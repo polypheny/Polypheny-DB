@@ -60,7 +60,7 @@ import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexSubQuery;
@@ -123,7 +123,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
      * @param e IN sub-query to rewrite
      * @param variablesSet A set of variables used by a relational expression of the specified RexSubQuery
      * @param builder Builder
-     * @param offset Offset to shift {@link RexInputRef}
+     * @param offset Offset to shift {@link RexIndexRef}
      * @return Expression that may be used to replace the RexSubQuery
      */
     private RexNode rewriteScalarQuery( RexSubQuery e, Set<CorrelationId> variablesSet, AlgBuilder builder, int inputCount, int offset ) {
@@ -228,7 +228,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
      * @param variablesSet A set of variables used by a relational expression of the specified RexSubQuery
      * @param logic Logic for evaluating
      * @param builder Builder
-     * @param offset Offset to shift {@link RexInputRef}
+     * @param offset Offset to shift {@link RexIndexRef}
      * @return Expression that may be used to replace the RexSubQuery
      */
     private RexNode rewriteIn( RexSubQuery e, Set<CorrelationId> variablesSet, AlgOptUtil.Logic logic, AlgBuilder builder, int offset ) {
@@ -463,7 +463,7 @@ public abstract class SubQueryRemoveRule extends AlgOptRule {
     /**
      * Returns a reference to a particular field, by offset, across several inputs on a {@link AlgBuilder}'s stack.
      */
-    private RexInputRef field( AlgBuilder builder, int inputCount, int offset ) {
+    private RexIndexRef field( AlgBuilder builder, int inputCount, int offset ) {
         for ( int inputOrdinal = 0; ; ) {
             final AlgNode r = builder.peek( inputCount, inputOrdinal );
             if ( offset < r.getRowType().getFieldCount() ) {

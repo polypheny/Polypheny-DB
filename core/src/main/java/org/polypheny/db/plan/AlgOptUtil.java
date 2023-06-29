@@ -77,6 +77,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.document.MergeDocumentFilterRule;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
@@ -110,7 +111,7 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexMultisetUtil;
@@ -352,14 +353,14 @@ public abstract class AlgOptUtil {
                         nodes.size(),
                         inputRowType.getFieldCount() );
         for ( Ord<RexNode> node : Ord.zip( nodes ) ) {
-            if ( node.e instanceof RexInputRef ) {
+            if ( node.e instanceof RexIndexRef ) {
                 mapping.set(
                         node.i,
-                        ((RexInputRef) node.e).getIndex() );
+                        ((RexIndexRef) node.e).getIndex() );
             } else if ( node.e.isA( Kind.CAST ) ) {
                 final RexNode operand = ((RexCall) node.e).getOperands().get( 0 );
-                if ( operand instanceof RexInputRef ) {
-                    mapping.set( node.i, ((RexInputRef) operand).getIndex() );
+                if ( operand instanceof RexIndexRef ) {
+                    mapping.set( node.i, ((RexIndexRef) operand).getIndex() );
                 }
             }
         }
@@ -378,8 +379,8 @@ public abstract class AlgOptUtil {
                         nodes.size(),
                         inputRowType.getFieldCount() );
         for ( Ord<RexNode> node : Ord.zip( nodes ) ) {
-            if ( node.e instanceof RexInputRef ) {
-                mapping.set( node.i, ((RexInputRef) node.e).getIndex() );
+            if ( node.e instanceof RexIndexRef ) {
+                mapping.set( node.i, ((RexIndexRef) node.e).getIndex() );
             }
         }
         return mapping;
@@ -1010,7 +1011,7 @@ public abstract class AlgOptUtil {
     }
 
 
-    private static void splitCorrelatedFilterCondition( LogicalFilter filter, RexNode condition, List<RexInputRef> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList ) {
+    private static void splitCorrelatedFilterCondition( LogicalFilter filter, RexNode condition, List<RexIndexRef> joinKeys, List<RexNode> correlatedJoinKeys, List<RexNode> nonEquiList ) {
         if ( condition instanceof RexCall ) {
             RexCall call = (RexCall) condition;
             if ( call.getOperator().getKind() == Kind.AND ) {
@@ -1025,12 +1026,12 @@ public abstract class AlgOptUtil {
                 RexNode op0 = operands.get( 0 );
                 RexNode op1 = operands.get( 1 );
 
-                if ( !(RexUtil.containsInputRef( op0 )) && (op1 instanceof RexInputRef) ) {
+                if ( !(RexUtil.containsInputRef( op0 )) && (op1 instanceof RexIndexRef) ) {
                     correlatedJoinKeys.add( op0 );
-                    joinKeys.add( (RexInputRef) op1 );
+                    joinKeys.add( (RexIndexRef) op1 );
                     return;
-                } else if ( (op0 instanceof RexInputRef) && !(RexUtil.containsInputRef( op1 )) ) {
-                    joinKeys.add( (RexInputRef) op0 );
+                } else if ( (op0 instanceof RexIndexRef) && !(RexUtil.containsInputRef( op1 )) ) {
+                    joinKeys.add( (RexIndexRef) op0 );
                     correlatedJoinKeys.add( op1 );
                     return;
                 }
@@ -1068,11 +1069,11 @@ public abstract class AlgOptUtil {
                         return;
                     }
                 } else {
-                    if ( !(RexUtil.containsInputRef( op0 )) && (op1 instanceof RexInputRef) ) {
+                    if ( !(RexUtil.containsInputRef( op0 )) && (op1 instanceof RexIndexRef) ) {
                         correlatedJoinKeys.add( op0 );
                         joinKeys.add( op1 );
                         return;
-                    } else if ( (op0 instanceof RexInputRef) && !(RexUtil.containsInputRef( op1 )) ) {
+                    } else if ( (op0 instanceof RexIndexRef) && !(RexUtil.containsInputRef( op1 )) ) {
                         joinKeys.add( op0 );
                         correlatedJoinKeys.add( op1 );
                         return;
@@ -1105,12 +1106,12 @@ public abstract class AlgOptUtil {
             // "=" and "IS NOT DISTINCT FROM" are the same except for how they treat nulls.
             if ( kind == Kind.EQUALS || (filterNulls != null && kind == Kind.IS_NOT_DISTINCT_FROM) ) {
                 final List<RexNode> operands = call.getOperands();
-                if ( (operands.get( 0 ) instanceof RexInputRef) && (operands.get( 1 ) instanceof RexInputRef) ) {
-                    RexInputRef op0 = (RexInputRef) operands.get( 0 );
-                    RexInputRef op1 = (RexInputRef) operands.get( 1 );
+                if ( (operands.get( 0 ) instanceof RexIndexRef) && (operands.get( 1 ) instanceof RexIndexRef) ) {
+                    RexIndexRef op0 = (RexIndexRef) operands.get( 0 );
+                    RexIndexRef op1 = (RexIndexRef) operands.get( 1 );
 
-                    RexInputRef leftField;
-                    RexInputRef rightField;
+                    RexIndexRef leftField;
+                    RexIndexRef rightField;
                     if ( (op0.getIndex() < leftFieldCount) && (op1.getIndex() >= leftFieldCount) ) {
                         // Arguments were of form 'op0 = op1'
                         leftField = op0;
@@ -1239,9 +1240,9 @@ public abstract class AlgOptUtil {
         for ( i = 0; i < leftKeyCount; i++ ) {
             RexNode leftKey = leftJoinKeys.get( i );
 
-            if ( leftKey instanceof RexInputRef ) {
+            if ( leftKey instanceof RexIndexRef ) {
                 // already added to the projected left fields only need to remember the index in the join key list
-                leftKeys.add( ((RexInputRef) leftKey).getIndex() );
+                leftKeys.add( ((RexIndexRef) leftKey).getIndex() );
             } else {
                 newLeftFields.add( leftKey );
                 newLeftFieldNames.add( null );
@@ -1262,9 +1263,9 @@ public abstract class AlgOptUtil {
         for ( i = 0; i < rightKeyCount; i++ ) {
             RexNode rightKey = rightJoinKeys.get( i );
 
-            if ( rightKey instanceof RexInputRef ) {
+            if ( rightKey instanceof RexIndexRef ) {
                 // already added to the projected left fields only need to remember the index in the join key list
-                rightKeys.add( ((RexInputRef) rightKey).getIndex() );
+                rightKeys.add( ((RexIndexRef) rightKey).getIndex() );
             } else {
                 newRightFields.add( rightKey );
                 newRightFieldNames.add( null );
@@ -1341,6 +1342,7 @@ public abstract class AlgOptUtil {
         planner.addRule( FilterMergeRule.INSTANCE );
         planner.addRule( DateRangeRules.FILTER_INSTANCE );
         planner.addRule( IntersectToDistinctRule.INSTANCE );
+        planner.addRule( MergeDocumentFilterRule.INSTANCE );
     }
 
 
@@ -1348,7 +1350,7 @@ public abstract class AlgOptUtil {
      * Dumps a plan as a string.
      *
      * @param header Header to print before the plan. Ignored if the format is XML
-     * @param alg Relational expression to explain
+     * @param alg Algebra expression to explain
      * @param format Output format
      * @param detailLevel Detail level
      * @return Plan
@@ -1796,8 +1798,8 @@ public abstract class AlgOptUtil {
                     if ( o0.getKind() == Kind.CAST ) {
                         o0 = ((RexCall) o0).getOperands().get( 0 );
                     }
-                    if ( o0 instanceof RexInputRef && o1 instanceof RexLiteral ) {
-                        final int index = ((RexInputRef) o0).getIndex();
+                    if ( o0 instanceof RexIndexRef && o1 instanceof RexLiteral ) {
+                        final int index = ((RexIndexRef) o0).getIndex();
                         if ( projectMap.get( index ) == null ) {
                             projectMap.put( index, o1 );
                             continue;
@@ -1985,10 +1987,10 @@ public abstract class AlgOptUtil {
         boolean namesDifferent = false;
         for ( int i = 0; i < n; ++i ) {
             RexNode exp = project.getProjects().get( i );
-            if ( !(exp instanceof RexInputRef) ) {
+            if ( !(exp instanceof RexIndexRef) ) {
                 return false;
             }
-            RexInputRef fieldAccess = (RexInputRef) exp;
+            RexIndexRef fieldAccess = (RexIndexRef) exp;
             if ( i != fieldAccess.getIndex() ) {
                 // can't support reorder yet
                 return false;
@@ -2067,7 +2069,7 @@ public abstract class AlgOptUtil {
     private static RexShuttle pushShuttle( final Project project ) {
         return new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef ref ) {
+            public RexNode visitIndexRef( RexIndexRef ref ) {
                 return project.getProjects().get( ref.getIndex() );
             }
         };
@@ -2303,7 +2305,7 @@ public abstract class AlgOptUtil {
 
                     @Override
                     public RexNode get( int index ) {
-                        return RexInputRef.of( index, fields );
+                        return RexIndexRef.of( index, fields );
                     }
                 };
         final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
@@ -2591,7 +2593,7 @@ public abstract class AlgOptUtil {
                         public Pair<RexNode, String> get( int index ) {
                             if ( index < leftCount ) {
                                 AlgDataTypeField field = fields.get( index );
-                                return Pair.of( new RexInputRef( index, field.getType() ), field.getName() );
+                                return Pair.of( new RexIndexRef( index, field.getType() ), field.getName() );
                             } else {
                                 return Pair.of( extraLeftExprs.get( index - leftCount ), null );
                             }
@@ -2617,7 +2619,7 @@ public abstract class AlgOptUtil {
                             if ( index < rightCount ) {
                                 AlgDataTypeField field = fields.get( index );
                                 return Pair.of(
-                                        new RexInputRef( index, field.getType() ),
+                                        new RexIndexRef( index, field.getType() ),
                                         field.getName() );
                             } else {
                                 return Pair.of(
@@ -2712,11 +2714,11 @@ public abstract class AlgOptUtil {
                     case LEFT:
                         fix( extraRightExprs, mid, mid + 1 );
                         extraLeftExprs.add( node );
-                        return new RexInputRef( mid, node.getType() );
+                        return new RexIndexRef( mid, node.getType() );
                     case RIGHT:
                         final int index2 = mid + rightCount + extraRightExprs.size();
                         extraRightExprs.add( node );
-                        return new RexInputRef( index2, node.getType() );
+                        return new RexIndexRef( index2, node.getType() );
                     case BOTH:
                     case EMPTY:
                     default:
@@ -2849,7 +2851,7 @@ public abstract class AlgOptUtil {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             inputPosReferenced.add( inputRef.getIndex() );
             return inputRef;
         }
@@ -2969,7 +2971,7 @@ public abstract class AlgOptUtil {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             inputBitSet.set( inputRef.getIndex() );
             return null;
         }
@@ -3041,7 +3043,7 @@ public abstract class AlgOptUtil {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef var ) {
+        public RexNode visitIndexRef( RexIndexRef var ) {
             int srcIndex = var.getIndex();
             int destIndex = srcIndex + adjustments[srcIndex];
 

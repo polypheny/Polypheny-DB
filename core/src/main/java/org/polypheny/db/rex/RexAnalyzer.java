@@ -76,16 +76,16 @@ public class RexAnalyzer {
     /**
      * Generates a map of variables and lists of values that could be assigned to them.
      */
-    public Iterable<Map<RexNode, Comparable>> assignments() {
-        final List<List<Comparable>> generators = variables.stream().map( RexAnalyzer::getComparables ).collect( Util.toImmutableList() );
-        final Iterable<List<Comparable>> product = Linq4j.product( generators );
+    public Iterable<Map<RexNode, Comparable<?>>> assignments() {
+        final List<List<Comparable<?>>> generators = variables.stream().map( RexAnalyzer::getComparables ).collect( Util.toImmutableList() );
+        final Iterable<List<Comparable<?>>> product = Linq4j.product( generators );
         //noinspection StaticPseudoFunctionalStyleMethod
         return Iterables.transform( product, values -> ImmutableMap.copyOf( Pair.zip( variables, values ) ) );
     }
 
 
-    private static List<Comparable> getComparables( RexNode variable ) {
-        final ImmutableList.Builder<Comparable> values = ImmutableList.builder();
+    private static List<Comparable<?>> getComparables( RexNode variable ) {
+        final ImmutableList.Builder<Comparable<?>> values = ImmutableList.builder();
         switch ( variable.getType().getPolyType() ) {
             case BOOLEAN:
                 values.add( true );
@@ -138,9 +138,9 @@ public class RexAnalyzer {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             builder.add( inputRef );
-            return super.visitInputRef( inputRef );
+            return super.visitIndexRef( inputRef );
         }
 
 

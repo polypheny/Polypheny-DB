@@ -52,7 +52,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -470,7 +470,7 @@ public class JoinToMultiJoinRule extends AlgOptRule {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             refCounts[inputRef.getIndex()]++;
             return null;
         }

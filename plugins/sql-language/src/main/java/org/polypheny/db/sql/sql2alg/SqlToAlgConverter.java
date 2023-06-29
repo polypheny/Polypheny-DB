@@ -157,7 +157,7 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexFieldCollation;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPatternFieldRef;
@@ -686,7 +686,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             for ( int i = 0; i < fields.size(); i++ ) {
                 if ( origins.get( i ) == i ) {
                     squished.put( i, newProjects.size() );
-                    newProjects.add( RexInputRef.of2( i, fields ) );
+                    newProjects.add( RexIndexRef.of2( i, fields ) );
                 }
             }
             alg = LogicalProject.create( alg, Pair.left( newProjects ), Pair.right( newProjects ) );
@@ -702,7 +702,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 AlgDataTypeField field = fields.get( i );
                 undoProjects.add(
                         Pair.of(
-                                (RexNode) new RexInputRef( squished.get( origin ), field.getType() ),
+                                (RexNode) new RexIndexRef( squished.get( origin ), field.getType() ),
                                 field.getName() ) );
             }
 
@@ -1990,7 +1990,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                             ? AlgFieldCollation.NullDirection.LAST
                             : AlgFieldCollation.NullDirection.FIRST;
             RexNode e = matchBb.convertExpression( order );
-            orderKeys.add( new AlgFieldCollation( ((RexInputRef) e).getIndex(), direction, nullDirection ) );
+            orderKeys.add( new AlgFieldCollation( ((RexIndexRef) e).getIndex(), direction, nullDirection ) );
         }
         final AlgCollation orders = cluster.traitSet().canonize( AlgCollations.of( orderKeys ) );
 
@@ -3256,8 +3256,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         int nSourceFields = join.getLeft().getRowType().getFieldCount();
         final List<RexNode> projects = new ArrayList<>();
         for ( int level1Idx = 0; level1Idx < nLevel1Exprs; level1Idx++ ) {
-            if ( (level2InsertExprs != null) && (level1InsertExprs.get( level1Idx ) instanceof RexInputRef) ) {
-                int level2Idx = ((RexInputRef) level1InsertExprs.get( level1Idx )).getIndex();
+            if ( (level2InsertExprs != null) && (level1InsertExprs.get( level1Idx ) instanceof RexIndexRef) ) {
+                int level2Idx = ((RexIndexRef) level1InsertExprs.get( level1Idx )).getIndex();
                 projects.add( level2InsertExprs.get( level2Idx ) );
             } else {
                 projects.add( level1InsertExprs.get( level1Idx ) );
@@ -3316,11 +3316,11 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 }
             }
         }
-        if ( e instanceof RexInputRef ) {
+        if ( e instanceof RexIndexRef ) {
             // adjust the type to account for nulls introduced by outer joins
-            e = adjustInputRef( bb, (RexInputRef) e );
+            e = adjustInputRef( bb, (RexIndexRef) e );
             if ( pv != null ) {
-                e = RexPatternFieldRef.of( pv, (RexInputRef) e );
+                e = RexPatternFieldRef.of( pv, (RexIndexRef) e );
             }
         }
 
@@ -3340,7 +3340,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * @param inputRef Input ref
      * @return Adjusted input ref
      */
-    protected RexNode adjustInputRef( Blackboard bb, RexInputRef inputRef ) {
+    protected RexNode adjustInputRef( Blackboard bb, RexIndexRef inputRef ) {
         AlgDataTypeField field = bb.getRootField( inputRef );
         if ( field != null ) {
             return rexBuilder.makeInputRef( field.getType(), inputRef.getIndex() );
@@ -3370,7 +3370,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         AlgNode converted = convertQuery( query, false, false ).alg;
         int iCursor = bb.cursors.size();
         bb.cursors.add( converted );
-        subQuery.expr = new RexInputRef( iCursor, converted.getRowType() );
+        subQuery.expr = new RexIndexRef( iCursor, converted.getRowType() );
         return converted;
     }
 
@@ -3929,7 +3929,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
 
-        AlgDataTypeField getRootField( RexInputRef inputRef ) {
+        AlgDataTypeField getRootField( RexIndexRef inputRef ) {
             if ( inputs == null ) {
                 return null;
             }
@@ -4495,8 +4495,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
          * @param name Suggested name
          */
         private void addExpr( RexNode expr, String name ) {
-            if ( (name == null) && (expr instanceof RexInputRef) ) {
-                final int i = ((RexInputRef) expr).getIndex();
+            if ( (name == null) && (expr instanceof RexIndexRef) ) {
+                final int i = ((RexIndexRef) expr).getIndex();
                 name = bb.root.getRowType().getFieldList().get( i ).getName();
             }
             if ( Pair.right( convertedInputExprs ).contains( name ) ) {

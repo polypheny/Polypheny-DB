@@ -38,6 +38,7 @@ import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.plan.volcano.AlgSubset;
 
 
 /**
@@ -97,7 +98,7 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
     /**
      * Takes an arbitrary Trait and returns the canonical representation of that Trait. Canonized Trait objects may always be compared using the equality operator (<code>==</code>).
      *
-     * If an equal RelTrait has already been canonized and is still in use, it will be returned. Otherwise, the given Trait is made canonical and returned.
+     * If an equal AlgTrait has already been canonized and is still in use, it will be returned. Otherwise, the given Trait is made canonical and returned.
      *
      * @param trait a possibly non-canonical Trait
      * @return a canonical Trait.
@@ -120,22 +121,22 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
     public abstract AlgNode convert( AlgOptPlanner planner, AlgNode alg, T toTrait, boolean allowInfiniteCostConverters );
 
     /**
-     * Tests whether the given RelTrait can be converted to another RelTrait.
+     * Tests whether the given AlgTrait can be converted to another AlgTrait.
      *
      * @param planner the planner requesting the conversion test
-     * @param fromTrait the RelTrait to convert from
-     * @param toTrait the RelTrait to convert to
+     * @param fromTrait the AlgTrait to convert from
+     * @param toTrait the AlgTrait to convert to
      * @return true if fromTrait can be converted to toTrait
      */
     public abstract boolean canConvert( AlgOptPlanner planner, T fromTrait, T toTrait );
 
 
     /**
-     * Tests whether the given RelTrait can be converted to another RelTrait.
+     * Tests whether the given AlgTrait can be converted to another AlgTrait.
      *
      * @param planner the planner requesting the conversion test
-     * @param fromTrait the RelTrait to convert from
-     * @param toTrait the RelTrait to convert to
+     * @param fromTrait the AlgTrait to convert from
+     * @param toTrait the AlgTrait to convert to
      * @param fromRel the {@link AlgNode} to convert from (with fromTrait)
      * @return true if fromTrait can be converted to toTrait
      */
@@ -168,6 +169,11 @@ public abstract class AlgTraitDef<T extends AlgTrait<?>> {
      * Returns the default member of this trait.
      */
     public abstract T getDefault();
+
+
+    public boolean canConvertUnchecked( AlgOptPlanner planner, AlgTrait<?> curAlgTrait, AlgTrait<?> curOtherTrait, AlgSubset subset ) {
+        return canConvert( planner, (T) curAlgTrait, (T) curOtherTrait, subset );
+    }
 
 }
 

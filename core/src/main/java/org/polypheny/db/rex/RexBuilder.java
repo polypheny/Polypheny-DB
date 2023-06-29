@@ -158,10 +158,10 @@ public class RexBuilder {
 
 
     /**
-     * Creates a list of {@link RexInputRef} expressions, projecting the fields of a given record type.
+     * Creates a list of {@link RexIndexRef} expressions, projecting the fields of a given record type.
      */
     public List<? extends RexNode> identityProjects( final AlgDataType rowType ) {
-        return rowType.getFieldList().stream().map( input -> new RexInputRef( input.getIndex(), input.getType() ) ).collect( Collectors.toList() );
+        return rowType.getFieldList().stream().map( input -> new RexIndexRef( input.getIndex(), input.getType() ) ).collect( Collectors.toList() );
     }
 
 
@@ -229,7 +229,7 @@ public class RexBuilder {
                         GET_OPERATOR,
                         ImmutableList.of( expr, makeLiteral( field.getName() ) ) );
             }
-            return new RexInputRef(
+            return new RexIndexRef(
                     range.getOffset() + field.getIndex(),
                     field.getType() );
         }
@@ -755,9 +755,9 @@ public class RexBuilder {
      * @param i Ordinal of field
      * @return Reference to field
      */
-    public RexInputRef makeInputRef( AlgDataType type, int i ) {
+    public RexIndexRef makeInputRef( AlgDataType type, int i ) {
         type = PolyTypeUtil.addCharsetAndCollation( type, typeFactory );
-        return new RexInputRef( i, type );
+        return new RexIndexRef( i, type );
     }
 
 
@@ -769,7 +769,7 @@ public class RexBuilder {
      * @return Reference to field
      * @see #identityProjects(AlgDataType)
      */
-    public RexInputRef makeInputRef( AlgNode input, int i ) {
+    public RexIndexRef makeInputRef( AlgNode input, int i ) {
         return makeInputRef( input.getRowType().getFieldList().get( i ).getType(), i );
     }
 

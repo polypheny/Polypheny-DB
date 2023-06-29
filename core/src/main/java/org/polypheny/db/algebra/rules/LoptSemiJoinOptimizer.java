@@ -60,7 +60,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.types.TranslatableEntity;
@@ -182,7 +182,7 @@ public class LoptSemiJoinOptimizer {
                 return -1;
         }
         List<RexNode> operands = ((RexCall) joinFilter).getOperands();
-        if ( !(operands.get( 0 ) instanceof RexInputRef) || !(operands.get( 1 ) instanceof RexInputRef) ) {
+        if ( !(operands.get( 0 ) instanceof RexIndexRef) || !(operands.get( 1 ) instanceof RexIndexRef) ) {
             return -1;
         }
 
@@ -412,15 +412,15 @@ public class LoptSemiJoinOptimizer {
         // Determine which side of the equality filter references the join operand we're interested in; then, check if it is contained in our key list
         assert call.getOperator().getOperatorName() == OperatorName.EQUALS;
         List<RexNode> operands = call.getOperands();
-        assert operands.get( 0 ) instanceof RexInputRef;
-        assert operands.get( 1 ) instanceof RexInputRef;
-        int idx = ((RexInputRef) operands.get( 0 )).getIndex();
+        assert operands.get( 0 ) instanceof RexIndexRef;
+        assert operands.get( 1 ) instanceof RexIndexRef;
+        int idx = ((RexIndexRef) operands.get( 0 )).getIndex();
         if ( idx < nFields ) {
             if ( !keys.contains( idx ) ) {
                 return null;
             }
         } else {
-            idx = ((RexInputRef) operands.get( 1 )).getIndex();
+            idx = ((RexIndexRef) operands.get( 1 )).getIndex();
             if ( !keys.contains( idx ) ) {
                 return null;
             }

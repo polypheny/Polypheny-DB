@@ -17,30 +17,31 @@
 package org.polypheny.db.algebra.enumerable.document;
 
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
 
-public class DocumentFilterToCalcRule extends AlgOptRule {
+public class DocumentFilterToCalcRule extends ConverterRule {
 
     public static final DocumentFilterToCalcRule INSTANCE = new DocumentFilterToCalcRule();
 
 
     public DocumentFilterToCalcRule() {
-        super( operand( LogicalDocumentFilter.class, any() ), AlgFactories.LOGICAL_BUILDER, "DocumentToCalcRule_LogicalDocumentFilter" );
+        super( DocumentFilter.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "DocumentToCalcRule_LogicalDocumentFilter" );
     }
 
 
     @Override
-    public void onMatch( AlgOptRuleCall call ) {
-        final LogicalDocumentFilter filter = call.alg( 0 );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalDocumentFilter filter = (LogicalDocumentFilter) alg;
         final AlgNode input = filter.getInput();
 
         // Create a program containing a filter.
@@ -51,8 +52,8 @@ public class DocumentFilterToCalcRule extends AlgOptRule {
         programBuilder.addCondition( filter.condition );
         final RexProgram program = programBuilder.getProgram();
 
-        final EnumerableCalc calc = EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
-        call.transformTo( calc );
+        return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
+
 
 }

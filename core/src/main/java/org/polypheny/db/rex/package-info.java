@@ -21,7 +21,7 @@
  * <li>{@link org.polypheny.db.rex.RexVariable} represents a leaf of the tree. It has sub-types:
  * <ul>
  * <li>{@link org.polypheny.db.rex.RexCorrelVariable} is a correlating variable for nested-loop joins</li>
- * <li>{@link org.polypheny.db.rex.RexInputRef} refers to a field of an input relational expression</li>
+ * <li>{@link org.polypheny.db.rex.RexIndexRef} refers to a field of an input relational expression</li>
  * <li>{@link org.polypheny.db.rex.RexCall} is a call to an operator or function.  By means of special operators, we can use this construct to represent virtually every non-leaf node in the tree.</li>
  * <li>{@link org.polypheny.db.rex.RexRangeRef} refers to a collection of contiguous fields from an input relational expression. It usually exists only during translation.</li>
  * </ul>

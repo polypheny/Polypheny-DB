@@ -54,7 +54,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -267,7 +267,7 @@ public abstract class CalcAlgSplitter {
             final boolean condition = i == conditionOrdinal;
 
             if ( i < inputFieldCount ) {
-                assert expr instanceof RexInputRef;
+                assert expr instanceof RexIndexRef;
                 exprLevels[i] = -1;
                 continue;
             }
@@ -465,7 +465,7 @@ public abstract class CalcAlgSplitter {
         // First populate the inputs. They were computed at some previous level and are used here.
         for ( int i = 0; i < inputExprOrdinals.length; i++ ) {
             final int inputExprOrdinal = inputExprOrdinals[i];
-            exprs.add( new RexInputRef( i, allExprs[inputExprOrdinal].getType() ) );
+            exprs.add( new RexIndexRef( i, allExprs[inputExprOrdinal].getType() ) );
             exprInverseOrdinals[inputExprOrdinal] = j;
             ++j;
         }
@@ -513,8 +513,8 @@ public abstract class CalcAlgSplitter {
 
 
     private String deriveFieldName( RexNode expr, int ordinal ) {
-        if ( expr instanceof RexInputRef ) {
-            int inputIndex = ((RexInputRef) expr).getIndex();
+        if ( expr instanceof RexIndexRef ) {
+            int inputIndex = ((RexIndexRef) expr).getIndex();
             String fieldName = child.getRowType().getFieldList().get( inputIndex ).getName();
             // Don't inherit field names like '$3' from child: that's confusing.
             if ( !fieldName.startsWith( "$" ) || fieldName.startsWith( "$EXPR" ) ) {
@@ -799,7 +799,7 @@ public abstract class CalcAlgSplitter {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             final int index = exprInverseOrdinals[input.getIndex()];
             assert index >= 0;
             return new RexLocalRef( index, input.getType() );

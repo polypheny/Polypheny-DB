@@ -105,7 +105,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -243,7 +243,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 restructured = true;
                 structuringExps.add( restructure( field.getType() ) );
             } else {
-                structuringExps.add( new RexInputRef( iRestructureInput, field.getType() ) );
+                structuringExps.add( new RexIndexRef( iRestructureInput, field.getType() ) );
                 ++iRestructureInput;
             }
         }
@@ -253,7 +253,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     private RexNode restructure( AlgDataType structuredType ) {
         // Access null indicator for entire structure.
-        RexInputRef nullIndicator = RexInputRef.of( iRestructureInput++, flattenedRootType.getFieldList() );
+        RexIndexRef nullIndicator = RexIndexRef.of( iRestructureInput++, flattenedRootType.getFieldList() );
 
         // Use NEW to put flattened data back together into a structure.
         List<RexNode> inputExprs = restructureFields( structuredType );
@@ -781,8 +781,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     private void flattenProjection( RewriteRexShuttle shuttle, RexNode exp, String fieldName, List<Pair<RexNode, String>> flattenedExps ) {
         if ( exp.getType().isStruct() ) {
-            if ( exp instanceof RexInputRef ) {
-                RexInputRef inputRef = (RexInputRef) exp;
+            if ( exp instanceof RexIndexRef ) {
+                RexIndexRef inputRef = (RexIndexRef) exp;
 
                 // Expand to range
                 AlgDataType flattenedType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), exp.getType(), null );
@@ -790,7 +790,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 int n = fieldList.size();
                 for ( int j = 0; j < n; ++j ) {
                     final Ord<AlgDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
-                    flattenedExps.add( Pair.of( new RexInputRef( newField.i + j, newField.e ), fieldName ) );
+                    flattenedExps.add( Pair.of( new RexIndexRef( newField.i + j, newField.e ), fieldName ) );
                 }
             } else if ( isConstructor( exp ) || exp.isA( Kind.CAST ) ) {
                 // REVIEW jvs: For cast, see corresponding note in RewriteRexShuttle
@@ -817,8 +817,8 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 int j = 0;
                 RexNode newExp = exp;
                 List<RexNode> oldOperands = ((RexCall) exp).getOperands();
-                if ( oldOperands.get( 0 ) instanceof RexInputRef ) {
-                    final RexInputRef inputRef = (RexInputRef) oldOperands.get( 0 );
+                if ( oldOperands.get( 0 ) instanceof RexIndexRef ) {
+                    final RexIndexRef inputRef = (RexIndexRef) oldOperands.get( 0 );
                     final Ord<AlgDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
                     newExp = rexBuilder.makeCall(
                             exp.getType(),
@@ -969,13 +969,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private class RewriteRexShuttle extends RexShuttle {
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             final int oldIndex = input.getIndex();
             final Ord<AlgDataType> field = getNewFieldForOldInput( oldIndex );
 
             // Use the actual flattened type, which may be different from the current type.
             AlgDataType fieldType = removeDistinct( field.e );
-            return new RexInputRef( field.i, fieldType );
+            return new RexIndexRef( field.i, fieldType );
         }
 
 
@@ -998,13 +998,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 int ordinal = fieldAccess.getField().getIndex();
                 accessOrdinals.push( ordinal );
                 iInput += calculateFlattenedOffset( refExp.getType(), ordinal );
-                if ( refExp instanceof RexInputRef ) {
+                if ( refExp instanceof RexIndexRef ) {
                     // Consecutive field accesses over some input can be removed since by now the input is
                     // flattened (no struct types). We just have to create a new RexInputRef with the correct ordinal and type.
-                    RexInputRef inputRef = (RexInputRef) refExp;
+                    RexIndexRef inputRef = (RexIndexRef) refExp;
                     final Ord<AlgDataType> newField = getNewFieldForOldInput( inputRef.getIndex() );
                     iInput += newField.i;
-                    return new RexInputRef( iInput, removeDistinct( newField.e ) );
+                    return new RexIndexRef( iInput, removeDistinct( newField.e ) );
                 } else if ( refExp instanceof RexCorrelVariable ) {
                     AlgDataType refType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), refExp.getType(), null );
                     refExp = rexBuilder.makeCorrel( refType, ((RexCorrelVariable) refExp).id );

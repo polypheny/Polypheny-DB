@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
  * <pre>SELECT emp.empno FROM emp</pre>
  * </blockquote>
  *
- * but there is a specialized expression {@link RexInputRef} for this purpose. So in practice, <code>RexFieldAccess</code> is usually used to access fields of correlating variables,
+ * but there is a specialized expression {@link RexIndexRef} for this purpose. So in practice, <code>RexFieldAccess</code> is usually used to access fields of correlating variables,
  * for example the expression <code>emp.deptno</code> in
  *
  * <blockquote>

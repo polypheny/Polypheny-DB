@@ -61,10 +61,10 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -76,7 +76,7 @@ import org.polypheny.db.util.Util;
  *
  * This should be used to infer whether same filters are applied on a given plan by materialized view rewriting rules.
  *
- * The output predicates might contain references to columns produced by Scan operators ({@link RexTableInputRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
+ * The output predicates might contain references to columns produced by Scan operators ({@link RexTableIndexRef}). In turn, each Scan operator is identified uniquely by its qualified name and an identifier.
  *
  * If the provider cannot infer the lineage for any of the expressions contain in any of the predicates, it will return null. Observe that this is different from the empty list of predicates, which means that there are not predicates in the (sub)plan.
  */
@@ -148,9 +148,9 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         final ImmutableBitSet inputFieldsUsed = inputFinder.inputBitSet.build();
 
         // Infer column origin expressions for given references
-        final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
+        final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexInputRef ref = RexInputRef.of( idx, filter.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, filter.getRowType().getFieldList() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( filter, ref );
             if ( originalExprs == null ) {
                 // Bail out
@@ -219,15 +219,15 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         final ImmutableBitSet inputFieldsUsed = inputFinder.inputBitSet.build();
 
         // Infer column origin expressions for given references
-        final Map<RexInputRef, Set<RexNode>> mapping = new LinkedHashMap<>();
+        final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexInputRef inputRef = RexInputRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef inputRef = RexIndexRef.of( idx, join.getRowType().getFieldList() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( join, inputRef );
             if ( originalExprs == null ) {
                 // Bail out
                 return null;
             }
-            final RexInputRef ref = RexInputRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, join.getRowType().getFieldList() );
             mapping.put( ref, originalExprs );
         }
 

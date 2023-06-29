@@ -852,7 +852,7 @@ public class RexSimplify {
 
 
         @Override
-        public Boolean visitInputRef( RexInputRef inputRef ) {
+        public Boolean visitIndexRef( RexIndexRef inputRef ) {
             return true;
         }
 
@@ -920,7 +920,7 @@ public class RexSimplify {
 
 
         @Override
-        public Boolean visitTableInputRef( RexTableInputRef fieldRef ) {
+        public Boolean visitTableInputRef( RexTableIndexRef fieldRef ) {
             return false;
         }
 
@@ -928,6 +928,12 @@ public class RexSimplify {
         @Override
         public Boolean visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
             return false;
+        }
+
+
+        @Override
+        public Boolean visitNameRef( RexNameRef nameRef ) {
+            return true;
         }
 
     }
@@ -1463,22 +1469,22 @@ public class RexSimplify {
             // Analyzer cannot handle this expression currently
             return simplified;
         }
-        if ( !foo0.variables.containsAll( foo1.variables ) ) {
+        if ( !new HashSet<>( foo0.variables ).containsAll( foo1.variables ) ) {
             throw new AssertionError( "variable mismatch: " + before + " has " + foo0.variables + ", " + simplified + " has " + foo1.variables );
         }
         assignment_loop:
-        for ( Map<RexNode, Comparable> map : foo0.assignments() ) {
+        for ( Map<RexNode, Comparable<?>> map : foo0.assignments() ) {
             for ( RexNode predicate : predicates.pulledUpPredicates ) {
-                final Comparable v = RexInterpreter.evaluate( predicate, map );
+                final Comparable<?> v = RexInterpreter.evaluate( predicate, map );
                 if ( !v.equals( true ) ) {
                     continue assignment_loop;
                 }
             }
-            Comparable v0 = RexInterpreter.evaluate( foo0.e, map );
+            Comparable<?> v0 = RexInterpreter.evaluate( foo0.e, map );
             if ( v0 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo0.e );
             }
-            Comparable v1 = RexInterpreter.evaluate( foo1.e, map );
+            Comparable<?> v1 = RexInterpreter.evaluate( foo1.e, map );
             if ( v1 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo1.e );
             }
@@ -1870,7 +1876,7 @@ public class RexSimplify {
 
 
     /**
-     * Comparison between a {@link RexInputRef} or {@link RexFieldAccess} and a literal. Literal may be on left or right side, and may be null.
+     * Comparison between a {@link RexIndexRef} or {@link RexFieldAccess} and a literal. Literal may be on left or right side, and may be null.
      */
     private static class Comparison implements Predicate {
 

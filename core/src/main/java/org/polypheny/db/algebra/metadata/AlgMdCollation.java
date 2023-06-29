@@ -78,7 +78,7 @@ import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCallBinding;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -252,8 +252,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
         final Multimap<Integer, Integer> targets = LinkedListMultimap.create();
         final Map<Integer, Monotonicity> targetsWithMonotonicity = new HashMap<>();
         for ( Ord<RexNode> project : Ord.<RexNode>zip( projects ) ) {
-            if ( project.e instanceof RexInputRef ) {
-                targets.put( ((RexInputRef) project.e).getIndex(), project.i );
+            if ( project.e instanceof RexIndexRef ) {
+                targets.put( ((RexIndexRef) project.e).getIndex(), project.i );
             } else if ( project.e instanceof RexCall ) {
                 final RexCall call = (RexCall) project.e;
                 final RexCallBinding binding = RexCallBinding.create( input.getCluster().getTypeFactory(), call, inputCollations );

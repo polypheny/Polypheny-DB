@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -181,8 +181,8 @@ public class JoinCommuteRule extends AlgOptRule {
                     builder.add( go( operand ) );
                 }
                 return call.clone( call.getType(), builder.build() );
-            } else if ( rex instanceof RexInputRef ) {
-                RexInputRef var = (RexInputRef) rex;
+            } else if ( rex instanceof RexIndexRef ) {
+                RexIndexRef var = (RexIndexRef) rex;
                 int index = var.getIndex();
                 if ( index < leftFields.size() ) {
                     // Field came from left side of join. Move it to the right.

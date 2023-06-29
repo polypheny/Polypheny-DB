@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.cql.TableIndex;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -81,7 +81,7 @@ public class AlgBuildTestHelper extends CqlTestHelper {
                         for ( Long columnId : tableIndex.catalogTable.getColumnIds() ) {
                             LogicalColumn column = catalog.getSnapshot().rel().getColumn( columnId ).orElseThrow();
                             columnNames.add( tableIndex.fullyQualifiedName + "." + column.name );
-                            RexInputRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
+                            RexIndexRef inputRef = rexBuilder.makeInputRef( algBuilder.peek(), inputRefs.size() );
                             tableScanOrdinalities.put( columnId, inputRefs.size() );
                             inputRefs.add( inputRef );
                         }

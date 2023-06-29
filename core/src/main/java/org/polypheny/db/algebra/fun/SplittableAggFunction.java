@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
@@ -53,7 +53,7 @@ public interface SplittableAggFunction {
     /**
      * Generates an aggregate call to merge sub-totals.
      *
-     * Most implementations will add a single aggregate call to {@code aggCalls}, and return a {@link RexInputRef} that points to it.
+     * Most implementations will add a single aggregate call to {@code aggCalls}, and return a {@link RexIndexRef} that points to it.
      *
      * @param rexBuilder Rex builder
      * @param extra Place to define extra input expressions

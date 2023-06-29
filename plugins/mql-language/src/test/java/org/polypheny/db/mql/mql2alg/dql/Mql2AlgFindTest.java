@@ -38,7 +38,7 @@ import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.mql.mql2alg.Mql2AlgTest;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
@@ -71,7 +71,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         assertEquals( OperatorName.MQL_EQUALS, condition.op.getOperatorName() );
 
         assertTrue( condition.operands.get( 0 ).isA( Kind.INPUT_REF ) );
-        assertEquals( 0, ((RexInputRef) condition.operands.get( 0 )).getIndex() );
+        assertEquals( 0, ((RexIndexRef) condition.operands.get( 0 )).getIndex() );
 
         testCastLiteral( condition.operands.get( 1 ), "value", String.class );
     }
@@ -576,7 +576,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         assertEquals( 2, projection.operands.size() );
 
         assertEquals( Kind.INPUT_REF, projection.operands.get( 0 ).getKind() );
-        assertEquals( 1, ((RexInputRef) projection.operands.get( 0 )).getIndex() );
+        assertEquals( 1, ((RexIndexRef) projection.operands.get( 0 )).getIndex() );
 
         RexCall arrayArray = assertRexCall( projection, 1 );
 
@@ -640,7 +640,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
         assertEquals( 2, jsonValue.operands.size() );
         assertEquals( Kind.INPUT_REF, jsonValue.operands.get( 0 ).getKind() );
-        assertEquals( 0, ((RexInputRef) jsonValue.operands.get( 0 )).getIndex() );
+        assertEquals( 0, ((RexIndexRef) jsonValue.operands.get( 0 )).getIndex() );
 
         RexCall array = assertRexCall( jsonValue, 0 );
 
@@ -673,7 +673,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
             testJsonExpression( jsonExpr );
         }
 
-        RexInputRef ref = (RexInputRef) jsonExpr.operands.get( 0 );
+        RexIndexRef ref = (RexIndexRef) jsonExpr.operands.get( 0 );
         assertEquals( 1, ref.getIndex() );
 
         // test json comp string

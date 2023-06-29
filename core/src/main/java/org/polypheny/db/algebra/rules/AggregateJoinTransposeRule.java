@@ -61,7 +61,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -197,8 +197,8 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
                     if ( !aggCall.e.getArgList().isEmpty() && fieldSet.contains( ImmutableBitSet.of( aggCall.e.getArgList() ) ) ) {
                         final RexNode singleton = splitter.singleton( rexBuilder, joinInput.getRowType(), aggCall.e.transform( mapping ) );
 
-                        if ( singleton instanceof RexInputRef ) {
-                            final int index = ((RexInputRef) singleton).getIndex();
+                        if ( singleton instanceof RexIndexRef ) {
+                            final int index = ((RexIndexRef) singleton).getIndex();
                             if ( !belowAggregateKey.get( index ) ) {
                                 projects.add( singleton );
                             }
@@ -332,10 +332,10 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
             case EQUALS:
                 RexCall call = (RexCall) predicate;
                 final List<RexNode> operands = call.getOperands();
-                if ( operands.get( 0 ) instanceof RexInputRef ) {
-                    final RexInputRef ref0 = (RexInputRef) operands.get( 0 );
-                    if ( operands.get( 1 ) instanceof RexInputRef ) {
-                        final RexInputRef ref1 = (RexInputRef) operands.get( 1 );
+                if ( operands.get( 0 ) instanceof RexIndexRef ) {
+                    final RexIndexRef ref0 = (RexIndexRef) operands.get( 0 );
+                    if ( operands.get( 1 ) instanceof RexIndexRef ) {
+                        final RexIndexRef ref1 = (RexIndexRef) operands.get( 1 );
                         populateEquivalence( equivalence, ref0.getIndex(), ref1.getIndex() );
                         populateEquivalence( equivalence, ref1.getIndex(), ref0.getIndex() );
                     }

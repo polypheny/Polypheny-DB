@@ -51,7 +51,7 @@ import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -119,7 +119,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
         }
         final NavigableMap<Integer, RexNode> map = new TreeMap<>();
         for ( int key : aggregate.getGroupSet() ) {
-            final RexInputRef ref = rexBuilder.makeInputRef( aggregate.getInput(), key );
+            final RexIndexRef ref = rexBuilder.makeInputRef( aggregate.getInput(), key );
             if ( predicates.constantMap.containsKey( ref ) ) {
                 map.put( key, predicates.constantMap.get( ref ) );
             }

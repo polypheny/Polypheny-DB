@@ -90,6 +90,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -126,7 +127,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -514,7 +515,7 @@ public class AlgBuilder {
      *
      * @param fieldName Field name
      */
-    public RexInputRef field( String fieldName ) {
+    public RexIndexRef field( String fieldName ) {
         return field( 1, 0, fieldName );
     }
 
@@ -526,7 +527,7 @@ public class AlgBuilder {
      * @param inputOrdinal Input ordinal
      * @param fieldName Field name
      */
-    public RexInputRef field( int inputCount, int inputOrdinal, String fieldName ) {
+    public RexIndexRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
         final List<String> fieldNames = Pair.left( frame.relFields() );
         int i = fieldNames.indexOf( fieldName );
@@ -545,8 +546,8 @@ public class AlgBuilder {
      *
      * @param fieldOrdinal Field ordinal
      */
-    public RexInputRef field( int fieldOrdinal ) {
-        return (RexInputRef) field( 1, 0, fieldOrdinal, false );
+    public RexIndexRef field( int fieldOrdinal ) {
+        return (RexIndexRef) field( 1, 0, fieldOrdinal, false );
     }
 
 
@@ -557,15 +558,15 @@ public class AlgBuilder {
      * @param inputOrdinal Input ordinal
      * @param fieldOrdinal Field ordinal within input
      */
-    public RexInputRef field( int inputCount, int inputOrdinal, int fieldOrdinal ) {
-        return (RexInputRef) field( inputCount, inputOrdinal, fieldOrdinal, false );
+    public RexIndexRef field( int inputCount, int inputOrdinal, int fieldOrdinal ) {
+        return (RexIndexRef) field( inputCount, inputOrdinal, fieldOrdinal, false );
     }
 
 
     /**
      * As {@link #field(int, int, int)}, but if {@code alias} is true, the method may apply an alias to make sure that the
      * field has the same name as in the input frame. If no alias is applied the expression is definitely a
-     * {@link RexInputRef}.
+     * {@link RexIndexRef}.
      */
     private RexNode field( int inputCount, int inputOrdinal, int fieldOrdinal, boolean alias ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
@@ -576,7 +577,7 @@ public class AlgBuilder {
         }
         final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
-        final RexInputRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
+        final RexIndexRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
         if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
             return ref;
         }
@@ -1404,6 +1405,12 @@ public class AlgBuilder {
     }
 
 
+    public AlgBuilder documentFilter( RexNode condition ) {
+        stack.add( new Frame( LogicalDocumentFilter.create( build(), condition ) ) );
+        return this;
+    }
+
+
     public AlgBuilder lpgScan( long logicalId ) {
         LogicalGraph graph = snapshot.graph().getGraph( logicalId ).orElseThrow();
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), graph, graph.getRowType() ) ) );
@@ -1560,8 +1567,8 @@ public class AlgBuilder {
             for ( int i = 0; i < fieldNameList.size(); i++ ) {
                 if ( fieldNameList.get( i ) == null ) {
                     final RexNode node = nodeList.get( i );
-                    if ( node instanceof RexInputRef ) {
-                        final RexInputRef ref = (RexInputRef) node;
+                    if ( node instanceof RexIndexRef ) {
+                        final RexIndexRef ref = (RexIndexRef) node;
                         fieldNameList.set( i, project.getRowType().getFieldNames().get( ref.getIndex() ) );
                     }
                 }
@@ -1577,7 +1584,7 @@ public class AlgBuilder {
             for ( Pair<RexNode, RelField> pair : Pair.zip( project.getProjects(), frame1.structured ) ) {
                 switch ( pair.left.getKind() ) {
                     case INPUT_REF:
-                        final int i = ((RexInputRef) pair.left).getIndex();
+                        final int i = ((RexIndexRef) pair.left).getIndex();
                         final RelField relField = relFields.get( i );
                         final ImmutableSet<String> aliases = pair.right.left;
                         relFields.set( i, new RelField( aliases, relField.right ) );
@@ -1626,7 +1633,7 @@ public class AlgBuilder {
             switch ( node.getKind() ) {
                 case INPUT_REF:
                     // preserve alg aliases for INPUT_REF fields
-                    final int index = ((RexInputRef) node).getIndex();
+                    final int index = ((RexIndexRef) node).getIndex();
                     relField = new RelField( frame.structured.get( index ).left, fieldType );
                     break;
                 default:
@@ -1760,7 +1767,7 @@ public class AlgBuilder {
     private String inferAlias( List<RexNode> exprList, RexNode expr, int i ) {
         switch ( expr.getKind() ) {
             case INPUT_REF:
-                final RexInputRef ref = (RexInputRef) expr;
+                final RexIndexRef ref = (RexIndexRef) expr;
                 return stack.peek().structured.get( ref.getIndex() ).getValue().getName();
             case CAST:
                 return inferAlias( exprList, ((RexCall) expr).getOperands().get( 0 ), -1 );
@@ -1914,9 +1921,9 @@ public class AlgBuilder {
             final Kind kind = node.getKind();
             if ( Objects.requireNonNull( kind ) == Kind.INPUT_REF ) {
                 if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
-                    fields.add( frame.unstructured.get( ((RexInputRef) node).getIndex() ) );
+                    fields.add( frame.unstructured.get( ((RexIndexRef) node).getIndex() ) );
                 } else {
-                    fields.add( frame.structured.get( ((RexInputRef) node).getIndex() ) );
+                    fields.add( frame.structured.get( ((RexIndexRef) node).getIndex() ) );
                 }
 
             } else {
@@ -2453,7 +2460,7 @@ public class AlgBuilder {
         switch ( node.getKind() ) {
             case INPUT_REF:
                 return new AlgFieldCollation(
-                        ((RexInputRef) node).getIndex(),
+                        ((RexIndexRef) node).getIndex(),
                         direction,
                         Util.first( nullDirection, direction.defaultNullDirection() ) );
             case DESCENDING:
@@ -2588,7 +2595,7 @@ public class AlgBuilder {
                     break;
             }
             final AlgFieldCollation.NullDirection nullDirection = direction.defaultNullDirection();
-            final RexInputRef ref = (RexInputRef) orderKey;
+            final RexIndexRef ref = (RexIndexRef) orderKey;
             fieldCollations.add( new AlgFieldCollation( ref.getIndex(), direction, nullDirection ) );
         }
 
@@ -3088,7 +3095,7 @@ public class AlgBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             final AlgDataType leftRowType = left.getRowType();
             final RexBuilder rexBuilder = getRexBuilder();
             final int leftCount = leftRowType.getFieldCount();

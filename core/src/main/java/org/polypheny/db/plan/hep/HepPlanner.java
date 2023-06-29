@@ -701,21 +701,21 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public AlgNode register( AlgNode alg, AlgNode equivRel ) {
+    public AlgNode register( AlgNode alg, AlgNode equivAlg ) {
         // Ignore; this call is mostly to tell Volcano how to avoid infinite loops.
         return alg;
     }
 
 
     @Override
-    public void onCopy( AlgNode alg, AlgNode newRel ) {
-        onCopyHook.apply( alg, newRel );
+    public void onCopy( AlgNode alg, AlgNode newAlg ) {
+        onCopyHook.apply( alg, newAlg );
     }
 
 
     // implement RelOptPlanner
     @Override
-    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         return alg;
     }
 

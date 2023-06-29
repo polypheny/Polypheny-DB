@@ -61,7 +61,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
  */
 public class AbstractConverter extends ConverterImpl {
 
-    public AbstractConverter( AlgOptCluster cluster, AlgSubset alg, AlgTraitDef traitDef, AlgTraitSet traits ) {
+    public AbstractConverter( AlgOptCluster cluster, AlgSubset alg, AlgTraitDef<?> traitDef, AlgTraitSet traits ) {
         super( cluster, traitDef, traits, alg );
         assert traits.allSimple();
     }
@@ -82,7 +82,7 @@ public class AbstractConverter extends ConverterImpl {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         super.explainTerms( pw );
-        for ( AlgTrait trait : traitSet ) {
+        for ( AlgTrait<?> trait : traitSet ) {
             pw.item( trait.getTraitDef().getSimpleName(), trait );
         }
         return pw;

@@ -48,8 +48,7 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -142,9 +141,9 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         final AlgNode input = alg.getInput();
         RexNode rexNode = alg.getProjects().get( iOutputColumn );
 
-        if ( rexNode instanceof RexInputRef ) {
+        if ( rexNode instanceof RexIndexRef ) {
             // Direct reference:  no derivation added.
-            RexInputRef inputRef = (RexInputRef) rexNode;
+            RexIndexRef inputRef = (RexIndexRef) rexNode;
             return mq.getColumnOrigins( input, inputRef.getIndex() );
         }
 
@@ -153,7 +152,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
         RexVisitor visitor =
                 new RexVisitorImpl<Void>( true ) {
                     @Override
-                    public Void visitInputRef( RexInputRef inputRef ) {
+                    public Void visitIndexRef( RexIndexRef inputRef ) {
                         Set<AlgColumnOrigin> inputSet = mq.getColumnOrigins( input, inputRef.getIndex() );
                         if ( inputSet != null ) {
                             set.addAll( inputSet );

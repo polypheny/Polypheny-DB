@@ -165,12 +165,9 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
-            planner.registerAbstractRelationalRules();
+            planner.registerAbstractAlgebraRules();
         }
-        if ( ENABLE_MODEL_TRAIT ) {
-            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
-            planner.registerModelRules();
-        }
+
 
         AlgOptUtil.registerAbstractAlgs( planner );
         for ( AlgOptRule rule : DEFAULT_RULES ) {
@@ -184,6 +181,11 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
         planner.addRule( Bindables.BINDABLE_TABLE_SCAN_RULE );
         planner.addRule( ProjectScanRule.INSTANCE );
         planner.addRule( ProjectScanRule.INTERPRETER );
+
+        if ( ENABLE_MODEL_TRAIT ) {
+            planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+            planner.registerModelRules();
+        }
 
         if ( ENABLE_ENUMERABLE ) {
             for ( AlgOptRule rule : ENUMERABLE_RULES ) {

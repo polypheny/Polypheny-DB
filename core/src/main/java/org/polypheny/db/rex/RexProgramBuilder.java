@@ -89,7 +89,7 @@ public class RexProgramBuilder {
         if ( inputRowType.isStruct() ) {
             final List<AlgDataTypeField> fields = inputRowType.getFieldList();
             for ( int i = 0; i < fields.size(); i++ ) {
-                registerInternal( RexInputRef.of( i, fields ), false );
+                registerInternal( RexIndexRef.of( i, fields ), false );
             }
         }
     }
@@ -167,7 +167,7 @@ public class RexProgramBuilder {
         final RexVisitor<Void> validator =
                 new RexVisitorImpl<Void>( true ) {
                     @Override
-                    public Void visitInputRef( RexInputRef input ) {
+                    public Void visitIndexRef( RexIndexRef input ) {
                         final int index = input.getIndex();
                         final List<AlgDataTypeField> fields = inputRowType.getFieldList();
                         if ( index < fields.size() ) {
@@ -467,7 +467,7 @@ public class RexProgramBuilder {
      * If {@code normalize}, converts the program to canonical form. In canonical form, in addition to the usual constraints:
      *
      * <ul>
-     * <li>The first N internal expressions are {@link RexInputRef}s to the N input fields;</li>
+     * <li>The first N internal expressions are {@link RexIndexRef}s to the N input fields;</li>
      * <li>Subsequent internal expressions reference only preceding expressions;</li>
      * <li>Arguments to {@link RexCall}s must be {@link RexLocalRef}s (that is, expressions must have maximum depth 1)</li>
      * </ul>
@@ -756,7 +756,7 @@ public class RexProgramBuilder {
         assert projectRefList.isEmpty();
         for ( AlgDataTypeField field : inputRowType.getFieldList() ) {
             addProject(
-                    new RexInputRef( field.getIndex(), field.getType() ),
+                    new RexIndexRef( field.getIndex(), field.getType() ),
                     field.getName() );
         }
     }
@@ -843,7 +843,7 @@ public class RexProgramBuilder {
 
     /**
      * Shuttle which walks over an expression, registering each sub-expression.
-     * Each {@link RexInputRef} is assumed to refer to an <em>input</em> of the program.
+     * Each {@link RexIndexRef} is assumed to refer to an <em>input</em> of the program.
      */
     private class RegisterInputShuttle extends RegisterShuttle {
 
@@ -856,7 +856,7 @@ public class RexProgramBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             final int index = input.getIndex();
             if ( valid ) {
                 // The expression should already be valid. Check that its index is within bounds.
@@ -939,7 +939,7 @@ public class RexProgramBuilder {
 
     /**
      * Shuttle which walks over an expression, registering each sub-expression.
-     * Each {@link RexInputRef} is assumed to refer to an <em>output</em> of the program.
+     * Each {@link RexIndexRef} is assumed to refer to an <em>output</em> of the program.
      */
     private class RegisterOutputShuttle extends RegisterShuttle {
 
@@ -953,7 +953,7 @@ public class RexProgramBuilder {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef input ) {
+        public RexNode visitIndexRef( RexIndexRef input ) {
             // This expression refers to the Nth project column. Lookup that column and find out what common sub-expression IT refers to.
             final int index = input.getIndex();
             final RexLocalRef local = projectRefList.get( index );

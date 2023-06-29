@@ -267,8 +267,8 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 if ( ascending ) {
                     // We know that the previous operand was *a* child of its parent, but now check that it is the *correct* child.
                     final AlgSubset input = (AlgSubset) alg.getInput( previousOperand.ordinalInParent );
-                    List<AlgNode> inputRels = input.set.getRelsFromAllSubsets();
-                    if ( !inputRels.contains( previous ) ) {
+                    List<AlgNode> inputAlgs = input.set.getAlgsFromAllSubsets();
+                    if ( !inputAlgs.contains( previous ) ) {
                         continue;
                     }
                 }

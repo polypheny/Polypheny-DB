@@ -53,9 +53,9 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 public abstract class ConverterRule extends AlgOptRule {
 
     @Getter
-    private final AlgTrait inTrait;
+    private final AlgTrait<?> inTrait;
     @Getter
-    private final AlgTrait outTrait;
+    private final AlgTrait<?> outTrait;
 
 
     /**
@@ -66,7 +66,7 @@ public abstract class ConverterRule extends AlgOptRule {
      * @param out Trait which is converted to
      * @param description Description of rule
      */
-    public ConverterRule( Class<? extends AlgNode> clazz, AlgTrait in, AlgTrait out, String description ) {
+    public ConverterRule( Class<? extends AlgNode> clazz, AlgTrait<?> in, AlgTrait<?> out, String description ) {
         this( clazz, (Predicate<AlgNode>) r -> true, in, out, AlgFactories.LOGICAL_BUILDER, description );
     }
 

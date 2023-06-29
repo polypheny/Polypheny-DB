@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
@@ -204,7 +205,7 @@ public class Programs {
      * Creates a list of programs based on an array of rule sets.
      */
     public static List<Program> listOf( RuleSet... ruleSets ) {
-        return Lists.transform( Arrays.asList( ruleSets ), Programs::of );
+        return Arrays.stream( ruleSets ).map( Programs::of ).collect( Collectors.toList() );
     }
 
 
@@ -212,7 +213,7 @@ public class Programs {
      * Creates a list of programs based on a list of rule sets.
      */
     public static List<Program> listOf( List<RuleSet> ruleSets ) {
-        return Lists.transform( ruleSets, Programs::of );
+        return ruleSets.stream().map( Programs::of ).collect( Collectors.toList() );
     }
 
 

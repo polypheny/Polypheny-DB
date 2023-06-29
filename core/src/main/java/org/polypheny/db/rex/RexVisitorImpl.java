@@ -53,7 +53,7 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
 
 
     @Override
-    public R visitInputRef( RexInputRef inputRef ) {
+    public R visitIndexRef( RexIndexRef inputRef ) {
         return null;
     }
 
@@ -146,13 +146,19 @@ public class RexVisitorImpl<R> implements RexVisitor<R> {
 
 
     @Override
-    public R visitTableInputRef( RexTableInputRef ref ) {
+    public R visitTableInputRef( RexTableIndexRef ref ) {
         return null;
     }
 
 
     @Override
     public R visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+        return null;
+    }
+
+
+    @Override
+    public R visitNameRef( RexNameRef nameRef ) {
         return null;
     }
 

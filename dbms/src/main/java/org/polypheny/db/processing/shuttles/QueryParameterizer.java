@@ -50,15 +50,16 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexTableInputRef;
+import org.polypheny.db.rex.RexTableIndexRef;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.IntervalPolyType;
@@ -441,7 +442,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         return inputRef;
     }
 
@@ -549,7 +550,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
 
     @Override
-    public RexNode visitTableInputRef( RexTableInputRef fieldRef ) {
+    public RexNode visitTableInputRef( RexTableIndexRef fieldRef ) {
         return fieldRef;
     }
 
@@ -557,6 +558,12 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Override
     public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         return fieldRef;
+    }
+
+
+    @Override
+    public RexNode visitNameRef( RexNameRef nameRef ) {
+        return nameRef;
     }
 
 }

@@ -73,7 +73,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -551,8 +551,8 @@ public class ConstraintEnforceAttacher {
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
                     final LogicalColumn column = snapshot.getColumn( table.id, columnName ).orElseThrow();
                     final LogicalColumn foreignColumn = snapshot.getColumn( foreignTable.id, foreignColumnName ).orElseThrow();
-                    final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
-                    final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
+                    final RexNode inputRef = new RexIndexRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
+                    final RexNode foreignInputRef = new RexIndexRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
                     projects.add( inputRef );
                     foreignProjects.add( foreignInputRef );
                 }

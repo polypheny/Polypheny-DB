@@ -47,7 +47,7 @@ import org.polypheny.db.util.Glossary;
  */
 public interface RexVisitor<R> {
 
-    R visitInputRef( RexInputRef inputRef );
+    R visitIndexRef( RexIndexRef inputRef );
 
     R visitLocalRef( RexLocalRef localRef );
 
@@ -67,7 +67,10 @@ public interface RexVisitor<R> {
 
     R visitSubQuery( RexSubQuery subQuery );
 
-    R visitTableInputRef( RexTableInputRef fieldRef );
+    R visitTableInputRef( RexTableIndexRef fieldRef );
 
     R visitPatternFieldRef( RexPatternFieldRef fieldRef );
+
+    R visitNameRef( RexNameRef nameRef );
+
 }

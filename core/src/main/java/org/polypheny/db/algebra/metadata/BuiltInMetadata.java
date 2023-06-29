@@ -46,8 +46,8 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 
@@ -473,7 +473,7 @@ public abstract class BuiltInMetadata {
         /**
          * Given the input expression applied on the given {@link AlgNode}, this provider returns the expression with its lineage resolved.
          *
-         * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableInputRef}). An expression can have more than one lineage expression due to
+         * In particular, the result will be a set of nodes which might contain references to columns in Scan operators ({@link RexTableIndexRef}). An expression can have more than one lineage expression due to
          * Union operators. However, we do not check column equality in Filter predicates. Each Scan operator below the node is identified uniquely by its qualified name and its entity number.
          *
          * For example, if the expression is {@code $0 + 2} and {@code $0} originated from column {@code $3} in the {@code 0} occurrence of table {@code A} in the plan, result will be: {@code A.#0.$3 + 2}.
@@ -639,7 +639,7 @@ public abstract class BuiltInMetadata {
      * Metadata about the predicates that hold in the rows emitted from a relational expression.
      *
      * The difference with respect to {@link Predicates} provider is that this provider tries to extract ALL predicates even if they are not applied on the output expressions of the relational expression; we rely
-     * on {@link RexTableInputRef} to reference origin columns in {@link RelScan} for the result predicates.
+     * on {@link RexTableIndexRef} to reference origin columns in {@link RelScan} for the result predicates.
      */
     public interface AllPredicates extends Metadata {
 

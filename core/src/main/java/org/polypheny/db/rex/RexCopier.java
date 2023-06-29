@@ -98,7 +98,7 @@ class RexCopier extends RexShuttle {
 
 
     @Override
-    public RexNode visitInputRef( RexInputRef inputRef ) {
+    public RexNode visitIndexRef( RexIndexRef inputRef ) {
         return builder.makeInputRef( copy( inputRef.getType() ), inputRef.getIndex() );
     }
 

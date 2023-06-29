@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 
@@ -168,7 +168,7 @@ public abstract class TableFunctionScan extends AbstractAlgNode {
     /**
      * Returns function invocation expression.
      *
-     * Within this rexCall, instances of {@link RexInputRef} refer to entire input {@link AlgNode}s rather than their fields.
+     * Within this rexCall, instances of {@link RexIndexRef} refer to entire input {@link AlgNode}s rather than their fields.
      *
      * @return function invocation expression
      */

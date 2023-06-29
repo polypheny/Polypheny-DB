@@ -35,16 +35,22 @@ package org.polypheny.db.rex;
 
 
 import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
  * A row-expression which references a field.
  */
+@EqualsAndHashCode(callSuper = false)
+@Value
+@NonFinal
 public abstract class RexVariable extends RexNode {
 
-    protected final String name;
-    protected final AlgDataType type;
+    public String name;
+    public AlgDataType type;
 
 
     protected RexVariable( String name, AlgDataType type ) {

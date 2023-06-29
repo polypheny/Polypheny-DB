@@ -43,7 +43,7 @@ package org.polypheny.db.rex;
  */
 public interface RexBiVisitor<R, P> {
 
-    R visitInputRef( RexInputRef inputRef, P arg );
+    R visitInputRef( RexIndexRef inputRef, P arg );
 
     R visitLocalRef( RexLocalRef localRef, P arg );
 
@@ -63,8 +63,11 @@ public interface RexBiVisitor<R, P> {
 
     R visitSubQuery( RexSubQuery subQuery, P arg );
 
-    R visitTableInputRef( RexTableInputRef ref, P arg );
+    R visitTableInputRef( RexTableIndexRef ref, P arg );
 
     R visitPatternFieldRef( RexPatternFieldRef ref, P arg );
+
+    R visitNameRef( RexNameRef ref, P arg );
+
 }
 

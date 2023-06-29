@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -75,5 +76,11 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
 
     protected abstract AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw ).item( "condition", condition );
+    }
 
 }

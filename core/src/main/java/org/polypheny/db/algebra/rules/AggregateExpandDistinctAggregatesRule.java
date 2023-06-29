@@ -67,7 +67,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -170,12 +170,12 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
 
         // Create a list of the expressions which will yield the final result. Initially, the expressions point to the input field.
         final List<AlgDataTypeField> aggFields = aggregate.getRowType().getFieldList();
-        final List<RexInputRef> refs = new ArrayList<>();
+        final List<RexIndexRef> refs = new ArrayList<>();
         final List<String> fieldNames = aggregate.getRowType().getFieldNames();
         final ImmutableBitSet groupSet = aggregate.getGroupSet();
         final int groupAndIndicatorCount = aggregate.getGroupCount() + aggregate.getIndicatorCount();
         for ( int i : Util.range( groupAndIndicatorCount ) ) {
-            refs.add( RexInputRef.of( i, aggFields ) );
+            refs.add( RexIndexRef.of( i, aggFields ) );
         }
 
         // Aggregate the original relation, including any non-distinct aggregates.
@@ -187,7 +187,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 refs.add( null );
                 continue;
             }
-            refs.add( new RexInputRef( groupAndIndicatorCount + newAggCallList.size(), aggFields.get( groupAndIndicatorCount + i ).getType() ) );
+            refs.add( new RexIndexRef( groupAndIndicatorCount + newAggCallList.size(), aggFields.get( groupAndIndicatorCount + i ).getType() ) );
             newAggCallList.add( aggCall );
         }
 
@@ -482,7 +482,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
      * @param filterArg Argument that filters input to aggregate function, or -1
      * @param refs Array of expressions which will be the projected by the result of this rule. Those relating to this arg list will be modified  @return Relational expression
      */
-    private void doRewrite( AlgBuilder algBuilder, Aggregate aggregate, int n, List<Integer> argList, int filterArg, List<RexInputRef> refs ) {
+    private void doRewrite( AlgBuilder algBuilder, Aggregate aggregate, int n, List<Integer> argList, int filterArg, List<RexIndexRef> refs ) {
         final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
         final List<AlgDataTypeField> leftFields;
         if ( n == 0 ) {
@@ -568,9 +568,9 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
             final AggregateCall newAggCall = AggregateCall.create( aggCall.getAggregation(), false, aggCall.isApproximate(), newArgs, newFilterArg, aggCall.collation, aggCall.getType(), aggCall.getName() );
             assert refs.get( i ) == null;
             if ( n == 0 ) {
-                refs.set( i, new RexInputRef( groupAndIndicatorCount + aggCallList.size(), newAggCall.getType() ) );
+                refs.set( i, new RexIndexRef( groupAndIndicatorCount + aggCallList.size(), newAggCall.getType() ) );
             } else {
-                refs.set( i, new RexInputRef( leftFields.size() + groupAndIndicatorCount + aggCallList.size(), newAggCall.getType() ) );
+                refs.set( i, new RexIndexRef( leftFields.size() + groupAndIndicatorCount + aggCallList.size(), newAggCall.getType() ) );
             }
             aggCallList.add( newAggCall );
         }
@@ -603,8 +603,8 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
             conditions.add(
                     rexBuilder.makeCall(
                             OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
-                            RexInputRef.of( i, leftFields ),
-                            new RexInputRef( leftFields.size() + i, distinctFields.get( i ).getType() ) ) );
+                            RexIndexRef.of( i, leftFields ),
+                            new RexIndexRef( leftFields.size() + i, distinctFields.get( i ).getType() ) ) );
         }
 
         // Join in the new 'select distinct' relation.
@@ -676,7 +676,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         final List<AlgDataTypeField> childFields = algBuilder.peek().getRowType().getFieldList();
         for ( int i : aggregate.getGroupSet() ) {
             sourceOf.put( i, projects.size() );
-            projects.add( RexInputRef.of2( i, childFields ) );
+            projects.add( RexIndexRef.of2( i, childFields ) );
         }
         for ( Integer arg : argList ) {
             if ( filterArg >= 0 ) {
@@ -690,8 +690,8 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 //
                 // It works except for (rare) agg functions that need to see null values.
                 final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
-                final RexInputRef filterRef = RexInputRef.of( filterArg, childFields );
-                final Pair<RexNode, String> argRef = RexInputRef.of2( arg, childFields );
+                final RexIndexRef filterRef = RexIndexRef.of( filterArg, childFields );
+                final Pair<RexNode, String> argRef = RexIndexRef.of2( arg, childFields );
                 RexNode condition =
                         rexBuilder.makeCall(
                                 OperatorRegistry.get( OperatorName.CASE ),
@@ -709,7 +709,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
                 continue;
             }
             sourceOf.put( arg, projects.size() );
-            projects.add( RexInputRef.of2( arg, childFields ) );
+            projects.add( RexIndexRef.of2( arg, childFields ) );
         }
         algBuilder.project( Pair.left( projects ), Pair.right( projects ) );
 

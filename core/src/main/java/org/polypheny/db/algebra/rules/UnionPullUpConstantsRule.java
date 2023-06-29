@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -95,8 +95,8 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
 
         final Map<Integer, RexNode> constants = new HashMap<>();
         for ( Map.Entry<RexNode, RexNode> e : predicates.constantMap.entrySet() ) {
-            if ( e.getKey() instanceof RexInputRef ) {
-                constants.put( ((RexInputRef) e.getKey()).getIndex(), e.getValue() );
+            if ( e.getKey() instanceof RexIndexRef ) {
+                constants.put( ((RexIndexRef) e.getKey()).getIndex(), e.getValue() );
             }
         }
 

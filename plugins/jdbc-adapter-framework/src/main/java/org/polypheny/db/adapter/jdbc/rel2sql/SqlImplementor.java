@@ -81,7 +81,7 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexFieldCollation;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -225,7 +225,7 @@ public abstract class SqlImplementor {
         if ( node.isAlwaysFalse() ) {
             return SqlLiteral.createBoolean( false, POS );
         }
-        if ( node instanceof RexInputRef ) {
+        if ( node instanceof RexIndexRef ) {
             Context joinContext = leftContext.implementor().joinContext( leftContext, rightContext );
             return joinContext.toSql( null, node );
         }
@@ -262,10 +262,10 @@ public abstract class SqlImplementor {
                 operands = ((RexCall) node).getOperands();
                 op = (SqlOperator) ((RexCall) node).getOperator();
                 if ( operands.size() == 2
-                        && operands.get( 0 ) instanceof RexInputRef
-                        && operands.get( 1 ) instanceof RexInputRef ) {
-                    final RexInputRef op0 = (RexInputRef) operands.get( 0 );
-                    final RexInputRef op1 = (RexInputRef) operands.get( 1 );
+                        && operands.get( 0 ) instanceof RexIndexRef
+                        && operands.get( 1 ) instanceof RexIndexRef ) {
+                    final RexIndexRef op0 = (RexIndexRef) operands.get( 0 );
+                    final RexIndexRef op1 = (RexIndexRef) operands.get( 1 );
 
                     if ( op0.getIndex() < leftFieldCount && op1.getIndex() >= leftFieldCount ) {
                         // Arguments were of form 'op0 = op1'
@@ -287,9 +287,9 @@ public abstract class SqlImplementor {
             case IS_NULL:
             case IS_NOT_NULL:
                 operands = ((RexCall) node).getOperands();
-                if ( operands.size() == 1 && operands.get( 0 ) instanceof RexInputRef ) {
+                if ( operands.size() == 1 && operands.get( 0 ) instanceof RexIndexRef ) {
                     op = (SqlOperator) ((RexCall) node).getOperator();
-                    final RexInputRef op0 = (RexInputRef) operands.get( 0 );
+                    final RexIndexRef op0 = (RexIndexRef) operands.get( 0 );
                     if ( op0.getIndex() < leftFieldCount ) {
                         return (SqlNode) op.createCall( POS, leftContext.field( op0.getIndex() ) );
                     } else {
@@ -501,7 +501,7 @@ public abstract class SqlImplementor {
                     return toSql( program, program.getExprList().get( index ) );
 
                 case INPUT_REF:
-                    return field( ((RexInputRef) rex).getIndex() );
+                    return field( ((RexIndexRef) rex).getIndex() );
 
                 case FIELD_ACCESS:
                     final Deque<RexFieldAccess> accesses = new ArrayDeque<>();

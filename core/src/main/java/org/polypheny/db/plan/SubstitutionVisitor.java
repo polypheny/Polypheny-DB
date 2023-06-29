@@ -82,7 +82,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -1119,9 +1119,9 @@ public class SubstitutionVisitor {
                 exprList.add( rexBuilder.makeZeroLiteral( field.getType() ) );
             }
             for ( Ord<RexNode> expr : Ord.zip( project.projects ) ) {
-                if ( expr.e instanceof RexInputRef ) {
-                    final int target = ((RexInputRef) expr.e).getIndex();
-                    exprList.set( target, rexBuilder.ensureType( expr.e.getType(), RexInputRef.of( expr.i, input.rowType ), false ) );
+                if ( expr.e instanceof RexIndexRef ) {
+                    final int target = ((RexIndexRef) expr.e).getIndex();
+                    exprList.set( target, rexBuilder.ensureType( expr.e.getType(), RexIndexRef.of( expr.i, input.rowType ), false ) );
                 } else {
                     throw MatchFailed.INSTANCE;
                 }
@@ -1382,10 +1382,10 @@ public class SubstitutionVisitor {
         }
         return new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef ref ) {
+            public RexNode visitIndexRef( RexIndexRef ref ) {
                 final Integer integer = map.get( ref );
                 if ( integer != null ) {
-                    return new RexInputRef( integer, ref.getType() );
+                    return new RexIndexRef( integer, ref.getType() );
                 }
                 throw MatchFailed.INSTANCE;
             }
@@ -1395,7 +1395,7 @@ public class SubstitutionVisitor {
             public RexNode visitCall( RexCall call ) {
                 final Integer integer = map.get( call );
                 if ( integer != null ) {
-                    return new RexInputRef( integer, call.getType() );
+                    return new RexIndexRef( integer, call.getType() );
                 }
                 return super.visitCall( call );
             }
@@ -1638,7 +1638,7 @@ public class SubstitutionVisitor {
                     operandJ(
                             LogicalFilter.class,
                             null,
-                            filter -> filter.getCondition() instanceof RexInputRef,
+                            filter -> filter.getCondition() instanceof RexIndexRef,
                             some( operand( LogicalProject.class, any() ) ) ),
                     algBuilderFactory, null );
         }
@@ -1665,7 +1665,7 @@ public class SubstitutionVisitor {
                             newProjects,
                             newRowType );
 
-            final RexInputRef newCondition = cluster.getRexBuilder().makeInputRef( newProject, newProjects.size() - 1 );
+            final RexIndexRef newCondition = cluster.getRexBuilder().makeInputRef( newProject, newProjects.size() - 1 );
 
             call.transformTo( LogicalFilter.create( newProject, newCondition ) );
         }

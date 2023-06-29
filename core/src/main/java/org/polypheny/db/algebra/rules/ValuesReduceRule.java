@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -255,7 +255,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             return literalList.get( inputRef.getIndex() );
         }
 

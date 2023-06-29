@@ -143,7 +143,7 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
 
 
     @Override
-    public Logic visitInputRef( RexInputRef inputRef, Logic arg ) {
+    public Logic visitInputRef( RexIndexRef inputRef, Logic arg ) {
         return end( inputRef, arg );
     }
 
@@ -202,13 +202,19 @@ public class LogicVisitor implements RexBiVisitor<Logic, Logic> {
 
 
     @Override
-    public Logic visitTableInputRef( RexTableInputRef ref, Logic arg ) {
+    public Logic visitTableInputRef( RexTableIndexRef ref, Logic arg ) {
         return end( ref, arg );
     }
 
 
     @Override
     public Logic visitPatternFieldRef( RexPatternFieldRef ref, Logic arg ) {
+        return end( ref, arg );
+    }
+
+
+    @Override
+    public Logic visitNameRef( RexNameRef ref, Logic arg ) {
         return end( ref, arg );
     }
 

@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Util;
 

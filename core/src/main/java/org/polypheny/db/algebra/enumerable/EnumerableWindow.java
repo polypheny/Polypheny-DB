@@ -53,7 +53,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexWindowBound;
@@ -380,7 +380,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
                 List<RexNode> args = new ArrayList<>( inputTypes.size() );
                 for ( int i = 0; i < argList.size(); i++ ) {
                     Integer idx = argList.get( i );
-                    args.add( new RexInputRef( idx, inputTypes.get( i ) ) );
+                    args.add( new RexIndexRef( idx, inputTypes.get( i ) ) );
                 }
                 return args;
             };
@@ -861,7 +861,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
         if ( bound.getOffset() == null ) {
             desiredKeyType = Primitive.box( desiredKeyType );
         }
-        Expression val = translator.translate( new RexInputRef( orderKey, keyType ), desiredKeyType );
+        Expression val = translator.translate( new RexIndexRef( orderKey, keyType ), desiredKeyType );
         if ( !bound.isCurrentRow() ) {
             RexNode node = bound.getOffset();
             Expression offs = translator.translate( node );

@@ -288,7 +288,7 @@ public class VolcanoPlannerTest {
 
         // Below two lines are important for the planner to use collation trait and generate merge join
         planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
-        planner.registerAbstractRelationalRules();
+        planner.registerAbstractAlgebraRules();
 
         planner.addRule( EnumerableRules.ENUMERABLE_MERGE_JOIN_RULE );
         planner.addRule( EnumerableRules.ENUMERABLE_VALUES_RULE );

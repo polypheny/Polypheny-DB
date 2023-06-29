@@ -56,7 +56,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -620,7 +620,7 @@ public class PushProjector {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             rexRefs.set( inputRef.getIndex() );
             return null;
         }

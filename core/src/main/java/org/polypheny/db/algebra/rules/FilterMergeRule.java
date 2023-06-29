@@ -70,7 +70,7 @@ public class FilterMergeRule extends AlgOptRule {
         final Filter topFilter = call.alg( 0 );
         final Filter bottomFilter = call.alg( 1 );
 
-        // use RexPrograms to merge the two FilterRels into a single program so we can convert the two LogicalFilter
+        // use RexPrograms to merge the two FilterAlgs into a single program so we can convert the two LogicalFilter
         // conditions to directly reference the bottom LogicalFilter's child
         RexBuilder rexBuilder = topFilter.getCluster().getRexBuilder();
         RexProgram bottomProgram = createProgram( bottomFilter );

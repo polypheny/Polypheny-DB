@@ -48,7 +48,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -244,7 +244,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                             List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFieldList();
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
-                                args.add( RexInputRef.of( index, inputTypes ) );
+                                args.add( RexIndexRef.of( index, inputTypes ) );
                             }
                             return args;
                         }
@@ -254,7 +254,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
-                                    : RexInputRef.of( agg.call.filterArg, inputPhysType.getRowType() );
+                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getRowType() );
                         }
 
 

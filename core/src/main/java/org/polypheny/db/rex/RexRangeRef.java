@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
  * While translating a join of EMP(EMPNO, ENAME, DEPTNO) to DEPT(DEPTNO2, DNAME) we create <code>RexRangeRef(DeptType,3)</code> to represent the pair of columns (DEPTNO2, DNAME) which came from DEPT.
  * The type has 2 columns, and therefore the range represents columns {3, 4} of the input.
  *
- * Suppose we later create a reference to the DNAME field of this RexRangeRef; it will return a <code>{@link RexInputRef}(5,Integer)</code>, and the {@link org.polypheny.db.rex.RexRangeRef} will disappear.
+ * Suppose we later create a reference to the DNAME field of this RexRangeRef; it will return a <code>{@link RexIndexRef}(5,Integer)</code>, and the {@link org.polypheny.db.rex.RexRangeRef} will disappear.
  */
 public class RexRangeRef extends RexNode {
 

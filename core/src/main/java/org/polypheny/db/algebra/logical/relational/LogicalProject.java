@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -104,7 +104,7 @@ public final class LogicalProject extends Project {
                 input,
                 IntStream.range( 0, input.getRowType().getFieldCount() )
                         .mapToObj( i ->
-                                new RexInputRef( i, input.getRowType().getFieldList().get( i ).getType() )
+                                new RexIndexRef( i, input.getRowType().getFieldList().get( i ).getType() )
                         )
                         .collect( Collectors.toList() ),
                 input.getRowType()

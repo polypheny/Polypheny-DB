@@ -22,7 +22,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
@@ -58,8 +58,8 @@ public class WhereClauseVisitor extends RexShuttle {
         if ( call.operands.size() == 2 ) {
             if ( call.op.getKind() == Kind.EQUALS ) {
                 Object value;
-                if ( call.operands.get( 0 ) instanceof RexInputRef ) {
-                    if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
+                if ( call.operands.get( 0 ) instanceof RexIndexRef ) {
+                    if ( ((RexIndexRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {
                             value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
                             values.add( value );
@@ -71,8 +71,8 @@ public class WhereClauseVisitor extends RexShuttle {
                             valueIdentified = true;
                         }
                     }
-                } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
-                    if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
+                } else if ( call.operands.get( 1 ) instanceof RexIndexRef ) {
+                    if ( ((RexIndexRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 0 ) instanceof RexLiteral ) {
                             value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
                             values.add( value );

@@ -50,7 +50,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -135,7 +135,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 final AlgNode scan = LogicalRelScan.create( modify.getCluster(), modify.getEntity() );
                 builder.push( scan );
                 // Enforce uniqueness between the already existing values and the new values
-                List<RexInputRef> keys = constraint.key
+                List<RexIndexRef> keys = constraint.key
                         .getColumnNames()
                         .stream()
                         .map( builder::field )
@@ -261,7 +261,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.clear();
                 builder.scan( table );//LogicalTableScan.create( modify.getCluster(), modify.getTable() );
                 // Enforce uniqueness between the already existing values and the new values
-                List<RexInputRef> keys = constraint.key
+                List<RexIndexRef> keys = constraint.key
                         .getColumnNames()
                         .stream()
                         .map( builder::field )

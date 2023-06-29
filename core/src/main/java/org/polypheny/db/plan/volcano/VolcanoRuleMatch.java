@@ -142,7 +142,7 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
      * @return description of this rule match
      */
     private String computeDigest() {
-        StringBuilder buf = new StringBuilder( "rule [" + getRule() + "] rels [" );
+        StringBuilder buf = new StringBuilder( "rule [" + getRule() + "] alg [" );
         for ( int i = 0; i < algs.length; i++ ) {
             if ( i > 0 ) {
                 buf.append( ", " );

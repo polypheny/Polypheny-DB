@@ -55,12 +55,12 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
  *
  * Note that this kind of {@link RexNode} is an auxiliary data structure with a very specific purpose and should not be used in relational expressions.
  */
-public class RexTableInputRef extends RexInputRef {
+public class RexTableIndexRef extends RexIndexRef {
 
     private final AlgTableRef tableRef;
 
 
-    private RexTableInputRef( AlgTableRef tableRef, int index, AlgDataType type ) {
+    private RexTableIndexRef( AlgTableRef tableRef, int index, AlgDataType type ) {
         super( index, type );
         this.tableRef = tableRef;
         this.digest = tableRef.toString() + ".$" + index;
@@ -70,9 +70,9 @@ public class RexTableInputRef extends RexInputRef {
     @Override
     public boolean equals( Object obj ) {
         return this == obj
-                || obj instanceof RexTableInputRef
-                && tableRef.equals( ((RexTableInputRef) obj).tableRef )
-                && index == ((RexTableInputRef) obj).index;
+                || obj instanceof RexTableIndexRef
+                && tableRef.equals( ((RexTableIndexRef) obj).tableRef )
+                && index == ((RexTableIndexRef) obj).index;
     }
 
 
@@ -97,13 +97,13 @@ public class RexTableInputRef extends RexInputRef {
     }
 
 
-    public static RexTableInputRef of( AlgTableRef tableRef, int index, AlgDataType type ) {
-        return new RexTableInputRef( tableRef, index, type );
+    public static RexTableIndexRef of( AlgTableRef tableRef, int index, AlgDataType type ) {
+        return new RexTableIndexRef( tableRef, index, type );
     }
 
 
-    public static RexTableInputRef of( AlgTableRef tableRef, RexInputRef ref ) {
-        return new RexTableInputRef( tableRef, ref.getIndex(), ref.getType() );
+    public static RexTableIndexRef of( AlgTableRef tableRef, RexIndexRef ref ) {
+        return new RexTableIndexRef( tableRef, ref.getIndex(), ref.getType() );
     }
 
 

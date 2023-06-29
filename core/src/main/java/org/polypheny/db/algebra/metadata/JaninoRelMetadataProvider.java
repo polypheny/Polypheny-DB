@@ -137,7 +137,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
     public static final JaninoRelMetadataProvider DEFAULT = JaninoRelMetadataProvider.of( DefaultAlgMetadataProvider.INSTANCE );
 
-    private static final Set<Class<? extends AlgNode>> ALL_RELS = new CopyOnWriteArraySet<>();
+    private static final Set<Class<? extends AlgNode>> ALL_ALGS = new CopyOnWriteArraySet<>();
 
     /**
      * Cache of pre-generated handlers by provider and kind of metadata.
@@ -207,6 +207,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalDocumentSort.class,
                         LogicalDocumentTransformer.class,
                         LogicalDocumentValues.class,
+
 
                         // Enumerable
                         EnumerableAggregate.class,
@@ -559,7 +560,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
     synchronized <M extends Metadata, H extends MetadataHandler<M>> H create( MetadataDef<M> def ) {
         try {
-            final Key key = new Key( def, provider, ImmutableList.copyOf( ALL_RELS ) );
+            final Key<?> key = new Key<>( def, provider, ImmutableList.copyOf( ALL_ALGS ) );
             //noinspection unchecked
             return (H) HANDLERS.get( key );
         } catch ( UncheckedExecutionException | ExecutionException e ) {
@@ -570,11 +571,10 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
 
     synchronized <M extends Metadata, H extends MetadataHandler<M>> H revise( Class<? extends AlgNode> rClass, MetadataDef<M> def ) {
-        if ( ALL_RELS.add( rClass ) ) {
+        if ( ALL_ALGS.add( rClass ) ) {
             HANDLERS.invalidateAll();
         }
-        //noinspection unchecked
-        return (H) create( def );
+        return create( def );
     }
 
 
@@ -594,7 +594,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
             }
         }
         synchronized ( this ) {
-            if ( ALL_RELS.addAll( list ) ) {
+            if ( ALL_ALGS.addAll( list ) ) {
                 HANDLERS.invalidateAll();
             }
         }
@@ -602,7 +602,7 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
 
 
     /**
-     * Exception that indicates there there should be a handler for this class but there is not. The action is probably to re-generate the handler class.
+     * Exception that indicates there should be a handler for this class but there is not. The action is probably to re-generate the handler class.
      */
     public static class NoHandler extends ControlFlowException {
 

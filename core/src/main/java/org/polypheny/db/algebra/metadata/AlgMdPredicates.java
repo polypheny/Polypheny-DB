@@ -76,7 +76,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutor;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexPermuteInputsShuttle;
@@ -187,8 +187,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         Mapping m = Mappings.create( MappingType.PARTIAL_FUNCTION, input.getRowType().getFieldCount(), project.getRowType().getFieldCount() );
 
         for ( Ord<RexNode> expr : Ord.zip( project.getProjects() ) ) {
-            if ( expr.e instanceof RexInputRef ) {
-                int sIdx = ((RexInputRef) expr.e).getIndex();
+            if ( expr.e instanceof RexIndexRef ) {
+                int sIdx = ((RexIndexRef) expr.e).getIndex();
                 m.set( sIdx, expr.i );
                 columnsMappedBuilder.set( sIdx );
                 // Project can also generate constants. We need to include them.
@@ -813,8 +813,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
 
 
         private int pos( RexNode expr ) {
-            if ( expr instanceof RexInputRef ) {
-                return ((RexInputRef) expr).getIndex();
+            if ( expr instanceof RexIndexRef ) {
+                return ((RexIndexRef) expr).getIndex();
             }
             return -1;
         }

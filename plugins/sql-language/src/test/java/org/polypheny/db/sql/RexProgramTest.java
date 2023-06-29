@@ -51,7 +51,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Strong;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexInterpreter;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
@@ -430,8 +430,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final ImmutableBitSet c13 = ImmutableBitSet.of( 1, 3 );
 
         // input ref
-        final RexInputRef i0 = rexBuilder.makeInputRef( intType, 0 );
-        final RexInputRef i1 = rexBuilder.makeInputRef( intType, 1 );
+        final RexIndexRef i0 = rexBuilder.makeInputRef( intType, 0 );
+        final RexIndexRef i1 = rexBuilder.makeInputRef( intType, 1 );
 
         assertThat( Strong.isNull( i0, c0 ), is( true ) );
         assertThat( Strong.isNull( i0, c1 ), is( false ) );
@@ -1753,10 +1753,10 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyIsNotNull() {
         AlgDataType intType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
         AlgDataType intNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), true );
-        final RexInputRef i0 = rexBuilder.makeInputRef( intNullableType, 0 );
-        final RexInputRef i1 = rexBuilder.makeInputRef( intNullableType, 1 );
-        final RexInputRef i2 = rexBuilder.makeInputRef( intType, 2 );
-        final RexInputRef i3 = rexBuilder.makeInputRef( intType, 3 );
+        final RexIndexRef i0 = rexBuilder.makeInputRef( intNullableType, 0 );
+        final RexIndexRef i1 = rexBuilder.makeInputRef( intNullableType, 1 );
+        final RexIndexRef i2 = rexBuilder.makeInputRef( intType, 2 );
+        final RexIndexRef i3 = rexBuilder.makeInputRef( intType, 3 );
         final RexLiteral one = rexBuilder.makeExactLiteral( BigDecimal.ONE );
         final RexLiteral null_ = rexBuilder.makeNullLiteral( intType );
         checkSimplify( isNotNull( lt( i0, i1 ) ), "AND(IS NOT NULL($0), IS NOT NULL($1))" );

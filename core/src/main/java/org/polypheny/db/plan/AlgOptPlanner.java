@@ -165,31 +165,31 @@ public interface AlgOptPlanner {
 
 
     /**
-     * Registers a relational expression in the expression bank.
+     * Registers an algebra expression in the expression bank.
      *
      * After it has been registered, you may not modify it.
      *
      * The expression must not already have been registered. If you are not sure whether it has been registered, call {@link #ensureRegistered(AlgNode, AlgNode)}.
      *
      * @param alg Relational expression to register (must not already be registered)
-     * @param equivRel Relational expression it is equivalent to (may be null)
+     * @param equivAlg Relational expression it is equivalent to (may be null)
      * @return the same expression, or an equivalent existing expression
      */
-    AlgNode register( AlgNode alg, AlgNode equivRel );
+    AlgNode register( AlgNode alg, AlgNode equivAlg );
 
     /**
-     * Registers a relational expression if it is not already registered.
+     * Registers an algebra expression if it is not already registered.
      *
      * If {@code equivRel} is specified, {@code rel} is placed in the same equivalence set. It is OK if {@code equivRel} has different traits;
      * {@code rel} will end up in a different subset of the same set.
      *
-     * It is OK if {@code rel} is a subset.
+     * It is OK if {@code alg} is a subset.
      *
      * @param alg Relational expression to register
-     * @param equivRel Relational expression it is equivalent to (may be null)
+     * @param equivAlg Relational expression it is equivalent to (may be null)
      * @return Registered relational expression
      */
-    AlgNode ensureRegistered( AlgNode alg, AlgNode equivRel );
+    AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg );
 
     /**
      * Determines whether a relational expression has been registered.
@@ -233,7 +233,7 @@ public interface AlgOptPlanner {
     /**
      * Sets the importance of a relational expression.
      *
-     * An important use of this method is when a {@link AlgOptRule} has created a relational expression which is indisputably better than the original relational expression.
+     * An important use of this method is when a {@link AlgOptRule} has created an algebra expression which is indisputably better than the original algebra expression.
      * The rule set the original relational expression's importance to zero, to reduce the search space. Pending rule calls are cancelled, and future rules will not fire.
      *
      * @param alg Relational expression
@@ -268,9 +268,9 @@ public interface AlgOptPlanner {
     RexExecutor getExecutor();
 
     /**
-     * Called when a relational expression is copied to a similar expression.
+     * Called when a algebraic expression is copied to a similar expression.
      */
-    void onCopy( AlgNode alg, AlgNode newRel );
+    void onCopy( AlgNode alg, AlgNode newAlg );
 
     /**
      * Thrown by {@link AlgOptPlanner#findBestExp()}.

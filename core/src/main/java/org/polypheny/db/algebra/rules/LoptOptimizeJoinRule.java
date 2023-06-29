@@ -66,7 +66,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -171,12 +171,12 @@ public class LoptOptimizeJoinRule extends AlgOptRule {
                     }
                     RexCall filterCall = (RexCall) filter;
                     if ( (filterCall.getOperator().getOperatorName() != OperatorName.EQUALS)
-                            || !(filterCall.getOperands().get( 0 ) instanceof RexInputRef)
-                            || !(filterCall.getOperands().get( 1 ) instanceof RexInputRef) ) {
+                            || !(filterCall.getOperands().get( 0 ) instanceof RexIndexRef)
+                            || !(filterCall.getOperands().get( 1 ) instanceof RexIndexRef) ) {
                         continue;
                     }
-                    int leftRef = ((RexInputRef) filterCall.getOperands().get( 0 )).getIndex();
-                    int rightRef = ((RexInputRef) filterCall.getOperands().get( 1 )).getIndex();
+                    int leftRef = ((RexIndexRef) filterCall.getOperands().get( 0 )).getIndex();
+                    int rightRef = ((RexIndexRef) filterCall.getOperands().get( 1 )).getIndex();
                     setJoinKey( joinKeyBuilder, otherJoinKeyBuilder, leftRef, rightRef, firstFieldNum, lastFieldNum, true );
                 }
 

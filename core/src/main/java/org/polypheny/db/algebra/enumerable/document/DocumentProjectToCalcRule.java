@@ -17,31 +17,32 @@
 package org.polypheny.db.algebra.enumerable.document;
 
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.plan.AlgOptRule;
-import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexProgram;
 
-public class DocumentProjectToCalcRule extends AlgOptRule {
+public class DocumentProjectToCalcRule extends ConverterRule {
 
     public static final DocumentProjectToCalcRule INSTANCE = new DocumentProjectToCalcRule();
 
 
     public DocumentProjectToCalcRule() {
-        super( operand( LogicalDocumentProject.class, any() ), AlgFactories.LOGICAL_BUILDER, "DocumentToCalcRule_LogicalDocumentProject" );
+        super( DocumentProject.class, r -> true, Convention.NONE, EnumerableConvention.INSTANCE, AlgFactories.LOGICAL_BUILDER, "DocumentToCalcRule_LogicalDocumentProject" );
     }
 
 
     @Override
-    public void onMatch( AlgOptRuleCall call ) {
-        final LogicalDocumentProject project = call.alg( 0 );
+    public AlgNode convert( AlgNode alg ) {
+        final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
         final RexProgram program = RexProgram.create( input.getRowType(), project.projects, null, project.getRowType(), project.getCluster().getRexBuilder() );
-        final EnumerableCalc calc = EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
-        call.transformTo( calc );
+        return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
+
 
 }

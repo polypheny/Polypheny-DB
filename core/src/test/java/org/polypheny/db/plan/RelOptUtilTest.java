@@ -40,7 +40,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Frameworks;
@@ -151,8 +151,8 @@ public class RelOptUtilTest {
 
         RexNode joinCond = REL_BUILDER.call(
                 OperatorRegistry.get( OperatorName.EQUALS ),
-                RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
-                RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
+                RexIndexRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
+                RexIndexRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
         splitJoinConditionHelper(
                 joinCond,
@@ -174,8 +174,8 @@ public class RelOptUtilTest {
 
         RexNode joinCond = REL_BUILDER.call(
                 OperatorRegistry.get( OperatorName.IS_NOT_DISTINCT_FROM ),
-                RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
-                RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
+                RexIndexRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
+                RexIndexRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
         splitJoinConditionHelper(
                 joinCond,
@@ -195,8 +195,8 @@ public class RelOptUtilTest {
         int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
-        RexInputRef leftKeyInputRef = RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
-        RexInputRef rightKeyInputRef = RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
+        RexIndexRef leftKeyInputRef = RexIndexRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
+        RexIndexRef rightKeyInputRef = RexIndexRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS );
         RexNode joinCond = REL_BUILDER.call(
                 OperatorRegistry.get( OperatorName.OR ),
                 REL_BUILDER.call( OperatorRegistry.get( OperatorName.EQUALS ), leftKeyInputRef, rightKeyInputRef ),

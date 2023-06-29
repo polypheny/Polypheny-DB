@@ -52,7 +52,7 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexTableInputRef.AlgTableRef;
+import org.polypheny.db.rex.RexTableIndexRef.AlgTableRef;
 import org.polypheny.db.util.ImmutableBitSet;
 
 

@@ -76,7 +76,7 @@ import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.test.Matchers;
@@ -454,7 +454,7 @@ public class AlgBuilderTest {
     public void testBadFieldName() {
         final AlgBuilder builder = createAlgBuilder();
         try {
-            RexInputRef ref = builder.scan( "employee" ).field( "foo" );
+            RexIndexRef ref = builder.scan( "employee" ).field( "foo" );
             fail( "expected error, got " + ref );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "field [foo] not found; input fields are: [empid, ename, job, mgr, hiredate, salary, commission, deptno]" ) );
@@ -466,7 +466,7 @@ public class AlgBuilderTest {
     public void testBadFieldOrdinal() {
         final AlgBuilder builder = createAlgBuilder();
         try {
-            RexInputRef ref = builder.scan( "department" ).field( 20 );
+            RexIndexRef ref = builder.scan( "department" ).field( 20 );
             fail( "expected error, got " + ref );
         } catch ( IllegalArgumentException e ) {
             assertThat( e.getMessage(), is( "field ordinal [20] out of range; input fields are: [deptno, name, loc]" ) );

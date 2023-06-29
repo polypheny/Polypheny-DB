@@ -49,7 +49,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -104,7 +104,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         // Keep only the fields which are referred
         for ( int index : BitSets.toIter( beReferred ) ) {
             final AlgDataTypeField algDataTypeField = rowTypeWindowInput.get( index );
-            exps.add( new RexInputRef( index, algDataTypeField.getType() ) );
+            exps.add( new RexIndexRef( index, algDataTypeField.getType() ) );
             builder.add( algDataTypeField );
         }
 
@@ -116,9 +116,9 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         // As the un-referred columns are trimmed by the LogicalProject, the indices specified in LogicalWindow would need to be adjusted
         final RexShuttle indexAdjustment = new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef inputRef ) {
+            public RexNode visitIndexRef( RexIndexRef inputRef ) {
                 final int newIndex = getAdjustedIndex( inputRef.getIndex(), beReferred, windowInputColumn );
-                return new RexInputRef( newIndex, inputRef.getType() );
+                return new RexIndexRef( newIndex, inputRef.getType() );
             }
 
 
@@ -202,7 +202,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
         final RexShuttle referenceFinder = new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef inputRef ) {
+            public RexNode visitIndexRef( RexIndexRef inputRef ) {
                 final int index = inputRef.getIndex();
                 if ( index < windowInputColumn ) {
                     beReferred.set( index );

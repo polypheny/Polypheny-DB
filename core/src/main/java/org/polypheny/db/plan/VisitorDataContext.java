@@ -49,7 +49,7 @@ import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Function.FunctionType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Statement;
@@ -169,10 +169,10 @@ public class VisitorDataContext implements DataContext {
     }
 
 
-    public static DataContext of( AlgDataType rowType, List<Pair<RexInputRef, RexNode>> usageList ) {
+    public static DataContext of( AlgDataType rowType, List<Pair<RexIndexRef, RexNode>> usageList ) {
         final int size = rowType.getFieldList().size();
         final Object[] values = new Object[size];
-        for ( Pair<RexInputRef, RexNode> elem : usageList ) {
+        for ( Pair<RexIndexRef, RexNode> elem : usageList ) {
             Pair<Integer, ?> value = getValue( elem.getKey(), elem.getValue() );
             if ( value == null ) {
                 log.warn( "{} is not handled for {} for checking implication", elem.getKey(), elem.getValue() );
@@ -189,8 +189,8 @@ public class VisitorDataContext implements DataContext {
         inputRef = removeCast( inputRef );
         literal = removeCast( literal );
 
-        if ( inputRef instanceof RexInputRef && literal instanceof RexLiteral ) {
-            final int index = ((RexInputRef) inputRef).getIndex();
+        if ( inputRef instanceof RexIndexRef && literal instanceof RexLiteral ) {
+            final int index = ((RexIndexRef) inputRef).getIndex();
             final RexLiteral rexLiteral = (RexLiteral) literal;
             final AlgDataType type = inputRef.getType();
 

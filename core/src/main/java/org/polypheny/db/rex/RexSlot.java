@@ -40,7 +40,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 
 
 /**
- * Abstract base class for {@link RexInputRef} and {@link RexLocalRef}.
+ * Abstract base class for {@link RexIndexRef} and {@link RexLocalRef}.
  */
 public abstract class RexSlot extends RexVariable {
 
@@ -81,7 +81,7 @@ public abstract class RexSlot extends RexVariable {
 
 
         private static AbstractList<String> fromTo( final String prefix, final int start, final int end ) {
-            return new AbstractList<String>() {
+            return new AbstractList<>() {
                 @Override
                 public String get( int index ) {
                     return prefix + (index + start);

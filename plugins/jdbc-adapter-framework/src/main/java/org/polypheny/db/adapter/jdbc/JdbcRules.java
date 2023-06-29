@@ -81,7 +81,7 @@ import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexMultisetUtil;
 import org.polypheny.db.rex.RexNode;
@@ -252,7 +252,7 @@ public class JdbcRules {
                 case LESS_THAN:
                 case LESS_THAN_OR_EQUAL:
                     operands = ((RexCall) node).getOperands();
-                    if ( (operands.get( 0 ) instanceof RexInputRef) && (operands.get( 1 ) instanceof RexInputRef) ) {
+                    if ( (operands.get( 0 ) instanceof RexIndexRef) && (operands.get( 1 ) instanceof RexIndexRef) ) {
                         return true;
                     }
                     // fall through

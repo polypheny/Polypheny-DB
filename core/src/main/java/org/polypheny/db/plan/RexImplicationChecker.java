@@ -54,7 +54,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexVisitorImpl;
@@ -223,9 +223,9 @@ public class RexImplicationChecker {
             return false;
         }
 
-        ImmutableList.Builder<Set<Pair<RexInputRef, RexNode>>> usagesBuilder = ImmutableList.builder();
-        for ( Map.Entry<RexInputRef, InputRefUsage<Operator, RexNode>> entry : firstUsageFinder.usageMap.entrySet() ) {
-            ImmutableSet.Builder<Pair<RexInputRef, RexNode>> usageBuilder = ImmutableSet.builder();
+        ImmutableList.Builder<Set<Pair<RexIndexRef, RexNode>>> usagesBuilder = ImmutableList.builder();
+        for ( Map.Entry<RexIndexRef, InputRefUsage<Operator, RexNode>> entry : firstUsageFinder.usageMap.entrySet() ) {
+            ImmutableSet.Builder<Pair<RexIndexRef, RexNode>> usageBuilder = ImmutableSet.builder();
             if ( entry.getValue().usageList.size() > 0 ) {
                 for ( final Pair<Operator, RexNode> pair : entry.getValue().usageList ) {
                     usageBuilder.add( Pair.of( entry.getKey(), pair.getValue() ) );
@@ -234,9 +234,9 @@ public class RexImplicationChecker {
             }
         }
 
-        final Set<List<Pair<RexInputRef, RexNode>>> usages = Sets.cartesianProduct( usagesBuilder.build() );
+        final Set<List<Pair<RexIndexRef, RexNode>>> usages = Sets.cartesianProduct( usagesBuilder.build() );
 
-        for ( List<Pair<RexInputRef, RexNode>> usageList : usages ) {
+        for ( List<Pair<RexIndexRef, RexNode>> usageList : usages ) {
             // Get the literals from first conjunction and executes second conjunction using them.
             //
             // E.g., for
@@ -297,10 +297,10 @@ public class RexImplicationChecker {
      * @return whether input usage pattern is supported
      */
     private boolean checkSupport( InputUsageFinder firstUsageFinder, InputUsageFinder secondUsageFinder ) {
-        final Map<RexInputRef, InputRefUsage<Operator, RexNode>> firstUsageMap = firstUsageFinder.usageMap;
-        final Map<RexInputRef, InputRefUsage<Operator, RexNode>> secondUsageMap = secondUsageFinder.usageMap;
+        final Map<RexIndexRef, InputRefUsage<Operator, RexNode>> firstUsageMap = firstUsageFinder.usageMap;
+        final Map<RexIndexRef, InputRefUsage<Operator, RexNode>> secondUsageMap = secondUsageFinder.usageMap;
 
-        for ( Map.Entry<RexInputRef, InputRefUsage<Operator, RexNode>> entry : secondUsageMap.entrySet() ) {
+        for ( Map.Entry<RexIndexRef, InputRefUsage<Operator, RexNode>> entry : secondUsageMap.entrySet() ) {
             final InputRefUsage<Operator, RexNode> secondUsage = entry.getValue();
             final List<Pair<Operator, RexNode>> secondUsageList = secondUsage.usageList;
             final int secondLen = secondUsageList.size();
@@ -421,7 +421,7 @@ public class RexImplicationChecker {
      */
     private static class InputUsageFinder extends RexVisitorImpl<Void> {
 
-        final Map<RexInputRef, InputRefUsage<Operator, RexNode>> usageMap = new HashMap<>();
+        final Map<RexIndexRef, InputRefUsage<Operator, RexNode>> usageMap = new HashMap<>();
 
 
         InputUsageFinder() {
@@ -430,7 +430,7 @@ public class RexImplicationChecker {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             InputRefUsage<Operator, RexNode> inputRefUse = getUsageMap( inputRef );
             inputRefUse.usageCount++;
             return null;
@@ -463,7 +463,7 @@ public class RexImplicationChecker {
             RexNode first = removeCast( operands.get( 0 ) );
 
             if ( first.isA( Kind.INPUT_REF ) ) {
-                updateUsage( call.getOperator(), (RexInputRef) first, null );
+                updateUsage( call.getOperator(), (RexIndexRef) first, null );
             }
         }
 
@@ -474,11 +474,11 @@ public class RexImplicationChecker {
             RexNode second = removeCast( operands.get( 1 ) );
 
             if ( first.isA( Kind.INPUT_REF ) && second.isA( Kind.LITERAL ) ) {
-                updateUsage( call.getOperator(), (RexInputRef) first, second );
+                updateUsage( call.getOperator(), (RexIndexRef) first, second );
             }
 
             if ( first.isA( Kind.LITERAL ) && second.isA( Kind.INPUT_REF ) ) {
-                updateUsage( reverse( call.getOperator() ), (RexInputRef) second, first );
+                updateUsage( reverse( call.getOperator() ), (RexIndexRef) second, first );
             }
         }
 
@@ -500,14 +500,14 @@ public class RexImplicationChecker {
         }
 
 
-        private void updateUsage( Operator op, RexInputRef inputRef, RexNode literal ) {
+        private void updateUsage( Operator op, RexIndexRef inputRef, RexNode literal ) {
             final InputRefUsage<Operator, RexNode> inputRefUse = getUsageMap( inputRef );
             Pair<Operator, RexNode> use = Pair.of( op, literal );
             inputRefUse.usageList.add( use );
         }
 
 
-        private InputRefUsage<Operator, RexNode> getUsageMap( RexInputRef rex ) {
+        private InputRefUsage<Operator, RexNode> getUsageMap( RexIndexRef rex ) {
             InputRefUsage<Operator, RexNode> inputRefUse = usageMap.get( rex );
             if ( inputRefUse == null ) {
                 inputRefUse = new InputRefUsage<>();
@@ -521,7 +521,7 @@ public class RexImplicationChecker {
 
 
     /**
-     * Usage of a {@link RexInputRef} in an expression.
+     * Usage of a {@link RexIndexRef} in an expression.
      *
      * @param <T1> left type
      * @param <T2> right type

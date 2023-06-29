@@ -299,7 +299,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addAlgTraitDef( AlgCollationTraitDef.INSTANCE );
-            planner.registerAbstractRelationalRules();
+            planner.registerAbstractAlgebraRules();
         }
         if ( ENABLE_MODEL_TRAIT ) {
             planner.addAlgTraitDef( ModelTraitDef.INSTANCE );

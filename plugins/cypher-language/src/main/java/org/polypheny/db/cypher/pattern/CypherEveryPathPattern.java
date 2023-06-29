@@ -31,7 +31,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -142,7 +142,7 @@ public class CypherEveryPathPattern extends CypherPattern {
         context.addDefaultScanIfNecessary();
         Pair<PolyString, PolyNode> nameNode = nodes.get( 0 ).getPolyNode();
 
-        RexInputRef graphRef = context.rexBuilder.makeInputRef( context.nodeType, 0 );
+        RexIndexRef graphRef = context.rexBuilder.makeInputRef( context.nodeType, 0 );
         if ( nameNode.right.isBlank() ) {
             Pair<PolyString, PolyNode> old = context.getNodeVariable( nameNode.left );
             if ( old != null ) {
@@ -180,7 +180,7 @@ public class CypherEveryPathPattern extends CypherPattern {
                 pathType,
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATH_MATCH ),
                 List.of(
-                        new RexInputRef( 0, context.graphType ),
+                        new RexIndexRef( 0, context.graphType ),
                         new RexLiteral( path, pathType, PolyType.PATH ) ) );
     }
 

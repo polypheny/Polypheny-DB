@@ -63,7 +63,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
@@ -129,7 +129,7 @@ public abstract class BaseRouter implements Router {
                                 QueryLanguage.from( "mongo" ),
                                 OperatorName.MQL_QUERY_VALUE ),
                         List.of(
-                                RexInputRef.of( 0, rowType ),
+                                RexIndexRef.of( 0, rowType ),
                                 rexBuilder.makeArray(
                                         rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
                                         List.of( PolyString.of( "_id" ) ) ) ) ),
@@ -137,8 +137,8 @@ public abstract class BaseRouter implements Router {
                         ? rexBuilder.makeCall( data,
                         OperatorRegistry.get(
                                 QueryLanguage.from( "mongo" ),
-                                OperatorName.MQL_JSONIFY ), List.of( RexInputRef.of( 0, rowType ) ) )
-                        : RexInputRef.of( 0, rowType ))
+                                OperatorName.MQL_JSONIFY ), List.of( RexIndexRef.of( 0, rowType ) ) )
+                        : RexIndexRef.of( 0, rowType ))
         );
     }
 

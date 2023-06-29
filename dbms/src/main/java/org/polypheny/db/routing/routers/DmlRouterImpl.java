@@ -76,7 +76,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.processing.WhereClauseVisitor;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.DmlRouter;
@@ -877,7 +877,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                     }
                     for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
-                        if ( !(rexNode instanceof RexInputRef) ) {
+                        if ( !(rexNode instanceof RexIndexRef) ) {
                             rexNodes.add( rexNode );
                         }
                     }
@@ -932,8 +932,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
-        if ( operand instanceof RexInputRef ) {
-            int index = ((RexInputRef) operand).getIndex();
+        if ( operand instanceof RexIndexRef ) {
+            int index = ((RexIndexRef) operand).getIndex();
             AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
             LogicalColumn column;
             String columnName;

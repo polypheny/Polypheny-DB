@@ -43,14 +43,14 @@ import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
  * Planner rule that pushes a {@link LogicalProject} past a {@link SetOp}.
  *
- * The children of the {@code SetOp} will project only the {@link RexInputRef}s referenced in the original {@code LogicalProject}.
+ * The children of the {@code SetOp} will project only the {@link RexIndexRef}s referenced in the original {@code LogicalProject}.
  */
 public class ProjectSetOpTransposeRule extends AlgOptRule {
 

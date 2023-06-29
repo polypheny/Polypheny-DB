@@ -62,7 +62,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -193,8 +193,8 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         ImmutableBitSet.Builder childColumns = ImmutableBitSet.builder();
         for ( int bit : columns ) {
             RexNode projExpr = projExprs.get( bit );
-            if ( projExpr instanceof RexInputRef ) {
-                childColumns.set( ((RexInputRef) projExpr).getIndex() );
+            if ( projExpr instanceof RexIndexRef ) {
+                childColumns.set( ((RexIndexRef) projExpr).getIndex() );
             } else if ( projExpr instanceof RexCall && ignoreNulls ) {
                 // If the expression is a cast such that the types are the same except for the nullability, then if we're ignoring nulls, it doesn't matter whether the underlying column reference
                 // is nullable.  Check that the types are the same by making a nullable copy of both types and then comparing them.
@@ -203,14 +203,14 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                     continue;
                 }
                 RexNode castOperand = call.getOperands().get( 0 );
-                if ( !(castOperand instanceof RexInputRef) ) {
+                if ( !(castOperand instanceof RexIndexRef) ) {
                     continue;
                 }
                 AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
                 AlgDataType castType = typeFactory.createTypeWithNullability( projExpr.getType(), true );
                 AlgDataType origType = typeFactory.createTypeWithNullability( castOperand.getType(), true );
                 if ( castType.equals( origType ) ) {
-                    childColumns.set( ((RexInputRef) castOperand).getIndex() );
+                    childColumns.set( ((RexIndexRef) castOperand).getIndex() );
                 }
             } else {
                 // If the expression will not influence uniqueness of the projection, then skip it.
@@ -357,10 +357,10 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
             if ( column >= projects.size() ) {
                 return false;
             }
-            if ( !(projects.get( column ) instanceof RexInputRef) ) {
+            if ( !(projects.get( column ) instanceof RexIndexRef) ) {
                 return false;
             }
-            final RexInputRef ref = (RexInputRef) projects.get( column );
+            final RexIndexRef ref = (RexIndexRef) projects.get( column );
             if ( ref.getIndex() != column ) {
                 return false;
             }

@@ -513,8 +513,8 @@ public final class AlgTraitSet extends AbstractList<AlgTrait<?>> {
     /**
      * Returns a list of traits that are in {@code traitSet} but not in this RelTraitSet.
      */
-    public ImmutableList<AlgTrait> difference( AlgTraitSet traitSet ) {
-        final ImmutableList.Builder<AlgTrait> builder = ImmutableList.builder();
+    public ImmutableList<AlgTrait<?>> difference( AlgTraitSet traitSet ) {
+        final ImmutableList.Builder<AlgTrait<?>> builder = ImmutableList.builder();
         for ( Pair<AlgTrait<?>, AlgTrait<?>> pair : Pair.zip( traits, traitSet.traits ) ) {
             if ( pair.left != pair.right ) {
                 builder.add( pair.right );

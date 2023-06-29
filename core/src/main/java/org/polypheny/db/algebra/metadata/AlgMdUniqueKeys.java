@@ -50,7 +50,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -101,8 +101,8 @@ public class AlgMdUniqueKeys implements MetadataHandler<BuiltInMetadata.UniqueKe
         // Build an input to output position map.
         for ( int i = 0; i < projExprs.size(); i++ ) {
             RexNode projExpr = projExprs.get( i );
-            if ( projExpr instanceof RexInputRef ) {
-                mapInToOutPos.put( ((RexInputRef) projExpr).getIndex(), i );
+            if ( projExpr instanceof RexIndexRef ) {
+                mapInToOutPos.put( ((RexIndexRef) projExpr).getIndex(), i );
             }
         }
 

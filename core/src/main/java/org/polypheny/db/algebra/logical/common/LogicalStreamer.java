@@ -41,7 +41,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -208,8 +208,8 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    private static List<RexInputRef> getOldFieldRefs( AlgDataType rowType ) {
-        return rowType.getFieldList().stream().map( f -> RexInputRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
+    private static List<RexIndexRef> getOldFieldRefs( AlgDataType rowType ) {
+        return rowType.getFieldList().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
     }
 
 

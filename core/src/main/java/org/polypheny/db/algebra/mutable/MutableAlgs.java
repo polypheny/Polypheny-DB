@@ -49,10 +49,8 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Intersect;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Minus;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sample;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
@@ -60,6 +58,8 @@ import org.polypheny.db.algebra.core.Uncollect;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalCorrelate;
 import org.polypheny.db.algebra.logical.relational.LogicalExchange;
@@ -71,7 +71,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
@@ -175,7 +175,7 @@ public abstract class MutableAlgs {
                     @Override
                     public RexNode get( int index ) {
                         final int pos = posList.get( index );
-                        return RexInputRef.of( pos, rowType );
+                        return RexIndexRef.of( pos, rowType );
                     }
                 } );
     }

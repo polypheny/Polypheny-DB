@@ -225,8 +225,7 @@ public abstract class AlgOptRule {
      * @param trait Trait to match, or null to match any trait
      * @param predicate Predicate to apply to relational expression
      */
-    protected static <R extends AlgNode> ConverterAlgOptRuleOperand
-    convertOperand( Class<R> clazz, Predicate<? super R> predicate, AlgTrait trait ) {
+    protected static <R extends AlgNode> ConverterAlgOptRuleOperand convertOperand( Class<R> clazz, Predicate<? super R> predicate, AlgTrait trait ) {
         return new ConverterAlgOptRuleOperand( clazz, trait, predicate );
     }
 
@@ -586,7 +585,7 @@ public abstract class AlgOptRule {
 
         @Override
         public boolean matches( AlgNode alg ) {
-            // Don't apply converters to converters that operate on the same RelTraitDef -- otherwise we get an n^2 effect.
+            // Don't apply converters to converters that operate on the same AlgTraitDef -- otherwise we get an n^2 effect.
             if ( alg instanceof Converter ) {
                 if ( ((ConverterRule) getRule()).getTraitDef() == ((Converter) alg).getTraitDef() ) {
                     return false;

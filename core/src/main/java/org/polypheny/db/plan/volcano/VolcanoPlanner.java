@@ -245,7 +245,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     /**
      * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize it, the caller must register the
-     * desired set of algations, rules, and calling conventions.
+     * desired set of relations, rules, and calling conventions.
      */
     public VolcanoPlanner( Context externalContext ) {
         this( null, externalContext );
@@ -484,7 +484,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * The algorithm executes repeatedly in a series of phases. In each phase the exact rules that may be fired varies.
      * The mapping of phases to rule sets is maintained in the {@link #ruleQueue}.
      *
-     * In each phase, the planner sets the initial importance of the existing RelSubSets ({@link #setInitialImportance()}).
+     * In each phase, the planner sets the initial importance of the existing AlgSubSets ({@link #setInitialImportance()}).
      * The planner then iterates over the rule matches presented by the rule queue until:
      *
      * <ol>
@@ -495,7 +495,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * <li>For non-ambitious planners: When an implementable plan is found.</li>
      * </ol>
      *
-     * Furthermore, after every 10 iterations without an implementable plan, RelSubSets that contain only logical RelNodes
+     * Furthermore, after every 10 iterations without an implementable plan, AlgSubSets that contain only logical RelNodes
      * are given an importance boost via {@link #injectImportanceBoost()}. Once an implementable plan is found,
      * the artificially raised importance values are cleared (see {@link #clearImportanceBoost()}).
      *
@@ -603,7 +603,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             }
         }
         for ( AlgSubset subset : root.set.subsets ) {
-            final ImmutableList<AlgTrait> difference = root.getTraitSet().difference( subset.getTraitSet() );
+            final ImmutableList<AlgTrait<?>> difference = root.getTraitSet().difference( subset.getTraitSet() );
             if ( difference.size() == 1 && subsets.add( subset ) ) {
                 register(
                         new AbstractConverter( subset.getCluster(), subset, difference.get( 0 ).getTraitDef(), root.getTraitSet() ),
@@ -833,12 +833,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
         // addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
         // addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
+        // addRule( MergeDocumentFilterRule.INSTANCE );
 
         // Relational
     }
 
 
-    public void registerAbstractRelationalRules() {
+    public void registerAbstractAlgebraRules() {
         addRule( FilterJoinRule.FILTER_ON_JOIN );
         addRule( FilterJoinRule.JOIN );
         addRule( AbstractConverter.ExpandConversionRule.INSTANCE );
@@ -1107,10 +1108,10 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Re-computes the digest of a {@link AlgNode}.
      *
-     * Since a algebra expression's digest contains the identifiers of its children, this method needs to be called
+     * Since an algebra expression's digest contains the identifiers of its children, this method needs to be called
      * when the child has been renamed, for example if the child's set merges with another.
      *
-     * @param alg Relational expression
+     * @param alg Algebra expression
      */
     void rename( AlgNode alg ) {
         final String oldDigest = alg.getDigest();
@@ -1213,7 +1214,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     /**
      * Fires all rules matched by an algebra expression.
      *
-     * @param alg Relational expression which has just been created (or maybe from the queue)
+     * @param alg Algebra expression which has just been created (or maybe from the queue)
      * @param deferred If true, each time a rule matches, just add an entry to the queue.
      */
     void fireRules( AlgNode alg, boolean deferred ) {
@@ -1267,7 +1268,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         };
         visitor.go( root );
         for ( Pair<AlgNode, AlgSubset> pair : matches ) {
-            ruleQueue.recompute( pair.right );
+            //ruleQueue.recompute( pair.right );
             fireRules( pair.left, true );
         }
 

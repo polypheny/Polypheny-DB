@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -82,7 +82,7 @@ public class Strong {
     public static Strong of( final ImmutableBitSet nullColumns ) {
         return new Strong() {
             @Override
-            public boolean isNull( RexInputRef ref ) {
+            public boolean isNull( RexIndexRef ref ) {
                 return nullColumns.get( ref.getIndex() );
             }
         };
@@ -155,7 +155,7 @@ public class Strong {
                 // NULLIF(X, Y) where X is not NULL, then this may return NULL if X = Y, otherwise X.
                 return allNull( ImmutableList.of( ((RexCall) node).getOperands().get( 0 ) ) );
             case INPUT_REF:
-                return isNull( (RexInputRef) node );
+                return isNull( (RexIndexRef) node );
             case CASE:
                 final RexCall caseCall = (RexCall) node;
                 final List<RexNode> caseValues = new ArrayList<>();
@@ -174,7 +174,7 @@ public class Strong {
     /**
      * Returns whether a given input is definitely null.
      */
-    public boolean isNull( RexInputRef ref ) {
+    public boolean isNull( RexIndexRef ref ) {
         return false;
     }
 

@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -121,19 +121,19 @@ public final class LogicalWindow extends Window {
 
         final int inputFieldCount = child.getRowType().getFieldCount();
 
-        final Map<RexLiteral, RexInputRef> constantPool = new HashMap<>();
+        final Map<RexLiteral, RexIndexRef> constantPool = new HashMap<>();
         final List<RexLiteral> constants = new ArrayList<>();
 
         // Identify constants in the expression tree and replace them with references to newly generated constant pool.
         RexShuttle replaceConstants = new RexShuttle() {
             @Override
             public RexNode visitLiteral( RexLiteral literal ) {
-                RexInputRef ref = constantPool.get( literal );
+                RexIndexRef ref = constantPool.get( literal );
                 if ( ref != null ) {
                     return ref;
                 }
                 constants.add( literal );
-                ref = new RexInputRef( constantPool.size() + inputFieldCount, literal.getType() );
+                ref = new RexIndexRef( constantPool.size() + inputFieldCount, literal.getType() );
                 constantPool.put( literal, ref );
                 return ref;
             }
@@ -168,7 +168,7 @@ public final class LogicalWindow extends Window {
             RexShuttle toInputRefs = new RexShuttle() {
                 @Override
                 public RexNode visitLocalRef( RexLocalRef localRef ) {
-                    return new RexInputRef( localRef.getIndex(), localRef.getType() );
+                    return new RexIndexRef( localRef.getIndex(), localRef.getType() );
                 }
             };
             groups.add(
@@ -236,7 +236,7 @@ public final class LogicalWindow extends Window {
                                 "intermed",
                                 intermediateRowType.getFieldList().get( index ).getType(),
                                 Litmus.THROW );
-                        return new RexInputRef( index, over.getType() );
+                        return new RexIndexRef( index, over.getType() );
                     }
 
 
@@ -264,7 +264,7 @@ public final class LogicalWindow extends Window {
         final List<RexNode> projectList = new ArrayList<>();
         for ( RexLocalRef inputRef : program.getProjectList() ) {
             final int index = inputRef.getIndex();
-            final RexInputRef ref = (RexInputRef) refToWindow.get( index );
+            final RexIndexRef ref = (RexIndexRef) refToWindow.get( index );
             projectList.add( ref );
         }
 
@@ -285,12 +285,12 @@ public final class LogicalWindow extends Window {
             @Override
             public RexNode get( int index ) {
                 final RexNode operand = operands.get( index );
-                if ( operand instanceof RexInputRef ) {
+                if ( operand instanceof RexIndexRef ) {
                     return operand;
                 }
                 assert operand instanceof RexLocalRef;
                 final RexLocalRef ref = (RexLocalRef) operand;
-                return new RexInputRef( ref.getIndex(), ref.getType() );
+                return new RexIndexRef( ref.getIndex(), ref.getType() );
             }
         };
     }

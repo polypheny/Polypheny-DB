@@ -68,7 +68,7 @@ import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -200,8 +200,8 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
                 alwaysTrue = !alwaysTrue;
             }
             RexNode operand = ((RexCall) rexNode).getOperands().get( 0 );
-            if ( operand instanceof RexInputRef ) {
-                RexInputRef inputRef = (RexInputRef) operand;
+            if ( operand instanceof RexIndexRef ) {
+                RexIndexRef inputRef = (RexIndexRef) operand;
                 if ( !inputRef.getType().isNullable() ) {
                     if ( alwaysTrue ) {
                         call.transformTo( filter.getInput() );
@@ -607,10 +607,10 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             RexNode node = visit( inputRef );
             if ( node == null ) {
-                return super.visitInputRef( inputRef );
+                return super.visitIndexRef( inputRef );
             }
             return node;
         }
@@ -737,7 +737,7 @@ public abstract class ReduceExpressionsRule extends AlgOptRule {
 
 
         @Override
-        public Void visitInputRef( RexInputRef inputRef ) {
+        public Void visitIndexRef( RexIndexRef inputRef ) {
             final RexNode constant = constants.get( inputRef );
             if ( constant != null ) {
                 if ( constant instanceof RexCall ) {

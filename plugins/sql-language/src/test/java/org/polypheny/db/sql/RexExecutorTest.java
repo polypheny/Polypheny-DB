@@ -51,7 +51,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutable;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSlot.SelfPopulatingList;
@@ -123,7 +123,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             final AlgDataType integer = typeFactory.createPolyType( PolyType.INTEGER );
             // Polypheny-DB is internally creating the input ref via a RexRangeRef
             // which eventually leads to a RexInputRef. So we are good.
-            final RexInputRef input = rexBuilder.makeInputRef( varchar, 0 );
+            final RexIndexRef input = rexBuilder.makeInputRef( varchar, 0 );
             final RexNode lengthArg = rexBuilder.makeLiteral( 3, integer, true );
             final RexNode substr = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.SUBSTRING ), input, lengthArg );
             ImmutableList<RexNode> constExps = ImmutableList.of( substr );

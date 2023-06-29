@@ -60,19 +60,19 @@ import org.polypheny.db.util.Util;
  * <li>It is not well tested.</li>
  * </ul>
  */
-public class RexInterpreter implements RexVisitor<Comparable> {
+public class RexInterpreter implements RexVisitor<Comparable<?>> {
 
     private static final NullSentinel N = NullSentinel.INSTANCE;
 
-    private final Map<RexNode, Comparable> environment;
+    private final Map<RexNode, Comparable<?>> environment;
 
 
     /**
      * Creates an interpreter.
      *
-     * @param environment Values of certain expressions (usually {@link RexInputRef}s)
+     * @param environment Values of certain expressions (usually {@link RexIndexRef}s)
      */
-    private RexInterpreter( Map<RexNode, Comparable> environment ) {
+    private RexInterpreter( Map<RexNode, Comparable<?>> environment ) {
         this.environment = ImmutableMap.copyOf( environment );
     }
 
@@ -80,8 +80,8 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     /**
      * Evaluates an expression in an environment.
      */
-    public static Comparable evaluate( RexNode e, Map<RexNode, Comparable> map ) {
-        final Comparable v = e.accept( new RexInterpreter( map ) );
+    public static Comparable<?> evaluate( RexNode e, Map<RexNode, Comparable<?>> map ) {
+        final Comparable<?> v = e.accept( new RexInterpreter( map ) );
         if ( false ) {
             System.out.println( "evaluate " + e + " on " + map + " returns " + v );
         }
@@ -94,8 +94,8 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable getOrUnbound( RexNode e ) {
-        final Comparable comparable = environment.get( e );
+    private Comparable<?> getOrUnbound( RexNode e ) {
+        final Comparable<?> comparable = environment.get( e );
         if ( comparable != null ) {
             return comparable;
         }
@@ -104,74 +104,80 @@ public class RexInterpreter implements RexVisitor<Comparable> {
 
 
     @Override
-    public Comparable visitInputRef( RexInputRef inputRef ) {
+    public Comparable<?> visitIndexRef( RexIndexRef inputRef ) {
         return getOrUnbound( inputRef );
     }
 
 
     @Override
-    public Comparable visitLocalRef( RexLocalRef localRef ) {
+    public Comparable<?> visitLocalRef( RexLocalRef localRef ) {
         throw unbound( localRef );
     }
 
 
     @Override
-    public Comparable visitLiteral( RexLiteral literal ) {
+    public Comparable<?> visitLiteral( RexLiteral literal ) {
         return Util.first( literal.getValue4(), N );
     }
 
 
     @Override
-    public Comparable visitOver( RexOver over ) {
+    public Comparable<?> visitOver( RexOver over ) {
         throw unbound( over );
     }
 
 
     @Override
-    public Comparable visitCorrelVariable( RexCorrelVariable correlVariable ) {
+    public Comparable<?> visitCorrelVariable( RexCorrelVariable correlVariable ) {
         return getOrUnbound( correlVariable );
     }
 
 
     @Override
-    public Comparable visitDynamicParam( RexDynamicParam dynamicParam ) {
+    public Comparable<?> visitDynamicParam( RexDynamicParam dynamicParam ) {
         return getOrUnbound( dynamicParam );
     }
 
 
     @Override
-    public Comparable visitRangeRef( RexRangeRef rangeRef ) {
+    public Comparable<?> visitRangeRef( RexRangeRef rangeRef ) {
         throw unbound( rangeRef );
     }
 
 
     @Override
-    public Comparable visitFieldAccess( RexFieldAccess fieldAccess ) {
+    public Comparable<?> visitFieldAccess( RexFieldAccess fieldAccess ) {
         return getOrUnbound( fieldAccess );
     }
 
 
     @Override
-    public Comparable visitSubQuery( RexSubQuery subQuery ) {
+    public Comparable<?> visitSubQuery( RexSubQuery subQuery ) {
         throw unbound( subQuery );
     }
 
 
     @Override
-    public Comparable visitTableInputRef( RexTableInputRef fieldRef ) {
+    public Comparable<?> visitTableInputRef( RexTableIndexRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
     @Override
-    public Comparable visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
+    public Comparable<?> visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         throw unbound( fieldRef );
     }
 
 
     @Override
-    public Comparable visitCall( RexCall call ) {
-        final List<Comparable> values = new ArrayList<>( call.operands.size() );
+    public Comparable<?> visitNameRef( RexNameRef nameRef ) {
+        throw unbound( nameRef );
+    }
+
+
+    @Override
+    public Comparable<?> visitCall( RexCall call ) {
+        final List<Comparable<?>> values = new ArrayList<>( call.operands.size() );
         for ( RexNode operand : call.operands ) {
             values.add( operand.accept( this ) );
         }
@@ -199,9 +205,9 @@ public class RexInterpreter implements RexVisitor<Comparable> {
             case LESS_THAN_OR_EQUAL:
                 return compare( values, c -> c <= 0 );
             case AND:
-                return values.stream().map( Truthy::of ).min( Comparator.naturalOrder() ).get().toComparable();
+                return values.stream().map( Truthy::of ).min( Comparator.naturalOrder() ).orElseThrow().toComparable();
             case OR:
-                return values.stream().map( Truthy::of ).max( Comparator.naturalOrder() ).get().toComparable();
+                return values.stream().map( Truthy::of ).max( Comparator.naturalOrder() ).orElseThrow().toComparable();
             case NOT:
                 return not( values.get( 0 ) );
             case CASE:
@@ -245,8 +251,8 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable extract( RexCall call, List<Comparable> values ) {
-        final Comparable v = values.get( 1 );
+    private Comparable<?> extract( RexCall call, List<Comparable<?>> values ) {
+        final Comparable<?> v = values.get( 1 );
         if ( v == N ) {
             return N;
         }
@@ -263,8 +269,8 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable coalesce( RexCall call, List<Comparable> values ) {
-        for ( Comparable value : values ) {
+    private Comparable<?> coalesce( RexCall call, List<Comparable<?>> values ) {
+        for ( Comparable<?> value : values ) {
             if ( value != N ) {
                 return value;
             }
@@ -273,7 +279,7 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable ceil( RexCall call, List<Comparable> values ) {
+    private Comparable<?> ceil( RexCall call, List<Comparable<?>> values ) {
         if ( values.get( 0 ) == N ) {
             return N;
         }
@@ -310,7 +316,7 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable cast( RexCall call, List<Comparable> values ) {
+    private Comparable<?> cast( RexCall call, List<Comparable<?>> values ) {
         if ( values.get( 0 ) == N ) {
             return N;
         }
@@ -318,7 +324,7 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable not( Comparable value ) {
+    private Comparable<?> not( Comparable<?> value ) {
         if ( value.equals( true ) ) {
             return false;
         } else if ( value.equals( false ) ) {
@@ -329,9 +335,9 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private Comparable case_( List<Comparable> values ) {
+    private Comparable<?> case_( List<Comparable<?>> values ) {
         final int size;
-        final Comparable elseValue;
+        final Comparable<?> elseValue;
         if ( values.size() % 2 == 0 ) {
             size = values.size();
             elseValue = N;
@@ -348,23 +354,23 @@ public class RexInterpreter implements RexVisitor<Comparable> {
     }
 
 
-    private BigDecimal number( Comparable comparable ) {
+    private BigDecimal number( Comparable<?> comparable ) {
         return comparable instanceof BigDecimal
                 ? (BigDecimal) comparable
                 : comparable instanceof BigInteger
                         ? new BigDecimal( (BigInteger) comparable )
                         : comparable instanceof Long || comparable instanceof Integer || comparable instanceof Short
                                 ? new BigDecimal( ((Number) comparable).longValue() )
-                                : new BigDecimal( ((Number) comparable).doubleValue() );
+                                : BigDecimal.valueOf( ((Number) comparable).doubleValue() );
     }
 
 
-    private Comparable compare( List<Comparable> values, IntPredicate p ) {
+    private Comparable<?> compare( List<Comparable<?>> values, IntPredicate p ) {
         if ( containsNull( values ) ) {
             return N;
         }
-        Comparable v0 = values.get( 0 );
-        Comparable v1 = values.get( 1 );
+        Comparable<?> v0 = values.get( 0 );
+        Comparable<?> v1 = values.get( 1 );
 
         if ( v0 instanceof Number && v1 instanceof NlsString ) {
             try {
@@ -387,13 +393,13 @@ public class RexInterpreter implements RexVisitor<Comparable> {
             v1 = number( v1 );
         }
         //noinspection unchecked
-        final int c = v0.compareTo( v1 );
+        final int c = ((Comparable) v0).compareTo( (Comparable) v1 );
         return p.test( c );
     }
 
 
-    private boolean containsNull( List<Comparable> values ) {
-        for ( Comparable value : values ) {
+    private boolean containsNull( List<Comparable<?>> values ) {
+        for ( Comparable<?> value : values ) {
             if ( value == N ) {
                 return true;
             }
@@ -410,12 +416,12 @@ public class RexInterpreter implements RexVisitor<Comparable> {
         FALSE, UNKNOWN, TRUE;
 
 
-        static Truthy of( Comparable c ) {
+        static Truthy of( Comparable<?> c ) {
             return c.equals( true ) ? TRUE : c.equals( false ) ? FALSE : UNKNOWN;
         }
 
 
-        Comparable toComparable() {
+        Comparable<?> toComparable() {
             switch ( this ) {
                 case TRUE:
                     return true;

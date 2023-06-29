@@ -407,7 +407,7 @@ public abstract class AbstractAlgNode implements AlgNode {
                     protected void explain_( AlgNode alg, List<Pair<String, Object>> values ) {
                         pw.write( getAlgTypeName() );
 
-                        for ( AlgTrait trait : traitSet ) {
+                        for ( AlgTrait<?> trait : traitSet ) {
                             pw.write( "." );
                             pw.write( trait.toString() );
                         }

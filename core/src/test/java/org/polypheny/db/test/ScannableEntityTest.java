@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AbstractEntity;
@@ -421,8 +421,8 @@ public class ScannableEntityTest {
             if ( cooperative
                     && node instanceof RexCall
                     && ((RexCall) node).getOperator().getOperatorName() == OperatorName.EQUALS
-                    && ((RexCall) node).getOperands().get( 0 ) instanceof RexInputRef
-                    && ((RexInputRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
+                    && ((RexCall) node).getOperands().get( 0 ) instanceof RexIndexRef
+                    && ((RexIndexRef) ((RexCall) node).getOperands().get( 0 )).getIndex() == 0
                     && ((RexCall) node).getOperands().get( 1 ) instanceof RexLiteral ) {
                 final RexNode op1 = ((RexCall) node).getOperands().get( 1 );
                 filterIter.remove();

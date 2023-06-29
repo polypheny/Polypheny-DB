@@ -42,7 +42,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
@@ -93,8 +93,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
                 left = ((RexCall) left).operands.get( 0 );
             }
             final RexNode right = call.getOperands().get( 1 );
-            if ( left instanceof RexInputRef && right instanceof RexLiteral ) {
-                final int index = ((RexInputRef) left).getIndex();
+            if ( left instanceof RexIndexRef && right instanceof RexLiteral ) {
+                final int index = ((RexIndexRef) left).getIndex();
                 if ( filterValues[index] == null ) {
                     filterValues[index] = ((RexLiteral) right).getValue2().toString();
                     return true;

@@ -44,7 +44,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilder;
@@ -115,7 +115,7 @@ public class JoinToCorrelateRule extends AlgOptRule {
         // Replace all references of left input with FieldAccess(corrVar, field)
         final RexNode joinCondition = join.getCondition().accept( new RexShuttle() {
             @Override
-            public RexNode visitInputRef( RexInputRef input ) {
+            public RexNode visitIndexRef( RexIndexRef input ) {
                 int field = input.getIndex();
                 if ( field >= leftFieldCount ) {
                     return rexBuilder.makeInputRef( input.getType(), input.getIndex() - leftFieldCount );

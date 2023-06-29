@@ -111,7 +111,7 @@ import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -904,11 +904,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<AlgDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
                     for ( final RexNode expr : project.getChildExps() ) {
-                        if ( !(expr instanceof RexInputRef) ) {
+                        if ( !(expr instanceof RexIndexRef) ) {
                             IndexManager.getInstance().incrementMiss();
                             return super.visit( project );
                         }
-                        final RexInputRef rir = (RexInputRef) expr;
+                        final RexIndexRef rir = (RexIndexRef) expr;
                         final AlgDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
                         final String column = field.getName();
                         columns.add( column );

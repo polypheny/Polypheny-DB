@@ -221,7 +221,7 @@ public class AlgSubset extends AbstractAlgNode {
      */
     Set<AlgNode> getParents() {
         final Set<AlgNode> list = new LinkedHashSet<>();
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && traitSet.satisfies( alg.getTraitSet() ) ) {
                     list.add( parent );
@@ -237,7 +237,7 @@ public class AlgSubset extends AbstractAlgNode {
      */
     Set<AlgSubset> getParentSubsets( VolcanoPlanner planner ) {
         final Set<AlgSubset> list = new LinkedHashSet<>();
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && alg.getTraitSet().equals( traitSet ) ) {
                     list.add( planner.getSubset( parent ) );
@@ -260,7 +260,7 @@ public class AlgSubset extends AbstractAlgNode {
     public Collection<AlgNode> getParentRels() {
         final Set<AlgNode> list = new LinkedHashSet<>();
         parentLoop:
-        for ( AlgNode parent : set.getParentRels() ) {
+        for ( AlgNode parent : set.getParentAlgs() ) {
             for ( AlgSubset alg : inputSubsets( parent ) ) {
                 if ( alg.set == set && traitSet.satisfies( alg.getTraitSet() ) ) {
                     list.add( parent );

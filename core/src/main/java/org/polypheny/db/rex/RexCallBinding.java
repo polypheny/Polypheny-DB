@@ -97,14 +97,14 @@ public class RexCallBinding extends OperatorBinding {
     public Monotonicity getOperandMonotonicity( int ordinal ) {
         RexNode operand = operands.get( ordinal );
 
-        if ( operand instanceof RexInputRef ) {
+        if ( operand instanceof RexIndexRef ) {
             for ( AlgCollation ic : inputCollations ) {
                 if ( ic.getFieldCollations().isEmpty() ) {
                     continue;
                 }
 
                 for ( AlgFieldCollation rfc : ic.getFieldCollations() ) {
-                    if ( rfc.getFieldIndex() == ((RexInputRef) operand).getIndex() ) {
+                    if ( rfc.getFieldIndex() == ((RexIndexRef) operand).getIndex() ) {
                         return rfc.direction.monotonicity();
                         // TODO: Is it possible to have more than one RelFieldCollation for a RexInputRef?
                     }

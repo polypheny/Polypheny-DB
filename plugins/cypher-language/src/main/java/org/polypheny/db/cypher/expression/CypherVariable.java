@@ -26,7 +26,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.entity.PolyString;
@@ -68,7 +68,7 @@ public class CypherVariable extends CypherExpression {
                 for ( AlgDataTypeField pathField : field.getType().getFieldList() ) {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))
-                        RexInputRef pathRef = context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( field.getIndex() ).getType(), field.getIndex() );
+                        RexIndexRef pathRef = context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( field.getIndex() ).getType(), field.getIndex() );
                         return Pair.of(
                                 PolyString.of( name ),
                                 context.rexBuilder.makeCall(

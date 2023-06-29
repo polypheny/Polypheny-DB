@@ -35,13 +35,13 @@ package org.polypheny.db.algebra.rules;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -51,7 +51,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
@@ -90,8 +90,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
 
     public static AlgNode apply( AlgOptRuleCall call, Aggregate aggregate, Project project ) {
         // Find all fields which we need to be straightforward field projections.
-        final Set<Integer> interestingFields = new TreeSet<>();
-        interestingFields.addAll( aggregate.getGroupSet().asList() );
+        final Set<Integer> interestingFields = new TreeSet<>( aggregate.getGroupSet().asList() );
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
             interestingFields.addAll( aggregateCall.getArgList() );
             if ( aggregateCall.filterArg >= 0 ) {
@@ -104,10 +103,10 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         final Map<Integer, Integer> map = new HashMap<>();
         for ( int source : interestingFields ) {
             final RexNode rex = project.getProjects().get( source );
-            if ( !(rex instanceof RexInputRef) ) {
+            if ( !(rex instanceof RexIndexRef) ) {
                 return null;
             }
-            map.put( source, ((RexInputRef) rex).getIndex() );
+            map.put( source, ((RexIndexRef) rex).getIndex() );
         }
 
         final ImmutableBitSet newGroupSet = aggregate.getGroupSet().permute( map );
@@ -129,7 +128,7 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         // Add a project if the group set is not in the same order or contains duplicates.
         final AlgBuilder algBuilder = call.builder();
         algBuilder.push( newAggregate );
-        final List<Integer> newKeys = Lists.transform( aggregate.getGroupSet().asList(), map::get );
+        final List<Integer> newKeys = aggregate.getGroupSet().asList().stream().map( map::get ).collect( Collectors.toList() );
         if ( !newKeys.equals( newGroupSet.asList() ) ) {
             final List<Integer> posList = new ArrayList<>();
             for ( int newKey : newKeys ) {

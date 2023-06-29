@@ -188,14 +188,14 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
 
     // implement RelOptPlanner
     @Override
-    public AlgNode register( AlgNode alg, AlgNode equivRel ) {
+    public AlgNode register( AlgNode alg, AlgNode equivAlg ) {
         return alg;
     }
 
 
     // implement RelOptPlanner
     @Override
-    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivRel ) {
+    public AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         return alg;
     }
 

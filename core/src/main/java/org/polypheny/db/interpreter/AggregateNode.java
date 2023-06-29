@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.interpreter.Row.RowBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AggregateFunctionImpl;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -220,7 +220,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         public List<RexNode> rexArguments() {
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
-                                args.add( RexInputRef.of( index, inputPhysType.getRowType() ) );
+                                args.add( RexIndexRef.of( index, inputPhysType.getRowType() ) );
                             }
                             return args;
                         }
@@ -230,7 +230,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
                         public RexNode rexFilterArgument() {
                             return agg.call.filterArg < 0
                                     ? null
-                                    : RexInputRef.of( agg.call.filterArg, inputPhysType.getRowType() );
+                                    : RexIndexRef.of( agg.call.filterArg, inputPhysType.getRowType() );
                         }
 
 

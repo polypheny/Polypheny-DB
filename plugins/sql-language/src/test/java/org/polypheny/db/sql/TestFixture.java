@@ -40,7 +40,7 @@ import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexSimplify;
@@ -173,8 +173,8 @@ public class TestFixture {
     }
 
 
-    public RexInputRef ref( int i, AlgDataType type ) {
-        return new RexInputRef( i, typeFactory.createTypeWithNullability( type, true ) );
+    public RexIndexRef ref( int i, AlgDataType type ) {
+        return new RexIndexRef( i, typeFactory.createTypeWithNullability( type, true ) );
     }
 
 

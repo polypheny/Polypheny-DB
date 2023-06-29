@@ -124,7 +124,7 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
 
 
     @Override
-    public Boolean visitInputRef( RexInputRef ref ) {
+    public Boolean visitIndexRef( RexIndexRef ref ) {
         final int index = ref.getIndex();
         if ( (index < 0) || (index >= inputTypeList.size()) ) {
             ++failCount;

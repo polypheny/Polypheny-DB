@@ -311,7 +311,7 @@ public abstract class AbstractRelOptPlanner implements AlgOptPlanner {
 
 
     @Override
-    public void onCopy( AlgNode alg, AlgNode newRel ) {
+    public void onCopy( AlgNode alg, AlgNode newAlg ) {
         // do nothing
     }
 

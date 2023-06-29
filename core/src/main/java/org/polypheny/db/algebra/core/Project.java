@@ -55,7 +55,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexChecker;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
@@ -247,10 +247,10 @@ public abstract class Project extends SingleAlg {
         }
         Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_SURJECTION, inputFieldCount, projects.size() );
         for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( !(exp.e instanceof RexInputRef) ) {
+            if ( !(exp.e instanceof RexIndexRef) ) {
                 return null;
             }
-            mapping.set( ((RexInputRef) exp.e).getIndex(), exp.i );
+            mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
         }
         return mapping;
     }
@@ -269,8 +269,8 @@ public abstract class Project extends SingleAlg {
     public static Mappings.TargetMapping getPartialMapping( int inputFieldCount, List<? extends RexNode> projects ) {
         Mappings.TargetMapping mapping = Mappings.create( MappingType.INVERSE_FUNCTION, inputFieldCount, projects.size() );
         for ( Ord<RexNode> exp : Ord.<RexNode>zip( projects ) ) {
-            if ( exp.e instanceof RexInputRef ) {
-                mapping.set( ((RexInputRef) exp.e).getIndex(), exp.i );
+            if ( exp.e instanceof RexIndexRef ) {
+                mapping.set( ((RexIndexRef) exp.e).getIndex(), exp.i );
             }
         }
         return mapping;
@@ -299,8 +299,8 @@ public abstract class Project extends SingleAlg {
         final Set<Integer> alreadyProjected = new HashSet<>( fieldCount );
         for ( int i = 0; i < fieldCount; ++i ) {
             final RexNode exp = projects.get( i );
-            if ( exp instanceof RexInputRef ) {
-                final int index = ((RexInputRef) exp).getIndex();
+            if ( exp instanceof RexIndexRef ) {
+                final int index = ((RexIndexRef) exp).getIndex();
                 if ( !alreadyProjected.add( index ) ) {
                     return null;
                 }
@@ -319,7 +319,7 @@ public abstract class Project extends SingleAlg {
      */
     public boolean isMapping() {
         for ( RexNode exp : exps ) {
-            if ( !(exp instanceof RexInputRef) ) {
+            if ( !(exp instanceof RexIndexRef) ) {
                 return false;
             }
         }

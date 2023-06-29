@@ -60,7 +60,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
@@ -626,7 +626,7 @@ public class RexToLixTranslator {
         }
         switch ( expr.getKind() ) {
             case INPUT_REF: {
-                final int index = ((RexInputRef) expr).getIndex();
+                final int index = ((RexIndexRef) expr).getIndex();
                 Expression x = inputGetter.field( list, index, storageType );
                 Expression input = list.append( "inp" + index + "_", x ); // safe to share
                 return handleNullUnboxingIfNecessary( input, nullAs, storageType );

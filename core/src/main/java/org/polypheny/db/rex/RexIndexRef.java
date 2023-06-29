@@ -64,7 +64,7 @@ import org.polypheny.db.util.Pair;
  *
  * So <code>RexInputRef(3, Integer)</code> is the correct reference for the field DEPTNO2.
  */
-public class RexInputRef extends RexSlot {
+public class RexIndexRef extends RexSlot {
 
     // list of common names, to reduce memory allocations
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
@@ -77,7 +77,7 @@ public class RexInputRef extends RexSlot {
      * @param index Index of the field in the underlying row-type
      * @param type Type of the column
      */
-    public RexInputRef( int index, AlgDataType type ) {
+    public RexIndexRef( int index, AlgDataType type ) {
         super( createName( index ), index, type );
     }
 
@@ -85,8 +85,8 @@ public class RexInputRef extends RexSlot {
     @Override
     public boolean equals( Object obj ) {
         return this == obj
-                || obj instanceof RexInputRef
-                && index == ((RexInputRef) obj).index;
+                || obj instanceof RexIndexRef
+                && index == ((RexIndexRef) obj).index;
     }
 
 
@@ -99,21 +99,21 @@ public class RexInputRef extends RexSlot {
     /**
      * Creates a reference to a given field in a row type.
      */
-    public static RexInputRef of( int index, AlgDataType rowType ) {
+    public static RexIndexRef of( int index, AlgDataType rowType ) {
         return of( index, rowType.getFieldList() );
     }
 
 
-    public static RexInputRef of( int index, DocumentType rowType ) {
-        return new RexInputRef( index, rowType );
+    public static RexIndexRef of( int index, DocumentType rowType ) {
+        return new RexIndexRef( index, rowType );
     }
 
 
     /**
      * Creates a reference to a given field in a list of fields.
      */
-    public static RexInputRef of( int index, List<AlgDataTypeField> fields ) {
-        return new RexInputRef( index, fields.get( index ).getType() );
+    public static RexIndexRef of( int index, List<AlgDataTypeField> fields ) {
+        return new RexIndexRef( index, fields.get( index ).getType() );
     }
 
 
@@ -122,7 +122,7 @@ public class RexInputRef extends RexSlot {
      */
     public static Pair<RexNode, String> of2( int index, List<AlgDataTypeField> fields ) {
         final AlgDataTypeField field = fields.get( index );
-        return Pair.of( (RexNode) new RexInputRef( index, field.getType() ), field.getName() );
+        return Pair.of( new RexIndexRef( index, field.getType() ), field.getName() );
     }
 
 
@@ -134,7 +134,7 @@ public class RexInputRef extends RexSlot {
 
     @Override
     public <R> R accept( RexVisitor<R> visitor ) {
-        return visitor.visitInputRef( this );
+        return visitor.visitIndexRef( this );
     }
 
 

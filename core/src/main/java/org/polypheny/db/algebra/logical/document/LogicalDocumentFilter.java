@@ -60,4 +60,12 @@ public class LogicalDocumentFilter extends DocumentFilter {
         return new LogicalDocumentFilter( input.getCluster(), traitSet, input, condition );
     }
 
+
+    @Override
+    public String toString() {
+        return "LogicalDocumentFilter{" +
+                "digest='" + digest + '\'' +
+                '}';
+    }
+
 }

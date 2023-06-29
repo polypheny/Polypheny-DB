@@ -43,7 +43,7 @@ import org.polypheny.db.plan.AlgOptUtil.Logic;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.LogicVisitor;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
@@ -82,13 +82,13 @@ public class RexTransformerTest {
         rexBuilder = new RexBuilder( typeFactory );
         boolRelDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
-        x = new RexInputRef(
+        x = new RexIndexRef(
                 0,
                 typeFactory.createTypeWithNullability( boolRelDataType, true ) );
-        y = new RexInputRef(
+        y = new RexIndexRef(
                 1,
                 typeFactory.createTypeWithNullability( boolRelDataType, true ) );
-        z = new RexInputRef(
+        z = new RexIndexRef(
                 2,
                 typeFactory.createTypeWithNullability( boolRelDataType, true ) );
         trueRex = rexBuilder.makeLiteral( true );
@@ -194,11 +194,11 @@ public class RexTransformerTest {
     @Test
     public void testPreTests() {
         // can make variable nullable?
-        RexNode node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true ) );
+        RexNode node = new RexIndexRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true ) );
         assertTrue( node.getType().isNullable() );
 
         // can make variable not nullable?
-        node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false ) );
+        node = new RexIndexRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false ) );
         assertFalse( node.getType().isNullable() );
     }
 

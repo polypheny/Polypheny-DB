@@ -48,7 +48,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
@@ -94,7 +94,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
         final List<Integer> leftKeys = semiJoin.getLeftKeys();
         final List<RexNode> projExprs = project.getProjects();
         for ( int leftKey : leftKeys ) {
-            RexInputRef inputRef = (RexInputRef) projExprs.get( leftKey );
+            RexIndexRef inputRef = (RexIndexRef) projExprs.get( leftKey );
             newLeftKeys.add( inputRef.getIndex() );
         }
 

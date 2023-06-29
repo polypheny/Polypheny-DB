@@ -101,14 +101,14 @@ public abstract class RexNode {
 
 
     /**
-     * Accepts a visitor, dispatching to the right overloaded {@link RexVisitor#visitInputRef visitXxx} method.
+     * Accepts a visitor, dispatching to the right overloaded {@link RexVisitor#visitIndexRef visitXxx} method.
      *
      * Also see {@link RexUtil#apply(RexVisitor, java.util.List, RexNode)}, which applies a visitor to several expressions simultaneously.
      */
     public abstract <R> R accept( RexVisitor<R> visitor );
 
     /**
-     * Accepts a visitor with a payload, dispatching to the right overloaded {@link RexBiVisitor#visitInputRef(RexInputRef, Object)} visitXxx} method.
+     * Accepts a visitor with a payload, dispatching to the right overloaded {@link RexBiVisitor#visitInputRef(RexIndexRef, Object)} visitXxx} method.
      */
     public abstract <R, P> R accept( RexBiVisitor<R, P> visitor, P arg );
 

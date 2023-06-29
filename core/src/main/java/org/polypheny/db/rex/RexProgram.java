@@ -68,7 +68,7 @@ import org.polypheny.db.util.Permutation;
  *
  * Programs are immutable. It may help to use a {@link RexProgramBuilder}, which has the same relationship to {@link RexProgram} as {@link StringBuilder} has to {@link String}.
  *
- * A program can contain aggregate functions. If it does, the arguments to each aggregate function must be an {@link RexInputRef}.
+ * A program can contain aggregate functions. If it does, the arguments to each aggregate function must be an {@link RexIndexRef}.
  *
  * @see RexProgramBuilder
  */
@@ -322,9 +322,9 @@ public class RexProgram {
         }
         final List<AlgDataTypeField> fields = rowType.getFieldList();
         final List<RexLocalRef> projectRefs = new ArrayList<>();
-        final List<RexInputRef> refs = new ArrayList<>();
+        final List<RexIndexRef> refs = new ArrayList<>();
         for ( int i = 0; i < fields.size(); i++ ) {
-            final RexInputRef ref = RexInputRef.of( i, fields );
+            final RexIndexRef ref = RexIndexRef.of( i, fields );
             refs.add( ref );
             projectRefs.add( new RexLocalRef( i, ref.getType() ) );
         }
@@ -395,7 +395,7 @@ public class RexProgram {
             // None of the other fields should be inputRefs.
             for ( int i = inputRowType.getFieldCount(); i < exprs.size(); i++ ) {
                 RexNode expr = exprs.get( i );
-                if ( expr instanceof RexInputRef ) {
+                if ( expr instanceof RexIndexRef ) {
                     return litmus.fail( null );
                 }
             }
@@ -636,8 +636,8 @@ public class RexProgram {
             }
             if ( expr instanceof RexLocalRef ) {
                 index = ((RexLocalRef) expr).index;
-            } else if ( expr instanceof RexInputRef ) {
-                return ((RexInputRef) expr).index;
+            } else if ( expr instanceof RexIndexRef ) {
+                return ((RexIndexRef) expr).index;
             } else {
                 return -1;
             }
@@ -851,7 +851,7 @@ public class RexProgram {
 
 
         @Override
-        public RexNode visitInputRef( RexInputRef inputRef ) {
+        public RexNode visitIndexRef( RexIndexRef inputRef ) {
             return inputRef;
         }
 

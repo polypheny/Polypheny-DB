@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -85,8 +85,8 @@ public class CsvProjectScanRule extends AlgOptRule {
         final int[] fields = new int[exps.size()];
         for ( int i = 0; i < exps.size(); i++ ) {
             final RexNode exp = exps.get( i );
-            if ( exp instanceof RexInputRef ) {
-                fields[i] = ((RexInputRef) exp).getIndex();
+            if ( exp instanceof RexIndexRef ) {
+                fields[i] = ((RexIndexRef) exp).getIndex();
             } else {
                 return null; // not a simple projection
             }

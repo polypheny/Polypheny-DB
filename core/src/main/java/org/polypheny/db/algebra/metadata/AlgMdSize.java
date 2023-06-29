@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.Size;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -407,7 +407,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
     public Double averageRexSize( RexNode node, List<Double> inputColumnSizes ) {
         switch ( node.getKind() ) {
             case INPUT_REF:
-                return inputColumnSizes.get( ((RexInputRef) node).getIndex() );
+                return inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
             case LITERAL:
                 return typeValueSize( node.getType(), ((RexLiteral) node).getValueAs( Comparable.class ) );
             default:
