@@ -23,9 +23,14 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -88,7 +93,7 @@ public class MqttStreamPlugin extends Plugin {
 
         private final int brokerPort;
 
-        private List<String> topics = new ArrayList<String>();
+        private ArrayList<String> topics = new ArrayList<String>();
 
         public static Mqtt3AsyncClient client;
 
@@ -99,15 +104,11 @@ public class MqttStreamPlugin extends Plugin {
 
         public MqttStreamServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
-            //this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
             // Add information page
             monitoringPage = new MonitoringPage();
             broker = settings.get( "broker" );
             brokerPort = Integer.parseInt( settings.get( "brokerPort" ) );
             namespace = settings.get( "namespace" );
-            //TODO: rmv
-            log.info( "MqttStreamPlugin constructor was called!" );
-
         }
 
 
@@ -134,7 +135,8 @@ public class MqttStreamPlugin extends Plugin {
                                     log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
                                 } else {
                                     log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
-                                    subscribeToAllTopics( Arrays.asList( settings.get( "topics" ).trim().split( "," )) );
+
+                                    subscribe( Arrays.asList( settings.get( "topics" ).trim().split( "," )) );
                                 }
                             }
                     );
@@ -165,7 +167,41 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        void subscribeToAllTopics( List<String> newTopics ) {
+
+        @Override
+        protected void reloadSettings( List<String> updatedSettings ) {
+
+            if ( updatedSettings.contains( "topics" ) ) {
+                List<String> newTopicsList = Stream.of(this.getCurrentSettings().get( "topics" ).split( "," )).map(String::trim).collect( Collectors.toList());
+
+                List<String> topicsToSub = new ArrayList<>();
+                for ( String newTopic : newTopicsList ) {
+                    if ( !topics.contains( newTopic ) ) {
+                        topicsToSub.add( newTopic );
+                    }
+                }
+
+                if ( !topicsToSub.isEmpty()) {
+                    subscribe( topicsToSub );
+                }
+
+
+                List<String> topicsToUnsub = new ArrayList<>();
+                for ( String oldTopic : topics ) {
+                    if ( !newTopicsList.contains( oldTopic ) ) {
+                        topicsToUnsub.add( oldTopic );
+                    }
+                }
+
+                if ( !topicsToUnsub.isEmpty() ) {
+                    unsubscribe( topicsToUnsub );
+                }
+            }
+
+        }
+
+
+        void subscribe( List<String> newTopics ) {
             for ( String t : newTopics ) {
                 subscribe( t );
             }
@@ -178,67 +214,40 @@ public class MqttStreamPlugin extends Plugin {
          * @param topic the topic the client should subscribe to.
          */
         public void subscribe( String topic ) {
+            client.subscribeWith().topicFilter( topic ).callback( subMsg -> {
+                log.info( "Received message from topic {}.", subMsg.getTopic() );
+                processMsg( subMsg );
+            } ).send().whenComplete( ( subAck, throwable ) -> {
+                if ( throwable != null ) {
+                    log.info( "Subscription was not successfull. Please try again." );
+                } else {
+                    this.topics.add( topic );
+                    log.info( "Successful subscription to topic {}.", topic );
+                }
+            } );
+            //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
 
-            if ( !topics.contains( topic ) ) {
-                client.subscribeWith()
-                        .topicFilter( topic )
-                        .callback( subMsg -> {
-                            // TODO:Process the received message
-                            log.info( "Received message from topic {}.", subMsg.getTopic().toString() );
-                            processMsg( subMsg );
-                        } )
-                        .send()
-                        .whenComplete( ( subAck, throwable ) -> {
-                            if ( throwable != null ) {
-                                log.info( "Subscription was not successfull. Please try again." );
-                            } else {
-                                topics.add( topic );
-                                log.info( "Successful subscription to topic {}.", topic );
-                            }
-                        } );
-                //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
+        }
 
+        public void unsubscribe( List<String> topics ) {
+            for ( String t : topics ) {
+                unsubscribe( t );
             }
-
         }
 
 
         public void unsubscribe( String topic ) {
+            client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
+                if ( throwable != null ) {
 
-            if ( topics.contains( topic ) ) {
-                client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
-                            if ( throwable != null ) {
-                                log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
-                            } else {
-                                topics.remove( topic );
-                                log.info( String.format( "Unsubscribed from %s.", topic ) );
-                            }
-                        }
-                );
-            }
+                    log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
+                } else {
+                    this.topics.remove( topic );
+                    log.info( String.format( "Unsubscribed from %s.", topic ) );
+                }
+            } );
         }
 
-
-        @Override
-        protected void reloadSettings( List<String> updatedSettings ) {
-            // updatedSettings only has the name of fields that has been changed!
-            if ( updatedSettings.contains( "topics" ) ) {
-                List<String> newTopicsList = Arrays.asList( this.getCurrentSettings().get( "topics" ).trim().split( "," ) );
-
-                for ( String newTopic : newTopicsList ) {
-                    if ( !topics.contains( newTopic ) ) {
-                        subscribe( newTopic );
-                    }
-                }
-
-                for ( String oldTopic : topics ) {
-                    if ( !newTopicsList.contains( oldTopic ) ) {
-                        unsubscribe( oldTopic );
-                    }
-                }
-            }
-
-        }
 
 
         void processMsg( Mqtt3Publish subMsg ) {
@@ -248,21 +257,6 @@ public class MqttStreamPlugin extends Plugin {
             streamCapture.saveMsgInDocument( subMsg.getTopic().toString(), msg );
 
         }
-
-
-        /**
-         * @Override protected List<String> applySettings( Map<String, String> newSettings ) {
-         * List<String> updatedSettings = new ArrayList<>();
-         * for ( Map.Entry<String, String> newSetting : newSettings.entrySet() ) {
-         * if ( !Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() ) ) {
-         * this.settings.put( newSetting.getKey(), newSetting.getValue() );
-         * updatedSettings.add( newSetting.getKey() );
-         * }
-         * }
-         *
-         * return updatedSettings;
-         * }
-         **/
 
 
         @Override
@@ -283,7 +277,7 @@ public class MqttStreamPlugin extends Plugin {
 
             private final InformationGroup informationGroupTopics;
 
-            private InformationTable topicsTable;
+            private final InformationTable topicsTable;
 
 
             public MonitoringPage() {
@@ -308,10 +302,10 @@ public class MqttStreamPlugin extends Plugin {
 
 
             public void update() {
+                topicsTable.reset();
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
-                    topicsTable.reset();
                     for ( String topic : topics ) {
                         topicsTable.addRow( topic );
                     }
