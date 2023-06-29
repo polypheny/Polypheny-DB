@@ -23,14 +23,12 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -97,6 +95,7 @@ public class MqttStreamPlugin extends Plugin {
 
         public static Mqtt3AsyncClient client;
 
+        @Getter
         public final String namespace;
 
         private final MonitoringPage monitoringPage;
@@ -116,7 +115,7 @@ public class MqttStreamPlugin extends Plugin {
         public void run() {
 
             // commented code used for SSL connection
-            client = MqttClient.builder()
+            this.client = MqttClient.builder()
                     .useMqttVersion3()
                     .identifier( getUniqueName() )
                     .serverHost( broker )
@@ -136,7 +135,7 @@ public class MqttStreamPlugin extends Plugin {
                                 } else {
                                     log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
 
-                                    subscribe( Arrays.asList( settings.get( "topics" ).trim().split( "," )) );
+                                    subscribe( Arrays.asList( settings.get( "topics" ).trim().split( "," ) ) );
                                 }
                             }
                     );
@@ -167,12 +166,11 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
 
             if ( updatedSettings.contains( "topics" ) ) {
-                List<String> newTopicsList = Stream.of(this.getCurrentSettings().get( "topics" ).split( "," )).map(String::trim).collect( Collectors.toList());
+                List<String> newTopicsList = Stream.of( this.getCurrentSettings().get( "topics" ).split( "," ) ).map( String::trim ).collect( Collectors.toList() );
 
                 List<String> topicsToSub = new ArrayList<>();
                 for ( String newTopic : newTopicsList ) {
@@ -181,10 +179,9 @@ public class MqttStreamPlugin extends Plugin {
                     }
                 }
 
-                if ( !topicsToSub.isEmpty()) {
+                if ( !topicsToSub.isEmpty() ) {
                     subscribe( topicsToSub );
                 }
-
 
                 List<String> topicsToUnsub = new ArrayList<>();
                 for ( String oldTopic : topics ) {
@@ -229,6 +226,7 @@ public class MqttStreamPlugin extends Plugin {
 
         }
 
+
         public void unsubscribe( List<String> topics ) {
             for ( String t : topics ) {
                 unsubscribe( t );
@@ -249,8 +247,8 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-
         void processMsg( Mqtt3Publish subMsg ) {
+            // create Instance of PolyStream for the message with namespace
             //TODO: attention: return values, not correct, might need a change of type.
             String msg = StreamProcessing.processMsg( subMsg );
             StreamCapture streamCapture = new StreamCapture( this.transactionManager, this.namespace );
