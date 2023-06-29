@@ -19,11 +19,18 @@ package org.polypheny.db.mqtt;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.NamespaceAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -46,24 +53,53 @@ public class StreamCapture {
 
     public void saveMsgInDocument( String topic, String message ) {
         //String path = registerTopicFolder(topic);
-        this.createCollection( topic );
+        long schemaId = createCollection( topic );
+        log.info( "schemaId = {}", schemaId );
+        log.info( "testing method createCollection" );
+        Catalog catalog = Catalog.getInstance();
+        CatalogSchema schema = null;
+        schema = catalog.getSchema( schemaId );
+
+        log.info( "Namespace name: {}, Namespace Type: {}, Database name: {}", schema.getName(), schema.getNamespaceType(), schema.getDatabaseName() );
         //TODO: create Document in collection with message
     }
+    long createCollection( String topic ) {
+        return createCollection( topic, Catalog.defaultDatabaseId, Catalog.defaultUserId );
+    }
+    long createCollection( String topic, long databaseId ) {
+        return createCollection( topic, databaseId, Catalog.defaultUserId );
+    }
+    long createCollection( String topic, int userId ) {
+        return createCollection( topic, Catalog.defaultDatabaseId, userId );
+    }
 
+    long createCollection( String topic, long databaseId, int userId ) {
 
-    void createCollection( String topic ) {
         Catalog catalog = Catalog.getInstance();
 
-        long schemaId;
-        //TODO: evtl. defaultDatabaseID anpassen + getSchema methodenaufruf
-        schemaId = catalog.getSchema( Catalog.defaultDatabaseId ).id;
+        // In case there is a namespace with the same name existing and is of Type Document, then that id of the existing schema will be used to create a collection.
+        long schemaId = schemaId = catalog.addNamespace( this.namespace, databaseId, userId, NamespaceType.DOCUMENT );
+
+        // check for namespace and NamespaceType:
+        try {
+            CatalogSchema schema = catalog.getSchema( databaseId, this.namespace );
+
+            if ( catalog.checkIfExistsSchema( databaseId, this.namespace ) && schema.namespaceType == NamespaceType.DOCUMENT ) {
+                schemaId =  schema.id;
+            }
+        } catch ( UnknownSchemaException e ) {
+            log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
+        }
+
+        //TODO: abfragen ob es collection schon gibt
+        //TODO: Namespace abfragen/erstellen und collection abfragen/erstellen in versch methoden machen
 
         Catalog.PlacementType placementType = Catalog.PlacementType.AUTOMATIC;
         Transaction transaction = null;
         Statement statement = null;
 
         try {
-            transaction = this.transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "MQTT Stream" );
+            transaction = this.transactionManager.startTransaction( Catalog.defaultUserId, databaseId, false, "MQTT Stream" );
             statement = transaction.createStatement();
         } catch ( Exception e ) {
             log.error( "An error occurred: {}", e.getMessage() );
@@ -73,16 +109,16 @@ public class StreamCapture {
             List<DataStore> dataStores = new ArrayList<>();
             DdlManager.getInstance().createCollection(
                     schemaId,
-                    this.namespace,
+                    topic,
                     true,   //only creates collection if it does not already exist.
                     dataStores.size() == 0 ? null : dataStores,
                     placementType,
                     statement );
             log.info( "Created Collection with name: {}", topic );
         } catch ( EntityAlreadyExistsException e ) {
-            throw new RuntimeException( "The generation of the collection was not possible, due to: " + e.getMessage() );
+            log.error( "The generation of the collection was not possible due to: " + e.getMessage() );
         }
-
+        return schemaId;
 
     }
 
@@ -106,15 +142,5 @@ public class StreamCapture {
 
     }
 
-
-    private void getTransaction() {
-        /**
-         try {
-         return transactionManager.startTransaction( userId, databaseId, false, "Stream Processing", Transaction.MultimediaFlavor.FILE );
-         } catch (UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
-         throw new RuntimeException( "Error while starting transaction", e );
-         }
-         **/
-    }
 
 }
