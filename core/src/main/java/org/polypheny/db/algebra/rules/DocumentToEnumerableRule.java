@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableLimit;
-import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
@@ -114,8 +113,8 @@ public class DocumentToEnumerableRule extends AlgOptRule {
         AlgTraitSet out = project.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( project.getInput(), EnumerableConvention.INSTANCE );
 
-        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.projects, project.getRowType() );
-        call.transformTo( enumerableProject );
+        // EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), out, input, project.projects, project.getRowType() );
+        //call.transformTo( enumerableProject );
     }
 
 

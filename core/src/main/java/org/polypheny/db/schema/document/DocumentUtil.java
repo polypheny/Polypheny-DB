@@ -265,7 +265,7 @@ public class DocumentUtil {
         if ( !removes.isEmpty() ) {
             updateChain = new RexCall(
                     new DocumentType(),
-                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ),
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ),
                     Arrays.asList(
                             updateChain,
                             getStringArray( removes, cluster ) ) );
@@ -319,7 +319,7 @@ public class DocumentUtil {
     public enum UpdateOperation {
         RENAME( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ) ),
         REPLACE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ) ),
-        REMOVE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ) );
+        REMOVE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ) );
 
         @Getter
         private final Operator operator;

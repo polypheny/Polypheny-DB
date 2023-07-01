@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
@@ -66,6 +67,7 @@ import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<RexNode> {
@@ -172,15 +174,16 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     public AlgNode visit( LogicalDocumentProject oProject ) {
         LogicalDocumentProject project = (LogicalDocumentProject) super.visit( oProject );
         List<RexNode> newProjects = new ArrayList<>();
-        for ( RexNode node : oProject.projects ) {
+        for ( RexNode node : oProject.includes.values() ) {
             newProjects.add( node.accept( this ) );
         }
         return new LogicalDocumentProject(
                 project.getCluster(),
                 project.getTraitSet(),
                 project.getInput(),
-                newProjects,
-                project.getRowType() );
+                Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
+                project.excludes
+        );
     }
 
 
@@ -388,7 +391,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         }
         AlgNode input = modify.getInput();
         if ( input instanceof LogicalDocumentValues ) {
-            List<RexNode> projects = new ArrayList<>();
+            Map<String, RexNode> projects = new HashMap<>();
             boolean firstRow = true;
             HashMap<Integer, Integer> idxMapping = new HashMap<>();
             this.batchSize = ((LogicalDocumentValues) input).documents.size();
@@ -405,7 +408,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
                 AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
                 if ( firstRow ) {
-                    projects.add( new RexDynamicParam( type, idx ) );
+                    projects.put( null, null );//new RexDynamicParam( type, idx ) );
                 }
                 if ( !values.containsKey( idx ) ) {
                     types.add( type );
@@ -416,13 +419,10 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 firstRow = false;
             }
             LogicalDocumentValues logicalValues = LogicalDocumentValues.createOneRow( input.getCluster() );
-            input = new LogicalDocumentProject(
-                    input.getCluster(),
-                    input.getTraitSet(),
+            input = LogicalDocumentProject.create(
                     logicalValues,
                     projects,
-                    input.getRowType()
-            );
+                    List.of() );
         }
         return new LogicalDocumentModify(
                 modify.getTraitSet(),

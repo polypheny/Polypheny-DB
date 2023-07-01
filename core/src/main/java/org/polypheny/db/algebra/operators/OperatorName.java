@@ -1338,7 +1338,7 @@ public enum OperatorName {
 
     MQL_UPDATE_REPLACE( LangFunctionOperator.class ),
 
-    MQL_UPDATE_REMOVE( LangFunctionOperator.class ),
+    MQL_REMOVE( LangFunctionOperator.class ),
 
     MQL_UPDATE( LangFunctionOperator.class ),
 
@@ -1359,6 +1359,8 @@ public enum OperatorName {
     MQL_JSONIFY( LangFunctionOperator.class ),
 
     MQL_MERGE( LangFunctionOperator.class ),
+
+    MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     MQL_RENAME( LangFunctionOperator.class ),
 

@@ -101,6 +101,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -291,6 +292,9 @@ public abstract class AlgOptUtil {
 
     public static boolean areRowTypesEqual( AlgDataType rowType1, AlgDataType rowType2, boolean compareNames ) {
         if ( rowType1 == rowType2 ) {
+            return true;
+        }
+        if ( rowType1 instanceof DocumentType || rowType2 instanceof DocumentType ) {
             return true;
         }
         if ( compareNames ) {

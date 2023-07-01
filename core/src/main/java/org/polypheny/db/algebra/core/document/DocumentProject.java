@@ -16,37 +16,60 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
 
 
+@EqualsAndHashCode(callSuper = false)
+@Value
+@NonFinal
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
-    public final List<? extends RexNode> projects;
+
+    public Map<String, ? extends RexNode> includes;
+    public List<String> excludes;
 
 
     /**
      * Creates a {@link DocumentProject}.
      * {@link ModelTrait#DOCUMENT} native node of a project.
      */
-    protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
+    protected DocumentProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, @NotNull Map<String, ? extends RexNode> includes, @NotNull List<String> excludes ) {
         super( cluster, traits, input );
-        this.projects = projects;
-        this.rowType = rowType;
+        this.includes = includes;
+        this.excludes = excludes;
+        this.rowType = DocumentType.ofDoc();
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + projects.hashCode() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + getInput().algCompareString();
     }
 
 
@@ -58,12 +81,47 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> exp = this.projects.stream().map( p -> (RexNode) p ).collect( Collectors.toList() );
+        List<RexNode> exp = this.includes.values().stream().map( p -> (RexNode) p ).collect( Collectors.toList() );
         List<RexNode> exps = shuttle.apply( exp );
         if ( exp == exps ) {
             return this;
         }
         return copy( traitSet, List.of( input ) );
+    }
+
+
+    public RexNode asSingleProject() {
+        RexBuilder builder = getCluster().getRexBuilder();
+        RexNode doc = RexIndexRef.of( 0, getRowType() );
+        List<RexNode> nodes = new ArrayList<>();
+        nodes.add( doc );
+        // null key is replaceRoot
+        nodes.add( builder.makeLiteral( PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( PolyString::of ).collect( Collectors.toList() ) ), builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
+        nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
+
+        if ( !includes.isEmpty() ) {
+            doc = builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
+
+            List<Entry<String, ? extends RexNode>> root = includes.entrySet().stream().filter( obj -> Objects.isNull( obj.getKey() ) ).collect( Collectors.toList() );
+            if ( !root.isEmpty() ) {
+                return builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REPLACE_ROOT ), root.get( 0 ).getValue() );
+            }
+        }
+
+        if ( !excludes.isEmpty() ) {
+            doc = builder.makeCall(
+                    getRowType(),
+                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ),
+                    doc,
+                    builder.makeArray(
+                            builder.getTypeFactory().createArrayType(
+                                    builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
+                                    -1 ),
+                            excludes.stream().map(
+                                    value -> PolyList.of( Arrays.stream( value.split( "\\." ) ).map( s -> PolyString.of( value ) ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ) );
+        }
+
+        return doc;
     }
 
 }

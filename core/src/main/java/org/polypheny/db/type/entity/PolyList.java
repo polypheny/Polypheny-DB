@@ -82,9 +82,19 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    /**
+     * Required due to limitation of call, where interfaces lead to errors.
+     */
+    @SuppressWarnings("unused")
+    @SafeVarargs
+    public static <E extends PolyValue> PolyList<E> ofExpression( E... values ) {
+        return new PolyList<>( values );
+    }
+
+
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyList.class, value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).collect( Collectors.toList() ) );
+        return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).collect( Collectors.toList() ) );
     }
 
 

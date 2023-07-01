@@ -64,6 +64,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -836,18 +837,18 @@ public class MqlToAlgConverter {
         }
 
         AlgNode finalNode = node;
-        node = LogicalDocumentProject.create( node,
+        /*node = LogicalDocumentProject.create( node,
                 node.getRowType().getFieldList()
                         .stream()
                         .map( el -> {
                             RexIndexRef ref = new RexIndexRef( el.getIndex(), finalNode.getRowType().getFieldList().get( el.getIndex() ).getType() );
                             /*if ( !el.getName().equals( "_id" ) ) {
                                 return DocumentUtil.createJsonify( ref, jsonType );
-                            } else {*/
+                            } else {
                             return ref;
                             //}
                         } )
-                        .collect( Collectors.toList() ), node.getRowType().getFieldNames() );
+                        .collect( Collectors.toList() ), node.getRowType().getFieldNames() );*/
         return node;
     }
 
@@ -868,13 +869,13 @@ public class MqlToAlgConverter {
             }
             BsonDocument doc = value.asDocument();
             if ( !doc.containsKey( "newRoot" ) ) {
-                throw new RuntimeException( "$replaceRoot requires a document with the key 'newRoot'" );
+                throw new GenericRuntimeException( "$replaceRoot requires a document with the key 'newRoot'" );
             }
             newRoot = doc.get( "newRoot" );
         }
 
         if ( !newRoot.isDocument() && !newRoot.isString() ) {
-            throw new RuntimeException( "The used root for $replaceRoot needs to either be a string or a document" );
+            throw new GenericRuntimeException( "The used root for $replaceRoot needs to either be a string or a document" );
         }
 
         DocumentProject project;
@@ -886,13 +887,18 @@ public class MqlToAlgConverter {
             );
         } else {
             if ( !newRoot.asString().getValue().startsWith( "$" ) ) {
-                throw new RuntimeException( "The used root needs to be a reference to a field" );
+                throw new GenericRuntimeException( "The used root needs to be a reference to a field" );
             }
+
+            BsonValue finalNewRoot = newRoot;
+            Map<String, RexNode> nodes = new HashMap<>() {{
+                put( null, getIdentifier( finalNewRoot.asString().getValue().substring( 1 ), node.getRowType() ) );
+            }};
 
             project = LogicalDocumentProject.create(
                     node,
-                    Collections.singletonList( getIdentifier( newRoot.asString().getValue().substring( 1 ), node.getRowType() ) ),
-                    Collections.singletonList( DocumentType.DOCUMENT_DATA )
+                    nodes,
+                    List.of()
             );
         }
         _dataExists = false;
@@ -1621,11 +1627,11 @@ public class MqlToAlgConverter {
 
     private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
         List<String> rowNames = rowType.getFieldNames();
-        if ( rowNames.contains( parentKey ) ) {
+        if ( false ) {
             if ( useAccess ) {
                 return attachAccess( parentKey, rowType );
             } else {
-                return RexNameRef.create( parentKey, rowType );
+                return attachRef( parentKey, rowType );
             }
         }
         // as it is possible to query relational schema with mql we have to block this step when this happens
@@ -1633,7 +1639,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "The used identifier is not part of the table." );
         }
 
-        if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
+        /*if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
             String[] keys = parentKey.split( "\\." );
             // we fix sub-documents in elemMatch queries by only passing the sub-key
             // that the replacing then only uses the array element and searches the sub-key there
@@ -1645,12 +1651,10 @@ public class MqlToAlgConverter {
                 return translateDocValue( rowNames.indexOf( keys[0] ), rowType, String.join( ".", names ), useAccess );
             }
 
-        } else if ( _dataExists ) {
-            // the default _data field does still exist
-            return translateDocValue( 0, rowType, parentKey, useAccess );
-        } else {
-            return null;
-        }
+        }*/
+        // the default _data field does still exist
+        return translateDocValue( 0, rowType, parentKey, false );
+
     }
 
 
@@ -2200,12 +2204,11 @@ public class MqlToAlgConverter {
     private AlgNode combineProjection( BsonValue projectionValue, AlgNode node, AlgDataType rowType, boolean isAddFields, boolean isUnset ) {
         Map<String, RexNode> includes = new HashMap<>();
         List<String> excludes = new ArrayList<>();
-        List<String> includesOrder = new ArrayList<>();
 
         BsonDocument projection;
         if ( projectionValue.isDocument() ) {
             projection = projectionValue.asDocument();
-            translateProjection( rowType, isAddFields, isUnset, includes, excludes, includesOrder, projection );
+            translateProjection( rowType, isAddFields, isUnset, includes, excludes, projection );
         } else if ( projectionValue.isArray() || projectionValue.isString() ) {
             List<BsonValue> array;
             if ( projectionValue.isArray() ) {
@@ -2213,7 +2216,7 @@ public class MqlToAlgConverter {
             } else if ( projectionValue.isString() ) {
                 array = new BsonArray( Collections.singletonList( projectionValue.asString() ) );
             } else {
-                throw new RuntimeException( "$unset or $addFields needs a string or an array of strings" );
+                throw new GenericRuntimeException( "$unset or $addFields needs a string or an array of strings" );
             }
 
             for ( BsonValue value : array ) {
@@ -2221,17 +2224,16 @@ public class MqlToAlgConverter {
                     excludes.add( value.asString().getValue() );
                 } else {
                     includes.put( value.asString().getValue(), getIdentifier( value.asString().getValue(), rowType ) );
-                    includesOrder.add( value.asString().getValue() );
                 }
             }
 
 
         } else {
-            throw new RuntimeException( "The provided projection was not translatable" );
+            throw new GenericRuntimeException( "The provided projection was not translatable" );
         }
 
         if ( includes.size() != 0 && excludes.size() != 0 ) {
-            throw new RuntimeException( "Include projection and exclude projections are not possible at the same time." );
+            throw new GenericRuntimeException( "Include projection and exclude projections are not possible at the same time." );
         }
 
         if ( excludes.size() > 0 ) {
@@ -2253,7 +2255,7 @@ public class MqlToAlgConverter {
                     this.excludedId = true;
                 }*/
 
-                return LogicalDocumentProject.create( node, values, names );
+                return LogicalDocumentProject.create( node, includes, excludes );
             } else {
                 // we already projected the _data field away and have to work with what we got
                 List<RexNode> values = new ArrayList<>();
@@ -2298,26 +2300,24 @@ public class MqlToAlgConverter {
 
             return node;
         } else if ( includes.size() > 0 ) {
-            List<RexNode> values = includesOrder.stream().map( includes::get ).collect( Collectors.toList() );
 
-            if ( !includes.containsKey( DocumentType.DOCUMENT_ID ) && !excludes.contains( DocumentType.DOCUMENT_ID ) ) {
-                includesOrder.add( 0, DocumentType.DOCUMENT_ID );
-                values.add( 0, translateDocValue( 0, rowType, DocumentType.DOCUMENT_ID, false ) );
+            if ( !includes.containsKey( DocumentType.DOCUMENT_ID ) ) {
+                includes.put( DocumentType.DOCUMENT_ID, getIdentifier( DocumentType.DOCUMENT_ID, rowType ) );
             }
 
             if ( isAddFields ) {
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                /*for ( AlgDataTypeField field : rowType.getFieldList() ) {
                     if ( !includesOrder.contains( field.getName() ) ) {
                         includesOrder.add( field.getName() );
                         values.add( RexIndexRef.of( field.getIndex(), rowType ) );
                     }
-                }
+                }*/
             }
 
             // the _data field does no longer exist, as we made a projection "out" of it
-            this._dataExists = false;
+            // this._dataExists = false;
 
-            return LogicalDocumentProject.create( node, values, includesOrder );
+            return LogicalDocumentProject.create( node, new ArrayList<>( includes.values() ), new ArrayList<>( includes.keySet() ) );
         }
         return node;
     }
@@ -2342,17 +2342,15 @@ public class MqlToAlgConverter {
      * @param isUnset if the projection is a <code>$unset</code>, which is exclusive projection
      * @param includes which fields are includes, as in <code>"field":1</code>
      * @param excludes which fields are includes, as in <code>"field":0</code>
-     * @param includesOrder order collection to assure same projection order on retrieval
      * @param projection document, which defines the structure of the projection
      */
-    private void translateProjection( AlgDataType rowType, boolean isAddFields, boolean isUnset, Map<String, RexNode> includes, List<String> excludes, List<String> includesOrder, BsonDocument projection ) {
+    private void translateProjection( AlgDataType rowType, boolean isAddFields, boolean isUnset, Map<String, RexNode> includes, List<String> excludes, BsonDocument projection ) {
         for ( Entry<String, BsonValue> entry : projection.entrySet() ) {
             BsonValue value = entry.getValue();
             if ( value.isNumber() && !isAddFields ) {
                 // we have a simple projection; [name]: 1 (include) or [name]:0 (exclude)
                 if ( value.asNumber().intValue() == 1 ) {
                     includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
-                    includesOrder.add( entry.getKey() );
                 } else if ( value.asNumber().intValue() == 0 ) {
                     excludes.add( entry.getKey() );
                 }
@@ -2362,24 +2360,19 @@ public class MqlToAlgConverter {
                 String oldName = value.asString().getValue().substring( 1 );
 
                 includes.put( entry.getKey(), getIdentifier( oldName, rowType ) );
-                includesOrder.add( entry.getKey() );
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
                 if ( mathOperators.containsKey( func ) ) {
                     includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
-                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$arrayElemAt" ) ) {
                     includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType ) );
-                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$slice" ) ) {
                     includes.put( entry.getKey(), convertSlice( entry.getKey(), value.asDocument().get( func ), rowType ) );
-                    includesOrder.add( entry.getKey() );
                 } else if ( func.equals( "$literal" ) ) {
                     if ( value.asDocument().get( func ).isInt32() && value.asDocument().get( func ).asInt32().getValue() == 0 ) {
                         excludes.add( entry.getKey() );
                     } else {
                         includes.put( entry.getKey(), getIdentifier( entry.getKey(), rowType ) );
-                        includesOrder.add( entry.getKey() );
                     }
                 }
             } else if ( isAddFields && !value.isDocument() ) {
@@ -2392,13 +2385,12 @@ public class MqlToAlgConverter {
                 } else {
                     includes.put( entry.getKey(), convertLiteral( value ) );
                 }
-                includesOrder.add( entry.getKey() );
             } else if ( isUnset && value.isArray() ) {
                 for ( BsonValue bsonValue : value.asArray() ) {
                     if ( bsonValue.isString() ) {
                         excludes.add( bsonValue.asString().getValue() );
                     } else {
-                        throw new RuntimeException( "When using $unset with an array, it can only contain strings" );
+                        throw new GenericRuntimeException( "When using $unset with an array, it can only contain strings" );
                     }
                 }
             } else {
@@ -2408,7 +2400,7 @@ public class MqlToAlgConverter {
                 } else {
                     msg = "After a projection there needs to be either a renaming, a literal or a function.";
                 }
-                throw new RuntimeException( msg );
+                throw new GenericRuntimeException( msg );
             }
         }
     }

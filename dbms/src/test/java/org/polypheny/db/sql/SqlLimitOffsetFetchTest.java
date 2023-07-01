@@ -336,8 +336,8 @@ public class SqlLimitOffsetFetchTest {
 
     // TODO:
     //  INSERT with LIMIT, OFFSET, FETCH (?)
-    //  UPDATE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
-    //  DELETE with LIMIT, OFFSET, FETCH (?)  --> Add to doc if this is working
+    //  UPDATE with LIMIT, OFFSET, FETCH (?)  --> Add to document if this is working
+    //  DELETE with LIMIT, OFFSET, FETCH (?)  --> Add to document if this is working
     //  INNER SELECTS with LIMIT, OFFSET, FETCH
 
 }

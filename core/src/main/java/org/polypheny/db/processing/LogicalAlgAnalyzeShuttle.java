@@ -246,7 +246,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalDocumentProject project ) {
-        hashBasis.add( "LogicalDocumentProject#" + project.projects.size() );
+        hashBasis.add( "LogicalDocumentProject#" + project.includes.size() + "$" + project.excludes.size() );
         super.visit( project );
         project.accept( this.rexShuttle );
         return project;

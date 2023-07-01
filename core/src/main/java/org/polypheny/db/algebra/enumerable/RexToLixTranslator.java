@@ -138,8 +138,17 @@ public class RexToLixTranslator {
 
 
     private RexToLixTranslator(
-            @Nullable RexProgram program, JavaTypeFactory typeFactory, Expression root, InputGetter inputGetter, BlockBuilder list,
-            Map<? extends RexNode, Boolean> exprNullableMap, RexBuilder builder, Conformance conformance, @Nullable RexToLixTranslator parent, @Nullable Function1<String, InputGetter> correlates, Map<RexNode, Expression> replace ) {
+            @Nullable RexProgram program,
+            JavaTypeFactory typeFactory,
+            Expression root,
+            InputGetter inputGetter,
+            BlockBuilder list,
+            Map<? extends RexNode, Boolean> exprNullableMap,
+            RexBuilder builder,
+            Conformance conformance,
+            @Nullable RexToLixTranslator parent,
+            @Nullable Function1<String, InputGetter> correlates,
+            Map<RexNode, Expression> replace ) {
         this.program = program;
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.conformance = Objects.requireNonNull( conformance );

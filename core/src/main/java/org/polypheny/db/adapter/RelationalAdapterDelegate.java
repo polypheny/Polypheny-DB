@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.NotSupportedException;
 import lombok.AllArgsConstructor;
@@ -27,7 +28,6 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
@@ -195,7 +195,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     private Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
-        builder.documentProject( updates.right, updates.left );
+        builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), List.of() );
 
         return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFieldList().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
@@ -469,7 +469,7 @@ public class RelationalAdapterDelegate implements Modifiable {
             assert alg.getUpdates().size() == 1;
             AlgNode old = builder.build();
             builder.push(
-                    LogicalDocumentProject.create( old, List.of( alg.getUpdates().get( 0 ) ), List.of( old.getRowType().getFieldList().get( 0 ).getName() ) ) );
+                    LogicalDocumentProject.create( old, Map.of( old.getRowType().getFieldList().get( 0 ).getName(), alg.getUpdates().get( 0 ) ), List.of() ) );
         }
         AlgNode query = builder.build();
         //query = createDocumentTransform( query, rexBuilder );
@@ -516,7 +516,7 @@ public class RelationalAdapterDelegate implements Modifiable {
                 break;
             case PROJECT:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
-                builder.push( LogicalDocumentProject.create( builder.build(), ((DocumentProject) alg).projects, alg.getRowType().getFieldNames() ) );
+                builder.push( alg.copy( alg.getTraitSet(), List.of( builder.build() ) ) );
                 break;
             case FILTER:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );

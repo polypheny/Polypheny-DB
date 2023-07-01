@@ -211,7 +211,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_UPDATE_REPLACE, new LangFunctionOperator( "MQL_UPDATE_REPLACE", Kind.MQL_UPDATE_REPLACE ) );
 
-        register( OperatorName.MQL_UPDATE_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE ) );
+        register( OperatorName.MQL_REMOVE, new LangFunctionOperator( "MQL_UPDATE_REMOVE", Kind.MQL_UPDATE_REMOVE ) );
 
         register( OperatorName.MQL_UPDATE, new LangFunctionOperator( "MQL_UPDATE", Kind.MQL_UPDATE ) );
 
@@ -234,6 +234,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
 
         register( OperatorName.MQL_RENAME, new LangFunctionOperator( OperatorName.MQL_RENAME.name(), Kind.OTHER ) );
+
+        register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
 
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 

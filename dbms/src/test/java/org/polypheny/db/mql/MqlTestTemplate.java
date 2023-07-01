@@ -84,6 +84,21 @@ public class MqlTestTemplate {
     }
 
 
+    public static String document( String... entries ) {
+        return String.format( "{ %s }", String.join( ",", entries ) );
+    }
+
+
+    public static String str( String string ) {
+        return String.format( "\"%s\"", string );
+    }
+
+
+    public static String kv( String key, Object value ) {
+        return String.format( "%s : %s", key, value );
+    }
+
+
     protected String $addFields( String doc ) {
         return "{\"$addFields\":" + doc + "}";
     }

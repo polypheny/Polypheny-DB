@@ -76,6 +76,11 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     }
 
 
+    public static AlgDataType ofDoc() {
+        return new DocumentType( List.of( new AlgDataTypeFieldImpl( "d", 0, DocumentType.ofId() ) ) );
+    }
+
+
     private String computeDigest() {
         assert fixedFields != null;
         return getClass().getSimpleName() +

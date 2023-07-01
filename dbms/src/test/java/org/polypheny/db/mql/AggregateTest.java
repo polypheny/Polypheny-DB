@@ -273,13 +273,15 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceWithTest() {
-        List<String> expected = Arrays.asList( "1",
-                null,
-                "13" );
+        // todo not document should throw
+        List<String> expected = Arrays.asList(
+                document( kv( str( "key" ), 1 ) ),
+                document( kv( str( "key1" ), 5 ) ),
+                document( kv( str( "key" ), 13 ) ) );
 
         insertMany( DATA_2 );
 
-        DocResult result = aggregate( $replaceWith( "$test.key" ) );
+        DocResult result = aggregate( $replaceWith( "$test" ) );
 
         MongoConnection.checkDocResultSet( result, expected, false, true );
     }
@@ -365,11 +367,11 @@ public class AggregateTest extends MqlTestTemplate {
         MongoConnection.checkDocResultSet( result, expected, true, true );
 
         expected = ImmutableList.of(
-                "{}",
-                "{}",
-                "{}" );
+                document(),
+                document(),
+                document() );
 
-        result = aggregate( $unset( Arrays.asList( "\"key\"", "\"test\"" ) ) );
+        result = aggregate( $unset( Arrays.asList( str( "key" ), str( "test" ) ) ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
     }

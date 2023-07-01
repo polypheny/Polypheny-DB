@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -40,7 +41,7 @@ public class DocumentProjectToCalcRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
-        final RexProgram program = RexProgram.create( input.getRowType(), project.projects, null, project.getRowType(), project.getCluster().getRexBuilder() );
+        final RexProgram program = RexProgram.create( input.getRowType(), List.of( project.asSingleProject() ), null, project.getRowType(), project.getCluster().getRexBuilder() );
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
 

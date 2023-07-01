@@ -468,7 +468,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     private List<Expression> fieldReferences( final Expression parameter, final List<Integer> fields ) {
-        return new AbstractList<Expression>() {
+        return new AbstractList<>() {
             @Override
             public Expression get( int index ) {
                 return fieldReference( parameter, fields.get( index ) );

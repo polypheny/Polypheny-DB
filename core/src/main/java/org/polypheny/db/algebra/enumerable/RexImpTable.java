@@ -417,11 +417,12 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_ADD_TO_SET ), BuiltInMethod.DOC_UPDATE_ADD_TO_SET.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ), BuiltInMethod.DOC_UPDATE_RENAME.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ), BuiltInMethod.DOC_UPDATE_REPLACE.method, NullPolicy.STRICT );
-        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REMOVE ), BuiltInMethod.DOC_UPDATE_REMOVE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ), BuiltInMethod.DOC_REMOVE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_EXISTS ), BuiltInMethod.DOC_EXISTS.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), BuiltInMethod.DOC_JSONIZE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), BuiltInMethod.DOC_MERGE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_RENAME ), BuiltInMethod.DOC_RENAME.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.DOC_REPLACE_ROOT.method, NullPolicy.STRICT );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
 

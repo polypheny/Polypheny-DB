@@ -860,9 +860,7 @@ public class RexProgramBuilder {
             final int index = input.getIndex();
             if ( valid ) {
                 // The expression should already be valid. Check that its index is within bounds.
-                if ( (index < 0) || (index >= inputRowType.getFieldCount()) ) {
-                    assert false : "RexInputRef index " + index + " out of range 0.." + (inputRowType.getFieldCount() - 1);
-                }
+                assert (index >= 0) && (index < inputRowType.getFieldCount()) : "RexInputRef index " + index + " out of range 0.." + (inputRowType.getFieldCount() - 1);
 
                 // Check that the type is consistent with the referenced field. If it is an object type, the rules are different, so skip the check.
                 assert input.getType().isStruct() || AlgOptUtil.eq(
@@ -874,8 +872,7 @@ public class RexProgramBuilder {
             }
 
             // Return a reference to the N'th expression, which should be equivalent.
-            final RexLocalRef ref = localRefList.get( index );
-            return ref;
+            return localRefList.get( index );
         }
 
 
@@ -908,6 +905,15 @@ public class RexProgramBuilder {
                     return registerInternal( local, false );
                 }
             }
+        }
+
+
+        @Override
+        public RexNode visitNameRef( RexNameRef nameRef ) {
+            final int index = 0;
+
+            // Return a reference to the N'th expression, which should be equivalent.
+            return localRefList.get( index );
         }
 
     }
@@ -980,7 +986,7 @@ public class RexProgramBuilder {
     /**
      * Shuttle which rewires {@link RexLocalRef} using a list of updated references
      */
-    private class UpdateRefShuttle extends RexShuttle {
+    private static class UpdateRefShuttle extends RexShuttle {
 
         private List<RexLocalRef> newRefs;
 

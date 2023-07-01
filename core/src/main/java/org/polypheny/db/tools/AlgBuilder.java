@@ -1399,8 +1399,8 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documentProject( List<? extends RexNode> projects, List<String> names ) {
-        stack.add( new Frame( LogicalDocumentProject.create( build(), projects, names ) ) );
+    public AlgBuilder documentProject( Map<String, RexNode> includes, List<String> excludes ) {
+        stack.add( new Frame( LogicalDocumentProject.create( build(), includes, excludes ) ) );
         return this;
     }
 

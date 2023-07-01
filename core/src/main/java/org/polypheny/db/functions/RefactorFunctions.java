@@ -16,7 +16,9 @@
 
 package org.polypheny.db.functions;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
@@ -66,6 +68,16 @@ public class RefactorFunctions {
         }
 
         return target.asDocument();
+    }
+
+
+    public static PolyDocument mergeDocuments( PolyString[] keys, PolyValue... values ) {
+        Map<PolyString, PolyValue> map = new HashMap<>();
+        for ( int i = 0; i < keys.length; i++ ) {
+            map.put( keys[i], values[i] );
+        }
+
+        return PolyDocument.ofDocument( map );
     }
 
 

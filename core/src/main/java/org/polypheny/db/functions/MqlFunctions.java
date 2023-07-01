@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -195,29 +196,31 @@ public class MqlFunctions {
      * @return the object/document, without the filtered name
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateRemove( Object input, List names ) {
-        // TODO enable as soon as pushing down of Modify is possible
-        Map<String, ?> initial = (Map) deserializeBsonIfNecessary( input );
-        Map<String, ?> doc = initial;
-        String name;
-        Iterator<String> iter = names.iterator();
-        while ( iter.hasNext() ) {
-            name = iter.next();
-            if ( doc.containsKey( name ) ) {
-                if ( !iter.hasNext() ) {
-                    doc.remove( name );
-                } else {
-                    if ( doc.get( name ) instanceof Map ) {
-                        doc = (Map<String, ?>) doc.get( name );
+    public static PolyValue docRemove( PolyValue input, List<List<PolyString>> names ) {
+        // Map<PolyString, PolyValue> initial = (Map) deserializeBsonIfNecessary( input );
+        Map<PolyString, PolyValue> doc = input.asDocument();
+        PolyString name;
+        for ( List<PolyString> split : names ) {
+            Iterator<PolyString> iter = split.iterator();
+            check:
+            while ( iter.hasNext() ) {
+                name = iter.next();
+                if ( doc.containsKey( name ) ) {
+                    if ( !iter.hasNext() ) {
+                        doc.remove( name );
                     } else {
-                        return docJsonify( initial );
-                    }
+                        if ( doc.get( name ).isDocument() ) {
+                            doc = doc.get( name ).asDocument();
+                        } else {
+                            break check;
+                        }
 
+                    }
                 }
             }
         }
 
-        return docJsonify( initial );
+        return input;
     }
 
 
@@ -283,6 +286,15 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyDocument renameDocument( PolyValue doc, PolyString key, PolyString rename ) {
         return new PolyDocument( rename, doc.asDocument().map.get( key ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyDocument replaceRoot( PolyValue doc ) {
+        if ( !doc.isDocument() ) {
+            throw new GenericRuntimeException( "Can only be replaced by document" );
+        }
+        return doc.asDocument();
     }
 
 
@@ -441,7 +453,7 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument mergeDocument( PolyList<PolyString> names, PolyValue... documents ) {
+    public static PolyDocument mergeDocument( PolyValue value, PolyList<PolyString> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
         for ( int i = 0; i < documents.length; i++ ) {

@@ -240,7 +240,7 @@ public class RexBuilder {
     /**
      * Creates a call with a list of arguments and a predetermined type.
      */
-    public RexNode makeCall( AlgDataType returnType, Operator op, List<RexNode> exprs ) {
+    public RexNode makeCall( AlgDataType returnType, Operator op, List<? extends RexNode> exprs ) {
         return new RexCall( returnType, op, exprs );
     }
 
