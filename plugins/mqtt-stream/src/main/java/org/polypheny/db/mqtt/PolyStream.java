@@ -16,11 +16,72 @@
 
 package org.polypheny.db.mqtt;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+
 public class PolyStream {
 
-    // Representation of 1 message in a namespace
-    String topic;
-    String message;
-    String namespace;
+    // Representation of 1 content in a namespace
+    @Getter
+    final String topic;
+
+    @Getter
+    final String uniqueNameInterface;
+    @Getter
+    final String content;
+    @Getter
+    final String namespace;
+    @Getter
+    @Setter
+    long namespaceID;
+    @Getter
+    final long databaseId;
+    @Getter
+    final int userId;
+    @Getter
+    @Setter
+    long storeID;   // the ID of collection/graph/table... the place where info is/should be saved
+
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId ) {
+        this.topic = topic;
+        this.uniqueNameInterface = uniqueNameInterface;
+        this.content = content;
+        this.namespace = namespace;
+        this.databaseId = databaseId;
+        this.userId = userId;
+    }
+
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId ) {
+        this.topic = topic;
+        this.uniqueNameInterface = uniqueNameInterface;
+        this.content = content;
+        this.namespace = namespace;
+        this.namespaceID = namespaceID;
+        this.databaseId = databaseId;
+        this.userId = userId;
+    }
+
+
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId, long storeID ) {
+        this.topic = topic;
+        this.uniqueNameInterface = uniqueNameInterface;
+        this.content = content;
+        this.namespace = namespace;
+        this.databaseId = databaseId;
+        this.userId = userId;
+        this.storeID = storeID;
+    }
+
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId, long storeID ) {
+        this.topic = topic;
+        this.uniqueNameInterface = uniqueNameInterface;
+        this.content = content;
+        this.namespace = namespace;
+        this.namespaceID = namespaceID;
+        this.databaseId = databaseId;
+        this.userId = userId;
+        this.storeID = storeID;
+    }
 
 }
