@@ -18,14 +18,10 @@ package org.polypheny.db.jupyter;
 
 import com.google.gson.JsonObject;
 import io.javalin.http.Context;
-import java.io.File;
-
-import java.security.SecureRandom;
-import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.iface.Authenticator;
@@ -36,6 +32,10 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.HttpServer.HandlerType;
+
+import java.io.File;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
 @Slf4j
 public class JupyterPlugin extends Plugin {
@@ -86,21 +86,21 @@ public class JupyterPlugin extends Plugin {
 
     private void startContainer() {
         token = generateToken();
-        log.error( "Token: {}", token );
+        log.error("Token: {}", token);
         PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-        rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
+        rootPath = fileSystemManager.registerNewFolder("data/jupyter");
 
-        log.info( "trying to start jupyter container..." );
-        DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/jupyter-server", UNIQUE_NAME, dockerInstanceId )
-                .withMappedPort( 8888, PORT )
-                .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
-                .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
-                .withReadyTest( this::testConnection, 20000 )
+        log.info("Deploying Jupyter container...");
+        DockerManager.Container container = new DockerManager.ContainerBuilder(adapterId, "polypheny/polypheny-jupyter-server", UNIQUE_NAME, dockerInstanceId)
+                .withMappedPort(8888, PORT)
+                .withBindMount(rootPath.getAbsolutePath(), SERVER_TARGET_PATH)
+                .withInitCommands(Arrays.asList("start-notebook.sh", "--IdentityProvider.token=" + token))
+                .withReadyTest(this::testConnection, 20000)
                 .build();
         this.container = container;
-        DockerManager.getInstance().initialize( container ).start();
+        DockerManager.getInstance().initialize(container).start();
         this.host = container.getIpAddress();
-        log.info( "Jupyter container started with ip " + container.getIpAddress() );
+        log.info("Jupyter container started with ip " + container.getIpAddress());
     }
 
 
