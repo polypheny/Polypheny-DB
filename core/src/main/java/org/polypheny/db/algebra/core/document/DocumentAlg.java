@@ -27,7 +27,7 @@ public interface DocumentAlg {
     DocType getDocType();
 
     enum DocType {
-        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, MODIFY
+        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, UNWIND, MODIFY
     }
 
 }

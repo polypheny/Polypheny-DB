@@ -20,42 +20,46 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.util.ImmutableBitSet;
 
 
 public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
     public final boolean indicator;
     public final List<AggregateCall> aggCalls;
-    public final ImmutableBitSet groupSet;
-    public final ImmutableList<ImmutableBitSet> groupSets;
+    public final List<String> groupSet;
+    public final List<List<String>> groupSets;
+    public final List<String> names;
 
 
     /**
      * Creates a {@link DocumentAggregate}.
      * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, @NotNull List<String> groupSet, List<List<String>> groupSets, List<AggregateCall> aggCalls, List<String> names ) {
         super( cluster, traits, child );
         this.indicator = indicator; // true is allowed, but discouraged
         this.aggCalls = ImmutableList.copyOf( aggCalls );
         this.groupSet = Objects.requireNonNull( groupSet );
+        this.names = names;
         if ( groupSets == null ) {
             this.groupSets = ImmutableList.of( groupSet );
         } else {
             this.groupSets = ImmutableList.copyOf( groupSets );
-            assert ImmutableBitSet.ORDERING.isStrictlyOrdered( groupSets ) : groupSets;
-            for ( ImmutableBitSet set : groupSets ) {
+            //assert ImmutableBitSet.ORDERING.isStrictlyOrdered( groupSets ) : groupSets;
+            /*for ( List<String> set : groupSets ) {
                 assert groupSet.contains( set );
-            }
+            }*/
         }
-        assert groupSet.length() <= child.getRowType().getFieldCount();
+        assert groupSet.size() <= child.getRowType().getFieldCount();
+        this.rowType = DocumentType.ofDoc();
     }
 
 

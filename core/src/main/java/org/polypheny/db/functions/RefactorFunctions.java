@@ -63,14 +63,16 @@ public class RefactorFunctions {
     @SafeVarargs
     @SuppressWarnings("unused")
     public static PolyDocument mergeDocuments( PolyValue target, Pair<String, PolyValue>... additional ) {
+        Map<PolyString, PolyValue> map = new HashMap<>( target.asDocument() );
         for ( Pair<String, PolyValue> pair : additional ) {
-            target.asDocument().put( new PolyString( pair.left ), pair.right );
+            map.put( new PolyString( pair.left ), pair.right );
         }
 
-        return target.asDocument();
+        return PolyDocument.ofDocument( map );
     }
 
 
+    @SuppressWarnings("unused")
     public static PolyDocument mergeDocuments( PolyString[] keys, PolyValue... values ) {
         Map<PolyString, PolyValue> map = new HashMap<>();
         for ( int i = 0; i < keys.length; i++ ) {

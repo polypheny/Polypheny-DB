@@ -89,7 +89,7 @@ public class MqlTestTemplate {
     }
 
 
-    public static String str( String string ) {
+    public static String string( String string ) {
         return String.format( "\"%s\"", string );
     }
 

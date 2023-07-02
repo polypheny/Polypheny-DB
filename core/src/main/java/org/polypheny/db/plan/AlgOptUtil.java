@@ -313,6 +313,10 @@ public abstract class AlgOptUtil {
             if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
                 continue;
             }
+            if ( type1.getPolyType() == PolyType.DOCUMENT || type2.getPolyType() == PolyType.DOCUMENT ) {
+                continue;
+            }
+
             if ( !type1.equals( type2 ) ) {
                 return false;
             }
@@ -324,13 +328,13 @@ public abstract class AlgOptUtil {
     /**
      * Verifies that a row type being added to an equivalence class matches the existing type, raising an assertion if this is not the case.
      *
-     * @param originalRel canonical alg for equivalence class
-     * @param newRel alg being added to equivalence class
+     * @param originalAlg canonical alg for equivalence class
+     * @param newAlg alg being added to equivalence class
      * @param equivalenceClass object representing equivalence class
      */
-    public static void verifyTypeEquivalence( AlgNode originalRel, AlgNode newRel, Object equivalenceClass ) {
-        AlgDataType expectedRowType = originalRel.getRowType();
-        AlgDataType actualRowType = newRel.getRowType();
+    public static void verifyTypeEquivalence( AlgNode originalAlg, AlgNode newAlg, Object equivalenceClass ) {
+        AlgDataType expectedRowType = originalAlg.getRowType();
+        AlgDataType actualRowType = newAlg.getRowType();
 
         // Row types must be the same, except for field names.
         if ( areRowTypesEqual( expectedRowType, actualRowType, false ) ) {
@@ -341,7 +345,7 @@ public abstract class AlgOptUtil {
                 + "set type is " + expectedRowType.getFullTypeString()
                 + "\nexpression type is " + actualRowType.getFullTypeString()
                 + "\nset is " + equivalenceClass.toString()
-                + "\nexpression is " + AlgOptUtil.toString( newRel );
+                + "\nexpression is " + AlgOptUtil.toString( newAlg );
         throw new AssertionError( s );
     }
 

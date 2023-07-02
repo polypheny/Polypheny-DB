@@ -1920,11 +1920,11 @@ public class AlgBuilder {
             RexNode node = registrar.extraNodes.get( groupField );
             final Kind kind = node.getKind();
             if ( Objects.requireNonNull( kind ) == Kind.INPUT_REF ) {
-                if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
+                /*if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
                     fields.add( frame.unstructured.get( ((RexIndexRef) node).getIndex() ) );
-                } else {
-                    fields.add( frame.structured.get( ((RexIndexRef) node).getIndex() ) );
-                }
+                } else {*/
+                fields.add( frame.structured.get( ((RexIndexRef) node).getIndex() ) );
+                //}
 
             } else {
                 String name = aggregateFields.get( i ).getName();

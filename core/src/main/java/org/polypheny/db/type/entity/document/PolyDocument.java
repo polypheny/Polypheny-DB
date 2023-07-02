@@ -133,7 +133,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public String toJson() {
-        return "{" + map.entrySet().stream().map( e -> String.format( (e.getValue() != null && e.getValue().isString() ? "%s:\"%s\"" : "%s:%s"), e.getKey().toJson(), e.getValue() == null ? JsonNull.INSTANCE.toString() : e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
+        return "{" + map.entrySet().stream().map( e -> String.format( (e.getValue() != null && !e.getValue().isNull() && e.getValue().isString() ? "\"%s\":\"%s\"" : "\"%s\":%s"), e.getKey().toJson(), e.getValue() == null ? JsonNull.INSTANCE.toString() : e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
 

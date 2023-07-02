@@ -41,12 +41,12 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
+public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
 
     /**
-     * Creates a {@link EnumerableUnwind}.
+     * Creates a {@link EnumerableLpgUnwind}.
      */
-    protected EnumerableUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
+    protected EnumerableLpgUnwind( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, int index, String alias ) {
         super( cluster, traits, input, index, alias );
     }
 
@@ -59,7 +59,7 @@ public class EnumerableUnwind extends LpgUnwind implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
+        return new EnumerableLpgUnwind( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), index, alias );
     }
 
 

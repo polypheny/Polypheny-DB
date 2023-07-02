@@ -63,7 +63,6 @@ import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
-import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
@@ -1026,7 +1025,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
-        AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeDocument( builder, (AlgNode & DocumentAlg) logicalRoot.alg, statement );
+        AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeDocument( builder, logicalRoot.alg, statement );
         return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
     }
 

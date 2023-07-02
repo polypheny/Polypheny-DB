@@ -526,7 +526,7 @@ public class RelationalAdapterDelegate implements Modifiable {
             case AGGREGATE:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 LogicalDocumentAggregate aggregate = (LogicalDocumentAggregate) alg;
-                builder.push( LogicalDocumentAggregate.create( builder.build(), aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls ) );
+                builder.push( LogicalDocumentAggregate.create( builder.build(), aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls, aggregate.names ) );
                 break;
             case SORT:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );

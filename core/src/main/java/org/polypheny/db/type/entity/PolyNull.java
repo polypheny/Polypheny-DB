@@ -16,6 +16,20 @@
 
 package org.polypheny.db.type.entity;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.NonNull;
 import org.apache.calcite.avatica.util.ByteString;
@@ -41,7 +55,7 @@ public class PolyNull extends PolyValue {
     public static PolyNull NULL = new PolyNull();
 
 
-    private PolyNull() {
+    public PolyNull() {
         super( PolyType.NULL );
     }
 
@@ -49,6 +63,12 @@ public class PolyNull extends PolyValue {
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         return o.isNull() ? 0 : -1;
+    }
+
+
+    @Override
+    public String toJson() {
+        return "null";
     }
 
 
@@ -72,7 +92,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyInteger asInteger() {
-        return PolyInteger.of( (Integer) null );
+        return PolyInteger.of( null );
     }
 
 
@@ -337,6 +357,43 @@ public class PolyNull extends PolyValue {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyNull.class );
+    }
+
+
+    public static class PolyNullSerializerDef extends SimpleSerializerDef<PolyNull> {
+
+        @Override
+        protected BinarySerializer<PolyNull> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyNull item ) {
+
+                }
+
+
+                @Override
+                public PolyNull decode( BinaryInput in ) throws CorruptedDataException {
+                    return PolyNull.NULL;
+                }
+            };
+        }
+
+    }
+
+
+    public static class PolyNullSerializer implements JsonDeserializer<PolyNull>, JsonSerializer<PolyNull> {
+
+        @Override
+        public PolyNull deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            return PolyNull.NULL;
+        }
+
+
+        @Override
+        public JsonElement serialize( PolyNull src, Type typeOfSrc, JsonSerializationContext context ) {
+            return JsonNull.INSTANCE;
+        }
+
     }
 
 }

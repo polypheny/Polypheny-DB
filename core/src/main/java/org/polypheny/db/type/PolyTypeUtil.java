@@ -953,7 +953,7 @@ public abstract class PolyTypeUtil {
     public static List<AlgDataType> projectTypes( final AlgDataType rowType, final List<? extends Number> requiredFields ) {
         final List<AlgDataTypeField> fields = rowType.getFieldList();
 
-        return new AbstractList<AlgDataType>() {
+        return new AbstractList<>() {
             @Override
             public AlgDataType get( int index ) {
                 return fields.get( requiredFields.get( index ).intValue() ).getType();

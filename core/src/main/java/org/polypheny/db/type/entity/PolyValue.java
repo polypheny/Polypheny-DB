@@ -61,6 +61,8 @@ import org.polypheny.db.type.entity.PolyInterval.PolyIntervalSerializer;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializer;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyLong.PolyLongSerializer;
+import org.polypheny.db.type.entity.PolyNull.PolyNullSerializer;
+import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializer;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.PolySymbol.PolySymbolSerializer;
@@ -121,6 +123,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyList.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
+            .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
             .build( PolyValue.class );
 
     // used to serialize to Json
@@ -144,6 +147,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .registerTypeAdapter( PolyDate.class, new PolyDateSerializer() )
             .registerTypeAdapter( PolyTimeStamp.class, new PolyTimeStampSerializer() )
             .registerTypeAdapter( PolyInterval.class, new PolyIntervalSerializer() )
+            .registerTypeAdapter( PolyNull.class, new PolyNullSerializer() )
             .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() );
 
 

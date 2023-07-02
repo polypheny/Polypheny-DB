@@ -56,6 +56,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -102,7 +103,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 
@@ -716,8 +716,8 @@ public class MqlToAlgConverter {
 
         return LogicalDocumentAggregate.create(
                 node,
-                ImmutableBitSet.of(),
-                Collections.singletonList( ImmutableBitSet.of() ),
+                List.of(),
+                null,
                 Collections.singletonList(
                         AggregateCall.create(
                                 OperatorRegistry.getAgg( OperatorName.COUNT ),
@@ -728,7 +728,8 @@ public class MqlToAlgConverter {
                                 AlgCollations.EMPTY,
                                 cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
                                 query.isEstimate() ? "estimatedCount" : "count"
-                        ) ) );
+                        ) ),
+                List.of( "count" ) );
     }
 
 
@@ -933,36 +934,7 @@ public class MqlToAlgConverter {
         }
         path = path.substring( 1 );
 
-        RexNode id = getIdentifier( path, node.getRowType() );
-
-        RexCall call = new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UNWIND ), Collections.singletonList( id ) );
-
-        List<String> names = new ArrayList<>();
-        List<RexNode> values = new ArrayList<>();
-
-        String firstKey = path.split( "\\." )[0];
-
-        if ( node.getRowType().getFieldNames().contains( firstKey ) ) {
-            for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-                if ( !field.getName().equals( firstKey ) ) {
-                    names.add( field.getName() );
-                    values.add( getIdentifier( field.getName(), node.getRowType() ) );
-                }
-            }
-            names.add( firstKey );
-            values.add( call );
-        } else {
-            for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-                if ( !field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                    names.add( field.getName() );
-                    values.add( getIdentifier( field.getName(), node.getRowType() ) );
-                }
-            }
-            names.add( DocumentType.DOCUMENT_DATA );
-            values.add( call );
-        }
-
-        return LogicalDocumentProject.create( node, values, names );
+        return LogicalDocumentUnwind.create( path, node );
     }
 
 
@@ -1188,7 +1160,7 @@ public class MqlToAlgConverter {
                             aggs.get( pos ),
                             false,
                             false,
-                            Collections.singletonList( rowType.getFieldNames().indexOf( name ) ),
+                            Collections.singletonList( 1 + pos ), // first is original
                             -1,
                             AlgCollations.EMPTY,
                             // when using aggregations MongoQl automatically casts to doubles
@@ -1203,16 +1175,17 @@ public class MqlToAlgConverter {
 
             node = LogicalDocumentAggregate.create(
                     node,
-                    ImmutableBitSet.of( index ),
-                    Collections.singletonList( ImmutableBitSet.of( index ) ),
-                    convertedAggs );
+                    List.of( groupName ),
+                    null,
+                    convertedAggs,
+                    names );
         } else {
-
             node = LogicalDocumentAggregate.create(
                     node,
-                    ImmutableBitSet.of(),
-                    Collections.singletonList( ImmutableBitSet.of() ),
-                    convertedAggs );
+                    List.of(),
+                    null,
+                    convertedAggs,
+                    names );
 
         }
         return node;
@@ -1235,8 +1208,8 @@ public class MqlToAlgConverter {
         }
         return LogicalDocumentAggregate.create(
                 node,
-                ImmutableBitSet.of(),
-                Collections.singletonList( ImmutableBitSet.of() ),
+                List.of(),
+                null,
                 Collections.singletonList(
                         AggregateCall.create(
                                 OperatorRegistry.getAgg( OperatorName.COUNT ),
@@ -1247,7 +1220,7 @@ public class MqlToAlgConverter {
                                 AlgCollations.EMPTY,
                                 cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
                                 value.asString().getValue()
-                        ) ) );
+                        ) ), List.of( "count" ) );
     }
 
 
@@ -2271,28 +2244,27 @@ public class MqlToAlgConverter {
                 return LogicalDocumentProject.create( node, values, names );
             }
         } else if ( isAddFields && _dataExists ) {
-            List<String> names = rowType.getFieldNames();
+            List<String> names = new ArrayList<>();
+            names.add( null ); // we want it at the root
 
             // we have to implement the added fields into the _data field
             // as this is later used to retrieve them when projecting
 
-            int dataIndex = rowType.getFieldNames().indexOf( "d" );
+            //int dataIndex = rowType.getFieldNames().indexOf( "d" );
 
             for ( Entry<String, RexNode> entry : includes.entrySet() ) {
                 List<RexNode> values = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    if ( field.getIndex() != dataIndex ) {
-                        values.add( RexIndexRef.of( field.getIndex(), rowType ) );
-                    } else {
-                        // we attach the new values to the input bson
-                        values.add( new RexCall(
-                                any,
-                                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
-                                Arrays.asList(
-                                        RexIndexRef.of( dataIndex, rowType ),
-                                        convertLiteral( new BsonString( entry.getKey() ) ),
-                                        entry.getValue() ) ) );
-                    }
+
+                    // we attach the new values to the input bson
+                    values.add( new RexCall(
+                            any,
+                            OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
+                            Arrays.asList(
+                                    RexIndexRef.of( 0, rowType ),
+                                    convertLiteral( new BsonString( entry.getKey() ) ),
+                                    entry.getValue() ) ) );
+
                 }
 
                 node = LogicalDocumentProject.create( node, values, names );

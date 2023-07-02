@@ -67,10 +67,10 @@ import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableJoin;
+import org.polypheny.db.algebra.enumerable.EnumerableLpgUnwind;
 import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.enumerable.EnumerableTransformer;
-import org.polypheny.db.algebra.enumerable.EnumerableUnwind;
 import org.polypheny.db.algebra.enumerable.common.EnumerableBatchIterator;
 import org.polypheny.db.algebra.enumerable.common.EnumerableConditionalExecute;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
@@ -208,14 +208,13 @@ public class JaninoRelMetadataProvider implements AlgMetadataProvider {
                         LogicalDocumentTransformer.class,
                         LogicalDocumentValues.class,
 
-
                         // Enumerable
                         EnumerableAggregate.class,
                         EnumerableFilter.class,
                         EnumerableProject.class,
                         EnumerableJoin.class,
                         EnumerableScan.class,
-                        EnumerableUnwind.class,
+                        EnumerableLpgUnwind.class,
                         EnumerableTransformer.class,
                         EnumerableTransformer.class,
                         EnumerableBatchIterator.class,

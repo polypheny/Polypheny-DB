@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.enumerable;
+package org.polypheny.db.algebra.enumerable.document;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 
+public class EnumerableDocumentUnwindRule extends ConverterRule {
 
-public class EnumerableUnwindRule extends ConverterRule {
 
-
-    public EnumerableUnwindRule() {
-        super( LogicalLpgUnwind.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnwind" );
+    public EnumerableDocumentUnwindRule() {
+        super( LogicalDocumentUnwind.class, Convention.NONE, EnumerableConvention.INSTANCE, EnumerableDocumentUnwindRule.class.getSimpleName() );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalLpgUnwind unwind = (LogicalLpgUnwind) alg;
+        LogicalDocumentUnwind unwind = (LogicalDocumentUnwind) alg;
         AlgTraitSet out = unwind.getTraitSet().replace( EnumerableConvention.INSTANCE );
 
-        return new EnumerableUnwind( unwind.getCluster(), out, AlgOptRule.convert( unwind.getInput(), out ), unwind.index, unwind.alias );
+        return new EnumerableDocumentUnwind( unwind.getCluster(), out, AlgOptRule.convert( unwind.getInput(), out ), unwind.path );
     }
 
 }

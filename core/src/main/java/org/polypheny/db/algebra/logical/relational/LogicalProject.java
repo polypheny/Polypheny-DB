@@ -93,7 +93,7 @@ public final class LogicalProject extends Project {
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSet()
                 .replace( Convention.NONE )
-                .replace( ModelTrait.RELATIONAL )
+                //.replace( ModelTrait.RELATIONAL )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.project( mq, input, projects ) );
         return new LogicalProject( cluster, traitSet, input, projects, rowType );
     }

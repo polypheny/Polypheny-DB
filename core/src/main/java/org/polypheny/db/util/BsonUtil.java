@@ -70,6 +70,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -948,9 +949,6 @@ public class BsonUtil {
                 PolyList<PolyValue> list = new PolyList<>();
 
                 for ( BsonValue value : input.asArray() ) {
-                    /*if ( !value.isDocument() ) {
-                        throw new NotImplementedException();
-                    }*/
 
                     list.add( toPolyValue( value ) );
                 }
@@ -966,7 +964,7 @@ public class BsonUtil {
             case DATE_TIME:
                 break;
             case NULL:
-                break;
+                return PolyNull.NULL;
             case REGULAR_EXPRESSION:
                 break;
             case DB_POINTER:

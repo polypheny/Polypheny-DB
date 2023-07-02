@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -55,6 +56,11 @@ public class AggregateTest extends MqlTestTemplate {
             "{\"val\":3,\"test\":[3,2]}",
             "{\"val\":\"31\",\"test\":[\"test\",3,51]}",
             "{\"test\":[13]}" );
+
+    private final List<String> DATA_3_5 = Arrays.asList(
+            "{\"val\":3,\"test\":[3,4.1]}",
+            "{\"val\":\"31\",\"test\":[\"test\",null,{ \"test\": 25 }]}",
+            "{\"test\":13}" );
 
 
     @Test
@@ -110,7 +116,9 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void matchProjectTest() {
-        List<String> expected = ImmutableList.of( "{ key.key: \"val\", test: 1.3 }" );
+        List<String> expected = ImmutableList.of(
+                document( kv( string( "key.key" ), string( "val" ) ), kv( "test", 1.3 ) )
+        );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $match( "{\"test\": 1.3}" ), $project( "{\"key.key\":1, \"test\":1}" ) );
@@ -138,11 +146,10 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void projectAddFieldsTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                        new String[]{ "52", "1" },
-                        new String[]{ "52", "1.3" },
-                        new String[]{ "52", "test" } ),
-                "test",
-                "added" );
+                        new Object[]{ 52, 1 },
+                        new Object[]{ 52, 1.3 },
+                        new Object[]{ 52, "test" } ),
+                "added", "test" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $project( "{\"test\":1}" ), $addFields( "{\"added\": 52}" ) );
@@ -157,12 +164,13 @@ public class AggregateTest extends MqlTestTemplate {
     @Category(MonetdbExcluded.class) // MonetClob instead of String
     public void countTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                new String[]{ "3" } ), "count" );
+                        new Object[]{ 3 } ),
+                "newName" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $count( "newName" ) );
 
-        MongoConnection.checkDocResultSet( result, expected, true, true );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
     //$group
@@ -182,9 +190,10 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupFieldTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                new String[]{ "1" },
-                new String[]{ "test" },
-                new String[]{ "1.3" } ), "test" );
+                        new Object[]{ 1 },
+                        new Object[]{ "test" },
+                        new Object[]{ 1.3 } ),
+                "test" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $group( "{\"_id\":\"$test\"}" ) );
@@ -192,9 +201,10 @@ public class AggregateTest extends MqlTestTemplate {
         MongoConnection.checkDocResultSet( result, expected, false, true );
 
         expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                new String[]{ null },
-                new String[]{ "13" },
-                new String[]{ "{\"key\":\"val\"}" } ), "test" );
+                        new Object[]{ null },
+                        new Object[]{ 13 },
+                        new Object[]{ document( kv( string( "key" ), string( "val" ) ) ) } ),
+                "key" );
 
         result = aggregate( $group( "{\"_id\":\"$key\"}" ) );
 
@@ -205,9 +215,9 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupSubFieldTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                        new String[]{ null },
-                        new String[]{ "val" } ),
-                "_id" );
+                        new Object[]{ null },
+                        new Object[]{ "val" } ),
+                "key.key" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $group( "{\"_id\":\"$key.key\"}" ) );
@@ -224,7 +234,8 @@ public class AggregateTest extends MqlTestTemplate {
                 "test", "avgValue" );
         insertMany( DATA_1 );
 
-        DocResult result = aggregate( $group( "{\"_id\":\"$test\", \"avgValue\": {\"$avg\":\"$key\"}}" ) );
+        DocResult result = aggregate( $group(
+                document( kv( string( "_id" ), string( "$test" ) ), kv( string( "avgValue" ), document( kv( string( "$avg" ), string( "$key" ) ) ) ) ) ) );
 
         MongoConnection.checkDocResultSet( result, expected, false, true );
     }
@@ -256,16 +267,30 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceRootTest() {
+        // only doc allowed
         List<String> expected = Arrays.asList(
-                "1",
-                null,
-                "13" );
+                document( kv( string( "key" ), 1 ) ),
+                document( kv( string( "key1" ), 5 ) ),
+                document( kv( string( "key" ), 13 ) ) );
 
         insertMany( DATA_2 );
 
-        DocResult result = aggregate( $replaceRoot( "$test.key" ) );
+        DocResult result = aggregate( $replaceRoot( "$test" ) );
 
         MongoConnection.checkDocResultSet( result, expected, false, true );
+    }
+
+
+    @Test
+    public void replaceRootNotDocTest() {
+        try {
+            insertMany( DATA_2 );
+
+            DocResult result = aggregate( $replaceRoot( "$test.key" ) );
+            Assert.fail();
+        } catch ( Exception e ) {
+            // empty on purpose
+        }
     }
 
     //$replaceWith
@@ -275,15 +300,28 @@ public class AggregateTest extends MqlTestTemplate {
     public void replaceWithTest() {
         // todo not document should throw
         List<String> expected = Arrays.asList(
-                document( kv( str( "key" ), 1 ) ),
-                document( kv( str( "key1" ), 5 ) ),
-                document( kv( str( "key" ), 13 ) ) );
+                document( kv( string( "key" ), 1 ) ),
+                document( kv( string( "key1" ), 5 ) ),
+                document( kv( string( "key" ), 13 ) ) );
 
         insertMany( DATA_2 );
 
         DocResult result = aggregate( $replaceWith( "$test" ) );
 
         MongoConnection.checkDocResultSet( result, expected, false, true );
+    }
+
+
+    @Test
+    public void replaceWithNonDocTest() {
+        try {
+            insertMany( DATA_2 );
+
+            DocResult result = aggregate( $replaceWith( "$test.key" ) );
+            Assert.fail();
+        } catch ( Exception e ) {
+            //empty on purpose
+        }
     }
 
     //$set
@@ -371,7 +409,7 @@ public class AggregateTest extends MqlTestTemplate {
                 document(),
                 document() );
 
-        result = aggregate( $unset( Arrays.asList( str( "key" ), str( "test" ) ) ) );
+        result = aggregate( $unset( Arrays.asList( string( "key" ), string( "test" ) ) ) );
 
         MongoConnection.checkDocResultSet( result, expected, true, true );
     }
@@ -382,14 +420,35 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void unwindTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                new String[]{ "3" },
-                new String[]{ "2" },
-                new String[]{ "test" },
-                new String[]{ "3" },
-                new String[]{ "51" },
-                new String[]{ "13" } ), "test" );
+                        new Object[]{ 3 },
+                        new Object[]{ 2 },
+                        new Object[]{ "test" },
+                        new Object[]{ 3 },
+                        new Object[]{ 51 },
+                        new Object[]{ 13 } ),
+                "test" );
 
         insertMany( DATA_3 );
+
+        DocResult result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
+
+        MongoConnection.checkDocResultSet( result, expected, true, true );
+
+    }
+
+
+    @Test
+    public void unwindTypesTest() {
+        List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
+                        new Object[]{ 3 },
+                        new Object[]{ 4.1 },
+                        new Object[]{ "test" },
+                        new Object[]{ null },
+                        new Object[]{ document( kv( string( "test" ), 25 ) ) },
+                        new Object[]{ 13 } ),
+                "test" );
+
+        insertMany( DATA_3_5 );
 
         DocResult result = aggregate( $project( "{\"test\":1}" ), $unwind( "$test" ) );
 

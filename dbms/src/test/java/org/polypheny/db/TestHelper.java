@@ -447,7 +447,7 @@ public class TestHelper {
                 docs.add( "{" +
                         Pair.zip( Arrays.asList( names ), Arrays.asList( doc ) )
                                 .stream()
-                                .map( p -> p.left + ":" +
+                                .map( p -> "\"" + p.left + "\"" + ":" +
                                         ((p.right != null
                                                 ? (p.right instanceof String && !((String) p.right).startsWith( "{" ) && !((String) p.right).endsWith( "}" ) // special handling for string and document
                                                 ? "\"" + p.right + "\""

@@ -18,9 +18,7 @@ package org.polypheny.db.algebra.rules;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableLimit;
@@ -87,14 +85,14 @@ public class DocumentToEnumerableRule extends AlgOptRule {
     private void convertAggregate( AlgOptRuleCall call ) {
         LogicalDocumentAggregate aggregate = call.alg( 0 );
         AlgTraitSet out = aggregate.getTraitSet().replace( EnumerableConvention.INSTANCE );
-
+        /*
         try {
-            AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
+            //AlgNode node = new EnumerableAggregate( aggregate.getCluster(), out, convert( aggregate.getInput(), EnumerableConvention.INSTANCE ), aggregate.indicator, aggregate.groupSet, aggregate.groupSets, aggregate.aggCalls );
 
-            call.transformTo( node );
+            //call.transformTo( node );
         } catch ( InvalidAlgException e ) {
             log.debug( e.toString() );
-        }
+        }*/
     }
 
 

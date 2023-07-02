@@ -97,7 +97,7 @@ public abstract class Project extends SingleAlg {
 
 
     @Override
-    public final AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+    public final Project copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return copy( traitSet, sole( inputs ), exps, rowType );
     }
 

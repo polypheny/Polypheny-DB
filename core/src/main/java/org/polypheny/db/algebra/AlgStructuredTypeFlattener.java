@@ -66,6 +66,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -435,6 +436,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalDocumentModify alg ) {
+        rewriteGeneric( alg );
+    }
+
+
+    @SuppressWarnings("unused")
+    public void rewriteAlg( LogicalDocumentUnwind alg ) {
         rewriteGeneric( alg );
     }
 

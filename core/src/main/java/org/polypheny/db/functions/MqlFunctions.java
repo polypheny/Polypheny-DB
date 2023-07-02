@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -44,6 +45,7 @@ import org.polypheny.db.util.Pair;
 /**
  * Repository class, which defines different functions used, when handling the document model
  */
+@Slf4j
 public class MqlFunctions {
 
 
@@ -86,15 +88,12 @@ public class MqlFunctions {
      * @return the new object, with the value included
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docAddFields( Object input, String name, Object object ) {
-        if ( input instanceof String ) {
-            BsonDocument document = BsonDocument.parse( (String) input );
-            document.put( name, DocumentUtil.getBson( object ) );
+    public static PolyValue docAddFields( PolyValue input, PolyString name, PolyValue object ) {
 
-            return document.toJson();
-        }
+        PolyDocument document = input.asDocument();
+        document.put( name, object );
 
-        return null;
+        return document;
     }
 
 
@@ -106,6 +105,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static Object docJsonify( Object input ) {
+        log.warn( "todo remove" );
         if ( input instanceof BsonDocument ) {
             return ((BsonDocument) input).toJson();
         } else if ( input instanceof Map ) {
@@ -255,19 +255,19 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateRename( Object input, List names, List newNames ) {
+    public static Object docUpdateRename( PolyValue input, List<PolyString> names, List<List<PolyString>> newNames ) {
         // TODO enable as soon as pushing down of Modify is possible
-        Map<String, Object> initial = (Map) deserializeBsonIfNecessary( input );
-        Map<String, Object> doc = initial;
-        String name;
+        Map<PolyString, PolyValue> doc = input.asDocument();
+        PolyString name;
         int count = -1;
-        Iterator<String> iter = names.iterator();
+        log.warn( "todo rename" );
+        /*Iterator<PolyString> iter = names.iterator();
         while ( iter.hasNext() ) {
             name = iter.next();
             if ( doc.containsKey( name ) ) {
                 if ( !iter.hasNext() ) {
-                    Object obj = doc.get( name );
-                    doc.put( String.join( ".", (List) newNames.get( count ) ), obj );
+                    PolyValue value = doc.get( name );
+                    doc.put( PolyString.join( ".", newNames.get( count ) ), value );
                 } else {
                     if ( doc.get( name ) instanceof Map ) {
                         doc = (Map<String, Object>) doc.get( name );
@@ -279,7 +279,8 @@ public class MqlFunctions {
             }
         }
 
-        return docJsonify( initial );
+        return docJsonify( initial );*/
+        return null;
     }
 
 
@@ -453,7 +454,7 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument mergeDocument( PolyValue value, PolyList<PolyString> names, PolyValue... documents ) {
+    public static PolyDocument mergeDocument( PolyValue value, List<PolyString> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
         for ( int i = 0; i < documents.length; i++ ) {
@@ -710,6 +711,12 @@ public class MqlFunctions {
         }
 
         return PolyBoolean.FALSE;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyList<?> getAsList( PolyValue value ) {
+        return value != null && value.isList() ? value.asList() : PolyList.of( value );
     }
 
 

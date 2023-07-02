@@ -94,6 +94,11 @@ public class PolyString extends PolyValue {
     }
 
 
+    public static PolyString join( String delimiter, List<PolyString> strings ) {
+        return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining( delimiter ) ) );
+    }
+
+
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyString.class, Expressions.constant( value ) );

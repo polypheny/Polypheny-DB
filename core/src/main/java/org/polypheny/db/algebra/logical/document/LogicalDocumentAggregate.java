@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import java.util.stream.IntStream;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -34,35 +35,40 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Subclass of {@link DocumentAggregate} not targeted at any particular engine or calling convention.
      */
-    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls );
+    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, boolean indicator, List<String> groupSet, List<List<String>> groupSets, List<AggregateCall> aggCalls, List<String> names ) {
+        super( cluster, traits, child, indicator, groupSet, groupSets, aggCalls, names );
     }
 
 
     /**
      * Creates a LogicalAggregate.
      */
-    public static LogicalDocumentAggregate create( final AlgNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
-        return create_( input, false, groupSet, groupSets, aggCalls );
+    public static LogicalDocumentAggregate create( final AlgNode input, List<String> groupSet, List<List<String>> groupSets, List<AggregateCall> aggCalls, List<String> names ) {
+        return create_( input, false, groupSet, groupSets, aggCalls, names );
     }
 
 
-    private static LogicalDocumentAggregate create_( final AlgNode input, boolean indicator, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls ) {
+    private static LogicalDocumentAggregate create_( final AlgNode input, boolean indicator, List<String> groupSet, List<List<String>> groupSets, List<AggregateCall> aggCalls, List<String> names ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalDocumentAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls );
+        return new LogicalDocumentAggregate( cluster, traitSet, input, indicator, groupSet, groupSets, aggCalls, names );
     }
 
 
     @Override
     protected AlgDataType deriveRowType() {
-        return Aggregate.deriveRowType( getCluster().getTypeFactory(), getInput().getRowType(), indicator, groupSet, groupSets, aggCalls );
+        return Aggregate.deriveRowType( getCluster().getTypeFactory(), getInput().getRowType(), indicator, getBitGroupSet(), null, aggCalls );
+    }
+
+
+    public ImmutableBitSet getBitGroupSet() {
+        return ImmutableBitSet.of( IntStream.range( 0, groupSet.size() ).toArray() );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), indicator, groupSet, groupSets, aggCalls );
+        return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), indicator, groupSet, groupSets, aggCalls, names );
     }
 
 

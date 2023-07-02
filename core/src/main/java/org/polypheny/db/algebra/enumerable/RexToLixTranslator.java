@@ -109,8 +109,6 @@ public class RexToLixTranslator {
     private boolean doSubstitute;
     @Getter
     private final Map<RexNode, Expression> replace;
-    @Getter
-    private UnwindContext unwindContext;
 
 
     public RexToLixTranslator(
@@ -164,12 +162,6 @@ public class RexToLixTranslator {
     }
 
 
-    public static List<Expression> translateProjects(
-            RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
-            InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
-        return translateProjects( program, typeFactory, conformance, list, outputPhysType, root, inputGetter, correlates, new UnwindContext() );
-    }
-
 
     /**
      * Translates a {@link RexProgram} to a sequence of expressions and declarations.
@@ -186,7 +178,7 @@ public class RexToLixTranslator {
      */
     public static List<Expression> translateProjects(
             RexProgram program, JavaTypeFactory typeFactory, Conformance conformance, BlockBuilder list, PhysType outputPhysType, Expression root,
-            InputGetter inputGetter, Function1<String, InputGetter> correlates, UnwindContext unwindContext ) {
+            InputGetter inputGetter, Function1<String, InputGetter> correlates ) {
         List<Type> storageTypes = null;
         if ( outputPhysType != null ) {
             final AlgDataType rowType = outputPhysType.getRowType();
@@ -196,7 +188,6 @@ public class RexToLixTranslator {
             }
         }
         return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), new RexBuilder( typeFactory ), conformance, null, correlates )
-                .setUnwindContext( unwindContext )
                 .translateList( program.getProjectList(), storageTypes );
     }
 
@@ -1184,8 +1175,7 @@ public class RexToLixTranslator {
         if ( nullable == null || nullable.isEmpty() ) {
             return this;
         }
-        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, this, correlates, replace )
-                .setUnwindContext( this.unwindContext );
+        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, nullable, builder, conformance, this, correlates, replace );
     }
 
 
@@ -1202,12 +1192,6 @@ public class RexToLixTranslator {
             return this;
         }
         return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, Collections.emptyMap(), builder, conformance, this, correlates, replace );
-    }
-
-
-    public RexToLixTranslator setUnwindContext( UnwindContext context ) {
-        this.unwindContext = context;
-        return this;
     }
 
 

@@ -424,8 +424,6 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_RENAME ), BuiltInMethod.DOC_RENAME.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.DOC_REPLACE_ROOT.method, NullPolicy.STRICT );
         map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_ELEM_MATCH ), new ElemMatchImplementor() );
-        map.put( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UNWIND ), new UnwindImplementor() );
-
     }
 
 
@@ -2485,43 +2483,6 @@ public class RexImpTable {
 
     }
 
-
-    private static class UnwindImplementor implements CallImplementor {
-
-        @Override
-        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
-            final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
-            final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_callList" );
-            final ParameterExpression unset_ = Expressions.parameter( boolean.class, "_unset" );
-            final ParameterExpression el_ = Expressions.parameter( Object.class, "_el" );
-            translator.getUnwindContext().activateUnwind( i_, list_, unset_ );
-
-            BlockBuilder else_ = new BlockBuilder();
-            else_.add( EnumUtils.ifThen(
-                    unset_,
-                    Expressions.block(
-                            Expressions.statement( Expressions.assign( list_, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, translator.translate( call.getOperands().get( 0 ) ) ) ) ),
-                            Expressions.statement( Expressions.assign( i_, Expressions.call( list_, "size" ) ) ),
-                            Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
-                    )
-            ) );
-            else_.add( EnumUtils.ifThen(
-                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
-                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ) ) );
-
-            BlockBuilder outer = new BlockBuilder();
-            outer.add( Expressions.declare( 0, el_, Expressions.constant( null ) ) );
-            outer.add( EnumUtils.ifThenElse(
-                    Expressions.greaterThan( i_, Expressions.constant( 0 ) ),
-                    Expressions.statement( Expressions.assign( el_, Expressions.call( list_, "get", Expressions.subtract( Expressions.call( list_, "size" ), i_ ) ) ) ),
-                    else_.toBlock()
-            ) );
-            translator.getList().append( "unwind", outer.toBlock() );
-
-            return el_;
-        }
-
-    }
 
 
     private static class ElemMatchImplementor implements CallImplementor {
