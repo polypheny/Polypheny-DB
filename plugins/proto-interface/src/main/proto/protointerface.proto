@@ -3,6 +3,7 @@ import "value.proto";
 import "relational_frame.proto";
 import "graph_frame.proto";
 import "document_frame.proto";
+import "meta.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -12,9 +13,12 @@ package polypheny.protointerface;
 
 // Functions provided by the proto interface
 service ProtoInterface {
+  rpc getDbVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
+
   rpc ConnectionCheck(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
+
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
   rpc FetchResult(FetchRequest) returns (Frame) {}
