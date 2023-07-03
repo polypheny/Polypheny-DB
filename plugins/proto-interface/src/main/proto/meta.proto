@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "Meta";
+
+package polypheny.protointerface;
+
+message DbmsVersionRequest{
+}
+
+message DbmsVersionResponse{
+  string dbms_name = 1;
+  string version_name = 2;
+}
+
+message LanguageRequest {}
+
+message LanguageResponse {
+  repeated string language_names = 1;
+}
+

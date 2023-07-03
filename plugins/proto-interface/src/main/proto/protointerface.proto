@@ -13,11 +13,11 @@ package polypheny.protointerface;
 
 // Functions provided by the proto interface
 service ProtoInterface {
-  rpc getDbVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
-
-  rpc ConnectionCheck(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
-  rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
+  rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
+
+  rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
+  rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
 
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
@@ -60,12 +60,6 @@ message ConnectionReply {
   bool is_compatible = 1;
   uint32 major_api_version = 2;
   uint32 minor_api_version = 3;
-}
-
-message LanguageRequest {}
-
-message LanguageResponse {
-  repeated string language_names = 1;
 }
 
 message CommitRequest {}
