@@ -25,6 +25,8 @@ import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
 import org.polypheny.db.protointerface.proto.CommitResponse;
+import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
+import org.polypheny.db.protointerface.proto.ConnectionCheckResponse;
 import org.polypheny.db.protointerface.proto.ConnectionReply;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
 import org.polypheny.db.protointerface.proto.FetchRequest;
@@ -85,9 +87,18 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onCompleted();
     }
 
+    public void checkConnection( ConnectionCheckRequest connectionCheckRequest, StreamObserver<ConnectionCheckResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( ConnectionCheckResponse.newBuilder().build() );
+        responseObserver.onCompleted();
+    }
+
 
     @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<LanguageResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
         LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
                 .addAllLanguageNames( new LinkedList<>() )
                 .build();

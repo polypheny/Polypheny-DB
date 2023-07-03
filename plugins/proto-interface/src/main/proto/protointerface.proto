@@ -12,6 +12,7 @@ package polypheny.protointerface;
 
 // Functions provided by the proto interface
 service ProtoInterface {
+  rpc ConnectionCheck(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
@@ -30,6 +31,10 @@ service ProtoInterface {
   //rpc ExecutePreparedStatement() returns (StatementResult) {}
   rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
+
+message ConnectionCheckRequest{}
+
+message ConnectionCheckResponse{}
 
 message Property {
   oneof value {
