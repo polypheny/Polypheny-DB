@@ -29,6 +29,8 @@ import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
 import org.polypheny.db.protointerface.proto.ConnectionCheckResponse;
 import org.polypheny.db.protointerface.proto.ConnectionReply;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
+import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
@@ -87,10 +89,24 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onCompleted();
     }
 
+
+    @Override
     public void checkConnection( ConnectionCheckRequest connectionCheckRequest, StreamObserver<ConnectionCheckResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
         responseObserver.onNext( ConnectionCheckResponse.newBuilder().build() );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getDbmsVersion( DbmsVersionRequest dbmsVersionRequest, StreamObserver<DbmsVersionResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                .setDbmsName( "Return Dbms name here!" )
+                .setVersionName( "Return Dbms version string here!" )
+                .build();
+        responseObserver.onNext( dbmsVersionResponse );
         responseObserver.onCompleted();
     }
 
