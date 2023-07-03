@@ -94,7 +94,6 @@ public class JupyterClient {
         if ( response.statusCode() == 200 ) {
             updateSessions( gson.fromJson( response.body(), JsonArray.class ) );
         }
-        log.warn( sessionManager.getOverview() );
         return response;
     }
 

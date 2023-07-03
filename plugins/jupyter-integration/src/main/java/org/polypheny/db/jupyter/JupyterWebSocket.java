@@ -45,7 +45,7 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
 
 
     public void connected( final WsConnectContext ctx ) {
-        log.error( "Opening websocket." );
+        log.trace( "Opening websocket to Jupyter Frontend." );
         String kernelId = ctx.pathParam( "kernelId" );
         JupyterKernel kernel = jsm.getKernel( kernelId );
         if ( kernel == null ) {
@@ -83,7 +83,7 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
 
 
     public void closed( WsCloseContext ctx ) {
-        log.error( "Closing websocket." );
+        log.trace( "Closing websocket to Jupyter Frontend." );
         kernels.get( ctx.session ).unsubscribe( ctx.session );
         kernels.remove( ctx.session );
     }

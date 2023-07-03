@@ -16,7 +16,6 @@
 
 package org.polypheny.db.jupyter;
 
-import com.google.gson.JsonObject;
 import io.javalin.http.Context;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
@@ -52,6 +51,7 @@ public class JupyterPlugin extends Plugin {
     private DockerManager.Container container;
     private File rootPath;
     private JupyterProxy proxy;
+    private boolean pluginLoaded = false;
 
 
     /**
@@ -81,26 +81,33 @@ public class JupyterPlugin extends Plugin {
     public void onContainerRunning() {
         proxy = new JupyterProxy( new JupyterClient( token, host, PORT ) );
         registerEndpoints();
+        pluginLoaded = true;
     }
 
 
-    private void startContainer() {
+    private boolean startContainer() {
         token = generateToken();
-        log.error("Token: {}", token);
+        log.trace( "Token: {}", token );
         PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-        rootPath = fileSystemManager.registerNewFolder("data/jupyter");
+        rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
+        try {
+            DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/polypheny-jupyter-server", UNIQUE_NAME, dockerInstanceId )
+                    .withMappedPort( 8888, PORT )
+                    .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
+                    .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
+                    .withReadyTest( this::testConnection, 20000 )
+                    .build();
+            this.container = container;
+            DockerManager.getInstance().initialize( container ).start();
+            this.host = container.getIpAddress();
+            log.info( "Jupyter container has been deployed." );
+            return true;
 
-        log.info("Deploying Jupyter container...");
-        DockerManager.Container container = new DockerManager.ContainerBuilder(adapterId, "polypheny/polypheny-jupyter-server", UNIQUE_NAME, dockerInstanceId)
-                .withMappedPort(8888, PORT)
-                .withBindMount(rootPath.getAbsolutePath(), SERVER_TARGET_PATH)
-                .withInitCommands(Arrays.asList("start-notebook.sh", "--IdentityProvider.token=" + token))
-                .withReadyTest(this::testConnection, 20000)
-                .build();
-        this.container = container;
-        DockerManager.getInstance().initialize(container).start();
-        this.host = container.getIpAddress();
-        log.info("Jupyter container started with ip " + container.getIpAddress());
+        } catch ( Exception e ) {
+            e.printStackTrace();
+            log.warn( "Unable to deploy Jupyter container." );
+            return false;
+        }
     }
 
 
@@ -112,19 +119,24 @@ public class JupyterPlugin extends Plugin {
     public void restartContainer( Context ctx, Crud crud ) {
         stopContainer();
         JupyterSessionManager.getInstance().reset();
-        log.warn( "Restarting Jupyter Server container" );
-        startContainer();
-        proxy.setClient( new JupyterClient( token, host, PORT ) );
-        ctx.status( 200 ).json( "restart ok" );
+        log.info( "Restarting Jupyter container..." );
+        if ( startContainer() ) {
+            proxy.setClient( new JupyterClient( token, host, PORT ) );
+            ctx.status( 200 ).json( "restart ok" );
+        } else {
+            container = null;
+            pluginLoaded = false;
+            ctx.status( 500 ).json( "failed to restart container" );
+        }
     }
 
 
-    public void containerStatus( Context ctx, Crud crud ) {
-        JsonObject status = new JsonObject();
-        status.addProperty( "status", container.getStatus().toString() );
-        status.addProperty( "host", container.getHost() );
-        status.addProperty( "ip", container.getIpAddress() );
-        ctx.status( 200 ).json( status );
+    public void pluginStatus( Context ctx, Crud crud ) {
+        if ( pluginLoaded ) {
+            ctx.status( 200 ).json( "plugin is loaded correctly" );
+        } else {
+            ctx.status( 500 ).json( "plugin is not loaded correctly" );
+        }
     }
 
 
@@ -139,7 +151,7 @@ public class JupyterPlugin extends Plugin {
         server.addSerializedRoute( REST_PATH + "/kernels", proxy::kernels, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/kernelspecs", proxy::kernelspecs, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/file/<path>", proxy::file, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/container/status", this::containerStatus, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/export/<path>", proxy::export, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/connections", proxy::openConnections, HandlerType.GET );
@@ -199,10 +211,10 @@ public class JupyterPlugin extends Plugin {
 
         @Override
         public void initExtension( TransactionManager manager, Authenticator authenticator ) {
-            log.info( "Initializing Jupyter Extension" );
-            JupyterSessionManager.getInstance().setTransactionManager( manager );
-            plugin.startContainer();
-            plugin.onContainerRunning();
+            if ( plugin.startContainer() ) {
+                JupyterSessionManager.getInstance().setTransactionManager( manager );
+                plugin.onContainerRunning();
+            }
         }
 
     }
