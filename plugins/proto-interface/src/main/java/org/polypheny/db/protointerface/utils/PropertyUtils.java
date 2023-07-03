@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface;
+package org.polypheny.db.protointerface.utils;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
-public class PropertyDefaults {
+public class PropertyUtils {
 
-    public static final String USERNAME = "user";
-    public static final String PASSWORD = "password";
-    public static final String AUTOCOMMIT = "autocommit";
-    public static final String FETCH_SIZE = "fetchSize";
+    public static final String USERNAME_KEY = "user";
+    public static final String PASSWORD_KEY = "password";
+    public static final String AUTOCOMMIT_KEY = "autocommit";
+    public static final String FETCH_SIZE_KEY = "fetchSize";
 
     private static final Map<String, String> DEFAULT_VALUES =
             ImmutableMap.<String, String>builder()
-                    .put(AUTOCOMMIT, "true")
-                    .put(FETCH_SIZE, "100")
+                    .put( AUTOCOMMIT_KEY, "true")
+                    .put( FETCH_SIZE_KEY, "100")
                     .build();
 
 
