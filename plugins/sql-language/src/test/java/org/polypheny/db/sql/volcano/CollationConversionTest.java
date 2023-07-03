@@ -301,12 +301,12 @@ public class CollationConversionTest {
     private static class PhysicalSort extends Sort {
 
         PhysicalSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-            super( cluster, traits, input, collation, offset, fetch );
+            super( cluster, traits, input, collation, null, offset, fetch );
         }
 
 
         @Override
-        public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+        public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> targets, RexNode offset, RexNode fetch ) {
             return new PhysicalSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 

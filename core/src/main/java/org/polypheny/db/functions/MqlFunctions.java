@@ -19,6 +19,7 @@ package org.polypheny.db.functions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -88,33 +89,10 @@ public class MqlFunctions {
      * @return the new object, with the value included
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyValue docAddFields( PolyValue input, PolyString name, PolyValue object ) {
+    public static PolyValue docAddFields( PolyValue input, List<PolyString> name, PolyValue object ) {
+        updateValue( object, input.asDocument(), name );
 
-        PolyDocument document = input.asDocument();
-        document.put( name, object );
-
-        return document;
-    }
-
-
-    /**
-     * Transformer methode, which outputs a JSON representation of the provided object
-     *
-     * @param input the untransformed object
-     * @return a transformed object as JSON string
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static Object docJsonify( Object input ) {
-        log.warn( "todo remove" );
-        if ( input instanceof BsonDocument ) {
-            return ((BsonDocument) input).toJson();
-        } else if ( input instanceof Map ) {
-            return GSON.toJson( input );
-        } else if ( input instanceof List ) {
-            return GSON.toJson( input );
-        } else {
-            return input;
-        }
+        return input;
     }
 
 
@@ -127,15 +105,13 @@ public class MqlFunctions {
      * @return a new list, which included the new value
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docAddToSet( Object input, Object value ) {
-        input = deserializeBsonIfNecessary( input );
-        value = deserializeBsonIfNecessary( value );
+    public static PolyValue docAddToSet( PolyValue input, PolyValue value ) {
 
-        if ( input instanceof List ) {
-            if ( ((List<Object>) input).contains( value ) ) {
+        if ( input.isList() ) {
+            if ( input.asList().contains( value ) ) {
                 return input;
             }
-            ((List<Object>) input).add( value );
+            input.asList().add( value );
             return input;
         } else {
             throw new RuntimeException( "AddToSet can only be applied to arrays" );
@@ -152,8 +128,8 @@ public class MqlFunctions {
      * @return a new document/object, which holds the minimal value
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateMin( Object input, Object comparator ) {
-        return docUpdateMinMax( input, comparator ) <= 0 ? input : comparator;
+    public static PolyValue docUpdateMin( PolyValue input, PolyValue comparator ) {
+        return docUpdateMinMax( input, comparator ).intValue() <= 0 ? input : comparator;
     }
 
 
@@ -166,8 +142,8 @@ public class MqlFunctions {
      * @return a new document/object, which holds the maximal value
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateMax( Object input, Object comparator ) {
-        return docUpdateMinMax( input, comparator ) <= 0 ? comparator : input;
+    public static PolyValue docUpdateMax( PolyValue input, PolyValue comparator ) {
+        return docUpdateMinMax( input, comparator ).intValue() <= 0 ? comparator : input;
     }
 
 
@@ -179,12 +155,11 @@ public class MqlFunctions {
      * @return number identifying, if comparator is bigger ( -1 ) or smaller ( 1 )
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static int docUpdateMinMax( Object input, Object comparator ) {
-        if ( input instanceof Comparable && comparator instanceof Comparable ) {
-            return ((Comparable) input).compareTo( comparator );
-        } else {
+    private static PolyNumber docUpdateMinMax( PolyValue input, PolyValue comparator ) {
+        if ( input == null || comparator == null ) {
             throw new RuntimeException( "The provided values where not comparable." );
         }
+        return PolyInteger.of( input.compareTo( comparator ) );
     }
 
 
@@ -197,7 +172,6 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyValue docRemove( PolyValue input, List<List<PolyString>> names ) {
-        // Map<PolyString, PolyValue> initial = (Map) deserializeBsonIfNecessary( input );
         Map<PolyString, PolyValue> doc = input.asDocument();
         PolyString name;
         for ( List<PolyString> split : names ) {
@@ -230,63 +204,69 @@ public class MqlFunctions {
             return new PolyDocument();
         }
         for ( Pair<PolyString, PolyValue> pair : Pair.zip( names, values ) ) {
-            updateValue( pair.right, input.asDocument(), List.of( pair.left.value.split( "\\." ) ) );
+            updateValue( pair.right, input.asDocument(), Arrays.stream( pair.left.value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) );
         }
 
         return input.asDocument();
     }
 
 
-    private static void updateValue( PolyValue value, PolyDocument doc, List<String> splitName ) {
+    private static void updateValue( PolyValue value, PolyDocument doc, List<PolyString> splitName ) {
         PolyString name;
-        Iterator<PolyString> iter = splitName.stream().map( PolyString::of ).iterator();
+        Iterator<PolyString> iter = splitName.iterator();
 
         while ( iter.hasNext() ) {
             name = iter.next();
-            if ( doc.containsKey( name ) ) {
-                if ( !iter.hasNext() ) {
-                    doc.put( name, value );
-                } else {
-                    doc = doc.get( name ).asDocument();
+
+            if ( !iter.hasNext() ) {
+                doc.put( name, value );
+            } else {
+                if ( doc.containsKey( name ) ) {
+                    doc.put( name, PolyDocument.ofDocument( Map.of() ) );
                 }
+                doc = doc.get( name ).asDocument();
             }
         }
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Object docUpdateRename( PolyValue input, List<PolyString> names, List<List<PolyString>> newNames ) {
-        // TODO enable as soon as pushing down of Modify is possible
-        Map<PolyString, PolyValue> doc = input.asDocument();
-        PolyString name;
-        int count = -1;
-        log.warn( "todo rename" );
-        /*Iterator<PolyString> iter = names.iterator();
-        while ( iter.hasNext() ) {
-            name = iter.next();
-            if ( doc.containsKey( name ) ) {
-                if ( !iter.hasNext() ) {
-                    PolyValue value = doc.get( name );
-                    doc.put( PolyString.join( ".", newNames.get( count ) ), value );
-                } else {
-                    if ( doc.get( name ) instanceof Map ) {
-                        doc = (Map<String, Object>) doc.get( name );
+    public static PolyValue docUpdateRename( PolyValue input, List<List<PolyString>> fields, List<List<PolyString>> newNames ) {
+        PolyDocument doc = input.asDocument();
+
+        PolyValue end = null;
+        PolyDocument temp = doc;
+        Iterator<PolyString> iter;
+        outer:
+        for ( int i = 0; i < fields.size(); i++ ) {
+            List<PolyString> names = fields.get( i );
+            iter = names.iterator();
+
+            // search for element
+            while ( iter.hasNext() ) {
+                PolyString name = iter.next();
+                if ( temp.containsKey( name ) ) {
+                    if ( iter.hasNext() ) {
+                        // we go deeper
+                        if ( temp.get( name ).isDocument() ) {
+                            temp = temp.get( name ).asDocument();
+                        } else {
+                            continue outer;
+                        }
                     } else {
-                        return docJsonify( initial );
+                        // we found it
+                        end = temp.get( name );
+                        temp.remove( name );
                     }
-
                 }
             }
+            // we place the element
+            docAddFields( doc, newNames.get( i ), end );
+
+
         }
 
-        return docJsonify( initial );*/
-        return null;
-    }
-
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument renameDocument( PolyValue doc, PolyString key, PolyString rename ) {
-        return new PolyDocument( rename, doc.asDocument().map.get( key ) );
+        return doc;
     }
 
 
@@ -296,28 +276,6 @@ public class MqlFunctions {
             throw new GenericRuntimeException( "Can only be replaced by document" );
         }
         return doc.asDocument();
-    }
-
-
-    /**
-     * Scans the object/document and removes matching filters
-     *
-     * @param input the object/document, form which the filters are removed
-     * @param excluded multiple filters, group in collections [key1.key2.key3, key1.key2] {@code ->} [[key1, key2, key3],[key1, key2]]
-     * @return a filtered object/document
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public static PolyValue docQueryExclude( PolyValue input, List<List<PolyString>> excluded ) {
-        if ( !(input.isDocument()) ) {
-            return null;
-        }
-
-        if ( excluded.size() == 0 ) {
-            return input;
-        }
-
-        excludeBson( input.asDocument(), excluded );
-        return input;
     }
 
 
@@ -383,7 +341,7 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docJsonMatch( PolyValue input, String json ) {
         // TODO use schema validator library
-        throw new RuntimeException( "NOT IMPLEMENTED" );
+        throw new GenericRuntimeException( "NOT IMPLEMENTED" );
     }
 
 
@@ -395,7 +353,6 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyList<PolyValue> docGetArray( PolyValue input ) {
-        // input = deserializeBsonIfNecessary( input );
         if ( input.isList() ) {
             return input.asList();
         }
@@ -479,7 +436,6 @@ public class MqlFunctions {
             }
 
         }
-
         return PolyDocument.ofDocument( doc );
     }
 

@@ -61,7 +61,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -1997,12 +1996,6 @@ public class MqlToAlgConverter {
     }
 
 
-    private RexNode translateJsonQuery( int index, AlgDataType rowType, List<String> excludes ) {
-        RexCall filter = getNestedArray( excludes.stream().map( e -> Arrays.asList( e.split( "\\." ) ) ).collect( Collectors.toList() ) );
-        return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXCLUDE ), Arrays.asList( RexIndexRef.of( index, rowType ), filter ) );
-    }
-
-
     private RexCall getNestedArray( List<List<String>> lists ) {
         List<RexNode> nodes = new ArrayList<>();
         for ( List<String> list : lists ) {
@@ -2190,22 +2183,6 @@ public class MqlToAlgConverter {
 
         if ( excludes.size() > 0 ) {
             if ( _dataExists ) {
-                // we have still the _data field, where the fields need to be extracted
-                // exclusion projections only work for the underlying _data field
-                AlgDataType defaultDataField = getDefaultDataField();
-
-                List<RexNode> values = new ArrayList<>( Collections.singletonList( translateJsonQuery( 0, rowType, excludes ) ) );
-                List<String> names = new ArrayList<>( Collections.singletonList( DocumentType.DOCUMENT_DATA ) );
-
-                // we only need to do this if it is the second time
-                /*if ( !excludes.contains( "_id" ) && !excludedId ) {
-                    names.add( 0, "_id" );
-                    values.add( 0, RexInputRef.of( 0, rowType ) );
-                }
-
-                if ( excludes.contains( "_id" ) ) {
-                    this.excludedId = true;
-                }*/
 
                 return LogicalDocumentProject.create( node, includes, excludes );
             } else {
@@ -2241,7 +2218,7 @@ public class MqlToAlgConverter {
                             OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
                             Arrays.asList(
                                     RexIndexRef.of( 0, rowType ),
-                                    convertLiteral( new BsonString( entry.getKey() ) ),
+                                    cluster.getRexBuilder().makeArray( cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyList.copyOf( Arrays.stream( entry.getKey().split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ),
                                     entry.getValue() ) ) );
 
                 }
@@ -2345,16 +2322,6 @@ public class MqlToAlgConverter {
         }
     }
 
-
-    private RexNode getRename( RexNode identifier, String oldName, String newName ) {
-        DocumentType returnType = new DocumentType( Collections.singletonList( new AlgDataTypeFieldImpl( newName, 0, new DocumentType() ) ) );
-        return cluster.getRexBuilder().makeCall(
-                returnType,
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_RENAME ),
-                identifier,
-                new RexLiteral( PolyString.of( oldName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ),
-                new RexLiteral( PolyString.of( newName ), cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), PolyType.CHAR ) );
-    }
 
 
 }

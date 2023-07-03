@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -285,11 +284,6 @@ public class DocumentUtil {
         return Pair.of(
                 List.of( DocumentType.DOCUMENT_DATA ),
                 List.of( updateChain ) );
-    }
-
-
-    public static RexCall createJsonify( RexNode ref, AlgDataType type ) {
-        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_JSONIFY ), Collections.singletonList( ref ) );
     }
 
 

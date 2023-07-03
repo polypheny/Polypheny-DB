@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFamily;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BinaryOperator;
+import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
@@ -724,6 +725,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         switch ( node.getKind() ) {
             case LITERAL:
                 return ((SqlLiteral) node).getPolyValue();
+            case CAST:
+                return PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
         }
         return null;
     }

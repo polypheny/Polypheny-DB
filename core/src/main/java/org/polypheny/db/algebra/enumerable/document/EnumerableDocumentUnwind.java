@@ -93,7 +93,7 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         // docQueryValue( (PolyValue) enumerable.next(), PolyList[]);
         Expression fullCurrent = Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyValue.class );
         value = Expressions.call(
-                BuiltInMethod.DOC_QUERY_VALUE.method,
+                BuiltInMethod.MQL_QUERY_VALUE.method,
                 Expressions.convert_( doc_, PolyValue.class ),
                 PolyList.copyOf( Arrays.stream( path.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ).asExpression() );
 

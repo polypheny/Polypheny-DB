@@ -89,13 +89,13 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
             switch ( call.op.getOperatorName() ) {
                 case CYPHER_NODE_EXTRACT:
                     extract = true;
-                    method = BuiltInMethod.GRAPH_NODE_EXTRACT.method;
+                    method = BuiltInMethod.CYPHER_NODE_EXTRACT.method;
                     break;
                 case CYPHER_NODE_MATCH:
-                    method = BuiltInMethod.GRAPH_NODE_MATCH.method;
+                    method = BuiltInMethod.CYPHER_NODE_MATCH.method;
                     break;
                 case CYPHER_PATH_MATCH:
-                    method = BuiltInMethod.GRAPH_PATH_MATCH.method;
+                    method = BuiltInMethod.CYPHER_PATH_MATCH.method;
                     break;
                 default:
                     throw new RuntimeException( "could not translate graph match" );
@@ -114,7 +114,7 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
         } else {
             // We have to join ( cross product ) all results together
             return_ = Expressions.new_(
-                    BuiltInMethod.GRAPH_MATCH_CTOR.constructor,
+                    BuiltInMethod.CYPHER_MATCH_CTOR.constructor,
                     Expressions.call( Arrays.class, "asList", expressions ) );
         }
 

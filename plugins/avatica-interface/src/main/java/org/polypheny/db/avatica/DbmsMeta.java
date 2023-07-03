@@ -1295,41 +1295,7 @@ public class DbmsMeta implements ProtobufMeta {
             public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    switch ( field.getType().getPolyType() ) {
-                        case VARCHAR:
-                        case CHAR:
-                            transform.add( o -> o.asString().value );
-                            break;
-                        case INTEGER:
-                        case TINYINT:
-                            transform.add( o -> o.asNumber().IntValue() );
-                            break;
-                        case FLOAT:
-                            transform.add( o -> o.asNumber().FloatValue() );
-                            break;
-                        case DOUBLE:
-                            transform.add( o -> o.asNumber().DoubleValue() );
-                            break;
-                        case BIGINT:
-                            transform.add( o -> o.asNumber().LongValue() );
-                        case DECIMAL:
-                            transform.add( o -> o.asNumber().BigDecimalValue() );
-                            break;
-                        case DATE:
-                            transform.add( o -> o.asDate().sinceEpoch );
-                            break;
-                        case TIME:
-                            transform.add( o -> o.asTime().ofDay );
-                            break;
-                        case TIMESTAMP:
-                            transform.add( o -> o.asTimeStamp().sinceEpoch );
-                            break;
-                        case BOOLEAN:
-                            transform.add( o -> o.asBoolean().value );
-                            break;
-                        default:
-                            throw new NotImplementedException( "meta" );
-                    }
+                    transform.add( getPolyToExternalizer( field.getType() ) );
                 }
 
                 if ( rowType.getFieldCount() > 1 ) {
@@ -1346,6 +1312,39 @@ public class DbmsMeta implements ProtobufMeta {
                 return Linq4j.transform( enumerable.enumerator(), row -> transform.get( 0 ).apply( (PolyValue) row ) );
             }
         };
+    }
+
+
+    private static Function1<PolyValue, Object> getPolyToExternalizer( AlgDataType type ) {
+        switch ( type.getPolyType() ) {
+            case VARCHAR:
+            case CHAR:
+                return o -> o.asString().value;
+            case INTEGER:
+            case TINYINT:
+                return o -> o.asNumber().IntValue();
+            case FLOAT:
+                return o -> o.asNumber().FloatValue();
+            case DOUBLE:
+                return o -> o.asNumber().DoubleValue();
+            case BIGINT:
+                return o -> o.asNumber().LongValue();
+            case DECIMAL:
+                return o -> o.asNumber().BigDecimalValue();
+            case DATE:
+                return o -> o.asDate().sinceEpoch;
+            case TIME:
+                return o -> o.asTime().ofDay;
+            case TIMESTAMP:
+                return o -> o.asTimeStamp().sinceEpoch;
+            case BOOLEAN:
+                return o -> o.asBoolean().value;
+            case ARRAY:
+                Function1<PolyValue, Object> elTrans = getPolyToExternalizer( type.getComponentType() );
+                return o -> o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
+            default:
+                throw new NotImplementedException( "meta" );
+        }
     }
 
 

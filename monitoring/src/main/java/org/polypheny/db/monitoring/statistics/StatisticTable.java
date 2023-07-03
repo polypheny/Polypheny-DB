@@ -45,9 +45,6 @@ public class StatisticTable {
     @Getter
     private NamespaceType namespaceType;
 
-    //@Getter
-    //private ImmutableList<Long> dataPlacements;
-
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
 

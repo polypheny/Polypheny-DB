@@ -41,7 +41,6 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
@@ -59,19 +58,13 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -119,28 +112,6 @@ public abstract class BaseRouter implements Router {
         }};
     }
 
-
-    protected static List<RexNode> addDocumentNodes( AlgDataType rowType, RexBuilder rexBuilder, boolean forceVarchar ) {
-        AlgDataType data = rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 );
-        return List.of(
-                rexBuilder.makeCall(
-                        rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ),
-                        OperatorRegistry.get(
-                                QueryLanguage.from( "mongo" ),
-                                OperatorName.MQL_QUERY_VALUE ),
-                        List.of(
-                                RexIndexRef.of( 0, rowType ),
-                                rexBuilder.makeArray(
-                                        rexBuilder.getTypeFactory().createArrayType( rexBuilder.getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ), 1 ),
-                                        List.of( PolyString.of( "_id" ) ) ) ) ),
-                (forceVarchar
-                        ? rexBuilder.makeCall( data,
-                        OperatorRegistry.get(
-                                QueryLanguage.from( "mongo" ),
-                                OperatorName.MQL_JSONIFY ), List.of( RexIndexRef.of( 0, rowType ) ) )
-                        : RexIndexRef.of( 0, rowType ))
-        );
-    }
 
 
     public AlgNode recursiveCopy( AlgNode node ) {

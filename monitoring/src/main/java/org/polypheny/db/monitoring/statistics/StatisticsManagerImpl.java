@@ -279,6 +279,11 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     private StatisticColumn reevaluateColumn( QueryResult column ) {
 
+        if ( column.getColumn().type.getFamily() == PolyTypeFamily.ARRAY ) {
+            log.warn( "array not yet supported" );
+            return null;
+        }
+
         if ( column.getColumn().type.getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
         } else if ( column.getColumn().type.getFamily() == PolyTypeFamily.CHARACTER ) {
@@ -828,8 +833,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
     }
 
 
-    private <T extends Comparable<?>> StatisticColumn createStatisticColumn( PolyType polyType, QueryResult queryResult ) {
+    private StatisticColumn createStatisticColumn( PolyType polyType, QueryResult queryResult ) {
         StatisticColumn statisticColumn = null;
+        if ( polyType.getFamily() == PolyTypeFamily.ARRAY ) {
+            log.warn( "statistic are not yet supported" );
+            return null;
+        }
+
         if ( polyType.getFamily() == PolyTypeFamily.NUMERIC ) {
             statisticColumn = new NumericalStatisticColumn( queryResult );
         } else if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
@@ -850,7 +860,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
         }
 
         for ( LogicalColumn column : catalogTable.getColumns() ) {
+            if ( column.collectionsType != null ) {
+                log.warn( "collections statistics are no yet supported" );
+                return;
+            }
+
             PolyType polyType = column.type;
+
             QueryResult queryResult = new QueryResult( catalogTable, column );
             if ( this.statisticFields.containsKey( column.id ) && changedValues.get( (long) column.position ) != null ) {
                 handleInsertColumn( changedValues.get( (long) column.position - 1 ), column, queryResult );

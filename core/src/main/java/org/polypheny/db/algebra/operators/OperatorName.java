@@ -1324,8 +1324,6 @@ public enum OperatorName {
 
     MQL_ITEM( LangFunctionOperator.class ),
 
-    MQL_EXCLUDE( LangFunctionOperator.class ),
-
     MQL_ADD_FIELDS( LangFunctionOperator.class ),
 
     MQL_UPDATE_MIN( LangFunctionOperator.class ),
@@ -1356,13 +1354,9 @@ public enum OperatorName {
 
     MQL_GTE( LangFunctionOperator.class ),
 
-    MQL_JSONIFY( LangFunctionOperator.class ),
-
     MQL_MERGE( LangFunctionOperator.class ),
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
-
-    MQL_RENAME( LangFunctionOperator.class ),
 
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS

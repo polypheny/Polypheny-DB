@@ -50,6 +50,7 @@ import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializer;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
 import org.polypheny.db.type.entity.PolyBinary.PolyBinarySerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializer;
+import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyDate.PolyDateSerializer;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializer;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
@@ -124,6 +125,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
+            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .build( PolyValue.class );
 
     // used to serialize to Json
@@ -683,12 +685,16 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static PolyValue convert( PolyValue value, PolyType type ) {
+
         switch ( type ) {
             case INTEGER:
                 return PolyInteger.from( value );
             case DOCUMENT:
                 // docs accept all
                 return value;
+        }
+        if ( value.getType() == type ) {
+            return value;
         }
 
         throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, type ) );

@@ -197,8 +197,6 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_ITEM, new LangFunctionOperator( "MQL_ITEM", Kind.MQL_ITEM ) );
 
-        register( OperatorName.MQL_EXCLUDE, new LangFunctionOperator( "MQL_EXCLUDE", Kind.MQL_EXCLUDE ) );
-
         register( OperatorName.MQL_ADD_FIELDS, new LangFunctionOperator( "MQL_ADD_FIELDS", Kind.MQL_ADD_FIELDS ) );
 
         register( OperatorName.MQL_UPDATE_MIN, new LangFunctionOperator( "MQL_UPDATE_MIN", Kind.MIN ) );
@@ -229,11 +227,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
 
-        register( OperatorName.MQL_JSONIFY, new LangFunctionOperator( "MQL_JSONIFY", Kind.MQL_JSONIFY ) );
-
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
-
-        register( OperatorName.MQL_RENAME, new LangFunctionOperator( OperatorName.MQL_RENAME.name(), Kind.OTHER ) );
 
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );
 

@@ -572,7 +572,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
 
     private void testJsonQuery( String key, RexCall projection, List<String> excludes ) {
-        assertEquals( OperatorName.MQL_EXCLUDE, projection.op.getOperatorName() );
+        //assertEquals( OperatorName.MQL_EXCLUDE, projection.op.getOperatorName() );
         assertEquals( 2, projection.operands.size() );
 
         assertEquals( Kind.INPUT_REF, projection.operands.get( 0 ).getKind() );

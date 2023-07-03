@@ -23,6 +23,12 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
@@ -87,6 +93,27 @@ public class PolyBoolean extends PolyValue {
             return ObjectUtils.compare( value, o.asBoolean().value );
         }
         return -1;
+    }
+
+
+    public static class PolyBooleanSerializerDef extends SimpleSerializerDef<PolyBoolean> {
+
+        @Override
+        protected BinarySerializer<PolyBoolean> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyBoolean item ) {
+                    out.writeBoolean( item.value );
+                }
+
+
+                @Override
+                public PolyBoolean decode( BinaryInput in ) throws CorruptedDataException {
+                    return in.readBoolean() ? PolyBoolean.TRUE : PolyBoolean.FALSE;
+                }
+            };
+        }
+
     }
 
 
