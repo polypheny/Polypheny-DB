@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -41,7 +42,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
      * Use {@link #create} unless you know what you're doing.
      */
     public EnumerableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traitSet, input, collation, offset, fetch );
+        super( cluster, traitSet, input, collation, null, offset, fetch );
         assert getConvention() instanceof EnumerableConvention;
         assert getConvention() == input.getConvention();
     }
@@ -58,7 +59,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
 
 
     @Override
-    public EnumerableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+    public EnumerableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new EnumerableSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 

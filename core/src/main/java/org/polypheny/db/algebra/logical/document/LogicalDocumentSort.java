@@ -34,22 +34,22 @@ public class LogicalDocumentSort extends DocumentSort implements DocumentAlg {
     /**
      * Subclass of {@link DocumentSort} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traits, child, collation, offset, fetch );
+    public LogicalDocumentSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, List<RexNode> targets, RexNode offset, RexNode fetch ) {
+        super( cluster, traits, child, collation, targets, offset, fetch );
     }
 
 
-    public static AlgNode create( AlgNode node, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public static AlgNode create( AlgNode node, AlgCollation collation, List<RexNode> targets, RexNode offset, RexNode fetch ) {
         collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
         AlgTraitSet traitSet = node.getTraitSet().replace( Convention.NONE ).replace( collation );
 
-        return new LogicalDocumentSort( node.getCluster(), traitSet, node, collation, offset, fetch );
+        return new LogicalDocumentSort( node.getCluster(), traitSet, node, collation, targets, offset, fetch );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentSort( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), collation, offset, fetch );
+        return new LogicalDocumentSort( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), collation, fieldExps, offset, fetch );
     }
 
 

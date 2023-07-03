@@ -26,14 +26,15 @@ import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
-import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
@@ -90,6 +91,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
                     EnumerableRules.ENUMERABLE_FILTER_RULE,
                     EnumerableRules.ENUMERABLE_AGGREGATE_RULE,
@@ -136,6 +138,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     FilterJoinRule.FILTER_ON_JOIN,
                     JoinPushExpressionsRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,

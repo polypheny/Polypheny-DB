@@ -48,8 +48,10 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.ChainedAlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.DefaultAlgMetadataProvider;
@@ -58,7 +60,6 @@ import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
 import org.polypheny.db.algebra.rules.CalcMergeRule;
-import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterCalcMergeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
@@ -108,6 +109,7 @@ public class Programs {
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     CalcMergeRule.INSTANCE,
                     FilterCalcMergeRule.INSTANCE,
                     ProjectCalcMergeRule.INSTANCE,
@@ -163,6 +165,7 @@ public class Programs {
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     SemiJoinRules.PROJECT,
                     SemiJoinRules.JOIN,
                     ScanRule.INSTANCE,

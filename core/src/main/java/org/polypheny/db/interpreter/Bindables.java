@@ -468,13 +468,13 @@ public class Bindables {
     public static class BindableSort extends Sort implements BindableAlg {
 
         public BindableSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-            super( cluster, traitSet, input, collation, offset, fetch );
+            super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof BindableConvention;
         }
 
 
         @Override
-        public BindableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+        public BindableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
             return new BindableSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 

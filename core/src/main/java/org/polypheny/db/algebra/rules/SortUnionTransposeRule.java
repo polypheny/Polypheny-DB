@@ -106,7 +106,7 @@ public class SortUnionTransposeRule extends AlgOptRule {
         for ( AlgNode input : union.getInputs() ) {
             if ( !AlgMdUtil.checkInputForCollationAndLimit( mq, input, sort.getCollation(), sort.offset, sort.fetch ) ) {
                 ret = false;
-                Sort branchSort = sort.copy( sort.getTraitSet(), input, sort.getCollation(), sort.offset, sort.fetch );
+                Sort branchSort = sort.copy( sort.getTraitSet(), input, sort.getCollation(), null, sort.offset, sort.fetch );
                 inputs.add( branchSort );
             } else {
                 inputs.add( input );
@@ -118,7 +118,7 @@ public class SortUnionTransposeRule extends AlgOptRule {
         }
         // create new union and sort
         Union unionCopy = (Union) union.copy( union.getTraitSet(), inputs, union.all );
-        Sort result = sort.copy( sort.getTraitSet(), unionCopy, sort.getCollation(), sort.offset, sort.fetch );
+        Sort result = sort.copy( sort.getTraitSet(), unionCopy, sort.getCollation(), null, sort.offset, sort.fetch );
         call.transformTo( result );
     }
 

@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -74,7 +75,7 @@ public abstract class Sort extends SingleAlg {
      * @param collation array of sort specifications
      */
     public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation ) {
-        this( cluster, traits, child, collation, null, null );
+        this( cluster, traits, child, collation, null, null, null );
     }
 
 
@@ -88,7 +89,7 @@ public abstract class Sort extends SingleAlg {
      * @param offset Expression for number of rows to discard before returning first row
      * @param fetch Expression for number of rows to fetch
      */
-    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public Sort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, @Nullable List<RexNode> fieldExpr, RexNode offset, RexNode fetch ) {
         super( cluster, traits, child );
         this.collation = collation;
         this.offset = offset;
@@ -96,6 +97,12 @@ public abstract class Sort extends SingleAlg {
 
         assert traits.containsIfApplicable( collation ) : "traits=" + traits + ", collation=" + collation;
         assert !(fetch == null && offset == null && collation.getFieldCollations().isEmpty()) : "trivial sort";
+
+        if ( fieldExpr != null ) {
+            fieldExps = ImmutableList.copyOf( fieldExpr );
+            return;
+        }
+
         ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
         for ( AlgFieldCollation field : collation.getFieldCollations() ) {
             int index = field.getFieldIndex();
@@ -107,16 +114,11 @@ public abstract class Sort extends SingleAlg {
 
     @Override
     public final Sort copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return copy( traitSet, sole( inputs ), collation, offset, fetch );
+        return copy( traitSet, sole( inputs ), collation, fieldExps, offset, fetch );
     }
 
 
-    public final Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation ) {
-        return copy( traitSet, newInput, newCollation, offset, fetch );
-    }
-
-
-    public abstract Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch );
+    public abstract Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch );
 
 
     @Override
@@ -144,7 +146,7 @@ public abstract class Sort extends SingleAlg {
         if ( offset == this.offset && fetch == this.fetch ) {
             return this;
         }
-        return copy( traitSet, getInput(), collation, offset, fetch );
+        return copy( traitSet, getInput(), collation, ImmutableList.copyOf( fieldExps ), offset, fetch );
     }
 
 

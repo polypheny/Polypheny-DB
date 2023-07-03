@@ -128,7 +128,7 @@ public class SortJoinTransposeRule extends AlgOptRule {
             if ( AlgMdUtil.checkInputForCollationAndLimit( mq, join.getLeft(), sort.getCollation(), sort.offset, sort.fetch ) ) {
                 return;
             }
-            newLeftInput = sort.copy( sort.getTraitSet(), join.getLeft(), sort.getCollation(), sort.offset, sort.fetch );
+            newLeftInput = sort.copy( sort.getTraitSet(), join.getLeft(), sort.getCollation(), null, sort.offset, sort.fetch );
             newRightInput = join.getRight();
         } else {
             final AlgCollation rightCollation = AlgCollationTraitDef.INSTANCE.canonize( AlgCollations.shift( sort.getCollation(), -join.getLeft().getRowType().getFieldCount() ) );
@@ -142,12 +142,13 @@ public class SortJoinTransposeRule extends AlgOptRule {
                             sort.getTraitSet().replace( rightCollation ),
                             join.getRight(),
                             rightCollation,
+                            null,
                             sort.offset,
                             sort.fetch );
         }
         // We copy the join and the top sort operator
         final AlgNode joinCopy = join.copy( join.getTraitSet(), join.getCondition(), newLeftInput, newRightInput, join.getJoinType(), join.isSemiJoinDone() );
-        final AlgNode sortCopy = sort.copy( sort.getTraitSet(), joinCopy, sort.getCollation(), sort.offset, sort.fetch );
+        final AlgNode sortCopy = sort.copy( sort.getTraitSet(), joinCopy, sort.getCollation(), null, sort.offset, sort.fetch );
 
         call.transformTo( sortCopy );
     }

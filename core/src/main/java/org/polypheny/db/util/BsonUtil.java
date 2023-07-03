@@ -66,6 +66,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -982,7 +983,7 @@ public class BsonUtil {
             case INT64:
                 return PolyInteger.of( input.asInt32().getValue() );
             case DECIMAL128:
-                break;
+                return PolyBigDecimal.of( input.asDecimal128().getValue().bigDecimalValue() );
             case MIN_KEY:
                 break;
             case MAX_KEY:

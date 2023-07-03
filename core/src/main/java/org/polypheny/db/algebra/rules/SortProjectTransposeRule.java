@@ -121,6 +121,7 @@ public class SortProjectTransposeRule extends AlgOptRule {
                         sort.getTraitSet().replace( newCollation ),
                         project.getInput(),
                         newCollation,
+                        null,
                         sort.offset,
                         sort.fetch );
         AlgNode newProject = project.copy( sort.getTraitSet(), ImmutableList.of( newSort ) );

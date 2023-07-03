@@ -813,14 +813,14 @@ public class JdbcRules {
     public static class JdbcSort extends Sort implements JdbcAlg {
 
         public JdbcSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-            super( cluster, traitSet, input, collation, offset, fetch );
+            super( cluster, traitSet, input, collation, null, offset, fetch );
             assert getConvention() instanceof JdbcConvention;
             assert getConvention() == input.getConvention();
         }
 
 
         @Override
-        public JdbcSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+        public JdbcSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
             return new JdbcSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
         }
 

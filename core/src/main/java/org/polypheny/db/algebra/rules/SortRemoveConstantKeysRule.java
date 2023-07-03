@@ -94,7 +94,7 @@ public class SortRemoveConstantKeysRule extends AlgOptRule {
             return;
         }
 
-        final Sort result = sort.copy( sort.getTraitSet(), input, AlgCollations.of( collationsList ) );
+        final Sort result = sort.copy( sort.getTraitSet(), input, AlgCollations.of( collationsList ), null, null, null );
         call.transformTo( result );
         call.getPlanner().setImportance( sort, 0.0 );
     }

@@ -88,7 +88,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
@@ -512,7 +511,7 @@ public class MqlToAlgConverter {
     private Map<String, RexNode> translateAddToSet( BsonDocument doc, AlgDataType rowType ) {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
-            RexNode id = RexNameRef.create( entry.getKey(), rowType );
+            RexNode id = getIdentifier( entry.getKey(), rowType );
             RexNode value = convertLiteral( entry.getValue() );
             RexCall addToSet = new RexCall( jsonType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_UPDATE_ADD_TO_SET ), Arrays.asList( id, value ) );
 
@@ -953,7 +952,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "$skip pipeline stage needs a positive number after" );
         }
 
-        return LogicalDocumentSort.create( node, AlgCollations.of(), convertLiteral( value ), null );
+        return LogicalDocumentSort.create( node, AlgCollations.of(), List.of(), convertLiteral( value ), null );
     }
 
 
@@ -972,7 +971,7 @@ public class MqlToAlgConverter {
             throw new RuntimeException( "$limit pipeline stage needs a positive number after" );
         }
 
-        return LogicalDocumentSort.create( node, AlgCollations.of(), null, convertLiteral( value ) );
+        return LogicalDocumentSort.create( node, AlgCollations.of(), List.of(), null, convertLiteral( value ) );
     }
 
 
@@ -1008,45 +1007,20 @@ public class MqlToAlgConverter {
                 node,
                 rowType,
                 names,
-                ( newNode, newRowType ) -> LogicalDocumentSort.create( newNode, AlgCollations.of( generateCollation( dirs, names, newRowType.getFieldNames() ) ), null, null ) );
+                ( newNode, nodes ) -> LogicalDocumentSort.create( newNode, AlgCollations.of( generateCollation( dirs, names, names ) ), nodes, null, null ) );
     }
 
 
     /**
      * This function wraps document fields which are either hidden in the default data field _data or in another parent field
      */
-    private AlgNode conditionalWrap( AlgNode node, AlgDataType rowType, List<String> names, BiFunction<AlgNode, AlgDataType, AlgNode> nodeFunction ) {
-        // we filter for names which are underlying
-        List<String> rowNames = rowType.getFieldNames();
-        List<String> hiddenNames = names
-                .stream()
-                .filter( name -> !rowNames.contains( name.split( "\\." )[0] ) )
-                .collect( Collectors.toList() );
-
-        // we generate Json mapping for underlying fields
+    private AlgNode conditionalWrap( AlgNode node, AlgDataType rowType, List<String> names, BiFunction<AlgNode, List<RexNode>, AlgNode> nodeFunction ) {
         List<RexNode> projectionNodes = new ArrayList<>();
-        for ( String name : hiddenNames ) {
+        for ( String name : names ) {
             RexNode identifier = getIdentifier( name, rowType );
             projectionNodes.add( identifier );
         }
-
-        // those underlying field need to be added via a projection, then the alg operation applied and then removed again
-        if ( hiddenNames.size() > 0 ) {
-
-            List<RexNode> nodes = rowType.getFieldList().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
-            nodes.addAll( projectionNodes );
-            List<String> nodeNames = rowType.getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
-            nodeNames.addAll( hiddenNames );
-            node = LogicalDocumentProject.create( node, nodes, nodeNames );
-
-            node = nodeFunction.apply( node, node.getRowType() );
-
-            nodes.removeAll( projectionNodes );
-            nodeNames.removeAll( hiddenNames );
-
-            return LogicalDocumentProject.create( node, nodes, nodeNames );
-        }
-        return nodeFunction.apply( node, node.getRowType() );
+        return nodeFunction.apply( node, projectionNodes );
     }
 
 
@@ -1256,6 +1230,7 @@ public class MqlToAlgConverter {
         return LogicalDocumentSort.create(
                 node,
                 collation,
+                List.of(),
                 null,
                 new RexLiteral(
                         PolyBigDecimal.of( new BigDecimal( limit ) ),
@@ -1600,33 +1575,37 @@ public class MqlToAlgConverter {
 
     private RexNode getIdentifier( String parentKey, AlgDataType rowType, boolean useAccess ) {
         List<String> rowNames = rowType.getFieldNames();
-        if ( false ) {
-            if ( useAccess ) {
-                return attachAccess( parentKey, rowType );
-            } else {
+        //if ( false ) {
+        if ( useAccess ) {
+            return attachAccess( parentKey, rowType );
+        } /*else {
                 return attachRef( parentKey, rowType );
-            }
-        }
+            }*/
+        //}
         // as it is possible to query relational schema with mql we have to block this step when this happens
         if ( !usesDocumentModel ) {
             throw new RuntimeException( "The used identifier is not part of the table." );
         }
 
-        /*if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
-            String[] keys = parentKey.split( "\\." );
-            // we fix sub-documents in elemMatch queries by only passing the sub-key
-            // that the replacing then only uses the array element and searches the sub-key there
-            if ( !elemMatchActive || keys.length == 1 ) {
-                return translateDocValue( rowNames.indexOf( keys[0] ), rowType, parentKey, useAccess );
-            } else {
-                List<String> names = Arrays.asList( keys );
-                names.remove( 0 );
-                return translateDocValue( rowNames.indexOf( keys[0] ), rowType, String.join( ".", names ), useAccess );
-            }
+        if ( elemMatchActive ) {
+            return RexIndexRef.of( 0, rowType );
+        }
 
-        }*/
+        //if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
+        String[] keys = parentKey.split( "\\." );
+        // we fix sub-documents in elemMatch queries by only passing the sub-key
+        // that the replacing then only uses the array element and searches the sub-key there
+           /*if ( !elemMatchActive || keys.length == 1 ) {
+                return translateDocValue(  0, rowType, parentKey, useAccess );
+            } else {
+                //List<String> names = Arrays.asList( keys );
+                //names.remove( 0 );
+                return translateDocValue( 0, rowType, parentKey, useAccess );
+            }*/
+
+        //}
         // the default _data field does still exist
-        return translateDocValue( 0, rowType, parentKey, false );
+        return translateDocValue( 0, rowType, parentKey, useAccess );
 
     }
 
@@ -1862,7 +1841,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertSize( BsonValue bsonValue, String parentKey, AlgDataType rowType ) {
         if ( bsonValue.isNumber() ) {
-            RexNameRef id = RexNameRef.create( parentKey, rowType );
+            RexNode id = getIdentifier( parentKey, rowType );
             return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
         } else {
             throw new RuntimeException( "After $size there needs to follow a number" );
@@ -1894,7 +1873,7 @@ public class MqlToAlgConverter {
 
         RexNode op = getFixedCall( nodes, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
 
-        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ELEM_MATCH ), Arrays.asList( RexNameRef.create( parentKey, rowType ), op ) );
+        return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ELEM_MATCH ), Arrays.asList( getIdentifier( parentKey, rowType ), op ) );
     }
 
 
@@ -1913,7 +1892,7 @@ public class MqlToAlgConverter {
         AlgDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
         if ( bsonValue.isArray() ) {
             List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, "" );
-            RexNode id = RexNameRef.create( parentKey, rowType );
+            RexNode id = getIdentifier( parentKey, rowType );
 
             List<RexNode> operands = new ArrayList<>();
             for ( RexNode rexNode : arr ) {
@@ -1964,7 +1943,7 @@ public class MqlToAlgConverter {
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_TYPE_MATCH ),
-                Arrays.asList( RexNameRef.create( parentKey, rowType ), types ) );
+                Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
     }
 
@@ -2292,17 +2271,6 @@ public class MqlToAlgConverter {
             return LogicalDocumentProject.create( node, new ArrayList<>( includes.values() ), new ArrayList<>( includes.keySet() ) );
         }
         return node;
-    }
-
-
-    private RexNode mergeDocument( AlgNode node ) {
-        DocumentType returnType = new DocumentType( node.getRowType().getFieldList() );
-        List<RexNode> nodes = new ArrayList<>();
-        nodes.add( getStringArray( node.getRowType().getFieldNames() ) );
-        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
-            nodes.add( cluster.getRexBuilder().makeInputRef( node.getRowType(), field.getIndex() ) );
-        }
-        return cluster.getRexBuilder().makeCall( returnType, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_MERGE ), nodes );
     }
 
 

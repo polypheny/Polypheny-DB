@@ -117,7 +117,7 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void matchProjectTest() {
         List<String> expected = ImmutableList.of(
-                document( kv( string( "key.key" ), string( "val" ) ), kv( "test", 1.3 ) )
+                document( kv( string( "key" ), document( kv( string( "key" ), string( "val" ) ) ) ), kv( "test", 1.3 ) )
         );
         insertMany( DATA_0 );
 
@@ -215,9 +215,9 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupSubFieldTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                        new Object[]{ null },
-                        new Object[]{ "val" } ),
-                "key.key" );
+                        new Object[]{ document( kv( string( "key" ), null ) ) },
+                        new Object[]{ document( kv( string( "key" ), string( "val" ) ) ) } ),
+                "key" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $group( "{\"_id\":\"$key.key\"}" ) );

@@ -86,6 +86,7 @@ public class ProjectSortTransposeRule extends AlgOptRule {
                         sort.getTraitSet(),
                         newProject,
                         sort.getCollation(),
+                        null,
                         sort.offset,
                         sort.fetch );
         call.transformTo( newSort );

@@ -55,7 +55,7 @@ public class MqlFunctions {
 
 
     private MqlFunctions() {
-        // empty on purpose
+        // empty on purposeD
     }
 
 
@@ -394,7 +394,7 @@ public class MqlFunctions {
      * @return the array
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyList<?> docGetArray( PolyValue input ) {
+    public static PolyList<PolyValue> docGetArray( PolyValue input ) {
         // input = deserializeBsonIfNecessary( input );
         if ( input.isList() ) {
             return input.asList();
@@ -454,11 +454,30 @@ public class MqlFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyDocument mergeDocument( PolyValue value, List<PolyString> names, PolyValue... documents ) {
+    public static PolyDocument mergeDocument( PolyValue value, List<PolyList<PolyString>> names, PolyValue... documents ) {
         assert names.size() == documents.length;
         Map<PolyString, PolyValue> doc = new HashMap<>();
+
+        Iterator<PolyString> iter;
+        Map<PolyString, PolyValue> temp;
+
         for ( int i = 0; i < documents.length; i++ ) {
-            doc.put( names.get( i ), documents[i] );
+            iter = names.get( i ).iterator();
+            temp = doc;
+            while ( iter.hasNext() ) {
+                PolyString name = iter.next();
+                if ( iter.hasNext() ) {
+                    // we are not yet at the end, need next document
+                    if ( !temp.containsKey( name ) ) {
+                        temp.put( name, PolyDocument.ofDocument( Map.of() ) );
+                    }
+                    temp = temp.get( name ).asDocument();
+                } else {
+                    // we are at the end and place value
+                    temp.put( name, documents[i] );
+                }
+            }
+
         }
 
         return PolyDocument.ofDocument( doc );
@@ -473,9 +492,9 @@ public class MqlFunctions {
      * @return if the size matches
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docSizeMatch( PolyValue input, int size ) {
+    public static PolyBoolean docSizeMatch( PolyValue input, PolyNumber size ) {
         if ( input.isList() ) {
-            return PolyBoolean.of( input.asList().size() == size );
+            return PolyBoolean.of( input.asList().size() == size.intValue() );
         }
         return PolyBoolean.FALSE;
     }
@@ -604,22 +623,22 @@ public class MqlFunctions {
      * @return the sliced elements
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyValue docSlice( PolyValue input, int skip, int elements ) {
+    public static PolyValue docSlice( PolyValue input, PolyNumber skip, PolyNumber elements ) {
         if ( !(input.isList()) ) {
             return null;
         } else {
-            PolyList<?> list = input.asList();
+            PolyList<PolyValue> list = input.asList();
             // if elements is negative the selection starts from the end
             int end;
             int start;
-            if ( elements > 0 ) {
-                start = Math.min( skip, list.size() );
-                end = Math.min( list.size(), skip + elements );
+            if ( elements.intValue() > 0 ) {
+                start = Math.min( skip.intValue(), list.size() );
+                end = Math.min( list.size(), skip.intValue() + elements.intValue() );
             } else {
-                end = Math.max( 0, list.size() - skip );
-                start = Math.max( 0, end + elements );
+                end = Math.max( 0, list.size() - skip.intValue() );
+                start = Math.max( 0, end + elements.intValue() );
             }
-            return (PolyValue) list.subList( start, end );
+            return PolyList.copyOf( list.subList( start, end ) );
         }
     }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -49,7 +50,7 @@ public class LogicalLpgSort extends LpgSort {
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
                 offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
                 fetch == null ? null : ((RexLiteral) fetch).value.asNumber().intValue() );

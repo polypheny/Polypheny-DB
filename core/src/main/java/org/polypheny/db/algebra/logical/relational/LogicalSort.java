@@ -33,6 +33,9 @@
 
 package org.polypheny.db.algebra.logical.relational;
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -49,8 +52,8 @@ import org.polypheny.db.rex.RexNode;
  */
 public final class LogicalSort extends Sort {
 
-    private LogicalSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traitSet, input, collation, offset, fetch );
+    private LogicalSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, @Nullable List<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
+        super( cluster, traitSet, input, collation, fieldExps, offset, fetch );
         assert traitSet.containsIfApplicable( Convention.NONE );
     }
 
@@ -67,13 +70,21 @@ public final class LogicalSort extends Sort {
         AlgOptCluster cluster = input.getCluster();
         collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
         AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
-        return new LogicalSort( cluster, traitSet, input, collation, offset, fetch );
+        return new LogicalSort( cluster, traitSet, input, collation, null, offset, fetch );
+    }
+
+
+    public static AlgNode create( AlgNode input, List<RexNode> fieldExps, AlgCollation collation, RexNode offset, RexNode fetch ) {
+        AlgOptCluster cluster = input.getCluster();
+        collation = AlgCollationTraitDef.INSTANCE.canonize( collation );
+        AlgTraitSet traitSet = input.getTraitSet().replace( Convention.NONE ).replace( collation );
+        return new LogicalSort( input.getCluster(), traitSet, input, collation, fieldExps, offset, fetch );
     }
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
-        return new LogicalSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
+        return new LogicalSort( getCluster(), traitSet, newInput, newCollation, fieldExps, offset, fetch );
     }
 
 

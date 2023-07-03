@@ -75,15 +75,16 @@ import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.rules.AggregateValuesRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalModifyRule;
 import org.polypheny.db.algebra.rules.AllocationToPhysicalScanRule;
-import org.polypheny.db.algebra.rules.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.rules.FilterAggregateTransposeRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
 import org.polypheny.db.algebra.rules.FilterProjectTransposeRule;
@@ -222,7 +223,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
-                    DocumentAggregateToAggregateRule.INSTANCE
+                    DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE
             );
 
     public static final List<AlgOptRule> DEFAULT_RULES =
@@ -245,6 +247,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     JoinPushExpressionsRule.INSTANCE,
                     AggregateExpandDistinctAggregatesRule.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
+                    DocumentSortToSortRule.INSTANCE,
                     AggregateReduceFunctionsRule.INSTANCE,
                     FilterAggregateTransposeRule.INSTANCE,
                     ProjectWindowTransposeRule.INSTANCE,

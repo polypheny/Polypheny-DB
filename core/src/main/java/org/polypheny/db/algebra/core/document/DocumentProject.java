@@ -96,7 +96,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         List<RexNode> nodes = new ArrayList<>();
         nodes.add( doc );
         // null key is replaceRoot
-        nodes.add( builder.makeLiteral( PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( PolyString::of ).collect( Collectors.toList() ) ), builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
+        nodes.add( builder.makeLiteral( PolyList.copyOf( includes.keySet().stream().filter( Objects::nonNull ).map( v -> PolyList.copyOf( Arrays.stream( v.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ), builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyType.ARRAY ) );
         nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
 
         if ( !includes.isEmpty() ) {
@@ -117,8 +117,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
                             builder.getTypeFactory().createArrayType(
                                     builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
                                     -1 ),
-                            excludes.stream().map(
-                                    value -> PolyList.of( Arrays.stream( value.split( "\\." ) ).map( s -> PolyString.of( value ) ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ) );
+                            excludes.stream().map( value -> PolyList.of( Arrays.stream( value.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ) );
         }
 
         return doc;

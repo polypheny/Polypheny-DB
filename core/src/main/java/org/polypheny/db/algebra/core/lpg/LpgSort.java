@@ -32,7 +32,7 @@ public abstract class LpgSort extends Sort implements LpgAlg {
      * {@link ModelTrait#GRAPH} native node of a sort operation.
      */
     public LpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traits, child, collation, offset, fetch );
+        super( cluster, traits, child, collation, null, offset, fetch );
     }
 
 

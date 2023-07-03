@@ -195,7 +195,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     private Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
-        builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ), List.of() );
+        builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
         return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFieldList().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
@@ -531,7 +531,7 @@ public class RelationalAdapterDelegate implements Modifiable {
             case SORT:
                 attachDocUpdate( alg.getInput( 0 ), statement, collectionTable, builder, information, adapterId );
                 LogicalDocumentSort sort = (LogicalDocumentSort) alg;
-                builder.push( LogicalDocumentSort.create( builder.build(), sort.collation, sort.offset, sort.fetch ) );
+                builder.push( LogicalDocumentSort.create( builder.build(), sort.collation, sort.fieldExps, sort.offset, sort.fetch ) );
                 break;
             case MODIFY:
                 break;

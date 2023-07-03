@@ -2484,7 +2484,6 @@ public class RexImpTable {
     }
 
 
-
     private static class ElemMatchImplementor implements CallImplementor {
 
         @Override
@@ -2493,17 +2492,17 @@ public class RexImpTable {
 
             final ParameterExpression i_ = Expressions.parameter( int.class, "i" );
             final ParameterExpression predicate = Expressions.parameter( boolean.class, "predicate" );
-            final ParameterExpression _list = Expressions.parameter( Types.of( List.class, Object.class ), "_list" );
-            final ParameterExpression par = Expressions.parameter( Object.class, "_arr" );
-            final ParameterExpression get_ = Expressions.parameter( Object.class, "_get" );
+            final ParameterExpression _list = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_list" );
+            final ParameterExpression par = Expressions.parameter( PolyValue.class, "_arr" );
+            final ParameterExpression get_ = Expressions.parameter( PolyValue.class, "_get" );
             builder.add( Expressions.declare( 0, par, translator.translate( call.getOperands().get( 0 ), NullAs.NOT_POSSIBLE, null ) ) );
             builder.add(
                     Expressions.declare( 0, predicate, Expressions.constant( false ) ) );
             builder.add(
-                    Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, par ) )
+                    Expressions.declare( 0, _list, Expressions.call( BuiltInMethod.DOC_GET_ARRAY.method, Expressions.convert_( par, PolyValue.class ) ) )
             );
             BlockStatement then = Expressions.block(
-                    Expressions.declare( 0, get_, Expressions.call( _list, "get", i_ ) ),
+                    Expressions.declare( 0, get_, Expressions.convert_( Expressions.call( _list, "get", i_ ), PolyValue.class ) ),
                     EnumUtils.ifThen(
                             startSubstitute( translator, call.getOperands().get( 1 ), 0, get_ ),
                             Expressions.block( Expressions.return_( null, Expressions.constant( true ) ) ) )
