@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -63,7 +64,7 @@ public class ClientManager {
                 .setClientUUID( connectionRequest.getClientUuid() )
                 .setConnectionProperties( properties )
                 .setTransactionManager( transactionManager );
-        final CatalogUser user = authenticateUser( properties.get( PropertyDefaults.USERNAME ), properties.get( PropertyDefaults.PASSWORD ) );
+        final CatalogUser user = authenticateUser( properties.get( PropertyUtils.USERNAME_KEY ), properties.get( PropertyUtils.PASSWORD_KEY ) );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
         if ( properties.containsKey( "namespace" ) ) {
@@ -92,7 +93,7 @@ public class ClientManager {
 
 
     private boolean credentialsPresent( Map<String, String> properties ) {
-        return properties.containsKey( PropertyDefaults.USERNAME ) && properties.containsKey( PropertyDefaults.PASSWORD );
+        return properties.containsKey( PropertyUtils.USERNAME_KEY ) && properties.containsKey( PropertyUtils.PASSWORD_KEY );
     }
 
 

@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -127,9 +128,9 @@ public class ProtoInterfaceClient {
 
 
     public boolean isAutocommit() throws IllegalArgumentException{
-        String isAutocommit = connectionProperties.get( PropertyDefaults.AUTOCOMMIT );
+        String isAutocommit = connectionProperties.get( PropertyUtils.AUTOCOMMIT_KEY );
         if ( isAutocommit == null ) {
-            isAutocommit = PropertyDefaults.getDefaultOf( PropertyDefaults.AUTOCOMMIT );
+            isAutocommit = PropertyUtils.getDefaultOf( PropertyUtils.AUTOCOMMIT_KEY );
         }
         return Boolean.parseBoolean( isAutocommit );
     }

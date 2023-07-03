@@ -35,7 +35,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.protointerface.PropertyDefaults;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -131,7 +131,7 @@ public abstract class ProtoInterfaceStatement {
 
 
     public Frame fetch( long offset ) throws Exception {
-        int fetchSize = Integer.parseInt( PropertyDefaults.getDefaultOf( PropertyDefaults.FETCH_SIZE ) );
+        int fetchSize = Integer.parseInt( PropertyUtils.getDefaultOf( PropertyUtils.FETCH_SIZE_KEY ) );
         return fetch( offset, fetchSize );
     }
 
