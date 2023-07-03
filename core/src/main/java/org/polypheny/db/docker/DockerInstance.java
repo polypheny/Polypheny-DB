@@ -125,13 +125,6 @@ public class DockerInstance extends DockerManager {
                     String[] splits = tag.split( "@" );
                     availableImages.add( new Image( splits[0], null, splits[1] ) );
                 }
-            } else {
-                // Just for testing. Adds docker images with no digests (=> not on docker hub, but locally stored)
-                for ( String tag : image.getRepoTags() ) {
-                    log.warn( "[DockerInstance] Adding local Docker Image: {}", tag );
-                    String[] splits = tag.split( ":" );
-                    availableImages.add( new Image( splits[0], null, image.getId() ) );
-                }
             }
         } );
 
