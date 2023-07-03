@@ -1651,7 +1651,7 @@ public class Functions {
         }
 
         if ( allAssignablePoly( PolyNumber.class, b0, b1 ) ) {
-            return mod( b0, b1 );
+            return mod( b0.asNumber(), b1.asNumber() );
         }
 
         throw notArithmetic( "mod", b0, b1 );
