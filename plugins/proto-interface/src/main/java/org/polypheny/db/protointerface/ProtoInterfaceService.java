@@ -105,6 +105,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
                 .setDbmsName( "Return Dbms name here!" )
                 .setVersionName( "Return Dbms version string here!" )
+                .setMajorVersion( 42 )
+                .setMinorVersion( 69 )
                 .build();
         responseObserver.onNext( dbmsVersionResponse );
         responseObserver.onCompleted();
