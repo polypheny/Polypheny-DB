@@ -17,6 +17,7 @@
 package org.polypheny.db.jupyter.model;
 
 import java.net.http.WebSocket;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,6 +143,15 @@ public class JupyterSessionManager {
             return session.getKernel();
         }
         return null;
+    }
+
+
+    public Map<String, Integer> getOpenConnectionCount() {
+        Map<String, Integer> openConnections = new HashMap<>();
+        for ( JupyterKernel kernel : kernels.values() ) {
+            openConnections.put( kernel.getKernelId(), kernel.getSubscriberCount() );
+        }
+        return openConnections;
     }
 
 

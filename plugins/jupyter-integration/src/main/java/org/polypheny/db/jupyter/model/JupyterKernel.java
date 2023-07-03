@@ -37,7 +37,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.jupyter.JupyterPlugin;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage.JupyterQueryPart;
 import org.polypheny.db.jupyter.model.language.JupyterLanguageFactory;
@@ -105,7 +104,6 @@ public class JupyterKernel {
 
 
     private void handleText( CharSequence data ) {
-        log.info( "Received Text: {}", data );
         String dataStr = data.toString();
         if ( dataStr.length() < 10000 ) { // reduce number of large json strings that need to be parsed
             try {
@@ -158,7 +156,6 @@ public class JupyterKernel {
             return;
         }
         String result = anyQuery( query, apc.language, apc.namespace );
-        log.warn( "sending query result: {}", result );
         ByteBuffer request = buildInputReply( result, parentHeader );
         webSocket.sendBinary( request, true );
     }
@@ -170,7 +167,6 @@ public class JupyterKernel {
 
 
     public void execute( String code, String uuid ) {
-        log.info( "Sending code: {}", code );
         ByteBuffer request = buildExecutionRequest( code, uuid, false, false, true );
         webSocket.sendBinary( request, true );
     }
@@ -193,7 +189,6 @@ public class JupyterKernel {
             for ( JupyterQueryPart part : queries ) {
                 ByteBuffer request = buildExecutionRequest( part.code, uuid, part.silent, part.allowStdin, true );
                 webSocket.sendBinary( request, true );
-                log.error( "sending query code: {}", part.code );
             }
         } catch ( Exception e ) {
             e.printStackTrace();
@@ -300,6 +295,11 @@ public class JupyterKernel {
     }
 
 
+    public int getSubscriberCount() {
+        return subscribers.size();
+    }
+
+
     private class WebSocketClient implements WebSocket.Listener {
 
         private final StringBuilder textBuilder = new StringBuilder();
@@ -324,7 +324,6 @@ public class JupyterKernel {
 
         @Override
         public CompletionStage<?> onClose( WebSocket webSocket, int statusCode, String reason ) {
-            log.error( "closed websocket to {}", kernelId );
             jsm.removeKernel( kernelId );
             return Listener.super.onClose( webSocket, statusCode, reason );
         }
@@ -332,7 +331,6 @@ public class JupyterKernel {
 
         @Override
         public void onError( WebSocket webSocket, Throwable error ) {
-            log.error( "error in websocket to {}:\n{}", kernelId, error.getMessage() );
             error.printStackTrace();
             jsm.removeKernel( kernelId );
             Listener.super.onError( webSocket, error );

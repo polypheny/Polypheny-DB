@@ -142,6 +142,7 @@ public class JupyterPlugin extends Plugin {
         server.addSerializedRoute( REST_PATH + "/container/status", this::containerStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/export/<path>", proxy::export, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/connections", proxy::openConnections, HandlerType.GET );
 
         server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );

@@ -24,6 +24,7 @@ import java.util.Base64;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
+import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
 import org.polypheny.db.jupyter.model.language.JupyterLanguageFactory;
 import org.polypheny.db.jupyter.model.response.NotebookContentModel;
@@ -100,6 +101,11 @@ public class JupyterProxy {
     }
 
 
+    public void openConnections( final Context ctx, Crud crud ) {
+        ctx.json( JupyterSessionManager.getInstance().getOpenConnectionCount() );
+    }
+
+
     public void export( final Context ctx, Crud crud ) {
         String path = ctx.pathParam( "path" );
         String language = ctx.queryParam( "language" );
@@ -108,10 +114,8 @@ public class JupyterProxy {
             ctx.status( 404 ).result( "Unknown language: " + language );
             return;
         }
-        log.error( "exporting {} with language {}", path, language );
         try {
             HttpResponse<String> response = client.getContents( path, "1", null );
-            log.warn( "got response {}", response.body() );
             NotebookContentModel content = gson.fromJson( response.body(), NotebookContentModel.class );
             NotebookModel nb = content.getContent();
             if ( nb == null ) {
@@ -192,7 +196,6 @@ public class JupyterProxy {
         ctx.contentType( "application/json" );
         try {
             HttpResponse<String> res = supplier.get();
-            log.info( "Responding with: {}", res.body() );
             ctx.status( res.statusCode() );
             ctx.result( res.body() );
 
