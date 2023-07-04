@@ -25,8 +25,22 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 @Value
 public class PolyFile extends PolyBlob {
 
-    public PolyFile( PolyType type, boolean nullable ) {
-        super( type );
+    public byte[] value;
+
+
+    public PolyFile( byte[] value ) {
+        super( PolyType.FILE );
+        this.value = value;
+    }
+
+
+    public static PolyFile of( byte[] value ) {
+        return new PolyFile( value );
+    }
+
+
+    public static PolyFile ofNullable( byte[] value ) {
+        return value == null ? null : of( value );
     }
 
 }

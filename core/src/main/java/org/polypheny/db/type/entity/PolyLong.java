@@ -65,6 +65,11 @@ public class PolyLong extends PolyNumber {
     }
 
 
+    public static PolyLong ofNullable( Number value ) {
+        return value == null ? null : of( value );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !o.isNumber() ) {

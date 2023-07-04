@@ -1346,6 +1346,8 @@ public class DbmsMeta implements ProtobufMeta {
             case ARRAY:
                 Function1<PolyValue, Object> elTrans = getPolyToExternalizer( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ) );
                 return o -> o == null ? null : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
+            case FILE:
+                return o -> o;
             default:
                 throw new NotImplementedException( "meta" );
         }

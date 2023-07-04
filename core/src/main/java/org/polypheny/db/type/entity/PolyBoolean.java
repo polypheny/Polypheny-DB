@@ -66,6 +66,11 @@ public class PolyBoolean extends PolyValue {
     }
 
 
+    public static PolyBoolean ofNullable( Boolean value ) {
+        return value == null ? null : of( value );
+    }
+
+
     public static PolyBoolean of( boolean value ) {
         return new PolyBoolean( value );
     }

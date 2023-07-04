@@ -446,7 +446,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
         }
 
-        if ( catalog.getSnapshot().rel().getColumn( table.id, columnName ).isEmpty() ) {
+        if ( !catalog.getSnapshot().rel().getColumn( table.id, columnName ).isEmpty() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", columnName, table.name );
         }
         //

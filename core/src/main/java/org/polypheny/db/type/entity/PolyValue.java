@@ -300,7 +300,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case GEOMETRY:
                 return PolyValue.class;
             case FILE:
-                break;
+                return PolyFile.class;
             case IMAGE:
                 break;
             case VIDEO:

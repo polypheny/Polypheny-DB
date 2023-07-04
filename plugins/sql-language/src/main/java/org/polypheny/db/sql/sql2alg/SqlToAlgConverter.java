@@ -1540,6 +1540,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         PolyValue value = literal.getValue();
 
+        if ( value == null ) {
+            return (RexLiteral) rexBuilder.makeLiteral( null, type, false );
+        }
+
         if ( PolyTypeUtil.isExactNumeric( type ) && PolyTypeUtil.hasScale( type ) ) {
             BigDecimal roundedValue = NumberUtil.rescaleBigDecimal( value.asBigDecimal().value, type.getScale() );
             return rexBuilder.makeExactLiteral( roundedValue, type );

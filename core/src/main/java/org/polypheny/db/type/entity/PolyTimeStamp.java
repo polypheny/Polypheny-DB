@@ -56,6 +56,11 @@ public class PolyTimeStamp extends PolyTemporal {
     }
 
 
+    public static PolyTimeStamp ofNullable( Number number ) {
+        return number == null ? null : of( number );
+    }
+
+
     public static PolyTimeStamp of( long value ) {
         return new PolyTimeStamp( value );
     }

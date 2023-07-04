@@ -344,7 +344,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyBlob asBlob() {
-        return new PolyBlob( null );
+        return new PolyBlob( PolyType.FILE );
     }
 
 

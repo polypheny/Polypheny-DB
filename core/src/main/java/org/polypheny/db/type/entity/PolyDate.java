@@ -55,6 +55,11 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyDate ofNullable( Number number ) {
+        return number == null ? null : of( number );
+    }
+
+
     public Date asDefaultDate() {
         return new Date( sinceEpoch );
     }

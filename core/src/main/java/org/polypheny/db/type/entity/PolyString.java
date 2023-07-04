@@ -79,6 +79,11 @@ public class PolyString extends PolyValue {
     }
 
 
+    public static PolyString ofNullable( String value ) {
+        return value == null ? null : of( value );
+    }
+
+
     public static PolyString concat( List<PolyString> strings ) {
         return PolyString.of( strings.stream().map( s -> s.value ).collect( Collectors.joining() ) );
     }

@@ -16,13 +16,20 @@
 
 package org.polypheny.db.type.entity.category;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
+@NonFinal
 public class PolyBlob extends PolyValue {
+
 
     public PolyBlob( PolyType type ) {
         super( type );

@@ -79,6 +79,11 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    public static PolyBigDecimal ofNullable( Number value, int precision, int scale ) {
+        return value == null ? null : of( value, precision, scale );
+    }
+
+
     public static PolyBigDecimal convert( Object value ) {
         if ( value instanceof PolyNumber ) {
             return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );

@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import java.io.PushbackInputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
@@ -45,6 +44,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -59,7 +59,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
@@ -80,17 +79,14 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFile;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
@@ -105,6 +101,7 @@ import org.polypheny.db.util.BuiltInMethod;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
+@Slf4j
 public class JdbcToEnumerableConverter extends ConverterImpl implements EnumerableAlg {
 
     public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
@@ -363,7 +360,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
                 */
             default:
-                if ( polyType.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                /*if ( polyType.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     // if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ){ ..getBytes } else { ..getBinaryStream }
                     Expression getStatement = Expressions.call( DataContext.ROOT, Types.lookupMethod( DataContext.class, "getStatement" ) );
                     Expression getTransaction = Expressions.call( getStatement, Types.lookupMethod( Statement.class, "getTransaction" ) );
@@ -376,50 +373,54 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             //assign a PushbackInputStream for the SQL META function
                             Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
                     source = null;
-                } else {
-                    source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
-                }
+                } else {*/
+                source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
+                //}
         }
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
-                poly = Expressions.call( PolyLong.class, "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyLong.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case VARCHAR:
             case CHAR:
-                poly = Expressions.call( PolyString.class, "of", Expressions.convert_( source, String.class ) );
+                poly = Expressions.call( PolyString.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
                 break;
             case SMALLINT:
             case TINYINT:
             case INTEGER:
-                poly = Expressions.call( PolyInteger.class, "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyInteger.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case BOOLEAN:
-                poly = Expressions.call( PolyBoolean.class, "of", Expressions.convert_( source, Boolean.class ) );
+                poly = Expressions.call( PolyBoolean.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Boolean.class ) );
                 break;
             case FLOAT:
             case REAL:
-                poly = Expressions.call( PolyFloat.class, "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyFloat.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case DOUBLE:
-                poly = Expressions.call( PolyDouble.class, "of", Expressions.convert_( source, Number.class ) );
+                poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
                 break;
             case TIMESTAMP:
-                poly = Expressions.call( PolyTimeStamp.class, "of", Expressions.convert_( source, Long.class ) );
+                poly = Expressions.call( PolyTimeStamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
                 break;
             case DECIMAL:
-                poly = Expressions.call( PolyBigDecimal.class, "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
+                poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = fieldType.isNullable() ? Expressions.call( PolyList.class, "ofNullable", source ) : Expressions.call( PolyList.class, "of", source ); // todo might change
+                poly = Expressions.call( PolyList.class, fieldType.isNullable() ? "ofNullable" : "of", source ); // todo might change
+                break;
+            case FILE:
+                poly = Expressions.call( PolyFile.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             default:
+                log.warn( "potentially unhandled polyValue" );
                 poly = source;
         }
 

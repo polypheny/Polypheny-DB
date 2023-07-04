@@ -67,7 +67,7 @@ public class AlphabeticStatisticColumn extends StatisticColumn {
         }
 
         for ( PolyValue val : values ) {
-            insert( val.asString() );
+            insert( val == null ? null : val.asString() );
         }
     }
 
