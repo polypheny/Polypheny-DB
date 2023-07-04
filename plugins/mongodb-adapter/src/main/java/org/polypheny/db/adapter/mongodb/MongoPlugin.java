@@ -191,6 +191,15 @@ public class MongoPlugin extends Plugin {
             } else if ( deployMode == DeployMode.REMOTE ) {
                 this.host = settings.get( "host" );
                 this.port = Integer.parseInt( settings.get( "port" ) );
+
+                MongoClientSettings mongoSettings = MongoClientSettings
+                        .builder()
+                        .applyToClusterSettings( builder ->
+                                builder.hosts( Collections.singletonList( new ServerAddress( host, port ) ) )
+                        )
+                        .build();
+
+                this.client = MongoClients.create( mongoSettings );
             } else {
                 throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
             }
