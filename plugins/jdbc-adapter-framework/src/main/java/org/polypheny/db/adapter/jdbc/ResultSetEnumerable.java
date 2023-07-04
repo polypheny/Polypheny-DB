@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.jdbc;
 
 
-import com.google.gson.Gson;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -75,7 +74,6 @@ import org.polypheny.db.util.Static;
 @Slf4j
 public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
-    private final static Gson gson = new Gson();
 
     // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
     // an one hour shift, as we lose this timezone information on retrieval

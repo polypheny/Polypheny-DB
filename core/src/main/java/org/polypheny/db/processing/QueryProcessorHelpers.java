@@ -44,6 +44,10 @@ import org.polypheny.db.util.Util;
  */
 public class QueryProcessorHelpers {
 
+
+    private static ArrayType arrayType;
+
+
     public static AlgDataType makeStruct( AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() ) {
             return type;
@@ -115,7 +119,13 @@ public class QueryProcessorHelpers {
     public static ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, AlgDataType type, AlgDataType fieldType ) {
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
-            final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
+            arrayType = ((ArrayType) type);
+            if ( arrayType.getDimension() > 1 ) {
+                // we have to go deeper
+                componentType = avaticaType( typeFactory, new ArrayType( arrayType.getComponentType(), arrayType.isNullable(), arrayType.getCardinality(), arrayType.getDimension() - 1 ), type.getComponentType() );
+            }
+
             final ColumnMetaData.Rep rep = Rep.ARRAY;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {

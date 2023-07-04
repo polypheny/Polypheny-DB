@@ -24,6 +24,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -81,6 +82,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.InitializerContext;
@@ -727,6 +729,8 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 return ((SqlLiteral) node).getPolyValue();
             case CAST:
                 return PolyValue.convert( toPolyValue( ((SqlCall) node).operand( 0 ) ), ((DataTypeSpec) ((SqlCall) node).operand( 1 )).getType() );
+            case ARRAY_VALUE_CONSTRUCTOR:
+                return PolyList.of( ((SqlCall) node).getSqlOperandList().stream().map( this::toPolyValue ).collect( Collectors.toList() ) );
         }
         return null;
     }

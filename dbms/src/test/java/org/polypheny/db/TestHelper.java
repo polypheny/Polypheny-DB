@@ -27,6 +27,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -240,18 +241,7 @@ public class TestHelper {
                         }
 
                     } else {
-                        List<?> resultList = (List<?>) row[j];
-                        Object[] expectedArray = (Object[]) expectedRow[j];
-                        if ( expectedArray == null ) {
-                            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
-                        } else {
-                            for ( int k = 0; k < expectedArray.length; k++ ) {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1,
-                                        expectedArray[k],
-                                        resultList.get( k ) );
-                            }
-                        }
+                        checkArray( rsmd, row, expectedRow, j );
                     }
                     j++;
                 } else {
@@ -260,6 +250,39 @@ public class TestHelper {
             }
         }
         Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+    }
+
+
+    private static void checkArray( ResultSetMetaData rsmd, Object[] row, Object[] expectedRow, int j ) throws SQLException {
+        List<?> resultList = (List<?>) row[j];
+
+        if ( expectedRow[j] == null ) {
+            Assert.assertNull( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': ", resultList );
+            return;
+        }
+
+        List<?> expectedArray = toList( (Object[]) expectedRow[j] );//(Object[]) expectedRow[j];
+
+        for ( int k = 0; k < expectedArray.size(); k++ ) {
+            Assert.assertEquals(
+                    "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "' at position: " + k + 1,
+                    expectedArray.get( k ),
+                    resultList.get( k ) );
+        }
+
+    }
+
+
+    private static List<Object> toList( Object[] objects ) {
+        List<Object> list = new ArrayList<>();
+        for ( Object object : objects ) {
+            if ( object instanceof Object[] ) {
+                list.add( toList( (Object[]) object ) );
+            } else {
+                list.add( object );
+            }
+        }
+        return list;
     }
 
 
@@ -288,7 +311,7 @@ public class TestHelper {
                         row[i - 1] = resultSet.getObject( i );
                     }
                 } else {
-                    row[i - 1] = Functions.deepArrayToList( resultSet.getArray( i ) );
+                    row[i - 1] = Functions.deepArrayToList( (Array) resultSet.getObject( i ) );
                 }
             }
             list.add( row );

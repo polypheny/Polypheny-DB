@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -342,7 +341,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Ignore
+    //@Ignore
     @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class, CassandraExcluded.class })
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -448,7 +447,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Ignore
     public void multiDimArrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -492,7 +490,7 @@ public class JdbcArrayTest {
                     connection.commit();
                 } finally {
                     connection.rollback();
-                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS multidimarray" );
                     connection.commit();
                 }
             }

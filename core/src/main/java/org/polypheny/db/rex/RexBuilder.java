@@ -1546,7 +1546,6 @@ public class RexBuilder {
 
 
     public RexLiteral makeArray( AlgDataType type, List<PolyValue> operands ) {
-        log.warn( "why" );
         return new RexLiteral( PolyList.of( operands ), type, type.getPolyType() );
     }
 

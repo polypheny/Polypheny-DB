@@ -42,6 +42,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.sql.Array;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -81,6 +82,7 @@ import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
@@ -3071,18 +3073,18 @@ public class Functions {
     /**
      * Helper for "array element reference". Caller has already ensured that array and index are not null. Index is 1-based, per SQL.
      */
-    public static Object arrayItem( List list, int item ) {
-        if ( item < 1 || item > list.size() ) {
+    public static PolyValue arrayItem( List<PolyValue> list, PolyNumber item ) {
+        if ( item.intValue() < 1 || item.intValue() > list.size() ) {
             return null;
         }
-        return list.get( item - 1 );
+        return list.get( item.intValue() - 1 );
     }
 
 
     /**
      * Helper for "map element reference". Caller has already ensured that array and index are not null. Index is 1-based, per SQL.
      */
-    public static Object mapItem( Map map, Object item ) {
+    public static PolyValue mapItem( Map<PolyValue, PolyValue> map, PolyValue item ) {
         return map.get( item );
     }
 
@@ -3090,12 +3092,12 @@ public class Functions {
     /**
      * Implements the {@code [ ... ]} operator on an object whose type is not known until runtime.
      */
-    public static Object item( Object object, Object index ) {
-        if ( object instanceof Map ) {
-            return mapItem( (Map) object, index );
+    public static PolyValue item( PolyValue object, PolyValue index ) {
+        if ( object.isMap() ) {
+            return mapItem( object.asMap(), index );
         }
-        if ( object instanceof List && index instanceof Number ) {
-            return arrayItem( (List) object, ((Number) index).intValue() );
+        if ( object.isList() && index.isNumber() ) {
+            return arrayItem( object.asList(), index.asNumber() );
         }
         return null;
     }
@@ -3104,7 +3106,7 @@ public class Functions {
     /**
      * As {@link #arrayItem} method, but allows array to be nullable.
      */
-    public static Object arrayItemOptional( List list, int item ) {
+    public static PolyValue arrayItemOptional( List<PolyValue> list, PolyNumber item ) {
         if ( list == null ) {
             return null;
         }
@@ -3115,7 +3117,7 @@ public class Functions {
     /**
      * As {@link #mapItem} method, but allows map to be nullable.
      */
-    public static Object mapItemOptional( Map map, Object item ) {
+    public static PolyValue mapItemOptional( Map<PolyValue, PolyValue> map, PolyValue item ) {
         if ( map == null ) {
             return null;
         }
@@ -3126,11 +3128,11 @@ public class Functions {
     /**
      * As {@link #item} method, but allows object to be nullable.
      */
-    public static Object itemOptional( Object object, Object index ) {
+    public static PolyValue itemOptional( Map<PolyValue, PolyValue> object, PolyValue index ) {
         if ( object == null ) {
             return null;
         }
-        return item( object, index );
+        return item( (PolyValue) object, index );
     }
 
 
@@ -3245,13 +3247,18 @@ public class Functions {
 
 
     private static List<?> deepArrayToListRecursive( List<?> l ) {
-        if ( l.isEmpty() || !l.get( 0 ).getClass().isArray() ) {
+        if ( l.isEmpty() || !Types.isAssignableFrom( Array.class, l.get( 0 ).getClass() ) ) {
             return new ArrayList<>( l );
         }
 
         List<Object> outer = new ArrayList<>();
         for ( Object o : l ) {
-            List<?> asList = Primitive.asList( o );
+            List<?> asList;
+            try {
+                asList = Primitive.asList( ((Array) o).getArray() );
+            } catch ( SQLException e ) {
+                throw new RuntimeException( e );
+            }
             outer.add( deepArrayToListRecursive( asList ) );
         }
 

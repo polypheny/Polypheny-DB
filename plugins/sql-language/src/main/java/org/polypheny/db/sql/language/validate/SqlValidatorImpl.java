@@ -5498,7 +5498,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             // Only visits arguments which are expressions. We don't want to qualify non-expressions such as 'x' in 'empno * 5 AS x'.
             ArgHandler<SqlNode> argHandler = new CallCopyingArgHandler( call, false );
 
-            if ( !SqlValidatorUtil.isTableRelational( validator ) && call.getKind() == Kind.OTHER_FUNCTION && call.getOperator().getOperatorName() == OperatorName.ITEM ) {
+            if ( SqlValidatorUtil.isNotRelational( validator ) && call.getKind() == Kind.OTHER_FUNCTION && call.getOperator().getOperatorName() == OperatorName.ITEM ) {
                 return new SqlBasicCall( new SqlCrossMapItemOperator(), call.getOperandList().toArray( SqlNode[]::new ), ParserPos.ZERO );
             }
 

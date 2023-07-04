@@ -76,6 +76,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    @SuppressWarnings("unused")
+    public static <E extends PolyValue> PolyList<E> ofNullable( Collection<E> value ) {
+        return value == null ? null : new PolyList<>( new ArrayList<>( value ) );
+    }
+
+
     @SafeVarargs
     public static <E extends PolyValue> PolyList<E> of( E... values ) {
         return new PolyList<>( values );

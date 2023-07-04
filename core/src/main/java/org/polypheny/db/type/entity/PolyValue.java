@@ -693,7 +693,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 // docs accept all
                 return value;
         }
-        if ( value.getType() == type ) {
+        if ( type.getFamily() == value.getType().getFamily() ) {
             return value;
         }
 

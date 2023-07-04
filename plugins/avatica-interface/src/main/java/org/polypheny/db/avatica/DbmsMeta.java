@@ -71,6 +71,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
@@ -111,6 +112,7 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -1322,8 +1324,10 @@ public class DbmsMeta implements ProtobufMeta {
                 return o -> o.asString().value;
             case INTEGER:
             case TINYINT:
+            case SMALLINT:
                 return o -> o.asNumber().IntValue();
             case FLOAT:
+            case REAL:
                 return o -> o.asNumber().FloatValue();
             case DOUBLE:
                 return o -> o.asNumber().DoubleValue();
@@ -1340,11 +1344,19 @@ public class DbmsMeta implements ProtobufMeta {
             case BOOLEAN:
                 return o -> o.asBoolean().value;
             case ARRAY:
-                Function1<PolyValue, Object> elTrans = getPolyToExternalizer( type.getComponentType() );
-                return o -> o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
+                Function1<PolyValue, Object> elTrans = getPolyToExternalizer( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ) );
+                return o -> o == null ? null : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
             default:
                 throw new NotImplementedException( "meta" );
         }
+    }
+
+
+    private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
+        if ( type.getDimension() > 1 ) {
+            return AlgDataTypeFactory.DEFAULT.createArrayType( type.getComponentType(), type.getMaxCardinality(), type.getDimension() - 1 );
+        }
+        return type.getComponentType();
     }
 
 

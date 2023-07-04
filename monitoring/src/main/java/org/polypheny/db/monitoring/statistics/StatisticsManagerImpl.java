@@ -836,7 +836,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     private StatisticColumn createStatisticColumn( PolyType polyType, QueryResult queryResult ) {
         StatisticColumn statisticColumn = null;
         if ( polyType.getFamily() == PolyTypeFamily.ARRAY ) {
-            log.warn( "statistic are not yet supported" );
+            log.warn( "statistic for arrays are not yet supported" );
             return null;
         }
 

@@ -254,7 +254,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                             Collections.sort( list );
                             throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFoundDidYouMean( columnName, Util.sepList( list, "', '" ) ) );
                         }
-                    } else if ( !SqlValidatorUtil.isTableRelational( validator ) ) {
+                    } else if ( SqlValidatorUtil.isNotRelational( validator ) ) {
                         // todo dl, check if this does not lead to problems
                         return SqlQualified.create( this, 0, validator.getSqlNamespace( identifier ), identifier );
                     }

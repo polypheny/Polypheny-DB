@@ -417,7 +417,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBigDecimal.class, "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
-                poly = Expressions.call( PolyList.class, "of", source );
+                poly = fieldType.isNullable() ? Expressions.call( PolyList.class, "ofNullable", source ) : Expressions.call( PolyList.class, "of", source ); // todo might change
                 break;
             default:
                 poly = source;

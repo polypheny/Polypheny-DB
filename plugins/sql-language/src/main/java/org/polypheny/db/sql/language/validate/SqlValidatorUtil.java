@@ -610,12 +610,12 @@ public class SqlValidatorUtil {
     }
 
 
-    public static boolean isTableRelational( SqlValidatorImpl validator ) {
+    public static boolean isNotRelational( SqlValidatorImpl validator ) {
         if ( validator.getTableScope() == null ) {
             return false;
         }
         if ( !(validator.getTableScope().getNode() instanceof SqlIdentifier) ) {
-            return false;
+            //return true;
         }
         SqlIdentifier id = ((SqlIdentifier) validator.getTableScope().getNode());
 
@@ -624,7 +624,7 @@ public class SqlValidatorUtil {
             namespace = Catalog.defaultNamespaceName;
         }
 
-        return validator.snapshot.getNamespace( namespace ).namespaceType == NamespaceType.RELATIONAL;
+        return validator.snapshot.getNamespace( namespace ).namespaceType != NamespaceType.RELATIONAL;
     }
 
 
