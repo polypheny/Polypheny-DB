@@ -17,7 +17,6 @@
 package org.polypheny.db.mqtt;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 public class PolyStream {
@@ -27,34 +26,46 @@ public class PolyStream {
     final String topic;
 
     @Getter
-    final String uniqueNameInterface;
+    final String uniqueNameOfInterface;
     @Getter
     final String content;
     @Getter
     final String namespace;
     @Getter
     @Setter
-    long namespaceID;
+    private long namespaceID;
+    @Setter
     @Getter
-    final long databaseId;
+    private long databaseId;
+    @Setter
     @Getter
-    final int userId;
+    private int userId;
     @Getter
     @Setter
-    long storeID;   // the ID of collection/graph/table... the place where info is/should be saved
+    private long storeID;   // the ID of collection/graph/table... the place where info is/should be saved
+
+
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace ) {
+        this.topic = topic;
+        this.uniqueNameOfInterface = uniqueNameInterface;
+        this.content = content;
+        this.namespace = namespace;
+    }
+
 
     public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId ) {
         this.topic = topic;
-        this.uniqueNameInterface = uniqueNameInterface;
+        this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
         this.databaseId = databaseId;
         this.userId = userId;
     }
 
+
     public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId ) {
         this.topic = topic;
-        this.uniqueNameInterface = uniqueNameInterface;
+        this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
         this.namespaceID = namespaceID;
@@ -65,7 +76,7 @@ public class PolyStream {
 
     public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId, long storeID ) {
         this.topic = topic;
-        this.uniqueNameInterface = uniqueNameInterface;
+        this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
         this.databaseId = databaseId;
@@ -73,9 +84,10 @@ public class PolyStream {
         this.storeID = storeID;
     }
 
+
     public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId, long storeID ) {
         this.topic = topic;
-        this.uniqueNameInterface = uniqueNameInterface;
+        this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
         this.namespaceID = namespaceID;
