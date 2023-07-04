@@ -38,6 +38,9 @@ import org.polypheny.db.type.PolyType;
 public class PhysicalColumn extends CatalogEntity {
 
     public long adapterId;
+
+    public long tableId;
+
     @Serialize
     public int position;
 
@@ -72,6 +75,7 @@ public class PhysicalColumn extends CatalogEntity {
     public String logicalName;
 
 
+
     public PhysicalColumn(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
@@ -90,6 +94,7 @@ public class PhysicalColumn extends CatalogEntity {
             @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
         super( id, name, tableId, EntityType.ENTITY, NamespaceType.RELATIONAL, true );
         this.adapterId = adapterId;
+        this.tableId = tableId;
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -111,7 +116,22 @@ public class PhysicalColumn extends CatalogEntity {
             final long adapterId,
             final int position,
             LogicalColumn column ) {
-        this( column.id, name, column.name, tableId, adapterId, position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, column.defaultValue );
+        this(
+                column.id,
+                name,
+                column.name,
+                tableId,
+                adapterId,
+                position,
+                column.type,
+                column.collectionsType,
+                column.length,
+                column.scale,
+                column.dimension,
+                column.cardinality,
+                column.nullable,
+                column.collation,
+                column.defaultValue );
     }
 
 

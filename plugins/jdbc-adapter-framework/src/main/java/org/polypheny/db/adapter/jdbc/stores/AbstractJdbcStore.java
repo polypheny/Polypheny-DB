@@ -338,6 +338,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
+        storeCatalog.dropTable( table.id );
         // }
     }
 
@@ -354,7 +355,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
-
+        storeCatalog.dropColum( allocId, columnId );
         //}
     }
 
