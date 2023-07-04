@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -249,11 +248,11 @@ public class MqttStreamPlugin extends Plugin {
 
 
         void processMsg( Mqtt3Publish subMsg ) {
-            // create Instance of PolyStream for the message with namespace
             //TODO: attention: return values, not correct, might need a change of type.
-            String msg = StreamProcessing.processMsg( subMsg );
-            //TODO: StreamCapture streamCapture = new StreamCapture( this.transactionManager, );
-            //TODO: streamCapture.handleMessage( );
+            String content = StreamProcessing.processMsg( subMsg );
+            PolyStream stream = new PolyStream( subMsg.getTopic().toString(), getUniqueName(), content, this.namespace );
+            StreamCapture streamCapture = new StreamCapture( this.transactionManager, stream);
+            streamCapture.handleContent( );
         }
 
 
