@@ -347,7 +347,15 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
 
-        webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts );
+        webuiServer.post( "/startHandshake", crud::startHandshake );
+
+        webuiServer.post( "/redoHandshake", crud::redoHandshake );
+
+        webuiServer.get( "/listHandshakes", crud::listHandshakes );
+
+        webuiServer.get( "/autoHandshakeAvailable", crud::autoHandshakeAvailable );
+
+        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
 
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 

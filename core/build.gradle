@@ -3,6 +3,7 @@ import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 group "org.polypheny"
 
 apply plugin: "io.freefair.lombok"
+apply plugin: "com.google.protobuf"
 
 configurations {
     javacc
@@ -22,7 +23,7 @@ buildscript {
         // Fmpp
         classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
     }
-    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
+    ant.taskdef(name: "fmpp", classname: "fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 
@@ -59,6 +60,12 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.73' // MIT
+    implementation 'org.bouncycastle:bctls-jdk18on:1.73' // MIT
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.73' // MIT
+    implementation 'com.google.protobuf:protobuf-java:3.23.0' // BSD 3-clause
+
+
     // https://github.com/docker-java/docker-java
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
     implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
@@ -71,15 +78,20 @@ dependencies {
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+}
 
 
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.23.0'
+    }
 }
 
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -113,7 +125,7 @@ task generateFmppSourcesDocument {
                 outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/mql")
     }
 }
-task generateParserDocument (type: CompileJavaccTask) {
+task generateParserDocument(type: CompileJavaccTask) {
     dependsOn("generateFmppSourcesDocument")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
@@ -133,7 +145,7 @@ task generateFmppSources {
                 outputRoot: project.buildDir.absolutePath + "/generated-sources/fmpp/sql")
     }
 }
-task generateParser (type: CompileJavaccTask) {
+task generateParser(type: CompileJavaccTask) {
     dependsOn("generateFmppSources")
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false", lookahead: "2"]
@@ -149,11 +161,18 @@ compileJava {
     dependsOn("generateJdbcVersionProperties")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
+    dependsOn("generateProto")
 }
 
 delombok {
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
+    dependsOn("generateProto")
+}
+
+extractIncludeProto {
+    dependsOn(":config:compileJava")
+    dependsOn(":information:compileJava")
 }
 
 
@@ -166,7 +185,7 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
     // Use HTML 5 for JavaDoc
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // Exclude build dir

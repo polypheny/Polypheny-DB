@@ -24,6 +24,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
+import java.io.IOException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -69,12 +71,9 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.DockerManager.Container;
-import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -127,20 +126,18 @@ public class MongoPlugin extends Plugin {
             description = "MongoDB is a document-oriented database system.",
             supportedNamespaceTypes = { NamespaceType.DOCUMENT, NamespaceType.RELATIONAL },
             usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
-    @AdapterSettingInteger(name = "port", defaultValue = 27017)
+    @AdapterSettingInteger(name = "port", defaultValue = 27017, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
     public static class MongoStore extends DataStore {
 
 
         private String host;
-        private final int port;
-        private Container container;
+        private int port;
+        private DockerContainer container;
         private transient MongoClient client;
         private final transient TransactionProvider transactionProvider;
         private transient MongoSchema currentSchema;
-        private String currentUrl;
-        private int dockerInstanceId;
 
         @Getter
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
@@ -155,31 +152,51 @@ public class MongoPlugin extends Plugin {
         public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {
             super( adapterId, uniqueName, settings, true );
 
-            this.port = Integer.parseInt( settings.get( "port" ) );
-
             if ( deployMode == DeployMode.DOCKER ) {
-                dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
-                DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/mongo", getUniqueName(), dockerInstanceId )
-                        .withMappedPort( 27017, port )
-                        .withInitCommands( Arrays.asList( "mongod", "--replSet", "poly" ) )
-                        .withReadyTest( this::testConnection, 20000 )
-                        .withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) )
-                        .build();
-                this.container = container;
-                DockerManager.getInstance().initialize( container ).start();
-                this.host = container.getIpAddress();
+                if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) );
+                    this.container = instance.newBuilder( "polypheny/mongo", getUniqueName() )
+                            .withExposedPort( 27017 )
+                            .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
+                            .build();
+
+                    if ( !container.waitTillStarted( this::testConnection, 20000 ) ) {
+                        container.destroy();
+                        throw new RuntimeException( "Failed to start Mongo container" );
+                    }
+
+                    try {
+                        int exitCode = container.execute( Arrays.asList( "mongo", "--eval", "rs.initiate()" ) );
+                        if ( exitCode != 0 ) {
+                            throw new IOException( "Command returned non-zero exit code" );
+                        }
+                    } catch ( IOException e ) {
+                        container.destroy();
+                        throw new RuntimeException( " Command 'mongo --eval rs.initiate()' failed" );
+                    }
+
+                    this.deploymentId = container.getContainerId();
+                    settings.put( "deploymentId", this.deploymentId );
+                    updateSettings( settings );
+                } else {
+                    deploymentId = settings.get( "deploymentId" );
+                    DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
+                    container = DockerContainer.getContainerByUUID( deploymentId ).get();
+                    if ( !testConnection() ) {
+                        throw new RuntimeException( "Could not connect to container" );
+                    }
+                }
+
+                resetDockerConnection();
             } else if ( deployMode == DeployMode.REMOTE ) {
                 this.host = settings.get( "host" );
-            } else if ( deployMode == DeployMode.EMBEDDED ) {
-                throw new RuntimeException( "Unsupported deploy mode: " + deployMode.name() );
+                this.port = Integer.parseInt( settings.get( "port" ) );
             } else {
                 throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
             }
 
             addInformationPhysicalNames();
             enableInformationPage();
-            ConfigDocker c = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId );
-            resetDockerConnection( c );
 
             this.transactionProvider = new TransactionProvider( this.client );
             MongoDatabase db = this.client.getDatabase( "admin" );
@@ -203,10 +220,15 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void resetDockerConnection( ConfigDocker c ) {
-            if ( c.id != dockerInstanceId || c.getHost().equals( currentUrl ) ) {
+        public void resetDockerConnection() {
+            DockerContainer c = DockerContainer.getContainerByUUID( deploymentId ).get();
+
+            if ( client != null && c.getIpAddress().equals( host ) && c.getExposedPort( 27017 ).get() == port ) {
                 return;
             }
+
+            host = c.getIpAddress();
+            port = c.getExposedPort( 27017 ).get();
 
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
@@ -219,7 +241,6 @@ public class MongoPlugin extends Plugin {
             if ( transactionProvider != null ) {
                 transactionProvider.setClient( client );
             }
-            this.currentUrl = c.getHost();
         }
 
 
@@ -288,7 +309,7 @@ public class MongoPlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            DockerInstance.getInstance().destroyAll( getAdapterId() );
+            DockerContainer.getContainerByUUID( deploymentId ).get().destroy();
 
             removeInformationPage();
         }
@@ -602,11 +623,12 @@ public class MongoPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            container.updateIpAddress();
             host = container.getIpAddress();
-            if ( host == null ) {
+            Optional<Integer> maybePort = container.getExposedPort( 27017 );
+            if ( host == null || maybePort.isEmpty() ) {
                 return false;
             }
+            port = maybePort.get();
 
             try {
                 MongoClientSettings mongoSettings = MongoClientSettings

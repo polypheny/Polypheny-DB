@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker;
+package org.polypheny.db.util;
 
-import org.junit.experimental.categories.Category;
+import java.security.SecureRandom;
+import java.util.Base64;
 
-@Category(DockerManagerTest.class)
-public class DockerInstanceTest {
+public final class PasswordGenerator {
+
+    public static String generatePassword( int bits ) {
+        SecureRandom sr = new SecureRandom();
+        byte[] raw = new byte[1 + bits / 8];
+        sr.nextBytes( raw );
+        return Base64.getUrlEncoder().encodeToString( raw );
+    }
 
 }

@@ -17,11 +17,8 @@
 package org.polypheny.db.config;
 
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -31,48 +28,41 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 @Accessors(chain = true)
 public class ConfigDocker extends ConfigObject {
 
-    public static final String DEFAULT_PROTOCOL = "tcp";
-    public static final int DEFAULT_PORT = 2376;
-
-    // SSH was introduced as a possible transport protocol for connecting to remote Docker hosts recently, it is not yet
-    // supported in java-docker but can be enabled as soon as this happens
-    public final List<String> protocols = Collections.singletonList( "tcp" );
+    public static final int DEFAULT_PORT = 7001;
 
     @Getter
     @Setter
     private String alias;
     @Getter
     @Setter
+    private String uuid;
+    @Getter
+    @Setter
     private String host;
     @Getter
     @Setter
-    private String protocol = DEFAULT_PROTOCOL;
-    @Getter
-    @Setter
-    private int port = DEFAULT_PORT;
-    @Getter
-    private String username;
-    @Getter
-    private String password;
+    private int port;
     @Getter
     @Setter
     private boolean dockerRunning;
-    @Getter
-    @Setter
-    private boolean usingInsecure;
 
 
-    public ConfigDocker( String host, String username, String password, String alias ) {
-        this( idBuilder.getAndIncrement(), host, username, password, alias );
+    public ConfigDocker( String host, String alias ) {
+        this( idBuilder.getAndIncrement(), host, alias, DEFAULT_PORT );
     }
 
 
-    public ConfigDocker( String host, String username, String password ) {
-        this( idBuilder.getAndIncrement(), host, username, password, host );
+    public ConfigDocker( String host ) {
+        this( idBuilder.getAndIncrement(), host, host, DEFAULT_PORT );
     }
 
 
-    public ConfigDocker( int id, String host, String username, String password, String alias ) {
+    public ConfigDocker( String host, int port ) {
+        this( idBuilder.getAndIncrement(), host, host, port );
+    }
+
+
+    public ConfigDocker( int id, String host, String alias, int port ) {
         super( "dockerConfig" + id );
         this.id = id;
         if ( idBuilder.get() <= id ) {
@@ -80,26 +70,37 @@ public class ConfigDocker extends ConfigObject {
         }
         this.host = host;
         this.alias = alias;
-        this.username = username;
-        this.password = password;
-
+        this.port = port;
+        this.uuid = null; /* set on first connection */
         this.webUiFormType = WebUiFormType.DOCKER_INSTANCE;
     }
 
 
     public static ConfigDocker fromMap( Map<String, Object> value ) {
+        Double newId = (Double) value.getOrDefault( "id", null );
+        if ( newId == null ) {
+            newId = (double) idBuilder.getAndIncrement();
+        }
         ConfigDocker config = new ConfigDocker(
-                ((Double) value.get( "id" )).intValue(),
+                newId.intValue(),
                 (String) value.get( "host" ),
-                (String) value.getOrDefault( "username", "" ),
-                (String) value.getOrDefault( "password", null ),
-                (String) value.get( "alias" ) );
+                (String) value.get( "alias" ),
+                ((Double) value.getOrDefault( "port", (double) DEFAULT_PORT )).intValue()
+        );
         config.setDockerRunning( (Boolean) value.get( "dockerRunning" ) );
-        config.setPort( ((Double) value.getOrDefault( "port", DEFAULT_PORT )).intValue() );
-        config.setProtocol( (String) value.getOrDefault( "protocol", DEFAULT_PROTOCOL ) );
-        config.setUsingInsecure( (Boolean) value.get( "usingInsecure" ) );
 
         return config;
+    }
+
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> m = new HashMap<>();
+        m.put( "id", (double) id );
+        m.put( "host", host );
+        m.put( "alias", alias );
+        m.put( "port", (double) port );
+        m.put( "dockerRunning", dockerRunning );
+        return m;
     }
 
 
@@ -109,11 +110,8 @@ public class ConfigDocker extends ConfigObject {
         settings.put( "host", host );
         settings.put( "id", String.valueOf( id ) );
         settings.put( "alias", alias );
-        settings.put( "username", username );
         settings.put( "dockerRunning", String.valueOf( dockerRunning ) );
         settings.put( "port", String.valueOf( port ) );
-        settings.put( "protocol", protocol );
-        settings.put( "usingInsecure", String.valueOf( usingInsecure ) );
 
         return settings;
     }
@@ -174,17 +172,10 @@ public class ConfigDocker extends ConfigObject {
         confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "id", conf.getDouble( "id" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
-        if ( conf.hasPath( "username" ) ) {
-            confMap.put( "username", conf.getString( "username" ) );
-        }
         confMap.put( "dockerRunning", conf.getBoolean( "dockerRunning" ) );
         if ( conf.hasPath( "port" ) ) {
             confMap.put( "port", conf.getDouble( "port" ) );
         }
-        if ( conf.hasPath( "protocol" ) ) {
-            confMap.put( "protocol", conf.getString( "protocol" ) );
-        }
-        confMap.put( "usingInsecure", conf.getBoolean( "usingInsecure" ) );
 
         return confMap;
     }
@@ -208,11 +199,7 @@ public class ConfigDocker extends ConfigObject {
         return port == that.port &&
                 dockerRunning == that.dockerRunning &&
                 host.equals( that.host ) &&
-                alias.equals( that.alias ) &&
-                protocol.equals( that.protocol ) &&
-                usingInsecure == that.usingInsecure &&
-                Objects.equals( username, that.username ) &&
-                Objects.equals( password, that.password );
+                alias.equals( that.alias );
     }
 
 }

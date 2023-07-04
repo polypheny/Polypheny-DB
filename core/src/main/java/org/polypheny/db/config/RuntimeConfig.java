@@ -394,17 +394,10 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
-    USE_DOCKER_NETWORK(
-            "docker/useDockerNetwork",
-            "If Polypheny should use the container network to communicate with the container.",
-            false,
-            ConfigType.BOOLEAN ),
-
     DOCKER_INSTANCES(
             "runtime/dockerInstances",
             "Configure different docker instances, which can be used to place adapters on.",
-            Collections.singletonList( new ConfigDocker( 0, "localhost", null, null, "localhost" )
-                    .setDockerRunning( true ) ),
+            Collections.EMPTY_LIST,
             ConfigType.DOCKER_LIST,
             "dockerGroup" ),
 
@@ -474,6 +467,13 @@ public enum RuntimeConfig {
                     "html-adapter",
                     "pig-adapter" ),
             ConfigType.STRING_LIST
+    ),
+
+    INSTANCE_UUID(
+            "runtime/uuid",
+            "Unique ID of this instance",
+            "WARNING! YOU SHOULD NOT BE SEEING THIS",
+            ConfigType.STRING
     );
 
 

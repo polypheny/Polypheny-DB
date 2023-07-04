@@ -64,8 +64,7 @@ public class AdapterManager {
 
 
     public Adapter getAdapter( String uniqueName ) {
-        uniqueName = uniqueName.toLowerCase();
-        return adapterByName.get( uniqueName );
+        return adapterByName.get( uniqueName.toLowerCase() );
     }
 
 

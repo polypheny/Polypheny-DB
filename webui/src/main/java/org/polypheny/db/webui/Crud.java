@@ -52,6 +52,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -133,7 +134,9 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.HandshakeHelper;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -3614,18 +3617,37 @@ public class Crud implements InformationObserver {
      * it is running correctly when using the provided settings
      */
     public void testDockerInstance( final Context ctx ) {
-        String dockerIdAsString = ctx.pathParam( "dockerId" );
-        int dockerId = Integer.parseInt( dockerIdAsString );
+        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
         ctx.json( DockerManager.getInstance().probeDockerStatus( dockerId ) );
     }
 
 
-    /**
-     * Retrieve a collection which maps the dockerInstance ids to the corresponding used ports
-     */
-    public void getUsedDockerPorts( final Context ctx ) {
-        ctx.json( DockerManager.getInstance().getUsedPortsSorted() );
+    void startHandshake( Context ctx ) {
+        String hostname = ctx.body();
+        ctx.json( HandshakeHelper.getInstance().startHandshake( hostname, 7001, 7002 ) );
+    }
+
+
+    void redoHandshake( Context ctx ) {
+        String hostname = ctx.body();
+        ctx.json( HandshakeHelper.getInstance().redoHandshake( hostname, 7001, 7002 ) );
+    }
+
+
+    void listHandshakes( Context ctx ) {
+        List<Map<String, String>> handshakes = HandshakeHelper.getInstance().getHandshakes();
+        ctx.json( handshakes );
+    }
+
+
+    void autoHandshakeAvailable( Context ctx ) {
+        ctx.json( Map.of( "available", AutoDocker.getInstance().isAvailable() ) );
+    }
+
+
+    void doAutoHandshake( Context ctx ) {
+        ctx.json( Map.of( "success", AutoDocker.getInstance().doIt() ) );
     }
 
 

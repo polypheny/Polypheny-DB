@@ -19,7 +19,7 @@ package org.polypheny.db.docker;
 import lombok.Getter;
 
 @Getter
-public class DockerStatus {
+final class DockerStatus {
 
     private final boolean successful;
     private final String errorMessage;

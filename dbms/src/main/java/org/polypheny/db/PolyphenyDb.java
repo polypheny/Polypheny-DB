@@ -21,10 +21,18 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
+import com.github.rvesse.airline.parser.errors.ParseException;
 import java.awt.SystemTray;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -156,6 +164,8 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
+        } catch ( ParseException e ) {
+            log.error( "Error parsing command line parameters: " + e.getMessage() );
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
@@ -242,6 +252,30 @@ public class PolyphenyDb {
             ConfigManager.getInstance();
             ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
+
+        // Generate UUID for Polypheny (if there isn't one already)
+        final UUID uuid;
+        if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
+            uuid = UUID.randomUUID();
+            File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
+
+            try ( FileOutputStream out = new FileOutputStream( f ) ) {
+                out.write( uuid.toString().getBytes( StandardCharsets.UTF_8 ) );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Failed to store UUID " + e );
+            }
+        } else {
+            Path path = PolyphenyHomeDirManager.getInstance().getFileIfExists( "uuid" ).toPath();
+
+            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
+                uuid = UUID.fromString( in.readLine() );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Failed to load UUID " + e );
+            }
+        }
+
+        log.info( "Polypheny UUID: " + uuid );
+        RuntimeConfig.INSTANCE_UUID.setString( uuid.toString() );
 
         class ShutdownHelper implements Runnable {
 

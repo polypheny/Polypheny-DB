@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -64,10 +65,9 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.DockerManager.Container;
-import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -76,6 +76,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.PasswordGenerator;
 
 
 public class Neo4jPlugin extends Plugin {
@@ -150,10 +151,10 @@ public class Neo4jPlugin extends Plugin {
         @Getter
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
-        private final int port;
+        private int port;
         private final String user;
         private final Session session;
-        private final Container container;
+        private final DockerContainer container;
         private Driver db;
         private final String pass;
         private final AuthToken auth;
@@ -172,17 +173,38 @@ public class Neo4jPlugin extends Plugin {
 
             this.port = Integer.parseInt( settings.get( "port" ) );
 
-            this.pass = "test";
             this.user = "neo4j";
-            this.auth = AuthTokens.basic( "neo4j", this.pass );
+            if ( !settings.containsKey( "password" ) ) {
+                this.pass = PasswordGenerator.generatePassword( 256 );
+                settings.put( "password", this.pass );
+                updateSettings( settings );
+            } else {
+                this.pass = settings.get( "password" );
+            }
+            this.auth = AuthTokens.basic( this.user, this.pass );
 
-            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/neo", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
-                    .withMappedPort( 7687, port )
-                    .withEnvironmentVariable( format( "NEO4J_AUTH=%s/%s", user, pass ) )
-                    .withReadyTest( this::testConnection, 100000 )
-                    .build();
-            this.container = container;
-            DockerManager.getInstance().initialize( container ).start();
+            if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+                DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) );
+                this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
+                        .withExposedPort( 7687 )
+                        .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
+                        .build();
+
+                if ( !container.waitTillStarted( this::testConnection, 100000 ) ) {
+                    container.destroy();
+                    throw new RuntimeException( "Failed to create neo4j container" );
+                }
+                this.deploymentId = container.getContainerId();
+                settings.put( "deploymentId", deploymentId );
+                updateSettings( settings );
+            } else {
+                deploymentId = settings.get( "deploymentId" );
+                DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works
+                container = DockerContainer.getContainerByUUID( deploymentId ).get();
+                if ( !testConnection() ) {
+                    throw new RuntimeException( "Could not connect to container" );
+                }
+            }
 
             if ( this.db == null ) {
                 try {
@@ -207,11 +229,13 @@ public class Neo4jPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            container.updateIpAddress();
             this.host = container.getIpAddress();
-            if ( this.host == null ) {
+            Optional<Integer> maybePort = container.getExposedPort( 7687 );
+            if ( this.host == null || maybePort.isEmpty() ) {
                 return false;
             }
+
+            this.port = maybePort.get();
 
             try {
                 this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
@@ -560,7 +584,7 @@ public class Neo4jPlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            DockerInstance.getInstance().destroyAll( getAdapterId() );
+            DockerContainer.getContainerByUUID( deploymentId ).get().destroy();
 
             removeInformationPage();
         }
