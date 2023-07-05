@@ -35,13 +35,13 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
@@ -58,10 +58,9 @@ public abstract class ProtoInterfaceStatement {
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage queryLanguage;
     protected final String query;
-    protected PolyImplementation currentImplementation;
+    protected PolyImplementation<Object> currentImplementation;
     protected Iterator<Object> resultIterator;
 
-    protected Iterator resultIterator;
 
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
