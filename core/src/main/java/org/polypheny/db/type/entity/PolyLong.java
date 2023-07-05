@@ -37,7 +37,7 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
-@Value(staticConstructor = "of")
+@Value
 public class PolyLong extends PolyNumber {
 
     public Long value;
@@ -56,6 +56,11 @@ public class PolyLong extends PolyNumber {
 
 
     public static PolyLong of( long value ) {
+        return new PolyLong( value );
+    }
+
+
+    public static PolyLong of( Long value ) {
         return new PolyLong( value );
     }
 
@@ -180,6 +185,12 @@ public class PolyLong extends PolyNumber {
             return PolyLong.of( Long.parseLong( value.asString().value ) );
         }
         throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
+    }
+
+
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return 16L;
     }
 
 

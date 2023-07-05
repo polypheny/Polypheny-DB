@@ -34,14 +34,16 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Optional;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.type.PolySerializable;
@@ -77,6 +79,7 @@ import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializer
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializer;
+import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerializerDef;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.PolyEdgeSerializer;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -120,7 +123,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyDouble.class, ctx -> new PolyDoubleSerializerDef() )
             .with( PolyMap.class, ctx -> new PolyMapSerializerDef() )
             .with( PolyDocument.class, ctx -> new PolyDocumentSerializerDef() )
-            .with( PolyDictionary.class, ctx -> new PolyDocumentSerializerDef() )
+            .with( PolyDictionary.class, ctx -> new PolyDictionarySerializerDef() )
             .with( PolyList.class, ctx -> new PolyListSerializerDef() )
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
@@ -160,10 +163,27 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyType type;
 
 
+    @NonFinal
+    Long byteSize;
+
+
     public PolyValue(
             @Deserialize("type") PolyType type ) {
         this.type = type;
     }
+
+
+    @NotNull
+    public Optional<Long> getByteSize() {
+        if ( byteSize == null ) {
+            byteSize = deriveByteSize();
+        }
+        return Optional.ofNullable( byteSize );
+    }
+
+
+    @Nullable
+    public abstract Long deriveByteSize();
 
 
     public static Expression getInitialExpression( Type type ) {
@@ -351,7 +371,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyBoolean asBoolean() {
         if ( isBoolean() ) {
             return (PolyBoolean) this;
@@ -365,7 +385,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyInteger asInteger() {
         if ( isInteger() ) {
             return (PolyInteger) this;
@@ -380,7 +400,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyDocument asDocument() {
         if ( isDocument() ) {
             return (PolyDocument) this;
@@ -394,7 +414,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public <T extends PolyValue> PolyList<T> asList() {
         if ( isList() ) {
             return (PolyList<T>) this;
@@ -408,7 +428,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyString asString() {
         if ( isString() ) {
             return (PolyString) this;
@@ -422,7 +442,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyBinary asBinary() {
         if ( isBinary() ) {
             return (PolyBinary) this;
@@ -436,7 +456,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyBigDecimal asBigDecimal() {
         if ( isBigDecimal() ) {
             return (PolyBigDecimal) this;
@@ -451,7 +471,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyFloat asFloat() {
         if ( isFloat() ) {
             return (PolyFloat) this;
@@ -466,7 +486,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyDouble asDouble() {
         if ( isDouble() ) {
             return (PolyDouble) this;
@@ -481,7 +501,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyLong asLong() {
         if ( isLong() ) {
             return (PolyLong) this;
@@ -509,7 +529,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyDate asDate() {
         if ( isDate() ) {
             return (PolyDate) this;
@@ -523,7 +543,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyTime asTime() {
         if ( isTime() ) {
             return (PolyTime) this;
@@ -538,7 +558,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyTimeStamp asTimeStamp() {
         if ( isTimestamp() ) {
             return (PolyTimeStamp) this;
@@ -553,7 +573,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyMap<PolyValue, PolyValue> asMap() {
         if ( isMap() || isDocument() ) {
             return (PolyMap<PolyValue, PolyValue>) this;
@@ -567,7 +587,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyEdge asEdge() {
         if ( isEdge() ) {
             return (PolyEdge) this;
@@ -581,7 +601,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyNode asNode() {
         if ( isNode() ) {
             return (PolyNode) this;
@@ -595,7 +615,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyPath asPath() {
         if ( isPath() ) {
             return (PolyPath) this;
@@ -609,7 +629,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyGraph asGraph() {
         if ( isGraph() ) {
             return (PolyGraph) this;
@@ -662,7 +682,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    @NonNull
+    @NotNull
     public PolyBlob asBlob() {
         if ( isBlob() ) {
             return (PolyBlob) this;
@@ -697,7 +717,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return value;
         }
 
-        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, type ) );
+        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
@@ -119,6 +120,11 @@ public abstract class SqlSampleSpec extends PolyValue {
         }
 
 
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
+        }
+
     }
 
 
@@ -194,6 +200,12 @@ public abstract class SqlSampleSpec extends PolyValue {
                 b.append( ')' );
             }
             return b.toString();
+        }
+
+
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
         }
 
     }

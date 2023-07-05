@@ -104,6 +104,12 @@ public class PolyTime extends PolyTemporal {
     }
 
 
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return 16L + timeUnit.name().getBytes().length;
+    }
+
+
     public static class PolyTimeSerializer implements JsonSerializer<PolyTime>, JsonDeserializer<PolyTime> {
 
 

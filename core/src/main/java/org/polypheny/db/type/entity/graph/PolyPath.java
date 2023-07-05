@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -263,6 +264,12 @@ public class PolyPath extends GraphObject {
     }
 
 
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
+    }
+
+
     @Slf4j
     public static class PolySegment extends GraphObject {
 
@@ -351,6 +358,12 @@ public class PolyPath extends GraphObject {
         @Override
         public PolySerializable copy() {
             return PolySerializable.deserialize( serialize(), PolyPath.class );
+        }
+
+
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
         }
 
     }

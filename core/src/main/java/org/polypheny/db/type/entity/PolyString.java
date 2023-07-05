@@ -146,6 +146,12 @@ public class PolyString extends PolyValue {
 
 
     @Override
+    public @NotNull Long deriveByteSize() {
+        return (long) (value == null ? 1 : value.getBytes( charset ).length);
+    }
+
+
+    @Override
     public boolean isNull() {
         return value == null;
     }

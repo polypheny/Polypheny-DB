@@ -45,6 +45,7 @@ import lombok.experimental.Delegate;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -126,6 +127,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Override
     public PolySerializable copy() {
+        return null;
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
         return null;
     }
 

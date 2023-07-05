@@ -118,6 +118,12 @@ public class PolyTimeStamp extends PolyTemporal {
     }
 
 
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return 16L;
+    }
+
+
     public static class PolyTimeStampSerializer implements JsonSerializer<PolyTimeStamp>, JsonDeserializer<PolyTimeStamp> {
 
         @Override

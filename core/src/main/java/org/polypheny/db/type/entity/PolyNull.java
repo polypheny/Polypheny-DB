@@ -36,6 +36,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -73,13 +74,19 @@ public class PolyNull extends PolyValue {
 
 
     @Override
+    public @Nullable Long deriveByteSize() {
+        return 1L;
+    }
+
+
+    @Override
     public boolean isBoolean() {
         return true;
     }
 
 
     @Override
-    public @NonNull PolyBoolean asBoolean() {
+    public @NotNull PolyBoolean asBoolean() {
         return PolyBoolean.of( null );
     }
 
@@ -91,7 +98,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyInteger asInteger() {
+    public @NotNull PolyInteger asInteger() {
         return PolyInteger.of( null );
     }
 
@@ -103,7 +110,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyDocument asDocument() {
+    public @NotNull PolyDocument asDocument() {
         return PolyDocument.ofDocument( null );
     }
 
@@ -115,7 +122,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull <T extends PolyValue> PolyList<T> asList() {
+    public @NotNull <T extends PolyValue> PolyList<T> asList() {
         return PolyList.of();
     }
 
@@ -127,7 +134,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyString asString() {
+    public @NotNull PolyString asString() {
         return PolyString.of( null );
     }
 
@@ -139,7 +146,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyBinary asBinary() {
+    public @NotNull PolyBinary asBinary() {
         return PolyBinary.of( (ByteString) null );
     }
 
@@ -151,7 +158,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyBigDecimal asBigDecimal() {
+    public @NotNull PolyBigDecimal asBigDecimal() {
         return PolyBigDecimal.of( (BigDecimal) null );
     }
 
@@ -163,8 +170,8 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyFloat asFloat() {
-        return PolyFloat.of( (Float) null );
+    public @NotNull PolyFloat asFloat() {
+        return PolyFloat.of( null );
     }
 
 
@@ -175,8 +182,8 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyDouble asDouble() {
-        return PolyDouble.of( (Double) null );
+    public @NotNull PolyDouble asDouble() {
+        return PolyDouble.of( null );
     }
 
 
@@ -187,7 +194,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyLong asLong() {
+    public @NotNull PolyLong asLong() {
         return PolyLong.of( (Long) null );
     }
 

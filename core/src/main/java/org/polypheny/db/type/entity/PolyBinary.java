@@ -112,6 +112,12 @@ public class PolyBinary extends PolyValue {
     }
 
 
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return (long) (value == null ? 1 : value.getBytes().length);
+    }
+
+
     public static class PolyBinarySerializer implements JsonSerializer<PolyBinary>, JsonDeserializer<PolyBinary> {
 
         @Override

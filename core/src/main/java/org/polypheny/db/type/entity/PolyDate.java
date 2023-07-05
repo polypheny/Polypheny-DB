@@ -32,6 +32,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -88,6 +89,12 @@ public class PolyDate extends PolyTemporal {
     @Override
     public Expression asExpression() {
         return Expressions.new_( PolyLong.class, Expressions.constant( sinceEpoch ) );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
     }
 
 

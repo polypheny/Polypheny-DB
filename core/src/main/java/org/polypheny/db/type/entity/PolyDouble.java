@@ -159,6 +159,12 @@ public class PolyDouble extends PolyNumber {
     }
 
 
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return 8L;
+    }
+
+
     public static class PolyDoubleSerializerDef extends SimpleSerializerDef<PolyDouble> {
 
         @Override

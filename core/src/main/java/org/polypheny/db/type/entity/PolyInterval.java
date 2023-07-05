@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolySerializable;
 
@@ -85,6 +86,12 @@ public class PolyInterval extends PolyValue {
                 return value.longValue();
         }
         throw new NotImplementedException( "since Epoch" );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
     }
 
 

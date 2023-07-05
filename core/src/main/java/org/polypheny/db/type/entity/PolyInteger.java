@@ -130,6 +130,12 @@ public class PolyInteger extends PolyNumber {
 
 
     @Override
+    public @NotNull Long deriveByteSize() {
+        return 4L;
+    }
+
+
+    @Override
     public boolean isNull() {
         return value == null;
     }

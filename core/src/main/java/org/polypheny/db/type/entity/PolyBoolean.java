@@ -101,6 +101,12 @@ public class PolyBoolean extends PolyValue {
     }
 
 
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return 1L;
+    }
+
+
     public static class PolyBooleanSerializerDef extends SimpleSerializerDef<PolyBoolean> {
 
         @Override

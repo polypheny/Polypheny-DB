@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.runtime.PolyCollections;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolySerializable;
@@ -267,6 +268,12 @@ public class PolyGraph extends GraphObject {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolyGraph.class );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
     }
 
 

@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -154,6 +155,12 @@ public class PolyFloat extends PolyNumber {
     @Override
     public PolyNumber negate() {
         return PolyFloat.of( -value );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return 4L;
     }
 
 

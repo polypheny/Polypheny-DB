@@ -38,7 +38,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -127,6 +129,12 @@ public class PolyNode extends GraphPropertyHolder {
     }
 
 
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
+    }
+
+
     public static class PolyNodeSerializerDef extends SimpleSerializerDef<PolyNode> {
 
         @Override
@@ -134,13 +142,13 @@ public class PolyNode extends GraphPropertyHolder {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyNode item ) {
-
+                    throw new NotImplementedException();
                 }
 
 
                 @Override
                 public PolyNode decode( BinaryInput in ) throws CorruptedDataException {
-                    return null;
+                    throw new NotImplementedException();
                 }
             };
         }

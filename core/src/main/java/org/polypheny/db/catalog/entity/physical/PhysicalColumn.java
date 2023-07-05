@@ -20,9 +20,9 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -83,7 +83,7 @@ public class PhysicalColumn extends CatalogEntity {
             @Deserialize("tableId") final long tableId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
-            @Deserialize("type") @NonNull final PolyType type,
+            @Deserialize("type") @NotNull final PolyType type,
             @Deserialize("collectionsType") final PolyType collectionsType,
             @Deserialize("length") final Integer length,
             @Deserialize("scale") final Integer scale,

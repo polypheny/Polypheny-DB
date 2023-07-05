@@ -213,6 +213,12 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    @Override
+    public @NotNull Long deriveByteSize() {
+        return value == null ? 1 : 32L;
+    }
+
+
     public static class PolyBigDecimalSerializerDef extends SimpleSerializerDef<PolyBigDecimal> {
 
         @Override

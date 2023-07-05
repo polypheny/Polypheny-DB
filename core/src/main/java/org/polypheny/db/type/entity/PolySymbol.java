@@ -29,6 +29,7 @@ import lombok.EqualsAndHashCode;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
@@ -68,6 +69,12 @@ public class PolySymbol extends PolyValue {
     @Override
     public PolySerializable copy() {
         return PolySerializable.deserialize( serialize(), PolySymbol.class );
+    }
+
+
+    @Override
+    public @Nullable Long deriveByteSize() {
+        return null;
     }
 
 

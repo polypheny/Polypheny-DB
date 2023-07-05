@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.Objects;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.type.PolySerializable;
@@ -166,6 +167,12 @@ public class SqlIntervalLiteral extends SqlLiteral {
         @Override
         public PolySerializable copy() {
             throw new GenericRuntimeException( "Not allowed" );
+        }
+
+
+        @Override
+        public @Nullable Long deriveByteSize() {
+            return null;
         }
 
     }
