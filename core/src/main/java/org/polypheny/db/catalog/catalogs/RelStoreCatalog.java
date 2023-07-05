@@ -123,10 +123,19 @@ public class RelStoreCatalog extends StoreCatalog {
     public PhysicalColumn addColumn( String name, long tableId, long adapterId, int position, LogicalColumn lColumn ) {
         PhysicalColumn column = new PhysicalColumn( name, tableId, adapterId, position, lColumn );
         PhysicalTable table = getTable( tableId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.add( column );
+        List<PhysicalColumn> columns = new ArrayList<>( table.columns );
+        columns.add( position, column );
+        if ( column.position + 1 < columns.size() - 1 ) {
+            // adjust positions
+            PhysicalColumn old;
+            for ( int i = position + 1; i < columns.size(); i++ ) {
+                old = columns.remove( i );
+                columns.add( old.position + 1, old.toBuilder().position( i ).build() );
+                addColumn( old );
+            }
+        }
         addColumn( column );
-        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 

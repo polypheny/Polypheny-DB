@@ -414,7 +414,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private int updateAdjacentPositions( LogicalTable catalogTable, LogicalColumn beforeColumn, LogicalColumn afterColumn ) {
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
-        int position = columns.size() + 1;
+        int position = columns.size();
         if ( beforeColumn != null || afterColumn != null ) {
             if ( beforeColumn != null ) {
                 position = beforeColumn.position;
@@ -422,19 +422,20 @@ public class DdlManagerImpl extends DdlManager {
                 position = afterColumn.position + 1;
             }
             // Update position of the other columns
-            for ( int i = columns.size(); i >= position; i-- ) {
-                updateColumnPosition( catalogTable, columns, i );
+            for ( int i = columns.size() - 1; i >= position; i-- ) {
+                updateColumnPosition( catalogTable, columns.get( i ), i + 1 );
             }
         }
         return position;
     }
 
 
-    private void updateColumnPosition( LogicalTable catalogTable, List<LogicalColumn> columns, int i ) {
-        catalog.getLogicalRel( catalogTable.namespaceId ).setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-        /*for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocationsFromLogical( catalogTable.id ) ) {
-            catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( allocation.id, columns.get( i - 1 ).id, i + 1 );
-        }*/
+    private void updateColumnPosition( LogicalTable table, LogicalColumn column, int position ) {
+        catalog.getLogicalRel( table.namespaceId ).setColumnPosition( column.id, position );
+        for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
+            AllocationColumn alloc = catalog.getSnapshot().alloc().getColumn( allocation.adapterId, column.id ).orElseThrow();
+            catalog.getAllocRel( allocation.namespaceId ).updatePosition( alloc, position );
+        }
     }
 
 
@@ -446,7 +447,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
         }
 
-        if ( !catalog.getSnapshot().rel().getColumn( table.id, columnName ).isEmpty() ) {
+        if ( catalog.getSnapshot().rel().getColumn( table.id, columnName ).isPresent() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", columnName, table.name );
         }
         //
@@ -484,7 +485,7 @@ public class DdlManagerImpl extends DdlManager {
                     allocation.id,
                     addedColumn.id,   // Will be set later
                     PlacementType.AUTOMATIC,   // Will be set later
-                    catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
+                    position );//Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), allocation.id, addedColumn );
         }
 

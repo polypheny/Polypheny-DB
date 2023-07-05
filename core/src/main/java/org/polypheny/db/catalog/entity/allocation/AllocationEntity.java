@@ -20,6 +20,7 @@ import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -30,6 +31,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @Value
 @NonFinal
 @Slf4j
+@SuperBuilder
 public abstract class AllocationEntity extends CatalogEntity {
 
     @Serialize

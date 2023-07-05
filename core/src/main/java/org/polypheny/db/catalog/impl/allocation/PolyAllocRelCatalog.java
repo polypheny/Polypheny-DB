@@ -198,4 +198,11 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     }
 
+
+    @Override
+    public void updatePosition( AllocationColumn alloc, int position ) {
+        AllocationColumn col = alloc.toBuilder().position( position ).build();
+        columns.put( Pair.of( alloc.tableId, alloc.columnId ), col );
+    }
+
 }

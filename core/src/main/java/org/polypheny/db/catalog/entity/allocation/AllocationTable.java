@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,6 +36,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@SuperBuilder(toBuilder = true)
 public class AllocationTable extends AllocationEntity {
 
 

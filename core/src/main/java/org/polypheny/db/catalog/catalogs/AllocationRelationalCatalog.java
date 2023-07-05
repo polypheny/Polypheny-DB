@@ -195,4 +195,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
     Map<Pair<Long, Long>, AllocationColumn> getColumns();
 
+    void updatePosition( AllocationColumn alloc, int position );
+
 }

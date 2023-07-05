@@ -21,6 +21,7 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@SuperBuilder(toBuilder = true)
 public class PhysicalColumn extends CatalogEntity {
 
     public long adapterId;
@@ -42,7 +44,7 @@ public class PhysicalColumn extends CatalogEntity {
     public long tableId;
 
     @Serialize
-    public int position;
+    public int position; // normalized to start with 0
 
     @Serialize
     public PolyType type;

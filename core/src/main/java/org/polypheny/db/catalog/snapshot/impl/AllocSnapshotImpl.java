@@ -57,8 +57,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, AllocationCollection> collections;
     ImmutableMap<Long, AllocationGraph> graphs;
 
-    ImmutableMap<Pair<Long, Long>, AllocationColumn> adapterColumnPlacement;
-
     ImmutableMap<Long, AllocationEntity> allocs;
     ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
     ImmutableMap<Long, List<AllocationColumn>> logicalColumnToAlloc;
@@ -99,7 +97,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
         this.allocs = mergeAllocs();
         this.allocsOnAdapters = buildAllocsOnAdapters( adapters );
-        this.adapterColumnPlacement = buildAdapterColumnPlacement();
         this.logicalColumnToAlloc = buildColumnPlacements();
         this.adapterLogicalTablePlacements = buildAdapterLogicalTablePlacements();
         this.adapterLogicalTableAlloc = buildAdapterLogicalTableAlloc();
@@ -185,13 +182,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildAdapterColumnPlacement() {
-        Map<Pair<Long, Long>, AllocationColumn> map = new HashMap<>();
-        //this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> map.put( Pair.of( v.adapterId, p.columnId ), p ) ) );
-        return ImmutableMap.copyOf( map );
-    }
-
-
     private ImmutableMap<Long, AllocationEntity> mergeAllocs() {
         Map<Long, AllocationEntity> allocs = new HashMap<>();
         allocs.putAll( this.tables );
@@ -252,7 +242,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public @NonNull Optional<AllocationColumn> getColumn( long adapterId, long columnId ) {
-        return Optional.ofNullable( adapterColumnPlacement.get( Pair.of( adapterId, columnId ) ) );
+        return Optional.ofNullable( columns.get( Pair.of( columnId, adapterId ) ) );
     }
 
 

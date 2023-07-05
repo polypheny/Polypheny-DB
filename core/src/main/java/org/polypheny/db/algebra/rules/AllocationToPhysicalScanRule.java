@@ -35,7 +35,7 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
 
     public AllocationToPhysicalScanRule( Class<? extends Scan<?>> scan ) {
-        super( operand( scan, any() ), AlgFactories.LOGICAL_BUILDER, scan.getSimpleName() );
+        super( operand( scan, any() ), AlgFactories.LOGICAL_BUILDER, AllocationToPhysicalScanRule.class.getSimpleName() + "_" + scan.getSimpleName() );
     }
 
 
