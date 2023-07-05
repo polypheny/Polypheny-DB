@@ -91,10 +91,6 @@ public class PolyTime extends PolyTemporal {
     }
 
 
-    public static PolyTime of( Time value ) {
-        return new PolyTime( (int) value.getTime(), TimeUnit.MILLISECOND );
-    }
-
 
     public Time asSqlTime() {
         return new Time( ofDay );
