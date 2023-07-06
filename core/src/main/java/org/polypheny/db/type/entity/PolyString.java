@@ -80,7 +80,7 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString ofNullable( String value ) {
-        return value == null ? null : of( value );
+        return of( value );
     }
 
 

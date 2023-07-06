@@ -61,6 +61,11 @@ public class PolyTime extends PolyTemporal {
     }
 
 
+    public static PolyTime ofNullable( Time value ) {
+        return value == null ? PolyTime.of( (Integer) null ) : of( value );
+    }
+
+
     public static PolyTime of( Integer value ) {
         return new PolyTime( value, TimeUnit.MILLISECOND );
     }

@@ -402,13 +402,13 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case TIMESTAMP:
                 poly = Expressions.call( PolyTimeStamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DECIMAL:
                 poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
@@ -447,20 +447,20 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 return BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
             case DATE:
                 return (nullable
-                        ? BuiltInMethod.DATE_TO_INT_OPTIONAL
-                        : BuiltInMethod.DATE_TO_INT).method;
+                        ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
+                        : BuiltInMethod.DATE_TO_LONG).method;
             case TIME:
                 return (nullable
-                        ? BuiltInMethod.TIME_TO_INT_OPTIONAL
-                        : BuiltInMethod.TIME_TO_INT).method;
+                        ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
+                        : BuiltInMethod.TIME_TO_LONG).method;
             case TIMESTAMP:
                 return (nullable
                         ? (offset
                         ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
-                        : BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL)
+                        : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
                         : (offset
                                 ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                                : BuiltInMethod.TIMESTAMP_TO_LONG)).method;
+                                : BuiltInMethod.DATE_TO_LONG)).method;
             default:
                 throw new AssertionError( polyType + ":" + nullable );
         }

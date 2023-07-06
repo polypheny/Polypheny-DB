@@ -58,6 +58,7 @@ import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -1336,9 +1337,9 @@ public class DbmsMeta implements ProtobufMeta {
             case DECIMAL:
                 return o -> o.asNumber().BigDecimalValue();
             case DATE:
-                return o -> o.asDate().sinceEpoch;
+                return o -> o.asDate().sinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
             case TIME:
-                return o -> o.asTime().ofDay;
+                return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
             case TIMESTAMP:
                 return o -> o.asTimeStamp().sinceEpoch;
             case BOOLEAN:

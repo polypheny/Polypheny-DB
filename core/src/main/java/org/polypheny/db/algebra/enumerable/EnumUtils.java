@@ -255,24 +255,24 @@ public class EnumUtils {
         if ( storageType != null && e.type != storageType ) {
             if ( e.type == java.sql.Date.class ) {
                 if ( storageType == int.class ) {
-                    return Expressions.call( BuiltInMethod.DATE_TO_INT.method, e );
+                    return Expressions.call( BuiltInMethod.DATE_TO_LONG.method, e );
                 }
                 if ( storageType == Integer.class ) {
-                    return Expressions.call( BuiltInMethod.DATE_TO_INT_OPTIONAL.method, e );
+                    return Expressions.call( BuiltInMethod.DATE_TO_LONG_OPTIONAL.method, e );
                 }
             } else if ( e.type == java.sql.Time.class ) {
                 if ( storageType == int.class ) {
-                    return Expressions.call( BuiltInMethod.TIME_TO_INT.method, e );
+                    return Expressions.call( BuiltInMethod.TIME_TO_LONG.method, e );
                 }
                 if ( storageType == Integer.class ) {
-                    return Expressions.call( BuiltInMethod.TIME_TO_INT_OPTIONAL.method, e );
+                    return Expressions.call( BuiltInMethod.TIME_TO_LONG_OPTIONAL.method, e );
                 }
             } else if ( e.type == java.sql.Timestamp.class ) {
                 if ( storageType == long.class ) {
-                    return Expressions.call( BuiltInMethod.TIMESTAMP_TO_LONG.method, e );
+                    return Expressions.call( BuiltInMethod.DATE_TO_LONG.method, e );
                 }
                 if ( storageType == Long.class ) {
-                    return Expressions.call( BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, e );
+                    return Expressions.call( BuiltInMethod.DATE_TO_LONG_OPTIONAL.method, e );
                 }
             }
         }

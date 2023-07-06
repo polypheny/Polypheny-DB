@@ -979,7 +979,7 @@ public class RexToLixTranslator {
             return Expressions.box( operand, toBox );
         } else if ( fromType == java.sql.Date.class ) {
             if ( toBox == Primitive.INT ) {
-                return Expressions.call( BuiltInMethod.DATE_TO_INT.method, operand );
+                return Expressions.call( BuiltInMethod.DATE_TO_LONG.method, operand );
             } else {
                 return Expressions.convert_( operand, toType );
             }

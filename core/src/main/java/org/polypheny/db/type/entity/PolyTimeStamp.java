@@ -24,6 +24,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
@@ -58,6 +59,11 @@ public class PolyTimeStamp extends PolyTemporal {
 
     public static PolyTimeStamp ofNullable( Number number ) {
         return number == null ? null : of( number );
+    }
+
+
+    public static PolyTimeStamp ofNullable( Time value ) {
+        return value == null ? new PolyTimeStamp( null ) : PolyTimeStamp.of( value );
     }
 
 

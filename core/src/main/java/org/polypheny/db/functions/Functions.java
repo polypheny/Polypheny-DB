@@ -2044,7 +2044,6 @@ public class Functions {
         return PolyDouble.of( Math.toRadians( b0.doubleValue() ) );
     }
 
-
     /**
      * SQL <code>RADIANS</code> operator applied to double values.
      */
@@ -2523,7 +2522,7 @@ public class Functions {
 
 
     public static int toInt( java.util.Date v, TimeZone timeZone ) {
-        return (int) (toLong( v, timeZone ) / DateTimeUtils.MILLIS_PER_DAY);
+        return (int) (toLong( v, timeZone )); // DateTimeUtils.MILLIS_PER_DAY);
     }
 
 
@@ -2539,7 +2538,7 @@ public class Functions {
     }
 
 
-    public static long toLong( Date v ) {
+    public static long dateToLong( Date v ) {
         return toLong( v, LOCAL_TZ );
     }
 
@@ -2549,13 +2548,13 @@ public class Functions {
      *
      * Converse of {@link #internalToTime(int)}.
      */
-    public static int toInt( java.sql.Time v ) {
-        return (int) (toLong( v ) % DateTimeUtils.MILLIS_PER_DAY);
+    public static long timeToLong( java.sql.Time v ) {
+        return toLong( v, LOCAL_TZ );//% DateTimeUtils.MILLIS_PER_DAY);
     }
 
 
-    public static Integer toIntOptional( java.sql.Time v ) {
-        return v == null ? null : toInt( v );
+    public static Long timeToLongOptional( java.sql.Time v ) {
+        return v == null ? null : toLong( v );
     }
 
 
@@ -2599,7 +2598,7 @@ public class Functions {
 
 
     // mainly intended for java.sql.Timestamp but works for other dates also
-    public static Long toLongOptional( java.util.Date v ) {
+    public static Long dateToLongOptional( java.util.Date v ) {
         return v == null ? null : toLong( v, LOCAL_TZ );
     }
 

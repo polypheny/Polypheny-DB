@@ -28,7 +28,6 @@ import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -61,6 +60,11 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyDate ofNullable( java.sql.Date date ) {
+        return PolyDate.of( date );
+    }
+
+
     public Date asDefaultDate() {
         return new Date( sinceEpoch );
     }
@@ -72,7 +76,7 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate of( Date date ) {
-        return new PolyDate( (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY) );
+        return new PolyDate( date.getTime() );
     }
 
 
