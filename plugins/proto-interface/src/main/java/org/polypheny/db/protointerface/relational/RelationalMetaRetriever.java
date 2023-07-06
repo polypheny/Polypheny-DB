@@ -17,14 +17,12 @@
 package org.polypheny.db.protointerface.relational;
 
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
-import org.checkerframework.checker.units.qual.A;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
@@ -40,6 +38,7 @@ import org.polypheny.db.protointerface.proto.ProtoValueType;
 import org.polypheny.db.protointerface.proto.StructMeta;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class RelationalMetaRetriever {
 
@@ -70,11 +69,10 @@ public class RelationalMetaRetriever {
     }
 
 
-
-    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
+    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation<PolyValue> polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
-        List<List<String>> origins = (List<List<String>>) polyImplementation.getPreparedResult().getFieldOrigins();
+        List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
         int index = 0;
         for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFieldList() ) ) {
