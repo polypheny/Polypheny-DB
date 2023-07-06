@@ -23,7 +23,8 @@ message LanguageResponse {
 }
 
 message TablesRequest{
-
+  string schemaPattern = 1;
+  string tablePattern = 2;
 }
 
 message TablesResponse {
