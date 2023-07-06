@@ -109,7 +109,7 @@ public abstract class ProtoInterfaceStatement {
             commitIfAuto();
             return resultBuilder.build();
         }
-        resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
+        //resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
         commitIfAuto();
         resultBuilder.setFrame( fetchFirst() );
         return resultBuilder.build();
