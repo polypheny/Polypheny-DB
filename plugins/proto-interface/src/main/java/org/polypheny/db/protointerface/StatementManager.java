@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.C;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.ParameterizedStatement;
@@ -46,6 +47,7 @@ public class StatementManager {
     public StatementManager() {
         statementIdGenerator = new AtomicInteger();
         openStatments = new ConcurrentHashMap<>();
+        openBatches = new ConcurrentHashMap<>();
         supportedLanguages = new HashSet<>();
         updateSupportedLanguages();
     }
@@ -154,6 +156,9 @@ public class StatementManager {
 
 
     public void closeStatementOrBatch( ProtoInterfaceClient client, int statementId ) {
+        if (client == null) {
+            throw new RuntimeException("CLIENT NULL");
+        }
         String statementKey = getId( client.getClientUUID(), statementId );
         ProtoInterfaceStatementBatch batchToClose = openBatches.remove( statementKey );
         if ( batchToClose != null ) {
