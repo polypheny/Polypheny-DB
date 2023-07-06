@@ -22,3 +22,83 @@ message LanguageResponse {
   repeated string language_names = 1;
 }
 
+message TablesRequest{
+
+}
+
+message TablesResponse {
+
+}
+
+message ColumnsRequest {
+
+}
+
+message ColumnsResponse {
+
+}
+
+message NamespacesRequest {
+
+}
+
+message NamespacesResponse {
+
+}
+
+message DatabasesRequest {
+
+}
+
+message DatabasesResponse {
+
+}
+
+message TableTypesRequest {
+
+}
+
+message TableTypesResponse {
+
+}
+
+message PrimaryKeysRequest {
+
+}
+
+message PrimaryKeysResponse {
+
+}
+
+message ImportedKeysRequest {
+
+}
+
+message ImportedKeysResponse {
+
+}
+
+message ExportedKeysRequest {
+
+}
+
+message ExportedKeysResponse {
+
+}
+
+message TypesRequest {
+
+}
+
+message TypesResponse {
+
+}
+
+message IndexesRequest {
+
+}
+
+message IndexesResponse{
+
+}
+
