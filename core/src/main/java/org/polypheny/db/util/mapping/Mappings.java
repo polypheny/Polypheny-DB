@@ -301,7 +301,7 @@ public abstract class Mappings {
      * @return Permuted view of list
      */
     public static <T> List<T> permute( final List<T> list, final TargetMapping mapping ) {
-        return new AbstractList<T>() {
+        return new AbstractList<>() {
             @Override
             public T get( int index ) {
                 return list.get( mapping.getTarget( index ) );

@@ -198,7 +198,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
         PhysicalTable table = storeCatalog.getTable( allocId );
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, logicalColumn.position, logicalColumn );
+        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, table.columns.size(), logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );

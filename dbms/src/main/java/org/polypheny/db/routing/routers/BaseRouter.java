@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
@@ -52,6 +53,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -66,6 +68,7 @@ import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.mapping.Mappings;
 
 
 /**
@@ -130,16 +133,28 @@ public abstract class BaseRouter implements Router {
             Statement statement,
             CatalogEntity entity ) {
 
+        LogicalEntity table;
+
         if ( entity.unwrap( LogicalTable.class ) != null ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
 
-            return (RoutedAlgBuilder) builder.scan( allocations.get( 0 ) );
+            table = entity.unwrap( LogicalEntity.class );
+            builder.scan( allocations.get( 0 ) );
+        } else if ( entity.unwrap( AllocationTable.class ) != null ) {
+            builder.scan( entity.unwrap( AllocationTable.class ) );
+            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).logicalId ).orElseThrow();
+        } else {
+            throw new NotImplementedException();
         }
-        if ( entity.unwrap( AllocationTable.class ) != null ) {
-            return (RoutedAlgBuilder) builder.scan( entity.unwrap( AllocationTable.class ) );
-        }
-        throw new NotImplementedException();
 
+        if ( !table.getRowType().equals( builder.peek().getRowType() ) ) {
+            // we adjust the
+            Map<String, Integer> namesIndexMapping = table.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
+            List<Integer> target = builder.peek().getRowType().getFieldList().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
+            builder.permute( Mappings.bijection( target ) );
+        }
+
+        return builder;
     }
 
 

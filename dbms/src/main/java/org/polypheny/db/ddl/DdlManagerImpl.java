@@ -422,8 +422,8 @@ public class DdlManagerImpl extends DdlManager {
                 position = afterColumn.position + 1;
             }
             // Update position of the other columns
-            for ( int i = columns.size() - 1; i >= position; i-- ) {
-                updateColumnPosition( catalogTable, columns.get( i ), i + 1 );
+            for ( int i = columns.size(); i >= position; i-- ) {
+                updateColumnPosition( catalogTable, columns.get( i - 1 ), i + 1 );
             }
         }
         return position;
@@ -432,10 +432,10 @@ public class DdlManagerImpl extends DdlManager {
 
     private void updateColumnPosition( LogicalTable table, LogicalColumn column, int position ) {
         catalog.getLogicalRel( table.namespaceId ).setColumnPosition( column.id, position );
-        for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
+        /*for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getFromLogical( table.id ) ) {
             AllocationColumn alloc = catalog.getSnapshot().alloc().getColumn( allocation.adapterId, column.id ).orElseThrow();
             catalog.getAllocRel( allocation.namespaceId ).updatePosition( alloc, position );
-        }
+        }*/
     }
 
 
@@ -485,7 +485,7 @@ public class DdlManagerImpl extends DdlManager {
                     allocation.id,
                     addedColumn.id,   // Will be set later
                     PlacementType.AUTOMATIC,   // Will be set later
-                    position );//Not a valid partitionID --> placeholder
+                    catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );// we just append it at the end //Not a valid partitionID --> placeholder
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), allocation.id, addedColumn );
         }
 
