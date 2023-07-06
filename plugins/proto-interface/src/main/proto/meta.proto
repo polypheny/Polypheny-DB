@@ -27,7 +27,7 @@ message TablesRequest{
 }
 
 message TablesResponse {
-
+  repeated Table tables = 1;
 }
 
 message Table {
