@@ -11,28 +11,45 @@ option java_outer_classname = "ProtoInterfaceProto";
 
 package polypheny.protointerface;
 
-// Functions provided by the proto interface
 service ProtoInterface {
+  // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
+  rpc GetTables(TablesRequest) returns (TablesResponse) {}
+  rpc GetColumns(ColumnsRequest) returns (ColumnsResponse) {}
+  rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
+  rpc GetDatabases(DatabasesRequest) returns (DatabasesResponse) {}
+  rpc GetTableTypes(TablesRequest) returns (TableTypesResponse) {}
+  rpc GetPrimaryKeys(PrimaryKeysRequest) returns (PrimaryKeysResponse) {}
+  rpc GetImportedKeys(ImportedKeysRequest) returns (ImportedKeysResponse) {}
+  rpc GetExportedKeys(ExportedKeysRequest) returns (ExportedKeysResponse) {}
+  rpc GetTypes(TypesRequest) returns (TypesResponse) {}
+  rpc GetIndexes(IndexesRequest) returns (IndexesRequest) {}
 
-  rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
+  // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
+  rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
 
+  // Unparameterized statements
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
+
+  // Parameterized statements
+  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
+
+  // Prepared Statements
+  rpc PrepareStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecutePreparedStatement(ParameterSet) returns (StatementResult){}
+
+  // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
 
+  // Transaction handling
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
 
-  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
-
-  rpc PrepareStatement(PreparedStatement) returns (PreparedStatementSignature) {}
-  rpc ExecutePreparedStatement(ParameterSet) returns (StatementResult){}
-  //rpc ExecutePreparedStatementBatch(Prepared)
-  //rpc ExecutePreparedStatement() returns (StatementResult) {}
+  // Properties
   rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
 }
 
