@@ -19,6 +19,8 @@ repositories {
 
 dependencies {
     implementation project(path: ':core')
+    implementation project(path: ':dbms')
+    implementation project(path: ':dbms')
     testImplementation project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")
