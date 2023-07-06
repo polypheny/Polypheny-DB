@@ -28,21 +28,17 @@ import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 
 @Slf4j
-public final class HandshakeHelper {
+public final class HandshakeManager {
 
-    private static HandshakeHelper INSTANCE = null;
+    private static final HandshakeManager INSTANCE = new HandshakeManager();
     private final Map<String, Handshake> handshakes = new HashMap<>();
 
 
-    private HandshakeHelper() {
+    private HandshakeManager() {
     }
 
 
-    public static HandshakeHelper getInstance() {
-        // TODO racy
-        if ( INSTANCE == null ) {
-            INSTANCE = new HandshakeHelper();
-        }
+    public static HandshakeManager getInstance() {
         return INSTANCE;
     }
 
@@ -57,24 +53,18 @@ public final class HandshakeHelper {
     }
 
 
-    private String handshakeName( String hostname, int communicationPort ) {
-        return String.format( "%s:%d", hostname, communicationPort );
-    }
-
-
     public Map<String, String> startHandshake( String hostname, int communicationPort, int handshakePort ) {
         hostname = normalizeHostname( hostname );
-        String name = handshakeName( hostname, communicationPort );
         Handshake h;
         synchronized ( this ) {
-            if ( !handshakes.containsKey( name ) ) {
+            if ( !handshakes.containsKey( hostname ) ) {
                 try {
-                    handshakes.putIfAbsent( name, new Handshake( hostname, communicationPort, handshakePort ) );
+                    handshakes.putIfAbsent( hostname, new Handshake( hostname, communicationPort, handshakePort ) );
                 } catch ( IOException e ) {
                     throw new RuntimeException( e );
                 }
             }
-            h = handshakes.get( name );
+            h = handshakes.get( hostname );
         }
         h.start();
         return h.serializeHandshake();
@@ -82,9 +72,8 @@ public final class HandshakeHelper {
 
 
     public Map<String, String> redoHandshake( String hostname, int communicationPort, int handshakePort ) {
-        String name = handshakeName( normalizeHostname( hostname ), communicationPort );
         synchronized ( this ) {
-            handshakes.remove( name );
+            handshakes.remove( hostname );
         }
         return startHandshake( hostname, communicationPort, handshakePort );
     }
@@ -99,19 +88,19 @@ public final class HandshakeHelper {
     }
 
 
-    public Map<String, String> getHandshake( String hostname, int communicationPort ) {
-        return handshakes.get( handshakeName( normalizeHostname( hostname ), communicationPort ) ).serializeHandshake();
+    public Map<String, String> getHandshake( String hostname ) {
+        return handshakes.get( hostname ).serializeHandshake();
     }
 
 
-    String getHandshakeParameters( String hostname, int communicationPort ) {
-        return handshakes.get( handshakeName( normalizeHostname( hostname ), communicationPort ) ).getHandshakeParameters();
+    String getHandshakeParameters( String hostname ) {
+        return handshakes.get( hostname ).getHandshakeParameters();
     }
 
 
     private static class Handshake {
 
-        private HandshakeThread handshakeThread;
+        private Thread handshakeThread;
         private final String hostname;
         private final int communicationPort;
         private boolean containerRunningGuess;
@@ -142,13 +131,29 @@ public final class HandshakeHelper {
         }
 
 
-        private void start() {
-            synchronized ( this ) {
-                if ( handshakeThread == null || !handshakeThread.isAlive() ) {
-                    containerRunningGuess = guessIfContainerExists();
-                    handshakeThread = new HandshakeThread( client );
-                    handshakeThread.start();
-                }
+        private synchronized void start() {
+            if ( handshakeThread == null || !handshakeThread.isAlive() ) {
+                Runnable doHandshake = () -> {
+                    if ( !client.doHandshake() ) {
+                        log.info( "Handshake failed" );
+                    } else {
+                        // TODO: racy
+                        log.info( "Saving docker config" );
+                        List<ConfigDocker> configList = ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).getList( ConfigDocker.class );
+                        for ( ConfigDocker c : configList ) {
+                            if ( c.getHost().equals( hostname ) && c.getPort() == communicationPort ) {
+                                c.setDockerRunning( true );
+                                return;
+                            }
+                        }
+                        // Add a new entry
+                        configList.add( new ConfigDocker( hostname, communicationPort ).setDockerRunning( true ) );
+                        ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+                    }
+                };
+                containerRunningGuess = guessIfContainerExists();
+                handshakeThread = new Thread( doHandshake );
+                handshakeThread.start();
             }
         }
 
@@ -168,39 +173,6 @@ public final class HandshakeHelper {
         private String getHandshakeParameters() {
             return client.getHandshakeParameters();
         }
-
-
-        private class HandshakeThread extends Thread {
-
-            private final PolyphenyHandshakeClient cli;
-
-
-            HandshakeThread( PolyphenyHandshakeClient cli ) {
-                this.cli = cli;
-            }
-
-
-            public void run() {
-                if ( !cli.doHandshake() ) {
-                    log.info( "Handshake failed" );
-                } else {
-                    // TODO: racy
-                    log.info( "Saving docker config" );
-                    List<ConfigDocker> configList = ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).getList( ConfigDocker.class );
-                    for ( ConfigDocker c : configList ) {
-                        if ( c.getHost().equals( hostname ) && c.getPort() == communicationPort ) {
-                            c.setDockerRunning( true );
-                            return;
-                        }
-                    }
-                    // Add a new entry
-                    configList.add( new ConfigDocker( hostname, communicationPort ).setDockerRunning( true ) );
-                    ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
-                }
-            }
-
-        }
-
 
     }
 

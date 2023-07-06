@@ -136,7 +136,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.HandshakeHelper;
+import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -3625,18 +3625,18 @@ public class Crud implements InformationObserver {
 
     void startHandshake( Context ctx ) {
         String hostname = ctx.body();
-        ctx.json( HandshakeHelper.getInstance().startHandshake( hostname, 7001, 7002 ) );
+        ctx.json( HandshakeManager.getInstance().startHandshake( hostname, 7001, 7002 ) );
     }
 
 
     void redoHandshake( Context ctx ) {
         String hostname = ctx.body();
-        ctx.json( HandshakeHelper.getInstance().redoHandshake( hostname, 7001, 7002 ) );
+        ctx.json( HandshakeManager.getInstance().redoHandshake( hostname, 7001, 7002 ) );
     }
 
 
     void listHandshakes( Context ctx ) {
-        List<Map<String, String>> handshakes = HandshakeHelper.getInstance().getHandshakes();
+        List<Map<String, String>> handshakes = HandshakeManager.getInstance().getHandshakes();
         ctx.json( handshakes );
     }
 

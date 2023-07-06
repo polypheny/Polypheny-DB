@@ -105,8 +105,8 @@ public final class AutoDocker {
             polyphenDockerUuid = containerResponse.getId();
             client.startContainerCmd( polyphenDockerUuid ).exec();
         }
-        HandshakeHelper.getInstance().redoHandshake( "localhost", 7001, 7002 );
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenDockerUuid ).withCmd( "./main", "handshake", HandshakeHelper.getInstance().getHandshakeParameters( "localhost", 7001 ) ).exec();
+        HandshakeManager.getInstance().redoHandshake( "localhost", 7001, 7002 );
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
             public void onStart( Closeable closeable ) {
@@ -138,7 +138,7 @@ public final class AutoDocker {
             }
         } );
         for ( int i = 0; i < 20; i++ ) {
-            String status = HandshakeHelper.getInstance().getHandshake( "localhost", 7001 ).get( "status" );
+            String status = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
             if ( status.equals( "RUNNING" ) ) {
                 try {
                     TimeUnit.SECONDS.sleep( 1 );
