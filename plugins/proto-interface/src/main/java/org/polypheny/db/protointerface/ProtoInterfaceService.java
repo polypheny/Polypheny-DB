@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
@@ -98,18 +99,37 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onCompleted();
     }
 
+
     @Override
     public void getDbmsVersion( DbmsVersionRequest dbmsVersionRequest, StreamObserver<DbmsVersionResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                .setDbmsName( "Return Dbms name here!" )
-                .setVersionName( "Return Dbms version string here!" )
-                .setMajorVersion( 42 )
-                .setMinorVersion( 69 )
-                .build();
-        responseObserver.onNext( dbmsVersionResponse );
-        responseObserver.onCompleted();
+        try {
+            String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
+            int nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+            }
+            int majorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+
+            versionName = versionName.substring( nextSeparatorIndex + 1 );
+            nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+            }
+            int minorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+
+            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                    .setDbmsName( "Polypheny-DB" )
+                    .setVersionName( PolyphenyDb.class.getPackage().getImplementationVersion() )
+                    .setMajorVersion( majorVersion )
+                    .setMinorVersion( minorVersion )
+                    .build();
+            responseObserver.onNext( dbmsVersionResponse );
+            responseObserver.onCompleted();
+        } catch ( Exception e ) {
+            throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+        }
     }
 
 
