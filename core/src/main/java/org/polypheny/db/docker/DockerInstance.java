@@ -17,8 +17,6 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 /**
@@ -101,18 +98,8 @@ public final class DockerInstance {
             }
         }
         try {
-            String baseName = "certs/" + currentConfig.getHost() + "/";
-            PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
-            String serverCertificatePath = dirManager.getFileIfExists( baseName + "server.pem" ).getAbsolutePath();
-            String clientKeyPath = dirManager.getFileIfExists( baseName + "key.pem" ).getAbsolutePath();
-            String clientCertificatePath = dirManager.getFileIfExists( baseName + "cert.pem" ).getAbsolutePath();
-
-            PolyphenyKeypair kp = PolyphenyKeypair.loadFromDisk( clientCertificatePath, clientKeyPath );
-
-            if ( Files.size( Paths.get( serverCertificatePath ) ) == 0 ) {
-                throw new IOException( "No server certificate" );
-            }
-            byte[] serverCertificate = PolyphenyCertificateUtils.loadCertificateFromFile( serverCertificatePath );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( currentConfig.getHost() );
+            byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( currentConfig.getHost() );
 
             this.client = new PolyphenyDockerClient( currentConfig.getHost(), currentConfig.getPort(), kp, serverCertificate );
         } catch ( IOException e ) {

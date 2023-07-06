@@ -21,7 +21,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.crypto.util.DigestFactory;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
 final class PolyphenyHandshakeClient {
@@ -39,7 +38,6 @@ final class PolyphenyHandshakeClient {
 
     @Getter
     private final String handshakeParameters;
-    private final String serverCertificatePath;
     private final byte[] polyphenyUUID;
 
     @Getter
@@ -64,26 +62,12 @@ final class PolyphenyHandshakeClient {
         // authentication value.
         this.polyphenyUUID = RuntimeConfig.INSTANCE_UUID.getString().getBytes( StandardCharsets.UTF_8 );
 
-        PolyphenyHomeDirManager manager = PolyphenyHomeDirManager.getInstance();
-        validateHostname( hostname );
-        String basePath = "certs/" + hostname + "/";
-        String certPath = manager.registerNewFile( basePath + "cert.pem" ).getAbsolutePath();
-        String keyPath = manager.registerNewFile( basePath + "key.pem" ).getAbsolutePath();
-        this.serverCertificatePath = manager.registerNewFile( basePath + "server.pem" ).getAbsolutePath();
-
-        this.kp = PolyphenyCertificateUtils.generateOrLoadCertificates( certPath, keyPath );
+        this.kp = PolyphenyCertificateManager.generateOrLoadClientKeypair( hostname );
         this.handshakeParameters = getHandshakeParameters( kp );
 
         this.lastErrorMessage = "";
 
         this.state = State.NOT_RUNNING;
-    }
-
-
-    private static void validateHostname( String hostname ) throws IOException {
-        if ( hostname.contains( "/" ) || hostname.contains( "\\" ) || hostname.startsWith( "." ) ) {
-            throw new IOException( "invalid hostname" );
-        }
     }
 
 
@@ -225,7 +209,7 @@ final class PolyphenyHandshakeClient {
         if ( Arrays.constantTimeAreEqual( authValue, serverValue ) ) {
             log.info( "Handshake with " + hostname + " succeeded" );
             try {
-                PolyphenyCertificateUtils.saveAsPemOverwrite( serverCertificatePath, "CERTIFICATE", serverCertificate );
+                PolyphenyCertificateManager.saveServerCertificate( hostname, serverCertificate );
             } catch ( IOException e ) {
                 lastErrorMessage = "Failed to save the server certificate to disk";
                 log.error( "Failed to persist server certificate", e );
