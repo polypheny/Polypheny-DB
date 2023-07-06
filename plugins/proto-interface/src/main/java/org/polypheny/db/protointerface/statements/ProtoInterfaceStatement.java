@@ -16,13 +16,10 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
@@ -45,7 +42,6 @@ import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -58,9 +54,8 @@ public abstract class ProtoInterfaceStatement {
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage queryLanguage;
     protected final String query;
-    protected PolyImplementation<Object> currentImplementation;
-    protected Iterator<Object> resultIterator;
-
+    protected PolyImplementation<PolyValue> currentImplementation;
+    protected Iterator<PolyValue> resultIterator;
 
 
     public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
@@ -110,8 +105,10 @@ public abstract class ProtoInterfaceStatement {
             return resultBuilder.build();
         }
         //resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
+
         commitIfAuto();
         resultBuilder.setFrame( fetchFirst() );
+
         return resultBuilder.build();
     }
 
@@ -156,12 +153,9 @@ public abstract class ProtoInterfaceStatement {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch(long {}, int {} )", offset, fetchSize );
             }
-            Iterator<Object> iterator = getOrCreateIterator();
-            CursorFactory cursorFactory = currentImplementation.getCursorFactory();
-            Iterator<Object> sectionIterator = LimitIterator.of( iterator, fetchSize );
             startOrResumeStopwatch();
             // TODO TH: clean up this mess
-            List<List<PolyValue>> rows = (List<List<PolyValue>>) (List<?>) MetaImpl.collect( cursorFactory, sectionIterator, new ArrayList<>() );
+            List<List<PolyValue>> rows = currentImplementation.getRows( currentImplementation.getStatement(), fetchSize );
             executionStopWatch.suspend();
             boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
             if ( isDone ) {
@@ -184,12 +178,12 @@ public abstract class ProtoInterfaceStatement {
     }
 
 
-    protected Iterator<Object> getOrCreateIterator() {
+    protected Iterator<PolyValue> getOrCreateIterator() {
         if ( resultIterator != null ) {
             return resultIterator;
         }
         Statement statement = currentImplementation.getStatement();
-        final Enumerable<Object> enumerable = currentImplementation.getBindable().bind( statement.getDataContext() );
+        final Enumerable<PolyValue> enumerable = currentImplementation.enumerable( statement.getDataContext() );
         resultIterator = enumerable.iterator();
         return resultIterator;
     }
