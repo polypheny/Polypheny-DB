@@ -46,6 +46,8 @@ import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.proto.TablesRequest;
+import org.polypheny.db.protointerface.proto.TablesResponse;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
 import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
@@ -130,6 +132,16 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         } catch ( Exception e ) {
             throw new ProtoInterfaceServiceException( "Could not parse database version info" );
         }
+    }
+
+    @Override
+    public void getTables( TablesRequest tablesRequest, StreamObserver<TablesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String schemaPattern = tablesRequest.getSchemaPattern();
+        String tablePattern = tablesRequest.getTablePattern();
+        responseObserver.onNext(DbmsMetaRetriever.getTables( schemaPattern, tablePattern));
+        responseObserver.onCompleted();
     }
 
 
