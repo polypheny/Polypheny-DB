@@ -173,7 +173,7 @@ public class StatementImpl implements Statement {
             dataContext.getParameterValues().clear();
         }
         fileInputHandles.forEach( FileInputHandle::close );
-        dataContext = null;
+        // dataContext = null; todo dl check how we want to handle this longterm
     }
 
 
