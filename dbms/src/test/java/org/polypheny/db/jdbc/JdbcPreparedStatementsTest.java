@@ -33,7 +33,6 @@ import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -120,7 +119,6 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
-    @Ignore
     public void nullValueTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -271,18 +269,18 @@ public class JdbcPreparedStatementsTest {
 
                     connection.commit();
 
-                    PreparedStatement preparedSelect = connection.prepareStatement( ""
-                            + "SELECT * FROM pstest WHERE "
-                            + "tbigint = ? AND "
-                            + "tboolean = ? AND "
-                            + "tdate = ? AND "
-                            + "tdecimal = ? AND "
-                            + "tdouble = ? AND "
-                            + "tinteger = ? AND "
-                            + "treal = ? AND "
-                            + "tsmallint = ? AND "
-                            + "ttime = ? AND "
-                            + "ttimestamp = ? AND "
+                    PreparedStatement preparedSelect = connection.prepareStatement(
+                            "SELECT * FROM pstest WHERE "
+                                    + "tbigint = ? AND "
+                                    + "tboolean = ? AND "
+                                    + "tdate = ? AND "
+                                    + "tdecimal = ? AND "
+                                    + "tdouble = ? AND "
+                                    + "tinteger = ? AND "
+                                    + "treal = ? AND "
+                                    + "tsmallint = ? AND "
+                                    + "ttime = ? AND "
+                                    + "ttimestamp = ? AND "
                             + "ttinyint = ? AND "
                             + "tvarchar = ?" );
                     preparedSelect.setLong( 1, (long) TEST_DATA[0] );

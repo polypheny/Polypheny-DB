@@ -34,6 +34,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -63,7 +64,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public static PolyTimeStamp ofNullable( Time value ) {
-        return value == null ? new PolyTimeStamp( null ) : PolyTimeStamp.of( value );
+        return value == null ? null : PolyTimeStamp.of( value );
     }
 
 
@@ -78,7 +79,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public static PolyTimeStamp of( Timestamp value ) {
-        return new PolyTimeStamp( value.getTime() );
+        return new PolyTimeStamp( Functions.toLongOptional( value ) );
     }
 
 

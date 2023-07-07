@@ -378,7 +378,7 @@ public enum BuiltInMethod {
     //TIMESTAMP_TO_LONG( Functions.class, "toLong", java.util.Date.class ),
     TIMESTAMP_TO_LONG_OFFSET( Functions.class, "toLong", java.util.Date.class, TimeZone.class ),
     //TIMESTAMP_TO_LONG_OPTIONAL( Functions.class, "toLongOptional", Timestamp.class ),
-    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( Functions.class, "toLongOptional", Timestamp.class, TimeZone.class ),
+    TIMESTAMP_TO_LONG_OPTIONAL_OFFSET( Functions.class, "toLongOptional", Timestamp.class ),
     SEQUENCE_CURRENT_VALUE( Functions.class, "sequenceCurrentValue", String.class ),
     SEQUENCE_NEXT_VALUE( Functions.class, "sequenceNextValue", String.class ),
     SLICE( Functions.class, "slice", List.class ),

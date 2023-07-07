@@ -2436,7 +2436,7 @@ public class Functions {
 
 
     @NonDeterministic
-    private static Object cannotConvert( Object o, Class toType ) {
+    private static Object cannotConvert( Object o, Class<?> toType ) {
         throw Static.RESOURCE.cannotConvert( o.toString(), toType.toString() ).ex();
     }
 
@@ -2554,7 +2554,7 @@ public class Functions {
 
 
     public static Long timeToLongOptional( java.sql.Time v ) {
-        return v == null ? null : toLong( v );
+        return v == null ? null : timeToLong( v );
     }
 
 
@@ -2603,7 +2603,7 @@ public class Functions {
     }
 
 
-    public static Long toLongOptional( Timestamp v, TimeZone timeZone ) {
+    public static Long toLongOptional( Timestamp v ) {
         if ( v == null ) {
             return null;
         }

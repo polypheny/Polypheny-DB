@@ -22,15 +22,19 @@ import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -69,6 +73,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -115,11 +120,18 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
@@ -900,6 +912,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             long[] updateCounts = new long[parameterValues.size()];
             Map<Long, List<PolyValue>> values = new HashMap<>();
+            List<AlgDataType> types = new ArrayList<>();
             for ( UpdateBatch updateBatch : parameterValues ) {
                 List<Common.TypedValue> list = updateBatch.getParameterValuesList();
                 long index = 0;
@@ -909,10 +922,11 @@ public class DbmsMeta implements ProtobufMeta {
                         values.put( i, new LinkedList<>() );
                     }
                     if ( v.getType() == Common.Rep.ARRAY ) {
-                        values.get( i ).add( (PolyValue) convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
+                        values.get( i ).add( convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
-                        values.get( i ).add( (PolyValue) TypedValue.fromProto( v ).toJdbc( calendar ) );
+                        values.get( i ).add( toPolyValue( TypedValue.fromProto( v ) ) );
                     }
+                    types.add( (int) i, toPolyAlgType( TypedValue.fromProto( v ), connection.getCurrentTransaction().getTypeFactory() ) ); // todo dl optimize
                 }
             }
 
@@ -922,8 +936,9 @@ public class DbmsMeta implements ProtobufMeta {
                     return new ExecuteBatchResult( new long[0] );
                 }
                 statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
+                int i = 0;
                 for ( Entry<Long, List<PolyValue>> valuesList : values.entrySet() ) {
-                    statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), null, valuesList.getValue() );
+                    statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), types.get( i++ ), valuesList.getValue() );
                 }
                 prepare( h, statementHandle.getPreparedQuery() );
                 updateCounts[0] = execute( h, connection, statementHandle, -1 ).size();
@@ -1211,7 +1226,7 @@ public class DbmsMeta implements ProtobufMeta {
         long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
-                statementHandle.getStatement().getDataContext().addParameterValues( index++, null, List.of( toPolyValue( v ) ) );
+                statementHandle.getStatement().getDataContext().addParameterValues( index++, toPolyAlgType( v, connection.getCurrentTransaction().getTypeFactory() ), List.of( toPolyValue( v ) ) );
             }
         }
 
@@ -1237,6 +1252,55 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
+    private AlgDataType toPolyAlgType( TypedValue value, JavaTypeFactory typeFactory ) {
+        if ( value.value == null ) {
+            return typeFactory.createPolyType( PolyType.NULL );
+        }
+        PolyType type = toPolyType( value.type );
+
+        if ( type == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( typeFactory.createPolyType( toPolyType( value.componentType ) ), -1 );
+        }
+
+        return typeFactory.createPolyType( type );
+    }
+
+
+    private PolyType toPolyType( Rep type ) {
+        if ( type == Rep.ARRAY ) {
+            return PolyType.ARRAY;
+        }
+        switch ( type ) {
+            case SHORT:
+            case BYTE:
+                return PolyType.TINYINT; // cache this
+            case LONG:
+                return PolyType.BIGINT;
+            case NUMBER:
+                return PolyType.DECIMAL;
+            case JAVA_SQL_TIME:
+                return PolyType.TIME;
+            case JAVA_SQL_DATE:
+                return PolyType.DATE;
+            case JAVA_SQL_TIMESTAMP:
+                return PolyType.TIMESTAMP;
+            case BOOLEAN:
+                return PolyType.BOOLEAN;
+            case DOUBLE:
+                return PolyType.DOUBLE;
+            case INTEGER:
+                return PolyType.INTEGER;
+            case FLOAT:
+                return PolyType.FLOAT;
+            case STRING:
+                return PolyType.VARCHAR;
+            case OBJECT:
+                return PolyType.OTHER;
+        }
+        throw new NotImplementedException( "sql to polyType " + type );
+    }
+
+
     private PolyList<PolyValue> convertList( List<TypedValue> list ) {
         List<PolyValue> newList = new LinkedList<>();
         for ( TypedValue o : list ) {
@@ -1250,6 +1314,9 @@ public class DbmsMeta implements ProtobufMeta {
         if ( value.type == Rep.ARRAY ) {
             return convertList( (List<TypedValue>) value.toLocal() );
         }
+        if ( value.value == null ) {
+            return PolyNull.NULL;
+        }
 
         Object jdbc = value.toJdbc( calendar );
         switch ( value.type ) {
@@ -1261,8 +1328,24 @@ public class DbmsMeta implements ProtobufMeta {
                 return PolyLong.of( (Number) jdbc );
             case STRING:
                 return PolyString.of( (String) jdbc );
+            case BOOLEAN:
+                return PolyBoolean.of( (Boolean) jdbc );
+            case JAVA_SQL_DATE:
+                return PolyDate.of( (Date) jdbc );
+            case JAVA_SQL_TIME:
+                return PolyTime.of( (Time) jdbc );
+            case JAVA_SQL_TIMESTAMP:
+                return PolyTimeStamp.of( (Timestamp) jdbc );
+            case NUMBER:
+                return PolyBigDecimal.of( (BigDecimal) jdbc );
+            case DOUBLE:
+                return PolyDouble.of( (Double) jdbc );
+            case SHORT:
+                return PolyInteger.of( (Short) jdbc );
+            case BYTE:
+                return PolyInteger.of( (byte) jdbc );
         }
-        throw new NotImplementedException( "dbms to poly" );
+        throw new NotImplementedException( "dbms to poly " + value.type );
     }
 
 
@@ -1298,7 +1381,7 @@ public class DbmsMeta implements ProtobufMeta {
             public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    transform.add( getPolyToExternalizer( field.getType() ) );
+                    transform.add( wrapNullableIfNecessary( getPolyToExternalizer( field.getType() ), field.getType().isNullable() ) );
                 }
 
                 if ( rowType.getFieldCount() > 1 ) {
@@ -1315,6 +1398,11 @@ public class DbmsMeta implements ProtobufMeta {
                 return Linq4j.transform( enumerable.enumerator(), row -> transform.get( 0 ).apply( (PolyValue) row ) );
             }
         };
+    }
+
+
+    private Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
+        return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
     }
 
 

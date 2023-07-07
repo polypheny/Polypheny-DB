@@ -58,6 +58,11 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    public static PolyInteger of( byte value ) {
+        return new PolyInteger( (int) value );
+    }
+
+
     public static PolyInteger of( short value ) {
         return new PolyInteger( (int) value );
     }

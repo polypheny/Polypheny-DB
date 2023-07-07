@@ -79,7 +79,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         LogicalTable catalogTable = getFromCatalog( context, table );
-        DataStore storeInstance = getDataStoreInstance( storeName );
+        DataStore<?> storeInstance = getDataStoreInstance( storeName );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );

@@ -82,7 +82,7 @@ public class JdbcAutoCommitTest {
                                 statement2.executeQuery( "SELECT * FROM autoCommit" ), ImmutableList.of() );
                     }
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS autocomit" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS autocommit" );
                 }
             }
         }
@@ -117,7 +117,7 @@ public class JdbcAutoCommitTest {
 
                     }
                 } finally {
-                    statement.executeUpdate( "DROP TABLE IF EXISTS autocomit" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS autocommit" );
                 }
             }
         }

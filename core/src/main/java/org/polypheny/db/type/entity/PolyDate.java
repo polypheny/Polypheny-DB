@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -76,7 +77,7 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate of( Date date ) {
-        return new PolyDate( date.getTime() );
+        return new PolyDate( Functions.dateToLong( date ) );
     }
 
 

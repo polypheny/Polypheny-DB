@@ -31,6 +31,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -72,7 +73,7 @@ public class PolyTime extends PolyTemporal {
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( (int) value.getTime(), TimeUnit.MILLISECOND );
+        return new PolyTime( (int) Functions.timeToLong( value ), TimeUnit.MILLISECOND );
     }
 
 

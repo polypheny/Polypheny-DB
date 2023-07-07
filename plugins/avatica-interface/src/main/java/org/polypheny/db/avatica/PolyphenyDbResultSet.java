@@ -35,7 +35,16 @@ package org.polypheny.db.avatica;
 
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.avatica.*;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.TimeZone;
+import org.apache.calcite.avatica.AvaticaResultSet;
+import org.apache.calcite.avatica.AvaticaResultSetMetaData;
+import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.linq4j.Enumerator;
@@ -43,12 +52,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.ArrayEnumeratorCursor;
 import org.polypheny.db.runtime.ObjectEnumeratorCursor;
-
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.TimeZone;
 
 
 /**
@@ -95,7 +98,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     }
 
 
-    private Cursor createCursor( ColumnMetaData.AvaticaType elementType, Iterable iterable ) {
+    private Cursor createCursor( ColumnMetaData.AvaticaType elementType, Iterable<?> iterable ) {
         final Enumerator enumerator = Linq4j.iterableEnumerator( iterable );
         //noinspection unchecked
         return !(elementType instanceof ColumnMetaData.StructType) || ((ColumnMetaData.StructType) elementType).columns.size() == 1
@@ -107,7 +110,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     // Do not make public
     <T> PolyphenyDbSignature<T> getSignature() {
         //noinspection unchecked
-        return (PolyphenyDbSignature) signature;
+        return (PolyphenyDbSignature<T>) signature;
     }
 
 }

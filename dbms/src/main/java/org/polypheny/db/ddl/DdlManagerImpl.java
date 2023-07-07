@@ -2904,13 +2904,13 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
         }
 
-        // delete logical
-        for ( long columnId : table.getColumnIds() ) {
-            catalog.getLogicalRel( table.namespaceId ).deleteColumn( columnId );
+        // delete constraints
+        for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
+            catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
         }
 
         // delete keys
-        for ( LogicalKey key : snapshot.rel().getKeys() ) {
+        for ( LogicalKey key : snapshot.rel().getTableKeys( table.id ) ) {
             catalog.getLogicalRel( table.namespaceId ).deleteKey( key.id );
         }
 
@@ -2919,9 +2919,9 @@ public class DdlManagerImpl extends DdlManager {
             catalog.getLogicalRel( table.namespaceId ).deleteIndex( index.id );
         }
 
-        // delete constraints
-        for ( LogicalConstraint constraint : snapshot.rel().getConstraints( table.id ) ) {
-            catalog.getLogicalRel( table.namespaceId ).deleteConstraint( constraint.id );
+        // delete logical
+        for ( long columnId : table.getColumnIds() ) {
+            catalog.getLogicalRel( table.namespaceId ).deleteColumn( columnId );
         }
 
         catalog.getLogicalRel( table.namespaceId ).deleteTable( table.id );

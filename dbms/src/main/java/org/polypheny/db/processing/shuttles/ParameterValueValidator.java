@@ -80,14 +80,13 @@ public class ParameterValueValidator extends AlgShuttleImpl {
             boolean valid = true;
             for ( Map<Long, PolyValue> map : dataContext.getParameterValues() ) {
                 o = map.get( index );
-                if ( o == null ) {
-                    break;
-                /*    if ( dynamicParam.getType().isNullable() ) {
+                if ( o == null || o.isNull() ) {
+                    if ( dynamicParam.getType().isNullable() ) {
                         break;
                     } else {
+                        valid = false;
                         throw new InvalidParameterValueException( "Null in not nullable column" );
                     }
-                 */
                 }
                 switch ( polyType.getFamily() ) {
                     //case ANY:
