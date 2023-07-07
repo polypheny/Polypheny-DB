@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -33,10 +32,12 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -64,93 +65,69 @@ public class StreamCapture {
 
     public void handleContent() {
         //String path = registerTopicFolder(topic);
-        long storeId = getCollection();
+        long storeId = getCollectionID();
         if ( storeId != 0 ) {
             stream.setStoreID( storeId );
             boolean saved = saveContent();
-            log.info( "testing method createCollection" );
-            Catalog catalog = Catalog.getInstance();
-            CatalogSchema schema = null;
-            schema = catalog.getSchema( stream.getNamespaceID() );
-
-            log.info( "Namespace name: {}, Namespace Type: {}, Database name: {}", schema.getName(), schema.getNamespaceType(), schema.getDatabaseName() );
-
+            //TODO: gescheite Tests
+//            Catalog catalog = Catalog.getInstance();
+//            CatalogSchema schema = null;
+//            schema = catalog.getSchema( stream.getNamespaceID() );
         }
     }
 
 
     /**
-     * @return the id of the collection that was already existing with the topic as name or that was newly created
+     * @return the id of the collection that was either already existing with the topic as name or that was newly created
      */
-    long getCollection() {
-        // TODO: schemaID ist NamespaceId ???
+    long getCollectionID() {
         Catalog catalog = Catalog.getInstance();
+        List<CatalogSchema> schemaList = catalog.getSchemas( this.stream.getDatabaseId(), null );
 
-        // In case there is a namespace with the same name existing and is of Type Document, then that id of the existing schema will be used to create a collection.
-        long schemaId = 0;
 
         // check for existing namespace with DOCUMENT NamespaceType:
         if ( catalog.checkIfExistsSchema( stream.getDatabaseId(), stream.getNamespace() ) ) {
+
             CatalogSchema schema = null;
             try {
                 schema = catalog.getSchema( stream.getDatabaseId(), stream.getNamespace() );
             } catch ( UnknownSchemaException e ) {
                 log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
-                // TODO: what to do here? Maybe get schema again?
-                //Not this as Namespace already exists...OR create Namespace of Datatype Document ???
-                // schemaId = catalog.addNamespace( this.namespace, databaseId, userId, NamespaceType.DOCUMENT );
                 return 0;
             }
-            //todo: rmv
-            log.info( "E Namespace with same name" );
 
             assert schema != null;
             if ( schema.namespaceType == NamespaceType.DOCUMENT ) {
-                //todo: rmv
-                log.info( "E Namespace with type DOCUMENT" );
+                this.stream.setNamespaceID( schema.id );
                 //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
                 List<CatalogCollection> collectionList = catalog.getCollections( schema.id, null );
                 for ( CatalogCollection collection : collectionList ) {
                     if ( collection.name.equals( stream.topic ) ) {
-                        //todo: rmv
-                        log.info( "E Collection with topic as name" );
-                        int adapterId = AdapterManager.getInstance().getStore( this.stream.getUniqueNameOfInterface() ).getAdapterId();
-                        if ( !collection.placements.contains( adapterId ) ) {
-                            return collection.addPlacement( adapterId ).id;
+                        int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.uniqueNameOfInterface ).getQueryInterfaceId();
+                        if ( !collection.placements.contains( queryInterfaceId ) ) {
+                            return collection.addPlacement( queryInterfaceId ).id;
                         } else {
                             return collection.id;
                         }
                     }
                 }
-                //todo: rmv
-                log.info( "No Collection with topic as name" );
                 return createNewCollection();
 
             } else {
-                //todo: rmv
-                log.info( "Namespace not of type DOCUMENT" );
-                //TODO: Namespacetype is not of type Document -> IS this what you do:
-                if ( addNewNamespace() ) {
-                    return createNewCollection();
-                }
-                return 0;
+                this.stream.setNamespaceID( createNamespace() );
+                return createNewCollection();
             }
-        } else if ( addNewNamespace() ) {
-            //todo: rmv
-            log.info( "No Namespace with choosen name" );
-            log.info( "Created new Namespace" );
+        } else {
+            this.stream.setNamespaceID( createNamespace() );
             return createNewCollection();
         }
-        return 0;
     }
 
 
-    private boolean addNewNamespace() {
-        boolean methodFinished = false;
+    private long createNamespace() {
         Catalog catalog = Catalog.getInstance();
-        stream.setNamespaceID( catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT ) );
-        methodFinished = true;
-        return methodFinished;
+        //TOdO: commit
+        return catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT );
     }
 
 
@@ -171,17 +148,20 @@ public class StreamCapture {
                     PlacementType.MANUAL,
                     statement );
             log.info( "Created Collection with name: {}", this.stream.topic );
-
+            transaction.commit();
         } catch ( EntityAlreadyExistsException e ) {
-            log.error( "The generation of the collection was not possible due to: " + e.getMessage() );
+            log.error( "The generation of the collection was not possible because there is a collaction already existing with this name." );
+            return 0;
+        } catch ( TransactionException e ) {
+            log.error( "The commit after creating a new Collection could be completed!" );
             return 0;
         }
         //add placement
         List<CatalogCollection> collectionList = catalog.getCollections( this.stream.getNamespaceID(), null );
         for ( int i = 0; i < collectionList.size(); i++ ) {
             if ( collectionList.get( i ).name.equals( this.stream.topic ) ) {
-                int adapterId = AdapterManager.getInstance().getStore( this.stream.getUniqueNameOfInterface() ).getAdapterId();
-                collectionList.set( i, collectionList.get( i ).addPlacement( adapterId ) );
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+                collectionList.set( i, collectionList.get( i ).addPlacement( queryInterfaceId ) );
 
                 return collectionList.get( i ).id;
             }
