@@ -55,8 +55,8 @@ public class DbmsMetaRetriever {
      * }
      */
     // TODO TH: typeList is ignored
-    public static synchronized TablesResponse getTables( String schemaPattern, String tablePattern, List<String> tableTypes ) {
-        final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern, tableTypes );
+    public static synchronized TablesResponse getTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
+        final List<LogicalTable> tables = getLogicalTables( namespacePattern, tablePattern, tableTypes );
         TablesResponse.Builder responseBuilder = TablesResponse.newBuilder();
         tables.forEach( logicalTable -> responseBuilder.addTables( getTableMeta( logicalTable ) ) );
         return responseBuilder.build();
@@ -64,11 +64,11 @@ public class DbmsMetaRetriever {
 
 
     @NotNull
-    private static List<LogicalTable> getLogicalTables( String schemaPattern, String tablePattern, List<String> tableTypes ) {
-        Pattern catalogSchemaPattern = schemaPattern == null ? null : new Pattern( schemaPattern );
+    private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
+        Pattern catalogNamespacePattern = namespacePattern == null ? null : new Pattern( namespacePattern );
         Pattern catalogTablePattern = tablePattern == null ? null : new Pattern( tablePattern );
         List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
-        return Catalog.getInstance().getSnapshot().rel().getTables( catalogSchemaPattern, catalogTablePattern )
+        return Catalog.getInstance().getSnapshot().rel().getTables( catalogNamespacePattern, catalogTablePattern )
                 .stream().filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
