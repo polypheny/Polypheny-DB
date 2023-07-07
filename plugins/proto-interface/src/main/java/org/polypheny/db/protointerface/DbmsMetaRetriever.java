@@ -17,46 +17,15 @@
 package org.polypheny.db.protointerface;
 
 import java.io.Serializable;
-import java.sql.DatabaseMetaData;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.Meta.ConnectionHandle;
-import org.apache.calcite.avatica.Meta.DatabaseProperty;
-import org.apache.calcite.avatica.Meta.MetaResultSet;
-import org.apache.calcite.avatica.Meta.Pat;
-import org.apache.calcite.avatica.Meta.StatementHandle;
-import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TablesResponse;
-import org.polypheny.db.type.PolyType;
 
 public class DbmsMetaRetriever {
 
@@ -68,10 +37,7 @@ public class DbmsMetaRetriever {
 
 
     /**
-     * Returns a map of static database properties.
-     *
-     * The provider can omit properties whose value is the same as the default.
-     */
+
     public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
@@ -86,27 +52,27 @@ public class DbmsMetaRetriever {
             return map;
         }
     }
-
-    // TODO: typeList is ignored
-
-
-    public static synchronized TablesResponse getTables( String schemaPattern, String tablePattern ) {
-        final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern );
+*/
+    // TODO TH: typeList is ignored
+    public static synchronized TablesResponse getTables( String schemaPattern, String tablePattern, List<String> tableTypes ) {
+        final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern, tableTypes );
         TablesResponse.Builder responseBuilder = TablesResponse.newBuilder();
-        tables.forEach( logicalTable -> responseBuilder.addTables( getTable( logicalTable ) ) );
+        tables.forEach( logicalTable -> responseBuilder.addTables( getTableMeta( logicalTable ) ) );
         return responseBuilder.build();
     }
 
 
     @NotNull
-    private static List<LogicalTable> getLogicalTables( String schemaPattern, String tablePattern ) {
+    private static List<LogicalTable> getLogicalTables( String schemaPattern, String tablePattern, List<String> tableTypes) {
         Pattern catalogSchemaPattern = schemaPattern == null ? null : new Pattern( schemaPattern );
         Pattern catalogTablePattern = tablePattern == null ? null : new Pattern( tablePattern );
-        return Catalog.getInstance().getSnapshot().rel().getTables( catalogSchemaPattern, catalogTablePattern );
+        List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList());
+        return Catalog.getInstance().getSnapshot().rel().getTables( catalogSchemaPattern, catalogTablePattern )
+                .stream().filter( t -> entityTypes.contains(t.entityType) ).collect( Collectors.toList());
     }
 
 
-    private static Table getTable( LogicalTable logicalTable ) {
+    private static Table getTableMeta( LogicalTable logicalTable ) {
         Serializable[] parameters = logicalTable.getParameterArray();
         return Table.newBuilder()
                 .setSourceDatabaseName( parameters[TABLE_CAT_INDEX].toString() )
@@ -116,7 +82,7 @@ public class DbmsMetaRetriever {
                 .setOwnerName( parameters[TABLE_OWNER_INDEX].toString() )
                 .build();
     }
-
+/*
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
@@ -652,5 +618,6 @@ public class DbmsMetaRetriever {
             return null;
         }
     }
+    */
 
 }
