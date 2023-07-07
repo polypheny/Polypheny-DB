@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +26,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesResponse;
 
 public class DbmsMetaRetriever {
@@ -37,22 +39,21 @@ public class DbmsMetaRetriever {
 
 
     /**
-
-    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
-            }
-
-            final Map<DatabaseProperty, Object> map = new HashMap<>();
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
-            return map;
-        }
-    }
-*/
+     * public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+     * final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+     * synchronized ( connection ) {
+     * if ( log.isTraceEnabled() ) {
+     * log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
+     * }
+     *
+     * final Map<DatabaseProperty, Object> map = new HashMap<>();
+     * // TODO
+     *
+     * log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
+     * return map;
+     * }
+     * }
+     */
     // TODO TH: typeList is ignored
     public static synchronized TablesResponse getTables( String schemaPattern, String tablePattern, List<String> tableTypes ) {
         final List<LogicalTable> tables = getLogicalTables( schemaPattern, tablePattern, tableTypes );
@@ -63,12 +64,12 @@ public class DbmsMetaRetriever {
 
 
     @NotNull
-    private static List<LogicalTable> getLogicalTables( String schemaPattern, String tablePattern, List<String> tableTypes) {
+    private static List<LogicalTable> getLogicalTables( String schemaPattern, String tablePattern, List<String> tableTypes ) {
         Pattern catalogSchemaPattern = schemaPattern == null ? null : new Pattern( schemaPattern );
         Pattern catalogTablePattern = tablePattern == null ? null : new Pattern( tablePattern );
-        List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList());
+        List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
         return Catalog.getInstance().getSnapshot().rel().getTables( catalogSchemaPattern, catalogTablePattern )
-                .stream().filter( t -> entityTypes.contains(t.entityType) ).collect( Collectors.toList());
+                .stream().filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
 
@@ -173,31 +174,16 @@ public class DbmsMetaRetriever {
             );
         }
     }
+*/
 
 
-    public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getTableTypes( ConnectionHandle {} )", ch );
-            }
-            final List<Object> objects = new LinkedList<>();
-            for ( EntityType tt : EntityType.values() ) {
-                objects.add( tt.getParameterArray() );
-            }
-            Enumerable<Object> enumerable = Linq4j.asEnumerable( objects );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    enumerable,
-                    PrimitiveTableType.class,
-                    "TABLE_TYPE"
-            );
-        }
+    public static synchronized TableTypesResponse getTableTypes() {
+        List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).collect( Collectors.toList() );
+        return TableTypesResponse.newBuilder().addAllTableTypes( tableTypes ).build();
     }
 
 
+/*
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
@@ -619,5 +605,4 @@ public class DbmsMetaRetriever {
         }
     }
     */
-
 }

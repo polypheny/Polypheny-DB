@@ -46,6 +46,8 @@ import org.polypheny.db.protointerface.proto.RollbackResponse;
 import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
+import org.polypheny.db.protointerface.proto.TableTypesRequest;
+import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesRequest;
 import org.polypheny.db.protointerface.proto.TablesResponse;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
@@ -142,6 +144,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
         List<String> tableTypes = tablesRequest.getTableTypesList();
         responseObserver.onNext(DbmsMetaRetriever.getTables( schemaPattern, tablePattern, tableTypes));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getTableTypes( TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( DbmsMetaRetriever.getTableTypes() );
         responseObserver.onCompleted();
     }
 

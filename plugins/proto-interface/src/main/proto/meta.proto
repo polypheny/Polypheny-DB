@@ -23,8 +23,9 @@ message LanguageResponse {
 }
 
 message TablesRequest{
-  string schemaPattern = 1;
-  string tablePattern = 2;
+  optional string schemaPattern = 1;
+  optional string tablePattern = 2;
+  repeated string table_types = 3;
 }
 
 message TablesResponse {
@@ -68,7 +69,7 @@ message TableTypesRequest {
 }
 
 message TableTypesResponse {
-
+  repeated string table_types = 1;
 }
 
 message PrimaryKeysRequest {

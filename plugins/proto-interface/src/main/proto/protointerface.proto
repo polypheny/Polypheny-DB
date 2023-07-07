@@ -19,7 +19,7 @@ service ProtoInterface {
   rpc GetColumns(ColumnsRequest) returns (ColumnsResponse) {}
   rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
   rpc GetDatabases(DatabasesRequest) returns (DatabasesResponse) {}
-  rpc GetTableTypes(TablesRequest) returns (TableTypesResponse) {}
+  rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
   rpc GetPrimaryKeys(PrimaryKeysRequest) returns (PrimaryKeysResponse) {}
   rpc GetImportedKeys(ImportedKeysRequest) returns (ImportedKeysResponse) {}
   rpc GetExportedKeys(ExportedKeysRequest) returns (ExportedKeysResponse) {}
