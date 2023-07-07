@@ -59,9 +59,9 @@ message Column {
   int32 type_length = 6;
   int32 type_scale = 7;
   bool is_nullable = 8;
-  string default_value_as_string = 9;
+  optional string default_value_as_string = 9;
   int32 columnIndex = 10;
-  string collation = 11;
+  optional string collation = 11;
 }
 
 message NamespacesRequest {
