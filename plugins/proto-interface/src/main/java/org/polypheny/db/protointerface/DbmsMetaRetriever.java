@@ -69,25 +69,31 @@ public class DbmsMetaRetriever {
 
     @NotNull
     private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
-        Pattern catalogNamespacePattern = namespacePattern == null ? null : new Pattern( namespacePattern );
-        Pattern catalogTablePattern = tablePattern == null ? null : new Pattern( tablePattern );
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
         List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
         return Catalog.getInstance().getSnapshot().rel().getTables( catalogNamespacePattern, catalogTablePattern )
                 .stream().filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
 
+    private static Pattern getPatternOrNull( String pattern ) {
+        return pattern == null ? null : new Pattern( pattern );
+    }
+
+
     private static Table getTableMeta( LogicalTable logicalTable ) {
         Serializable[] parameters = logicalTable.getParameterArray();
         return Table.newBuilder()
-                .setSourceDatabaseName( parameters[TABLE_CAT_INDEX].toString() )
-                .setNamespaceName( parameters[TABLE_SCHEM_INDEX].toString() )
-                .setTableName( parameters[TABLE_NAME_INDEX].toString() )
-                .setTableType( parameters[TABLE_TYPE_INDEX].toString() )
-                .setOwnerName( parameters[TABLE_OWNER_INDEX].toString() )
+                .setSourceDatabaseName( parameters[0].toString() )
+                .setNamespaceName( parameters[1].toString() )
+                .setTableName( parameters[2].toString() )
+                .setTableType( parameters[3].toString() )
+                .setOwnerName( parameters[10].toString() )
                 .build();
     }
-/*
+
+
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
@@ -128,7 +134,6 @@ public class DbmsMetaRetriever {
             );
         }
     }
-    */
 
 
     public static synchronized NamespacesResponse getNamespaces( String namespacePattern ) {
@@ -140,7 +145,7 @@ public class DbmsMetaRetriever {
 
 
     private static List<LogicalNamespace> getLogicalNamespaces( String namespacePattern ) {
-        Pattern catalogNamespacePattern = namespacePattern == null ? null : new Pattern( namespacePattern );
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
         return Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
     }
 
