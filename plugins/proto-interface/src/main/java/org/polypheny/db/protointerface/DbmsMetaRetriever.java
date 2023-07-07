@@ -23,10 +23,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.ColumnsResponse;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.Table;
@@ -58,7 +61,7 @@ public class DbmsMetaRetriever {
      * }
      * }
      */
-    // TODO TH: typeList is ignored
+
     public static synchronized TablesResponse getTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
         final List<LogicalTable> tables = getLogicalTables( namespacePattern, tablePattern, tableTypes );
         TablesResponse.Builder responseBuilder = TablesResponse.newBuilder();
@@ -68,12 +71,18 @@ public class DbmsMetaRetriever {
 
 
     @NotNull
+    private static List<LogicalTable> getLogicalTables( Pattern namespacePattern, Pattern tablePattern ) {
+        return Catalog.getInstance().getSnapshot().rel().getTables( namespacePattern, tablePattern );
+    }
+
+
+    @NotNull
     private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
         Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
         Pattern catalogTablePattern = getPatternOrNull( tablePattern );
         List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
-        return Catalog.getInstance().getSnapshot().rel().getTables( catalogNamespacePattern, catalogTablePattern )
-                .stream().filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
+        return getLogicalTables( catalogNamespacePattern, catalogTablePattern ).stream()
+                .filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
 
@@ -94,45 +103,42 @@ public class DbmsMetaRetriever {
     }
 
 
-    public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getAllocColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
-            }
-            final List<LogicalColumn> columns = getLogicalTables( schemaPattern, tablePattern ).stream().flatMap( t -> catalog.getSnapshot().rel().getColumns(
-                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
-                    (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            ).stream() ).collect( Collectors.toList() );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( columns ),
-                    PrimitiveCatalogColumn.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",  // the database name
-                    "TABLE_SCHEM",        // the schema name
-                    "TABLE_NAME",         // the table name
-                    "COLUMN_NAME",        // the column name
-                    "DATA_TYPE",          // The SQL data type from java.sql.Types.
-                    "TYPE_NAME",          // The name of the data type.
-                    "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
-                    "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
-                    "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
-                    "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
-                    "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
-                    "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
-                    "COLUMN_DEF",         // The default value of the column.
-                    "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
-                    "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
-                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
-                    "ORDINAL_POSITION",   // The index of the column within the table.
-                    "IS_NULLABLE",        // Indicates if the column allows null values.
-                    // Polypheny-DB specific extensions:
-                    "COLLATION"
-            );
-        }
+    private static List<LogicalColumn> getLogicalColumns( String namespacePattern, String tablePattern, String columnPattern ) {
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        Pattern catalogColumnPattern = getPatternOrNull( columnPattern );
+        return getLogicalTables( catalogNamespacePattern, catalogTablePattern ).stream()
+                .flatMap(t -> getLogicalColumns( catalogTablePattern, catalogColumnPattern ).stream() )
+                .collect( Collectors.toList() );
+    }
+
+    private static List<LogicalColumn> getLogicalColumns( Pattern catalogTablePattern, Pattern catalogColumnPattern ) {
+        return Catalog.getInstance().getSnapshot().rel().getColumns( catalogTablePattern, catalogColumnPattern );
+    }
+
+
+    public static synchronized ColumnsResponse getColumns( String namespacePattern, String tablePattern, String columnPattern ) {
+        final List<LogicalColumn> columns = getLogicalColumns( namespacePattern, tablePattern, columnPattern );
+        ColumnsResponse.Builder responseBuilder = ColumnsResponse.newBuilder();
+        columns.forEach( logicalColumn -> responseBuilder.addColumns( getColumnMeta( logicalColumn ) ) );
+        return responseBuilder.build();
+    }
+
+    private static Column getColumnMeta(LogicalColumn logicalColumn) {
+        Serializable[] parameters = logicalColumn.getParameterArray();
+        Column.Builder columnBuilder = Column.newBuilder();
+        columnBuilder.setDatabaseName( parameters[0].toString() );
+        columnBuilder.setNamespaceName( parameters[1].toString() );
+        columnBuilder.setTableName( parameters[2].toString() );
+        columnBuilder.setColumnName( parameters[3].toString() );
+        columnBuilder.setTypeName( parameters[5].toString() );
+        columnBuilder.setTypeLength( Integer.parseInt(parameters[6].toString()));
+        columnBuilder.setTypeScale( Integer.parseInt(parameters[8].toString()));
+        columnBuilder.setIsNullable( Boolean.parseBoolean( parameters[10].toString() ) );
+        columnBuilder.setDefaultValueAsString( parameters[12].toString() );
+        columnBuilder.setColumnIndex(Integer.parseInt(parameters[16].toString()));
+        columnBuilder.setCollation( parameters[18].toString() );
+        return columnBuilder.build();
     }
 
 
