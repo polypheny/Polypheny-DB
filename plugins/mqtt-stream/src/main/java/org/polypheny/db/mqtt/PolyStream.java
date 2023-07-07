@@ -18,6 +18,7 @@ package org.polypheny.db.mqtt;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.Catalog;
 
 public class PolyStream {
 
@@ -50,6 +51,8 @@ public class PolyStream {
         this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
+        this.databaseId = Catalog.defaultDatabaseId;
+        this.userId = Catalog.defaultUserId;
     }
 
 
