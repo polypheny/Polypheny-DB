@@ -19,12 +19,16 @@ package org.polypheny.db.protointerface;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesResponse;
@@ -124,32 +128,33 @@ public class DbmsMetaRetriever {
             );
         }
     }
+    */
 
 
-    public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getNamespaces( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
-            }
-            final List<LogicalNamespace> schemas = catalog.getSnapshot().getNamespaces(
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
-            );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( schemas ),
-                    PrimitiveCatalogSchema.class,
-                    // According to JDBC standard:
-                    "TABLE_SCHEM",
-                    "TABLE_CATALOG",
-                    // Polypheny-DB specific extensions:
-                    "OWNER",
-                    "SCHEMA_TYPE"
-            );
-        }
+    public static synchronized NamespacesResponse getNamespaces( String namespacePattern ) {
+        List<LogicalNamespace> namespaces = getLogicalNamespaces( namespacePattern );
+        NamespacesResponse.Builder responseBuilder = NamespacesResponse.newBuilder();
+        namespaces.forEach( namespace -> responseBuilder.addNamespaces( getNamespaceMeta( namespace ) ) );
+        return responseBuilder.build();
     }
+
+
+    private List<LogicalNamespace> getLogicalNamespaces( String namespacePattern ) {
+        Pattern catalogNamespacePattern = namespacePattern == null ? null : new Pattern( namespacePattern );
+        return Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
+    }
+
+
+    private static Namespace getNamespaceMeta( LogicalNamespace logicalNamespace ) {
+        Serializable[] parameters = logicalNamespace.getParameterArray();
+        Namespace.Builder namespaceBuilder = Namespace.newBuilder();
+        namespaceBuilder.setNamespaceName( parameters[0].toString() );
+        namespaceBuilder.setDatabaseName( parameters[1].toString() );
+        namespaceBuilder.setOwnerName( parameters[2].toString() );
+        Optional.ofNullable( parameters[3] ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.toString() ) );
+        return namespaceBuilder.build();
+    }
+    /*
 
 
     public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
