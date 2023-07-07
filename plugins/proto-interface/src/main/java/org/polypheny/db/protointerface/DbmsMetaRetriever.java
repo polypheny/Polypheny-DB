@@ -108,9 +108,10 @@ public class DbmsMetaRetriever {
         Pattern catalogTablePattern = getPatternOrNull( tablePattern );
         Pattern catalogColumnPattern = getPatternOrNull( columnPattern );
         return getLogicalTables( catalogNamespacePattern, catalogTablePattern ).stream()
-                .flatMap(t -> getLogicalColumns( catalogTablePattern, catalogColumnPattern ).stream() )
+                .flatMap( t -> getLogicalColumns( catalogTablePattern, catalogColumnPattern ).stream() )
                 .collect( Collectors.toList() );
     }
+
 
     private static List<LogicalColumn> getLogicalColumns( Pattern catalogTablePattern, Pattern catalogColumnPattern ) {
         return Catalog.getInstance().getSnapshot().rel().getColumns( catalogTablePattern, catalogColumnPattern );
@@ -124,7 +125,8 @@ public class DbmsMetaRetriever {
         return responseBuilder.build();
     }
 
-    private static Column getColumnMeta(LogicalColumn logicalColumn) {
+
+    private static Column getColumnMeta( LogicalColumn logicalColumn ) {
         Serializable[] parameters = logicalColumn.getParameterArray();
         Column.Builder columnBuilder = Column.newBuilder();
         columnBuilder.setDatabaseName( parameters[0].toString() );
@@ -132,12 +134,12 @@ public class DbmsMetaRetriever {
         columnBuilder.setTableName( parameters[2].toString() );
         columnBuilder.setColumnName( parameters[3].toString() );
         columnBuilder.setTypeName( parameters[5].toString() );
-        columnBuilder.setTypeLength( Integer.parseInt(parameters[6].toString()));
-        columnBuilder.setTypeScale( Integer.parseInt(parameters[8].toString()));
-        columnBuilder.setIsNullable( Boolean.parseBoolean( parameters[10].toString() ) );
-        columnBuilder.setDefaultValueAsString( parameters[12].toString() );
-        columnBuilder.setColumnIndex(Integer.parseInt(parameters[16].toString()));
-        columnBuilder.setCollation( parameters[18].toString() );
+        columnBuilder.setTypeLength( Integer.parseInt( parameters[6].toString() ) );
+        columnBuilder.setTypeScale( Integer.parseInt( parameters[8].toString() ) );
+        columnBuilder.setIsNullable( parameters[10].toString().equals( "1" ) );
+        Optional.of( parameters[12] ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.toString() ) );
+        columnBuilder.setColumnIndex( Integer.parseInt( parameters[16].toString() ) );
+        Optional.of( parameters[18] ).ifPresent( p -> columnBuilder.setCollation( p.toString() ) );
         return columnBuilder.build();
     }
 
