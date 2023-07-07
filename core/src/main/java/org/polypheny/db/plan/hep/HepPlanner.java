@@ -733,7 +733,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
             return (HepAlgVertex) alg;
         }
 
-        // Recursively add children, replacing this rel's inputs with corresponding child vertices.
+        // Recursively add children, replacing this alg's inputs with corresponding child vertices.
         final List<AlgNode> inputs = alg.getInputs();
         final List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input1 : inputs ) {
