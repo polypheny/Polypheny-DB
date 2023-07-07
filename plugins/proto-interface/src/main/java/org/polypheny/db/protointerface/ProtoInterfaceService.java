@@ -140,10 +140,10 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void getTables( TablesRequest tablesRequest, StreamObserver<TablesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        String schemaPattern = tablesRequest.hasSchemaPattern() ? tablesRequest.getSchemaPattern() : null;
+        String namespacePattern = tablesRequest.hasSchemaPattern() ? tablesRequest.getSchemaPattern() : null;
         String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
         List<String> tableTypes = tablesRequest.getTableTypesList();
-        responseObserver.onNext(DbmsMetaRetriever.getTables( schemaPattern, tablePattern, tableTypes));
+        responseObserver.onNext(DbmsMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes));
         responseObserver.onCompleted();
     }
 

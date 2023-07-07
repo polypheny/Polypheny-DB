@@ -23,8 +23,8 @@ message LanguageResponse {
 }
 
 message TablesRequest{
-  optional string schemaPattern = 1;
-  optional string tablePattern = 2;
+  optional string namespace_pattern = 1;
+  optional string table_pattern = 2;
   repeated string table_types = 3;
 }
 
