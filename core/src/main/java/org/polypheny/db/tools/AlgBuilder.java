@@ -34,20 +34,67 @@
 package org.polypheny.db.tools;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import java.math.BigDecimal;
+import java.util.AbstractList;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.bson.BsonDocument;
+import org.bson.BsonElement;
 import org.bson.BsonValue;
-import org.polypheny.db.algebra.*;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgDistribution;
+import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
-import org.polypheny.db.algebra.core.*;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.AlgFactories.ScanFactory;
+import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.Match;
+import org.polypheny.db.algebra.core.Minus;
+import org.polypheny.db.algebra.core.Modify.Operation;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Scan;
+import org.polypheny.db.algebra.core.SemiJoin;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -63,8 +110,24 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.*;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptPredicateList;
+import org.polypheny.db.plan.AlgOptSchema;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexExecutor;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSimplify;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
 import org.polypheny.db.schema.ModelTrait;
@@ -72,16 +135,20 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.*;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.Holder;
+import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Litmus;
+import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
+import org.polypheny.db.util.Util;
+import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
-
-import javax.annotation.Nonnull;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -2406,7 +2473,51 @@ public class AlgBuilder {
 
 
     public AlgBuilder aggregate( GroupKey groupKey, List<AggregateCall> aggregateCalls ) {
-        return aggregate( groupKey, Lists.transform( aggregateCalls, AggCallImpl2::new ) );
+        return aggregate( groupKey, aggregateCalls.stream().map( AggCallImpl2::new ).collect( Collectors.toList() ) );
+    }
+
+    // DOCUMENT SCAN
+
+
+    public AlgBuilder docScan( Statement statement, String collectionName ) {
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+        AlgOptTable collection = catalogReader.getCollection( List.of( collectionName.split( "\\." ) ) );
+        stack.push( new Frame( LogicalDocumentScan.create( cluster, collection ) ) );
+        return this;
+    }
+
+
+    // DOCUMENT MODIFY
+    public AlgBuilder docInsert( Statement statement, String collectionName, BsonDocument... documents ) {
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
+        AlgOptTable collection = catalogReader.getCollection( List.of( collectionName.split( "\\." ) ) );
+
+        AlgNode values = LogicalDocumentValues.create( cluster, ImmutableList.copyOf( documents ) );
+
+        LogicalDocumentModify modify = LogicalDocumentModify.create( collection, values, catalogReader, Operation.INSERT, null, null );
+
+        stack.push( new Frame( modify ) );
+        return this;
+    }
+
+
+    public AlgBuilder docInsert( Statement statement, String collectionName, BsonElement... elements ) {
+        return docInsert( statement, collectionName, new BsonDocument( List.of( elements ) ) );
+    }
+
+
+    public AlgBuilder docInsert( Statement statement, String collectionName, String key, BsonValue value ) {
+        return docInsert( statement, collectionName, new BsonDocument( key, value ) );
+    }
+
+
+    public AlgBuilder docInsert( Statement statement, String collectionName, String key0, BsonValue value0, String key1, BsonValue value1 ) {
+        return docInsert( statement, collectionName, new BsonElement( key0, value0 ), new BsonElement( key1, value1 ) );
+    }
+
+
+    public AlgBuilder docInsert( Statement statement, String collectionName, String key0, BsonValue value0, String key1, BsonValue value1, String key2, BsonValue value2 ) {
+        return docInsert( statement, collectionName, new BsonElement( key0, value0 ), new BsonElement( key1, value1 ), new BsonElement( key2, value2 ) );
     }
 
 
