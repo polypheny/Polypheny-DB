@@ -4,9 +4,12 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
+    compileOnly project(":plugins:mql-language")
 
     // https://mvnrepository.com/artifact/com.hivemq/hivemq-mqtt-client
     implementation group: 'com.hivemq', name: 'hivemq-mqtt-client', version: hivemq_mqttclient_version
+
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

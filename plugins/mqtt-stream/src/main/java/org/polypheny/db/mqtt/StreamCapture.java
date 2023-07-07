@@ -18,13 +18,16 @@ package org.polypheny.db.mqtt;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -39,6 +42,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -170,6 +174,49 @@ public class StreamCapture {
     }
 
 
+    // added by Datomo
+    public void insertDocument() {
+        String collectionName = "users";
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+
+        // Builder which allows to construct the algebra tree which is equivalent to query and is executed
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        // we insert document { age: 28, name: "David" } into the collection users
+        BsonDocument document = new BsonDocument();
+        document.put( "age", new BsonInt32( 28 ) );
+        document.put( "name", new BsonString( "David" ) );
+
+        AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
+
+        // we can then wrap the tree in an AlgRoot and execute it
+        AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
+        // for inserts and all DML queries only a number is returned
+        String res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
+
+
+    }
+
+
+    // added by Datomo
+    public void scanDocument() {
+        String collectionName = "users";
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+
+        // Builder which allows to construct the algebra tree which is equivalent to query and is executed
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        AlgNode algNode = builder.docScan( statement, collectionName ).build();
+
+        // we can then wrap the tree in an AlgRoot and execute it
+        AlgRoot root = AlgRoot.of( algNode, Kind.SELECT );
+        String res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
+
+    }
+
+
     boolean saveContent() {
 /**
  //TODO: save Message here -> Polyalgebra
@@ -245,13 +292,16 @@ public class StreamCapture {
             PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, false );
             log.debug( "AlgRoot was prepared." );
 
-            final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
+            /*final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
             while ( iterator.hasNext() ) {
                 iterator.next();
-            }
+            }*/
+            // todo transform into desired output format
+            List<List<Object>> rows = result.getRows( statement, -1 );
 
             statement.getTransaction().commit();
+            return rows.toString();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
             try {
@@ -264,7 +314,7 @@ public class StreamCapture {
         //Pair<String, Integer> result = restResult.getResult( ctx );
 
         //return result.left;
-        return null;
+        //return null;
     }
 
 
