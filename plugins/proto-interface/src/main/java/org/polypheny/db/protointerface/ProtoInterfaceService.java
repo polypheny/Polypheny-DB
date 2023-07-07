@@ -36,6 +36,8 @@ import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.LanguageResponse;
+import org.polypheny.db.protointerface.proto.NamespacesRequest;
+import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.ParameterSet;
 import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
@@ -136,22 +138,34 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         }
     }
 
+
     @Override
     public void getTables( TablesRequest tablesRequest, StreamObserver<TablesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        String namespacePattern = tablesRequest.hasSchemaPattern() ? tablesRequest.getSchemaPattern() : null;
+        String namespacePattern = tablesRequest.hasNamespacePattern() ? tablesRequest.getNamespacePattern() : null;
         String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
         List<String> tableTypes = tablesRequest.getTableTypesList();
-        responseObserver.onNext(DbmsMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes));
+        responseObserver.onNext( DbmsMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes ) );
         responseObserver.onCompleted();
     }
+
 
     @Override
     public void getTableTypes( TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
         responseObserver.onNext( DbmsMetaRetriever.getTableTypes() );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getNamespaces( NamespacesRequest namespacesRequest, StreamObserver<NamespacesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = namespacesRequest.hasNamespacePattern() ? namespacesRequest.getNamespacePattern() : null;
+        responseObserver.onNext( DbmsMetaRetriever.getNamespaces( namespacePattern ) );
         responseObserver.onCompleted();
     }
 
