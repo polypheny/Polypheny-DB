@@ -134,8 +134,11 @@ public class MqttStreamPlugin extends Plugin {
                                     log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
                                 } else {
                                     log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
-
-                                    subscribe( Arrays.asList( settings.get( "topics" ).trim().split( "," ) ) );
+                                    /**List<String> topicsList = new ArrayList<>( List.of( this.settings.get( "topics" ).split( "," ) ) );
+                                    for ( int i = 0; i < topicsList.size(); i++ ) {
+                                        topicsList.set( i, topicsList.get(i).trim() );
+                                    }**/
+                                    subscribe( topicsToList( this.settings.get( "topics" ) ) );
                                 }
                             }
                     );
@@ -165,12 +168,20 @@ public class MqttStreamPlugin extends Plugin {
 
         }
 
+        public List<String> topicsToList( String topics ) {
+            List<String> topicsList = new ArrayList<>( List.of( topics.split( "," ) ) );
+            for ( int i = 0; i < topicsList.size(); i++ ) {
+                topicsList.set( i, topicsList.get(i).trim() );
+            }
+            return topicsList;
+        }
+
 
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
 
             if ( updatedSettings.contains( "topics" ) ) {
-                List<String> newTopicsList = Stream.of( this.getCurrentSettings().get( "topics" ).split( "," ) ).map( String::trim ).collect( Collectors.toList() );
+                List<String> newTopicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
 
                 List<String> topicsToSub = new ArrayList<>();
                 for ( String newTopic : newTopicsList ) {
@@ -219,7 +230,7 @@ public class MqttStreamPlugin extends Plugin {
                     log.info( "Subscription was not successfull. Please try again." );
                 } else {
                     this.topics.add( topic );
-                    log.info( "Successful subscription to topic {}.", topic );
+                    log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
@@ -241,7 +252,7 @@ public class MqttStreamPlugin extends Plugin {
                     log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
                 } else {
                     this.topics.remove( topic );
-                    log.info( String.format( "Unsubscribed from %s.", topic ) );
+                    log.info( "Unsubscribed from topic:{}.", topic );
                 }
             } );
         }
