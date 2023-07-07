@@ -49,11 +49,18 @@ message ColumnsResponse {
 }
 
 message NamespacesRequest {
-
+  optional string namespace_pattern = 1;
 }
 
 message NamespacesResponse {
+ repeated Namespace namespaces = 1;
+}
 
+message Namespace {
+  string namespace_name = 1;
+  string database_name = 2;
+  string owner_name = 3;
+  optional string namespace_type = 4;
 }
 
 message DatabasesRequest {
