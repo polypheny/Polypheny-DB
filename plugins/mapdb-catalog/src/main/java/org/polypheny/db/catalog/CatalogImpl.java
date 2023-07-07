@@ -4014,6 +4014,22 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings ) {
+        CatalogQueryInterface old = getQueryInterface( queryInterfaceId );
+        Map<String, String> temp = new HashMap<>();
+        newSettings.forEach( temp::put );
+        temp.values().forEach( System.out::println );
+        CatalogQueryInterface queryInterface = new CatalogQueryInterface( old.id, old.name, old.clazz, temp );
+        synchronized ( this ) {
+            queryInterfaces.put( queryInterface.id, queryInterface );
+            queryInterfaceNames.put( queryInterface.name, queryInterface );
+        }
+        listeners.firePropertyChange( "queryInterface", old, queryInterface );
+    }
+
 
     /**
      * {@inheritDoc}

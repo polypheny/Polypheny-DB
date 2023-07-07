@@ -1234,6 +1234,14 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract void deleteQueryInterface( int ifaceId );
 
     /**
+     * Update settings of a query interface
+     *
+     * @param queryInterfaceId The id of the query interface
+     * @param newSettings The new settings for the query interface
+     */
+    public abstract void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings );
+
+    /**
      * Adds a partition to the catalog
      *
      * @param tableId The unique id of the table

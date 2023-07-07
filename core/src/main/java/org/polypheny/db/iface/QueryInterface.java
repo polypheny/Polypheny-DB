@@ -17,6 +17,9 @@
 package org.polypheny.db.iface;
 
 
+import static org.reflections.Reflections.log;
+
+import com.google.common.collect.ImmutableList;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.*;
@@ -25,7 +28,21 @@ import java.util.Map.Entry;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -122,6 +139,53 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     public void updateSettings( Map<String, String> newSettings ) {
         this.validateSettings( newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
+        Catalog catalog = Catalog.getInstance();
+        catalog.updateQueryInterfaceSettings(getQueryInterfaceId(), getCurrentSettings());
+
+        Transaction transaction = null;
+        try {
+            transaction = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, catalog.getQueryInterface( queryInterfaceId ).name);
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | GenericCatalogException e ) {
+            throw new RuntimeException( "Error while starting transaction", e );
+        }
+
+        Statement statement = transaction.createStatement();
+        long schemaId = 0;
+        CatalogSchema schema = null;
+        try {
+            schema = catalog.getSchema( Catalog.defaultDatabaseId, "SettingsSchema");
+            schemaId = schema.id;
+        } catch ( UnknownSchemaException e ) {
+            log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
+        }
+
+        List<DataStore> stores =  null;
+
+        PlacementType placementType = PlacementType.AUTOMATIC;
+
+        List<FieldInformation> columns = null;
+
+        List<ConstraintInformation> constraints = null;
+        try{
+            DdlManager.getInstance().createTable(
+                    schemaId,
+                    "tableName",
+                    columns,
+                    constraints,
+                    true,
+                    stores,
+                    placementType,
+                    statement );
+
+        } catch (Exception e) {
+            log.error( "Could not create table to commit the new settings." );
+        }
+
+        try{
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Could not commit new changes in settings." );
+        }
         this.reloadSettings( updatedSettings );
     }
 
