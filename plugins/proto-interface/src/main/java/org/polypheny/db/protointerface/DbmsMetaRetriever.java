@@ -139,7 +139,7 @@ public class DbmsMetaRetriever {
     }
 
 
-    private List<LogicalNamespace> getLogicalNamespaces( String namespacePattern ) {
+    private static List<LogicalNamespace> getLogicalNamespaces( String namespacePattern ) {
         Pattern catalogNamespacePattern = namespacePattern == null ? null : new Pattern( namespacePattern );
         return Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
     }
