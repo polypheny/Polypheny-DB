@@ -24,6 +24,8 @@ import lombok.SneakyThrows;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
 import org.polypheny.db.protointerface.proto.CloseStatementResponse;
+import org.polypheny.db.protointerface.proto.ColumnsRequest;
+import org.polypheny.db.protointerface.proto.ColumnsResponse;
 import org.polypheny.db.protointerface.proto.CommitRequest;
 import org.polypheny.db.protointerface.proto.CommitResponse;
 import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
@@ -145,7 +147,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = tablesRequest.hasNamespacePattern() ? tablesRequest.getNamespacePattern() : null;
         String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
-        List<String> tableTypes = tablesRequest.getTableTypesList();
+        List<String> tableTypes = tablesRequest.getTableTypesCount() == 0 ? null : tablesRequest.getTableTypesList();
         responseObserver.onNext( DbmsMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes ) );
         responseObserver.onCompleted();
     }
@@ -166,6 +168,17 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = namespacesRequest.hasNamespacePattern() ? namespacesRequest.getNamespacePattern() : null;
         responseObserver.onNext( DbmsMetaRetriever.getNamespaces( namespacePattern ) );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getColumns( ColumnsRequest columnsRequest, StreamObserver<ColumnsResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
+        String tablePattern = columnsRequest.getTablePattern();
+        String columnPattern = columnsRequest.getColumnPattern();
+        responseObserver.onNext( DbmsMetaRetriever.getColumns(namespacePattern, tablePattern, columnPattern) );
         responseObserver.onCompleted();
     }
 
