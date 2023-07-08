@@ -99,11 +99,20 @@ message TableType {
 }
 
 message PrimaryKeysRequest {
-
+  optional string namespace_pattern = 1;
+  string table_pattern = 2;
 }
 
 message PrimaryKeysResponse {
+repeated PrimaryKey primary_keys= 1;
+}
 
+message PrimaryKey {
+  optional string database_name = 1;
+  optional string namespace_name = 2;
+  string table_name = 3;
+  string column_name = 4;
+  int32 sequence_index = 5;
 }
 
 message ImportedKeysRequest {

@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,6 +26,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -32,7 +35,10 @@ import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.ColumnsResponse;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
+import org.polypheny.db.protointerface.proto.PrimaryKey;
+import org.polypheny.db.protointerface.proto.PrimaryKeysResponse;
 import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesResponse;
 
@@ -197,7 +203,14 @@ public class DbmsMetaRetriever {
 
     public static synchronized TableTypesResponse getTableTypes() {
         List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).collect( Collectors.toList() );
-        return TableTypesResponse.newBuilder().addAllTableTypes( tableTypes ).build();
+        TableTypesResponse.Builder responseBuilder = TableTypesResponse.newBuilder();
+        tableTypes.forEach( tableType -> responseBuilder.addTableTypes( getTableTypeMeta( tableType ) ) );
+        return responseBuilder.build();
+    }
+
+
+    private static TableType getTableTypeMeta( String tableType ) {
+        return TableType.newBuilder().setTableType( tableType ).build();
     }
 
 
@@ -282,43 +295,46 @@ public class DbmsMetaRetriever {
             return null;
         }
     }
+*/
 
 
-    public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
-            }
-            final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
-            for ( LogicalTable catalogTable : catalogEntities ) {
-                if ( catalogTable.primaryKey != null ) {
-                    final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
-                    primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
-                }
-            }
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( primaryKeyColumns ),
-                    PrimitiveCatalogPrimaryKeyColumn.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",  // database name
-                    "TABLE_SCHEM",        // schema name
-                    "TABLE_NAME",         // table name
-                    "COLUMN_NAME",        // column name
-                    "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
-                    "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
-            );
-        }
+    public static synchronized PrimaryKeysResponse getPrimaryKeys( String namespacePattern, String tablePattern ) {
+        List<CatalogPrimaryKeyColumn> primaryKeyColumns = getPrimaryKeyColumns( namespacePattern, tablePattern );
+        PrimaryKeysResponse.Builder responseBuilder = PrimaryKeysResponse.newBuilder();
+        primaryKeyColumns.forEach( primaryKeyColumn -> responseBuilder.addPrimaryKeys( getPrimaryKeyColumnMeta( primaryKeyColumn ) ) );
+        return responseBuilder.build();
     }
 
 
+    private static List<CatalogPrimaryKeyColumn> getPrimaryKeyColumns( String namespacePattern, String tablePattern ) {
+        Pattern cataloNamespacePattern = getPatternOrNull( namespacePattern );
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        return getLogicalTables( cataloNamespacePattern, catalogTablePattern ).stream()
+                .filter( e -> e.primaryKey != null )
+                .map( DbmsMetaRetriever::getLogicalPrimaryKey )
+                .map( LogicalPrimaryKey::getCatalogPrimaryKeyColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static LogicalPrimaryKey getLogicalPrimaryKey( LogicalTable logicalTable ) {
+        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
+    }
+
+
+    private static PrimaryKey getPrimaryKeyColumnMeta( CatalogPrimaryKeyColumn catalogPrimaryKeyColumn ) {
+        Serializable[] parameters = catalogPrimaryKeyColumn.getParameterArray();
+        PrimaryKey.Builder primaryKeyBuilder = PrimaryKey.newBuilder();
+        Optional.ofNullable( parameters[0] ).ifPresent( p -> primaryKeyBuilder.setDatabaseName( p.toString() ) );
+        Optional.ofNullable( parameters[1] ).ifPresent( p -> primaryKeyBuilder.setNamespaceName( p.toString() ) );
+        primaryKeyBuilder.setTableName( parameters[2].toString() );
+        primaryKeyBuilder.setColumnName( parameters[3].toString() );
+        primaryKeyBuilder.setSequenceIndex( Integer.parseInt( parameters[4].toString() ) );
+        return primaryKeyBuilder.build();
+    }
+
+/*
     @SuppressWarnings("Duplicates")
 
     public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
