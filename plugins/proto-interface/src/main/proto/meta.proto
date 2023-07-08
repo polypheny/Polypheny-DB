@@ -83,7 +83,13 @@ message DatabasesRequest {
 }
 
 message DatabasesResponse {
+  repeated Database databases = 1;
+}
 
+message Database {
+  string database_name = 1;
+  string owner_name = 2;
+  string default_namespace_name = 3;
 }
 
 message TableTypesRequest {
