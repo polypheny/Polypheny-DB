@@ -110,7 +110,7 @@ message PrimaryKeysRequest {
 }
 
 message PrimaryKeysResponse {
-repeated PrimaryKey primary_keys= 1;
+  repeated PrimaryKey primary_keys = 1;
 }
 
 message PrimaryKey {
@@ -122,11 +122,27 @@ message PrimaryKey {
 }
 
 message ImportedKeysRequest {
-
+  optional string namespace_pattern = 1;
+  string table_pattern = 2;
 }
 
 message ImportedKeysResponse {
+  repeated ImportedKey imported_keys = 1;
+}
 
+message ImportedKey {
+  optional string referenced_database_name = 1;
+  optional string referenced_namespace_name = 2;
+  string referenced_table_name = 3;
+  string referenced_column_name = 4;
+  optional string foreign_database_name = 5;
+  optional string foreign_namespace_name = 6;
+  string foreign_table_name = 7;
+  string foreign_column_name = 8;
+  int32 sequence_index = 9;
+  int32 update_rule = 10;
+  int32 delete_rule = 11;
+  optional string key_name = 12;
 }
 
 message ExportedKeysRequest {
