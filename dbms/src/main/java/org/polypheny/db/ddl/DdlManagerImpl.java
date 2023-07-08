@@ -414,7 +414,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private int updateAdjacentPositions( LogicalTable catalogTable, LogicalColumn beforeColumn, LogicalColumn afterColumn ) {
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
-        int position = columns.size();
+        int position = columns.size() + 1;
         if ( beforeColumn != null || afterColumn != null ) {
             if ( beforeColumn != null ) {
                 position = beforeColumn.position;

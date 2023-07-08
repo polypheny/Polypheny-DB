@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.Objects;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
@@ -61,6 +62,7 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
+    @Nullable
     protected LogicalTable getFromCatalog( Context context, SqlIdentifier tableName ) {
         long schemaId;
         String tableOldName;

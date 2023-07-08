@@ -225,6 +225,8 @@ public class TestHelper {
                                 } else {
                                     Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
+                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
+                                assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
                             } else {
                                 Assert.assertEquals(
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",

@@ -23,6 +23,7 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -80,7 +81,9 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.NonDeterministic;
+import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
@@ -373,6 +376,58 @@ public class Functions {
             throw new ConstraintViolationException( Joiner.on( "\n" )
                     .join( validationIndexes.stream().map( msgs::get ).collect( Collectors.toList() ) ) );
         }
+    }
+
+
+    /**
+     * Correlates the elements of two sequences based on a predicate. // todo dl use EnumerablesDefault
+     */
+    @SuppressWarnings("unused")
+    public static <TSource, TInner, TResult> Enumerable<TResult> thetaJoin(
+            final Enumerable<TSource> outer,
+            final Enumerable<TInner> inner,
+            final Predicate2<TSource, TInner> predicate,
+            Function2<TSource, TInner, TResult> resultSelector,
+            final boolean generateNullsOnLeft,
+            final boolean generateNullsOnRight ) {
+        // Building the result as a list is easy but hogs memory. We should iterate.
+        final List<TResult> result = new ArrayList<>();
+        final Enumerator<TSource> lefts = outer.enumerator();
+        final List<TInner> rightList = inner.toList();
+        final Set<TInner> rightUnmatched;
+        if ( generateNullsOnLeft ) {
+            rightUnmatched = Sets.newIdentityHashSet();
+            rightUnmatched.addAll( rightList );
+        } else {
+            rightUnmatched = null;
+        }
+        while ( lefts.moveNext() ) {
+            int leftMatchCount = 0;
+            final TSource left = lefts.current();
+            final Enumerator<TInner> rights = Linq4j.iterableEnumerator( rightList );
+            while ( rights.moveNext() ) {
+                TInner right = rights.current();
+                if ( predicate.apply( left, right ) ) {
+                    ++leftMatchCount;
+                    if ( rightUnmatched != null ) {
+                        rightUnmatched.remove( right );
+                    }
+                    result.add( resultSelector.apply( left, right ) );
+                }
+            }
+            if ( generateNullsOnRight && leftMatchCount == 0 ) {
+                result.add( resultSelector.apply( left, null ) );
+            }
+        }
+        if ( rightUnmatched != null ) {
+            final Enumerator<TInner> rights =
+                    Linq4j.iterableEnumerator( rightUnmatched );
+            while ( rights.moveNext() ) {
+                TInner right = rights.current();
+                result.add( resultSelector.apply( null, right ) );
+            }
+        }
+        return Linq4j.asEnumerable( result );
     }
 
 

@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
+import org.apache.calcite.linq4j.function.Predicate2;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
@@ -44,12 +46,15 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.functions.Functions;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -415,6 +420,41 @@ public class EnumUtils {
     public static MethodCallExpression wrapPolyValue( Type outputClass, Expression operand ) {
         return Expressions.call( outputClass, "of", operand );
     }
+
+
+    /**
+     * Returns a predicate expression based on a join condition.
+     */
+    static Expression generatePredicate(
+            EnumerableAlgImplementor implementor,
+            RexBuilder rexBuilder,
+            AlgNode left,
+            AlgNode right,
+            PhysType leftPhysType,
+            PhysType rightPhysType,
+            RexNode condition ) {
+        final BlockBuilder builder = new BlockBuilder();
+        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaRowType(), "left" );
+        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
+        final RexProgramBuilder program = new RexProgramBuilder(
+                implementor.getTypeFactory().builder()
+                        .addAll( left.getRowType().getFieldList() )
+                        .addAll( right.getRowType().getFieldList() )
+                        .build(),
+                rexBuilder );
+        program.addCondition( condition );
+        builder.add(
+                Expressions.return_( null,
+                        Expressions.convert_( Expressions.field( RexToLixTranslator.translateCondition( program.getProgram(),
+                                        implementor.getTypeFactory(),
+                                        builder,
+                                        new RexToLixTranslator.InputGetterImpl( ImmutableList.of( Pair.of( left_, leftPhysType ), Pair.of( right_, rightPhysType ) ) ),
+                                        implementor.allCorrelateVariables,
+                                        implementor.getConformance() ), "value" ),
+                                boolean.class ) ) );
+        return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
+    }
+
 
 }
 

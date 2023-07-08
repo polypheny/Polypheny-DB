@@ -84,6 +84,8 @@ public class PolyInterval extends PolyValue {
         switch ( qualifier.getTimeUnitRange() ) {
             case YEAR:
                 return value.longValue();
+            case MONTH:
+                return value.longValue();
         }
         throw new NotImplementedException( "since Epoch" );
     }

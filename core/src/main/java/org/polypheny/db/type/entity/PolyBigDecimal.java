@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -43,6 +44,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
+@Slf4j
 public class PolyBigDecimal extends PolyNumber {
 
     public BigDecimal value;
@@ -88,6 +90,7 @@ public class PolyBigDecimal extends PolyNumber {
         if ( value instanceof PolyNumber ) {
             return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
         } else if ( value instanceof PolyValue ) {
+            log.warn( "error in Decimal convert" );
             return null;
         }
         return null;

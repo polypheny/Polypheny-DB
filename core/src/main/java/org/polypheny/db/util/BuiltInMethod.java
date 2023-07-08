@@ -188,7 +188,7 @@ public enum BuiltInMethod {
     MERGE_JOIN( EnumerableDefaults.class, "mergeJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class, Function2.class, boolean.class, boolean.class ),
     SLICE0( Enumerables.class, "slice0", Enumerable.class ),
     SEMI_JOIN( EnumerableDefaults.class, "semiJoin", Enumerable.class, Enumerable.class, Function1.class, Function1.class ),
-    //THETA_JOIN( EnumerableDefaults.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ), // todo fix
+    // THETA_JOIN( Functions.class, "thetaJoin", Enumerable.class, Enumerable.class, Predicate2.class, Function2.class, boolean.class, boolean.class ), // todo fix
     SINGLE_SUM( Functions.class, "singleSum", Enumerable.class ),
     CORRELATE_JOIN( ExtendedEnumerable.class, "correlateJoin", JoinType.class, Function1.class, Function2.class ),
     SELECT( ExtendedEnumerable.class, "select", Function1.class ),

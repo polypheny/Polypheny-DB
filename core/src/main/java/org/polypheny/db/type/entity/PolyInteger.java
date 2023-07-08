@@ -181,7 +181,7 @@ public class PolyInteger extends PolyNumber {
 
     @Override
     public BigDecimal bigDecimalValue() {
-        return new BigDecimal( value );
+        return value == null ? null : new BigDecimal( value );
     }
 
 
