@@ -91,7 +91,11 @@ message TableTypesRequest {
 }
 
 message TableTypesResponse {
-  repeated string table_types = 1;
+  repeated TableType table_types = 1;
+}
+
+message TableType {
+  string table_type = 1;
 }
 
 message PrimaryKeysRequest {
