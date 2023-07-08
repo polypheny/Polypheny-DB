@@ -159,7 +159,20 @@ message TypesRequest {
 }
 
 message TypesResponse {
+repeated Type types = 1;
+}
 
+message Type {
+string type_name = 1;
+int32 precision = 2;
+string literal_prefix = 3;
+string literal_suffix = 4;
+bool is_case_sensitive = 5;
+int32 is_searchable = 6;
+bool is_auto_increment = 7;
+int32 min_scale = 8;
+int32 max_scale = 9;
+int32 radix = 10;
 }
 
 message IndexesRequest {
