@@ -17,12 +17,14 @@
 package org.polypheny.db.protointerface;
 
 import java.io.Serializable;
+import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -49,6 +51,9 @@ import org.polypheny.db.protointerface.proto.Table;
 import org.polypheny.db.protointerface.proto.TableType;
 import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesResponse;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.db.protointerface.proto.TypesResponse;
+import org.polypheny.db.type.PolyType;
 
 public class DbmsMetaRetriever {
 
@@ -394,82 +399,51 @@ public class DbmsMetaRetriever {
         return Catalog.getInstance().getSnapshot().rel().getExportedKeys( entityId );
     }
 
+
+    /*
+
+        @SuppressWarnings("Duplicates")
+        public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
+            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+            synchronized ( connection ) {
+                if ( log.isTraceEnabled() ) {
+                    log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+                }
+
+                // TODO
+
+                log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+                return null;
+            }
+        }
+
+    */
+    public static synchronized TypesResponse getTypes() {
+        TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
+        Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
+        return responseBuilder.build();
+    }
+
+
+    private static Type getTypeMeta( PolyType polyType ) {
+        AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
+        Type.Builder typeBuilder = Type.newBuilder();
+        typeBuilder.setTypeName( polyType.getName() );
+        typeBuilder.setPrecision( typeSystem.getMaxPrecision( polyType ) );
+        typeBuilder.setLiteralPrefix( typeSystem.getLiteral( polyType, true ) );
+        typeBuilder.setLiteralSuffix( typeSystem.getLiteral( polyType, false ) );
+        typeBuilder.setIsCaseSensitive( typeSystem.isCaseSensitive( polyType ) );
+        typeBuilder.setIsSearchable( DatabaseMetaData.typeSearchable );
+        typeBuilder.setIsAutoIncrement( typeSystem.isAutoincrement( polyType ) );
+        typeBuilder.setMinScale( polyType.getMinScale() );
+        typeBuilder.setMaxScale( typeSystem.getMaxScale( polyType ) );
+        typeBuilder.setRadix( typeSystem.getNumTypeRadix( polyType ) );
+        return typeBuilder.build();
+    }
+
+
+
 /*
-
-    @SuppressWarnings("Duplicates")
-    public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-            }
-
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
-            }
-            final StatementHandle statementHandle = createStatement( ch );
-            final AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
-            final List<Object> objects = new LinkedList<>();
-            for ( PolyType polyType : PolyType.values() ) {
-                objects.add(
-                        new Serializable[]{
-                                polyType.getName(),
-                                polyType.getJdbcOrdinal(),
-                                typeSystem.getMaxPrecision( polyType ),
-                                typeSystem.getLiteral( polyType, true ),
-                                typeSystem.getLiteral( polyType, false ),
-                                null,
-                                (short) DatabaseMetaData.typeNullable, // All types are nullable
-                                typeSystem.isCaseSensitive( polyType ),
-                                (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
-                                false,
-                                false,
-                                typeSystem.isAutoincrement( polyType ),
-                                polyType.getName(),
-                                (short) polyType.getMinScale(),
-                                (short) typeSystem.getMaxScale( polyType ),
-                                null,
-                                null,
-                                typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) } );
-            }
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    Linq4j.asEnumerable( objects ),
-                    MetaTypeInfo.class,
-                    "TYPE_NAME",   // The name of the data type.
-                    "DATA_TYPE",           // The SQL data type from java.sql.Types.
-                    "PRECISION",           // The maximum number of significant digits.
-                    "LITERAL_PREFIX",      // Prefix used to quote a literal
-                    "LITERAL_SUFFIX",      // Suffix used to quote a literal
-                    "CREATE_PARAMS",       // Parameters used in creating the type --> not used, always null
-                    "NULLABLE",            // Indicates if the column can contain a null value (1: means type can contain null, 0 not). --> Currently 1 for all types
-                    "CASE_SENSITIVE",      // Indicates if the data type is case-sensitive. "true" if the type is case-sensitive; otherwise, "false".
-                    "SEARCHABLE",          // Indicates if (and how) the column can be used in a SQL WHERE clause. 0: none, 1: char, 2: basic, 3: searchable
-                    "UNSIGNED_ATTRIBUTE",  // Indicates the sign of the data type. "true" if the type is unsigned; otherwise, "false". --> Currently false for all types
-                    "FIXED_PREC_SCALE",    // Indicates that the data type can be a money value. "true" if the data type is money type; otherwise, "false".
-                    "AUTO_INCREMENT",      // Indicates that the data type can be automatically incremented. "true" if the type can be auto incremented; otherwise, "false".
-                    "LOCAL_TYPE_NAME",     // The localized name of the data type. --> Same as TYPE_NAME
-                    "MINIMUM_SCALE",       // The maximum number of digits to the right of the decimal point.
-                    "MAXIMUM_SCALE",       // The minimum number of digits to the right of the decimal point.
-                    "SQL_DATA_TYPE",       // Not used, always null
-                    "SQL_DATETIME_SUB",    // Not used, always null
-                    "NUM_PREC_RADIX" );    // The radix
-        }
-    }
-
-
     public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
