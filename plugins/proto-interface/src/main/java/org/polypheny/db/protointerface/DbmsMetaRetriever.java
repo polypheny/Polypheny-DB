@@ -33,6 +33,8 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.ColumnsResponse;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.PrimaryKey;
@@ -173,32 +175,18 @@ public class DbmsMetaRetriever {
         Optional.ofNullable( parameters[3] ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.toString() ) );
         return namespaceBuilder.build();
     }
-    /*
 
 
-    public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getCatalogs( ConnectionHandle {} )", ch );
-            }
-            //final List<CatalogDatabase> databases = Linq4j.asEnumerable( new String[]{ "APP", "system", "public" } );
-            List<Object> databases = Collections.singletonList( new Serializable[]{ Catalog.DATABASE_NAME, "system", Catalog.defaultNamespaceName } );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    Linq4j.asEnumerable( databases ),
-                    PrimitiveCatalogDatabase.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",
-                    // Polypheny-DB specific extensions:
-                    "OWNER",
-                    "DEFAULT_SCHEMA"
-            );
-        }
+    public static synchronized DatabasesResponse getDatabases() {
+        Database database = Database.newBuilder()
+                .setDatabaseName( Catalog.DATABASE_NAME )
+                .setOwnerName( "system" )
+                .setDefaultNamespaceName( Catalog.defaultNamespaceName )
+                .build();
+        return DatabasesResponse.newBuilder()
+                .addDatabases( database )
+                .build();
     }
-*/
 
 
     public static synchronized TableTypesResponse getTableTypes() {
