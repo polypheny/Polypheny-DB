@@ -62,6 +62,8 @@ import org.polypheny.db.protointerface.proto.TableTypesRequest;
 import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesRequest;
 import org.polypheny.db.protointerface.proto.TablesResponse;
+import org.polypheny.db.protointerface.proto.TypesRequest;
+import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
 import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
@@ -218,9 +220,10 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
         String tablePattern = importedKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getImportedKeys(namespacePattern, tablePattern) );
+        responseObserver.onNext( DbmsMetaRetriever.getImportedKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
+
 
     @Override
     public void getExportedKeys( ExportedKeysRequest exportedKeysRequest, StreamObserver<ExportedKeysResponse> responseObserver ) {
@@ -228,12 +231,22 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = exportedKeysRequest.hasNamespacePattern() ? exportedKeysRequest.getNamespacePattern() : null;
         String tablePattern = exportedKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getExportedKeys(namespacePattern, tablePattern) );
+        responseObserver.onNext( DbmsMetaRetriever.getExportedKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
 
 
     @Override
+    public void getTypes( TypesRequest typesRequest, StreamObserver<TypesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( DbmsMetaRetriever.getTypes() );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+
+
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<LanguageResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
