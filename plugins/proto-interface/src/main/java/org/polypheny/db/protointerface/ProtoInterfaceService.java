@@ -36,6 +36,8 @@ import org.polypheny.db.protointerface.proto.DatabasesRequest;
 import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.ExportedKeysRequest;
+import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
 import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ImportedKeysRequest;
@@ -217,6 +219,16 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
         String tablePattern = importedKeysRequest.getTablePattern();
         responseObserver.onNext( DbmsMetaRetriever.getImportedKeys(namespacePattern, tablePattern) );
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getExportedKeys( ExportedKeysRequest exportedKeysRequest, StreamObserver<ExportedKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = exportedKeysRequest.hasNamespacePattern() ? exportedKeysRequest.getNamespacePattern() : null;
+        String tablePattern = exportedKeysRequest.getTablePattern();
+        responseObserver.onNext( DbmsMetaRetriever.getExportedKeys(namespacePattern, tablePattern) );
         responseObserver.onCompleted();
     }
 
