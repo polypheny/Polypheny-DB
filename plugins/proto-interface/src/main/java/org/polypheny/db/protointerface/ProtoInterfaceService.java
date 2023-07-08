@@ -42,6 +42,8 @@ import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ImportedKeysRequest;
 import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
+import org.polypheny.db.protointerface.proto.IndexesRequest;
+import org.polypheny.db.protointerface.proto.IndexesResponse;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.NamespacesRequest;
@@ -244,9 +246,19 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onCompleted();
     }
 
+
     @Override
+    public void getIndexes( IndexesRequest indexesRequest, StreamObserver<IndexesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = indexesRequest.hasNamespacePattern() ? indexesRequest.getNamespacePattern() : null;
+        String tablePattern = indexesRequest.getTablePattern();
+        responseObserver.onNext( DbmsMetaRetriever.getIndexes( namespacePattern, tablePattern, indexesRequest.getUnique() ) );
+        responseObserver.onCompleted();
+    }
 
 
+    @Override
     public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<LanguageResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
