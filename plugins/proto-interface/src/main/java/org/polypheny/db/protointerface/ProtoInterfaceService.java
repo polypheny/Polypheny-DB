@@ -38,6 +38,8 @@ import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
 import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
 import org.polypheny.db.protointerface.proto.FetchRequest;
 import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.ImportedKeysRequest;
+import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.NamespacesRequest;
@@ -66,7 +68,6 @@ import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
-import org.polypheny.db.schema.Namespace.Database;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
@@ -195,15 +196,27 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = primaryKeysRequest.hasNamespacePattern() ? primaryKeysRequest.getNamespacePattern() : null;
         String tablePattern = primaryKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern) );
+        responseObserver.onNext( DbmsMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
 
+
     @Override
-    public void getDatabases( DatabasesRequest databasesRequest, StreamObserver<DatabasesResponse>  responseObserver) {
+    public void getDatabases( DatabasesRequest databasesRequest, StreamObserver<DatabasesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
         responseObserver.onNext( DbmsMetaRetriever.getDatabases() );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getImportedKeys( ImportedKeysRequest importedKeysRequest, StreamObserver<ImportedKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
+        String tablePattern = importedKeysRequest.getTablePattern();
+        responseObserver.onNext( DbmsMetaRetriever.getImportedKeys(namespacePattern, tablePattern) );
         responseObserver.onCompleted();
     }
 
