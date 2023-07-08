@@ -44,6 +44,8 @@ import org.polypheny.db.protointerface.proto.ParameterSet;
 import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
+import org.polypheny.db.protointerface.proto.PrimaryKeysRequest;
+import org.polypheny.db.protointerface.proto.PrimaryKeysResponse;
 import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
 import org.polypheny.db.protointerface.proto.RollbackRequest;
 import org.polypheny.db.protointerface.proto.RollbackResponse;
@@ -171,6 +173,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         responseObserver.onCompleted();
     }
 
+
     @Override
     public void getColumns( ColumnsRequest columnsRequest, StreamObserver<ColumnsResponse> responseObserver ) {
         /* called as client auth check */
@@ -178,7 +181,18 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
         String tablePattern = columnsRequest.getTablePattern();
         String columnPattern = columnsRequest.getColumnPattern();
-        responseObserver.onNext( DbmsMetaRetriever.getColumns(namespacePattern, tablePattern, columnPattern) );
+        responseObserver.onNext( DbmsMetaRetriever.getColumns( namespacePattern, tablePattern, columnPattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getPrimaryKeys( PrimaryKeysRequest primaryKeysRequest, StreamObserver<PrimaryKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = primaryKeysRequest.hasNamespacePattern() ? primaryKeysRequest.getNamespacePattern() : null;
+        String tablePattern = primaryKeysRequest.getTablePattern();
+        responseObserver.onNext( DbmsMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern) );
         responseObserver.onCompleted();
     }
 
