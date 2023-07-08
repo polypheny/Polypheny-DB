@@ -38,7 +38,8 @@ import org.polypheny.db.protointerface.proto.Column;
 import org.polypheny.db.protointerface.proto.ColumnsResponse;
 import org.polypheny.db.protointerface.proto.Database;
 import org.polypheny.db.protointerface.proto.DatabasesResponse;
-import org.polypheny.db.protointerface.proto.ImportedKey;
+import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
+import org.polypheny.db.protointerface.proto.ForeignKey;
 import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
@@ -337,7 +338,7 @@ public class DbmsMetaRetriever {
                 .map( CatalogEntity::getId )
                 .map( DbmsMetaRetriever::getLogicalForeignKeysOf )
                 .flatMap( Collection::stream )
-                .map(LogicalForeignKey::getCatalogForeignKeyColumns)
+                .map( LogicalForeignKey::getCatalogForeignKeyColumns )
                 .flatMap( Collection::stream )
                 .collect( Collectors.toList() );
     }
@@ -347,9 +348,10 @@ public class DbmsMetaRetriever {
         return Catalog.getInstance().getSnapshot().rel().getForeignKeys( entityId );
     }
 
-    private static ImportedKey getForeignKeyColumnMeta(CatalogForeignKeyColumn catalogForeignKeyColumn) {
+
+    private static ForeignKey getForeignKeyColumnMeta( CatalogForeignKeyColumn catalogForeignKeyColumn ) {
         Serializable[] parameters = catalogForeignKeyColumn.getParameterArray();
-        ImportedKey.Builder importedKeyBuilder = ImportedKey.newBuilder();
+        ForeignKey.Builder importedKeyBuilder = ForeignKey.newBuilder();
         Optional.ofNullable( parameters[0] ).ifPresent( p -> importedKeyBuilder.setReferencedDatabaseName( p.toString() ) );
         Optional.ofNullable( parameters[1] ).ifPresent( p -> importedKeyBuilder.setReferencedNamespaceName( p.toString() ) );
         importedKeyBuilder.setReferencedTableName( parameters[2].toString() );
@@ -364,51 +366,37 @@ public class DbmsMetaRetriever {
         importedKeyBuilder.setKeyName( parameters[11].toString() );
         return importedKeyBuilder.build();
     }
-/*
 
-    @SuppressWarnings("Duplicates")
 
-    public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
-            }
-            final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-
-            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-            for ( LogicalTable catalogTable : catalogEntities ) {
-                List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
-                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
-            }
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( foreignKeyColumns ),
-                    PrimitiveCatalogForeignKeyColumn.class,
-                    // According to JDBC standard:
-                    "PKTABLE_CAT",            // The name of the database that contains the table with the referenced primary key.
-                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
-                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
-                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
-                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
-                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
-                    "FKTABLE_NAME",           // The name of the table containing the foreign key.
-                    "FKCOLUMN_NAME",          // The column name of the foreign key.
-                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
-                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
-                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
-                    "FK_NAME",                // The name of the foreign key.
-                    "PK_NAME",                // The name of the primary key. --> always null
-                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
-            );
-        }
+    public static synchronized ExportedKeysResponse getExportedKeys( String schemaPattern, String tablePattern ) {
+        List<CatalogForeignKeyColumn> exportedKeyColumns = getExportedKeyColumns( schemaPattern, tablePattern );
+        ExportedKeysResponse.Builder responseBuilder = ExportedKeysResponse.newBuilder();
+        exportedKeyColumns.forEach( foreignKeyColumn -> responseBuilder.addExportedKeys( getForeignKeyColumnMeta( foreignKeyColumn ) ) );
+        return responseBuilder.build();
     }
 
 
+    @SuppressWarnings("Duplicates")
+    private static List<CatalogForeignKeyColumn> getExportedKeyColumns( String schemaPattern, String tablePattern ) {
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        Pattern catalogSchemaPattern = getPatternOrNull( schemaPattern );
+        return getLogicalTables( catalogSchemaPattern, catalogTablePattern ).stream()
+                .map( CatalogEntity::getId )
+                .map( DbmsMetaRetriever::getExportedKeysOf )
+                .flatMap( Collection::stream )
+                .map( LogicalForeignKey::getCatalogForeignKeyColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static List<LogicalForeignKey> getExportedKeysOf( long entityId ) {
+        return Catalog.getInstance().getSnapshot().rel().getExportedKeys( entityId );
+    }
+
+/*
+
+    @SuppressWarnings("Duplicates")
     public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {

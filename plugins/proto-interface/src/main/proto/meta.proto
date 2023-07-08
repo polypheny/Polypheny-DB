@@ -127,10 +127,10 @@ message ImportedKeysRequest {
 }
 
 message ImportedKeysResponse {
-  repeated ImportedKey imported_keys = 1;
+  repeated ForeignKey imported_keys = 1;
 }
 
-message ImportedKey {
+message ForeignKey {
   optional string referenced_database_name = 1;
   optional string referenced_namespace_name = 2;
   string referenced_table_name = 3;
@@ -146,11 +146,12 @@ message ImportedKey {
 }
 
 message ExportedKeysRequest {
-
+  optional string namespace_pattern = 1;
+  string table_pattern = 2;
 }
 
 message ExportedKeysResponse {
-
+  repeated ForeignKey exported_keys = 1;
 }
 
 message TypesRequest {
