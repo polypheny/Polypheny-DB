@@ -159,27 +159,41 @@ message TypesRequest {
 }
 
 message TypesResponse {
-repeated Type types = 1;
+  repeated Type types = 1;
 }
 
 message Type {
-string type_name = 1;
-int32 precision = 2;
-string literal_prefix = 3;
-string literal_suffix = 4;
-bool is_case_sensitive = 5;
-int32 is_searchable = 6;
-bool is_auto_increment = 7;
-int32 min_scale = 8;
-int32 max_scale = 9;
-int32 radix = 10;
+  string type_name = 1;
+  int32 precision = 2;
+  string literal_prefix = 3;
+  string literal_suffix = 4;
+  bool is_case_sensitive = 5;
+  int32 is_searchable = 6;
+  bool is_auto_increment = 7;
+  int32 min_scale = 8;
+  int32 max_scale = 9;
+  int32 radix = 10;
 }
 
 message IndexesRequest {
-
+  optional string namespace_pattern = 1;
+  optional string table_pattern = 2;
+  bool unique = 3;
 }
 
 message IndexesResponse{
+  repeated Index indexes = 1;
+}
 
+message Index {
+  string database_name = 1;
+  string namespace_name = 2;
+  string table_name = 3;
+  bool unique = 4;
+  string index_name = 5;
+  int32 position_index = 6;
+  string column_name = 7;
+  string location = 8;
+  int32 index_type = 9;
 }
 

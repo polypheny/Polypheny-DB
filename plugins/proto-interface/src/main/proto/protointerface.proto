@@ -24,7 +24,7 @@ service ProtoInterface {
   rpc GetImportedKeys(ImportedKeysRequest) returns (ImportedKeysResponse) {}
   rpc GetExportedKeys(ExportedKeysRequest) returns (ExportedKeysResponse) {}
   rpc GetTypes(TypesRequest) returns (TypesResponse) {}
-  rpc GetIndexes(IndexesRequest) returns (IndexesRequest) {}
+  rpc GetIndexes(IndexesRequest) returns (IndexesResponse) {}
 
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}

@@ -30,6 +30,8 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
@@ -43,6 +45,8 @@ import org.polypheny.db.protointerface.proto.DatabasesResponse;
 import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
 import org.polypheny.db.protointerface.proto.ForeignKey;
 import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
+import org.polypheny.db.protointerface.proto.Index;
+import org.polypheny.db.protointerface.proto.IndexesResponse;
 import org.polypheny.db.protointerface.proto.Namespace;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
 import org.polypheny.db.protointerface.proto.PrimaryKey;
@@ -84,17 +88,17 @@ public class DbmsMetaRetriever {
 
 
     @NotNull
-    private static List<LogicalTable> getLogicalTables( Pattern namespacePattern, Pattern tablePattern ) {
-        return Catalog.getInstance().getSnapshot().rel().getTables( namespacePattern, tablePattern );
+    private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern ) {
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        return Catalog.getInstance().getSnapshot().rel().getTables( catalogNamespacePattern, catalogTablePattern );
     }
 
 
     @NotNull
     private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
-        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
-        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
         List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
-        return getLogicalTables( catalogNamespacePattern, catalogTablePattern ).stream()
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
@@ -117,16 +121,15 @@ public class DbmsMetaRetriever {
 
 
     private static List<LogicalColumn> getLogicalColumns( String namespacePattern, String tablePattern, String columnPattern ) {
-        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
-        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
-        Pattern catalogColumnPattern = getPatternOrNull( columnPattern );
-        return getLogicalTables( catalogNamespacePattern, catalogTablePattern ).stream()
-                .flatMap( t -> getLogicalColumns( catalogTablePattern, catalogColumnPattern ).stream() )
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .flatMap( t -> getLogicalColumns( tablePattern, namespacePattern ).stream() )
                 .collect( Collectors.toList() );
     }
 
 
-    private static List<LogicalColumn> getLogicalColumns( Pattern catalogTablePattern, Pattern catalogColumnPattern ) {
+    private static List<LogicalColumn> getLogicalColumns( String tablePattern, String columnPattern ) {
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        Pattern catalogColumnPattern = getPatternOrNull( columnPattern );
         return Catalog.getInstance().getSnapshot().rel().getColumns( catalogTablePattern, catalogColumnPattern );
     }
 
@@ -300,9 +303,7 @@ public class DbmsMetaRetriever {
 
 
     private static List<CatalogPrimaryKeyColumn> getPrimaryKeyColumns( String namespacePattern, String tablePattern ) {
-        Pattern cataloNamespacePattern = getPatternOrNull( namespacePattern );
-        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
-        return getLogicalTables( cataloNamespacePattern, catalogTablePattern ).stream()
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .filter( e -> e.primaryKey != null )
                 .map( DbmsMetaRetriever::getLogicalPrimaryKey )
                 .map( LogicalPrimaryKey::getCatalogPrimaryKeyColumns )
@@ -328,18 +329,16 @@ public class DbmsMetaRetriever {
     }
 
 
-    public static synchronized ImportedKeysResponse getImportedKeys( String schemaPattern, String tablePattern ) {
-        List<CatalogForeignKeyColumn> foreignKeyColumns = getForeignKeyColumns( schemaPattern, tablePattern );
+    public static synchronized ImportedKeysResponse getImportedKeys( String namespacePattern, String tablePattern ) {
+        List<CatalogForeignKeyColumn> foreignKeyColumns = getForeignKeyColumns( namespacePattern, tablePattern );
         ImportedKeysResponse.Builder responseBuilder = ImportedKeysResponse.newBuilder();
         foreignKeyColumns.forEach( foreignKeyColumn -> responseBuilder.addImportedKeys( getForeignKeyColumnMeta( foreignKeyColumn ) ) );
         return responseBuilder.build();
     }
 
 
-    private static List<CatalogForeignKeyColumn> getForeignKeyColumns( String schemaPattern, String tablePattern ) {
-        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
-        Pattern catalogSchemaPattern = getPatternOrNull( schemaPattern );
-        return getLogicalTables( catalogSchemaPattern, catalogTablePattern ).stream()
+    private static List<CatalogForeignKeyColumn> getForeignKeyColumns( String namespacePattern, String tablePattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .map( CatalogEntity::getId )
                 .map( DbmsMetaRetriever::getLogicalForeignKeysOf )
                 .flatMap( Collection::stream )
@@ -382,10 +381,8 @@ public class DbmsMetaRetriever {
 
 
     @SuppressWarnings("Duplicates")
-    private static List<CatalogForeignKeyColumn> getExportedKeyColumns( String schemaPattern, String tablePattern ) {
-        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
-        Pattern catalogSchemaPattern = getPatternOrNull( schemaPattern );
-        return getLogicalTables( catalogSchemaPattern, catalogTablePattern ).stream()
+    private static List<CatalogForeignKeyColumn> getExportedKeyColumns( String namespacePattern, String tablePattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .map( CatalogEntity::getId )
                 .map( DbmsMetaRetriever::getExportedKeysOf )
                 .flatMap( Collection::stream )
@@ -442,49 +439,48 @@ public class DbmsMetaRetriever {
     }
 
 
-
-/*
-    public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
-            }
-            final Pattern tablePattern = table == null ? null : new Pattern( table );
-            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-            final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-            for ( LogicalTable catalogTable : catalogEntities ) {
-                List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
-                logicalIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
-            }
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( catalogIndexColumns ),
-                    PrimitiveCatalogIndexColumn.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",    // The name of the database in which the specified table resides.
-                    "TABLE_SCHEM",          // The name of the schema in which the specified table resides.
-                    "TABLE_NAME",           // The name of the table in which the index resides.
-                    "NON_UNIQUE",           // Indicates whether the index values can be non-unique.
-                    "INDEX_QUALIFIER",      // --> currently always returns null
-                    "INDEX_NAME",           // The name of the index.
-                    "TYPE",                 // The type of the index. (integer between 0 and 3) --> currently always returns 0
-                    "ORDINAL_POSITION",     // The ordinal position of the column in the index. The first column in the index is 1.
-                    "COLUMN_NAME",          // The name of the column.
-                    "ASC_OR_DESC",          // The order used in the collation of the index.--> currently always returns null
-                    "CARDINALITY",          // The number of rows in the table or unique values in the index. --> currently always returns -1
-                    "PAGES",                // The number of pages used to store the index or table. --> currently always returns null
-                    "FILTER_CONDITION",     // The filter condition. --> currently always returns null
-                    // Polypheny-DB specific extensions
-                    "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
-                    "INDEX_TYPE"            // Polypheny-DB specific index type
-            );
-        }
+    public static synchronized IndexesResponse getIndexes( String namespacePattern, String tablePattern, boolean unique ) {
+        List<CatalogIndexColumn> catalogIndexColumns = getCatalogIndexColumns( namespacePattern, tablePattern, unique );
+        IndexesResponse.Builder responseBuilder = IndexesResponse.newBuilder();
+        catalogIndexColumns.forEach( indexColumn -> responseBuilder.addIndexes( getIndexColumnMeta( indexColumn ) ) );
+        return responseBuilder.build();
     }
 
+
+    private static List<CatalogIndexColumn> getCatalogIndexColumns( String namespacePattern, String tablePattern, boolean unique ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .map( CatalogEntity::getId )
+                .map( i -> getLogicalIndexesOf( i, unique ) )
+                .flatMap( Collection::stream )
+                .map( LogicalIndex::getCatalogIndexColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static List<LogicalIndex> getLogicalIndexesOf( long entityId, boolean unique ) {
+        return Catalog.getInstance().getSnapshot().rel().getIndexes( entityId, unique );
+    }
+
+
+    private static Index getIndexColumnMeta( CatalogIndexColumn catalogIndexColumn ) {
+        Serializable[] parameters = catalogIndexColumn.getParameterArray();
+        Index.Builder importedKeyBuilder = Index.newBuilder();
+        importedKeyBuilder.setDatabaseName( parameters[0].toString() );
+        importedKeyBuilder.setNamespaceName( parameters[1].toString() );
+        importedKeyBuilder.setTableName( parameters[2].toString() );
+        importedKeyBuilder.setUnique( !Boolean.parseBoolean( parameters[3].toString() ) );
+        importedKeyBuilder.setIndexName( parameters[5].toString() );
+        importedKeyBuilder.setPositionIndex( Integer.parseInt( parameters[7].toString() ) );
+        importedKeyBuilder.setColumnName( parameters[8].toString() );
+        importedKeyBuilder.setLocation( parameters[13].toString() );
+        importedKeyBuilder.setIndexType( Integer.parseInt( parameters[14].toString() ) );
+        return importedKeyBuilder.build();
+    }
+
+
+
+    /*
 
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
