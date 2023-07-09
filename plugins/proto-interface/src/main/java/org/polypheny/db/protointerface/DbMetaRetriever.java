@@ -59,25 +59,8 @@ import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.type.PolyType;
 
-public class DbmsMetaRetriever {
+public class DbMetaRetriever {
 
-
-    /**
-     * public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-     * final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-     * synchronized ( connection ) {
-     * if ( log.isTraceEnabled() ) {
-     * log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
-     * }
-     *
-     * final Map<DatabaseProperty, Object> map = new HashMap<>();
-     * // TODO
-     *
-     * log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
-     * return map;
-     * }
-     * }
-     */
 
     private static Pattern getPatternOrNull( String pattern ) {
         return pattern == null ? null : new Pattern( pattern );
@@ -143,7 +126,7 @@ public class DbmsMetaRetriever {
     private static List<CatalogPrimaryKeyColumn> getPrimaryKeyColumns( String namespacePattern, String tablePattern ) {
         return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .filter( e -> e.primaryKey != null )
-                .map( DbmsMetaRetriever::getLogicalPrimaryKey )
+                .map( DbMetaRetriever::getLogicalPrimaryKey )
                 .map( LogicalPrimaryKey::getCatalogPrimaryKeyColumns )
                 .flatMap( Collection::stream )
                 .collect( Collectors.toList() );
@@ -153,7 +136,7 @@ public class DbmsMetaRetriever {
     private static List<CatalogForeignKeyColumn> getForeignKeyColumns( String namespacePattern, String tablePattern ) {
         return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .map( CatalogEntity::getId )
-                .map( DbmsMetaRetriever::getLogicalForeignKeysOf )
+                .map( DbMetaRetriever::getLogicalForeignKeysOf )
                 .flatMap( Collection::stream )
                 .map( LogicalForeignKey::getCatalogForeignKeyColumns )
                 .flatMap( Collection::stream )
@@ -165,7 +148,7 @@ public class DbmsMetaRetriever {
     private static List<CatalogForeignKeyColumn> getExportedKeyColumns( String namespacePattern, String tablePattern ) {
         return getLogicalTables( namespacePattern, tablePattern ).stream()
                 .map( CatalogEntity::getId )
-                .map( DbmsMetaRetriever::getExportedKeysOf )
+                .map( DbMetaRetriever::getExportedKeysOf )
                 .flatMap( Collection::stream )
                 .map( LogicalForeignKey::getCatalogForeignKeyColumns )
                 .flatMap( Collection::stream )
@@ -376,7 +359,24 @@ public class DbmsMetaRetriever {
         return importedKeyBuilder.build();
     }
 
-      /*
+/*
+
+
+    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
+            }
+
+            final Map<DatabaseProperty, Object> map = new HashMap<>();
+            // TODO
+
+            log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
+            return map;
+        }
+    }
+
 
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
@@ -461,19 +461,20 @@ public class DbmsMetaRetriever {
 
 
     @SuppressWarnings("Duplicates")
-        public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            synchronized ( connection ) {
-                if ( log.isTraceEnabled() ) {
-                    log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-                }
-
-                // TODO
-
-                log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-                return null;
+    public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
             }
+
+            // TODO
+
+            log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+            return null;
         }
+    }
+
 
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
