@@ -53,106 +53,110 @@ public class PolyValueSerializer {
 
     private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
 
-    public static List<ProtoValue> serializeList(List<PolyValue> valuesList) {
-        return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList());
+
+    public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
+        return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() );
     }
 
 
     public static ProtoValue serialize( PolyValue polyValue ) {
         switch ( polyValue.getType() ) {
             case BOOLEAN:
+                // used by PolyBoolean
                 return serialize( polyValue.asBoolean() );
-            case TINYINT:
             case INTEGER:
-            case SMALLINT:
+                // used by PolyInteger
                 return serialize( polyValue.asInteger() );
             case BIGINT:
-                return serialize(polyValue.asLong());
+                //used by PolyLong
+                return serialize( polyValue.asLong() );
             case DECIMAL:
-                return serialize(polyValue.asBigDecimal());
+                // used by PolyBigDecimal
+                return serialize( polyValue.asBigDecimal() );
             case FLOAT:
-            case REAL:
+                // used by PolyFloat
                 return serialize( polyValue.asFloat() );
             case DOUBLE:
+                // used by PolyDouble
                 return serialize( polyValue.asDouble() );
             case DATE:
+                // used by PolyDate
                 return serialize( polyValue.asDate() );
             case TIME:
+                //used by PolyTime
                 return serialize( polyValue.asTime() );
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                throw new NotImplementedException( "serialization of type TIME_WITH_LOCAL_TIME_ZONE as PolyTime is not supported" );
             case TIMESTAMP:
+                //used by PolyTimeStamp
                 return serialize( polyValue.asTimeStamp() );
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                throw new NotImplementedException( "serialization of type TIMESTAMP_WITH_LOCAL_TIME_ZONE as PolyTimeStamp is not supported" );
-            case INTERVAL_YEAR:
             case INTERVAL_SECOND:
+                //used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
+                //used by PolyInterval
             case INTERVAL_MINUTE:
+                //used by PolyInterval
             case INTERVAL_HOUR_SECOND:
+                //used by PolyInterval
             case INTERVAL_HOUR_MINUTE:
+                //used by PolyInterval
             case INTERVAL_HOUR:
+                //used by PolyInterval
             case INTERVAL_DAY_SECOND:
+                //used by PolyInterval
             case INTERVAL_DAY_MINUTE:
+                //used by PolyInterval
             case INTERVAL_DAY_HOUR:
+                //used by PolyInterval
             case INTERVAL_DAY:
+                //used by PolyInterval
             case INTERVAL_MONTH:
+                //used by PolyInterval
             case INTERVAL_YEAR_MONTH:
+                //used by PolyInterval
+            case INTERVAL_YEAR:
                 return serialize( polyValue.asInterval() ); //TODO TH: implement serializer
-            case CHAR:
             case VARCHAR:
+                // used by PolyString
                 return serialize( polyValue.asString() );
             case BINARY:
-            case VARBINARY:
+                // used by PolyBinary
                 return serialize( polyValue.asBinary() );
             case NULL:
+                // used by PolyNull
                 return serialize( polyValue.asNull() );
             case ANY:
                 throw new NotImplementedException( "serialization of type ANY as PolyValue is not supported" );
             case SYMBOL:
+                // used by PolySymbol
                 throw new NotImplementedException( "serialization of type SYMBOL as PolySymbol is not supported" );
-            case MULTISET:
-                throw new NotImplementedException( "serialization of type MULTISET as PolyList is not supported" );
             case ARRAY:
+                // used by PolyList
                 throw new NotImplementedException( "serialization of type MULTISET as PolyList is not supported" );
             case MAP:
+                // used by PolyDictionary
+                //used by PolyMap
                 throw new NotImplementedException( "serialization of type MAP as PolyMap is not supported" );
             case DOCUMENT:
+                //used by PolyDocument
                 throw new NotImplementedException( "serialization of type DOCUMENT as PolyDocument is not supported" );
             case GRAPH:
+                //used by PolyGraph
                 throw new NotImplementedException( "serialization of type GRAPH as PolyGraph is not supported" );
             case NODE:
+                //used by PolyNode
                 throw new NotImplementedException( "serialization of type NODE as PolyNode is not supported" );
             case EDGE:
+                //used by PolyEdge
                 throw new NotImplementedException( "serialization of type EDGE as PolyEdge is not supported" );
             case PATH:
+                //used by PolyPath
                 throw new NotImplementedException( "serialization of type PATH as PolyPath is not supported" );
-            case DISTINCT:
-                throw new NotImplementedException( "serialization of type DISTINCT as PolyValue is not supported" );
-            case STRUCTURED:
-                throw new NotImplementedException( "serialization of type DISTINCT as PolyValue is not supported" );
-            case ROW:
-                throw new NotImplementedException( "serialization of type ROW as PolyList is not supported" );
-            case OTHER:
-                throw new NotImplementedException( "serialization of type OTHER as PolyValue is not supported" );
-            case CURSOR:
-                throw new NotImplementedException( "serialization of type CURSOR as PolyValue is not supported" );
-            case COLUMN_LIST:
-                throw new NotImplementedException( "serialization of type COLUMN_LIST as PolyList is not supported" );
-            case DYNAMIC_STAR:
-                throw new NotImplementedException( "serialization of type COLUMN_STAR as PolyValue is not supported" );
-            case GEOMETRY:
-                throw new NotImplementedException( "serialization of type GEOMETRY as PolyValue is not supported" );
             case FILE:
+                // used by PolyFile
+                // used by PolyStream
                 throw new NotImplementedException( "serialization of type FILE" );
-            case IMAGE:
-                throw new NotImplementedException( "serialization of type FILE" );
-            case VIDEO:
-                throw new NotImplementedException( "serialization of type FILE" );
-            case AUDIO:
-                throw new NotImplementedException( "serialization of type FILE" );
-            case JSON:
-                throw new NotImplementedException( "serialization of type JSON as PolyString is not supported" );
+            case USER_DEFINED_TYPE:
+                // used by PolyUserDefinedType
+                throw new NotImplementedException( "serialization of type USER_DEFINED_TYPE as PolyString is not supported" );
         }
         throw new NotImplementedException();
     }
@@ -293,4 +297,5 @@ public class PolyValueSerializer {
                 .setType( getType( polyBigDecimal ) )
                 .build();
     }
+
 }
