@@ -51,7 +51,7 @@ public class NamedValueProcssorTest {
     }
 
 
-    @Test(expected = PIServiceException.class)
+    @Test(expected = ProtoInterfaceServiceException.class)
     public void replacePlaceholders__missingValue() throws Exception {
         final String statement = "select * from people where (first_name = :first_name or last_name= :last_name) and project = :project);";
 

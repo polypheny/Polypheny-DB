@@ -38,14 +38,8 @@ public class NamedValueProcessor {
     private ImmutableBiMap<String, Integer> namedIndexes;
 
 
-    public static NamedValueProcessor forStatement( String statement ) {
-        NamedValueProcessor processor = new NamedValueProcessor();
-        processor.processStatement( statement );
-        return processor;
-    }
-
-
-    private NamedValueProcessor() {
+    public NamedValueProcessor( String statement ) {
+        this.processStatement( statement );
     }
 
 
