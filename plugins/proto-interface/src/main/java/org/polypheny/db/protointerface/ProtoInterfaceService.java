@@ -19,7 +19,6 @@ package org.polypheny.db.protointerface;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import lombok.SneakyThrows;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.protointerface.proto.CloseStatementRequest;
@@ -48,8 +47,8 @@ import org.polypheny.db.protointerface.proto.LanguageRequest;
 import org.polypheny.db.protointerface.proto.LanguageResponse;
 import org.polypheny.db.protointerface.proto.NamespacesRequest;
 import org.polypheny.db.protointerface.proto.NamespacesResponse;
+import org.polypheny.db.protointerface.proto.ParameterList;
 import org.polypheny.db.protointerface.proto.ParameterSet;
-import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.PrimaryKeysRequest;
@@ -68,13 +67,13 @@ import org.polypheny.db.protointerface.proto.TypesRequest;
 import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
-import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
+import org.polypheny.db.protointerface.statements.IndexedPreparedInterfaceStatement;
+import org.polypheny.db.protointerface.statements.NamedPreparedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
@@ -296,21 +295,9 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @SneakyThrows
     @Override
-    public void executeParameterizedStatement( ParameterizedStatement parameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
+    public void prepareIndexedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
         ProtoInterfaceClient client = getClient();
-        ParameterizedInterfaceStatement statement = statementManager.createParameterizedStatement( client, parameterizedStatement );
-        responseObserver.onNext( ProtoUtils.createStatus( statement ) );
-        Map<String, PolyValue> valueMap = ProtoValueDeserializer.deserilaizeValueMap( parameterizedStatement.getValuesMap() );
-        StatementResult result = statement.execute( valueMap );
-        responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
-    }
-
-
-    @SneakyThrows
-    @Override
-    public void prepareStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        ParameterizedInterfaceStatement statement = statementManager.createParameterizedStatement( client, preparedStatement );
+        IndexedPreparedInterfaceStatement statement = statementManager.createIndexedPreparedInterfaceStatement( client, preparedStatement );
         responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
         responseObserver.onCompleted();
     }
@@ -318,9 +305,29 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @SneakyThrows
     @Override
-    public void executePreparedStatement( ParameterSet parameterSet, StreamObserver<StatementResult> responseObserver ) {
+    public void executeIndexedStatement( ParameterList parameterList, StreamObserver<StatementResult> responseObserver ) {
         ProtoInterfaceClient client = getClient();
-        ParameterizedInterfaceStatement statement = statementManager.getParameterizedStatement( client, parameterSet.getStatementId() );
+        IndexedPreparedInterfaceStatement statement = statementManager.getIndexedPreparedStatement( client, parameterList.getStatementId() );
+        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeValueList( parameterList.getValuesList() ) ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void prepareNamedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
+        ProtoInterfaceClient client = getClient();
+        NamedPreparedInterfaceStatement statement = statementManager.createNamedPreparedInterfaceStatement( client, preparedStatement );
+        responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @SneakyThrows
+    @Override
+    public void executeNamedStatement( ParameterSet parameterSet, StreamObserver<StatementResult> responseObserver ) {
+        ProtoInterfaceClient client = getClient();
+        NamedPreparedInterfaceStatement statement = statementManager.getNamedPreparedStatement( client, parameterSet.getStatementId() );
         responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeValueMap( parameterSet.getValuesMap() ) ) );
         responseObserver.onCompleted();
     }

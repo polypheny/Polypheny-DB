@@ -98,7 +98,7 @@ public class PolyValueSerializer {
             case INTERVAL_DAY:
             case INTERVAL_MONTH:
             case INTERVAL_YEAR_MONTH:
-                return serialize( polyValue.asInterval() );
+                return serialize( polyValue.asInterval() ); //TODO TH: implement serializer
             case CHAR:
             case VARCHAR:
                 return serialize( polyValue.asString() );
