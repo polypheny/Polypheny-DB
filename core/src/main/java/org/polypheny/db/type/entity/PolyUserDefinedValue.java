@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import java.util.Map;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +27,9 @@ import org.polypheny.db.type.PolyType;
 
 public class PolyUserDefinedValue extends PolyValue {
 
+    @Getter
     private final Map<String, PolyType> template;
+    @Getter
     private final Map<String, PolyValue> value;
 
 
