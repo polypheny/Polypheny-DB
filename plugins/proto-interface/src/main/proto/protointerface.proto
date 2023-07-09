@@ -38,7 +38,7 @@ service ProtoInterface {
   // Prepared Statements
   rpc PrepareIndexedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
   rpc ExecuteIndexedStatement(ParameterList) returns (StatementResult){}
-  rpc ExecuteIndexedStatementBatch(IndexedValueBatch) returns (StatementBatchStatus){}
+  rpc ExecuteIndexedStatementBatch(IndexedParameterBatch) returns (StatementBatchStatus){}
   rpc PrepareNamedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
   rpc ExecuteNamedStatement(ParameterSet) returns (StatementResult){}
 
@@ -154,16 +154,17 @@ message PreparedStatement {
 
 message ParameterList {
   int32 statementId = 1;
-  repeated ProtoValue values = 2;
+  repeated ProtoValue parameters = 2;
 }
 
 message ParameterSet {
   int32 statementId = 1;
-  map<string, ProtoValue> values = 2;
+  map<string, ProtoValue> parameters = 2;
 }
 
-message IndexedValueBatch {
-  repeated ParameterList parameter_lists = 1;
+message IndexedParameterBatch {
+  int32 statement_id = 1;
+  repeated ParameterList parameter_lists = 2;
 }
 
 message StatementResult {
