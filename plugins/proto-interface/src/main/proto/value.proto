@@ -109,7 +109,7 @@ message ProtoString {
 }
 
 message ProtoTime {
-  int64 value = 1;
+  int32 value = 1;
   TimeUnit time_unit = 2;
   enum TimeUnit {
     UNSPECIFIED = 0;
