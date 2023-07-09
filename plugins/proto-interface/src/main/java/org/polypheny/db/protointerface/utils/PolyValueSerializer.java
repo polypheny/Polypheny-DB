@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface.utils;
 
 import com.google.protobuf.ByteString;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
@@ -27,6 +28,7 @@ import org.polypheny.db.protointerface.proto.ProtoDate;
 import org.polypheny.db.protointerface.proto.ProtoDouble;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
+import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoString;
@@ -42,6 +44,7 @@ import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
@@ -63,31 +66,31 @@ public class PolyValueSerializer {
         switch ( polyValue.getType() ) {
             case BOOLEAN:
                 // used by PolyBoolean
-                return serialize( polyValue.asBoolean() );
+                return serializeAsProtoBoolean( polyValue.asBoolean() );
             case INTEGER:
                 // used by PolyInteger
-                return serialize( polyValue.asInteger() );
+                return serializeAsProtoInteger( polyValue.asInteger() );
             case BIGINT:
                 //used by PolyLong
-                return serialize( polyValue.asLong() );
+                return serializeAsProtoLong( polyValue.asLong() );
             case DECIMAL:
                 // used by PolyBigDecimal
-                return serialize( polyValue.asBigDecimal() );
+                return serializeAsProtoBigDecimal( polyValue.asBigDecimal() );
             case FLOAT:
                 // used by PolyFloat
-                return serialize( polyValue.asFloat() );
+                return serializeAsProtoFloat( polyValue.asFloat() );
             case DOUBLE:
                 // used by PolyDouble
-                return serialize( polyValue.asDouble() );
+                return serializeAsProtoDouble( polyValue.asDouble() );
             case DATE:
                 // used by PolyDate
-                return serialize( polyValue.asDate() );
+                return serializeAsProtoDate( polyValue.asDate() );
             case TIME:
                 //used by PolyTime
-                return serialize( polyValue.asTime() );
+                return serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP:
                 //used by PolyTimeStamp
-                return serialize( polyValue.asTimeStamp() );
+                return serializeAsProtoTimeStamp( polyValue.asTimeStamp() );
             case INTERVAL_SECOND:
                 //used by PolyInterval
             case INTERVAL_MINUTE_SECOND:
@@ -113,18 +116,16 @@ public class PolyValueSerializer {
             case INTERVAL_YEAR_MONTH:
                 //used by PolyInterval
             case INTERVAL_YEAR:
-                return serialize( polyValue.asInterval() ); //TODO TH: implement serializer
+                return serializeAsProtoInterval( polyValue.asInterval() );
             case VARCHAR:
                 // used by PolyString
-                return serialize( polyValue.asString() );
+                return serializeAsProtoString( polyValue.asString() );
             case BINARY:
                 // used by PolyBinary
-                return serialize( polyValue.asBinary() );
+                return serializeAsProtoBinary( polyValue.asBinary() );
             case NULL:
                 // used by PolyNull
-                return serialize( polyValue.asNull() );
-            case ANY:
-                throw new NotImplementedException( "serialization of type ANY as PolyValue is not supported" );
+                return serializeAsProtoNull( polyValue.asNull() );
             case SYMBOL:
                 // used by PolySymbol
                 throw new NotImplementedException( "serialization of type SYMBOL as PolySymbol is not supported" );
@@ -162,12 +163,23 @@ public class PolyValueSerializer {
     }
 
 
+    private static ProtoValue serializeAsProtoInterval( PolyInterval polyInterval ) {
+        ProtoInterval protoInterval = ProtoInterval.newBuilder()
+                .setValue(serializeBigDecimal( polyInterval.getValue() ))
+                .build();
+        return  ProtoValue.newBuilder()
+                .setInterval( protoInterval )
+                .setType( getType( polyInterval ) )
+                .build();
+    }
+
+
     private static ProtoValueType getType( PolyValue polyValue ) {
         return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyValue.getType() );
     }
 
 
-    public static ProtoValue serialize( PolyBoolean polyBoolean ) {
+    public static ProtoValue serializeAsProtoBoolean( PolyBoolean polyBoolean ) {
         ProtoBoolean protoBoolean = ProtoBoolean.newBuilder()
                 .setBoolean( polyBoolean.getValue() )
                 .build();
@@ -178,7 +190,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyInteger polyInteger ) {
+    public static ProtoValue serializeAsProtoInteger( PolyInteger polyInteger ) {
         ProtoInteger protoInteger = ProtoInteger.newBuilder()
                 .setInteger( polyInteger.getValue() )
                 .build();
@@ -189,7 +201,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyLong polyLong ) {
+    public static ProtoValue serializeAsProtoLong( PolyLong polyLong ) {
         ProtoLong protoLong = ProtoLong.newBuilder()
                 .setLong( polyLong.value )
                 .build();
@@ -200,7 +212,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyBinary polyBinary ) {
+    public static ProtoValue serializeAsProtoBinary( PolyBinary polyBinary ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
                 .setBinary( ByteString.copyFrom( polyBinary.getValue().getBytes() ) )
                 .build();
@@ -211,7 +223,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyDate polyDate ) {
+    public static ProtoValue serializeAsProtoDate( PolyDate polyDate ) {
         ProtoDate protoDate = ProtoDate.newBuilder()
                 .setDate( polyDate.getSinceEpoch() )
                 .build();
@@ -222,7 +234,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyDouble polyDouble ) {
+    public static ProtoValue serializeAsProtoDouble( PolyDouble polyDouble ) {
         ProtoDouble protoDouble = ProtoDouble.newBuilder()
                 .setDouble( polyDouble.doubleValue() )
                 .build();
@@ -233,7 +245,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyFloat polyFloat ) {
+    public static ProtoValue serializeAsProtoFloat( PolyFloat polyFloat ) {
         ProtoFloat protoFloat = ProtoFloat.newBuilder()
                 .setFloat( polyFloat.floatValue() )
                 .build();
@@ -244,7 +256,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyString polyString ) {
+    public static ProtoValue serializeAsProtoString( PolyString polyString ) {
         ProtoString protoString = ProtoString.newBuilder()
                 .setString( polyString.getValue() )
                 .build();
@@ -255,7 +267,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyTime polyTime ) {
+    public static ProtoValue serializeAsProtoTime( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setValue( polyTime.ofDay )
                 .setTimeUnit( TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
@@ -267,7 +279,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyTimeStamp polyTimeStamp ) {
+    public static ProtoValue serializeAsProtoTimeStamp( PolyTimeStamp polyTimeStamp ) {
         ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
                 .setTimeStamp( polyTimeStamp.asLong().longValue() )
                 .build();
@@ -278,7 +290,7 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyNull polyNull ) {
+    public static ProtoValue serializeAsProtoNull( PolyNull polyNull ) {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
                 .setType( getType( polyNull ) )
@@ -286,15 +298,20 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoValue serialize( PolyBigDecimal polyBigDecimal ) {
-        ProtoBigDecimal protoBigDecimal = ProtoBigDecimal.newBuilder()
-                .setUnscaledValue( ByteString.copyFrom( polyBigDecimal.getValue().unscaledValue().toByteArray() ) )
-                .setScale( polyBigDecimal.getValue().scale() )
-                .setPrecision( polyBigDecimal.getValue().precision() )
-                .build();
+    public static ProtoValue serializeAsProtoBigDecimal( PolyBigDecimal polyBigDecimal ) {
+        ProtoBigDecimal protoBigDecimal = serializeBigDecimal( polyBigDecimal.getValue() );
         return ProtoValue.newBuilder()
                 .setBigDecimal( protoBigDecimal )
                 .setType( getType( polyBigDecimal ) )
+                .build();
+    }
+
+
+    private static ProtoBigDecimal serializeBigDecimal( BigDecimal bigDecimal ) {
+        return ProtoBigDecimal.newBuilder()
+                .setUnscaledValue( ByteString.copyFrom( bigDecimal.unscaledValue().toByteArray() ) )
+                .setScale( bigDecimal.scale() )
+                .setPrecision( bigDecimal.precision() )
                 .build();
     }
 
