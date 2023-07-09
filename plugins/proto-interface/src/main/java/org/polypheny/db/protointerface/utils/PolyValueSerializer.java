@@ -27,12 +27,15 @@ import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoBinary;
 import org.polypheny.db.protointerface.proto.ProtoBoolean;
 import org.polypheny.db.protointerface.proto.ProtoDate;
+import org.polypheny.db.protointerface.proto.ProtoDocument;
 import org.polypheny.db.protointerface.proto.ProtoDouble;
+import org.polypheny.db.protointerface.proto.ProtoEntry;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
+import org.polypheny.db.protointerface.proto.ProtoMap;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
@@ -61,6 +64,8 @@ import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class PolyValueSerializer {
 
@@ -79,6 +84,19 @@ public class PolyValueSerializer {
 
     public static Map<String, ProtoValueType> convertTypeMap( Map<String, PolyType> typeMap ) {
         return typeMap.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> getType( e.getValue() ) ) );
+    }
+
+
+    public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
+        return polyMap.entrySet().stream().map( PolyValueSerializer::deserializeToProtoEntry ).collect( Collectors.toList());
+    }
+
+
+    public static ProtoEntry deserializeToProtoEntry( Map.Entry<PolyValue, PolyValue> polyMapEntry ) {
+        return ProtoEntry.newBuilder()
+                .setKey( serialize( polyMapEntry.getKey() ) )
+                .setValue( serialize( polyMapEntry.getValue() ) )
+                .build();
     }
 
 
@@ -148,17 +166,17 @@ public class PolyValueSerializer {
                 return serializeAsProtoNull( polyValue.asNull() );
             case SYMBOL:
                 // used by PolySymbol
-                return serailizeAsProtoSymbol(polyValue.asSymbol());
+                return serailizeAsProtoSymbol( polyValue.asSymbol() );
             case ARRAY:
                 // used by PolyList
-                return serializeAsProtoList(polyValue.asList());
+                return serializeAsProtoList( polyValue.asList() );
             case MAP:
                 // used by PolyDictionary
                 //used by PolyMap
-                throw new NotImplementedException( "serialization of type MAP as PolyMap is not supported" );
+                return serializeAsProtoMap( polyValue.asMap() );
             case DOCUMENT:
                 //used by PolyDocument
-                throw new NotImplementedException( "serialization of type DOCUMENT as PolyDocument is not supported" );
+                serializeAsProtoDocument(polyValue.asDocument());
             case GRAPH:
                 //used by PolyGraph
                 throw new NotImplementedException( "serialization of type GRAPH as PolyGraph is not supported" );
@@ -173,11 +191,11 @@ public class PolyValueSerializer {
                 throw new NotImplementedException( "serialization of type PATH as PolyPath is not supported" );
             case FILE:
                 // used by PolyFile
-                if (polyValue instanceof PolyFile) {
-                    return serializeAsProtoFile(polyValue.asFile());
+                if ( polyValue instanceof PolyFile ) {
+                    return serializeAsProtoFile( polyValue.asFile() );
                 }
-                if (polyValue instanceof PolyStream ) {
-                    return serializeAsProtoStream(polyValue.asStream());
+                if ( polyValue instanceof PolyStream ) {
+                    return serializeAsProtoStream( polyValue.asStream() );
                 }
                 throw new IllegalArgumentException( "Illegal poly value for poly type FILE." );
                 // used by PolyStream
@@ -187,6 +205,28 @@ public class PolyValueSerializer {
                 return serializeAsProtoUserDefinedType( polyValue.asUserDefinedValue() );
         }
         throw new NotImplementedException();
+    }
+
+
+    private static void serializeAsProtoDocument( PolyDocument polyDocument ) {
+        ProtoDocument protoDocument = ProtoDocument.newBuilder()
+                .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
+                .build();
+        ProtoValue.newBuilder()
+                .setDocument( protoDocument )
+                .setType( getType( polyDocument.getType() ) )
+                .build();
+    }
+
+
+    private static ProtoValue serializeAsProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
+        ProtoMap protoMap = ProtoMap.newBuilder()
+                .addAllEntries( serializeToProtoEntryList( polyMap ))
+                .build();
+        return ProtoValue.newBuilder()
+                .setMap( protoMap )
+                .setType( getType( polyMap.getType() ) )
+                .build();
     }
 
 
@@ -207,13 +247,13 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoStream( PolyStream polyStream ) {
-        throw new NotImplementedException("Stream handlin not yet implemented");
+        throw new NotImplementedException( "Stream handlin not yet implemented" );
     }
 
 
     private static ProtoValue serializeAsProtoFile( PolyFile polyFile ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
-                .setBinary( ByteString.copyFrom( polyFile.getValue()) )
+                .setBinary( ByteString.copyFrom( polyFile.getValue() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
