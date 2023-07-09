@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.protointerface.proto.ParameterList;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
+import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -163,7 +164,7 @@ public class ProtoValueDeserializer {
     }
 
 
-    private static TimeUnit getTimeUnit( org.polypheny.db.protointerface.proto.TimeUnit timeUnit ) {
+    private static TimeUnit getTimeUnit( ProtoTime.TimeUnit timeUnit ) {
         return TimeUnit.valueOf( timeUnit.name() );
     }
 
