@@ -50,6 +50,7 @@ public abstract class ProtoInterfaceStatement {
 
     @Getter
     protected final int statementId;
+    @Getter
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage queryLanguage;

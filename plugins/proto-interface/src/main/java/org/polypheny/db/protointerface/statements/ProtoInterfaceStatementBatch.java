@@ -17,25 +17,9 @@
 package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
-import lombok.Getter;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
 
-public abstract class ProtoInterfaceStatementBatch {
+public interface ProtoInterfaceStatementBatch {
+    List<ProtoInterfaceStatement> getStatements();
 
-    @Getter
-    protected final int batchId;
-    protected final ProtoInterfaceClient protoInterfaceClient;
-
-
-    public abstract List<Long> execute() throws Exception;
-
-
-    public ProtoInterfaceStatementBatch( int batchId, ProtoInterfaceClient protoInterfaceClient ) {
-        this.batchId = batchId;
-        this.protoInterfaceClient = protoInterfaceClient;
-    }
-
-
-    public abstract List<ProtoInterfaceStatement> getStatements();
-
+    int getBatchId();
 }
