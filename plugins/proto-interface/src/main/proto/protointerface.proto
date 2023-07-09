@@ -180,4 +180,4 @@ message Frame {
     GraphFrame graph_frame = 4;
     DocumentFrame document_frame = 5;
   }
-
+}
