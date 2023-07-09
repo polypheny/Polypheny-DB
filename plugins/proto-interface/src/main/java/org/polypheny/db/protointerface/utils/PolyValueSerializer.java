@@ -29,20 +29,24 @@ import org.polypheny.db.protointerface.proto.ProtoBoolean;
 import org.polypheny.db.protointerface.proto.ProtoDate;
 import org.polypheny.db.protointerface.proto.ProtoDocument;
 import org.polypheny.db.protointerface.proto.ProtoDouble;
+import org.polypheny.db.protointerface.proto.ProtoEdge;
 import org.polypheny.db.protointerface.proto.ProtoEntry;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
+import org.polypheny.db.protointerface.proto.ProtoGraphPropertyHolder;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
 import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoMap;
+import org.polypheny.db.protointerface.proto.ProtoNode;
 import org.polypheny.db.protointerface.proto.ProtoNull;
+import org.polypheny.db.protointerface.proto.ProtoPath;
+import org.polypheny.db.protointerface.proto.ProtoSegment;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
 import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValueType;
 import org.polypheny.db.protointerface.proto.TimeUnit;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
@@ -65,6 +69,12 @@ import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class PolyValueSerializer {
@@ -82,13 +92,13 @@ public class PolyValueSerializer {
     }
 
 
-    public static Map<String, ProtoValueType> convertTypeMap( Map<String, PolyType> typeMap ) {
+    public static Map<String, ProtoValue.ProtoValueType> convertTypeMap( Map<String, PolyType> typeMap ) {
         return typeMap.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> getType( e.getValue() ) ) );
     }
 
 
     public static List<ProtoEntry> serializeToProtoEntryList( PolyMap<PolyValue, PolyValue> polyMap ) {
-        return polyMap.entrySet().stream().map( PolyValueSerializer::deserializeToProtoEntry ).collect( Collectors.toList());
+        return polyMap.entrySet().stream().map( PolyValueSerializer::deserializeToProtoEntry ).collect( Collectors.toList() );
     }
 
 
@@ -176,19 +186,19 @@ public class PolyValueSerializer {
                 return serializeAsProtoMap( polyValue.asMap() );
             case DOCUMENT:
                 //used by PolyDocument
-                serializeAsProtoDocument(polyValue.asDocument());
+                return serializeAsProtoDocument( polyValue.asDocument() );
             case GRAPH:
                 //used by PolyGraph
-                throw new NotImplementedException( "serialization of type GRAPH as PolyGraph is not supported" );
+                return serializeAsProtoGraph( polyValue.asGraph() );
             case NODE:
                 //used by PolyNode
-                throw new NotImplementedException( "serialization of type NODE as PolyNode is not supported" );
+                return serializeAsProtoNode( polyValue.asNode() );
             case EDGE:
                 //used by PolyEdge
-                throw new NotImplementedException( "serialization of type EDGE as PolyEdge is not supported" );
+                return serializeAsProtoEdge( polyValue.asEdge() );
             case PATH:
                 //used by PolyPath
-                throw new NotImplementedException( "serialization of type PATH as PolyPath is not supported" );
+                serializeAsProtoPath( polyValue.asPath() );
             case FILE:
                 // used by PolyFile
                 if ( polyValue instanceof PolyFile ) {
@@ -208,11 +218,103 @@ public class PolyValueSerializer {
     }
 
 
-    private static void serializeAsProtoDocument( PolyDocument polyDocument ) {
+    private static ProtoValue serializeAsProtoPath( PolyPath polyPath ) {
+        ProtoPath protoPath = ProtoPath.newBuilder()
+                .setNodes( serializeToProtoList( polyPath.getNodes().asList() ) )
+                .setEdges( serializeToProtoList( polyPath.getEdges().asList() ) )
+                .setNames( serializeToProtoList( polyPath.getNames().asList() ) )
+                .addAllPaths( serializeToProtoGraphPropertyHolderList( polyPath.getPath() ) )
+                .addAllSegments( serializeToProtoSegmentList( polyPath.getSegments() ) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setPath( protoPath )
+                .build();
+    }
+
+
+    private static ProtoValue serializeAsProtoEdge( PolyEdge polyEdge ) {
+        return ProtoValue.newBuilder()
+                .setEdge( serializeToProtoEdge( polyEdge ) )
+                .build();
+
+    }
+
+
+    private static ProtoEdge serializeToProtoEdge( PolyEdge polyEdge ) {
+        return ProtoEdge.newBuilder()
+                .setGraphPropertyHolder( serializeToProtoGraphPropertyHolder( polyEdge ) )
+                .setSource( serializeToProtoString( polyEdge.getSource() ) )
+                .setTarget( serializeToProtoString( polyEdge.getTarget() ) )
+                .setEdgeDirection( getEdgeDirection( polyEdge.getDirection() ) )
+                .build();
+    }
+
+
+    private static ProtoEdge.EdgeDirection getEdgeDirection( PolyEdge.EdgeDirection edgeDirection ) {
+        return ProtoEdge.EdgeDirection.valueOf( edgeDirection.name() );
+    }
+
+
+    private static ProtoValue serializeAsProtoNode( PolyNode polyNode ) {
+        return ProtoValue.newBuilder()
+                .setNode( serializeToProtoNode( polyNode ) )
+                .build();
+    }
+
+
+    private static ProtoNode serializeToProtoNode( PolyNode polyNode ) {
+        return ProtoNode.newBuilder()
+                .setGraphPropertyHolder( serializeToProtoGraphPropertyHolder( polyNode ) )
+                .build();
+    }
+
+
+    private static ProtoGraphPropertyHolder serializeToProtoGraphPropertyHolder( GraphPropertyHolder polyGraphPropertyHolder ) {
+        return ProtoGraphPropertyHolder.newBuilder()
+                .setId( serializeToProtoString( polyGraphPropertyHolder.getId() ) )
+                .setVariableName( serializeToProtoString( polyGraphPropertyHolder.getVariableName() ) )
+                .setProperties( serializeToProtoMap( polyGraphPropertyHolder.getProperties().asMap() ) )
+                .setLabels( serializeToProtoList( polyGraphPropertyHolder.getLabels().asList() ) )
+                .build();
+    }
+
+
+    private static ProtoSegment serializeToProtoSegment( PolySegment polySegment ) {
+        return ProtoSegment.newBuilder()
+                .setId( serializeToProtoString( polySegment.getId() ) )
+                .setVariableName( serializeToProtoString( polySegment.getVariableName() ) )
+                .setSourceId( serializeToProtoString( polySegment.getSourceId() ) )
+                .setEdgeId( serializeToProtoString( polySegment.getEdgeId() ) )
+                .setTargetId( serializeToProtoString( polySegment.getTargetId() ) )
+                .setSource( serializeToProtoNode( polySegment.getSource() ) )
+                .setEdge( serializeToProtoEdge( polySegment.getEdge() ) )
+                .setTarget( serializeToProtoNode( polySegment.getTarget() ) )
+                .setIsRef( polySegment.isRef() )
+                .setEdgeDirection( getEdgeDirection( polySegment.getDirection() ) )
+                .build();
+    }
+
+
+    private static List<ProtoGraphPropertyHolder> serializeToProtoGraphPropertyHolderList( PolyList<GraphPropertyHolder> polyGraphPropertyHolders ) {
+        return polyGraphPropertyHolders.stream().map( PolyValueSerializer::serializeToProtoGraphPropertyHolder ).collect( Collectors.toList() );
+    }
+
+
+    private static List<ProtoSegment> serializeToProtoSegmentList( PolyList<PolySegment> polySegments ) {
+        return polySegments.stream().map( PolyValueSerializer::serializeToProtoSegment ).collect( Collectors.toList() );
+    }
+
+
+    private static ProtoValue serializeAsProtoGraph( PolyGraph polyGraph ) {
+
+    }
+
+
+    private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
         ProtoDocument protoDocument = ProtoDocument.newBuilder()
                 .addAllEntries( serializeToProtoEntryList( polyDocument.asMap() ) )
                 .build();
-        ProtoValue.newBuilder()
+        return ProtoValue.newBuilder()
                 .setDocument( protoDocument )
                 .setType( getType( polyDocument.getType() ) )
                 .build();
@@ -220,23 +322,32 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
-        ProtoMap protoMap = ProtoMap.newBuilder()
-                .addAllEntries( serializeToProtoEntryList( polyMap ))
-                .build();
+
         return ProtoValue.newBuilder()
-                .setMap( protoMap )
+                .setMap( serializeToProtoMap( polyMap ) )
                 .setType( getType( polyMap.getType() ) )
                 .build();
     }
 
 
-    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
-        ProtoList protoList = ProtoList.newBuilder()
-                .addAllValues( serializeList( polyList.getValue() ) )
+    private static ProtoMap serializeToProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
+        return ProtoMap.newBuilder()
+                .addAllEntries( serializeToProtoEntryList( polyMap ) )
                 .build();
+    }
+
+
+    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
         return ProtoValue.newBuilder()
-                .setList( protoList )
+                .setList( serializeToProtoList( polyList ) )
                 .setType( getType( polyList.type ) )
+                .build();
+    }
+
+
+    private static ProtoList serializeToProtoList( PolyList<PolyValue> polyList ) {
+        return ProtoList.newBuilder()
+                .addAllValues( serializeList( polyList.getValue() ) )
                 .build();
     }
 
@@ -285,13 +396,13 @@ public class PolyValueSerializer {
     }
 
 
-    private static ProtoValueType getType( PolyValue polyValue ) {
-        return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyValue.getType() );
+    private static ProtoValue.ProtoValueType getType( PolyValue polyValue ) {
+        return getType( polyValue.getType() );
     }
 
 
-    private static ProtoValueType getType( PolyType polyType ) {
-        return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyType );
+    private static ProtoValue.ProtoValueType getType( PolyType polyType ) {
+        return ProtoValue.ProtoValueType.valueOf( polyType.getName() );
     }
 
 
@@ -373,12 +484,16 @@ public class PolyValueSerializer {
 
 
     public static ProtoValue serializeAsProtoString( PolyString polyString ) {
-        ProtoString protoString = ProtoString.newBuilder()
-                .setString( polyString.getValue() )
-                .build();
         return ProtoValue.newBuilder()
-                .setString( protoString )
+                .setString( serializeToProtoString( polyString ) )
                 .setType( getType( polyString ) )
+                .build();
+    }
+
+
+    public static ProtoString serializeToProtoString( PolyString polyString ) {
+        return ProtoString.newBuilder()
+                .setString( polyString.getValue() )
                 .build();
     }
 
