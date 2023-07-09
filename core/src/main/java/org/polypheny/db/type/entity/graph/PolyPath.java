@@ -306,14 +306,22 @@ public class PolyPath extends GraphObject {
     @Slf4j
     public static class PolySegment extends GraphObject {
 
+        @Getter
         public final PolyString sourceId;
+        @Getter
         public final PolyString edgeId;
+        @Getter
         public final PolyString targetId;
+        @Getter
         public final PolyNode source;
+        @Getter
         public final PolyEdge edge;
+        @Getter
         public final PolyNode target;
 
+        @Getter
         public final boolean isRef;
+        @Getter
         public final EdgeDirection direction;
 
 
