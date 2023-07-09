@@ -20,7 +20,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoValue;
@@ -39,6 +41,10 @@ import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoValueDeserializer {
+
+    public static List<PolyValue> deserializeValueList( List<ProtoValue> valuesList ) {
+        return valuesList.stream().map( ProtoValueDeserializer::deserializeProtoValue ).collect( Collectors.toList());
+    }
 
     public static Map<String, PolyValue> deserilaizeValueMap( Map<String, ProtoValue> valueMap ) {
         Map<String, PolyValue> deserializedValues = new HashMap<>();
@@ -151,5 +157,4 @@ public class ProtoValueDeserializer {
     private static TimeUnit getTimeUnit( org.polypheny.db.protointerface.proto.TimeUnit timeUnit ) {
         return TimeUnit.valueOf( timeUnit.name() );
     }
-
 }

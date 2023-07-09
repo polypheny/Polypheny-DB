@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableBiMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -49,23 +50,30 @@ public class RelationalMetaRetriever {
     private static final int ORIGIN_DATABASE_INDEX = 0;
 
 
-    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType, ImmutableBiMap<String, Integer> namedIndexes) {
+    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType) {
         int index = 0;
         return parameterRowType.getFieldList().stream()
-                .map( p -> retrieveParameterMeta(p, namedIndexes.inverse().get( index )) )
+                .map( p -> retrieveParameterMeta( p, null ) )
+                .collect( Collectors.toList() );
+    }
+
+    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType, ImmutableBiMap<String, Integer> namedIndexes ) {
+        int index = 0;
+        return parameterRowType.getFieldList().stream()
+                .map( p -> retrieveParameterMeta( p, namedIndexes.inverse().get( index ) ) )
                 .collect( Collectors.toList() );
     }
 
 
     private static ParameterMeta retrieveParameterMeta( AlgDataTypeField algDataTypeField, String parameterName ) {
         AlgDataType algDataType = algDataTypeField.getType();
-        return ParameterMeta.newBuilder()
-                .setName( algDataTypeField.getName() )
-                .setTypeName( algDataType.getPolyType().getTypeName())
-                .setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) )
-                .setScale( QueryProcessorHelpers.getScale( algDataType ) )
-                .setParameterName( parameterName )
-                .build();
+        ParameterMeta.Builder metaBuilder = ParameterMeta.newBuilder();
+        metaBuilder.setName( algDataTypeField.getName() );
+        metaBuilder.setTypeName( algDataType.getPolyType().getTypeName() );
+        metaBuilder.setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) );
+        metaBuilder.setScale( QueryProcessorHelpers.getScale( algDataType ) );
+        Optional.of( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
+        return metaBuilder.build();
     }
 
 
