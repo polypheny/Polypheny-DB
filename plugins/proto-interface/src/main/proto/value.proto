@@ -28,6 +28,48 @@ message ProtoValue {
     ProtoList list = 17;
     ProtoMap map = 18;
     ProtoDocument document = 19;
+    ProtoNode node = 20;
+    ProtoEdge edge = 21;
+    ProtoPath path = 22;
+    ProtoGraph graph = 23;
+  }
+  enum ProtoValueType {
+    UNSPECIFIED = 0;
+    BOOLEAN = 1;
+    INTEGER = 2;
+    BIGINT = 3;
+    DECIMAL = 4;
+    FLOAT = 5;
+    DOUBLE = 6;
+    DATE = 7;
+    TIME = 8;
+    TIMESTAMP = 9;
+    INTERVAL_SECOND = 10;
+    INTERVAL_MINUTE_SECOND = 11;
+    INTERVAL_MINUTE = 12;
+    INTERVAL_HOUR_SECOND = 13;
+    INTERVAL_HOUR_MINUTE = 14;
+    INTERVAL_HOUR = 15;
+    INTERVAL_DAY_SECOND = 16;
+    INTERVAL_DAY_MINUTE = 17;
+    INTERVAL_DAY_HOUR = 18;
+    INTERVAL_DAY = 19;
+    INTERVAL_MONTH = 20;
+    INTERVAL_YEAR_MONTH = 21;
+    INTERVAL_YEAR = 22;
+    VARCHAR = 23;
+    BINARY = 24;
+    NULL = 25;
+    SYMBOL = 26;
+    ARRAY = 27;
+    MAP = 28;
+    DOCUMENT = 29;
+    GRAPH = 30;
+    NODE = 31;
+    EDGE = 32;
+    PATH = 33;
+    FILE = 34;
+    USER_DEFINED_TYPE = 35;
   }
 }
 
@@ -69,6 +111,28 @@ message ProtoString {
 message ProtoTime {
   int64 value = 1;
   TimeUnit time_unit = 2;
+  enum TimeUnit {
+    UNSPECIFIED = 0;
+    YEAR = 1;
+    MONTH = 2;
+    DAY = 3;
+    HOUR = 4;
+    MINUTE = 5;
+    SECOND = 6;
+    QUARTER = 7;
+    ISOYEAR = 8;
+    WEEK = 9;
+    MILLISECOND = 10;
+    MICROSECOND = 11;
+    NANOSECOND = 12;
+    DOW = 13;
+    ISODOW = 14;
+    DOY = 15;
+    EPOCH = 16;
+    DECADE = 17;
+    CENTURY = 18;
+    MILLENNIUM = 19;
+  }
 }
 
 message ProtoTimeStamp {
@@ -94,7 +158,7 @@ message ProtoInterval {
 }
 
 message ProtoUserDefinedType {
-  map<string, ProtoValueType> template = 1;
+  map<string, ProtoValue.ProtoValueType> template = 1;
   map<string, ProtoValue> value = 2;
 }
 
@@ -119,64 +183,56 @@ message ProtoDocument {
   repeated ProtoEntry entries = 1;
 }
 
-enum ProtoValueType {
-  PROTO_VALUE_TYPE_UNSPECIFIED = 0;
-  PROTO_VALUE_TYPE_BOOLEAN = 1;
-  PROTO_VALUE_TYPE_INTEGER = 2;
-  PROTO_VALUE_TYPE_BIGINT = 3;
-  PROTO_VALUE_TYPE_DECIMAL = 4;
-  PROTO_VALUE_TYPE_FLOAT = 5;
-  PROTO_VALUE_TYPE_DOUBLE = 6;
-  PROTO_VALUE_TYPE_DATE = 7;
-  PROTO_VALUE_TYPE_TIME = 8;
-  PROTO_VALUE_TYPE_TIMESTAMP = 9;
-  PROTO_VALUE_TYPE_INTERVAL_SECOND = 10;
-  PROTO_VALUE_TYPE_INTERVAL_MINUTE_SECOND = 11;
-  PROTO_VALUE_TYPE_INTERVAL_MINUTE = 12;
-  PROTO_VALUE_TYPE_INTERVAL_HOUR_SECOND = 13;
-  PROTO_VALUE_TYPE_INTERVAL_HOUR_MINUTE = 14;
-  PROTO_VALUE_TYPE_INTERVAL_HOUR = 15;
-  PROTO_VALUE_TYPE_INTERVAL_DAY_SECOND = 16;
-  PROTO_VALUE_TYPE_INTERVAL_DAY_MINUTE = 17;
-  PROTO_VALUE_TYPE_INTERVAL_DAY_HOUR = 18;
-  PROTO_VALUE_TYPE_INTERVAL_DAY = 19;
-  PROTO_VALUE_TYPE_INTERVAL_MONTH = 20;
-  PROTO_VALUE_TYPE_INTERVAL_YEAR_MONTH = 21;
-  PROTO_VALUE_TYPE_INTERVAL_YEAR = 22;
-  PROTO_VALUE_TYPE_VARCHAR = 23;
-  PROTO_VALUE_TYPE_BINARY = 24;
-  PROTO_VALUE_TYPE_NULL = 25;
-  PROTO_VALUE_TYPE_SYMBOL = 26;
-  PROTO_VALUE_TYPE_ARRAY = 27;
-  PROTO_VALUE_TYPE_MAP = 28;
-  PROTO_VALUE_TYPE_DOCUMENT = 29;
-  PROTO_VALUE_TYPE_GRAPH = 30;
-  PROTO_VALUE_TYPE_NODE = 31;
-  PROTO_VALUE_TYPE_EDGE = 32;
-  PROTO_VALUE_TYPE_PATH = 33;
-  PROTO_VALUE_TYPE_FILE = 34;
-  PROTO_VALUE_TYPE_USER_DEFINED_TYPE = 35;
+message ProtoEdge {
+  ProtoGraphPropertyHolder graph_property_holder = 1;
+  ProtoString source = 2;
+  ProtoString target = 3;
+  EdgeDirection edge_direction = 4;
+
+  enum EdgeDirection {
+    UNSPECIFIED = 0;
+    LEFT_TO_RIGHT = 1;
+    RIGHT_TO_LEFT = 2;
+    NONE = 3;
+  }
 }
 
-enum TimeUnit {
-  TIME_UNIT_UNSPECIFIED = 0;
-  TIME_UNIT_YEAR = 1;
-  TIME_UNIT_MONTH = 2;
-  TIME_UNIT_DAY = 3;
-  TIME_UNIT_HOUR = 4;
-  TIME_UNIT_MINUTE = 5;
-  TIME_UNIT_SECOND = 6;
-  TIME_UNIT_QUARTER = 7;
-  TIME_UNIT_ISOYEAR = 8;
-  TIME_UNIT_WEEK = 9;
-  TIME_UNIT_MILLISECOND = 10;
-  TIME_UNIT_MICROSECOND = 11;
-  TIME_UNIT_NANOSECOND = 12;
-  TIME_UNIT_DOW = 13;
-  TIME_UNIT_ISODOW = 14;
-  TIME_UNIT_DOY = 15;
-  TIME_UNIT_EPOCH = 16;
-  TIME_UNIT_DECADE = 17;
-  TIME_UNIT_CENTURY = 18;
-  TIME_UNIT_MILLENNIUM = 19;
+message ProtoNode {
+  ProtoGraphPropertyHolder graph_property_holder = 1;
+}
+
+message ProtoGraph {
+  ProtoString id = 1;
+  ProtoString variable_name = 2;
+  ProtoMap nodes = 3;
+  ProtoMap edges = 4;
+}
+
+message ProtoPath {
+  ProtoList nodes = 1;
+  ProtoList edges = 2;
+  ProtoList names = 3;
+  // used directly instead of list as ProtoGraphPropertyHolder should not be used as ProtoValue
+  repeated ProtoGraphPropertyHolder paths = 5;
+  repeated ProtoSegment segments = 6;
+}
+
+message ProtoSegment {
+  ProtoString id = 1;
+  ProtoString variable_name = 2;
+  ProtoString source_id = 3;
+  ProtoString edge_id = 4;
+  ProtoString target_id = 5;
+  ProtoNode source = 6;
+  ProtoEdge edge = 7;
+  ProtoNode target = 8;
+  bool is_ref = 9;
+  ProtoEdge.EdgeDirection edge_direction = 10;
+}
+
+message ProtoGraphPropertyHolder {
+  ProtoString id = 1;
+  ProtoString variable_name = 2;
+  ProtoMap properties = 3; //Dictionary = ProtoMap<ProtoString, ProtoValue>
+  ProtoList labels = 4; //ProtoList<ProtoString>
 }
