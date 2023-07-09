@@ -26,6 +26,8 @@ message ProtoValue {
     ProtoUserDefinedType user_defined_type = 15;
     ProtoFile file = 16;
     ProtoList list = 17;
+    ProtoMap map = 18;
+    ProtoDocument document = 19;
   }
 }
 
@@ -102,6 +104,19 @@ message ProtoFile {
 
 message ProtoList {
   repeated ProtoValue values = 1;
+}
+
+message ProtoMap {
+  repeated ProtoEntry entries = 1;
+}
+
+message ProtoEntry {
+  ProtoValue key = 1;
+  ProtoValue value = 2;
+}
+
+message ProtoDocument {
+  repeated ProtoEntry entries = 1;
 }
 
 enum ProtoValueType {
