@@ -31,6 +31,7 @@ import org.polypheny.db.protointerface.proto.ProtoDouble;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
+import org.polypheny.db.protointerface.proto.ProtoList;
 import org.polypheny.db.protointerface.proto.ProtoLong;
 import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoString;
@@ -46,12 +47,16 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFile;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
@@ -143,10 +148,10 @@ public class PolyValueSerializer {
                 return serializeAsProtoNull( polyValue.asNull() );
             case SYMBOL:
                 // used by PolySymbol
-                throw new NotImplementedException( "serialization of type SYMBOL as PolySymbol is not supported" );
+                return serailizeAsProtoSymbol(polyValue.asSymbol());
             case ARRAY:
                 // used by PolyList
-                throw new NotImplementedException( "serialization of type MULTISET as PolyList is not supported" );
+                return serializeAsProtoList(polyValue.asList());
             case MAP:
                 // used by PolyDictionary
                 //used by PolyMap
@@ -168,13 +173,52 @@ public class PolyValueSerializer {
                 throw new NotImplementedException( "serialization of type PATH as PolyPath is not supported" );
             case FILE:
                 // used by PolyFile
+                if (polyValue instanceof PolyFile) {
+                    return serializeAsProtoFile(polyValue.asFile());
+                }
+                if (polyValue instanceof PolyStream ) {
+                    return serializeAsProtoStream(polyValue.asStream());
+                }
+                throw new IllegalArgumentException( "Illegal poly value for poly type FILE." );
                 // used by PolyStream
-                throw new NotImplementedException( "serialization of type FILE" );
+
             case USER_DEFINED_TYPE:
                 // used by PolyUserDefinedType
                 return serializeAsProtoUserDefinedType( polyValue.asUserDefinedValue() );
         }
         throw new NotImplementedException();
+    }
+
+
+    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
+        ProtoList protoList = ProtoList.newBuilder()
+                .addAllValues( serializeList( polyList.getValue() ) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setList( protoList )
+                .setType( getType( polyList.type ) )
+                .build();
+    }
+
+
+    private static ProtoValue serailizeAsProtoSymbol( PolySymbol polySymbol ) {
+        throw new NotImplementedException( "serialization of type SYMBOL as PolySymbol is not supported" );
+    }
+
+
+    private static ProtoValue serializeAsProtoStream( PolyStream polyStream ) {
+        throw new NotImplementedException("Stream handlin not yet implemented");
+    }
+
+
+    private static ProtoValue serializeAsProtoFile( PolyFile polyFile ) {
+        ProtoBinary protoBinary = ProtoBinary.newBuilder()
+                .setBinary( ByteString.copyFrom( polyFile.getValue()) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setBinary( protoBinary )
+                .setType( getType( polyFile ) )
+                .build();
     }
 
 

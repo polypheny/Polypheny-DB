@@ -24,6 +24,8 @@ message ProtoValue {
     ProtoBigDecimal big_decimal = 13;
     ProtoInterval interval = 14;
     ProtoUserDefinedType user_defined_type = 15;
+    ProtoFile file = 16;
+    ProtoList list = 17;
   }
 }
 
@@ -92,6 +94,14 @@ message ProtoInterval {
 message ProtoUserDefinedType {
   map<string, ProtoValueType> template = 1;
   map<string, ProtoValue> value = 2;
+}
+
+message ProtoFile {
+  bytes bytes = 1;
+}
+
+message ProtoList {
+  repeated ProtoValue values = 1;
 }
 
 enum ProtoValueType {
