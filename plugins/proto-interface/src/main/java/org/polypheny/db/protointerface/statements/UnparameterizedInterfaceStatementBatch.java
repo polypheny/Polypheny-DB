@@ -21,19 +21,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 
-public class UnparameterizedInterfaceStatementBatch extends ProtoInterfaceStatementBatch {
+public class UnparameterizedInterfaceStatementBatch implements ProtoInterfaceStatementBatch {
 
     List<UnparameterizedInterfaceStatement> statements;
+    ProtoInterfaceClient protoInterfaceClient;
+    int batchId;
 
 
     public UnparameterizedInterfaceStatementBatch( int batchId, ProtoInterfaceClient protoInterfaceClient, List<UnparameterizedInterfaceStatement> statements ) {
-        super( batchId, protoInterfaceClient );
         this.statements = statements;
+        this.protoInterfaceClient = protoInterfaceClient;
+        this.batchId = batchId;
     }
 
 
-    @Override
-    public List<Long> execute() throws Exception {
+    public List<Long> executeBatch() throws Exception {
         List<Long> updateCounts = new LinkedList<>();
         for ( UnparameterizedInterfaceStatement statement : statements ) {
             updateCounts.add( statement.execute().getScalar() );
@@ -45,6 +47,12 @@ public class UnparameterizedInterfaceStatementBatch extends ProtoInterfaceStatem
     @Override
     public List<ProtoInterfaceStatement> getStatements() {
         return statements.stream().map( s -> (ProtoInterfaceStatement) s ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public int getBatchId() {
+        return batchId;
     }
 
 }
