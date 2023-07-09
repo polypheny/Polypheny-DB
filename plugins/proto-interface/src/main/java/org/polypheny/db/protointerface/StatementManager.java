@@ -23,13 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.C;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.proto.ParameterizedStatement;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
-import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
+import org.polypheny.db.protointerface.statements.IndexedPreparedInterfaceStatement;
+import org.polypheny.db.protointerface.statements.NamedPreparedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
 import org.polypheny.db.protointerface.statements.UnparameterizedInterfaceStatement;
@@ -105,31 +104,43 @@ public class StatementManager {
     }
 
 
-    public ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, PreparedStatement statement ) {
+    public IndexedPreparedInterfaceStatement createIndexedPreparedInterfaceStatement( ProtoInterfaceClient protoInterfaceClient, PreparedStatement statement ) {
         String languageName = statement.getStatementLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
             throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
         }
-        return createParameterizedStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
+        return createIndexedPreparedInterfaceStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
     }
 
 
-    public ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, ParameterizedStatement statement ) {
-        String languageName = statement.getStatementLanguageName();
-        if ( !isSupportedLanguage( languageName ) ) {
-            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
-        }
-        return createParameterizedStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
-    }
-
-
-    private synchronized ParameterizedInterfaceStatement createParameterizedStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    private synchronized IndexedPreparedInterfaceStatement createIndexedPreparedInterfaceStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         final int statementId = statementIdGenerator.getAndIncrement();
         final String statementKey = getId( protoInterfaceClient.getClientUUID(), statementId );
-        final ParameterizedInterfaceStatement statement = new ParameterizedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        final IndexedPreparedInterfaceStatement statement = new IndexedPreparedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
         openStatments.put( statementKey, statement );
         if ( log.isTraceEnabled() ) {
-            log.trace( "created prepared statement {}", statement );
+            log.trace( "created named prepared statement {}", statement );
+        }
+        return statement;
+    }
+
+
+    public NamedPreparedInterfaceStatement createNamedPreparedInterfaceStatement( ProtoInterfaceClient protoInterfaceClient, PreparedStatement statement ) {
+        String languageName = statement.getStatementLanguageName();
+        if ( !isSupportedLanguage( languageName ) ) {
+            throw new ProtoInterfaceServiceException( "Language " + languageName + " not supported." );
+        }
+        return createNamedPreparedInterfaceStatement( protoInterfaceClient, QueryLanguage.from( languageName ), statement.getStatement() );
+    }
+
+
+    private synchronized NamedPreparedInterfaceStatement createNamedPreparedInterfaceStatement( ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+        final int statementId = statementIdGenerator.getAndIncrement();
+        final String statementKey = getId( protoInterfaceClient.getClientUUID(), statementId );
+        final NamedPreparedInterfaceStatement statement = new NamedPreparedInterfaceStatement( statementId, protoInterfaceClient, queryLanguage, query );
+        openStatments.put( statementKey, statement );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "created named prepared statement {}", statement );
         }
         return statement;
     }
@@ -156,8 +167,8 @@ public class StatementManager {
 
 
     public void closeStatementOrBatch( ProtoInterfaceClient client, int statementId ) {
-        if (client == null) {
-            throw new RuntimeException("CLIENT NULL");
+        if ( client == null ) {
+            throw new RuntimeException( "CLIENT NULL" );
         }
         String statementKey = getId( client.getClientUUID(), statementId );
         ProtoInterfaceStatementBatch batchToClose = openBatches.remove( statementKey );
@@ -178,16 +189,30 @@ public class StatementManager {
         return statement;
     }
 
-    public ParameterizedInterfaceStatement getParameterizedStatement(ProtoInterfaceClient client, int statementId) {
+
+    public NamedPreparedInterfaceStatement getNamedPreparedStatement( ProtoInterfaceClient client, int statementId ) {
         String statementKey = getId( client.getClientUUID(), statementId );
         ProtoInterfaceStatement statement = openStatments.get( statementKey );
         if ( statement == null ) {
             throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
-        if (!(statement instanceof ParameterizedInterfaceStatement)) {
+        if ( !(statement instanceof NamedPreparedInterfaceStatement) ) {
             throw new ProtoInterfaceServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
         }
-        return (ParameterizedInterfaceStatement)statement;
+        return (NamedPreparedInterfaceStatement) statement;
+    }
+
+
+    public IndexedPreparedInterfaceStatement getIndexedPreparedStatement( ProtoInterfaceClient client, int statementId ) {
+        String statementKey = getId( client.getClientUUID(), statementId );
+        ProtoInterfaceStatement statement = openStatments.get( statementKey );
+        if ( statement == null ) {
+            throw new ProtoInterfaceServiceException( "A statement with id " + statementId + " does not exist for that client" );
+        }
+        if ( !(statement instanceof IndexedPreparedInterfaceStatement) ) {
+            throw new ProtoInterfaceServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
+        }
+        return (IndexedPreparedInterfaceStatement) statement;
     }
 
 
