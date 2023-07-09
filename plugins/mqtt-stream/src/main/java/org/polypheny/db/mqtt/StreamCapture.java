@@ -90,11 +90,11 @@ public class StreamCapture {
 
 
         // check for existing namespace with DOCUMENT NamespaceType:
-        if ( catalog.checkIfExistsSchema( stream.getDatabaseId(), stream.getNamespace() ) ) {
+        if ( catalog.checkIfExistsSchema( this.stream.getDatabaseId(), this.stream.getNamespace() ) ) {
 
             CatalogSchema schema = null;
             try {
-                schema = catalog.getSchema( stream.getDatabaseId(), stream.getNamespace() );
+                schema = catalog.getSchema( this.stream.getDatabaseId(), this.stream.getNamespace() );
             } catch ( UnknownSchemaException e ) {
                 log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
                 return 0;
@@ -106,8 +106,8 @@ public class StreamCapture {
                 //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
                 List<CatalogCollection> collectionList = catalog.getCollections( schema.id, null );
                 for ( CatalogCollection collection : collectionList ) {
-                    if ( collection.name.equals( stream.topic ) ) {
-                        int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.uniqueNameOfInterface ).getQueryInterfaceId();
+                    if ( collection.name.equals( this.stream.topic ) ) {
+                        int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
                         if ( !collection.placements.contains( queryInterfaceId ) ) {
                             return collection.addPlacement( queryInterfaceId ).id;
                         } else {
@@ -118,20 +118,25 @@ public class StreamCapture {
                 return createNewCollection();
 
             } else {
-                this.stream.setNamespaceID( createNamespace() );
+                this.stream.setNamespaceID( createNewNamespace() );
                 return createNewCollection();
             }
         } else {
-            this.stream.setNamespaceID( createNamespace() );
+            this.stream.setNamespaceID( createNewNamespace() );
             return createNewCollection();
         }
     }
 
 
-    private long createNamespace() {
+    private long createNewNamespace() {
         Catalog catalog = Catalog.getInstance();
-        //TOdO: commit
-        return catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT );
+        long namespaceId = catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT );
+        try {
+            catalog.commit();
+        } catch ( NoTablePrimaryKeyException e ) {
+            log.error( "An error " );
+        }
+        return namespaceId;
     }
 
 
