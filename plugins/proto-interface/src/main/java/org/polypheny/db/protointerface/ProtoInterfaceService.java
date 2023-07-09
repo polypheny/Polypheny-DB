@@ -160,7 +160,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         String namespacePattern = tablesRequest.hasNamespacePattern() ? tablesRequest.getNamespacePattern() : null;
         String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
         List<String> tableTypes = tablesRequest.getTableTypesCount() == 0 ? null : tablesRequest.getTableTypesList();
-        responseObserver.onNext( DbmsMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes ) );
+        responseObserver.onNext( DbMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes ) );
         responseObserver.onCompleted();
     }
 
@@ -169,7 +169,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void getTableTypes( TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbmsMetaRetriever.getTableTypes() );
+        responseObserver.onNext( DbMetaRetriever.getTableTypes() );
         responseObserver.onCompleted();
     }
 
@@ -179,7 +179,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         /* called as client auth check */
         getClient();
         String namespacePattern = namespacesRequest.hasNamespacePattern() ? namespacesRequest.getNamespacePattern() : null;
-        responseObserver.onNext( DbmsMetaRetriever.getNamespaces( namespacePattern ) );
+        responseObserver.onNext( DbMetaRetriever.getNamespaces( namespacePattern ) );
         responseObserver.onCompleted();
     }
 
@@ -191,7 +191,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
         String tablePattern = columnsRequest.getTablePattern();
         String columnPattern = columnsRequest.getColumnPattern();
-        responseObserver.onNext( DbmsMetaRetriever.getColumns( namespacePattern, tablePattern, columnPattern ) );
+        responseObserver.onNext( DbMetaRetriever.getColumns( namespacePattern, tablePattern, columnPattern ) );
         responseObserver.onCompleted();
     }
 
@@ -202,7 +202,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = primaryKeysRequest.hasNamespacePattern() ? primaryKeysRequest.getNamespacePattern() : null;
         String tablePattern = primaryKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern ) );
+        responseObserver.onNext( DbMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
 
@@ -211,7 +211,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void getDatabases( DatabasesRequest databasesRequest, StreamObserver<DatabasesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbmsMetaRetriever.getDatabases() );
+        responseObserver.onNext( DbMetaRetriever.getDatabases() );
         responseObserver.onCompleted();
     }
 
@@ -222,7 +222,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
         String tablePattern = importedKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getImportedKeys( namespacePattern, tablePattern ) );
+        responseObserver.onNext( DbMetaRetriever.getImportedKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
 
@@ -233,7 +233,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = exportedKeysRequest.hasNamespacePattern() ? exportedKeysRequest.getNamespacePattern() : null;
         String tablePattern = exportedKeysRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getExportedKeys( namespacePattern, tablePattern ) );
+        responseObserver.onNext( DbMetaRetriever.getExportedKeys( namespacePattern, tablePattern ) );
         responseObserver.onCompleted();
     }
 
@@ -242,7 +242,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     public void getTypes( TypesRequest typesRequest, StreamObserver<TypesResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbmsMetaRetriever.getTypes() );
+        responseObserver.onNext( DbMetaRetriever.getTypes() );
         responseObserver.onCompleted();
     }
 
@@ -253,7 +253,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         getClient();
         String namespacePattern = indexesRequest.hasNamespacePattern() ? indexesRequest.getNamespacePattern() : null;
         String tablePattern = indexesRequest.getTablePattern();
-        responseObserver.onNext( DbmsMetaRetriever.getIndexes( namespacePattern, tablePattern, indexesRequest.getUnique() ) );
+        responseObserver.onNext( DbMetaRetriever.getIndexes( namespacePattern, tablePattern, indexesRequest.getUnique() ) );
         responseObserver.onCompleted();
     }
 
