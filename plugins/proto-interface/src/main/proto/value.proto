@@ -23,6 +23,7 @@ message ProtoValue {
     ProtoNull null = 12;
     ProtoBigDecimal big_decimal = 13;
     ProtoInterval interval = 14;
+    ProtoUserDefinedType user_defined_type = 15;
   }
 }
 
@@ -88,7 +89,10 @@ message ProtoInterval {
   ProtoBigDecimal value = 1;
 }
 
-
+message ProtoUserDefinedType {
+  map<string, ProtoValueType> template = 1;
+  map<string, ProtoValue> value = 2;
+}
 
 enum ProtoValueType {
   PROTO_VALUE_TYPE_UNSPECIFIED = 0;

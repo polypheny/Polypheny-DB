@@ -109,7 +109,7 @@ public class RelationalMetaRetriever {
         return columnMetaBuilder
                 .setColumnIndex( index )
                 .setColumnName( fieldName ) // designated column name
-                .setColumnAlias( getColumnLabel( origins, type, fieldName ) ) // alias as specified in sql AS clause
+                .setColumnLabel( getColumnLabel( origins, type, fieldName ) ) // alias as specified in sql AS clause
                 .setIsNullable( type.isNullable() )
                 .setLength( type.getPrecision() )
                 .setPrecision( QueryProcessorHelpers.getPrecision( type ) ) // <- same as type.getPrecision() but returns 0 if not applicable
