@@ -22,8 +22,7 @@ message ProtoValue {
     ProtoTimeStamp time_stamp = 11;
     ProtoNull null = 12;
     ProtoBigDecimal big_decimal = 13;
-    ProtoArray array = 14;
-    ProtoStructured structured = 15;
+    ProtoInterval interval = 14;
   }
 }
 
@@ -84,6 +83,11 @@ message ProtoStructured {
 message ProtoArray {
   repeated ProtoValue elements = 1;
 }
+
+message ProtoInterval {
+  ProtoBigDecimal value = 1;
+}
+
 
 
 enum ProtoValueType {
