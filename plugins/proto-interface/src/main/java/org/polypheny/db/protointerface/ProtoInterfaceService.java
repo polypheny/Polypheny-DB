@@ -42,7 +42,6 @@ import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ImportedKeysRequest;
 import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
 import org.polypheny.db.protointerface.proto.IndexedParameterBatch;
-import org.polypheny.db.protointerface.proto.IndexedValueBatch;
 import org.polypheny.db.protointerface.proto.IndexesRequest;
 import org.polypheny.db.protointerface.proto.IndexesResponse;
 import org.polypheny.db.protointerface.proto.LanguageRequest;
