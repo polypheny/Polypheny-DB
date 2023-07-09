@@ -29,7 +29,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
 
-public class PlaceholderReplacementTest {
+public class NamedValueProcssorTest {
 
     @BeforeClass
     public static void setUpClass() {
@@ -59,7 +59,10 @@ public class PlaceholderReplacementTest {
         values.put( "first_name", PolyString.of( "tobias" ) );
         values.put( "last_name", PolyString.of( "hafner" ) );
 
-        //NamedValueProcessor.process( statement, values );
+        //NamedValueProcessor namedValueProcessor = new NamedValueProcessor( statement );
+
+
+
         fail( "No ProtoInterfaceServiceException thrown" );
     }
 
