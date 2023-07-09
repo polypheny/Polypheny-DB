@@ -43,7 +43,7 @@ public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
 
     public ParameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
-        this.namedValueProcessor = NamedValueProcessor.forStatement( query );
+        this.namedValueProcessor = new NamedValueProcessor( query );
         this.processedQuery = namedValueProcessor.getProcessedQuery();
         this.hasParametersSet = false;
     }
