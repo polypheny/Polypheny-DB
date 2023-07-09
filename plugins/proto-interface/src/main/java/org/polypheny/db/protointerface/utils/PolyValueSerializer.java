@@ -19,6 +19,8 @@ package org.polypheny.db.protointerface.utils;
 import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
@@ -34,9 +36,11 @@ import org.polypheny.db.protointerface.proto.ProtoNull;
 import org.polypheny.db.protointerface.proto.ProtoString;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
+import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValueType;
 import org.polypheny.db.protointerface.proto.TimeUnit;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -50,6 +54,7 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyValueSerializer {
@@ -59,6 +64,16 @@ public class PolyValueSerializer {
 
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
         return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() );
+    }
+
+
+    private static Map<String, ProtoValue> serializeValueMap( Map<String, PolyValue> valueMap ) {
+        return valueMap.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> serialize( e.getValue() ) ) );
+    }
+
+
+    public static Map<String, ProtoValueType> convertTypeMap( Map<String, PolyType> typeMap ) {
+        return typeMap.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> getType( e.getValue() ) ) );
     }
 
 
@@ -157,17 +172,29 @@ public class PolyValueSerializer {
                 throw new NotImplementedException( "serialization of type FILE" );
             case USER_DEFINED_TYPE:
                 // used by PolyUserDefinedType
-                throw new NotImplementedException( "serialization of type USER_DEFINED_TYPE as PolyString is not supported" );
+                return serializeAsProtoUserDefinedType( polyValue.asUserDefinedValue() );
         }
         throw new NotImplementedException();
     }
 
 
+    private static ProtoValue serializeAsProtoUserDefinedType( PolyUserDefinedValue userDefinedValue ) {
+        ProtoUserDefinedType protoUserDefinedType = ProtoUserDefinedType.newBuilder()
+                .putAllTemplate( convertTypeMap( userDefinedValue.getTemplate() ) )
+                .putAllValue( serializeValueMap( userDefinedValue.getValue() ) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setUserDefinedType( protoUserDefinedType )
+                .setType( getType( userDefinedValue ) )
+                .build();
+    }
+
+
     private static ProtoValue serializeAsProtoInterval( PolyInterval polyInterval ) {
         ProtoInterval protoInterval = ProtoInterval.newBuilder()
-                .setValue(serializeBigDecimal( polyInterval.getValue() ))
+                .setValue( serializeBigDecimal( polyInterval.getValue() ) )
                 .build();
-        return  ProtoValue.newBuilder()
+        return ProtoValue.newBuilder()
                 .setInterval( protoInterval )
                 .setType( getType( polyInterval ) )
                 .build();
@@ -176,6 +203,11 @@ public class PolyValueSerializer {
 
     private static ProtoValueType getType( PolyValue polyValue ) {
         return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyValue.getType() );
+    }
+
+
+    private static ProtoValueType getType( PolyType polyType ) {
+        return ProtoValueType.valueOf( PROTO_TYPE_PREFIX + polyType );
     }
 
 
