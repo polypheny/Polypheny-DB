@@ -29,6 +29,7 @@ import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.ParameterizedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
+import org.polypheny.db.protointerface.statements.Signaturizable;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
@@ -64,10 +65,10 @@ public class ProtoUtils {
     }
 
 
-    public static PreparedStatementSignature createPreparedStatementSignature( ParameterizedInterfaceStatement parameterizedInterfaceStatement ) {
+    public static PreparedStatementSignature createPreparedStatementSignature( Signaturizable preparedStatement ) {
         return PreparedStatementSignature.newBuilder()
-                .setStatementId( parameterizedInterfaceStatement.getStatementId() )
-                .addAllParameterMetas( parameterizedInterfaceStatement.determineParameterMeta() )
+                .setStatementId( preparedStatement.getStatementId() )
+                .addAllParameterMetas( preparedStatement.determineParameterMeta() )
                 .build();
     }
 

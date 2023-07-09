@@ -20,45 +20,28 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
-import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
-public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
+public class NamedPreparedInterfaceStatement extends IndexedPreparedInterfaceStatement {
 
-    private NamedValueProcessor namedValueProcessor;
-    private Statement currentStatement;
-    private boolean hasParametersSet;
-    private String processedQuery;
+    private final NamedValueProcessor namedValueProcessor;
 
 
-    public ParameterizedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
+    public NamedPreparedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
         super( statementId, protoInterfaceClient, queryLanguage, query );
         this.namedValueProcessor = new NamedValueProcessor( query );
-        this.processedQuery = namedValueProcessor.getProcessedQuery();
-        this.hasParametersSet = false;
+        overwriteQuery( namedValueProcessor.getProcessedQuery() );
     }
 
 
     public List<ParameterMeta> determineParameterMeta() {
-        Transaction transaction = protoInterfaceClient.getCurrentOrCreateNewTransaction();
-        currentStatement = transaction.createStatement();
-        Processor queryProcessor = transaction.getProcessor( queryLanguage );
-        Node parsed = queryProcessor.parse( processedQuery ).get( 0 );
-        // It is important not to add default values for missing fields in insert statements. If we did this, the
-        // JDBC driver would expect more parameter fields than there actually are in the query.
-        Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
-        AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
-        return RelationalMetaRetriever.retrieveParameterMetas( parameterRowType, namedValueProcessor.getNamedIndexes() );
+        AlgDataType parameters = getParameterRowType();
+        return RelationalMetaRetriever.retrieveParameterMetas( parameters, namedValueProcessor.getNamedIndexes() );
     }
 
 
@@ -70,7 +53,7 @@ public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
                 currentStatement.getDataContext().addParameterValues( index++, null, List.of( value ) );
             }
         }
-        this.hasParametersSet = true;
+        hasParametersSet = true;
     }
 
 
@@ -80,15 +63,6 @@ public class ParameterizedInterfaceStatement extends ProtoInterfaceStatement {
         }
         setParameters( values );
         return execute();
-    }
-
-
-    @Override
-    public StatementResult execute() throws Exception {
-        if ( currentStatement == null || !hasParametersSet ) {
-            throw new ProtoInterfaceServiceException( "Can't execute parameterized statement before preparation." );
-        }
-        return execute( currentStatement );
     }
 
 }
