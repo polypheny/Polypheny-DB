@@ -20,5 +20,6 @@ import java.util.List;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 
 public interface Signaturizable {
-    List<ParameterMeta> getParameterMetas();
+    int getStatementId();
+    List<ParameterMeta> determineParameterMeta();
 }
