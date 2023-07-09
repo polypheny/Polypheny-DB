@@ -60,7 +60,7 @@ message Column {
   int32 type_scale = 7;
   bool is_nullable = 8;
   optional string default_value_as_string = 9;
-  int32 columnIndex = 10;
+  int32 column_index = 10;
   optional string collation = 11;
 }
 
@@ -196,4 +196,3 @@ message Index {
   string location = 8;
   int32 index_type = 9;
 }
-
