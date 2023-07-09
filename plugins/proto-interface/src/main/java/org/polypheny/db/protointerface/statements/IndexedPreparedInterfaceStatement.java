@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -31,7 +33,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
-public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement implements Signaturizable {
+public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement implements Signaturizable, ProtoInterfaceStatementBatch {
 
     protected Statement currentStatement;
     protected boolean hasParametersSet;
@@ -70,7 +72,6 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
         this.hasParametersSet = true;
     }
 
-
     public StatementResult execute( List<PolyValue> values ) throws Exception {
         if ( currentStatement == null ) {
             currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
@@ -86,6 +87,28 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
             throw new ProtoInterfaceServiceException( "Can't execute parameterized statement before preparation." );
         }
         return execute( currentStatement );
+    }
+
+
+    public List<Long> executeBatch(List<List<PolyValue>> valueLists) throws Exception {
+        List<Long> updateCounts = new LinkedList<>();
+        for (List<PolyValue> values : valueLists) {
+            updateCounts.add( execute(values).getScalar() );
+        }
+        return updateCounts;
+    }
+
+
+    @Override
+    public List<ProtoInterfaceStatement> getStatements() {
+        return Collections.singletonList( this );
+    }
+
+
+    @Override
+    public int getBatchId() {
+        // As prepared statements implement tProtoInterfaceStatementBatch directly, thy don't have a separate batch id.
+        return statementId;
     }
 
 }
