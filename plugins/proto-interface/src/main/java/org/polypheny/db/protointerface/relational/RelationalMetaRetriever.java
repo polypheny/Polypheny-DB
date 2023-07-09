@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
@@ -35,7 +34,7 @@ import org.polypheny.db.protointerface.proto.ArrayMeta;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.FieldMeta;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
-import org.polypheny.db.protointerface.proto.ProtoValueType;
+import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.StructMeta;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 import org.polypheny.db.type.PolyType;
@@ -50,12 +49,13 @@ public class RelationalMetaRetriever {
     private static final int ORIGIN_DATABASE_INDEX = 0;
 
 
-    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType) {
+    public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
         int index = 0;
         return parameterRowType.getFieldList().stream()
                 .map( p -> retrieveParameterMeta( p, null ) )
                 .collect( Collectors.toList() );
     }
+
 
     public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType, ImmutableBiMap<String, Integer> namedIndexes ) {
         int index = 0;
@@ -92,8 +92,8 @@ public class RelationalMetaRetriever {
     }
 
 
-    private static ProtoValueType getFromPolyType( PolyType polyType ) {
-        return ProtoValueType.valueOf( PROTO_VALUE_TYPE_PREFIX + polyType.getName() );
+    private static ProtoValue.ProtoValueType getFromPolyType( PolyType polyType ) {
+        return ProtoValue.ProtoValueType.valueOf( PROTO_VALUE_TYPE_PREFIX + polyType.getName() );
     }
 
 
@@ -104,8 +104,8 @@ public class RelationalMetaRetriever {
             List<String> origins ) {
         TypeMeta typeMeta = retrieveTypeMeta( type );
         ColumnMeta.Builder columnMetaBuilder = ColumnMeta.newBuilder();
-        applyIfNotNull( columnMetaBuilder::setEntityName, QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) );
-        applyIfNotNull( columnMetaBuilder::setSchemaName, QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) );
+        Optional.of( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) ).ifPresent( columnMetaBuilder::setEntityName );
+        Optional.of( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) ).ifPresent( columnMetaBuilder::setSchemaName );
         return columnMetaBuilder
                 .setColumnIndex( index )
                 .setColumnName( fieldName ) // designated column name
@@ -118,14 +118,6 @@ public class RelationalMetaRetriever {
                 //.setNamespace()
                 //TODO TH: find out how to get namespace form here
                 .build();
-    }
-
-
-    private static <R> R applyIfNotNull( Function<String, R> function, String value ) {
-        if ( value == null ) {
-            return null;
-        }
-        return function.apply( value );
     }
 
 
@@ -162,7 +154,7 @@ public class RelationalMetaRetriever {
                     .build();
             return TypeMeta.newBuilder()
                     .setArrayMeta( arrayMeta )
-                    .setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_ARRAY )
+                    .setProtoValueType( ProtoValue.ProtoValueType.ARRAY )
                     .build();
         } else {
             PolyType polyType = algDataType.getPolyType();
@@ -174,7 +166,8 @@ public class RelationalMetaRetriever {
                         .collect( Collectors.toList() );
                 return TypeMeta.newBuilder()
                         .setStructMeta( StructMeta.newBuilder().addAllFieldMetas( fieldMetas ).build() )
-                        .setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED )
+                        //.setProtoValueType( ProtoValueType.PROTO_VALUE_TYPE_STRUCTURED )
+                        //TODO TH: handle structured type meta in a useful way
                         .build();
             }
             return TypeMeta.newBuilder()

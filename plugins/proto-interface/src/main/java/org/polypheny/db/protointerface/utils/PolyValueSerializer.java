@@ -32,6 +32,7 @@ import org.polypheny.db.protointerface.proto.ProtoDouble;
 import org.polypheny.db.protointerface.proto.ProtoEdge;
 import org.polypheny.db.protointerface.proto.ProtoEntry;
 import org.polypheny.db.protointerface.proto.ProtoFloat;
+import org.polypheny.db.protointerface.proto.ProtoGraph;
 import org.polypheny.db.protointerface.proto.ProtoGraphPropertyHolder;
 import org.polypheny.db.protointerface.proto.ProtoInteger;
 import org.polypheny.db.protointerface.proto.ProtoInterval;
@@ -47,7 +48,6 @@ import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoTimeStamp;
 import org.polypheny.db.protointerface.proto.ProtoUserDefinedType;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.TimeUnit;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -306,7 +306,15 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoGraph( PolyGraph polyGraph ) {
-
+        ProtoGraph protoGraph = ProtoGraph.newBuilder()
+                .setId( serializeToProtoString( polyGraph.getId() ) )
+                .setVariableName( serializeToProtoString( polyGraph.getVariableName() ) )
+                .setNodes( serializeToProtoMap( new PolyMap<>( polyGraph.getNodes() ).asMap() ) )
+                .setEdges( serializeToProtoMap( new PolyMap<>( polyGraph.getEdges() ).asMap() ) )
+                .build();
+        return ProtoValue.newBuilder()
+                .setGraph( protoGraph )
+                .build();
     }
 
 
@@ -322,7 +330,6 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoMap( PolyMap<PolyValue, PolyValue> polyMap ) {
-
         return ProtoValue.newBuilder()
                 .setMap( serializeToProtoMap( polyMap ) )
                 .setType( getType( polyMap.getType() ) )
@@ -501,7 +508,7 @@ public class PolyValueSerializer {
     public static ProtoValue serializeAsProtoTime( PolyTime polyTime ) {
         ProtoTime protoTime = ProtoTime.newBuilder()
                 .setValue( polyTime.ofDay )
-                .setTimeUnit( TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
+                .setTimeUnit( ProtoTime.TimeUnit.valueOf( polyTime.getTimeUnit().name() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setTime( protoTime )
