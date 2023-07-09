@@ -19,19 +19,21 @@ package org.polypheny.db.mqtt;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 public class PolyStream {
 
     // Representation of 1 content in a namespace
     @Getter
     final String topic;
-
     @Getter
-    final String uniqueNameOfInterface;
+    private final String uniqueNameOfInterface;
     @Getter
-    final String content;
+    private final String content;
     @Getter
-    final String namespace;
+    private final String namespace;
+    @Getter
+    private final NamespaceType namespaceType;
     @Getter
     @Setter
     private long namespaceID;
@@ -46,57 +48,15 @@ public class PolyStream {
     private long storeID;   // the ID of collection/graph/table... the place where info is/should be saved
 
 
-    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace ) {
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, NamespaceType namespaceType ) {
         this.topic = topic;
         this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
         this.namespace = namespace;
+        this.namespaceType = namespaceType;
         this.databaseId = Catalog.defaultDatabaseId;
         this.userId = Catalog.defaultUserId;
     }
 
-
-    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId ) {
-        this.topic = topic;
-        this.uniqueNameOfInterface = uniqueNameInterface;
-        this.content = content;
-        this.namespace = namespace;
-        this.databaseId = databaseId;
-        this.userId = userId;
-    }
-
-
-    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId ) {
-        this.topic = topic;
-        this.uniqueNameOfInterface = uniqueNameInterface;
-        this.content = content;
-        this.namespace = namespace;
-        this.namespaceID = namespaceID;
-        this.databaseId = databaseId;
-        this.userId = userId;
-    }
-
-
-    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long databaseId, int userId, long storeID ) {
-        this.topic = topic;
-        this.uniqueNameOfInterface = uniqueNameInterface;
-        this.content = content;
-        this.namespace = namespace;
-        this.databaseId = databaseId;
-        this.userId = userId;
-        this.storeID = storeID;
-    }
-
-
-    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, long namespaceID, long databaseId, int userId, long storeID ) {
-        this.topic = topic;
-        this.uniqueNameOfInterface = uniqueNameInterface;
-        this.content = content;
-        this.namespace = namespace;
-        this.namespaceID = namespaceID;
-        this.databaseId = databaseId;
-        this.userId = userId;
-        this.storeID = storeID;
-    }
 
 }
