@@ -40,13 +40,13 @@ public class StatementManager {
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
     private ConcurrentHashMap<String, ProtoInterfaceStatement> openStatments;
-    private ConcurrentHashMap<String, ProtoInterfaceStatementBatch> openBatches;
+    private ConcurrentHashMap<String, ProtoInterfaceStatementBatch> openUnparameterizedBatches;
 
 
     public StatementManager() {
         statementIdGenerator = new AtomicInteger();
         openStatments = new ConcurrentHashMap<>();
-        openBatches = new ConcurrentHashMap<>();
+        openUnparameterizedBatches = new ConcurrentHashMap<>();
         supportedLanguages = new HashSet<>();
         updateSupportedLanguages();
     }
@@ -96,7 +96,7 @@ public class StatementManager {
         final int batchId = statementIdGenerator.getAndIncrement();
         final String batchKey = getId( protoInterfaceClient.getClientUUID(), batchId );
         final UnparameterizedInterfaceStatementBatch batch = new UnparameterizedInterfaceStatementBatch( batchId, protoInterfaceClient, unparameterizedInterfaceStatements );
-        openBatches.put( batchKey, batch );
+        openUnparameterizedBatches.put( batchKey, batch );
         if ( log.isTraceEnabled() ) {
             log.trace( "created batch {}", batch );
         }
@@ -147,7 +147,7 @@ public class StatementManager {
 
 
     public void closeBatch( ProtoInterfaceClient client, ProtoInterfaceStatementBatch toClose ) {
-        toClose.getStatements().forEach( s -> closeStatementOrBatch( client, s.getStatementId() ) );
+        toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getProtoInterfaceClient(), s.getStatementId() ) );
     }
 
 
@@ -171,7 +171,7 @@ public class StatementManager {
             throw new RuntimeException( "CLIENT NULL" );
         }
         String statementKey = getId( client.getClientUUID(), statementId );
-        ProtoInterfaceStatementBatch batchToClose = openBatches.remove( statementKey );
+        ProtoInterfaceStatementBatch batchToClose = openUnparameterizedBatches.remove( statementKey );
         if ( batchToClose != null ) {
             closeBatch( client, batchToClose );
             return;
