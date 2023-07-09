@@ -16,7 +16,7 @@ message ColumnMeta {
   int32 column_index = 1;
   bool is_nullable = 2;
   int32 length = 3;
-  string column_alias = 4;
+  string column_label = 4;
   string column_name = 5;
   int32 precision = 6;
   string entity_name = 7;

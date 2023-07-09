@@ -87,17 +87,17 @@ message RollbackRequest {}
 message RollbackResponse{}
 
 message StatementBatchStatus {
-  int32 batchId = 1;
+  int32 batch_id = 1;
   repeated int64 scalars = 2;
 }
 
 message StatementStatus {
-  int32 statementId = 1;
+  int32 statement_id = 1;
   optional StatementResult result = 2;
 }
 
 message PreparedStatementSignature{
-  int32 statementId = 1;
+  int32 statement_id = 1;
   repeated ParameterMeta parameter_metas = 2;
 }
 
@@ -180,4 +180,4 @@ message Frame {
     GraphFrame graph_frame = 4;
     DocumentFrame document_frame = 5;
   }
-}
+
