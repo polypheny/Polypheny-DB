@@ -1255,7 +1255,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
                     visitedSubsets.add( subset );
 
-                    for ( AlgNode alg : subset.getAlgs() ) {
+                    for ( AlgNode alg : subset.set.algs ) {
                         visit( alg, -1, subset );
                     }
                 } else {

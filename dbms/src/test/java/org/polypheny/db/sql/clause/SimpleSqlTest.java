@@ -94,12 +94,12 @@ public class SimpleSqlTest {
 
 
     @Test
-    public void updateTable() throws SQLException {
+    public void selectFromNestedSimple() {
         List<Object[]> data = List.of(
                 new Object[]{ 1, "Name1" },
-                new Object[]{ 2, "Name2" },
-                new Object[]{ 3, "Name3" },
-                new Object[]{ 4, "Name4" }
+                new Object[]{ 1, "Name2" },
+                new Object[]{ 1, "Name3" },
+                new Object[]{ 1, "Name4" }
         );
         TestHelper.executeSql(
                 ( c, s ) -> s.executeUpdate( "CREATE TABLE Person(ID INTEGER NOT NULL, NAME VARCHAR(20), PRIMARY KEY (ID))" ),
@@ -107,7 +107,29 @@ public class SimpleSqlTest {
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (2, 'Name2')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (3, 'Name3')" ),
                 ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
-                ( c, s ) -> s.executeUpdate( "UPDATE Person SET NAME = 'Name99' WHERE ID < 3" ),
+                ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT test, name FROM (SELECT COUNT(id) as test, name FROM Person GROUP BY name)" ), data, true ),
+                ( c, s ) -> s.executeUpdate( "DROP TABLE Person" ),
+                ( c, s ) -> c.commit()
+        );
+
+    }
+
+
+    @Test
+    public void likeTest() {
+        List<Object[]> data = List.of(
+                new Object[]{ 1 },
+                new Object[]{ 2 },
+                new Object[]{ 3 },
+                new Object[]{ 4 }
+        );
+        TestHelper.executeSql(
+                ( c, s ) -> s.executeUpdate( "CREATE TABLE Person(ID INTEGER NOT NULL, NAME VARCHAR(20), PRIMARY KEY (ID))" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (1, 'Name1')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (2, 'Name2')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (3, 'Name3')" ),
+                ( c, s ) -> s.executeUpdate( "INSERT INTO Person VALUES (4, 'Name4')" ),
+                ( c, s ) -> TestHelper.checkResultSet( s.executeQuery( "SELECT test FROM (SELECT id AS test FROM Person where name like 'Name%')" ), data, true ),
                 ( c, s ) -> s.executeUpdate( "DROP TABLE Person" ),
                 ( c, s ) -> c.commit()
         );

@@ -115,7 +115,6 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     }
 
 
-
     public String toString() {
         return "JdbcTable {" + namespaceName + "." + name + "}";
     }
@@ -163,7 +162,6 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     }
 
 
-
     public SqlNodeList getNodeList() {
         List<SqlNode> pcnl = Expressions.list();
         int i = 0;
@@ -180,6 +178,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+        jdbcSchema.getConvention().register( context.getCluster().getPlanner() );
         return new JdbcScan( context.getCluster(), this, jdbcSchema.getConvention() );
     }
 

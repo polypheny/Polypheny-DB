@@ -38,6 +38,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -99,6 +101,7 @@ public class AlgRoot {
     public final Kind kind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final AlgCollation collation;
+    public final AlgInformation info;
 
 
     /**
@@ -114,16 +117,22 @@ public class AlgRoot {
         this.kind = kind;
         this.fields = ImmutableList.copyOf( fields );
         this.collation = Objects.requireNonNull( collation );
+        this.info = buildTreeInfo();
     }
 
 
-    public AlgRoot tryExpandView() {
-        return new AlgRoot( alg.tryParentExpandView( alg ), validatedRowType, kind, fields, collation );
+    private AlgInformation buildTreeInfo() {
+        return new AlgInformation( alg.containsView() );
+    }
+
+
+    public AlgRoot unfoldView() {
+        return new AlgRoot( alg.unfoldView( null, -1, alg.getCluster() ), validatedRowType, kind, fields, collation );
     }
 
 
     /**
-     * Creates a simple RelRoot.
+     * Creates a simple AlgRoot.
      */
     public static AlgRoot of( AlgNode alg, Kind kind ) {
         return of( alg, alg.getRowType(), kind );
@@ -232,6 +241,15 @@ public class AlgRoot {
 
     public ModelTrait getModel() {
         return alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    public static class AlgInformation {
+
+        public boolean containsView;
+
     }
 
 }

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
@@ -70,12 +71,22 @@ public class LogicalRelViewScan extends RelScan<CatalogEntity> {
 
 
     @Override
-    public boolean hasView() {
+    public boolean containsView() {
         return true;
     }
 
 
-    public AlgNode expandViewNode() {
+    @Override
+    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
+        AlgNode unfolded = unfoldView( cluster );
+        if ( parent != null ) {
+            parent.replaceInput( index, unfolded );
+        }
+        return unfolded;
+    }
+
+
+    public AlgNode unfoldView( AlgOptCluster cluster ) {
         RexBuilder rexBuilder = this.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
         final AlgDataType rowType = this.getRowType();
@@ -83,6 +94,8 @@ public class LogicalRelViewScan extends RelScan<CatalogEntity> {
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
+
+        algNode.replaceCluster( cluster );
 
         return LogicalProject.create( algNode, exprs, this.getRowType().getFieldNames() );
     }

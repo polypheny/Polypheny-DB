@@ -260,8 +260,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         //
         // Check for view
-        if ( logicalRoot.alg.hasView() ) {
-            logicalRoot = logicalRoot.tryExpandView();
+        if ( logicalRoot.info.containsView ) {
+            logicalRoot = logicalRoot.unfoldView();
         }
 
         // Analyze step
@@ -286,7 +286,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Expand Views" );
         }
 
-        // Check if the relRoot includes Views or Materialized Views and replaces what necessary
+        // Check if the algRoot includes Views or Materialized Views and replaces what necessary
         // View: replace LogicalViewScan with underlying information
         // Materialized View: add order by if Materialized View includes Order by
         ViewVisitor viewVisitor = new ViewVisitor( false );
@@ -436,7 +436,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
                 AlgRoot parameterizedRoot = parameterizedRootList.get( i );
-                PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
+                PreparedResult<?> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
                 if ( preparedResult != null ) {
                     PolyImplementation<T> result = createPolyImplementation(

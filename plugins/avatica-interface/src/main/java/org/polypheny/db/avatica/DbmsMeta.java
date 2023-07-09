@@ -90,8 +90,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn.PrimitiveCatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
@@ -230,7 +230,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class clazz, String... names ) {
+    private <E> MetaResultSet createMetaResultSet( final ConnectionHandle ch, final StatementHandle statementHandle, Enumerable<E> enumerable, Class<?> clazz, String... names ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
         final List<Field> fields = new ArrayList<>();
         //final List<String> fieldNames = new ArrayList<>();
@@ -748,16 +748,16 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
+            List<LogicalIndexColumn> logicalIndexColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalIndex> logicalIndexInfos = catalog.getSnapshot().rel().getIndexes( catalogTable.id, unique );
-                logicalIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
+                logicalIndexInfos.forEach( info -> logicalIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
                     statementHandle,
-                    toEnumerable( catalogIndexColumns ),
+                    toEnumerable( logicalIndexColumns ),
                     PrimitiveCatalogIndexColumn.class,
                     // According to JDBC standard:
                     "TABLE_CAT",    // The name of the database in which the specified table resides.
