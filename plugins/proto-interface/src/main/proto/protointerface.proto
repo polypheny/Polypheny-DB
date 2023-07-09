@@ -34,12 +34,12 @@ service ProtoInterface {
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
 
-  // Parameterized statements
-  rpc ExecuteParameterizedStatement(ParameterizedStatement) returns (stream StatementStatus) {}
 
   // Prepared Statements
-  rpc PrepareStatement(PreparedStatement) returns (PreparedStatementSignature) {}
-  rpc ExecutePreparedStatement(ParameterSet) returns (StatementResult){}
+  rpc PrepareIndexedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecuteIndexedStatement(ParameterList) returns (StatementResult){}
+  rpc PrepareNamedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
+  rpc ExecuteNamedStatement(ParameterSet) returns (StatementResult){}
 
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
@@ -141,7 +141,7 @@ message ParameterMeta {
   int32 precision = 1;
   int32 scale = 2;
   string type_name = 3;
-  string parameter_name = 4;
+  optional string parameter_name = 4;
   string name = 5;
 }
 
@@ -149,6 +149,11 @@ message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
   bool expects_result = 3;
+}
+
+message ParameterList {
+  int32 statementId = 1;
+  repeated ProtoValue values = 2;
 }
 
 message ParameterSet {

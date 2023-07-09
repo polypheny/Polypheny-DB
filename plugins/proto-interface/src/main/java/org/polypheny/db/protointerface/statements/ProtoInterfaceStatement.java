@@ -53,7 +53,8 @@ public abstract class ProtoInterfaceStatement {
     protected final ProtoInterfaceClient protoInterfaceClient;
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage queryLanguage;
-    protected final String query;
+    protected String query;
+    boolean allowOverwrite;
     protected PolyImplementation<PolyValue> currentImplementation;
     protected Iterator<PolyValue> resultIterator;
 
@@ -73,6 +74,15 @@ public abstract class ProtoInterfaceStatement {
         this.queryLanguage = queryLanguage;
         this.query = query;
         this.executionStopWatch = new StopWatch();
+        this.allowOverwrite = true;
+    }
+
+
+    protected void overwriteQuery( String query ) {
+        if ( !allowOverwrite ) {
+            throw new ProtoInterfaceServiceException( "Query overwrite not permitted after execution of statement" );
+        }
+        this.query = query;
     }
 
 
@@ -80,6 +90,7 @@ public abstract class ProtoInterfaceStatement {
 
 
     protected StatementResult execute( Statement statement ) throws Exception {
+        this.allowOverwrite = false;
         Processor queryProcessor = statement.getTransaction().getProcessor( queryLanguage );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
