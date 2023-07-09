@@ -16,349 +16,567 @@
 
 package org.polypheny.db.protointerface;
 
-import org.polypheny.db.PolyphenyDb;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.CatalogObject.Visibility;
-import org.polypheny.db.catalog.entity.logical.*;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.proto.*;
-import org.polypheny.db.type.PolyType;
-
+import java.io.Serializable;
 import java.sql.DatabaseMetaData;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.ColumnsResponse;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.DatabasesResponse;
+import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
+import org.polypheny.db.protointerface.proto.ForeignKey;
+import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
+import org.polypheny.db.protointerface.proto.Index;
+import org.polypheny.db.protointerface.proto.IndexesResponse;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.NamespacesResponse;
+import org.polypheny.db.protointerface.proto.PrimaryKey;
+import org.polypheny.db.protointerface.proto.PrimaryKeysResponse;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
+import org.polypheny.db.protointerface.proto.TableTypesResponse;
+import org.polypheny.db.protointerface.proto.TablesResponse;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.db.protointerface.proto.TypesResponse;
+import org.polypheny.db.type.PolyType;
 
 public class DbMetaRetriever {
 
-    // Namespace search by name and type
-    public static NamespacesResponse searchNamespaces(String namespacePattern, String namespaceType) {
-        List<LogicalNamespace> namespaces = getLogicalNamespaces(namespacePattern, namespaceType);
-        NamespacesResponse.Builder responseBuilder = NamespacesResponse.newBuilder();
-        namespaces.forEach(namespace -> responseBuilder.addNamespaces(getNamespaceMeta(namespace)));
+
+    private static Pattern getPatternOrNull( String pattern ) {
+        return pattern == null ? null : new Pattern( pattern );
+    }
+
+
+    private static List<LogicalNamespace> getLogicalNamespaces( String namespacePattern ) {
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
+        return Catalog.getInstance().getSnapshot().getNamespaces( catalogNamespacePattern );
+    }
+
+
+    @NotNull
+    private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern ) {
+        Pattern catalogNamespacePattern = getPatternOrNull( namespacePattern );
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        return Catalog.getInstance().getSnapshot().rel().getTables( catalogNamespacePattern, catalogTablePattern );
+    }
+
+
+    @NotNull
+    private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
+        List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
+    }
+
+
+    private static List<LogicalColumn> getLogicalColumns( String tablePattern, String columnPattern ) {
+        Pattern catalogTablePattern = getPatternOrNull( tablePattern );
+        Pattern catalogColumnPattern = getPatternOrNull( columnPattern );
+        return Catalog.getInstance().getSnapshot().rel().getColumns( catalogTablePattern, catalogColumnPattern );
+    }
+
+
+    private static List<LogicalColumn> getLogicalColumns( String namespacePattern, String tablePattern, String columnPattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .flatMap( t -> getLogicalColumns( tablePattern, columnPattern ).stream() )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static LogicalPrimaryKey getLogicalPrimaryKey( LogicalTable logicalTable ) {
+        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey( logicalTable.primaryKey ).orElseThrow();
+    }
+
+
+    private static List<LogicalForeignKey> getLogicalForeignKeysOf( long entityId ) {
+        return Catalog.getInstance().getSnapshot().rel().getForeignKeys( entityId );
+    }
+
+
+    private static List<LogicalForeignKey> getExportedKeysOf( long entityId ) {
+        return Catalog.getInstance().getSnapshot().rel().getExportedKeys( entityId );
+    }
+
+
+    private static List<LogicalIndex> getLogicalIndexesOf( long entityId, boolean unique ) {
+        return Catalog.getInstance().getSnapshot().rel().getIndexes( entityId, unique );
+    }
+
+
+    private static List<CatalogPrimaryKeyColumn> getPrimaryKeyColumns( String namespacePattern, String tablePattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .filter( e -> e.primaryKey != null )
+                .map( DbMetaRetriever::getLogicalPrimaryKey )
+                .map( LogicalPrimaryKey::getCatalogPrimaryKeyColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static List<CatalogForeignKeyColumn> getForeignKeyColumns( String namespacePattern, String tablePattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .map( CatalogEntity::getId )
+                .map( DbMetaRetriever::getLogicalForeignKeysOf )
+                .flatMap( Collection::stream )
+                .map( LogicalForeignKey::getCatalogForeignKeyColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    @SuppressWarnings("Duplicates")
+    private static List<CatalogForeignKeyColumn> getExportedKeyColumns( String namespacePattern, String tablePattern ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .map( CatalogEntity::getId )
+                .map( DbMetaRetriever::getExportedKeysOf )
+                .flatMap( Collection::stream )
+                .map( LogicalForeignKey::getCatalogForeignKeyColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    private static List<CatalogIndexColumn> getCatalogIndexColumns( String namespacePattern, String tablePattern, boolean unique ) {
+        return getLogicalTables( namespacePattern, tablePattern ).stream()
+                .map( CatalogEntity::getId )
+                .map( i -> getLogicalIndexesOf( i, unique ) )
+                .flatMap( Collection::stream )
+                .map( LogicalIndex::getCatalogIndexColumns )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
+
+    public static synchronized TablesResponse getTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
+        final List<LogicalTable> tables = getLogicalTables( namespacePattern, tablePattern, tableTypes );
+        TablesResponse.Builder responseBuilder = TablesResponse.newBuilder();
+        tables.forEach( logicalTable -> responseBuilder.addTables( getTableMeta( logicalTable ) ) );
         return responseBuilder.build();
     }
 
 
-    private static List<LogicalNamespace> getLogicalNamespaces(String namespacePattern, String namespaceType) {
-        Pattern catalogNamespacePattern = getPatternOrNull(namespacePattern);
-        List<LogicalNamespace> logicalNamespaces = Catalog.getInstance().getSnapshot().getNamespaces(catalogNamespacePattern);
-        if (namespaceType == null) {
-            return logicalNamespaces;
-        }
-        NamespaceType catalogNamespaceType = NamespaceType.valueOf(namespaceType);
-        return logicalNamespaces.stream().filter(n -> n.getNamespaceType() == catalogNamespaceType).collect(Collectors.toList());
-    }
-
-    private static Namespace getNamespaceMeta(LogicalNamespace logicalNamespace) {
-        Namespace.Builder namespaceBuilder = Namespace.newBuilder();
-        namespaceBuilder.setNamespaceName(logicalNamespace.getName());
-        namespaceBuilder.setDatabaseName(logicalNamespace.getDatabaseName());
-        namespaceBuilder.setOwnerName(logicalNamespace.getOwnerName());
-        Optional.ofNullable(logicalNamespace.getNamespaceType()).ifPresent(p -> namespaceBuilder.setNamespaceType(p.name()));
-        return namespaceBuilder.build();
+    private static Table getTableMeta( LogicalTable logicalTable ) {
+        Serializable[] parameters = logicalTable.getParameterArray();
+        return Table.newBuilder()
+                .setSourceDatabaseName( parameters[0].toString() )
+                .setNamespaceName( parameters[1].toString() )
+                .setTableName( parameters[2].toString() )
+                .setTableType( parameters[3].toString() )
+                .setOwnerName( parameters[10].toString() )
+                .build();
     }
 
 
-    private static Pattern getPatternOrNull(String pattern) {
-        return pattern == null ? null : new Pattern(pattern);
-    }
-
-    public static Namespace getNamespace(String namespaceName) {
-        return getNamespaceMeta(Catalog.getInstance().getSnapshot().getNamespace(namespaceName));
-    }
-
-    // Entity search by namespace
-    public static EntitiesResponse searchEntities(String namespaceName, String entityPattern) {
-        EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace(namespaceName);
-        switch (namespace.getNamespaceType()) {
-            case RELATIONAL:
-                responseBuilder.addAllEntities(getRelationalEntities(namespace.getId(), entityPattern));
-                break;
-            case GRAPH:
-                responseBuilder.addAllEntities(getGraphEntities(namespace.getId(), entityPattern));
-                break;
-            case DOCUMENT:
-                responseBuilder.addAllEntities(getDocumentEntities(namespace.getId(), entityPattern));
-                break;
-        }
+    public static synchronized ColumnsResponse getColumns( String namespacePattern, String tablePattern, String columnPattern ) {
+        final List<LogicalColumn> columns = getLogicalColumns( namespacePattern, tablePattern, columnPattern );
+        ColumnsResponse.Builder responseBuilder = ColumnsResponse.newBuilder();
+        columns.forEach( logicalColumn -> responseBuilder.addColumns( getColumnMeta( logicalColumn ) ) );
         return responseBuilder.build();
     }
 
-    // Relational entities
-    private static List<Entity> getRelationalEntities(long namespaceId, String entityPattern) {
-        Pattern catalogEntityPattern = getPatternOrNull(entityPattern);
-        final List<LogicalTable> tables = Catalog.getInstance().getSnapshot().rel().getTables(namespaceId, catalogEntityPattern);
-        return tables.stream().map(logicalTable -> buildEntityFromTable(getTableMeta(logicalTable))).collect(Collectors.toList());
-    }
 
-    private static Entity buildEntityFromTable(Table table) {
-        return Entity.newBuilder()
-                .setTable(table)
-                .build();
-    }
-
-    private static Table getTableMeta(LogicalTable logicalTable) {
-        Table.Builder tableBuilder = Table.newBuilder();
-        tableBuilder.setSourceDatabaseName(logicalTable.getDatabaseName());
-        tableBuilder.setNamespaceName(logicalTable.getNamespaceName());
-        tableBuilder.setTableName(logicalTable.getName());
-        tableBuilder.setTableType(logicalTable.getEntityType().name());
-        tableBuilder.setOwnerName(logicalTable.getOwnerName());
-        tableBuilder.addAllColumns(getColumns(logicalTable));
-        if (hasPrimaryKey(logicalTable)) {
-            tableBuilder.setPrimaryKey(getPrimaryKeyMeta(logicalTable));
-        }
-        tableBuilder.addAllForeignKeys(getForeignKeys(logicalTable));
-        tableBuilder.addAllExportedKeys(getExportedKeys(logicalTable));
-        tableBuilder.addAllIndexes(getIndexes(logicalTable, true));
-        return tableBuilder.build();
-    }
-
-    private static List<Column> getColumns(LogicalTable logicalTable) {
-        return logicalTable.getColumns().stream().map(DbMetaRetriever::getColumnMeta).collect(Collectors.toList());
-    }
-
-    private static boolean hasPrimaryKey(LogicalTable logicalTable) {
-        if (logicalTable.primaryKey == null) {
-            return false;
-        }
-        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey(logicalTable.primaryKey).isPresent();
-    }
-
-
-    private static PrimaryKey getPrimaryKeyMeta(LogicalTable logicalTable) {
-        LogicalPrimaryKey logicalPrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey(logicalTable.primaryKey).orElseThrow();
-        return PrimaryKey.newBuilder()
-                .setDatabaseName(logicalPrimaryKey.getDatabaseName())
-                .setNamespaceName(logicalPrimaryKey.getSchemaName())
-                .setTableName(logicalPrimaryKey.getTableName())
-                .addAllColumns(getColumns(logicalPrimaryKey))
-                .build();
-    }
-
-    private static List<Column> getColumns(LogicalKey logicalKey) {
-        return logicalKey.getColumns().stream().map(DbMetaRetriever::getColumnMeta).collect(Collectors.toList());
-    }
-
-    private static Column getColumnMeta(LogicalColumn logicalColumn) {
+    private static Column getColumnMeta( LogicalColumn logicalColumn ) {
+        Serializable[] parameters = logicalColumn.getParameterArray();
         Column.Builder columnBuilder = Column.newBuilder();
-        columnBuilder.setDatabaseName(logicalColumn.getDatabaseName());
-        columnBuilder.setNamespaceName(logicalColumn.getNamespaceName());
-        columnBuilder.setTableName(logicalColumn.getTableName());
-        columnBuilder.setColumnName(logicalColumn.getName());
-        columnBuilder.setTypeName(logicalColumn.getType().getTypeName());
-        Optional.ofNullable(logicalColumn.getLength()).ifPresent(columnBuilder::setTypeLength);
-        Optional.ofNullable(logicalColumn.getScale()).ifPresent(columnBuilder::setTypeScale);
-        columnBuilder.setIsNullable(logicalColumn.isNullable());
-        Optional.ofNullable(logicalColumn.getDefaultValue()).ifPresent(p -> columnBuilder.setDefaultValueAsString(p.getValue()));
-        columnBuilder.setColumnIndex(logicalColumn.getPosition());
-        Optional.ofNullable(CatalogObject.getEnumNameOrNull(logicalColumn.getCollation())).ifPresent(columnBuilder::setCollation);
-        columnBuilder.setIsHidden( logicalColumn.getVisibility() == Visibility.INTERNAL );
-        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: reserved for future use
+        columnBuilder.setDatabaseName( parameters[0].toString() );
+        columnBuilder.setNamespaceName( parameters[1].toString() );
+        columnBuilder.setTableName( parameters[2].toString() );
+        columnBuilder.setColumnName( parameters[3].toString() );
+        columnBuilder.setTypeName( parameters[5].toString() );
+        columnBuilder.setTypeLength( Integer.parseInt( parameters[6].toString() ) );
+        columnBuilder.setTypeScale( Integer.parseInt( parameters[8].toString() ) );
+        columnBuilder.setIsNullable( parameters[10].toString().equals( "1" ) );
+        Optional.of( parameters[12] ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.toString() ) );
+        columnBuilder.setColumnIndex( Integer.parseInt( parameters[16].toString() ) );
+        Optional.of( parameters[18] ).ifPresent( p -> columnBuilder.setCollation( p.toString() ) );
         return columnBuilder.build();
     }
 
 
-    private static List<ForeignKey> getForeignKeys(LogicalTable logicalTable) {
-        return Catalog.getInstance().getSnapshot().rel().getForeignKeys(logicalTable.getId())
-                .stream().map(DbMetaRetriever::getForeignKeyMeta).collect(Collectors.toList());
-    }
-
-    private static ForeignKey getForeignKeyMeta(LogicalForeignKey logicalForeignKey) {
-        ForeignKey.Builder foreignKeyBuilder = ForeignKey.newBuilder();
-        foreignKeyBuilder.setReferencedNamespaceName(logicalForeignKey.getReferencedKeySchemaName());
-        foreignKeyBuilder.setReferencedDatabaseName(logicalForeignKey.getReferencedKeyDatabaseName());
-        foreignKeyBuilder.setReferencedTableName(logicalForeignKey.getReferencedKeyTableName());
-        foreignKeyBuilder.setUpdateRule(logicalForeignKey.getUpdateRule().getId());
-        foreignKeyBuilder.setDeleteRule(logicalForeignKey.getDeleteRule().getId());
-        Optional.ofNullable(logicalForeignKey.getName()).ifPresent(foreignKeyBuilder::setKeyName);
-        foreignKeyBuilder.addAllReferencedColumns(getReferencedColumns(logicalForeignKey));
-        foreignKeyBuilder.addAllForeignColumns(getColumns(logicalForeignKey));
-        return foreignKeyBuilder.build();
-    }
-
-    private static List<Column> getReferencedColumns(LogicalForeignKey logicalForeignKey) {
-        return logicalForeignKey.getReferencedColumns().stream().map(DbMetaRetriever::getColumnMeta).collect(Collectors.toList());
-    }
-
-    private static List<ForeignKey> getExportedKeys(LogicalTable logicalTable) {
-        return Catalog.getInstance().getSnapshot().rel().getExportedKeys(logicalTable.getId())
-                .stream().map(DbMetaRetriever::getForeignKeyMeta).collect(Collectors.toList());
-    }
-
-    private static List<Index> getIndexes(LogicalTable logicalTable, boolean unique) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes(logicalTable.getId(), unique)
-                .stream().map(DbMetaRetriever::getIndexMeta).collect(Collectors.toList());
+    public static synchronized NamespacesResponse getNamespaces( String namespacePattern ) {
+        List<LogicalNamespace> namespaces = getLogicalNamespaces( namespacePattern );
+        NamespacesResponse.Builder responseBuilder = NamespacesResponse.newBuilder();
+        namespaces.forEach( namespace -> responseBuilder.addNamespaces( getNamespaceMeta( namespace ) ) );
+        return responseBuilder.build();
     }
 
 
-    private static Index getIndexMeta(LogicalIndex logicalIndex) {
-        Index.Builder importedKeyBuilder = Index.newBuilder();
-        importedKeyBuilder.setDatabaseName(logicalIndex.getDatabaseName());
-        importedKeyBuilder.setNamespaceName(logicalIndex.getKey().getSchemaName());
-        importedKeyBuilder.setTableName(logicalIndex.getKey().getTableName());
-        importedKeyBuilder.setUnique(logicalIndex.isUnique());
-        importedKeyBuilder.setIndexName(logicalIndex.getName());
-        importedKeyBuilder.addAllColumns(getColumns(logicalIndex.getKey()));
-        importedKeyBuilder.setLocation(logicalIndex.getLocation());
-        importedKeyBuilder.setIndexType(logicalIndex.getType().getId());
-        return importedKeyBuilder.build();
-    }
-
-
-    public static List<Entity> getDocumentEntities(long namespaceId, String entityPattern) {
-        return null;
-    }
-
-    public static List<Entity> getGraphEntities(long namespaceId, String entityPattern) {
-        return null;
-    }
-
-
-    private static List<LogicalIndex> getLogicalIndexesOf(long entityId, boolean unique) {
-        return Catalog.getInstance().getSnapshot().rel().getIndexes(entityId, unique);
+    private static Namespace getNamespaceMeta( LogicalNamespace logicalNamespace ) {
+        Serializable[] parameters = logicalNamespace.getParameterArray();
+        Namespace.Builder namespaceBuilder = Namespace.newBuilder();
+        namespaceBuilder.setNamespaceName( parameters[0].toString() );
+        namespaceBuilder.setDatabaseName( parameters[1].toString() );
+        namespaceBuilder.setOwnerName( parameters[2].toString() );
+        Optional.ofNullable( parameters[3] ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.toString() ) );
+        return namespaceBuilder.build();
     }
 
 
     public static synchronized DatabasesResponse getDatabases() {
         Database database = Database.newBuilder()
-                .setDatabaseName(Catalog.DATABASE_NAME)
-                .setOwnerName("system")
-                .setDefaultNamespaceName(Catalog.defaultNamespaceName)
+                .setDatabaseName( Catalog.DATABASE_NAME )
+                .setOwnerName( "system" )
+                .setDefaultNamespaceName( Catalog.defaultNamespaceName )
                 .build();
         return DatabasesResponse.newBuilder()
-                .addDatabases(database)
+                .addDatabases( database )
                 .build();
     }
 
 
     public static synchronized TableTypesResponse getTableTypes() {
-        List<String> tableTypes = Arrays.stream(EntityType.values()).map(EntityType::name).collect(Collectors.toList());
+        List<String> tableTypes = Arrays.stream( EntityType.values() ).map( EntityType::name ).collect( Collectors.toList() );
         TableTypesResponse.Builder responseBuilder = TableTypesResponse.newBuilder();
-        tableTypes.forEach(tableType -> responseBuilder.addTableTypes(getTableTypeMeta(tableType)));
+        tableTypes.forEach( tableType -> responseBuilder.addTableTypes( getTableTypeMeta( tableType ) ) );
         return responseBuilder.build();
     }
 
 
-    private static TableType getTableTypeMeta(String tableType) {
-        return TableType.newBuilder().setTableType(tableType).build();
+    private static TableType getTableTypeMeta( String tableType ) {
+        return TableType.newBuilder().setTableType( tableType ).build();
+    }
+
+
+    public static synchronized PrimaryKeysResponse getPrimaryKeys( String namespacePattern, String tablePattern ) {
+        List<CatalogPrimaryKeyColumn> primaryKeyColumns = getPrimaryKeyColumns( namespacePattern, tablePattern );
+        PrimaryKeysResponse.Builder responseBuilder = PrimaryKeysResponse.newBuilder();
+        primaryKeyColumns.forEach( primaryKeyColumn -> responseBuilder.addPrimaryKeys( getPrimaryKeyColumnMeta( primaryKeyColumn ) ) );
+        return responseBuilder.build();
+    }
+
+
+    private static PrimaryKey getPrimaryKeyColumnMeta( CatalogPrimaryKeyColumn catalogPrimaryKeyColumn ) {
+        Serializable[] parameters = catalogPrimaryKeyColumn.getParameterArray();
+        PrimaryKey.Builder primaryKeyBuilder = PrimaryKey.newBuilder();
+        Optional.ofNullable( parameters[0] ).ifPresent( p -> primaryKeyBuilder.setDatabaseName( p.toString() ) );
+        Optional.ofNullable( parameters[1] ).ifPresent( p -> primaryKeyBuilder.setNamespaceName( p.toString() ) );
+        primaryKeyBuilder.setTableName( parameters[2].toString() );
+        primaryKeyBuilder.setColumnName( parameters[3].toString() );
+        primaryKeyBuilder.setSequenceIndex( Integer.parseInt( parameters[4].toString() ) );
+        return primaryKeyBuilder.build();
+    }
+
+
+    public static synchronized ImportedKeysResponse getImportedKeys( String namespacePattern, String tablePattern ) {
+        List<CatalogForeignKeyColumn> foreignKeyColumns = getForeignKeyColumns( namespacePattern, tablePattern );
+        ImportedKeysResponse.Builder responseBuilder = ImportedKeysResponse.newBuilder();
+        foreignKeyColumns.forEach( foreignKeyColumn -> responseBuilder.addImportedKeys( getForeignKeyColumnMeta( foreignKeyColumn ) ) );
+        return responseBuilder.build();
+    }
+
+
+    public static synchronized ExportedKeysResponse getExportedKeys( String schemaPattern, String tablePattern ) {
+        List<CatalogForeignKeyColumn> exportedKeyColumns = getExportedKeyColumns( schemaPattern, tablePattern );
+        ExportedKeysResponse.Builder responseBuilder = ExportedKeysResponse.newBuilder();
+        exportedKeyColumns.forEach( foreignKeyColumn -> responseBuilder.addExportedKeys( getForeignKeyColumnMeta( foreignKeyColumn ) ) );
+        return responseBuilder.build();
+    }
+
+
+    private static ForeignKey getForeignKeyColumnMeta( CatalogForeignKeyColumn catalogForeignKeyColumn ) {
+        Serializable[] parameters = catalogForeignKeyColumn.getParameterArray();
+        ForeignKey.Builder importedKeyBuilder = ForeignKey.newBuilder();
+        Optional.ofNullable( parameters[0] ).ifPresent( p -> importedKeyBuilder.setReferencedDatabaseName( p.toString() ) );
+        Optional.ofNullable( parameters[1] ).ifPresent( p -> importedKeyBuilder.setReferencedNamespaceName( p.toString() ) );
+        importedKeyBuilder.setReferencedTableName( parameters[2].toString() );
+        importedKeyBuilder.setReferencedColumnName( parameters[3].toString() );
+        Optional.ofNullable( parameters[4] ).ifPresent( p -> importedKeyBuilder.setForeignDatabaseName( p.toString() ) );
+        Optional.ofNullable( parameters[5] ).ifPresent( p -> importedKeyBuilder.setForeignNamespaceName( p.toString() ) );
+        importedKeyBuilder.setForeignTableName( parameters[6].toString() );
+        importedKeyBuilder.setForeignColumnName( parameters[7].toString() );
+        importedKeyBuilder.setSequenceIndex( Integer.parseInt( parameters[8].toString() ) );
+        importedKeyBuilder.setUpdateRule( Integer.parseInt( parameters[9].toString() ) );
+        importedKeyBuilder.setDeleteRule( Integer.parseInt( parameters[10].toString() ) );
+        importedKeyBuilder.setKeyName( parameters[11].toString() );
+        return importedKeyBuilder.build();
     }
 
 
     public static synchronized TypesResponse getTypes() {
         TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
-        Arrays.stream(PolyType.values()).forEach(polyType -> responseBuilder.addTypes(getTypeMeta(polyType)));
+        Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
         return responseBuilder.build();
     }
 
 
-    private static Type getTypeMeta(PolyType polyType) {
+    private static Type getTypeMeta( PolyType polyType ) {
         AlgDataTypeSystem typeSystem = AlgDataTypeSystem.DEFAULT;
         Type.Builder typeBuilder = Type.newBuilder();
-        typeBuilder.setTypeName(polyType.getName());
-        typeBuilder.setPrecision(typeSystem.getMaxPrecision(polyType));
-        Optional.ofNullable(typeSystem.getLiteral(polyType, true)).ifPresent(typeBuilder::setLiteralPrefix);
-        Optional.ofNullable(typeSystem.getLiteral(polyType, false)).ifPresent(typeBuilder::setLiteralSuffix);
-        typeBuilder.setIsCaseSensitive(typeSystem.isCaseSensitive(polyType));
-        typeBuilder.setIsSearchable(DatabaseMetaData.typeSearchable);
-        typeBuilder.setIsAutoIncrement(typeSystem.isAutoincrement(polyType));
-        typeBuilder.setMinScale(polyType.getMinScale());
-        typeBuilder.setMaxScale(typeSystem.getMaxScale(polyType) );
-        typeBuilder.setRadix(typeSystem.getNumTypeRadix(polyType));
+        typeBuilder.setTypeName( polyType.getName() );
+        typeBuilder.setPrecision( typeSystem.getMaxPrecision( polyType ) );
+        typeBuilder.setLiteralPrefix( typeSystem.getLiteral( polyType, true ) );
+        typeBuilder.setLiteralSuffix( typeSystem.getLiteral( polyType, false ) );
+        typeBuilder.setIsCaseSensitive( typeSystem.isCaseSensitive( polyType ) );
+        typeBuilder.setIsSearchable( DatabaseMetaData.typeSearchable );
+        typeBuilder.setIsAutoIncrement( typeSystem.isAutoincrement( polyType ) );
+        typeBuilder.setMinScale( polyType.getMinScale() );
+        typeBuilder.setMaxScale( typeSystem.getMaxScale( polyType ) );
+        typeBuilder.setRadix( typeSystem.getNumTypeRadix( polyType ) );
         return typeBuilder.build();
     }
 
 
-    public static String getSqlKeywords() {
-        // TODO: get data after functionality is implemented
-        return "";
+    public static synchronized IndexesResponse getIndexes( String namespacePattern, String tablePattern, boolean unique ) {
+        List<CatalogIndexColumn> catalogIndexColumns = getCatalogIndexColumns( namespacePattern, tablePattern, unique );
+        IndexesResponse.Builder responseBuilder = IndexesResponse.newBuilder();
+        catalogIndexColumns.forEach( indexColumn -> responseBuilder.addIndexes( getIndexColumnMeta( indexColumn ) ) );
+        return responseBuilder.build();
     }
 
-    public static ProceduresResponse getProcedures(String languageName, String procedureNamePattern) {
-        // TODO: get data after functionality is implemented
-        return ProceduresResponse.newBuilder().build();
+
+    private static Index getIndexColumnMeta( CatalogIndexColumn catalogIndexColumn ) {
+        Serializable[] parameters = catalogIndexColumn.getParameterArray();
+        Index.Builder importedKeyBuilder = Index.newBuilder();
+        importedKeyBuilder.setDatabaseName( parameters[0].toString() );
+        importedKeyBuilder.setNamespaceName( parameters[1].toString() );
+        importedKeyBuilder.setTableName( parameters[2].toString() );
+        importedKeyBuilder.setUnique( !Boolean.parseBoolean( parameters[3].toString() ) );
+        importedKeyBuilder.setIndexName( parameters[5].toString() );
+        importedKeyBuilder.setPositionIndex( Integer.parseInt( parameters[7].toString() ) );
+        importedKeyBuilder.setColumnName( parameters[8].toString() );
+        importedKeyBuilder.setLocation( parameters[13].toString() );
+        importedKeyBuilder.setIndexType( Integer.parseInt( parameters[14].toString() ) );
+        return importedKeyBuilder.build();
     }
 
-    public static ClientInfoPropertyMetaResponse getClientInfoProperties() {
-        List<ClientInfoPropertyMeta> propertyInfoMetas = PIClientInfoProperties.DEFAULTS.stream()
-                .map(DbMetaRetriever::getClientInfoPropertyMeta).collect(Collectors.toList());
-        return ClientInfoPropertyMetaResponse.newBuilder()
-                .addAllClientInfoPropertyMetas(propertyInfoMetas)
-                .build();
-    }
+/*
 
-    private static ClientInfoPropertyMeta getClientInfoPropertyMeta(PIClientInfoProperties.ClientInfoPropertiesDefault clientInfoPropertiesDefault) {
-        return ClientInfoPropertyMeta.newBuilder()
-                .setKey(clientInfoPropertiesDefault.key)
-                .setDefaultValue(clientInfoPropertiesDefault.default_value)
-                .setMaxlength(clientInfoPropertiesDefault.maxlength)
-                .setDescription(clientInfoPropertiesDefault.description)
-                .build();
-    }
 
-    public static FunctionsResponse getFunctions(QueryLanguage language, FunctionCategory functionCategory) {
-        List<Function> functions = OperatorRegistry.getMatchingOperators(language).values().stream()
-                .filter(o -> o instanceof org.polypheny.db.nodes.Function)
-                .map(org.polypheny.db.nodes.Function.class::cast)
-                .filter(f -> f.getFunctionCategory() == functionCategory || functionCategory == null)
-                .map(DbMetaRetriever::getFunctionMeta)
-                .collect(Collectors.toList());
-        return FunctionsResponse.newBuilder().addAllFunctions(functions).build();
-    }
-
-    private static Function getFunctionMeta(org.polypheny.db.nodes.Function function) {
-        Function.Builder functionBuilder = Function.newBuilder();
-        functionBuilder.setName(function.getName());
-        functionBuilder.setSyntax(function.getAllowedSignatures());
-        functionBuilder.setFunctionCategory(function.getFunctionCategory().name());
-        functionBuilder.setIsTableFunction(function.getFunctionCategory().isTableFunction());
-        return functionBuilder.build();
-    }
-
-    public static DbmsVersionResponse getDbmsVersion() {
-        try {
-            String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
-            if ( versionName == null ) {
-                throw new PIServiceException( "Could not retrieve database version info" );
+    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
             }
-            int nextSeparatorIndex = versionName.indexOf( '.' );
-            if ( nextSeparatorIndex <= 0 ) {
-                throw new PIServiceException( "Could not parse database version info" );
-            }
-            int majorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
 
-            versionName = versionName.substring( nextSeparatorIndex + 1 );
-            nextSeparatorIndex = versionName.indexOf( '.' );
-            if ( nextSeparatorIndex <= 0 ) {
-                throw new PIServiceException( "Could not parse database version info" );
-            }
-            int minorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+            final Map<DatabaseProperty, Object> map = new HashMap<>();
+            // TODO
 
-            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                    .setDbmsName( "Polypheny-DB" )
-                    .setVersionName( PolyphenyDb.class.getPackage().getImplementationVersion() )
-                    .setMajorVersion( majorVersion )
-                    .setMinorVersion( minorVersion )
-                    .build();
-            return dbmsVersionResponse;
-        } catch (Exception e) {
-            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                    .setDbmsName("Polypheny-DB")
-                    .setVersionName("DEVELOPMENT VERSION")
-                    .setMajorVersion(-1)
-                    .setMinorVersion(-1)
-                    .build();
-            return dbmsVersionResponse;
+            log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
+            return map;
         }
     }
+
+
+    public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
+            }
+
+            // TODO
+
+            log.error( "[NOT IMPLEMENTED YET] getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+            }
+
+            // TODO
+
+            log.error( "[NOT IMPLEMENTED YET] getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
+            return null;
+        }
+    }
+
+
+    @SuppressWarnings("Duplicates")
+    public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+            }
+
+            // TODO
+
+            log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getClientInfoProperties( ConnectionHandle {} )", ch );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
+            return null;
+        }
+    }
+
+
+    public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        synchronized ( connection ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            }
+
+            log.error( "[NOT IMPLEMENTED YET] getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
+            return null;
+        }
+    }
+    */
 }
