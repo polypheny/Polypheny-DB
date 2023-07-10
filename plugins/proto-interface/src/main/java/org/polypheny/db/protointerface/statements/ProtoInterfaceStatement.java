@@ -16,10 +16,12 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
@@ -42,6 +44,7 @@ import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -129,7 +132,7 @@ public abstract class ProtoInterfaceStatement {
         if ( !protoInterfaceClient.isAutocommit() ) {
             return;
         }
-        protoInterfaceClient.commitCurrentTransaction();
+        commitElseRollback();
     }
 
 
@@ -166,8 +169,7 @@ public abstract class ProtoInterfaceStatement {
                 log.trace( "fetch(long {}, int {} )", offset, fetchSize );
             }
             startOrResumeStopwatch();
-            // TODO TH: clean up this mess
-            List<List<PolyValue>> rows = currentImplementation.getRows( currentImplementation.getStatement(), fetchSize );
+            List<List<PolyValue>> rows = getRows( LimitIterator.of( getOrCreateIterator(), fetchSize ) );
             executionStopWatch.suspend();
             boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
             if ( isDone ) {
@@ -177,6 +179,11 @@ public abstract class ProtoInterfaceStatement {
             List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
             return ProtoUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
         }
+    }
+
+
+    private List<List<PolyValue>> getRows( Iterator sectionIterator ) {
+        return (List<List<PolyValue>>) MetaImpl.collect( currentImplementation.getCursorFactory(), sectionIterator, new ArrayList<>() );
     }
 
 
