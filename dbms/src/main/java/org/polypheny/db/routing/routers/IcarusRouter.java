@@ -57,12 +57,12 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+            log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
 
-        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
+        final Set<List<AllocationColumn>> placements = selectPlacement( table, queryInformation );
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
@@ -73,7 +73,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
@@ -91,7 +91,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id );
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same

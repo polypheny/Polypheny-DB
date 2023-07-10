@@ -1002,6 +1002,16 @@ public class Functions {
     public static PolyBoolean lt( PolyTemporal b0, PolyTemporal b1 ) {
         return lt( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
     }
+
+
+    public static PolyBoolean lt( PolyTemporal b0, PolyNumber b1 ) {
+        return lt( PolyLong.of( b0.getSinceEpoch() ), b1 );
+    }
+
+
+    public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
+        return lt( b0, PolyLong.of( b1.getSinceEpoch() ) );
+    }
     // <=
 
 

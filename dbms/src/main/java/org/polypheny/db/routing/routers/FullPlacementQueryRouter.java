@@ -95,17 +95,17 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+            log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
 
-        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
+        //final Set<List<AllocationColumn>> placements = selectPlacement( table, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
@@ -113,7 +113,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getFromLogical( catalogTable.id );
+        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getFromLogical( table.id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );

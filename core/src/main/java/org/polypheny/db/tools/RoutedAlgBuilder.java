@@ -61,8 +61,10 @@ public class RoutedAlgBuilder extends AlgBuilder {
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
         if ( builder.stackSize() > 0 ) {
-            final AlgNode node = builder.peek().accept( new DeepCopyShuttle() );
-            newBuilder.push( node );
+            for ( int i = 0; i < builder.stackSize(); i++ ) {
+                final AlgNode node = builder.peek( i ).accept( new DeepCopyShuttle() );
+                newBuilder.push( node );
+            }
         }
 
         return newBuilder;

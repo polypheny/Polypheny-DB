@@ -82,6 +82,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationCode;
@@ -981,11 +982,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             for ( Router router : RoutingManager.getInstance().getRouters() ) {
-                List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
-                List<ProposedRoutingPlan> plans = builders.stream()
-                        .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass() ) )
-                        .collect( Collectors.toList() );
-                proposedPlans.addAll( plans );
+                try{
+                    List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
+                    List<ProposedRoutingPlan> plans = builders.stream()
+                            .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass() ) )
+                            .collect( Collectors.toList() );
+                    proposedPlans.addAll( plans );
+                } catch ( Throwable e ){
+                    log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) ); // this should not be necessary but some of the routers fail loudly, which makes this necessary todo dl
+                }
+                
+            }
+            
+            if ( proposedPlans.isEmpty() ){
+                throw new GenericRuntimeException( "No router was able to route the query successfully." );
             }
 
             if ( statement.getTransaction().isAnalyze() ) {

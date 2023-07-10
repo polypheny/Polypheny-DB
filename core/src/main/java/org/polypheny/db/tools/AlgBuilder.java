@@ -374,7 +374,7 @@ public class AlgBuilder {
      */
     public void replaceTop( AlgNode node ) {
         final Frame frame = stack.pop();
-        stack.push( new Frame( node, frame.structured, null ) );
+        stack.push( new Frame( node, toFields( node ), null ) );
     }
 
 
@@ -382,11 +382,17 @@ public class AlgBuilder {
      * Adds an alg node to the top of the stack while preserving the field names and aliases.
      */
     public void replaceTop( AlgNode node, int amount ) {
-        final Frame frame = stack.pop();
-        for ( int i = 0; i < amount - 1; i++ ) {
+        //final Frame frame = stack.pop();
+        for ( int i = 0; i < amount; i++ ) {
             stack.pop();
         }
-        stack.push( new Frame( node, frame.structured, null ) );
+
+        stack.push( new Frame( node, toFields( node ), null ) );
+    }
+
+
+    private static ImmutableList<RelField> toFields( AlgNode node ) {
+        return ImmutableList.copyOf( node.getRowType().getFieldList().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
     }
 
 

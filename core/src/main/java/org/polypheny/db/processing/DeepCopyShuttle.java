@@ -100,8 +100,8 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
         return new LogicalJoin(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
-                this.visit( join.getLeft() ),
-                this.visit( join.getRight() ),
+                super.visit( join.getLeft() ),
+                super.visit( join.getRight() ),
                 join.getCondition(),
                 join.getVariablesSet(),
                 join.getJoinType(),
@@ -144,7 +144,7 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
         return new LogicalAggregate(
                 node.getCluster(),
                 copy( node.getTraitSet() ),
-                visit( aggregate.getInput() ),
+                super.visit( aggregate.getInput() ),
                 aggregate.indicator,
                 aggregate.getGroupSet(),
                 aggregate.groupSets,
@@ -178,8 +178,8 @@ public class DeepCopyShuttle extends AlgShuttleImpl {
         return new LogicalConditionalExecute(
                 lce.getCluster(),
                 copy( lce.getTraitSet() ),
-                visit( lce.getLeft() ),
-                visit( lce.getRight() ),
+                super.visit( lce.getLeft() ),
+                super.visit( lce.getRight() ),
                 lce.getCondition(),
                 lce.getExceptionClass(),
                 lce.getExceptionMessage() );

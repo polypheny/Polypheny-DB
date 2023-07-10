@@ -248,7 +248,7 @@ public abstract class BaseRouter implements Router {
                     allocationEntities.get( 0 ) );
             // Final project
             //buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
-
+            return builder.build();
         }
 
 
