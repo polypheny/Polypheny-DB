@@ -202,10 +202,12 @@ public class PolyValueSerializer {
             case FILE:
                 // used by PolyFile
                 if ( polyValue instanceof PolyFile ) {
-                    return serializeAsProtoFile( polyValue.asFile() );
+                    throw new NotImplementedException("Serialization of PolyFile not implemented");
+                    //return serializeAsProtoFile( polyValue.asFile() );
                 }
                 if ( polyValue instanceof PolyStream ) {
-                    return serializeAsProtoStream( polyValue.asStream() );
+                    throw new NotImplementedException("Serialization of PolyStream not implemented");
+                    //return serializeAsProtoStream( polyValue.asStream() );
                 }
                 throw new IllegalArgumentException( "Illegal poly value for poly type FILE." );
                 // used by PolyStream
@@ -365,7 +367,7 @@ public class PolyValueSerializer {
 
 
     private static ProtoValue serializeAsProtoStream( PolyStream polyStream ) {
-        throw new NotImplementedException( "Stream handlin not yet implemented" );
+        throw new NotImplementedException( "Stream handling not yet implemented" );
     }
 
 
