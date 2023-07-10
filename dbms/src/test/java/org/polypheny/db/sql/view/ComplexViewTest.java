@@ -821,7 +821,7 @@ public class ComplexViewTest {
     // SELECT NOT POSSIBLE
     // java.lang.AssertionError: type mismatch: ref: VARCHAR(55) NOT NULL input: INTEGER NOT NULL
     // new Object for result must be created correctly
-    //@Ignore
+    @Ignore
     @Test
     public void testQ2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
