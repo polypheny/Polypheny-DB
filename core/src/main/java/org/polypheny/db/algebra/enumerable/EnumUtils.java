@@ -178,7 +178,7 @@ public class EnumUtils {
                     expression =
                             EnumUtils.condition(
                                     Expressions.equal( parameter, Expressions.constant( null ) ),
-                                    PolyValue.getNull( inputPhysType.field( i ).fieldClass( 0 ) ).asExpression(),
+                                    Expressions.constant( null ),//PolyValue.getNull( inputPhysType.field( i ).fieldClass( 0 ) ).asExpression(),
                                     expression );
                 }
                 expressions.add( expression );

@@ -1600,6 +1600,18 @@ public class ComplexViewTest {
                 try {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "select "
+                                    + "count(o_orderkey) "
+                                    + "from "
+                                    + "customer left outer join orders on "
+                                    + "c_custkey = o_custkey "
+                                    + "and o_comment not like 'fast'"
+                                    + " group by c_custkey" ),
+                            ImmutableList.of( new Object[]{
+                                    0L
+                            } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "select "
                                     + "c_count, "
                                     + "count(*) as custdist "
                                     + "from "
@@ -1772,7 +1784,7 @@ public class ComplexViewTest {
 
     // Select not possible
     // Caused by: org.hsqldb.HsqlException: data type cast needed for parameter or null literal
-    @Ignore
+    //@Ignore
     @Test
     public void testQ16() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -1812,7 +1824,7 @@ public class ComplexViewTest {
                                     + "p_brand, "
                                     + "p_type, "
                                     + "p_size" ),
-                            ImmutableList.of( new Object[]{} )
+                            ImmutableList.of()
                     );
 
                     connection.commit();
@@ -2053,8 +2065,7 @@ public class ComplexViewTest {
                                     + "from "
                                     + "part "
                                     + "where "
-                                    + "p_name like ? "
-                                    + ") "
+                                    + "p_name like 'Mou%' ) "
                                     + "and ps_availqty > ( "
                                     + "select "
                                     + "0.5 * sum(l_quantity) "
@@ -2063,14 +2074,12 @@ public class ComplexViewTest {
                                     + "where "
                                     + "l_partkey = ps_partkey "
                                     + "and l_suppkey = ps_suppkey "
-                                    + "and l_shipdate >= date ? "
-                                    + "and l_shipdate < date ? + interval '1' year "
-                                    + ") "
+                                    + "and l_shipdate >= date '1994-01-01' "
+                                    + "and l_shipdate < date '2002-01-01' + interval '1' year ) "
                                     + ") "
                                     + "and s_nationkey = n_nationkey "
-                                    + "and n_name = ? "
-                                    + "order by "
-                                    + "s_name" ),
+                                    + "and n_name = 'Mouse' "
+                                    + "order by s_name" ),
                             ImmutableList.of( new Object[]{} )
                     );
 

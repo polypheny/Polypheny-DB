@@ -98,6 +98,9 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal convert( PolyValue value ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( value.isNumber() ) {
             return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
         } else if ( value.isTemporal() ) {

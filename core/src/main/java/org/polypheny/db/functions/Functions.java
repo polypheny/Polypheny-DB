@@ -867,12 +867,6 @@ public class Functions {
         }
         return b0.equals( b1 );
     }*/
-    public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
-        if ( b0 == null || b1 == null ) {
-            return PolyBoolean.FALSE;
-        }
-        return eqAny( b0, b1 );
-    }
 
 
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
@@ -886,7 +880,7 @@ public class Functions {
     /**
      * SQL <code>=</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    public static PolyBoolean eqAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) ) {
             // The result of SqlFunctions.eq(BigDecimal, BigDecimal) makes more sense than BigDecimal.equals(BigDecimal). So if both of types are BigDecimal, we just use SqlFunctions.eq(BigDecimal, BigDecimal).
             return PolyBoolean.of( b0.equals( b1 ) );
@@ -934,9 +928,6 @@ public class Functions {
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (at least one operand has ANY type, including String; neither may be null).
      */
-    public static PolyBoolean neAny( PolyValue b0, PolyValue b1 ) {
-        return PolyBoolean.of( !eqAny( b0, b1 ).value );
-    }
 
     // <
 
@@ -970,14 +961,14 @@ public class Functions {
 
 
     /*public static boolean lt( Object b0, Object b1 ) {
-        return ltAny( b0, b1 );
+        return lt( b0, b1 );
     }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to Object values.
      */
-    public static PolyBoolean ltAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -1050,7 +1041,7 @@ public class Functions {
     /**
      * SQL <code>&le;</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    public static PolyBoolean leAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -1113,7 +1104,7 @@ public class Functions {
      * SQL <code>&gt;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    /*public static boolean gtAny( Object b0, Object b1 ) {
+    /*public static boolean gt( Object b0, Object b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
             //noinspection unchecked
             return ((Comparable) b0).compareTo( b1 ) > 0;
@@ -1123,7 +1114,7 @@ public class Functions {
 
         throw notComparable( ">", b0, b1 );
     }*/
-    public static PolyBoolean gtAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -1183,7 +1174,7 @@ public class Functions {
      * SQL <code>&ge;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    public static PolyBoolean geAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
