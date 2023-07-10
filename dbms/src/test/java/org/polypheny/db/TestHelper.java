@@ -216,7 +216,7 @@ public class TestHelper {
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = (BigDecimal) expectedRow[j];
+                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     Assert.assertTrue(
