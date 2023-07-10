@@ -93,7 +93,7 @@ public class RelationalMetaRetriever {
 
 
     private static ProtoValue.ProtoValueType getFromPolyType( PolyType polyType ) {
-        return ProtoValue.ProtoValueType.valueOf( PROTO_VALUE_TYPE_PREFIX + polyType.getName() );
+        return ProtoValue.ProtoValueType.valueOf( polyType.getName() );
     }
 
 
@@ -104,8 +104,8 @@ public class RelationalMetaRetriever {
             List<String> origins ) {
         TypeMeta typeMeta = retrieveTypeMeta( type );
         ColumnMeta.Builder columnMetaBuilder = ColumnMeta.newBuilder();
-        Optional.of( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) ).ifPresent( columnMetaBuilder::setEntityName );
-        Optional.of( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) ).ifPresent( columnMetaBuilder::setSchemaName );
+        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) ).ifPresent( columnMetaBuilder::setEntityName );
+        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) ).ifPresent( columnMetaBuilder::setSchemaName );
         return columnMetaBuilder
                 .setColumnIndex( index )
                 .setColumnName( fieldName ) // designated column name

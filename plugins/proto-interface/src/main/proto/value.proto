@@ -32,6 +32,7 @@ message ProtoValue {
     ProtoEdge edge = 21;
     ProtoPath path = 22;
     ProtoGraph graph = 23;
+    ProtoArray array = 24;
   }
   enum ProtoValueType {
     UNSPECIFIED = 0;
