@@ -104,7 +104,7 @@ public class PolyBigDecimal extends PolyNumber {
         if ( value.isNumber() ) {
             return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
         } else if ( value.isTemporal() ) {
-            return PolyBigDecimal.of( value.asTemporal().getSinceEpoch() );
+            return PolyBigDecimal.of( value.asTemporal().getMilliSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyBigDecimal.of( value.asString().value );
         }

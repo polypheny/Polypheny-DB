@@ -16,14 +16,19 @@
 
 package org.polypheny.db.routing;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 /**
  * This is the result of the analyze step in the query pipeline.
  * The class contains logical information about a query.
  */
+
 public interface LogicalQueryInformation {
 
     /**
@@ -56,11 +61,16 @@ public interface LogicalQueryInformation {
     /**
      * @return gets the query class.
      */
-    String getQueryClass();
+    String getQueryHash();
 
-    /**
-     * @return Gets a list of all accessed tables.
-     */
-    List<Long> getTablesIds();
+    ImmutableMap<NamespaceType, Set<Long>> getScannedEntities();
+
+    ImmutableMap<NamespaceType, Set<Long>> getModifiedEntities();
+
+    ImmutableSet<Long> getAllModifiedEntities();
+
+    ImmutableSet<Long> getAllScannedEntities();
+
+    ImmutableSet<Long> getAllEntities();
 
 }

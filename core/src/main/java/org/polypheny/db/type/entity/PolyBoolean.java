@@ -77,6 +77,9 @@ public class PolyBoolean extends PolyValue {
 
 
     public static PolyBoolean convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( value instanceof PolyValue ) {
             if ( ((PolyValue) value).isBoolean() ) {
                 return ((PolyValue) value).asBoolean();

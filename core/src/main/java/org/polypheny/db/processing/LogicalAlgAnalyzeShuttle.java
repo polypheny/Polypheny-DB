@@ -25,10 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
@@ -62,40 +65,39 @@ import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 /**
  * Universal routing alg shuttle class to extract partition and column information from AlgNode.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
-    protected final LogicalAlgAnalyzeRexShuttle rexShuttle;
-    @Getter
-    //protected final Map<Integer, List<String>> filterMap = new HashMap<>(); // logical scanId (ScanId) -> List partitionsValue
-    protected final Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
-    @Getter
-    protected final HashSet<String> hashBasis = new HashSet<>();
-    @Getter
-    protected final LinkedHashMap<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
-    protected final HashMap<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
-    @Getter
-    protected final List<Long> entityId = new ArrayList<>();
-    private final Statement statement;
+    public LogicalAlgAnalyzeRexShuttle rexShuttle;
 
-    @Getter
-    protected HashMap<Long, List<Object>> ordered;
+    public Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
 
-    @Getter
-    public int rowCount;
+    public Set<String> hashBasis = new HashSet<>();
+
+    public Map<Long, String> availableColumns = new LinkedHashMap<>(); // column id -> schemaName.tableName.ColumnName
+
+    public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
+
+    public Map<NamespaceType, Set<Long>> modifiedEntities = new HashMap<>();
+
+    public Map<NamespaceType, Set<Long>> scannedEntities = new HashMap<>();
+
+    public List<Long> entityIds = new ArrayList<>();
 
 
-    public LogicalAlgAnalyzeShuttle( Statement statement ) {
-        this.statement = statement;
+    public LogicalAlgAnalyzeShuttle() {
         this.rexShuttle = new LogicalAlgAnalyzeRexShuttle();
     }
 
@@ -138,6 +140,22 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
+    private void addScannedEntity( NamespaceType type, long entityId ) {
+        if ( !scannedEntities.containsKey( type ) ) {
+            scannedEntities.put( type, new HashSet<>() );
+        }
+        scannedEntities.get( type ).add( entityId );
+    }
+
+
+    private void addModifiedEntity( NamespaceType type, long entityId ) {
+        if ( !modifiedEntities.containsKey( type ) ) {
+            modifiedEntities.put( type, new HashSet<>() );
+        }
+        modifiedEntities.get( type ).add( entityId );
+    }
+
+
     @Override
     public AlgNode visit( LogicalAggregate aggregate ) {
         hashBasis.add( "LogicalAggregate#" + aggregate.getAggCallList() );
@@ -148,6 +166,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalLpgModify modify ) {
         hashBasis.add( modify.getClass().getSimpleName() );
+
+        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+
         return super.visit( modify );
     }
 
@@ -155,6 +176,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalLpgScan scan ) {
         hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.entity.id );
+
+        addScannedEntity( scan.getEntity().namespaceType, scan.entity.id );
 
         return super.visit( scan );
     }
@@ -221,6 +244,8 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentModify modify ) {
         hashBasis.add( "LogicalDocumentModify" );
 
+        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+
         return super.visit( modify );
     }
 
@@ -256,6 +281,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalDocumentScan scan ) {
         hashBasis.add( "LogicalDocumentScan#" + scan.entity.id );
+
+        addScannedEntity( scan.entity.namespaceType, getLogicalId( scan ) );
+
         return super.visit( scan );
     }
 
@@ -294,10 +322,23 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             throw new RuntimeException();
         }
         hashBasis.add( "Scan#" + scan.getEntity().id );
+
+        addScannedEntity( scan.getEntity().namespaceType, getLogicalId( scan ) );
+
         // get available columns for every table scan
         this.getAvailableColumns( scan );
 
         return super.visit( scan );
+    }
+
+
+    private static long getLogicalId( Scan<?> scan ) {
+        return scan.entity.isLogical() ? scan.entity.id : scan.entity.unwrap( AllocationEntity.class ).getLogicalId();
+    }
+
+
+    private static long getLogicalId( Modify<?> modify ) {
+        return modify.entity.isLogical() ? modify.entity.id : modify.entity.unwrap( AllocationEntity.class ).getLogicalId();
     }
 
 
@@ -383,6 +424,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     @Override
     public AlgNode visit( LogicalRelModify modify ) {
         hashBasis.add( "LogicalModify" );
+
+        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+
         // e.g. inserts only have underlying values and need to attach the table correctly
         this.getAvailableColumns( modify );
         return visitChildren( modify );
@@ -397,7 +441,6 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getAvailableColumns( AlgNode scan ) {
-        this.entityId.add( scan.getEntity().id );
         final LogicalTable table = scan.getEntity().unwrap( LogicalTable.class );
         if ( table != null ) {
             final List<LogicalColumn> columns = Catalog.getInstance().getSnapshot().rel().getColumns( table.id );

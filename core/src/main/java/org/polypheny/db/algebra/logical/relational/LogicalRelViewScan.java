@@ -78,7 +78,7 @@ public class LogicalRelViewScan extends RelScan<CatalogEntity> {
 
     @Override
     public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
-        AlgNode unfolded = unfoldView( cluster );
+        AlgNode unfolded = unfoldView( cluster ).unfoldView( this, 0, cluster );
         if ( parent != null ) {
             parent.replaceInput( index, unfolded );
         }

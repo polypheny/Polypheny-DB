@@ -180,7 +180,7 @@ public class PolyLong extends PolyNumber {
         if ( value.isNumber() ) {
             return PolyLong.of( value.asNumber().longValue() );
         } else if ( value.isTemporal() ) {
-            return PolyLong.of( value.asTemporal().getSinceEpoch() );
+            return PolyLong.of( value.asTemporal().getMilliSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyLong.of( Long.parseLong( value.asString().value ) );
         }

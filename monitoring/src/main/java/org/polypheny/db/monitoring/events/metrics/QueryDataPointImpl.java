@@ -19,10 +19,11 @@ package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Value;
@@ -37,7 +38,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     private static final long serialVersionUID = 4389301720141941770L;
 
     @Builder.Default
-    List<Long> tables = new ArrayList<>();
+    Set<Long> tables = new HashSet<>();
     Map<String, Object> dataElements = new HashMap<>();
     UUID Id;
     Timestamp recordedTimestamp;

@@ -44,12 +44,12 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyTimeStamp extends PolyTemporal {
 
     @Getter
-    public Long sinceEpoch;
+    public Long milliSinceEpoch;
 
 
-    public PolyTimeStamp( Long sinceEpoch ) {
+    public PolyTimeStamp( Long milliSinceEpoch ) {
         super( PolyType.TIMESTAMP );
-        this.sinceEpoch = sinceEpoch;
+        this.milliSinceEpoch = milliSinceEpoch;
     }
 
 
@@ -89,7 +89,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public Timestamp asSqlTimestamp() {
-        return new Timestamp( sinceEpoch );
+        return new Timestamp( milliSinceEpoch );
     }
 
 
@@ -99,13 +99,13 @@ public class PolyTimeStamp extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( sinceEpoch, o.asTimeStamp().sinceEpoch );
+        return Long.compare( milliSinceEpoch, o.asTimeStamp().milliSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( sinceEpoch ) );
+        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 
@@ -119,7 +119,7 @@ public class PolyTimeStamp extends PolyTemporal {
         if ( value.isNumber() ) {
             return PolyTimeStamp.of( value.asNumber().longValue() );
         } else if ( value.isTemporal() ) {
-            return PolyTimeStamp.of( value.asTemporal().getSinceEpoch() );
+            return PolyTimeStamp.of( value.asTemporal().getMilliSinceEpoch() );
         }
         throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
     }
@@ -141,7 +141,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyTimeStamp src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.sinceEpoch );
+            return new JsonPrimitive( src.milliSinceEpoch );
         }
 
     }

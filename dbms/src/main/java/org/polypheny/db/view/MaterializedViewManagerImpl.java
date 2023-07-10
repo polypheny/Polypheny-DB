@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
@@ -111,7 +112,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
     public synchronized Map<Long, MaterializedCriteria> updateMaterializedViewInfo() {
         List<Long> toRemove = new ArrayList<>();
         for ( Long id : materializedInfo.keySet() ) {
-            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ) == null ) {
+            if ( Catalog.getInstance().getSnapshot().getLogicalEntity( id ).isEmpty() ) {
                 toRemove.add( id );
             }
         }
@@ -177,16 +178,23 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      * @param tableIds table that was changed
      */
     @Override
-    public void addTables( Transaction transaction, List<Long> tableIds ) {
+    public void notifyModifiedTables( Transaction transaction, Collection<Long> tableIds ) {
         if ( tableIds.isEmpty() ) {
             return;
         }
 
-        LogicalTable catalogTable = Catalog.snapshot().rel().getTable( tableIds.get( 0 ) ).orElseThrow();
-        long id = catalogTable.id;
-        /*if ( !catalogTable.getConnectedViews().isEmpty() ) {
-            updateCandidates.put( transaction.getXid(), id );
-        }*/
+        for ( long tableId : tableIds ) {
+            Optional<LogicalTable> tableOptional = Catalog.snapshot().rel().getTable( tableId );
+
+            if ( tableOptional.isEmpty() ) {
+                continue;
+            }
+
+            if ( !transaction.getSnapshot().rel().getConnectedViews( tableOptional.get().id ).isEmpty() ) {
+                updateCandidates.put( transaction.getXid(), tableOptional.get().id );
+            }
+        }
+
 
     }
 
@@ -212,7 +220,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void materializedUpdate( long potentialInteresting ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        //LogicalTable catalogTable = snapshot.getNamespaces( null ).stream().map( n -> snapshot.rel().getTable( potentialInteresting ) ).filter( Objects::nonNull ).findFirst().orElse( null );
         List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( potentialInteresting );
 
         for ( LogicalView view : connectedViews ) {

@@ -17,6 +17,7 @@
 package org.polypheny.db.view;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -68,7 +69,7 @@ public abstract class MaterializedViewManager {
             @NonNull AlgRoot algRoot,
             @NonNull LogicalMaterializedView materializedView );
 
-    public abstract void addTables( Transaction transaction, List<Long> ids );
+    public abstract void notifyModifiedTables( Transaction transaction, Collection<Long> ids );
 
     public abstract void updateData( Transaction transaction, long viewId );
 
@@ -91,7 +92,7 @@ public abstract class MaterializedViewManager {
         @Override
         public AlgNode visit( LogicalRelModify modify ) {
             if ( modify.getOperation() != Modify.Operation.MERGE ) {
-                if ( (modify.getEntity() != null) ) {
+                if ( modify.getEntity() != null ) {
                     if ( modify.getEntity().unwrap( PhysicalEntity.class ) != null ) {
                         ids.add( modify.getEntity().unwrap( PhysicalEntity.class ).id );
                     } else if ( modify.getEntity().unwrap( AllocationEntity.class ) != null ) {

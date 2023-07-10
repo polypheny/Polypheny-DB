@@ -32,8 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -147,14 +145,10 @@ import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
-import org.polypheny.db.view.MaterializedViewManager.TableUpdateVisitor;
-import org.polypheny.db.view.ViewManager.ViewVisitor;
 
 
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor, ExecutionTimeObserver {
-
-    BlockingQueue<Runnable> eventQueue = new LinkedBlockingQueue<>();
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -177,7 +171,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public void executionTime( String reference, long nanoTime ) {
         StatementEvent event = statement.getMonitoringEvent();
-        if ( reference.equals( event.getLogicalQueryInformation().getQueryClass() ) ) {
+        if ( reference.equals( event.getLogicalQueryInformation().getQueryHash() ) ) {
             event.setExecutionTime( nanoTime );
         }
     }
@@ -259,7 +253,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         List<PolyImplementation<T>> results = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
-        //
+        if ( isAnalyze ) {
+            statement.getProcessingDuration().start( "Expand Views" );
+        }
+
         // Check for view
         if ( logicalRoot.info.containsView ) {
             logicalRoot = logicalRoot.unfoldView();
@@ -267,6 +264,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Analyze step
         if ( isAnalyze ) {
+            statement.getProcessingDuration().stop( "Expand Views" );
             statement.getProcessingDuration().start( "Analyze" );
         }
 
@@ -280,23 +278,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
         if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
             // Subscribe only when aggregation is active
-            executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryClass() );
+            executionTimeMonitor.subscribe( this, logicalQueryInformation.getQueryHash() );
         }
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Expand Views" );
         }
-
-        // Check if the algRoot includes Views or Materialized Views and replaces what necessary
-        // View: replace LogicalViewScan with underlying information
-        // Materialized View: add order by if Materialized View includes Order by
-        ViewVisitor viewVisitor = new ViewVisitor( false );
-        logicalRoot = viewVisitor.startSubstitution( logicalRoot );
-
-        // Update which tables where changed used for Materialized Views
-        TableUpdateVisitor visitor = new TableUpdateVisitor();
-        logicalRoot.alg.accept( visitor );
-        MaterializedViewManager.getInstance().addTables( statement.getTransaction(), visitor.getIds() );
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Expand Views" );
@@ -313,7 +300,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isRouted ) {
-            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryClass() ) );
+            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryHash() ) );
         } else {
             //
             // Locking
@@ -370,7 +357,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
                         .flatMap( List::stream )
                         .collect( Collectors.toSet() );
-                List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryClass(), partitionIds );
+                List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryHash(), partitionIds );
                 if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( p -> p.physicalPlacementsOfPartitions.isEmpty() ) ) {
                     proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
                 }
@@ -965,16 +952,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.alg instanceof LogicalRelModify ) {
             AlgNode routedDml = dmlRouter.routeDml( (LogicalRelModify) logicalRoot.alg, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConditionalExecute ) {
             AlgNode routedConditionalExecute = dmlRouter.handleConditionalExecute( logicalRoot.alg, statement, queryInformation );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConditionalExecute, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof BatchIterator ) {
             AlgNode routedIterator = dmlRouter.handleBatchIterator( logicalRoot.alg, statement, queryInformation );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedIterator, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof ConstraintEnforcer ) {
             AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalRoot.alg, statement, queryInformation );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.getTransaction().isAnalyze() ) {
@@ -985,7 +972,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 try{
                     List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
                     List<ProposedRoutingPlan> plans = builders.stream()
-                            .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), router.getClass() ) )
+                            .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
                             .collect( Collectors.toList() );
                     proposedPlans.addAll( plans );
                 } catch ( Throwable e ){
@@ -1021,22 +1008,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
         if ( logicalRoot.alg instanceof LogicalLpgModify ) {
             AlgNode routedDml = dmlRouter.routeGraphDml( (LogicalLpgModify) logicalRoot.alg, statement );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
         AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeGraph( builder, (AlgNode & LpgAlg) logicalRoot.alg, statement );
-        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
+        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryHash() ) );
     }
 
 
     private List<ProposedRoutingPlan> routeDocument( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
         if ( logicalRoot.alg instanceof LogicalDocumentModify ) {
             AlgNode routedDml = dmlRouter.routeDocumentDml( (LogicalDocumentModify) logicalRoot.alg, statement, null );
-            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryClass() ) );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         }
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, logicalRoot.alg.getCluster() );
         AlgNode node = RoutingManager.getInstance().getRouters().get( 0 ).routeDocument( builder, logicalRoot.alg, statement );
-        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryClass() ) );
+        return Lists.newArrayList( new ProposedRoutingPlanImpl( builder.stackSize() == 0 ? node : builder.build(), logicalRoot, queryInformation.getQueryHash() ) );
     }
 
 
@@ -1066,7 +1053,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getRoutingDuration().start( "Create Plan From Cache" );
         }
 
-        ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryClass(), selectedCachedPlan );
+        ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), selectedCachedPlan );
 
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Create Plan From Cache" );
@@ -1271,25 +1258,29 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
         // Analyze logical query
-        LogicalAlgAnalyzeShuttle analyzeRelShuttle = new LogicalAlgAnalyzeShuttle( statement );
-        logicalRoot.alg.accept( analyzeRelShuttle );
+        LogicalAlgAnalyzeShuttle analyzer = new LogicalAlgAnalyzeShuttle();
+        logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
-        Map<Integer, Set<String>> partitionValueFilterPerScan = analyzeRelShuttle.getPartitionValueFilterPerScan();
+        Map<Integer, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
         Map<Integer, List<Long>> accessedPartitionMap = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
-        String queryClass = analyzeRelShuttle.getQueryName();// + accessedPartitionMap;
+        String queryHash = analyzer.getQueryName();// + accessedPartitionMap;
 
         // Build LogicalQueryInformation instance and prepare monitoring
-        LogicalQueryInformation queryInformation = new LogicalQueryInformationImpl(
-                queryClass,
+        LogicalQueryInformationImpl queryInformation = new LogicalQueryInformationImpl(
+                queryHash,
                 accessedPartitionMap,
-                analyzeRelShuttle.availableColumns,
-                analyzeRelShuttle.availableColumnsWithTable,
-                analyzeRelShuttle.getUsedColumns(),
-                analyzeRelShuttle.getEntityId() );
+                analyzer.availableColumns,
+                analyzer.availableColumnsWithTable,
+                analyzer.getUsedColumns(),
+                analyzer.scannedEntities,
+                analyzer.modifiedEntities );
         this.prepareMonitoring( statement, logicalRoot, isAnalyze, isSubquery, queryInformation );
+
+        // Update which tables where changed used for Materialized Views
+        MaterializedViewManager.getInstance().notifyModifiedTables( statement.getTransaction(), queryInformation.allModifiedEntities );
 
         return queryInformation;
     }
@@ -1496,7 +1487,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             this.cacheRouterPlans(
                     proposedRoutingPlans,
                     approximatedCosts,
-                    queryInformation.getQueryClass(),
+                    queryInformation.getQueryHash(),
                     queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
         }
 

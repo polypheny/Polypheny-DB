@@ -137,7 +137,7 @@ public class Functions {
 
     private static final DecimalFormat DOUBLE_FORMAT = NumberUtil.decimalFormat( "0.0E0" );
 
-    private static final TimeZone LOCAL_TZ = TimeZone.getDefault();
+    public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
     private static final Function1<List<?>, Enumerable<?>> LIST_AS_ENUMERABLE = Linq4j::asEnumerable;
 
@@ -991,17 +991,17 @@ public class Functions {
 
 
     public static PolyBoolean lt( PolyTemporal b0, PolyTemporal b1 ) {
-        return lt( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
+        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
     }
 
 
     public static PolyBoolean lt( PolyTemporal b0, PolyNumber b1 ) {
-        return lt( PolyLong.of( b0.getSinceEpoch() ), b1 );
+        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), b1 );
     }
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
-        return lt( b0, PolyLong.of( b1.getSinceEpoch() ) );
+        return lt( b0, PolyLong.of( b1.getMilliSinceEpoch() ) );
     }
     // <=
 
@@ -1166,7 +1166,7 @@ public class Functions {
 
 
     public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
-        return ge( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
+        return ge( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
     }
 
 

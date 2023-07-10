@@ -105,7 +105,7 @@ public class PolyTime extends PolyTemporal {
 
 
     @Override
-    public Long getSinceEpoch() {
+    public Long getMilliSinceEpoch() {
         return Long.valueOf( ofDay );
     }
 

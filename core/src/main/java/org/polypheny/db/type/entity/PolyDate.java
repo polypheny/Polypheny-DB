@@ -42,12 +42,12 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyDate extends PolyTemporal {
 
     @Getter
-    public Long sinceEpoch;
+    public Long milliSinceEpoch;
 
 
-    public PolyDate( long sinceEpoch ) {
+    public PolyDate( long milliSinceEpoch ) {
         super( PolyType.DATE );
-        this.sinceEpoch = sinceEpoch;
+        this.milliSinceEpoch = milliSinceEpoch;
     }
 
 
@@ -67,12 +67,12 @@ public class PolyDate extends PolyTemporal {
 
 
     public Date asDefaultDate() {
-        return new Date( sinceEpoch );
+        return new Date( milliSinceEpoch );
     }
 
 
     public java.sql.Date asSqlDate() {
-        return new java.sql.Date( sinceEpoch );
+        return new java.sql.Date( milliSinceEpoch );
     }
 
 
@@ -87,13 +87,13 @@ public class PolyDate extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( sinceEpoch, o.asDate().sinceEpoch );
+        return Long.compare( milliSinceEpoch, o.asDate().milliSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( sinceEpoch ) );
+        return Expressions.new_( PolyLong.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 
@@ -107,7 +107,7 @@ public class PolyDate extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyDate src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.sinceEpoch );
+            return new JsonPrimitive( src.milliSinceEpoch );
         }
 
 
