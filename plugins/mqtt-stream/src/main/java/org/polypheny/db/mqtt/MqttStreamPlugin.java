@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -61,9 +62,9 @@ public class MqttStreamPlugin extends Plugin {
         Map<String, String> mqttDefaultSettings = new HashMap<>();
         mqttDefaultSettings.put( "broker", "localhost" );
         mqttDefaultSettings.put( "brokerPort", "1883" );
-        // TODO namespace und type müssen dringend eingegeben werden, so machen wie bei topics?
-        mqttDefaultSettings.put( "namespace", "public" );
-        mqttDefaultSettings.put( "namespace type", "RELATIONAL" );
+        // TODO Bei run mit reset: braucht es diese default settings sonst kommt nullpointer exception.
+//        mqttDefaultSettings.put( "namespace", "public" );
+//        mqttDefaultSettings.put( "namespace type", "RELATIONAL" );
         QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttDefaultSettings );
     }
 
@@ -95,11 +96,11 @@ public class MqttStreamPlugin extends Plugin {
 
         private final int brokerPort;
 
-        private ArrayList<String> topics = new ArrayList<String>();
+        private List<MqttTopic> topics = new ArrayList<MqttTopic>();
 
         private static Mqtt3AsyncClient client;
 
-        private String namespace;
+        private String namespaceName;
 
         private NamespaceType namespaceType;
 
@@ -114,8 +115,8 @@ public class MqttStreamPlugin extends Plugin {
             this.brokerPort = Integer.parseInt( settings.get( "brokerPort" ) );
             String name = settings.get( "namespace" );
             NamespaceType type = NamespaceType.valueOf(settings.get( "namespace type" ));
-            if ( validateNamespaceName( name, type ) ) {
-                this.namespace = name;
+            if ( StreamCapture.validateNamespaceName( name, type ) ) {
+                this.namespaceName = name;
                 this.namespaceType =  type;
             }
         }
@@ -145,10 +146,10 @@ public class MqttStreamPlugin extends Plugin {
                                 } else {
                                     log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
                                     /**List<String> topicsList = new ArrayList<>( List.of( this.settings.get( "topics" ).split( "," ) ) );
-                                     for ( int i = 0; i < topicsList.size(); i++ ) {
+                                     for ( int i = 0; i < atopicsList.size(); i++ ) {
                                      topicsList.set( i, topicsList.get(i).trim() );
                                      }**/
-                                    subscribe( topicsToList( this.settings.get( "topics" ) ) );
+                                    subscribe( topicsStringToList( this.settings.get( "topics" ) ) );
                                 }
                             }
                     );
@@ -179,36 +180,10 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private boolean validateNamespaceName( String namespaceName, NamespaceType namespaceType ) {
-            // TODO: Nachrichten an UI schicken falls Namespace name nicht geht
-            boolean nameCanBeUsed = false;
-            Catalog catalog = Catalog.getInstance();
-            // TODO: database ID evtl von UI abfragen?
-            if ( catalog.checkIfExistsSchema( Catalog.defaultDatabaseId, namespaceName ) ) {
-                CatalogSchema schema = null;
-                try {
-                    schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
-                } catch ( UnknownSchemaException e ) {
-                    log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
-                    return nameCanBeUsed;
-                }
-                assert schema != null;
-                if ( schema.namespaceType == namespaceType ) {
-                    nameCanBeUsed = true;
-                } else {
-                    log.info( "There is already a namespace existing in this database with the given name but of type {}.", schema.getNamespaceType() );
-                    log.info( "Please change the name or the type to {} to use the existing namespace.", schema.getNamespaceType() );
-                }
-            } else {
-                nameCanBeUsed = true;
-            }
-            //TODO: rmv
-            log.info( String.valueOf( nameCanBeUsed ) );
-            return nameCanBeUsed;
-        }
 
 
-        public List<String> topicsToList( String topics ) {
+
+        public List<String> topicsStringToList( String topics ) {
             List<String> topicsList = new ArrayList<>( List.of( topics.split( "," ) ) );
             for ( int i = 0; i < topicsList.size(); i++ ) {
                 topicsList.set( i, topicsList.get( i ).trim() );
@@ -222,11 +197,18 @@ public class MqttStreamPlugin extends Plugin {
             for ( String changedSetting : updatedSettings ) {
                 switch ( changedSetting ) {
                     case "topics":
-                        List<String> newTopicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
+                        List<String> newTopicsList = topicsStringToList( this.getCurrentSettings().get( "topics" ) );
 
                         List<String> topicsToSub = new ArrayList<>();
                         for ( String newTopic : newTopicsList ) {
-                            if ( !topics.contains( newTopic ) ) {
+                            boolean containedInTopics = false;
+                            for ( MqttTopic t : topics ) {
+                                if ( ! t.topicName.equals( newTopic ) ){
+                                    containedInTopics = true;
+                                    break;
+                                }
+                            }
+                            if ( !containedInTopics ) {
                                 topicsToSub.add( newTopic );
                             }
                         }
@@ -235,9 +217,16 @@ public class MqttStreamPlugin extends Plugin {
                             subscribe( topicsToSub );
                         }
 
-                        List<String> topicsToUnsub = new ArrayList<>();
-                        for ( String oldTopic : topics ) {
-                            if ( !newTopicsList.contains( oldTopic ) ) {
+                        List<MqttTopic> topicsToUnsub = new ArrayList<>();
+                        for ( MqttTopic oldTopic : topics ) {
+                            boolean containedInNewTopicsList = false;
+                            for ( String newTopic : newTopicsList ) {
+                                if ( ! oldTopic.topicName.equals( newTopic ) ){
+                                    containedInNewTopicsList = true;
+                                    break;
+                                }
+                            }
+                            if ( !containedInNewTopicsList ) {
                                 topicsToUnsub.add( oldTopic );
                             }
                         }
@@ -248,10 +237,34 @@ public class MqttStreamPlugin extends Plugin {
                         break;
 
                     case "namespace":
-                        this.validateNamespaceName( this.getCurrentSettings().get( "namespace" ), NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) ) );
+                        if ( StreamCapture.validateNamespaceName( this.getCurrentSettings().get( "namespace" ), this.namespaceType ) ) {
+                            this.namespaceName = this.getCurrentSettings().get( "namespace" );
+                            List<MqttTopic> changedTopics = new ArrayList<>();
+                            for ( MqttTopic t : topics ) {
+                                MqttTopic newt = t.setNewNamespace( this.namespaceName, 0, this.namespaceType );
+                                changedTopics.add(newt);
+                            }
+                            this.topics = changedTopics;
+                            log.info( "namespsace name changed" );
+                        } else {
+                            //TODO: rmv
+                            log.info( "new Name not updated in Objekts" );
+                        }
                         break;
                     case "namespace type":
-                        this.validateNamespaceName( this.getCurrentSettings().get( "namespace" ), NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) ) );
+                        if ( StreamCapture.validateNamespaceName( this.namespaceName, NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) ) ) ) {
+                            this.namespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
+                            List<MqttTopic> changedTopics = new ArrayList<>();
+                            for ( MqttTopic t : topics ) {
+                                MqttTopic newt = t.setNewNamespace( this.namespaceName, 0, this.namespaceType );
+                                changedTopics.add(newt);
+                            }
+                            this.topics = changedTopics;
+                            log.info( "namespsace type changed" );
+                        } else {
+                            //TODO: rmv
+                            log.info( "new Name not updated in Opjekts" );
+                        }
                         break;
                 }
             }
@@ -267,20 +280,21 @@ public class MqttStreamPlugin extends Plugin {
 
 
         /**
-         * subscribes to one given topic and adds it to the List topics.
+         * subscribes to given topic and adds it to the List topics.
          *
-         * @param topic the topic the client should subscribe to.
+         * @param topicName the topic the client should subscribe to.
          */
-        public void subscribe( String topic ) {
-            client.subscribeWith().topicFilter( topic ).callback( subMsg -> {
+        public void subscribe( String topicName ) {
+            client.subscribeWith().topicFilter( topicName ).callback( subMsg -> {
                 log.info( "Received message from topic {}.", subMsg.getTopic() );
                 processMsg( subMsg );
             } ).send().whenComplete( ( subAck, throwable ) -> {
                 if ( throwable != null ) {
                     log.info( "Subscription was not successfull. Please try again." );
                 } else {
-                    this.topics.add( topic );
-                    log.info( "Successful subscription to topic:{}.", topic );
+                    MqttTopic newTopic = new MqttTopic( topicName, this.namespaceName, this.namespaceType, Catalog.defaultDatabaseId, Catalog.defaultUserId, this.getQueryInterfaceId() );
+                    this.topics.add( newTopic );
+                    log.info( "Successful subscription to topic:{}.", topicName );
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
@@ -288,21 +302,21 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        public void unsubscribe( List<String> topics ) {
-            for ( String t : topics ) {
+        public void unsubscribe( List<MqttTopic> topics ) {
+            for ( MqttTopic t : topics ) {
                 unsubscribe( t );
             }
         }
 
 
-        public void unsubscribe( String topic ) {
-            client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
+        public void unsubscribe( MqttTopic topic ) {
+            client.unsubscribeWith().topicFilter( topic.topicName ).send().whenComplete( ( unsub, throwable ) -> {
                 if ( throwable != null ) {
 
-                    log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
+                    log.error( String.format( "Topic %s could not be unsubscribed.", topic.topicName ) );
                 } else {
                     this.topics.remove( topic );
-                    log.info( "Unsubscribed from topic:{}.", topic );
+                    log.info( "Unsubscribed from topic:{}.", topic.topicName );
                 }
             } );
         }
@@ -310,8 +324,11 @@ public class MqttStreamPlugin extends Plugin {
 
         void processMsg( Mqtt3Publish subMsg ) {
             //TODO: attention: return values, not correct, might need a change of type.
-            String content = StreamProcessing.processMsg( subMsg );
-            PolyStream stream = new PolyStream( subMsg.getTopic().toString(), getUniqueName(), content, this.namespace, this.namespaceType );
+
+            //TODO: get topic from List don't create it like below
+            MqttTopic topic = new MqttTopic( subMsg.getTopic().toString(), this.namespaceName, this.namespaceType, Catalog.defaultDatabaseId, Catalog.defaultUserId, this.getQueryInterfaceId() );
+            String content = StreamProcessing.processMsg( subMsg.getPayloadAsBytes().toString(),topic );
+            PolyStream stream = new PolyStream( topic, content );
             StreamCapture streamCapture = new StreamCapture( this.transactionManager, stream );
             streamCapture.handleContent();
         }
@@ -350,7 +367,7 @@ public class MqttStreamPlugin extends Plugin {
                 // table to display topics
                 topicsTable = new InformationTable(
                         informationGroupTopics,
-                        List.of( "Topics" )
+                        List.of( "Topics", "Message Count" )
                 );
 
                 im.registerInformation( topicsTable );
@@ -360,13 +377,17 @@ public class MqttStreamPlugin extends Plugin {
 
 
             public void update() {
+                //TODO: Message Count
                 topicsTable.reset();
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
+                    //TODO: korrect
+                    /**
                     for ( String topic : topics ) {
                         topicsTable.addRow( topic );
                     }
+                     **/
                 }
 
             }

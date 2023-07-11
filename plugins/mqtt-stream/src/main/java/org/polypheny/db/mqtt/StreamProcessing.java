@@ -16,31 +16,22 @@
 
 package org.polypheny.db.mqtt;
 
-import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
-import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StreamProcessing {
 
-    public static String processMsg( Mqtt3Publish subMsg ) {
-        String msg = toString( subMsg );
-
-        String info = extractInfo( msg );
+    public static String processMsg( String subMsg, MqttTopic topic ) {
+        String info = extractInfo( subMsg );
         if ( validateMsg( info ) ) {
-            log.info( "Extracted and validated message: {}", msg);
+            log.info( "Extracted and validated message: {}", subMsg);
+            topic.increaseMsgCount();
             return info;
         } else {
             log.error( "Message is not valid!" );
             return null;
         }
     }
-
-
-    private static String toString( Mqtt3Publish subMsg ) {
-        return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
-    }
-
 
     private static boolean validateMsg( String msg ) {
         //TODO: Implement
