@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.information.InformationAction;
+import org.polypheny.db.information.InformationAction.Action;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -203,7 +206,7 @@ public class MqttStreamPlugin extends Plugin {
                         for ( String newTopic : newTopicsList ) {
                             boolean containedInTopics = false;
                             for ( MqttTopic t : topics ) {
-                                if ( ! t.topicName.equals( newTopic ) ){
+                                if ( t.topicName.equals( newTopic ) ){
                                     containedInTopics = true;
                                     break;
                                 }
@@ -221,7 +224,7 @@ public class MqttStreamPlugin extends Plugin {
                         for ( MqttTopic oldTopic : topics ) {
                             boolean containedInNewTopicsList = false;
                             for ( String newTopic : newTopicsList ) {
-                                if ( ! oldTopic.topicName.equals( newTopic ) ){
+                                if ( oldTopic.topicName.equals( newTopic ) ){
                                     containedInNewTopicsList = true;
                                     break;
                                 }
@@ -245,10 +248,6 @@ public class MqttStreamPlugin extends Plugin {
                                 changedTopics.add(newt);
                             }
                             this.topics = changedTopics;
-                            log.info( "namespsace name changed" );
-                        } else {
-                            //TODO: rmv
-                            log.info( "new Name not updated in Objekts" );
                         }
                         break;
                     case "namespace type":
@@ -260,10 +259,6 @@ public class MqttStreamPlugin extends Plugin {
                                 changedTopics.add(newt);
                             }
                             this.topics = changedTopics;
-                            log.info( "namespsace type changed" );
-                        } else {
-                            //TODO: rmv
-                            log.info( "new Name not updated in Opjekts" );
                         }
                         break;
                 }
@@ -352,6 +347,10 @@ public class MqttStreamPlugin extends Plugin {
 
             private final InformationGroup informationGroupTopics;
 
+            private final InformationGroup informationGroupMsg;
+
+            private final InformationAction msgButton;
+
             private final InformationTable topicsTable;
 
 
@@ -372,6 +371,17 @@ public class MqttStreamPlugin extends Plugin {
 
                 im.registerInformation( topicsTable );
                 informationGroupTopics.setRefreshFunction( this::update );
+
+                //TODO: rmv button
+                informationGroupMsg = new InformationGroup( informationPage, "Publish a message" ).setOrder( 2 );
+                im.addGroup( informationGroupMsg );
+
+                msgButton = new InformationAction( informationGroupMsg, "Send a msg", (parameters) -> {
+                    String end = "Msg was published!";
+                    client.publishWith().topic( parameters.get( "topic" ) ).payload( parameters.get( "msg" ).getBytes( StandardCharsets.UTF_8 ) ).send();
+                    return end;
+                }).withParameters( "topic", "msg" );
+                im.registerInformation( msgButton );
 
             }
 
