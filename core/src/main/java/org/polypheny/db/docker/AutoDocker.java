@@ -186,8 +186,10 @@ public final class AutoDocker {
             DockerManager.addDockerInstance( "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT );
             return true;
         } catch ( IOException e ) {
-            // Need a new handshake
+            // Needs a handshake
         }
+
+        DockerSetupHelper.addPendingSetup( "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT );
 
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {

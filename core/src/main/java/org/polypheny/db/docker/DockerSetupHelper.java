@@ -177,7 +177,14 @@ public final class DockerSetupHelper {
     }
 
 
-    public static Optional<PendingSetup> getPendingSetup( String hostname ) {
+    static void addPendingSetup( String hostname, String alias, int communicationPort ) {
+        synchronized ( pendingSetups ) {
+            pendingSetups.put( hostname, new PendingSetup( hostname, alias, communicationPort ) );
+        }
+    }
+
+
+    static Optional<PendingSetup> getPendingSetup( String hostname ) {
         synchronized ( pendingSetups ) {
             return Optional.ofNullable( pendingSetups.getOrDefault( hostname, null ) );
         }
