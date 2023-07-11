@@ -99,8 +99,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, table );
-        LogicalTable refTable = getFromCatalog( context, referencesTable );
+        LogicalTable catalogTable = getEntityFromCatalog( context, table );
+        LogicalTable refTable = getEntityFromCatalog( context, referencesTable );
 
         DdlManager.getInstance().addForeignKey(
                 catalogTable,

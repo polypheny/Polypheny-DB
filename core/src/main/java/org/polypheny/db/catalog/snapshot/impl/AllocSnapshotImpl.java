@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
@@ -66,6 +65,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
     ImmutableMap<Long, Map<Long, List<Long>>> logicalTableAdapterColumns;
+
+    ImmutableMap<Long, PartitionProperty> properties;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
@@ -104,6 +105,14 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.logicalAllocs = buildLogicalAllocs();
 
         this.logicalTableAdapterColumns = buildTableAdapterColumns();
+
+        this.properties = ImmutableMap.copyOf( allocationCatalogs.values()
+                .stream()
+                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .map( c -> (AllocationRelationalCatalog) c )
+                .map( AllocationRelationalCatalog::getProperties )
+                .flatMap( c -> c.values().stream() )
+                .collect( Collectors.toMap( c -> c.entityId, c -> c ) ) );
     }
 
 
@@ -337,9 +346,9 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public PartitionProperty getPartitionProperty( long id ) {
+    public @NotNull Optional<PartitionProperty> getPartitionProperty( long id ) {
         log.warn( "replace me" );
-        return new PartitionProperty( PartitionType.NONE, false, List.of(), List.of(), -1, -1, -1, false );
+        return Optional.ofNullable( properties.get( id ) );
     }
 
 

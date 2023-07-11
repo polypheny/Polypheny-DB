@@ -44,7 +44,7 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyTimeStamp extends PolyTemporal {
 
     @Getter
-    public Long milliSinceEpoch;
+    public Long milliSinceEpoch; // normalized to utz
 
 
     public PolyTimeStamp( Long milliSinceEpoch ) {

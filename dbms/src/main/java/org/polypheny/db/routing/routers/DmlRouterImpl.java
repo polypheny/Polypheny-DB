@@ -853,7 +853,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         } else if ( node instanceof LogicalProject ) {
             List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
-            PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id );
+            PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
             if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
                 if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
                     return remapParameterizedDml( node, builder, statement, parameterValues );

@@ -132,7 +132,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     protected Collection<Map<Long, List<AllocationColumn>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed

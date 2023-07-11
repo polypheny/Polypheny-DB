@@ -70,7 +70,7 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed

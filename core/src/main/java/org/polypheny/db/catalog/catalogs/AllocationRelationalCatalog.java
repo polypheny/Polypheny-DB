@@ -99,6 +99,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     void deletePartition( long tableId, long schemaId, long partitionId );
 
 
+    void addPartitionProperty( long tableId, PartitionProperty partitionProperty );
+
     /**
      * Effectively partitions a table with the specified partitionType
      *
@@ -196,5 +198,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     Map<Pair<Long, Long>, AllocationColumn> getColumns();
 
     void updatePosition( AllocationColumn alloc, int position );
+
+    java.util.concurrent.ConcurrentHashMap<Long, PartitionProperty> getProperties();
 
 }

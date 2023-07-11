@@ -1574,8 +1574,7 @@ public class AlgBuilderTest {
                         .sort( 0 )
                         .project( builder.field( "e", "empid" ) )
                         .build();
-        final String expected = ""
-                + "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+        final String expected = "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
                 + "  LogicalSort(model=[RELATIONAL], sort0=[$0], dir0=[ASC])\n"
                 + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
@@ -1592,8 +1591,7 @@ public class AlgBuilderTest {
                         .sortLimit( 10, 20 ) // aliases were lost here if preceded by sort()
                         .project( builder.field( "e", "empid" ) )
                         .build();
-        final String expected = ""
-                + "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
+        final String expected = "LogicalProject(model=[RELATIONAL], empid=[$0])\n"
                 + "  LogicalSort(model=[RELATIONAL], sort0=[$1], dir0=[ASC], offset=[10], fetch=[20])\n"
                 + "    LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
@@ -1612,8 +1610,7 @@ public class AlgBuilderTest {
                         .project( builder.field( "deptno" ), builder.literal( 20 ) )
                         .project( builder.field( "employee_alias", "deptno" ) )
                         .build();
-        final String expected = ""
-                + "LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
+        final String expected = "LogicalProject(model=[RELATIONAL], deptno=[$7])\n"
                 + "  LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }

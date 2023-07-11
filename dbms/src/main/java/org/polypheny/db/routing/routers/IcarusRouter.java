@@ -73,7 +73,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
@@ -91,7 +91,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same

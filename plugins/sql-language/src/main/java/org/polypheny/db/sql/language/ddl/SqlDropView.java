@@ -53,7 +53,7 @@ public class SqlDropView extends SqlDropObject {
         final LogicalTable table;
 
         try {
-            table = getFromCatalog( context, name );
+            table = getEntityFromCatalog( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified

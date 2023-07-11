@@ -98,13 +98,13 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable catalogTable = getEntityFromCatalog( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).isPartitioned ) {
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
@@ -136,10 +136,10 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionGroupList ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionGroupIds.get( partitionId ) );
+                    tempPartitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).numPartitionGroups + " partitions" );
+                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().numPartitionGroups + " partitions" );
                 }
             }
         }

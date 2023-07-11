@@ -126,7 +126,7 @@ public class FrequencyMapImpl extends FrequencyMap {
         List<LogicalTable> periodicTables = catalog.getSnapshot().getTablesForPeriodicProcessing();
         // Retrieve all Tables which rely on periodic processing
         for ( LogicalTable table : periodicTables ) {
-            if ( catalog.getSnapshot().alloc().getPartitionProperty( table.id ).partitionType == PartitionType.TEMPERATURE ) {
+            if ( catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.TEMPERATURE ) {
                 determinePartitionFrequency( table, invocationTimestamp );
             }
         }
@@ -158,7 +158,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             log.debug( "Determine access frequency of partitions of table: {}", table.name );
         }
 
-        PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id );
+        PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
         // Get percentage of tables which can remain in HOT
         long numberOfPartitionsInHot = (property.partitionIds.size() * ((TemperaturePartitionProperty) property).getHotAccessPercentageIn()) / 100;
@@ -269,7 +269,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             Snapshot snapshot = transaction.getSnapshot();
 
-            PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
+            PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
 
             List<CatalogAdapter> adaptersWithHot = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
             List<CatalogAdapter> adaptersWithCold = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getColdPartitionGroupId() );
@@ -402,7 +402,7 @@ public class FrequencyMapImpl extends FrequencyMap {
     @Override
     public void determinePartitionFrequency( LogicalTable table, long invocationTimestamp ) {
         Snapshot snapshot = catalog.getSnapshot();
-        PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
+        PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
         Timestamp queryStart = new Timestamp( invocationTimestamp - ((TemperaturePartitionProperty) property).getFrequencyInterval() * 1000 );
 
         accessCounter = new HashMap<>();

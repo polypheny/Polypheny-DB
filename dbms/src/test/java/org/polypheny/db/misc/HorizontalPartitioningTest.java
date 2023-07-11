@@ -705,7 +705,7 @@ public class HorizontalPartitioningTest {
                 try {
                     LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    PartitionProperty partitionProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id );
+                    PartitionProperty partitionProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
                     // Check if partition properties are correctly set and parsed
                     Assert.assertEquals( 600, ((TemperaturePartitionProperty) partitionProperty).getFrequencyInterval() );
@@ -765,7 +765,7 @@ public class HorizontalPartitioningTest {
                     // Verify that the partition is now in HOT and was not before
                     LogicalTable updatedTable = Catalog.snapshot().rel().getTables( null, new Pattern( "temperaturetest" ) ).get( 0 );
 
-                    PartitionProperty updatedProperty = Catalog.snapshot().alloc().getPartitionProperty( updatedTable.id );
+                    PartitionProperty updatedProperty = Catalog.snapshot().alloc().getPartitionProperty( updatedTable.id ).orElseThrow();
 
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
@@ -773,7 +773,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionValue );
 
                     List<CatalogPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ) ) );
+                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow() ) );
 
                     //Todo @Hennlo check number of access
                 } finally {

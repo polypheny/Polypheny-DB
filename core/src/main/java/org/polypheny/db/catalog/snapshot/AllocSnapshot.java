@@ -19,7 +19,7 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
@@ -30,10 +30,10 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 
 public interface AllocSnapshot {
 
-    @NonNull
+    @NotNull
     Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id );
 
-    @NonNull
+    @NotNull
     Optional<AllocationEntity> getEntity( long id );
 
     /**
@@ -44,7 +44,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the column
      * @return The specific column placement
      */
-    @NonNull
+    @NotNull
     Optional<AllocationColumn> getColumn( long adapterId, long columnId );
 
     /**
@@ -53,7 +53,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    @NonNull
+    @NotNull
     Optional<List<AllocationColumn>> getColumnFromLogical( long columnId );
 
     /**
@@ -63,7 +63,7 @@ public interface AllocSnapshot {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    @NonNull
+    @NotNull
     List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
 
@@ -73,7 +73,7 @@ public interface AllocSnapshot {
      * @param tableId The id of the table for the requested column placements
      * @return The requested collection
      */
-    @NonNull
+    @NotNull
     Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId );
 
 
@@ -176,16 +176,16 @@ public interface AllocSnapshot {
     List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
 
 
-    @NonNull
+    @NotNull
     List<AllocationEntity> getFromLogical( long logicalId );
 
+    @NotNull
+    Optional<PartitionProperty> getPartitionProperty( long id );
 
-    PartitionProperty getPartitionProperty( long id );
-
-    @NonNull
+    @NotNull
     Optional<AllocationEntity> getEntity( long adapterId, long entityId );
 
-    @NonNull
+    @NotNull
     List<AllocationColumn> getColumns( long allocId );
 
 

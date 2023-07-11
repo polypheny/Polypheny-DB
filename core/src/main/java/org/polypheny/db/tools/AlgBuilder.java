@@ -294,7 +294,7 @@ public class AlgBuilder {
                         return null;
                     }
                 } );
-        return new AlgBuilder( config.getContext(), cluster[0], snapshot[0] );
+        return new AlgBuilder( config.getContext(), cluster[0], config.getSnapshot() );
     }
 
 

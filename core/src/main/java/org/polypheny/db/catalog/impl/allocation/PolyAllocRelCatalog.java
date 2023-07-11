@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.impl.allocation;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,9 +66,13 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Getter
     public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns;
 
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, PartitionProperty> properties;
+
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this( namespace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
@@ -75,11 +80,13 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
             @Deserialize("namespace") LogicalNamespace namespace,
             @Deserialize("tables") Map<Long, AllocationTable> tables,
             @Deserialize("columns") Map<Pair<Long, Long>, AllocationColumn> columns,
-            @Deserialize("groups") Map<Long, List<Long>> groups ) {
+            @Deserialize("groups") Map<Long, List<Long>> groups,
+            @Deserialize("properties") Map<Long, PartitionProperty> properties ) {
         this.namespace = namespace;
         this.tables = new ConcurrentHashMap<>( tables );
         this.columns = new ConcurrentHashMap<>( columns );
         this.groups = new ConcurrentHashMap<>( groups );
+        this.properties = new ConcurrentHashMap<>( properties );
     }
 
 
@@ -132,6 +139,12 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void deletePartition( long tableId, long schemaId, long partitionId ) {
 
+    }
+
+
+    @Override
+    public void addPartitionProperty( long tableId, PartitionProperty partitionProperty ) {
+        properties.put( tableId, partitionProperty );
     }
 
 

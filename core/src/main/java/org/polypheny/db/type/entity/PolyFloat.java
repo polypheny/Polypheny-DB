@@ -171,13 +171,13 @@ public class PolyFloat extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyFloat item ) {
-                    out.writeFloat( item.value );
+                    out.writeUTF8( item.value.toString() );
                 }
 
 
                 @Override
                 public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyFloat( in.readFloat() );
+                    return new PolyFloat( Float.valueOf( in.readUTF8() ) );
                 }
             };
         }

@@ -110,14 +110,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getFromCatalog( context, this.table );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
             throw new RuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
         }
 

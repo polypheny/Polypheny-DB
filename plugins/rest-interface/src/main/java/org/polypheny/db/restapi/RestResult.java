@@ -29,12 +29,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -131,8 +135,9 @@ public class RestResult {
             for ( AlgDataTypeField type : dataType.getFieldList() ) {
                 PolyValue o = row[i];
 
+                String columnName = columns.get( i ).columnName;
                 if ( o == null ) {
-                    temp.put( columns.get( i ).columnName, null );
+                    temp.put( columnName, null );
                     continue;
                 }
 
@@ -145,46 +150,45 @@ public class RestResult {
                     } else if ( o instanceof byte[] ) {
                         o = addZipEntry( o );
                     }*///todo dl rest
-                    temp.put( columns.get( i ).columnName, o );
+                    temp.put( columnName, o );
                 } else {
                     switch ( type.getType().getPolyType() ) {
                         case TIMESTAMP:
-                            //Long nanoSeconds = o.asTimeStamp().asSqlTimestamp().toLocalDateTime();
-                            LocalDateTime localDateTime = o.asTimeStamp().asSqlTimestamp().toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
-                            temp.put( columns.get( i ).columnName, localDateTime.toString() );
+                            LocalDateTime localDateTime = o.asTimeStamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            temp.put( columnName, localDateTime.toString() );
                             break;
                         case TIME:
-                            temp.put( columns.get( i ).columnName, o.asTime().ofDay );
+                            temp.put( columnName, o.asTime().asSqlTime().toLocalTime().toSecondOfDay() * 1000 - TimeZone.getDefault().getRawOffset() );
                             break;
                         case VARCHAR:
-                            temp.put( columns.get( i ).columnName, o.asString().value );
+                            temp.put( columnName, o.asString().value );
                             break;
                         case DOUBLE:
-                            temp.put( columns.get( i ).columnName, o.asNumber().DoubleValue() );
+                            temp.put( columnName, o.asNumber().DoubleValue() );
                             break;
                         case REAL:
                         case FLOAT:
-                            temp.put( columns.get( i ).columnName, o.asNumber().FloatValue() );
+                            temp.put( columnName, o.asNumber().FloatValue() );
                             break;
                         case DECIMAL:
-                            temp.put( columns.get( i ).columnName, o.asNumber().bigDecimalValue() );
+                            temp.put( columnName, o.asNumber().bigDecimalValue() );
                             break;
                         case BOOLEAN:
-                            temp.put( columns.get( i ).columnName, o.asBoolean().value );
+                            temp.put( columnName, o.asBoolean().value );
                             break;
                         case BIGINT:
-                            temp.put( columns.get( i ).columnName, o.asNumber().LongValue() );
+                            temp.put( columnName, o.asNumber().LongValue() );
                             break;
                         case TINYINT:
                         case SMALLINT:
                         case INTEGER:
-                            temp.put( columns.get( i ).columnName, o.asNumber().IntValue() );
+                            temp.put( columnName, o.asNumber().IntValue() );
                             break;
                         case DATE:
-                            temp.put( columns.get( i ).columnName, o.asDate().getDaysSinceEpoch() );
+                            temp.put( columnName, o.asDate().getDaysSinceEpoch() );
                             break;
                         default:
-                            temp.put( columns.get( i ).columnName, o );
+                            temp.put( columnName, o );
                             break;
                     }
                 }

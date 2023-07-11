@@ -23,6 +23,8 @@ import io.javalin.http.Context;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -627,11 +630,11 @@ public class RequestParser {
     @VisibleForTesting
     PolyValue parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
         if ( !(objectLiteral instanceof String) ) {
-            if ( PolyType.APPROX_TYPES.contains( type ) ) {
+            if ( PolyType.FRACTIONAL_TYPES.contains( type ) ) {
                 if ( objectLiteral instanceof Number ) {
                     return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).doubleValue() ) );
                 }
-            } else if ( PolyType.EXACT_TYPES.contains( type ) ) {
+            } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
                 if ( objectLiteral instanceof Number ) {
                     return PolyBigDecimal.of( BigDecimal.valueOf( ((Number) objectLiteral).longValue() ) );
                 }
@@ -640,7 +643,7 @@ public class RequestParser {
                     return PolyBoolean.of( (Boolean) objectLiteral );
                 }
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException( "Rest to Poly: " + objectLiteral );
         } else {
             PolyValue parsedLiteral;
             String literal = (String) objectLiteral;
@@ -663,11 +666,11 @@ public class RequestParser {
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                        long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
+                        long millisecondsSinceEpoch = instant.toEpochMilli();// * 1000L + instant.getNano() / 1000000L;
                         parsedLiteral = PolyTimeStamp.of( millisecondsSinceEpoch );
                         break;
                     case TIME:
-                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() );
+                        parsedLiteral = PolyTime.of( new TimeString( literal ).getMillisOfDay() - TimeZone.getDefault().getRawOffset() );
                         break;
                     default:
                         return null;

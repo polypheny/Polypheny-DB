@@ -30,8 +30,6 @@ public interface TransactionManager {
 
     Transaction startTransaction( long userId, boolean analyze, String origin );
 
-    Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor );
-
     void removeTransaction( PolyXid xid );
 
     boolean isActive( PolyXid xid );

@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -192,7 +193,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
+    public abstract void addDataPlacement( LogicalTable table, List<LogicalColumn> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table

@@ -265,7 +265,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
+        PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
         if ( property.isPartitioned ) {
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
@@ -686,7 +686,7 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        PartitionProperty targetProperty = snapshot.alloc().getPartitionProperty( targetTable.id );
+        PartitionProperty targetProperty = snapshot.alloc().getPartitionProperty( targetTable.id ).orElseThrow();
         // Add partition columns to select column list
         long partitionColumnId = targetProperty.partitionColumnId;
         LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
@@ -699,7 +699,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         //We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( sourceTable.id );
+        PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( sourceTable.id ).orElseThrow();
         placementDistribution.put( sourceProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
 
         Statement sourceStatement = transaction.createStatement();

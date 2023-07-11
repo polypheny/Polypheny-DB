@@ -148,10 +148,6 @@ public class StatisticQueryProcessor {
     }
 
 
-    private Transaction getTransaction() {
-        return transactionManager.startTransaction( userId, false, "Statistics", MultimediaFlavor.FILE );
-    }
-
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------

@@ -334,7 +334,7 @@ public class EntityAccessMap {
         private void extractWriteConstraints( LogicalTable logicalTable ) {
 
             for ( long constraintTable : logicalTable.getConstraintIds() ) {
-                PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( logicalTable.id );
+                PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( logicalTable.id ).orElseThrow();
                 for ( long constraintPartitionIds : property.partitionIds ) {
 
                     EntityIdentifier id = new EntityIdentifier( constraintTable, constraintPartitionIds, NamespaceLevel.ENTITY_LEVEL );

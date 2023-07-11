@@ -134,7 +134,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable catalogTable = getEntityFromCatalog( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
@@ -142,7 +142,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
         try {
             // Check if table is already partitioned
-            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionType == PartitionType.NONE ) {
+            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().partitionType == PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
                                 catalogTable,
