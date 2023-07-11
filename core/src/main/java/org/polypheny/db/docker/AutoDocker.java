@@ -34,18 +34,24 @@ import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.config.RuntimeConfig;
 
 @Slf4j
 public final class AutoDocker {
 
     private static final AutoDocker INSTANCE = new AutoDocker();
-    private DockerClient client;
+
+    private String status = "";
+
+    private Thread thread = null;
 
 
     private AutoDocker() {
-        this.client = null;
     }
 
 
@@ -54,7 +60,7 @@ public final class AutoDocker {
     }
 
 
-    public void createPolyphenyConnectorVolumeIfNotExists() {
+    private void createPolyphenyConnectorVolumeIfNotExists( DockerClient client ) {
         List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
 
         for ( InspectVolumeResponse vol : volumes ) {
@@ -67,74 +73,89 @@ public final class AutoDocker {
     }
 
 
-    public boolean doIt() {
-        if ( client == null ) {
-            return false;
-        }
+    private Optional<String> findPolyphenyContainer( DockerClient client ) {
         List<Container> resp = client.listContainersCmd().exec();
-        String polyphenDockerUuid = null;
         for ( Container c : resp ) {
             for ( String name : c.getNames() ) {
                 if ( name.equals( "/polypheny-docker-connector" ) ) {
-                    polyphenDockerUuid = c.getId();
-                    break;
+                    return Optional.of( c.getId() );
                 }
             }
         }
-        if ( polyphenDockerUuid == null ) {
-            PullImageResultCallback callback = new PullImageResultCallback();
-            client.pullImageCmd( "polypheny/polypheny-docker-connector" ).exec( callback );
-            try {
-                callback.awaitCompletion();
-            } catch ( InterruptedException e ) {
-                log.error( "PullImage: ", e );
-                return false;
-            }
-            createPolyphenyConnectorVolumeIfNotExists();
+        return Optional.empty();
+    }
 
-            HostConfig hostConfig = new HostConfig();
-            hostConfig.withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) );
-            hostConfig.withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) );
 
-            CreateContainerResponse containerResponse = client.createContainerCmd( "polypheny/polypheny-docker-connector" )
-                    .withExposedPorts( ExposedPort.tcp( 7001 ), ExposedPort.tcp( 7002 ) )
-                    .withHostConfig( hostConfig )
-                    .withName( "polypheny-docker-connector" )
-                    .withCmd( "server" )
-                    .exec();
-            polyphenDockerUuid = containerResponse.getId();
-            client.startContainerCmd( polyphenDockerUuid ).exec();
+    private Optional<String> createAndStartPolyphenyContainer( DockerClient client ) {
+        status = "Pulling container image...";
+        PullImageResultCallback callback = new PullImageResultCallback();
+        client.pullImageCmd( "polypheny/polypheny-docker-connector" ).exec( callback );
+        try {
+            callback.awaitCompletion();
+        } catch ( InterruptedException e ) {
+            log.error( "PullImage: ", e );
+            status = "Error while pulling image";
+            return Optional.empty();
         }
-        HandshakeManager.getInstance().redoHandshake( "localhost", 7001, 7002 );
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
+        createPolyphenyConnectorVolumeIfNotExists( client );
+
+        status = "Creating container...";
+        HostConfig hostConfig = new HostConfig();
+        hostConfig.withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) );
+        hostConfig.withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) );
+
+        CreateContainerResponse containerResponse = client.createContainerCmd( "polypheny/polypheny-docker-connector" )
+                .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ) )
+                .withHostConfig( hostConfig )
+                .withName( "polypheny-docker-connector" )
+                .withCmd( "server" )
+                .exec();
+        String uuid = containerResponse.getId();
+        client.startContainerCmd( uuid ).exec();
+        return Optional.of( uuid );
+    }
+
+
+    private void doAutoHandshake() {
+        status = "Starting...";
+        DockerClient client = getClient();
+        Optional<String> maybeUuid = findPolyphenyContainer( client );
+
+        if ( maybeUuid.isEmpty() ) {
+            maybeUuid = createAndStartPolyphenyContainer( client );
+            if ( maybeUuid.isEmpty() ) {
+                return;
+            }
+        }
+
+        String polyphenyDockerUuid = maybeUuid.get();
+        status = "Starting handshake...";
+        HandshakeManager.getInstance().cancelHandshake( "localhost" );
+        HandshakeManager.getInstance().startOrGetHandshake( "localhost", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT );
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
             public void onStart( Closeable closeable ) {
-
             }
 
 
             @Override
             public void onNext( Frame object ) {
-
             }
 
 
             @Override
             public void onError( Throwable throwable ) {
-
             }
 
 
             @Override
             public void onComplete() {
-
             }
 
 
             @Override
             public void close() {
-
             }
         } );
         for ( int i = 0; i < 20; i++ ) {
@@ -145,37 +166,82 @@ public final class AutoDocker {
                 } catch ( InterruptedException e ) {
                     // no problem
                 }
-                continue;
             }
-            return status.equals( "SUCCESS" );
         }
-        return false;
+    }
+
+
+    public boolean start() {
+        if ( isConnected() ) {
+            return true;
+        }
+        if ( !isAvailable() ) {
+            return false;
+        }
+        synchronized ( this ) {
+            if ( thread == null || !thread.isAlive() ) {
+                Runnable r = this::doAutoHandshake;
+                thread = new Thread( r );
+                thread.start();
+            }
+        }
+        // thread != null
+        while ( thread.isAlive() ) {
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                // no problem
+            }
+        }
+        return isConnected();
+    }
+
+
+    private boolean isConnected() {
+        return RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class )
+                .stream()
+                .filter( c -> c.getHost().equals( "localhost" ) )
+                .anyMatch( c -> DockerManager.getInstance().getInstanceById( c.getId() ).map( DockerInstance::isConnected ).orElse( false ) );
     }
 
 
     public boolean isAvailable() {
-        if ( client != null ) {
-            return true;
-        }
         try {
-            DockerClientConfig config = DefaultDockerClientConfig
-                    .createDefaultConfigBuilder()
-                    .build();
-
-            ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-                    .dockerHost( config.getDockerHost() )
-                    .sslConfig( config.getSSLConfig() )
-                    .build();
-
-            client = DockerClientImpl.getInstance( config, httpClient );
+            DockerClient client = getClient();
             client.pingCmd().exec();
-            log.info( "AutoDocker is available" );
             return true;
         } catch ( Exception e ) {
-            log.info( "AutoDocker not available" );
-            client = null;
             return false;
         }
     }
+
+
+    public Map<String, Object> getStatus() {
+        boolean isRunning;
+        synchronized ( this ) {
+            isRunning = thread != null && thread.isAlive();
+        }
+        return Map.of(
+                "available", isAvailable(),
+                "connected", isConnected(),
+                "running", isRunning,
+                "message", status
+        );
+    }
+
+
+    private DockerClient getClient() {
+        DockerClientConfig config = DefaultDockerClientConfig
+                .createDefaultConfigBuilder()
+                .build();
+
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost( config.getDockerHost() )
+                .sslConfig( config.getSSLConfig() )
+                .build();
+
+        return DockerClientImpl.getInstance( config, httpClient );
+    }
+
 
 }

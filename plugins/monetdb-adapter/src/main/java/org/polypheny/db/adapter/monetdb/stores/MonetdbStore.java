@@ -93,7 +93,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 updateSettings( settings );
             }
 
-            DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId );
+            DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId ).get();
             this.container = instance.newBuilder( "polypheny/monet", getUniqueName() )
                     .withExposedPort( 50000 )
                     .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )

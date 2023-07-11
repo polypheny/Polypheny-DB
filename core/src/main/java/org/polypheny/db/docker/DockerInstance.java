@@ -42,13 +42,6 @@ import org.polypheny.db.config.RuntimeConfig;
 public final class DockerInstance {
 
     /**
-     * This set is responsible to ensure that Polypheny is never connected to the same docker instance twice (via e.g.
-     * different hostnames).  We utilize an ID value exposed by the docker daemon itself for that, which gets stored
-     * in this Set.
-     */
-    private static final Set<String> dockerInstanceUuids = new HashSet<>();
-
-    /**
      * This set is needed for resetDocker and resetCatalog.  The first time we see a new UUID, we save it in the set
      * and remove all the containers belonging to us.
      */
@@ -62,6 +55,7 @@ public final class DockerInstance {
      * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
      */
     private String dockerInstanceUuid;
+
     /**
      * The client object used to communicate with Docker.  null if not connected.
      */
@@ -69,48 +63,40 @@ public final class DockerInstance {
 
     private final int instanceId;
 
+    private Status status = Status.NEW;
+
 
     DockerInstance( Integer instanceId ) {
         this.currentConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
         try {
-            checkConnection( false );
+            checkConnection();
         } catch ( IOException e ) {
             log.error( "Could not connect to docker ", e );
         }
     }
 
 
-    /**
-     * If client is null, it creates a new connection and retrieves a list of relevant containers on that host.
-     * If client is not null and forceReconnect is false, this is a no-op.
-     *
-     * @throws IOException The exception if something failed.  checkConnection calls connectionLoss in this case,
-     * it is mostly for the caller to be able to display an appropriate error message.
-     */
-    private synchronized void checkConnection( boolean forceReconnect ) throws IOException {
-        if ( client != null ) {
-            if ( forceReconnect ) {
-                client.close();
-            } else {
-                return;
-            }
-        }
-        try {
+    private void connectToDocker() throws IOException {
+        synchronized ( this ) {
             PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( currentConfig.getHost() );
             byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( currentConfig.getHost() );
-
             this.client = new PolyphenyDockerClient( currentConfig.getHost(), currentConfig.getPort(), kp, serverCertificate );
-        } catch ( IOException e ) {
-            connectionLoss();
-            throw e;
+            this.client.ping();
         }
+    }
 
+
+    private void handleNewDockerInstance() throws IOException {
         this.dockerInstanceUuid = this.client.getDockerId();
-        synchronized ( dockerInstanceUuids ) {
-            if ( !dockerInstanceUuids.add( this.dockerInstanceUuid ) ) {
-                throw new RuntimeException( "Cannot add the same host twice" );
+
+        // seenUuids used ust to lock out all DockerInstance instances
+        synchronized ( seenUuids ) {
+            for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
+                if ( instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                    throw new RuntimeException( "The same docker instance cannot be added twice" );
+                }
             }
         }
 
@@ -130,23 +116,44 @@ public final class DockerInstance {
                 }
             }
         }
+    }
 
-        try {
-            List<ContainerInfo> containers = this.client.listContainers();
-            for ( ContainerInfo containerInfo : containers ) {
-                DockerManager.getInstance().takeOwnership( containerInfo.getUuid(), this );
-                Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( containerInfo.getUuid() );
-                if ( maybeContainer.isPresent() ) {
-                    maybeContainer.get().updateStatus( containerInfo.getStatus() );
-                } else {
-                    new DockerContainer( containerInfo.getUuid(), containerInfo.getName(), containerInfo.getStatus().toUpperCase() );
-                }
+
+    private void checkConnection() throws IOException {
+        synchronized ( this ) {
+            if ( status != Status.CONNECTED || client == null || !client.isConnected() ) {
+                connectToDocker();
             }
-        } catch ( IOException e ) {
-            connectionLoss();
-            throw e;
+
+            if ( status == Status.NEW ) {
+                handleNewDockerInstance();
+                status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never rerun handleNewDockerInstance
+            }
+
+            if ( status != Status.CONNECTED ) {
+                List<ContainerInfo> containers = this.client.listContainers();
+                for ( ContainerInfo containerInfo : containers ) {
+                    DockerManager.getInstance().takeOwnership( containerInfo.getUuid(), this );
+                    Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( containerInfo.getUuid() );
+                    if ( maybeContainer.isPresent() ) {
+                        maybeContainer.get().updateStatus( containerInfo.getStatus() );
+                    } else {
+                        new DockerContainer( containerInfo.getUuid(), containerInfo.getName(), containerInfo.getStatus().toUpperCase() );
+                    }
+                }
+                status = Status.CONNECTED;
+            }
         }
-        RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( true );
+    }
+
+
+    public boolean isConnected() {
+        try {
+            checkConnection();
+            return true;
+        } catch ( IOException ignore ) {
+            return false;
+        }
     }
 
 
@@ -156,13 +163,8 @@ public final class DockerInstance {
      */
     private void connectionLoss() {
         this.client = null;
-        if ( dockerInstanceUuid != null ) {
-            synchronized ( dockerInstanceUuids ) {
-                dockerInstanceUuids.remove( dockerInstanceUuid );
-            }
-            this.dockerInstanceUuid = null;
-        }
-        RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( false );
+        this.dockerInstanceUuid = null;
+        this.status = Status.DISCONNECTED;
     }
 
 
@@ -201,6 +203,11 @@ public final class DockerInstance {
     }
 
 
+    public boolean hasContainers() throws IOException {
+        return client.listContainers().size() > 0;
+    }
+
+
     public ContainerBuilder newBuilder( String imageName, String uniqueName ) {
         return new ContainerBuilder( imageName, uniqueName );
     }
@@ -210,28 +217,32 @@ public final class DockerInstance {
         ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         if ( !currentConfig.equals( newConfig ) ) {
             currentConfig = newConfig;
-            // Something changed and we need to get a new client, which matches the new config
             try {
-                checkConnection( true );
+                connectionLoss();
+                status = Status.NEW;
+                checkConnection();
             } catch ( IOException e ) {
                 log.error( "Failed to update config for instance " + instanceId, e );
-                RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( false );
-                return;
             }
-            RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId ).setDockerRunning( true );
         }
     }
 
 
     public DockerStatus probeDockerStatus() {
-        log.info( "probeDockerStatus" );
         try {
-            checkConnection( false );
+            checkConnection();
             client.ping();
             return new DockerStatus( instanceId, true );
         } catch ( IOException e ) {
             return new DockerStatus( instanceId, false );
         }
+    }
+
+
+    private enum Status {
+        NEW,
+        CONNECTED,
+        DISCONNECTED,
     }
 
 

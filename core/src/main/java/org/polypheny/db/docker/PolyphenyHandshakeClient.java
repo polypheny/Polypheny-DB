@@ -7,8 +7,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.tls.AlertDescription;
@@ -32,6 +34,7 @@ final class PolyphenyHandshakeClient {
     private State state;
     private final String hostname;
     private final int port;
+    private final AtomicLong timeout;
     private final byte[] psk;
 
     private final PolyphenyKeypair kp;
@@ -45,6 +48,7 @@ final class PolyphenyHandshakeClient {
 
 
     enum State {
+        STARTING,
         NOT_RUNNING,
         RUNNING,
         SUCCESS,
@@ -52,9 +56,10 @@ final class PolyphenyHandshakeClient {
     }
 
 
-    public PolyphenyHandshakeClient( String hostname, int port ) throws IOException {
+    public PolyphenyHandshakeClient( String hostname, int port, AtomicLong timeout ) throws IOException {
         this.hostname = hostname;
         this.port = port;
+        this.timeout = timeout;
         this.psk = new byte[32];
         new SecureRandom().nextBytes( this.psk );
 
@@ -67,7 +72,13 @@ final class PolyphenyHandshakeClient {
 
         this.lastErrorMessage = "";
 
-        this.state = State.NOT_RUNNING;
+        this.state = State.STARTING;
+    }
+
+
+    public void prepareNextTry() {
+        this.lastErrorMessage = "";
+        this.state = State.STARTING;
     }
 
 
@@ -119,7 +130,7 @@ final class PolyphenyHandshakeClient {
 
     public boolean doHandshake() {
         synchronized ( this ) {
-            if ( state != State.NOT_RUNNING ) {
+            if ( state != State.NOT_RUNNING && state != State.STARTING ) {
                 return false;
             }
             lastErrorMessage = "";
@@ -127,20 +138,21 @@ final class PolyphenyHandshakeClient {
         }
 
         PolyphenyTlsClient client = null;
-        for ( int i = 0; i < 20 && client == null; i++ ) {
-            if ( i != 0 ) {
+        boolean first = true;
+        while ( client == null && Instant.now().getEpochSecond() < timeout.get() ) {
+            if ( !first ) {
                 try {
                     TimeUnit.SECONDS.sleep( 1 );
                 } catch ( InterruptedException ignored ) {
                     // Ok, no issue with retrying sooner
                 }
             }
+            first = false;
             Socket con;
             try {
                 con = new Socket( hostname, port );
             } catch ( IOException e ) {
                 lastErrorMessage = "Could not connect to " + hostname + ":" + port;
-                log.error( "socket", e );
                 continue;
             }
             try {

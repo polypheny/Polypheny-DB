@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 final class PolyphenyDockerClient {
 
@@ -22,6 +23,9 @@ final class PolyphenyDockerClient {
 
     private static final int VERSION = 1; // In sync with polypheny-docker-connector
     private final transient AtomicInteger counter;
+
+    @Getter
+    private boolean connected;
 
 
     public PolyphenyDockerClient( String hostname, int port, PolyphenyKeypair kp, byte[] serverCertificate ) throws IOException {
@@ -38,6 +42,7 @@ final class PolyphenyDockerClient {
             throw new IOException( String.format( "Version mismatch: try to update either the docker container or Polypheny (docker container is version %d, Polypheny version is %d)", resp.getVersion(), VERSION ) );
         }
         this.dockerId = resp.getUuid();
+        this.connected = true;
     }
 
 
@@ -65,8 +70,14 @@ final class PolyphenyDockerClient {
         Request req = r.build();
         Response resp;
         synchronized ( this ) {
-            req.writeDelimitedTo( out );
-            resp = Response.parseDelimitedFrom( in );
+            try {
+                req.writeDelimitedTo( out );
+                resp = Response.parseDelimitedFrom( in );
+            } catch ( IOException e ) {
+                connected = false;
+                throw e;
+            }
+
         }
         if ( req.getMessageId() != resp.getMessageId() ) {
             throw new IOException( "Response has the wrong message ID" );

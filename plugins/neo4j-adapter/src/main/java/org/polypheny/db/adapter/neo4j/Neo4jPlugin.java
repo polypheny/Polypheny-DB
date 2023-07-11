@@ -144,7 +144,6 @@ public class Neo4jPlugin extends Plugin {
             description = "Neo4j is a graph-model based database system. If stores data in a graph structure which consists of nodes and edges.",
             usedModes = { DeployMode.DOCKER },
             supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
-    @AdapterSettingInteger(name = "port", defaultValue = 7687)
     @Extension
     public static class Neo4jStore extends DataStore {
 
@@ -184,7 +183,7 @@ public class Neo4jPlugin extends Plugin {
             this.auth = AuthTokens.basic( this.user, this.pass );
 
             if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) );
+                DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) ).get();
                 this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
                         .withExposedPort( 7687 )
                         .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )

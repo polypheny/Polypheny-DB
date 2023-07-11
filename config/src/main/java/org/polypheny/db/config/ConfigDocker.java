@@ -28,7 +28,8 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 @Accessors(chain = true)
 public class ConfigDocker extends ConfigObject {
 
-    public static final int DEFAULT_PORT = 7001;
+    public static final int COMMUNICATION_PORT = 7001;
+    public static final int HANDSHAKE_PORT = 7002;
 
     @Getter
     @Setter
@@ -42,23 +43,25 @@ public class ConfigDocker extends ConfigObject {
     @Getter
     @Setter
     private int port;
-    @Getter
-    @Setter
-    private boolean dockerRunning;
 
 
     public ConfigDocker( String host, String alias ) {
-        this( idBuilder.getAndIncrement(), host, alias, DEFAULT_PORT );
+        this( idBuilder.getAndIncrement(), host, alias, COMMUNICATION_PORT );
     }
 
 
     public ConfigDocker( String host ) {
-        this( idBuilder.getAndIncrement(), host, host, DEFAULT_PORT );
+        this( idBuilder.getAndIncrement(), host, host, COMMUNICATION_PORT );
     }
 
 
     public ConfigDocker( String host, int port ) {
         this( idBuilder.getAndIncrement(), host, host, port );
+    }
+
+
+    public ConfigDocker( String host, String alias, int port ) {
+        this( idBuilder.getAndIncrement(), host, alias, port );
     }
 
 
@@ -81,15 +84,13 @@ public class ConfigDocker extends ConfigObject {
         if ( newId == null ) {
             newId = (double) idBuilder.getAndIncrement();
         }
-        ConfigDocker config = new ConfigDocker(
+
+        return new ConfigDocker(
                 newId.intValue(),
                 (String) value.get( "host" ),
                 (String) value.get( "alias" ),
-                ((Double) value.getOrDefault( "port", (double) DEFAULT_PORT )).intValue()
+                ((Double) value.getOrDefault( "port", (double) COMMUNICATION_PORT )).intValue()
         );
-        config.setDockerRunning( (Boolean) value.get( "dockerRunning" ) );
-
-        return config;
     }
 
 
@@ -99,7 +100,6 @@ public class ConfigDocker extends ConfigObject {
         m.put( "host", host );
         m.put( "alias", alias );
         m.put( "port", (double) port );
-        m.put( "dockerRunning", dockerRunning );
         return m;
     }
 
@@ -110,7 +110,6 @@ public class ConfigDocker extends ConfigObject {
         settings.put( "host", host );
         settings.put( "id", String.valueOf( id ) );
         settings.put( "alias", alias );
-        settings.put( "dockerRunning", String.valueOf( dockerRunning ) );
         settings.put( "port", String.valueOf( port ) );
 
         return settings;
@@ -172,7 +171,6 @@ public class ConfigDocker extends ConfigObject {
         confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "id", conf.getDouble( "id" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
-        confMap.put( "dockerRunning", conf.getBoolean( "dockerRunning" ) );
         if ( conf.hasPath( "port" ) ) {
             confMap.put( "port", conf.getDouble( "port" ) );
         }
@@ -197,7 +195,6 @@ public class ConfigDocker extends ConfigObject {
         }
         ConfigDocker that = (ConfigDocker) o;
         return port == that.port &&
-                dockerRunning == that.dockerRunning &&
                 host.equals( that.host ) &&
                 alias.equals( that.alias );
     }

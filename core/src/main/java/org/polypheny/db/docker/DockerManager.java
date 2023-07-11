@@ -16,14 +16,17 @@
 
 package org.polypheny.db.docker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 
 public final class DockerManager {
@@ -75,8 +78,8 @@ public final class DockerManager {
     }
 
 
-    public DockerInstance getInstanceById( Integer instanceId ) {
-        return dockerInstances.get( instanceId );
+    public Optional<DockerInstance> getInstanceById( Integer instanceId ) {
+        return Optional.ofNullable( dockerInstances.getOrDefault( instanceId, null ) );
     }
 
 
@@ -130,6 +133,38 @@ public final class DockerManager {
             return dockerInstances.get( dockerId ).probeDockerStatus();
         }
         throw new RuntimeException( "There was a problem retrieving the correct Docker instance." );
+    }
+
+
+    /**
+     * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
+     */
+    public static Integer addDockerInstance( String host, String alias, int port ) {
+        // TODO: racy, someone else could modify the setting elsewhere
+        List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
+        for ( ConfigDocker c : configList ) {
+            if ( c.getHost().equals( host ) && c.getPort() == port ) {
+                return c.getId();
+            }
+        }
+        // Add a new entry
+        ConfigDocker configDocker = new ConfigDocker( host, alias, port );
+        configList.add( configDocker );
+        ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+        return configDocker.getId();
+    }
+
+
+    public static void removeDockerInstance( int id ) {
+        // TODO: racy, someone else could modify the setting elsewhere
+        List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
+        List<ConfigDocker> newList = new ArrayList<>();
+        for ( ConfigDocker c : configList ) {
+            if ( c.getId() != id ) {
+                newList.add( c );
+            }
+        }
+        ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( newList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
     }
 
 }

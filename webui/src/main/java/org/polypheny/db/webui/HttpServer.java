@@ -345,17 +345,27 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getFile/{file}", crud::getFile );
 
-        webuiServer.get( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
+        webuiServer.post( "/addDockerInstance", crud::addDockerInstance );
+
+        webuiServer.post( "/testDockerInstance/{dockerId}", crud::testDockerInstance );
+
+        webuiServer.get( "/getDockerInstance/{dockerId}", crud::getDockerInstance );
+
+        webuiServer.get( "/getDockerInstances", crud::getDockerInstances );
+
+        webuiServer.post( "/updateDockerInstance", crud::updateDockerInstance );
+
+        webuiServer.post( "/removeDockerInstance", crud::removeDockerInstance );
+
+        webuiServer.get( "/getAutoDockerStatus", crud::getAutoDockerStatus );
+
+        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
 
         webuiServer.post( "/startHandshake", crud::startHandshake );
 
-        webuiServer.post( "/redoHandshake", crud::redoHandshake );
+        webuiServer.get( "/getHandshake/{hostname}", crud::getHandshake );
 
-        webuiServer.get( "/listHandshakes", crud::listHandshakes );
-
-        webuiServer.get( "/autoHandshakeAvailable", crud::autoHandshakeAvailable );
-
-        webuiServer.post( "/doAutoHandshake", crud::doAutoHandshake );
+        webuiServer.post( "/cancelHandshake", crud::cancelHandshake );
 
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 

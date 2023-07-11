@@ -107,7 +107,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 updateSettings( settings );
             }
 
-            DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId );
+            DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId ).get();
             container = instance.newBuilder( "polypheny/postgres", getUniqueName() )
                     .withExposedPort( 5432 )
                     .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )

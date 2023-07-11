@@ -52,7 +52,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -131,11 +130,16 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.docker.AutoDocker;
+import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerSetupHelper;
+import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
+import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -3612,42 +3616,106 @@ public class Crud implements InformationObserver {
     }
 
 
-    /**
-     * This method can be used to retrieve the status of a specific Docker instance and if
-     * it is running correctly when using the provided settings
-     */
-    public void testDockerInstance( final Context ctx ) {
+    void addDockerInstance( final Context ctx ) {
+        try {
+            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ) );
+
+            ctx.json( res.getMap() );
+        } catch ( RuntimeException e ) {
+            log.error( "addDockerInstance", e );
+        }
+    }
+
+
+    void testDockerInstance( final Context ctx ) {
         int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
         ctx.json( DockerManager.getInstance().probeDockerStatus( dockerId ) );
     }
 
 
-    void startHandshake( Context ctx ) {
+    void getDockerInstances( final Context ctx ) {
+        ctx.json( new ArrayList<>( DockerManager.getInstance().getDockerInstances().keySet() ) );
+    }
+
+
+    void getDockerInstance( final Context ctx ) {
+        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+
+        ConfigDocker configDocker = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerId );
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( configDocker.id ).get();
+
+        ctx.json( Map.of(
+                "host", configDocker.getHost(),
+                "alias", configDocker.getAlias(),
+                "connected", dockerInstance.isConnected()
+        ) );
+    }
+
+
+    void updateDockerInstance( final Context ctx ) {
+        try {
+            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+
+            DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ) );
+
+            ctx.json( res.getMap() );
+        } catch ( RuntimeException e ) {
+            log.error( "updateDockerInstance", e );
+        }
+    }
+
+
+    void removeDockerInstance( final Context ctx ) {
+        try {
+            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+            int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
+            if ( id == -1 ) {
+                throw new RuntimeException( "Invalid id" );
+            }
+
+            DockerSetupResult res = DockerSetupHelper.removeDockerInstance( id );
+
+            ctx.json( res.getMap() );
+        } catch ( RuntimeException e ) {
+            log.error( "removeDockerInstance", e );
+        }
+    }
+
+
+    void getAutoDockerStatus( final Context ctx ) {
+        ctx.json( AutoDocker.getInstance().getStatus() );
+    }
+
+
+    void doAutoHandshake( final Context ctx ) {
+        ctx.json( Map.of(
+                "success", AutoDocker.getInstance().start(),
+                "instances", new ArrayList<>( DockerManager.getInstance().getDockerInstances().keySet() )
+        ) );
+    }
+
+
+    void startHandshake( final Context ctx ) {
         String hostname = ctx.body();
-        ctx.json( HandshakeManager.getInstance().startHandshake( hostname, 7001, 7002 ) );
+        ctx.json( HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT ) );
     }
 
 
-    void redoHandshake( Context ctx ) {
+    void getHandshake( final Context ctx ) {
+        String hostname = ctx.pathParam( "hostname" );
+        ctx.json( HandshakeManager.getInstance().getHandshake( hostname ) );
+    }
+
+
+    void cancelHandshake( final Context ctx ) {
         String hostname = ctx.body();
-        ctx.json( HandshakeManager.getInstance().redoHandshake( hostname, 7001, 7002 ) );
-    }
-
-
-    void listHandshakes( Context ctx ) {
-        List<Map<String, String>> handshakes = HandshakeManager.getInstance().getHandshakes();
-        ctx.json( handshakes );
-    }
-
-
-    void autoHandshakeAvailable( Context ctx ) {
-        ctx.json( Map.of( "available", AutoDocker.getInstance().isAvailable() ) );
-    }
-
-
-    void doAutoHandshake( Context ctx ) {
-        ctx.json( Map.of( "success", AutoDocker.getInstance().doIt() ) );
+        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
+            ctx.status( 200 );
+        } else {
+            ctx.status( 404 );
+        }
     }
 
 

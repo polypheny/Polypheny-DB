@@ -71,6 +71,9 @@ final class PolyphenyCertificateUtils {
     public static byte[] loadPemFromFile( String filename, String description ) throws IOException {
         Path p = Paths.get( filename );
         PemObject o = new PemReader( Files.newBufferedReader( p ) ).readPemObject();
+        if ( o == null ) {
+            throw new IOException( "No PEM object present" );
+        }
         if ( !description.equals( o.getType() ) ) {
             throw new IOException( "Unexpected object of type " + o.getType() + " expected " + description );
         }

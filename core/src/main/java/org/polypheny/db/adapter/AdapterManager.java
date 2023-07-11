@@ -43,6 +43,8 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerInstance;
+import org.polypheny.db.docker.DockerManager;
 
 public class AdapterManager {
 
@@ -187,7 +189,7 @@ public class AdapterManager {
                                     null,
                                     true,
                                     false,
-                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( ConfigDocker::isDockerRunning ).collect( Collectors.toList() ),
+                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( c -> DockerManager.getInstance().getInstanceById( c.getId() ).map( DockerInstance::isConnected ).orElse( false ) ).collect( Collectors.toList() ),
                                     ConfigDocker::getAlias,
                                     ConfigDocker.class )
                                     .bind( RuntimeConfig.DOCKER_INSTANCES )

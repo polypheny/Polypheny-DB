@@ -181,7 +181,7 @@ public class CassandraPlugin extends Plugin {
                 this.dbPassword = "cassandra";
 
                 if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                    DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) );
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) ).get();
                     this.container = instance.newBuilder( "polypheny/cassandra", getUniqueName() )
                             .withExposedPort( 9042 )
                             .build();
