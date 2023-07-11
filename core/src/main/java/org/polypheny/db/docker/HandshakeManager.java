@@ -150,7 +150,7 @@ public final class HandshakeManager {
                             log.info( "Handshake failed" );
                         } else {
                             log.info( "Saving docker config" );
-                            DockerManager.addDockerInstance( hostname, hostname, communicationPort );
+                            DockerSetupHelper.getPendingSetup( hostname ).ifPresent( s -> DockerManager.addDockerInstance( s.getHostname(), s.getAlias(), s.getCommunicationPort() ) );
                         }
                     };
                     containerRunningGuess = guessIfContainerExists();

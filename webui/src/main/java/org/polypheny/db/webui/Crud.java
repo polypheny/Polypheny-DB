@@ -3711,7 +3711,7 @@ public class Crud implements InformationObserver {
 
     void cancelHandshake( final Context ctx ) {
         String hostname = ctx.body();
-        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
+        if ( DockerSetupHelper.cancelSetup( hostname ) ) {
             ctx.status( 200 );
         } else {
             ctx.status( 404 );

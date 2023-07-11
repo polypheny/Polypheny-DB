@@ -33,6 +33,7 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -175,9 +176,19 @@ public final class AutoDocker {
         if ( isConnected() ) {
             return true;
         }
+
         if ( !isAvailable() ) {
             return false;
         }
+
+        try {
+            DockerSetupHelper.tryConnectDirectly( "localhost" );
+            DockerManager.addDockerInstance( "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT );
+            return true;
+        } catch ( IOException e ) {
+            // Need a new handshake
+        }
+
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {
                 Runnable r = this::doAutoHandshake;

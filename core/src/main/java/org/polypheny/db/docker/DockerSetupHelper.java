@@ -18,15 +18,20 @@ package org.polypheny.db.docker;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
 @Slf4j
 public final class DockerSetupHelper {
+
+    private static final Map<String, PendingSetup> pendingSetups = new HashMap<>();
+
 
     // TODO racy
     private static boolean hasAlias( String alias ) {
@@ -90,6 +95,9 @@ public final class DockerSetupHelper {
             int id = DockerManager.addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT );
             return new DockerSetupResult( true, id );
         } catch ( IOException e ) {
+            synchronized ( pendingSetups ) {
+                pendingSetups.put( hostname, new PendingSetup( hostname, alias, ConfigDocker.COMMUNICATION_PORT ) );
+            }
             return new DockerSetupResult( HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT ) );
         }
 
@@ -151,10 +159,48 @@ public final class DockerSetupHelper {
 
         if ( hostChanged ) {
             dockerInstance.getCurrentConfig().setHost( hostname );
+            synchronized ( pendingSetups ) {
+                pendingSetups.put( hostname, new PendingSetup( hostname, alias, ConfigDocker.COMMUNICATION_PORT ) );
+            }
             HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT );
         }
 
         return new DockerUpdateResult( id, hostChanged );
+    }
+
+
+    public static boolean cancelSetup( String hostname ) {
+        synchronized ( pendingSetups ) {
+            pendingSetups.remove( hostname );
+            return HandshakeManager.getInstance().cancelHandshake( hostname );
+        }
+    }
+
+
+    public static Optional<PendingSetup> getPendingSetup( String hostname ) {
+        synchronized ( pendingSetups ) {
+            return Optional.ofNullable( pendingSetups.getOrDefault( hostname, null ) );
+        }
+    }
+
+
+    static final class PendingSetup {
+
+        @Getter
+        private final String hostname;
+        @Getter
+        private final String alias;
+        @Getter
+        private final int communicationPort;
+
+
+        private PendingSetup( String hostname, String alias, int communicationPort ) {
+            log.info( "Pending Setup" );
+            this.hostname = hostname;
+            this.alias = alias;
+            this.communicationPort = communicationPort;
+        }
+
     }
 
 
