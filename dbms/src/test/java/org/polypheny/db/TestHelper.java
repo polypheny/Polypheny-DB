@@ -729,7 +729,7 @@ public class TestHelper {
 
             Properties props = new Properties();
             props.setProperty( "user", "pa" );
-            props.setProperty( "serialization", "PROTOBUF" );
+            //props.setProperty( "serialization", "PROTOBUF" ); deprecated parameter for jdbc-driver
 
             connection = DriverManager.getConnection( url, props );
             connection.setAutoCommit( autoCommit );
