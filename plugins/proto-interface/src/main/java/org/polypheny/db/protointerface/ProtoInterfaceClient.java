@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -42,7 +41,7 @@ public class ProtoInterfaceClient {
     @Getter
     private Map<String, String> statementProperties;
 
-    private Map<String, String> connectionProperties;
+    private InterfaceClientProperties clientProperties;
     private int minorApiVersion;
     private int majorApiVersion;
 
@@ -53,7 +52,7 @@ public class ProtoInterfaceClient {
         this.logicalNamespace = connectionBuilder.logicalNamespace;
         this.currentTransaction = connectionBuilder.currentTransaction;
         this.transactionManager = connectionBuilder.transactionManager;
-        this.connectionProperties = connectionBuilder.connectionProperties;
+        this.clientProperties = connectionBuilder.clientProperties;
         this.majorApiVersion = connectionBuilder.majorApiVersion;
         this.minorApiVersion = connectionBuilder.minorApiVersion;
     }
@@ -128,11 +127,7 @@ public class ProtoInterfaceClient {
 
 
     public boolean isAutocommit() throws IllegalArgumentException{
-        String isAutocommit = connectionProperties.get( PropertyUtils.AUTOCOMMIT_KEY );
-        if ( isAutocommit == null ) {
-            isAutocommit = PropertyUtils.getDefaultOf( PropertyUtils.AUTOCOMMIT_KEY );
-        }
-        return Boolean.parseBoolean( isAutocommit );
+        return clientProperties.isAutoCommit();
     }
 
 
@@ -148,10 +143,9 @@ public class ProtoInterfaceClient {
         private LogicalNamespace logicalNamespace;
         private Transaction currentTransaction;
         private TransactionManager transactionManager;
-        private Map<String, String> connectionProperties;
+        private InterfaceClientProperties clientProperties;
         private int minorApiVersion;
         private int majorApiVersion;
-        private boolean isAutocommit;
 
 
         private Builder() {
@@ -176,11 +170,6 @@ public class ProtoInterfaceClient {
         }
 
 
-        public Builder setCurrentTransaction( Transaction currentTransaction ) {
-            this.currentTransaction = currentTransaction;
-            return this;
-        }
-
 
         public Builder setTransactionManager( TransactionManager transactionManager ) {
             this.transactionManager = transactionManager;
@@ -188,8 +177,8 @@ public class ProtoInterfaceClient {
         }
 
 
-        public Builder setConnectionProperties( Map<String, String> connectionProperties ) {
-            this.connectionProperties = connectionProperties;
+        public Builder setClientProperties( InterfaceClientProperties clientProperties ) {
+            this.clientProperties = clientProperties;
             return this;
         }
 
