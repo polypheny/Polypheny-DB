@@ -21,15 +21,7 @@ import org.polypheny.db.protointerface.proto.ConnectionProperties;
 
 public class InterfaceClientProperties {
     public InterfaceClientProperties(ConnectionProperties clientProperties) {
-        this.username = clientProperties.hasUsername() ? clientProperties.getUsername() : null;
-        this.password = clientProperties.hasPassword() ? clientProperties.getPassword() : null;
-        this.isAutoCommit = clientProperties.getIsAutoCommit();
-        this.isReadOnly = clientProperties.getIsReadOnly();
-        this.resultSetHoldability = clientProperties.getHoldability();
-        this.transactionIsolation = clientProperties.getIsolation();
-        this.networkTimeout = clientProperties.getNetworkTimeout();
-        this.namespaceName = clientProperties.hasNamespaceName() ? clientProperties.getNamespaceName() : null;
-
+        update(clientProperties);
     }
 
     @Getter
@@ -59,5 +51,16 @@ public class InterfaceClientProperties {
 
     public boolean haveNamespaceName() {
         return namespaceName != null;
+    }
+
+    public void update(ConnectionProperties clientProperties) {
+        this.username = clientProperties.hasUsername() ? clientProperties.getUsername() : null;
+        this.password = clientProperties.hasPassword() ? clientProperties.getPassword() : null;
+        this.isAutoCommit = clientProperties.getIsAutoCommit();
+        this.isReadOnly = clientProperties.getIsReadOnly();
+        this.resultSetHoldability = clientProperties.getHoldability();
+        this.transactionIsolation = clientProperties.getIsolation();
+        this.networkTimeout = clientProperties.getNetworkTimeout();
+        this.namespaceName = clientProperties.hasNamespaceName() ? clientProperties.getNamespaceName() : null;
     }
 }
