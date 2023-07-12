@@ -94,8 +94,7 @@ public class CassandraPlugin extends Plugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
-                "instanceId", "0",
-                "port", "9042"
+                "instanceId", "0"
         );
 
         Adapter.addAdapter( CassandraStore.class, ADAPTER_NAME, settings );
@@ -147,8 +146,8 @@ public class CassandraPlugin extends Plugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
-        public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true );
+        public CassandraStore( int storeId, String uniqueName, Map<String, String> adapterSettings ) {
+            super( storeId, uniqueName, adapterSettings, true );
 
             // Parse settings
 

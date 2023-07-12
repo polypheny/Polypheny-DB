@@ -77,4 +77,13 @@ public final class PolyphenyCertificateManager {
         return PolyphenyCertificateUtils.generateOrLoadCertificates( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 
+
+    public static void deleteCertificates( String hostname ) {
+        try {
+            PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( getBaseDirectory( hostname ) );
+        } catch ( IOException e ) {
+            // ignore
+        }
+    }
+
 }

@@ -101,13 +101,12 @@ public class MongoPlugin extends Plugin {
 
     @Override
     public void start() {
-        Map<String, String> settings = ImmutableMap.copyOf( Map.of(
-                "port", "27017",
+        Map<String, String> settings = ImmutableMap.of(
                 "type", "mongo",
                 "instanceId", "0",
                 "mode", "docker",
                 "trxLifetimeLimit", "1209600"
-        ) );
+        );
 
         Adapter.addAdapter( MongoStore.class, ADAPTER_NAME, settings );
     }
@@ -149,8 +148,9 @@ public class MongoPlugin extends Plugin {
         }
 
 
-        public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, true );
+
+        public MongoStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
+            super( adapterId, uniqueName, adapterSettings, Boolean.parseBoolean( adapterSettings.get( "persistent" ) ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {

@@ -309,7 +309,7 @@ public abstract class Adapter {
         this.adapterName = properties.name();
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
-        this.settings = settings;
+        this.settings = new HashMap<>( settings );
 
         informationPage = new InformationPage( uniqueName );
         informationGroups = new ArrayList<>();

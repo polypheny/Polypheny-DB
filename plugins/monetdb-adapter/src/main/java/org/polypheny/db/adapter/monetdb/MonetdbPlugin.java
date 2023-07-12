@@ -47,9 +47,7 @@ public class MonetdbPlugin extends Plugin {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
                 "instanceId", "0",
-                "password", "polypheny",
-                "maxConnections", "25",
-                "port", "5000"
+                "maxConnections", "25"
         );
 
         Adapter.addAdapter( MonetdbStore.class, ADAPTER_NAME, settings );

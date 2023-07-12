@@ -98,7 +98,6 @@ public class Neo4jPlugin extends Plugin {
     public void start() {
         ImmutableMap<String, String> settings = ImmutableMap.of(
                 "persistent", "true",
-                "port", "7687",
                 "mode", "docker",
                 "instanceId", "0",
                 "type", "neo4j" );
@@ -167,8 +166,8 @@ public class Neo4jPlugin extends Plugin {
         private String host;
 
 
-        public Neo4jStore( int adapterId, String uniqueName, Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, Boolean.parseBoolean( settings.get( "persistent" ) ) );
+        public Neo4jStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
+            super( adapterId, uniqueName, adapterSettings, Boolean.parseBoolean( adapterSettings.get( "persistent" ) ) );
 
             this.port = Integer.parseInt( settings.get( "port" ) );
 
