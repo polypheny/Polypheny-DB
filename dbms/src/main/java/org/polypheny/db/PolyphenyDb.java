@@ -51,11 +51,14 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.PolyphenyCertificateManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -281,6 +284,16 @@ public class PolyphenyDb {
 
         log.info( "Polypheny UUID: " + uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid.toString() );
+
+        if ( testMode && AutoDocker.getInstance().isAvailable() ) {
+            Catalog.resetDocker = true;
+            PolyphenyCertificateManager.deleteCertificates( "localhost" );
+            ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( List.of(), ConfigDocker.class );
+            AutoDocker.getInstance().start();
+            // This is done so we have a DockerInstance with id 0, Plugins using addAdapter depend on it...
+            List<ConfigDocker> configList = List.of( new ConfigDocker( 0, "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT ) );
+            ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+        }
 
         class ShutdownHelper implements Runnable {
 
