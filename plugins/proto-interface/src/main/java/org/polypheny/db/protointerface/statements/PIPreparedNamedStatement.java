@@ -16,25 +16,27 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.List;
-import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.PIClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class NamedPreparedInterfaceStatement extends IndexedPreparedInterfaceStatement {
+import java.util.List;
+import java.util.Map;
+
+public class PIPreparedNamedStatement extends PIPreparedIndexedStatement {
 
     private final NamedValueProcessor namedValueProcessor;
 
 
-    public NamedPreparedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
-        super( statementId, protoInterfaceClient, queryLanguage, query );
-        this.namedValueProcessor = new NamedValueProcessor( query );
+    public PIPreparedNamedStatement(Builder builder ) {
+        super( builder );
+        this.namedValueProcessor = new NamedValueProcessor( builder.query );
         overwriteQuery( namedValueProcessor.getProcessedQuery() );
     }
 
@@ -63,6 +65,49 @@ public class NamedPreparedInterfaceStatement extends IndexedPreparedInterfaceSta
         }
         setParameters( values );
         return execute();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+
+    static class Builder extends PIPreparedIndexedStatement.Builder {
+
+        private Builder() {
+            super();
+        }
+
+        public Builder setStatementId(int statementId) {
+            this.statementId = statementId;
+            return this;
+        }
+
+
+        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
+            this.protoInterfaceClient = protoInterfaceClient;
+            return this;
+        }
+
+
+        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
+            this.queryLanguage = queryLanguage;
+            return this;
+        }
+
+        public Builder setQuery(String query) {
+            this.query = query;
+            return this;
+        }
+
+        public Builder setProperties(PIStatementProperties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public PIPreparedNamedStatement build() {
+            return new PIPreparedNamedStatement(this);
+        }
     }
 
 }
