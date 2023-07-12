@@ -190,8 +190,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         /* called as client auth check */
         getClient();
         String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
-        String tablePattern = columnsRequest.getTablePattern();
-        String columnPattern = columnsRequest.getColumnPattern();
+        String tablePattern =  columnsRequest.hasTablePattern() ? columnsRequest.getTablePattern() : null;
+        String columnPattern =  columnsRequest.hasColumnPattern() ? columnsRequest.getColumnPattern() : null;
         responseObserver.onNext( DbMetaRetriever.getColumns( namespacePattern, tablePattern, columnPattern ) );
         responseObserver.onCompleted();
     }
