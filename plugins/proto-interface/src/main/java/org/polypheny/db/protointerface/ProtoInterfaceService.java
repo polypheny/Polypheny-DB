@@ -21,53 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.polypheny.db.PolyphenyDb;
-import org.polypheny.db.protointerface.proto.CloseStatementRequest;
-import org.polypheny.db.protointerface.proto.CloseStatementResponse;
-import org.polypheny.db.protointerface.proto.ColumnsRequest;
-import org.polypheny.db.protointerface.proto.ColumnsResponse;
-import org.polypheny.db.protointerface.proto.CommitRequest;
-import org.polypheny.db.protointerface.proto.CommitResponse;
-import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
-import org.polypheny.db.protointerface.proto.ConnectionCheckResponse;
-import org.polypheny.db.protointerface.proto.ConnectionReply;
-import org.polypheny.db.protointerface.proto.ConnectionRequest;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
-import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
-import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
-import org.polypheny.db.protointerface.proto.ExportedKeysRequest;
-import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
-import org.polypheny.db.protointerface.proto.FetchRequest;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.ImportedKeysRequest;
-import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
-import org.polypheny.db.protointerface.proto.IndexedParameterBatch;
-import org.polypheny.db.protointerface.proto.IndexesRequest;
-import org.polypheny.db.protointerface.proto.IndexesResponse;
-import org.polypheny.db.protointerface.proto.LanguageRequest;
-import org.polypheny.db.protointerface.proto.LanguageResponse;
-import org.polypheny.db.protointerface.proto.NamespacesRequest;
-import org.polypheny.db.protointerface.proto.NamespacesResponse;
-import org.polypheny.db.protointerface.proto.ParameterList;
-import org.polypheny.db.protointerface.proto.ParameterSet;
-import org.polypheny.db.protointerface.proto.PreparedStatement;
-import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
-import org.polypheny.db.protointerface.proto.PrimaryKeysRequest;
-import org.polypheny.db.protointerface.proto.PrimaryKeysResponse;
-import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
-import org.polypheny.db.protointerface.proto.RollbackRequest;
-import org.polypheny.db.protointerface.proto.RollbackResponse;
-import org.polypheny.db.protointerface.proto.StatementBatchStatus;
-import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.proto.TableTypesRequest;
-import org.polypheny.db.protointerface.proto.TableTypesResponse;
-import org.polypheny.db.protointerface.proto.TablesRequest;
-import org.polypheny.db.protointerface.proto.TablesResponse;
-import org.polypheny.db.protointerface.proto.TypesRequest;
-import org.polypheny.db.protointerface.proto.TypesResponse;
-import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
-import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
+import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.protointerface.statements.IndexedPreparedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.NamedPreparedInterfaceStatement;
 import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
@@ -384,6 +338,14 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
         ProtoInterfaceClient client = getClient();
         statementManager.closeStatementOrBatch( client, closeStatementRequest.getStatementId() );
         responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
+    }
+
+    @Override
+    public void updateConnectionProperties(ConnectionProperties connectionProperties, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver) {
+        ProtoInterfaceClient client = getClient();
+        client.updateClientProperties(connectionProperties);
+        responseObserver.onNext(ConnectionPropertiesUpdateResponse.newBuilder().build());
+        responseObserver.onCompleted();
     }
 
 
