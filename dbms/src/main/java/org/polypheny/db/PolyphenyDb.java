@@ -255,7 +255,7 @@ public class PolyphenyDb {
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
-        final UUID uuid;
+        UUID uuid;
         if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
             uuid = UUID.randomUUID();
             File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
@@ -273,6 +273,10 @@ public class PolyphenyDb {
             } catch ( IOException e ) {
                 throw new RuntimeException( "Failed to load UUID " + e );
             }
+        }
+
+        if ( testMode ) {
+            uuid = UUID.fromString( "027719c8-ae3e-4eae-aa9e-7dd82ebe510c" );
         }
 
         log.info( "Polypheny UUID: " + uuid );
