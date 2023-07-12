@@ -739,7 +739,11 @@ public class TestHelper {
             final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
             log.debug( "Connecting to database @ {}", url );
 
-            conn = DriverManager.getConnection( url, "pa", "" );
+            Properties props = new Properties();
+            props.setProperty( "user", "pa" );
+            //props.setProperty( "serialization", "PROTOBUF" ); deprecated parameter for jdbc-driver
+
+            conn = DriverManager.getConnection( url, props );
             conn.setAutoCommit( autoCommit );
         }
 
