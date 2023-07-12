@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.protointerface.InterfaceStatementProperties;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
@@ -39,8 +40,8 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
     protected boolean hasParametersSet;
 
 
-    public IndexedPreparedInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
-        super( statementId, protoInterfaceClient, queryLanguage, query );
+    private IndexedPreparedInterfaceStatement(Builder builder) {
+        super( builder );
         this.hasParametersSet = false;
     }
 
@@ -109,6 +110,49 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
     public int getBatchId() {
         // As prepared statements implement tProtoInterfaceStatementBatch directly, thy don't have a separate batch id.
         return statementId;
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+
+    static class Builder extends ProtoInterfaceStatement.Builder {
+
+        private Builder() {
+            super();
+        }
+
+        public Builder setStatementId(int statementId) {
+            this.statementId = statementId;
+            return this;
+        }
+
+
+        public Builder setProtoInterfaceClient(ProtoInterfaceClient protoInterfaceClient) {
+            this.protoInterfaceClient = protoInterfaceClient;
+            return this;
+        }
+
+
+        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
+            this.queryLanguage = queryLanguage;
+            return this;
+        }
+
+        public Builder setQuery(String query) {
+            this.query = query;
+            return this;
+        }
+
+        public Builder setProperties(InterfaceStatementProperties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public IndexedPreparedInterfaceStatement build() {
+            return new IndexedPreparedInterfaceStatement(this);
+        }
     }
 
 }
