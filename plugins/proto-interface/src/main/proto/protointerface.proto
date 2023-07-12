@@ -51,7 +51,8 @@ service ProtoInterface {
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
 
   // Properties
-  rpc StatementPropertyUpdate(StatementProperties) returns (StatementPropertyConfirmation) {}
+  rpc UpdateConnectionProperties(ConnectionProperties) returns (ConnectionPropertiesUpdateResponse){}
+  rpc UpdateStatementProperties(StatementProperties) returns (StatementPropertiesUpdateResponse) {}
 }
 
 message ConnectionCheckRequest{}
@@ -97,6 +98,10 @@ message ConnectionProperties {
     SERIALIZABLE = 3;
     REPEATABLE_READ = 4;
   }
+}
+
+
+message ConnectionPropertiesUpdateResponse {
 }
 
 message ConnectionReply {
@@ -153,7 +158,7 @@ message StatementProperties{
   map<string, string> properties = 2;
 }
 
-message StatementPropertyConfirmation {
+message StatementPropertiesUpdateResponse {
 }
 
 message ParameterizedStatement {
