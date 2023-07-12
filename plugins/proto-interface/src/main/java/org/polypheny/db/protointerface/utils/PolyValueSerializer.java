@@ -115,6 +115,8 @@ public class PolyValueSerializer {
             case BOOLEAN:
                 // used by PolyBoolean
                 return serializeAsProtoBoolean( polyValue.asBoolean() );
+            case TINYINT:
+            case SMALLINT:
             case INTEGER:
                 // used by PolyInteger
                 return serializeAsProtoInteger( polyValue.asInteger() );
@@ -124,6 +126,7 @@ public class PolyValueSerializer {
             case DECIMAL:
                 // used by PolyBigDecimal
                 return serializeAsProtoBigDecimal( polyValue.asBigDecimal() );
+            case REAL:
             case FLOAT:
                 // used by PolyFloat
                 return serializeAsProtoFloat( polyValue.asFloat() );
@@ -135,9 +138,11 @@ public class PolyValueSerializer {
                 return serializeAsProtoDate( polyValue.asDate() );
             case TIME:
                 //used by PolyTime
+            case TIME_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP:
                 //used by PolyTimeStamp
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return serializeAsProtoTimeStamp( polyValue.asTimeStamp() );
             case INTERVAL_SECOND:
                 //used by PolyInterval
@@ -165,18 +170,17 @@ public class PolyValueSerializer {
                 //used by PolyInterval
             case INTERVAL_YEAR:
                 return serializeAsProtoInterval( polyValue.asInterval() );
+            case CHAR:
             case VARCHAR:
                 // used by PolyString
                 return serializeAsProtoString( polyValue.asString() );
             case BINARY:
+            case VARBINARY:
                 // used by PolyBinary
                 return serializeAsProtoBinary( polyValue.asBinary() );
             case NULL:
                 // used by PolyNull
                 return serializeAsProtoNull( polyValue.asNull() );
-            case SYMBOL:
-                // used by PolySymbol
-                return serailizeAsProtoSymbol( polyValue.asSymbol() );
             case ARRAY:
                 // used by PolyList
                 return serializeAsProtoList( polyValue.asList() );
@@ -199,19 +203,34 @@ public class PolyValueSerializer {
             case PATH:
                 //used by PolyPath
                 serializeAsProtoPath( polyValue.asPath() );
+            case IMAGE:
+            case VIDEO:
+            case AUDIO:
             case FILE:
                 // used by PolyFile
                 if ( polyValue instanceof PolyFile ) {
-                    throw new NotImplementedException("Serialization of PolyFile not implemented");
+                    throw new NotImplementedException( "Serialization of PolyFile not implemented" );
                     //return serializeAsProtoFile( polyValue.asFile() );
                 }
                 if ( polyValue instanceof PolyStream ) {
-                    throw new NotImplementedException("Serialization of PolyStream not implemented");
+                    throw new NotImplementedException( "Serialization of PolyStream not implemented" );
                     //return serializeAsProtoStream( polyValue.asStream() );
                 }
                 throw new IllegalArgumentException( "Illegal poly value for poly type FILE." );
                 // used by PolyStream
-
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+            case SYMBOL:
+            case JSON:
+            case MULTISET:
+            case ANY:
+                throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
             case USER_DEFINED_TYPE:
                 // used by PolyUserDefinedType
                 return serializeAsProtoUserDefinedType( polyValue.asUserDefinedValue() );
@@ -359,17 +378,6 @@ public class PolyValueSerializer {
                 .addAllValues( serializeList( polyList.getValue() ) )
                 .build();
     }
-
-
-    private static ProtoValue serailizeAsProtoSymbol( PolySymbol polySymbol ) {
-        throw new NotImplementedException( "serialization of type SYMBOL as PolySymbol is not supported" );
-    }
-
-
-    private static ProtoValue serializeAsProtoStream( PolyStream polyStream ) {
-        throw new NotImplementedException( "Stream handling not yet implemented" );
-    }
-
 
     private static ProtoValue serializeAsProtoFile( PolyFile polyFile ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -83,9 +84,12 @@ public class DbMetaRetriever {
 
     @NotNull
     private static List<LogicalTable> getLogicalTables( String namespacePattern, String tablePattern, List<String> tableTypes ) {
-        List<EntityType> entityTypes = tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toList() );
-        return getLogicalTables( namespacePattern, tablePattern ).stream()
-                .filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
+        List<LogicalTable> logicalTables = getLogicalTables( namespacePattern, tablePattern );
+        if ( tableTypes == null ) {
+            return logicalTables;
+        }
+        Set<EntityType> entityTypes = getTableTypes( tableTypes );
+        return logicalTables.stream().filter( t -> entityTypes.contains( t.entityType ) ).collect( Collectors.toList() );
     }
 
 
@@ -175,6 +179,12 @@ public class DbMetaRetriever {
     }
 
 
+    @NotNull
+    private static Set<EntityType> getTableTypes( List<String> tableTypes ) {
+        return tableTypes.stream().map( EntityType::getByName ).collect( Collectors.toSet() );
+    }
+
+
     private static Table getTableMeta( LogicalTable logicalTable ) {
         Serializable[] parameters = logicalTable.getParameterArray();
         return Table.newBuilder()
@@ -203,12 +213,12 @@ public class DbMetaRetriever {
         columnBuilder.setTableName( parameters[2].toString() );
         columnBuilder.setColumnName( parameters[3].toString() );
         columnBuilder.setTypeName( parameters[5].toString() );
-        columnBuilder.setTypeLength( Integer.parseInt( parameters[6].toString() ) );
-        columnBuilder.setTypeScale( Integer.parseInt( parameters[8].toString() ) );
+        Optional.ofNullable( parameters[6] ).ifPresent( p -> columnBuilder.setTypeLength( Integer.parseInt( p.toString() ) ) );
+        Optional.ofNullable( parameters[8] ).ifPresent( p -> columnBuilder.setTypeScale( Integer.parseInt( p.toString() ) ) );
         columnBuilder.setIsNullable( parameters[10].toString().equals( "1" ) );
-        Optional.of( parameters[12] ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.toString() ) );
+        Optional.ofNullable( parameters[12] ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.toString() ) );
         columnBuilder.setColumnIndex( Integer.parseInt( parameters[16].toString() ) );
-        Optional.of( parameters[18] ).ifPresent( p -> columnBuilder.setCollation( p.toString() ) );
+        Optional.ofNullable( parameters[18] ).ifPresent( p -> columnBuilder.setCollation( p.toString() ) );
         return columnBuilder.build();
     }
 
@@ -324,8 +334,8 @@ public class DbMetaRetriever {
         Type.Builder typeBuilder = Type.newBuilder();
         typeBuilder.setTypeName( polyType.getName() );
         typeBuilder.setPrecision( typeSystem.getMaxPrecision( polyType ) );
-        typeBuilder.setLiteralPrefix( typeSystem.getLiteral( polyType, true ) );
-        typeBuilder.setLiteralSuffix( typeSystem.getLiteral( polyType, false ) );
+        Optional.ofNullable( typeSystem.getLiteral( polyType, true ) ).ifPresent( typeBuilder::setLiteralPrefix );
+        Optional.ofNullable( typeSystem.getLiteral( polyType, false ) ).ifPresent( typeBuilder::setLiteralSuffix );
         typeBuilder.setIsCaseSensitive( typeSystem.isCaseSensitive( polyType ) );
         typeBuilder.setIsSearchable( DatabaseMetaData.typeSearchable );
         typeBuilder.setIsAutoIncrement( typeSystem.isAutoincrement( polyType ) );
