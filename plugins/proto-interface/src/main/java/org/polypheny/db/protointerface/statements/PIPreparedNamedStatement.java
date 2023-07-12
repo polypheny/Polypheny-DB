@@ -16,73 +16,98 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.List;
-import java.util.Map;
-import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.PIClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
+import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class PIPreparedNamedStatement extends PIPreparedStatement {
+import java.util.List;
+import java.util.Map;
 
-    @Getter
-    protected String query;
-    @Getter
-    @Setter
-    protected PolyImplementation<PolyValue> implementation;
-    @Getter
-    protected Statement statement;
+public class PIPreparedNamedStatement extends PIPreparedIndexedStatement {
+
     private final NamedValueProcessor namedValueProcessor;
 
 
-    public PIPreparedNamedStatement(
-            int id,
-            PIClient client,
-            QueryLanguage language,
-            LogicalNamespace namespace,
-            String query ) {
-        super(
-                id, client, language, namespace
-        );
-        this.namedValueProcessor = new NamedValueProcessor( query );
-        this.query = namedValueProcessor.getProcessedQuery();
+    public PIPreparedNamedStatement(Builder builder ) {
+        super( builder );
+        this.namedValueProcessor = new NamedValueProcessor( builder.query );
+        overwriteQuery( namedValueProcessor.getProcessedQuery() );
     }
 
 
-    @SuppressWarnings("Duplicates")
-    public StatementResult execute( Map<String, PolyValue> values, int fetchSize ) throws Exception {
-        synchronized ( client ) {
-            if ( statement == null ) {
-                statement = client.getCurrentOrCreateNewTransaction().createStatement();
-            } else {
-            statement.getDataContext().resetParameterValues();
+    public List<ParameterMeta> determineParameterMeta() {
+        AlgDataType parameters = getParameterRowType();
+        return RelationalMetaRetriever.retrieveParameterMetas( parameters, namedValueProcessor.getNamedIndexes() );
+    }
+
+
+    private void setParameters( Map<String, PolyValue> values ) {
+        List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
+        long index = 0;
+        for ( PolyValue value : valueList ) {
+            if ( value != null ) {
+                currentStatement.getDataContext().addParameterValues( index++, null, List.of( value ) );
             }
-            List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
-            long index = 0;
-            for ( PolyValue value : valueList ) {
-                if ( value != null ) {
-                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(value.getType());
-                    statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
-                }
-            }
-            StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this, fetchSize );
         }
+        hasParametersSet = true;
     }
 
 
-    @Override
-    public Transaction getTransaction() {
-        return statement.getTransaction();
+    public StatementResult execute( Map<String, PolyValue> values ) throws Exception {
+        if ( currentStatement == null ) {
+            currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
+        }
+        setParameters( values );
+        return execute();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+
+    static class Builder extends PIPreparedIndexedStatement.Builder {
+
+        private Builder() {
+            super();
+        }
+
+        public Builder setStatementId(int statementId) {
+            this.statementId = statementId;
+            return this;
+        }
+
+
+        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
+            this.protoInterfaceClient = protoInterfaceClient;
+            return this;
+        }
+
+
+        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
+            this.queryLanguage = queryLanguage;
+            return this;
+        }
+
+        public Builder setQuery(String query) {
+            this.query = query;
+            return this;
+        }
+
+        public Builder setProperties(PIStatementProperties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public PIPreparedNamedStatement build() {
+            return new PIPreparedNamedStatement(this);
+        }
     }
 
 }

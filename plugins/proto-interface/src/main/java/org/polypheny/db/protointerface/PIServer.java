@@ -32,12 +32,12 @@ public class PIServer {
     private final int port;
 
 
-    public PIServer(PIPlugin.ProtoInterface protoInterface) {
-        this.port = protoInterface.getPort();
+    public PIServer(int port, PIService service, ClientManager clientManager ) {
+        this.port = port;
         ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
         server = serverBuilder
-                .addService( new PIService( protoInterface.getClientManager() ) )
-                .intercept( new ClientMetaInterceptor( ) )
+                .addService( service )
+                .intercept( new ClientMetaInterceptor( clientManager ) )
                 .intercept( new ExceptionHandler() )
                 .build();
     }
@@ -60,7 +60,7 @@ public class PIServer {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
-        server.shutdown().awaitTermination( 60, TimeUnit.SECONDS );
+        server.shutdown().awaitTermination( 30, TimeUnit.SECONDS );
     }
 
 

@@ -17,71 +17,65 @@
 package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class PIUnparameterizedStatement extends PIStatement {
 
-    String query;
-    Statement statement;
-    PolyImplementation<PolyValue> implementation;
+    private PIUnparameterizedStatement(Builder builder) {
+        super(builder);
+    }
 
+    public StatementResult execute() throws Exception {
+        Statement currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
+        return execute(currentStatement);
 
-    public PIUnparameterizedStatement( int id, PIClient client, QueryLanguage language, LogicalNamespace namespace, String query ) {
-        super(
-                id,
-                client,
-                language,
-                namespace
-        );
-        this.query = query;
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
 
-    public StatementResult execute(int fetchSize) throws Exception {
-        statement = client.getCurrentOrCreateNewTransaction().createStatement();
-        synchronized ( client ) {
-            StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this, fetchSize);
+    static class Builder extends PIStatement.Builder {
+
+        private Builder() {
+            super();
+        }
+
+        public Builder setStatementId(int statementId) {
+            this.statementId = statementId;
+            return this;
+        }
+
+
+        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
+            this.protoInterfaceClient = protoInterfaceClient;
+            return this;
+        }
+
+
+        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
+            this.queryLanguage = queryLanguage;
+            return this;
+        }
+
+        public Builder setQuery(String query) {
+            this.query = query;
+            return this;
+        }
+
+        public Builder setProperties(PIStatementProperties properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        public PIUnparameterizedStatement build() {
+            return new PIUnparameterizedStatement(this);
         }
     }
-
-
-    @Override
-    public PolyImplementation<PolyValue> getImplementation() {
-        return implementation;
-    }
-
-
-    @Override
-    public void setImplementation( PolyImplementation<PolyValue> implementation ) {
-        this.implementation = implementation;
-    }
-
-
-    @Override
-    public Statement getStatement() {
-        return statement;
-    }
-
-
-    @Override
-    public String getQuery() {
-        return query;
-    }
-
-
-    @Override
-    public Transaction getTransaction() {
-        return statement.getTransaction();
-    }
-
 }
