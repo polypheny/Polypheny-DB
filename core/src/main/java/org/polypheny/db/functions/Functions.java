@@ -108,6 +108,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -3270,6 +3271,23 @@ public class Functions {
 
     public static PolyBoolean not( Boolean b ) {
         return PolyBoolean.of( !b );
+    }
+
+
+    public static List<PolyValue> arrayToPolyList( final java.sql.Array a, Function1<Object, PolyValue> transformer, int depth ) {
+        if ( a == null ) {
+            return null;
+        }
+        List<?> array = arrayToList( a );
+        return applyToLowest( array, transformer ).asList();
+    }
+
+
+    private static PolyValue applyToLowest( Object o, Function1<Object, PolyValue> transformer ) {
+        if ( o instanceof List ) {
+            return PolyList.of( ((List<?>) o).stream().map( a -> applyToLowest( a, transformer ) ).collect( Collectors.toList() ) );
+        }
+        return transformer.apply( o );
     }
 
 

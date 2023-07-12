@@ -62,7 +62,6 @@ import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
@@ -77,7 +76,6 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
@@ -118,7 +116,6 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -1381,7 +1378,7 @@ public class DbmsMeta implements ProtobufMeta {
             public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    transform.add( wrapNullableIfNecessary( getPolyToExternalizer( field.getType() ), field.getType().isNullable() ) );
+                    transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType() ), field.getType().isNullable() ) );
                 }
 
                 if ( rowType.getFieldCount() > 1 ) {
@@ -1398,56 +1395,6 @@ public class DbmsMeta implements ProtobufMeta {
                 return Linq4j.transform( enumerable.enumerator(), row -> transform.get( 0 ).apply( (PolyValue) row ) );
             }
         };
-    }
-
-
-    private Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
-        return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
-    }
-
-
-    private static Function1<PolyValue, Object> getPolyToExternalizer( AlgDataType type ) {
-        switch ( type.getPolyType() ) {
-            case VARCHAR:
-            case CHAR:
-                return o -> o.asString().value;
-            case INTEGER:
-            case TINYINT:
-            case SMALLINT:
-                return o -> o.asNumber().IntValue();
-            case FLOAT:
-            case REAL:
-                return o -> o.asNumber().FloatValue();
-            case DOUBLE:
-                return o -> o.asNumber().DoubleValue();
-            case BIGINT:
-                return o -> o.asNumber().LongValue();
-            case DECIMAL:
-                return o -> o.asNumber().BigDecimalValue();
-            case DATE:
-                return o -> o.asDate().milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
-            case TIME:
-                return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
-            case TIMESTAMP:
-                return o -> o.asTimeStamp().milliSinceEpoch;
-            case BOOLEAN:
-                return o -> o.asBoolean().value;
-            case ARRAY:
-                Function1<PolyValue, Object> elTrans = getPolyToExternalizer( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ) );
-                return o -> o == null ? null : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
-            case FILE:
-                return o -> o;
-            default:
-                throw new NotImplementedException( "meta" );
-        }
-    }
-
-
-    private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
-        if ( type.getDimension() > 1 ) {
-            return AlgDataTypeFactory.DEFAULT.createArrayType( type.getComponentType(), type.getMaxCardinality(), type.getDimension() - 1 );
-        }
-        return type.getComponentType();
     }
 
 

@@ -35,17 +35,23 @@ import io.activej.serializer.annotations.SerializeClass;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializer;
@@ -170,6 +176,57 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyValue(
             @Deserialize("type") PolyType type ) {
         this.type = type;
+    }
+
+
+    public static Function1<PolyValue, Object> getPolyToJava( AlgDataType type ) {
+        switch ( type.getPolyType() ) {
+            case VARCHAR:
+            case CHAR:
+                return o -> o.asString().value;
+            case INTEGER:
+            case TINYINT:
+            case SMALLINT:
+                return o -> o.asNumber().IntValue();
+            case FLOAT:
+            case REAL:
+                return o -> o.asNumber().FloatValue();
+            case DOUBLE:
+                return o -> o.asNumber().DoubleValue();
+            case BIGINT:
+                return o -> o.asNumber().LongValue();
+            case DECIMAL:
+                return o -> o.asNumber().BigDecimalValue();
+            case DATE:
+                return o -> o.asDate().milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
+            case TIME:
+                return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
+            case TIMESTAMP:
+                return o -> o.asTimeStamp().milliSinceEpoch;
+            case BOOLEAN:
+                return o -> o.asBoolean().value;
+            case ARRAY:
+                Function1<PolyValue, Object> elTrans = getPolyToJava( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ) );
+                return o -> o == null ? null : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() );
+            case FILE:
+                return o -> o;
+            default:
+                throw new org.apache.commons.lang3.NotImplementedException( "meta" );
+        }
+    }
+
+
+    private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
+        if ( type.getDimension() > 1 ) {
+            // we make the component the parent for the next step
+            return AlgDataTypeFactory.DEFAULT.createArrayType( type.getComponentType(), type.getMaxCardinality(), type.getDimension() - 1 );
+        }
+        return type.getComponentType();
+    }
+
+
+    public static Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
+        return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
     }
 
 

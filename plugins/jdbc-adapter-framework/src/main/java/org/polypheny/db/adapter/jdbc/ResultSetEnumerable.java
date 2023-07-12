@@ -293,13 +293,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 break;
             case ARRAY:
                 if ( connectionHandler.getDialect().supportsNestedArrays() ) {
-                    SqlType componentType;
-                    AlgDataType t = type;
-                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
-                        t = t.getComponentType();
-                    }
-                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
-                    Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
+                    // apparently even postgres is able to support nested arrays now
+                    Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                 } else {
                     preparedStatement.setString( i, value.serialize() );
@@ -458,6 +453,18 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else {
             preparedStatement.setObject( i, value );
         }*/
+    }
+
+
+    private static Array getArray( PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
+        SqlType componentType;
+        AlgDataType t = type;
+        while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+            t = t.getComponentType();
+        }
+        componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+        Object[] array = ((List<?>) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type ), type.isNullable() ).apply( value )).toArray();
+        return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
     }
 
 

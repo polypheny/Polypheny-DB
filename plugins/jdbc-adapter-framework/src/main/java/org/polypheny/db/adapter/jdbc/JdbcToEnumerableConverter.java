@@ -54,6 +54,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -323,19 +324,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             // TODO js(knn): Make sure this is more than just a hotfix.
             //  add nullability stuff as well
             case ARRAY:
-                if ( dialect.supportsNestedArrays() ) {
-                    source = Expressions.call(
-                            BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method,
-                            Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) )
-                    );
-                } else {
-                    source = Expressions.call(
-                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                            Expressions.constant( ((ArrayType) fieldType).getDimension() ),
-                            Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-                    );
-                }
+                source = getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
                 break;
 
             case DATE:
@@ -377,6 +366,55 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
                 //}
         }
+        final Expression poly = getOfPolyExpression( fieldType, source );
+
+        //source is null if an expression was already added to the builder.
+        if ( poly != null ) {
+            builder.add( Expressions.statement( Expressions.assign( target, poly ) ) );
+        }
+
+        // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
+        if ( primitive != null ) {
+            builder.add(
+                    Expressions.ifThen(
+                            Expressions.call( resultSet_, "wasNull" ),
+                            Expressions.statement( Expressions.assign( target, PolyDefaults.NULLS.get( PolyValue.classFrom( polyType ) ).asExpression() ) ) ) );
+        }
+
+
+    }
+
+
+    @NotNull
+    private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
+        if ( dialect.supportsNestedArrays() ) {
+            ParameterExpression argument = Expressions.parameter( Object.class );
+
+            AlgDataType componentType = fieldType.getComponentType();
+            int depth = 0;
+            while ( componentType.getComponentType() != null ) {
+                componentType = componentType.getComponentType();
+                depth++;
+            }
+
+            return Expressions.call(
+                    BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
+                    Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument ), argument ),
+                    Expressions.constant( depth )
+            );
+        }
+        return Expressions.call(
+                BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                Expressions.constant( fieldType.getComponentType().getPolyType() ),
+                Expressions.constant( ((ArrayType) fieldType).getDimension() ),
+                Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
+        );
+
+    }
+
+
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source ) {
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
@@ -423,21 +461,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 log.warn( "potentially unhandled polyValue" );
                 poly = source;
         }
-
-        //source is null if an expression was already added to the builder.
-        if ( poly != null ) {
-            builder.add( Expressions.statement( Expressions.assign( target, poly ) ) );
-        }
-
-        // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
-        if ( primitive != null ) {
-            builder.add(
-                    Expressions.ifThen(
-                            Expressions.call( resultSet_, "wasNull" ),
-                            Expressions.statement( Expressions.assign( target, PolyDefaults.NULLS.get( PolyValue.classFrom( polyType ) ).asExpression() ) ) ) );
-        }
-
-
+        return poly;
     }
 
 

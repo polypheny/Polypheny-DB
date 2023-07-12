@@ -26,10 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -37,9 +39,12 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
@@ -49,6 +54,9 @@ import org.polypheny.db.type.PolyType;
 @Slf4j
 public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> implements ExtensionPoint {
 
+    @Delegate(excludes = Exclude.class)
+    private final RelationalScanDelegate delegate;
+
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
 
@@ -56,7 +64,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
 
 
     public AbstractJdbcSource(
-            int storeId,
+            long storeId,
             String uniqueName,
             Map<String, String> settings,
             String diverClass,
@@ -67,6 +75,8 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerInformationPage();
+
+        this.delegate = new RelationalScanDelegate( this, storeCatalog );
     }
 
 
@@ -105,6 +115,19 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
                 break;
         }
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
+    }
+
+
+    @Override
+    public void updateNamespace( String name, long id ) {
+        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        putNamespace( currentJdbcSchema );
+    }
+
+
+    @Override
+    public Namespace getCurrentNamespace() {
+        return currentJdbcSchema;
     }
 
 
@@ -287,6 +310,17 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
             throw new RuntimeException( "Exception while collecting schema information!" + e );
         }
         return map;
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void updateTable( long allocId );
+
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
     }
 
 }

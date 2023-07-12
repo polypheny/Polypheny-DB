@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RelationalAdapterDelegate;
+import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -43,6 +43,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
@@ -53,7 +54,7 @@ import org.polypheny.db.type.PolyType;
 public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> implements ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
-    private final RelationalAdapterDelegate delegate;
+    private final RelationalModifyDelegate delegate;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -89,7 +90,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // Create udfs
         createUdfs();
 
-        this.delegate = new RelationalAdapterDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
     }
 
 
@@ -124,6 +125,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     public void createUdfs() {
 
+    }
+
+
+    @Override
+    public Namespace getCurrentNamespace() {
+        return currentJdbcSchema;
     }
 
 
@@ -166,7 +173,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void updateTable( long allocId ) {
+    public void refreshTable( long allocId ) {
         PhysicalTable template = storeCatalog.getTable( allocId );
         storeCatalog.addTable( this.currentJdbcSchema.createJdbcTable( storeCatalog, template ) );
     }
@@ -465,8 +472,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
         void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
 
-        void updateTable( long allocId );
-
+        void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 

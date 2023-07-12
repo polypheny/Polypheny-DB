@@ -54,7 +54,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getModify( alloc.id, modify, call.builder() );
+        AlgNode newAlg = AdapterManager.getInstance().getStore( alloc.adapterId ).getModify( alloc.id, modify, call.builder() );
         call.transformTo( newAlg );
     }
 

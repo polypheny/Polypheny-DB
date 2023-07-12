@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.NotSupportedException;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -50,7 +49,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -75,7 +73,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -94,13 +91,16 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
-@AllArgsConstructor
-public class RelationalAdapterDelegate implements Modifiable {
+public class RelationalModifyDelegate extends RelationalScanDelegate implements Modifiable {
 
 
-    public final Adapter<RelStoreCatalog> callee;
+    private final Modifiable modifiable;
 
-    public final RelStoreCatalog catalog;
+
+    public RelationalModifyDelegate( Modifiable modifiable, RelStoreCatalog catalog ) {
+        super( modifiable, catalog );
+        this.modifiable = modifiable;
+    }
 
 
     @Override
@@ -309,7 +309,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public void updateTable( long allocId ) {
+    public void refreshTable( long allocId ) {
         throw new NotSupportedException();
     }
 
@@ -368,17 +368,8 @@ public class RelationalAdapterDelegate implements Modifiable {
             i++;
         }
 
-        callee.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
+        modifiable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
         return catalog.getTable( catalog.getAllocRelations().get( allocTable.id ).right.get( 0 ) );
-    }
-
-
-    @Override
-    public void updateGraph( long allocId ) {
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
     }
 
 
@@ -397,68 +388,13 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public void updateCollection( long allocId ) {
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-    }
-
-
-    @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
         catalog.dropTable( allocation.id );
         catalog.getAllocRelations().remove( allocation.id );
     }
 
 
-    @Override
-    public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
-        return builder.scan( catalog.getTable( relations.right.get( 0 ) ) ).build();
-    }
 
-
-    @Override
-    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
-        builder.clear();
-        PhysicalTable node = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        PhysicalTable nProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        PhysicalTable edge = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        PhysicalTable eProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
-
-        builder.scan( node );
-        builder.scan( nProps );
-        builder.scan( edge );
-        builder.scan( eProps );
-
-        builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
-
-        return builder.build();
-    }
-
-
-    @Override
-    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
-        builder.clear();
-        PhysicalTable table = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        builder.scan( table );
-        AlgDataType rowType = DocumentType.ofId();
-        builder.transform( ModelTrait.DOCUMENT, rowType, false );
-        return builder.build();
-    }
-
-
-    @Override
-    public AlgNode getScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> alloc = catalog.getAllocRelations().get( allocId );
-        if ( alloc.left.unwrap( AllocationTable.class ) != null ) {
-            return getRelScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationCollection.class ) != null ) {
-            return getDocumentScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationGraph.class ) != null ) {
-            return getGraphScan( allocId, builder );
-        } else {
-            throw new GenericRuntimeException( "This should not happen" );
-        }
-    }
 
 
     private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {

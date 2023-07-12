@@ -26,12 +26,10 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
@@ -80,16 +78,6 @@ public interface Modifiable extends Scannable {
     void updateColumnType( Context context, long allocId, LogicalColumn column );
 
 
-    default void createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
-        for ( AllocationTableWrapper allocation : allocations ) {
-            createTable( context, logical, allocation );
-        }
-    }
-
-    void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
-
-    void updateTable( long allocId );
-
     default void dropTable( Context context, List<Long> allocIds ) {
         for ( Long allocId : allocIds ) {
             dropTable( context, allocId );
@@ -112,9 +100,6 @@ public interface Modifiable extends Scannable {
      * support the LPG data model.
      */
     void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
-
-
-    void updateGraph( long allocId );
 
 
     default void dropGraph( Context context, List<AllocationGraph> allocations ) {
@@ -143,9 +128,6 @@ public interface Modifiable extends Scannable {
      * support the document data model natively.
      */
     void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
-
-
-    void updateCollection( long allocId );
 
 
     /**

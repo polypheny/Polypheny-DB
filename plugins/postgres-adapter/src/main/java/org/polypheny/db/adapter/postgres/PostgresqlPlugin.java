@@ -18,13 +18,13 @@ package org.polypheny.db.adapter.postgres;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
 import org.polypheny.db.adapter.postgres.store.PostgresqlStore;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
-public class PostgresqlPlugin extends Plugin {
+public class PostgresqlPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "POSTGRESQL";
@@ -34,8 +34,8 @@ public class PostgresqlPlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public PostgresqlPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public PostgresqlPlugin( PluginContext context ) {
+        super( context );
     }
 
 
@@ -49,15 +49,15 @@ public class PostgresqlPlugin extends Plugin {
                 "maxConnections", "25"
         );
 
-        Adapter.addAdapter( PostgresqlStore.class, ADAPTER_NAME, settings );
-        Adapter.addAdapter( PostgresqlSource.class, ADAPTER_NAME, settings );
+        AdapterManager.addAdapterDeploy( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
+        AdapterManager.addAdapterDeploy( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( PostgresqlStore.class, ADAPTER_NAME );
-        Adapter.removeAdapter( PostgresqlSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME );
     }
 
 }
