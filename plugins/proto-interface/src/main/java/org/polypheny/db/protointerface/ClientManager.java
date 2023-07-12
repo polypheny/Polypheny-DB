@@ -16,7 +16,6 @@
 
 package org.polypheny.db.protointerface;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -25,7 +24,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -53,8 +51,8 @@ public class ClientManager {
         if ( isConnected( connectionRequest.getClientUuid() ) ) {
             throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
-        Map<String, String> properties = connectionRequest.getConnectionPropertiesMap();
-        if ( !credentialsPresent( properties ) ) {
+        InterfaceClientProperties properties = new InterfaceClientProperties(connectionRequest.getConnectionProperties());
+        if ( !properties.haveCredentials() ) {
             throw new ProtoInterfaceServiceException( "No username and password given." );
         }
         ProtoInterfaceClient.Builder clientBuilder = ProtoInterfaceClient.newBuilder();
@@ -62,21 +60,22 @@ public class ClientManager {
                 .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
                 .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
                 .setClientUUID( connectionRequest.getClientUuid() )
-                .setConnectionProperties( properties )
                 .setTransactionManager( transactionManager );
-        final CatalogUser user = authenticateUser( properties.get( PropertyUtils.USERNAME_KEY ), properties.get( PropertyUtils.PASSWORD_KEY ) );
+        final CatalogUser user = authenticateUser( properties.getUsername(), properties.getPassword() );
         Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         LogicalNamespace namespace;
-        if ( properties.containsKey( "namespace" ) ) {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.get( "namespace" ) );
+        if ( properties.haveNamespaceName() ) {
+            namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.getNamespaceName() );
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
         }
         assert namespace != null;
         transaction.commit();
+        properties.updateNamespaceName(namespace.getName());
         clientBuilder
                 .setCatalogUser( user )
-                .setLogicalNamespace( namespace );
+                .setLogicalNamespace( namespace )
+                .setClientProperties( properties );
         openConnections.put( connectionRequest.getClientUuid(), clientBuilder.build() );
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
@@ -89,11 +88,6 @@ public class ClientManager {
             throw new ProtoInterfaceServiceException( "Client not registered" );
         }
         return openConnections.get( clientUUID );
-    }
-
-
-    private boolean credentialsPresent( Map<String, String> properties ) {
-        return properties.containsKey( PropertyUtils.USERNAME_KEY ) && properties.containsKey( PropertyUtils.PASSWORD_KEY );
     }
 
 
