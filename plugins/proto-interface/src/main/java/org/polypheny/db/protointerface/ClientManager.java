@@ -16,7 +16,6 @@
 
 package org.polypheny.db.protointerface;
 
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -28,76 +27,84 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 @Slf4j
 public class ClientManager {
 
-    private ConcurrentHashMap<String, ProtoInterfaceClient> openConnections;
+    private ConcurrentHashMap<String, PIClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
 
 
-    public ClientManager( Authenticator authenticator, TransactionManager transactionManager ) {
+    public ClientManager(Authenticator authenticator, TransactionManager transactionManager) {
         this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = authenticator;
         this.transactionManager = transactionManager;
     }
 
 
-    public void registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
-        if ( log.isTraceEnabled() ) {
-            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid() );
+    public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
+        if (log.isTraceEnabled()) {
+            log.trace("User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid());
         }
         // reject already connected user
-        if ( isConnected( connectionRequest.getClientUuid() ) ) {
-            throw new ProtoInterfaceServiceException( "user with uid " + connectionRequest.getClientUuid() + "is already connected." );
+        if (isConnected(connectionRequest.getClientUuid())) {
+            throw new ProtoInterfaceServiceException("A user with uid " + connectionRequest.getClientUuid() + "is already connected.");
         }
-        InterfaceClientProperties properties = new InterfaceClientProperties(connectionRequest.getConnectionProperties());
-        if ( !properties.haveCredentials() ) {
-            throw new ProtoInterfaceServiceException( "No username and password given." );
+        if (!connectionRequest.hasUsername() || !connectionRequest.hasPassword()) {
+            throw new ProtoInterfaceServiceException("No username or password given.");
         }
-        ProtoInterfaceClient.Builder clientBuilder = ProtoInterfaceClient.newBuilder();
-        clientBuilder
-                .setMajorApiVersion( connectionRequest.getMajorApiVersion() )
-                .setMinorApiVersion( connectionRequest.getMinorApiVersion() )
-                .setClientUUID( connectionRequest.getClientUuid() )
-                .setTransactionManager( transactionManager );
-        final CatalogUser user = authenticateUser( properties.getUsername(), properties.getPassword() );
-        Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
+        PIClientProperties properties = getPropertiesOrDefault(connectionRequest);
+        final CatalogUser user = authenticateUser(connectionRequest.getUsername(), connectionRequest.getPassword());
+        Transaction transaction = transactionManager.startTransaction(user, null, false, "proto-interface");
         LogicalNamespace namespace;
-        if ( properties.haveNamespaceName() ) {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.getNamespaceName() );
+        if (properties.haveNamespaceName()) {
+            namespace = Catalog.getInstance().getSnapshot().getNamespace(properties.getNamespaceName());
         } else {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace( Catalog.defaultNamespaceName );
+            namespace = Catalog.getInstance().getSnapshot().getNamespace(Catalog.defaultNamespaceName);
         }
         assert namespace != null;
         transaction.commit();
         properties.updateNamespaceName(namespace.getName());
-        clientBuilder
-                .setCatalogUser( user )
-                .setLogicalNamespace( namespace )
-                .setClientProperties( properties );
-        openConnections.put( connectionRequest.getClientUuid(), clientBuilder.build() );
-        if ( log.isTraceEnabled() ) {
-            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
+        PIClient client = PIClient.newBuilder()
+                .setMajorApiVersion(connectionRequest.getMajorApiVersion())
+                .setMinorApiVersion(connectionRequest.getMinorApiVersion())
+                .setClientUUID(connectionRequest.getClientUuid())
+                .setTransactionManager(transactionManager)
+                .setCatalogUser(user)
+                .setLogicalNamespace(namespace)
+                .setClientProperties(properties)
+                .build();
+        openConnections.put(connectionRequest.getClientUuid(), client);
+        if (log.isTraceEnabled()) {
+            log.trace("proto-interface established connection to user {}.", connectionRequest.getClientUuid());
         }
     }
 
-
-    public ProtoInterfaceClient getClient( String clientUUID ) throws ProtoInterfaceServiceException {
-        if ( !openConnections.containsKey( clientUUID ) ) {
-            throw new ProtoInterfaceServiceException( "Client not registered" );
+    private PIClientProperties getPropertiesOrDefault(ConnectionRequest connectionRequest) {
+        if (connectionRequest.hasConnectionProperties()) {
+            return new PIClientProperties(connectionRequest.getConnectionProperties());
         }
-        return openConnections.get( clientUUID );
+        return PIClientProperties.getDefaultInstance();
     }
 
 
-    private CatalogUser authenticateUser( String username, String password ) throws AuthenticationException {
-        return authenticator.authenticate( username, password );
+    public PIClient getClient(String clientUUID) throws ProtoInterfaceServiceException {
+        if (!openConnections.containsKey(clientUUID)) {
+            throw new ProtoInterfaceServiceException("Client not registered");
+        }
+        return openConnections.get(clientUUID);
     }
 
 
-    private boolean isConnected( String clientUUID ) {
-        return openConnections.containsKey( clientUUID );
+    private CatalogUser authenticateUser(String username, String password) throws AuthenticationException {
+        return authenticator.authenticate(username, password);
+    }
+
+
+    private boolean isConnected(String clientUUID) {
+        return openConnections.containsKey(clientUUID);
     }
 
 }

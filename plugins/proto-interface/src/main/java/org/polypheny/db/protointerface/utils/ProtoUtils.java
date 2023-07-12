@@ -26,22 +26,22 @@ import org.polypheny.db.protointerface.proto.Row;
 import org.polypheny.db.protointerface.proto.StatementBatchStatus;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.proto.StatementStatus;
-import org.polypheny.db.protointerface.statements.ProtoInterfaceStatement;
-import org.polypheny.db.protointerface.statements.ProtoInterfaceStatementBatch;
+import org.polypheny.db.protointerface.statements.PIStatement;
+import org.polypheny.db.protointerface.statements.PIStatementBatch;
 import org.polypheny.db.protointerface.statements.Signaturizable;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
 
-    public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement ) {
+    public static StatementStatus createStatus( PIStatement protoInterfaceStatement ) {
         return StatementStatus.newBuilder()
                 .setStatementId( protoInterfaceStatement.getStatementId() )
                 .build();
     }
 
 
-    public static StatementStatus createStatus( ProtoInterfaceStatement protoInterfaceStatement, StatementResult result ) {
+    public static StatementStatus createStatus(PIStatement protoInterfaceStatement, StatementResult result ) {
         return StatementStatus.newBuilder()
                 .setStatementId( protoInterfaceStatement.getStatementId() )
                 .setResult( result )
@@ -49,16 +49,16 @@ public class ProtoUtils {
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch ) {
+    public static StatementBatchStatus createStatementBatchStatus( PIStatementBatch PIStatementBatch) {
         return StatementBatchStatus.newBuilder()
-                .setBatchId( protoInterfaceStatementBatch.getBatchId() )
+                .setBatchId( PIStatementBatch.getBatchId() )
                 .build();
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus( ProtoInterfaceStatementBatch protoInterfaceStatementBatch, List<Long> updateCounts ) {
+    public static StatementBatchStatus createStatementBatchStatus(PIStatementBatch PIStatementBatch, List<Long> updateCounts ) {
         return StatementBatchStatus.newBuilder()
-                .setBatchId( protoInterfaceStatementBatch.getBatchId() )
+                .setBatchId( PIStatementBatch.getBatchId() )
                 .addAllScalars( updateCounts )
                 .build();
     }
