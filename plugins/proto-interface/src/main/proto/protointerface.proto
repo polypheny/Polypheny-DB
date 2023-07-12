@@ -75,6 +75,12 @@ message ConnectionRequest {
   ConnectionProperties connection_properties = 4;
 }
 
+message ConnectionReply {
+  bool is_compatible = 1;
+  uint32 major_api_version = 2;
+  uint32 minor_api_version = 3;
+}
+
 message ConnectionProperties {
   optional string username = 1;
   optional string password = 2;
@@ -85,12 +91,6 @@ message ConnectionProperties {
   int32 network_timeout = 7;
   optional string namespace_name = 8;
 
-  enum Holdability {
-    HOLDABILITY_UNSPECIFIED = 0;
-    HOLD = 1;
-    CLOSE = 2;
-  }
-
   enum Isolation {
     ISOLATION_UNSPECIFIED = 0;
     COMMITTED = 1;
@@ -100,15 +100,37 @@ message ConnectionProperties {
   }
 }
 
+enum Holdability {
+  HOLDABILITY_UNSPECIFIED = 0;
+  HOLD = 1;
+  CLOSE = 2;
+}
+
 
 message ConnectionPropertiesUpdateResponse {
 }
 
-message ConnectionReply {
-  bool is_compatible = 1;
-  uint32 major_api_version = 2;
-  uint32 minor_api_version = 3;
+message StatementProperties{
+  int32 statement_id = 1;
+  ResultOperations update_behaviour = 2;
+  Holdability holdability = 3;
+  int32 fetch_size = 5;
+  bool reverse_fetch = 6;
+  int64 max_total_fetch_size = 7;
+  bool does_escape_processing = 8;
+  bool is_poolable = 9;
+
+
+  enum ResultOperations {
+    RESULT_OPERATIONS_UNSPECIFIED = 0;
+    READ_ONLY = 1;
+    READ_WRITE = 2;
+  }
 }
+
+message StatementPropertiesUpdateResponse {
+}
+
 
 message CommitRequest {}
 message CommitResponse{}
@@ -131,6 +153,14 @@ message PreparedStatementSignature{
   repeated ParameterMeta parameter_metas = 2;
 }
 
+message ParameterMeta {
+  int32 precision = 1;
+  int32 scale = 2;
+  string type_name = 3;
+  optional string parameter_name = 4;
+  string name = 5;
+}
+
 message FetchRequest {
   int32 statement_id = 1;
   int64 offset = 2;
@@ -140,6 +170,7 @@ message FetchRequest {
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
+  StatementProperties properties = 3;
 }
 
 message UnparameterizedStatementBatch {
@@ -153,33 +184,12 @@ message CloseStatementRequest {
 message CloseStatementResponse {
 }
 
-message StatementProperties{
-  int32 statement_id = 1;
-  map<string, string> properties = 2;
-}
 
-message StatementPropertiesUpdateResponse {
-}
-
-message ParameterizedStatement {
-  string statement_language_name = 1;
-  string statement = 2;
-  map<string, ProtoValue> values = 3;
-  bool expects_result = 4;
-}
-
-message ParameterMeta {
-  int32 precision = 1;
-  int32 scale = 2;
-  string type_name = 3;
-  optional string parameter_name = 4;
-  string name = 5;
-}
 
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  bool expects_result = 3;
+  StatementProperties properties = 3;
 }
 
 message ParameterList {
