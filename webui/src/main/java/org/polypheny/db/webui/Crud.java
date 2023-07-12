@@ -3690,8 +3690,10 @@ public class Crud implements InformationObserver {
 
 
     void doAutoHandshake( final Context ctx ) {
+        boolean success = AutoDocker.getInstance().start();
         ctx.json( Map.of(
-                "success", AutoDocker.getInstance().start(),
+                "success", success,
+                "status", AutoDocker.getInstance().getStatus(),
                 "instances", new ArrayList<>( DockerManager.getInstance().getDockerInstances().keySet() )
         ) );
     }
