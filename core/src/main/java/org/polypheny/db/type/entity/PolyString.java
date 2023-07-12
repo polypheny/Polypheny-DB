@@ -163,6 +163,19 @@ public class PolyString extends PolyValue {
     }
 
 
+    public String asCharset( String charset ) {
+        return asCharset( Charset.forName( charset ) );
+    }
+
+
+    public String asCharset( Charset charset ) {
+        if ( this.charset.equals( charset ) ) {
+            return value;
+        }
+        return new String( value.getBytes( this.charset ), charset );
+    }
+
+
     public static class PolyStringSerializerDef extends SimpleSerializerDef<PolyString> {
 
         @Override

@@ -90,6 +90,7 @@ import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 public class RelationalModifyDelegate extends RelationalScanDelegate implements Modifiable {
 
@@ -324,37 +325,37 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
 
         PhysicalTable node = createSubstitution( context, logical, allocation, "_node_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "label", GraphType.LABEL_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable nProperties = createSubstitution( context, logical, allocation, "_nProperties_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "key", GraphType.KEY_SIZE ),
-                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
+                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "label", GraphType.LABEL_SIZE ),
-                Pair.of( "_l_id_", GraphType.ID_SIZE ),
-                Pair.of( "_r_id_", GraphType.ID_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ),
+                Triple.of( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "key", GraphType.KEY_SIZE ),
-                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
+                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
     }
 
 
-    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Pair<String, Integer>> nameLength ) {
+    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Triple<String, Integer, PolyType>> nameLength ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( Pair<String, Integer> col : nameLength ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, PolyType.VARCHAR, null, col.right, null, null, null, false, Collation.getDefaultCollation(), null );
+        for ( Triple<String, Integer, PolyType> col : nameLength ) {
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, col.getRight(), null, col.getMiddle(), null, null, null, false, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
@@ -382,7 +383,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Pair.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE ), Pair.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE ) ) );
+        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( physical.id ) ) );
     }
 
@@ -392,9 +393,6 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
         catalog.dropTable( allocation.id );
         catalog.getAllocRelations().remove( allocation.id );
     }
-
-
-
 
 
     private List<AlgNode> attachRelationalDoc( LogicalDocumentModify alg, Statement statement, CatalogEntity collectionTable, LogicalQueryInformation queryInformation, long adapterId ) {

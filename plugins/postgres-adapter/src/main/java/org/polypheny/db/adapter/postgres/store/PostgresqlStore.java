@@ -173,7 +173,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         if ( column.collectionsType != null ) {
             builder.append( " " ).append( column.collectionsType );
         }
-        if ( column.length != null ) {
+        if ( column.length != null && column.type != PolyType.VARBINARY ) {
             builder.append( "(" );
             builder.append( column.length );
             if ( column.scale != null ) {
@@ -323,7 +323,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
-                return "VARBINARY";
+                return "BYTEA";
             case TINYINT:
                 return "SMALLINT";
             case SMALLINT:

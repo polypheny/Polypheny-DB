@@ -24,6 +24,7 @@ import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -32,6 +33,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
@@ -85,9 +88,9 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
                     throw new RuntimeException( "Error while transforming document to relational values" );
                 }
 
-                normalizedTuple.add( 0, rexBuilder.makeLiteral( id.value ) );
-                String parsed = tuple.serialize();
-                normalizedTuple.add( 1, rexBuilder.makeLiteral( parsed ) );
+                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ), PolyType.VARBINARY ) );
+                byte[] parsed = tuple.serialize().getBytes();
+                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ), PolyType.VARBINARY ) );
                 normalized.add( ImmutableList.copyOf( normalizedTuple ) );
             }
         }

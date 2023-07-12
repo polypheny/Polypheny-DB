@@ -293,7 +293,6 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 break;
             case ARRAY:
                 if ( connectionHandler.getDialect().supportsNestedArrays() ) {
-                    // apparently even postgres is able to support nested arrays now
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory

@@ -16,28 +16,18 @@
 
 package org.polypheny.db.algebra.logical.document;
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.List;
-import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
-import org.bson.BsonValue;
-import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.util.BsonUtil;
 
 
 public class LogicalDocumentValues extends DocumentValues implements RelationalTransformable {
@@ -78,47 +68,6 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     public static AlgNode create( AlgOptCluster cluster, List<PolyDocument> documents ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, documents );
-    }
-
-
-    private static ImmutableList<BsonValue> bsonify( ImmutableList<ImmutableList<RexLiteral>> tuples, AlgDataType rowType ) {
-        List<BsonValue> docs = new ArrayList<>();
-
-        for ( ImmutableList<RexLiteral> values : tuples ) {
-            BsonDocument doc = new BsonDocument();
-            int pos = 0;
-            for ( RexLiteral value : values ) {
-                AlgDataTypeField field = rowType.getFieldList().get( pos );
-
-                if ( field.getName().equals( DocumentType.DOCUMENT_ID ) ) {
-                    String _id = value.value.asString().value;
-                    ObjectId objectId;
-                    if ( _id.matches( "ObjectId\\([0-9abcdef]{24}\\)" ) ) {
-                        objectId = new ObjectId( _id.substring( 9, 33 ) );
-                    } else {
-                        objectId = ObjectId.get();
-                    }
-                    doc.put( DocumentType.DOCUMENT_ID, new BsonObjectId( objectId ) );
-                } else if ( field.getName().equals( "_data" ) ) {
-                    BsonDocument docVal = new BsonDocument();
-                    if ( !value.isNull() && value.value.asString().value.length() != 0 ) {
-                        String data = BsonUtil.fixBson( value.value.asString().value );
-                        if ( data.matches( "[{].*[}]" ) ) {
-                            docVal = BsonDocument.parse( data );
-                        } else {
-                            throw new RuntimeException( "The inserted document is not valid." );
-                        }
-                    }
-                    doc.put( DocumentType.DOCUMENT_DATA, docVal );
-                } else {
-                    doc.put( field.getName(), BsonUtil.getAsBson( value, null ) );
-                }
-
-                pos++;
-            }
-            docs.add( doc );
-        }
-        return ImmutableList.copyOf( docs );
     }
 
 
