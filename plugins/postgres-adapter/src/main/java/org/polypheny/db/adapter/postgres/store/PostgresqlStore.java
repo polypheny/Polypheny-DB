@@ -107,7 +107,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 updateSettings( settings );
             }
 
-            DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId ).get();
+            DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                    .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
             container = instance.newBuilder( "polypheny/postgres", getUniqueName() )
                     .withExposedPort( 5432 )
                     .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
@@ -124,7 +125,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
         } else {
             deploymentId = settings.get( "deploymentId" );
             DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
-            container = DockerContainer.getContainerByUUID( deploymentId ).get();
+            container = DockerContainer.getContainerByUUID( deploymentId )
+                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
             if ( !testDockerConnection() ) {
                 throw new RuntimeException( "Could not connect to container" );
             }

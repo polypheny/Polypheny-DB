@@ -93,7 +93,8 @@ public class MonetdbStore extends AbstractJdbcStore {
                 updateSettings( settings );
             }
 
-            DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId ).get();
+            DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId )
+                    .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
             this.container = instance.newBuilder( "polypheny/monet", getUniqueName() )
                     .withExposedPort( 50000 )
                     .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
@@ -111,7 +112,8 @@ public class MonetdbStore extends AbstractJdbcStore {
         } else {
             deploymentId = settings.get( "deploymentId" );
             DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
-            container = DockerContainer.getContainerByUUID( deploymentId ).get();
+            container = DockerContainer.getContainerByUUID( deploymentId )
+                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
             if ( !testDockerConnection() ) {
                 throw new RuntimeException( "Could not connect to container" );
             }

@@ -48,7 +48,6 @@ import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.DeployMode;
@@ -182,7 +181,9 @@ public class Neo4jPlugin extends Plugin {
             this.auth = AuthTokens.basic( this.user, this.pass );
 
             if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) ).get();
+                int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
+                DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                        .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                 this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
                         .withExposedPort( 7687 )
                         .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
@@ -198,7 +199,8 @@ public class Neo4jPlugin extends Plugin {
             } else {
                 deploymentId = settings.get( "deploymentId" );
                 DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works
-                container = DockerContainer.getContainerByUUID( deploymentId ).get();
+                container = DockerContainer.getContainerByUUID( deploymentId )
+                        .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
                 if ( !testConnection() ) {
                     throw new RuntimeException( "Could not connect to container" );
                 }
@@ -582,7 +584,7 @@ public class Neo4jPlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).get().destroy();
+            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
 
             removeInformationPage();
         }

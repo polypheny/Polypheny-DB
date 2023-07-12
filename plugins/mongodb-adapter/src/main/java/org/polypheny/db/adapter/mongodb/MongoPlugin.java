@@ -154,7 +154,9 @@ public class MongoPlugin extends Plugin {
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                    DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) ).get();
+                    int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                     this.container = instance.newBuilder( "polypheny/mongo", getUniqueName() )
                             .withExposedPort( 27017 )
                             .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
@@ -181,7 +183,8 @@ public class MongoPlugin extends Plugin {
                 } else {
                     deploymentId = settings.get( "deploymentId" );
                     DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
-                    container = DockerContainer.getContainerByUUID( deploymentId ).get();
+                    container = DockerContainer.getContainerByUUID( deploymentId )
+                            .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
                     if ( !testConnection() ) {
                         throw new RuntimeException( "Could not connect to container" );
                     }
@@ -230,14 +233,17 @@ public class MongoPlugin extends Plugin {
 
         @Override
         public void resetDockerConnection() {
-            DockerContainer c = DockerContainer.getContainerByUUID( deploymentId ).get();
+            DockerContainer c = DockerContainer.getContainerByUUID( deploymentId )
+                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
 
-            if ( client != null && c.getIpAddress().equals( host ) && c.getExposedPort( 27017 ).get() == port ) {
+            int exposedPort = c.getExposedPort( 27017 )
+                    .orElseThrow( () -> new RuntimeException( "Could not find exposed port for internal port 27017" ) );
+            if ( client != null && c.getIpAddress().equals( host ) && exposedPort == port ) {
                 return;
             }
 
             host = c.getIpAddress();
-            port = c.getExposedPort( 27017 ).get();
+            port = exposedPort;
 
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
@@ -318,7 +324,7 @@ public class MongoPlugin extends Plugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).get().destroy();
+            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
 
             removeInformationPage();
         }

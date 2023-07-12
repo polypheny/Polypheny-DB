@@ -131,7 +131,6 @@ public final class AutoDocker {
 
         String polyphenyDockerUuid = maybeUuid.get();
         status = "Starting handshake...";
-        HandshakeManager.getInstance().cancelHandshake( "localhost" );
         HandshakeManager.getInstance().startOrGetHandshake( "localhost", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT );
         ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
