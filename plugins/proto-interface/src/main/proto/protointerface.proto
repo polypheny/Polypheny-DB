@@ -71,7 +71,32 @@ message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
   string client_uuid = 3;
-  map<string, string> connection_properties = 4;
+  ConnectionProperties connection_properties = 4;
+}
+
+message ConnectionProperties {
+  optional string username = 1;
+  optional string password = 2;
+  bool is_auto_commit = 3;
+  bool is_read_only = 4;
+  Holdability holdability = 5;
+  Isolation isolation = 6;
+  int32 network_timeout = 7;
+  optional string namespace_name = 8;
+
+  enum Holdability {
+    HOLDABILITY_UNSPECIFIED = 0;
+    HOLD = 1;
+    CLOSE = 2;
+  }
+
+  enum Isolation {
+    ISOLATION_UNSPECIFIED = 0;
+    COMMITTED = 1;
+    DIRTY = 2;
+    SERIALIZABLE = 3;
+    REPEATABLE_READ = 4;
+  }
 }
 
 message ConnectionReply {
