@@ -607,7 +607,7 @@ public class DdlManagerImpl extends DdlManager {
 
         String method;
         String methodDisplayName;
-        if ( indexMethodName != null ) {
+        if ( indexMethodName != null && !indexMethodName.toLowerCase().equals( "default" ) ) {
             AvailableIndexMethod aim = null;
             for ( AvailableIndexMethod availableIndexMethod : location.getAvailableIndexMethods() ) {
                 if ( availableIndexMethod.name.equals( indexMethodName ) ) {

@@ -54,7 +54,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntFunction;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -574,7 +573,7 @@ public abstract class SqlImplementor {
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
                             if ( dialect.supportsNestedArrays() ) {
-                                List<PolyValue> array = literal.getRexList().stream().map( e -> e.value ).collect( Collectors.toList() );//toSql( program, e ) ).collect( Collectors.toList() );
+                                List<PolyValue> array = literal.getValue().asList();//toSql( program, e ) ).collect( Collectors.toList() );
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
                                 return SqlLiteral.createCharString( literal.value.serialize(), POS );

@@ -1378,7 +1378,7 @@ public class DbmsMeta implements ProtobufMeta {
             public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                    transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType() ), field.getType().isNullable() ) );
+                    transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType(), true ), field.getType().isNullable() ) );
                 }
 
                 if ( rowType.getFieldCount() > 1 ) {

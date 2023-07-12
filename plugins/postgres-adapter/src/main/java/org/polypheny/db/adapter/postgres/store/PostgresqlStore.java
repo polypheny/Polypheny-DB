@@ -165,7 +165,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
-                .append( dialect.quoteIdentifier( physicalTable.name ) )
+                .append( dialect.quoteIdentifier( physicalTable.namespaceName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
@@ -185,6 +185,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "::" )
                 .append( getTypeString( column.type ) );
+
         if ( column.collectionsType != null ) {
             builder.append( " " ).append( column.collectionsType );
         }

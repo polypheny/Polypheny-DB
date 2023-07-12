@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -72,6 +73,15 @@ public class PolyLong extends PolyNumber {
 
     public static PolyLong ofNullable( Number value ) {
         return value == null ? null : of( value );
+    }
+
+
+    public static PolyLong from( PolyValue value ) {
+        if ( PolyType.NUMERIC_TYPES.contains( value.type ) ) {
+            return PolyLong.of( value.asNumber().longValue() );
+        }
+
+        throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, value.type ) );
     }
 
 

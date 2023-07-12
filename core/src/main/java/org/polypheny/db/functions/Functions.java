@@ -3278,14 +3278,14 @@ public class Functions {
         if ( a == null ) {
             return null;
         }
-        List<?> array = arrayToList( a );
+        Object[] array = arrayToList( a ).toArray();
         return applyToLowest( array, transformer ).asList();
     }
 
 
     private static PolyValue applyToLowest( Object o, Function1<Object, PolyValue> transformer ) {
-        if ( o instanceof List ) {
-            return PolyList.of( ((List<?>) o).stream().map( a -> applyToLowest( a, transformer ) ).collect( Collectors.toList() ) );
+        if ( o instanceof Object[] ) {
+            return PolyList.of( Arrays.stream( ((Object[]) o) ).map( a -> applyToLowest( a, transformer ) ).collect( Collectors.toList() ) );
         }
         return transformer.apply( o );
     }

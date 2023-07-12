@@ -296,6 +296,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     // apparently even postgres is able to support nested arrays now
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
+                    array.free(); // according to documentation this is advised to not hog the memory
                 } else {
                     preparedStatement.setString( i, value.serialize() );
                 }
@@ -463,7 +464,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             t = t.getComponentType();
         }
         componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
-        Object[] array = ((List<?>) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type ), type.isNullable() ).apply( value )).toArray();
+        Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
         return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
     }
 
@@ -654,8 +655,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private static Function1<ResultSet, Function0<Object>>
-    primitiveRowBuilderFactory( final Primitive[] primitives ) {
+    private static Function1<ResultSet, Function0<Object>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
         return resultSet -> {
             final ResultSetMetaData metaData;
             final int columnCount;

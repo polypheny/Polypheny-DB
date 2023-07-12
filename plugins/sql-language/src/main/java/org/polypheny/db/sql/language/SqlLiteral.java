@@ -668,7 +668,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 writer.keyword( "NULL" );
                 break;
             case CHAR:
-            case DECIMAL:
+            //case DECIMAL:
             case DOUBLE:
             case BINARY:
                 // should be handled in subtype

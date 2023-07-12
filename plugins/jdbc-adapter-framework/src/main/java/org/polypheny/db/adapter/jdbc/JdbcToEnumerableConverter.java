@@ -391,7 +391,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             ParameterExpression argument = Expressions.parameter( Object.class );
 
             AlgDataType componentType = fieldType.getComponentType();
-            int depth = 0;
+            int depth = 1;
             while ( componentType.getComponentType() != null ) {
                 componentType = componentType.getComponentType();
                 depth++;
