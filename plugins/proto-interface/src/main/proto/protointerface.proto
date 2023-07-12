@@ -72,7 +72,9 @@ message ConnectionRequest {
   int32 major_api_version = 1;
   int32 minor_api_version = 2;
   string client_uuid = 3;
-  ConnectionProperties connection_properties = 4;
+  optional string username = 5;
+  optional string password = 6;
+  optional ConnectionProperties connection_properties = 4;
 }
 
 message ConnectionReply {
@@ -82,14 +84,11 @@ message ConnectionReply {
 }
 
 message ConnectionProperties {
-  optional string username = 1;
-  optional string password = 2;
-  bool is_auto_commit = 3;
-  bool is_read_only = 4;
-  Holdability holdability = 5;
-  Isolation isolation = 6;
-  int32 network_timeout = 7;
-  optional string namespace_name = 8;
+  bool is_auto_commit = 1;
+  bool is_read_only = 2;
+  Isolation isolation = 3;
+  int32 network_timeout = 4;
+  optional string namespace_name = 5;
 
   enum Isolation {
     ISOLATION_UNSPECIFIED = 0;
@@ -100,12 +99,6 @@ message ConnectionProperties {
   }
 }
 
-enum Holdability {
-  HOLDABILITY_UNSPECIFIED = 0;
-  HOLD = 1;
-  CLOSE = 2;
-}
-
 
 message ConnectionPropertiesUpdateResponse {
 }
@@ -113,12 +106,11 @@ message ConnectionPropertiesUpdateResponse {
 message StatementProperties{
   int32 statement_id = 1;
   ResultOperations update_behaviour = 2;
-  Holdability holdability = 3;
-  int32 fetch_size = 5;
-  bool reverse_fetch = 6;
-  int64 max_total_fetch_size = 7;
-  bool does_escape_processing = 8;
-  bool is_poolable = 9;
+  int32 fetch_size = 3;
+  bool reverse_fetch = 4;
+  int64 max_total_fetch_size = 5;
+  bool does_escape_processing = 6;
+  bool is_poolable = 7;
 
 
   enum ResultOperations {
@@ -170,7 +162,7 @@ message FetchRequest {
 message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  StatementProperties properties = 3;
+  optional StatementProperties properties = 3;
 }
 
 message UnparameterizedStatementBatch {
@@ -189,7 +181,7 @@ message CloseStatementResponse {
 message PreparedStatement {
   string statement_language_name = 1;
   string statement = 2;
-  StatementProperties properties = 3;
+  optional StatementProperties properties = 3;
 }
 
 message ParameterList {

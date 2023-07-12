@@ -23,8 +23,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.protointerface.InterfaceStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
+import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
@@ -34,13 +34,13 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
-public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement implements Signaturizable, ProtoInterfaceStatementBatch {
+public class PIPreparedIndexedStatement extends PIStatement implements Signaturizable, PIStatementBatch {
 
     protected Statement currentStatement;
     protected boolean hasParametersSet;
 
 
-    private IndexedPreparedInterfaceStatement(Builder builder) {
+    protected PIPreparedIndexedStatement(Builder builder) {
         super( builder );
         this.hasParametersSet = false;
     }
@@ -101,7 +101,7 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
 
 
     @Override
-    public List<ProtoInterfaceStatement> getStatements() {
+    public List<PIStatement> getStatements() {
         return Collections.singletonList( this );
     }
 
@@ -117,9 +117,9 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
     }
 
 
-    static class Builder extends ProtoInterfaceStatement.Builder {
+    static class Builder extends PIStatement.Builder {
 
-        private Builder() {
+        protected Builder() {
             super();
         }
 
@@ -129,7 +129,7 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
         }
 
 
-        public Builder setProtoInterfaceClient(ProtoInterfaceClient protoInterfaceClient) {
+        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
             this.protoInterfaceClient = protoInterfaceClient;
             return this;
         }
@@ -145,13 +145,13 @@ public class IndexedPreparedInterfaceStatement extends ProtoInterfaceStatement i
             return this;
         }
 
-        public Builder setProperties(InterfaceStatementProperties properties) {
+        public Builder setProperties(PIStatementProperties properties) {
             this.properties = properties;
             return this;
         }
 
-        public IndexedPreparedInterfaceStatement build() {
-            return new IndexedPreparedInterfaceStatement(this);
+        public PIPreparedIndexedStatement build() {
+            return new PIPreparedIndexedStatement(this);
         }
     }
 
