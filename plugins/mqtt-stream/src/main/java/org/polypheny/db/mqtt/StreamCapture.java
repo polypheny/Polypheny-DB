@@ -66,40 +66,12 @@ public class StreamCapture {
         this.stream.setDatabaseId( statement.getPrepareContext().getDatabaseId() );
     }
 
-    public static boolean validateNamespaceName( String namespaceName, NamespaceType namespaceType ) {
-        // TODO: Nachrichten an UI schicken falls Namespace name nicht geht
-        boolean nameCanBeUsed = false;
-        Catalog catalog = Catalog.getInstance();
-        // TODO: database ID evtl von von statement.getPrepareContext().getCurrentUserId() und statement.getPrepareContext().getDatabaseId() nehmen?
-        if ( catalog.checkIfExistsSchema( Catalog.defaultDatabaseId, namespaceName ) ) {
-            CatalogSchema schema = null;
-            try {
-                schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
-            } catch ( UnknownSchemaException e ) {
-                log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
-                return nameCanBeUsed;
-            }
-            assert schema != null;
-            if ( schema.namespaceType == namespaceType ) {
-                nameCanBeUsed = true;
-            } else {
-                log.info( "There is already a namespace existing in this database with the given name but of type {}.", schema.getNamespaceType() );
-                log.info( "Please change the name or the type to {} to use the existing namespace.", schema.getNamespaceType() );
-            }
-        } else {
-            nameCanBeUsed = true;
-        }
-        //TODO: rmv
-        log.info( String.valueOf( nameCanBeUsed ) );
-        return nameCanBeUsed;
-    }
 
-
-    void handleContent() {
+    public void handleContent() {
         //String path = registerTopicFolder(topic);
         long storeId = getCollectionID();
         if ( storeId != 0 ) {
-            stream.getTopic().storeID = storeId;
+            stream.setStoreID( storeId );
             boolean saved = saveContent();
             //TODO: gescheite Tests
 //            Catalog catalog = Catalog.getInstance();
@@ -114,17 +86,15 @@ public class StreamCapture {
      */
     long getCollectionID() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogSchema> schemaList = catalog.getSchemas( this.stream.getTopic().databaseId, null );
+        List<CatalogSchema> schemaList = catalog.getSchemas( this.stream.getDatabaseId(), null );
 
 
         // check for existing namespace with DOCUMENT NamespaceType:
-        //TODO: if wird nur gemacht, wenn Topic das erste mal Nachricht bekommt und noch kein storage zugewiesen bekommen hat.
-        // DH: wenn CatalogObject oder storeID noch null ist, dann diese ganze Abfrage machen.
-        if ( catalog.checkIfExistsSchema( this.stream.getTopic().databaseId, this.stream.getTopic().namespaceName ) ) {
+        if ( catalog.checkIfExistsSchema( this.stream.getDatabaseId(), this.stream.getNamespace() ) ) {
 
             CatalogSchema schema = null;
             try {
-                schema = catalog.getSchema( this.stream.getTopic().databaseId, this.stream.getTopic().namespaceName );
+                schema = catalog.getSchema( this.stream.getDatabaseId(), this.stream.getNamespace() );
             } catch ( UnknownSchemaException e ) {
                 log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
                 return 0;
@@ -132,13 +102,14 @@ public class StreamCapture {
 
             assert schema != null;
             if ( schema.namespaceType == NamespaceType.DOCUMENT ) {
-                this.stream.setTopic( this.stream.getTopic().setNamespaceId( schema.id ) );
+                this.stream.setNamespaceID( schema.id );
                 //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
                 List<CatalogCollection> collectionList = catalog.getCollections( schema.id, null );
                 for ( CatalogCollection collection : collectionList ) {
-                    if ( collection.name.equals( this.stream.getTopic().topicName ) ) {
-                        if ( !collection.placements.contains( this.stream.getTopic().queryInterfaceId ) ) {
-                            return collection.addPlacement( this.stream.getTopic().queryInterfaceId ).id;
+                    if ( collection.name.equals( this.stream.topic ) ) {
+                        int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+                        if ( !collection.placements.contains( queryInterfaceId ) ) {
+                            return collection.addPlacement( queryInterfaceId ).id;
                         } else {
                             return collection.id;
                         }
@@ -147,19 +118,19 @@ public class StreamCapture {
                 return createNewCollection();
 
             } else {
-                this.stream.setNamespaceId( addNewNamespace() );
+                this.stream.setNamespaceID( createNewNamespace() );
                 return createNewCollection();
             }
         } else {
-            this.stream.setNamespaceId( addNewNamespace() );
+            this.stream.setNamespaceID( createNewNamespace() );
             return createNewCollection();
         }
     }
 
 
-    private long addNewNamespace() {
+    private long createNewNamespace() {
         Catalog catalog = Catalog.getInstance();
-        long namespaceId = catalog.addNamespace( this.stream.getTopic().namespaceName, this.stream.getTopic().databaseId, this.stream.getTopic().userId, NamespaceType.DOCUMENT );
+        long namespaceId = catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT );
         try {
             catalog.commit();
         } catch ( NoTablePrimaryKeyException e ) {
@@ -179,13 +150,13 @@ public class StreamCapture {
         try {
             List<DataStore> dataStores = new ArrayList<>();
             DdlManager.getInstance().createCollection(
-                    this.stream.getTopic().namespaceId,
-                    this.stream.getTopic().topicName,
+                    this.stream.getNamespaceID(),
+                    this.stream.topic,
                     true,   //only creates collection if it does not already exist.
                     dataStores.size() == 0 ? null : dataStores,
                     PlacementType.MANUAL,
                     statement );
-            log.info( "Created Collection with name: {}", this.stream.getTopic().topicName );
+            log.info( "Created Collection with name: {}", this.stream.topic );
             transaction.commit();
         } catch ( EntityAlreadyExistsException e ) {
             log.error( "The generation of the collection was not possible because there is a collaction already existing with this name." );
@@ -195,10 +166,11 @@ public class StreamCapture {
             return 0;
         }
         //add placement
-        List<CatalogCollection> collectionList = catalog.getCollections( this.stream.getTopic().namespaceId, null );
+        List<CatalogCollection> collectionList = catalog.getCollections( this.stream.getNamespaceID(), null );
         for ( int i = 0; i < collectionList.size(); i++ ) {
-            if ( collectionList.get( i ).name.equals( this.stream.getTopic().topicName ) ) {
-                collectionList.set( i, collectionList.get( i ).addPlacement( this.stream.getTopic().queryInterfaceId ) );
+            if ( collectionList.get( i ).name.equals( this.stream.topic ) ) {
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+                collectionList.set( i, collectionList.get( i ).addPlacement( queryInterfaceId ) );
 
                 return collectionList.get( i ).id;
             }
@@ -310,7 +282,7 @@ public class StreamCapture {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( this.stream.getTopic().userId, this.stream.getTopic().databaseId, false, "MQTT Stream" );
+            return transactionManager.startTransaction( this.stream.getUserId(), this.stream.getDatabaseId(), false, "MQTT Stream" );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | GenericCatalogException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -365,7 +337,15 @@ public class StreamCapture {
             //TODO: rmv log
             log.info( "Directory already exists" );
         }
+
         return path;
+
     }
+
+
+    public static void main( String[] args ) {
+
+    }
+
 
 }

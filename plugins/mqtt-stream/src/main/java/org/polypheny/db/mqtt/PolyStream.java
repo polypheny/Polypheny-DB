@@ -18,41 +18,44 @@ package org.polypheny.db.mqtt;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 public class PolyStream {
 
     // Representation of 1 content in a namespace
     @Getter
-    @Setter
-    private MqttTopic topic;
+    final String topic;
+    @Getter
+    private final String uniqueNameOfInterface;
     @Getter
     private final String content;
+    @Getter
+    private final String namespace;
+    @Getter
+    private final NamespaceType namespaceType;
+    @Getter
+    @Setter
+    private long namespaceID;
+    @Setter
+    @Getter
+    private long databaseId;
+    @Setter
+    @Getter
+    private int userId;
+    @Getter
+    @Setter
+    private long storeID;   // the ID of collection/graph/table... the place where info is/should be saved
 
 
-    public PolyStream( MqttTopic topic, String content ) {
+    public PolyStream( String topic, String uniqueNameInterface, String content, String namespace, NamespaceType namespaceType ) {
         this.topic = topic;
+        this.uniqueNameOfInterface = uniqueNameInterface;
         this.content = content;
-
-    }
-
-    public void setDatabaseId( long databaseId ) {
-        this.topic = this.topic.setDatabaseId( databaseId );
-    }
-
-
-    public void setUserId( int userId ) {
-        this.topic = this.topic.setUserId( userId );
-    }
-
-
-    public void setNewNameSpace( String newName, long newId, NamespaceType type ) {
-        this.topic = this.topic.setNewNamespace( newName, newId, type );
-    }
-
-
-    public void setNamespaceId( long namespaceId ) {
-        this.topic = this.topic.setNamespaceId( namespaceId );
+        this.namespace = namespace;
+        this.namespaceType = namespaceType;
+        this.databaseId = Catalog.defaultDatabaseId;
+        this.userId = Catalog.defaultUserId;
     }
 
 
