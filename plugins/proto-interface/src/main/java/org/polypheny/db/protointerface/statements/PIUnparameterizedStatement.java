@@ -17,20 +17,16 @@
 package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.InterfaceClientProperties;
-import org.polypheny.db.protointerface.InterfaceStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
+import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
+public class PIUnparameterizedStatement extends PIStatement {
 
-    private UnparameterizedInterfaceStatement(Builder builder) {
+    private PIUnparameterizedStatement(Builder builder) {
         super(builder);
     }
 
@@ -45,7 +41,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
     }
 
 
-    static class Builder extends ProtoInterfaceStatement.Builder {
+    static class Builder extends PIStatement.Builder {
 
         private Builder() {
             super();
@@ -57,7 +53,7 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
         }
 
 
-        public Builder setProtoInterfaceClient(ProtoInterfaceClient protoInterfaceClient) {
+        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
             this.protoInterfaceClient = protoInterfaceClient;
             return this;
         }
@@ -73,13 +69,13 @@ public class UnparameterizedInterfaceStatement extends ProtoInterfaceStatement {
             return this;
         }
 
-        public Builder setProperties(InterfaceStatementProperties properties) {
+        public Builder setProperties(PIStatementProperties properties) {
             this.properties = properties;
             return this;
         }
 
-        public UnparameterizedInterfaceStatement build() {
-            return new UnparameterizedInterfaceStatement(this);
+        public PIUnparameterizedStatement build() {
+            return new PIUnparameterizedStatement(this);
         }
     }
 }

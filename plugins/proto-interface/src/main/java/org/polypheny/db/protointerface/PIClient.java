@@ -16,9 +16,6 @@
 
 package org.polypheny.db.protointerface;
 
-import java.util.Map;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -29,7 +26,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class ProtoInterfaceClient {
+public class PIClient {
 
     private String clientUUID;
     private CatalogUser catalogUser;
@@ -37,17 +34,12 @@ public class ProtoInterfaceClient {
     private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
-
-    @Setter
-    @Getter
-    private Map<String, String> statementProperties;
-
-    private InterfaceClientProperties clientProperties;
+    private PIClientProperties clientProperties;
     private int minorApiVersion;
     private int majorApiVersion;
 
 
-    private ProtoInterfaceClient( Builder connectionBuilder ) {
+    private PIClient(Builder connectionBuilder ) {
         this.clientUUID = connectionBuilder.clientUUID;
         this.catalogUser = connectionBuilder.catalogUser;
         this.logicalNamespace = connectionBuilder.logicalNamespace;
@@ -61,6 +53,10 @@ public class ProtoInterfaceClient {
 
     public String getClientUUID() {
         return clientUUID;
+    }
+
+    public PIClientProperties getClientProperties() {
+        return clientProperties;
     }
 
     public void updateClientProperties(ConnectionProperties connectionProperties) {
@@ -148,7 +144,7 @@ public class ProtoInterfaceClient {
         private LogicalNamespace logicalNamespace;
         private Transaction currentTransaction;
         private TransactionManager transactionManager;
-        private InterfaceClientProperties clientProperties;
+        private PIClientProperties clientProperties;
         private int minorApiVersion;
         private int majorApiVersion;
 
@@ -182,7 +178,7 @@ public class ProtoInterfaceClient {
         }
 
 
-        public Builder setClientProperties( InterfaceClientProperties clientProperties ) {
+        public Builder setClientProperties( PIClientProperties clientProperties ) {
             this.clientProperties = clientProperties;
             return this;
         }
@@ -200,8 +196,8 @@ public class ProtoInterfaceClient {
         }
 
 
-        public ProtoInterfaceClient build() {
-            return new ProtoInterfaceClient( this );
+        public PIClient build() {
+            return new PIClient( this );
         }
 
     }

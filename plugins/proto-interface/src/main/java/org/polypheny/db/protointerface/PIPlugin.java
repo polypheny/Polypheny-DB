@@ -34,9 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProtoInterfacePlugin extends PolyPlugin {
+public class PIPlugin extends PolyPlugin {
 
-    public ProtoInterfacePlugin( PluginContext context ) {
+    public PIPlugin(PluginContext context ) {
         super( context );
     }
 
@@ -66,7 +66,7 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         private final int port;
         private TransactionManager transactionManager;
         private Authenticator authenticator;
-        private ProtoInterfaceServer protoInterfaceServer;
+        private PIServer protoInterfaceServer;
 
 
         public ProtoInterface( TransactionManager transactionManager, Authenticator authenticator, long queryInterfaceId, String uniqueName, Map<String, String> settings ) {
@@ -123,8 +123,8 @@ public class ProtoInterfacePlugin extends PolyPlugin {
         @Override
         public void run() {
             ClientManager clientManager = new ClientManager( authenticator, transactionManager );
-            ProtoInterfaceService protoInterfaceService = new ProtoInterfaceService( clientManager );
-            protoInterfaceServer = new ProtoInterfaceServer( port, protoInterfaceService, clientManager );
+            PIService protoInterfaceService = new PIService( clientManager );
+            protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
             try {
                 protoInterfaceServer.start();
             } catch ( IOException e ) {
