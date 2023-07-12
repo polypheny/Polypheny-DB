@@ -20,76 +20,11 @@ import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.polypheny.db.algebra.constant.FunctionCategory;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.proto.ClientInfoProperties;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
-import org.polypheny.db.protointerface.proto.ClientInfoPropertiesResponse;
-import org.polypheny.db.protointerface.proto.CloseStatementRequest;
-import org.polypheny.db.protointerface.proto.CloseStatementResponse;
-import org.polypheny.db.protointerface.proto.CommitRequest;
-import org.polypheny.db.protointerface.proto.CommitResponse;
-import org.polypheny.db.protointerface.proto.ConnectionCheckRequest;
-import org.polypheny.db.protointerface.proto.ConnectionCheckResponse;
-import org.polypheny.db.protointerface.proto.ConnectionProperties;
-import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateRequest;
-import org.polypheny.db.protointerface.proto.ConnectionPropertiesUpdateResponse;
-import org.polypheny.db.protointerface.proto.ConnectionRequest;
-import org.polypheny.db.protointerface.proto.ConnectionResponse;
-import org.polypheny.db.protointerface.proto.DatabasesRequest;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
-import org.polypheny.db.protointerface.proto.DbmsVersionRequest;
-import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
-import org.polypheny.db.protointerface.proto.DisconnectRequest;
-import org.polypheny.db.protointerface.proto.DisconnectionResponse;
-import org.polypheny.db.protointerface.proto.EntitiesRequest;
-import org.polypheny.db.protointerface.proto.EntitiesResponse;
-import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementBatchRequest;
-import org.polypheny.db.protointerface.proto.ExecuteIndexedStatementRequest;
-import org.polypheny.db.protointerface.proto.ExecuteNamedStatementRequest;
-import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementBatchRequest;
-import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
-import org.polypheny.db.protointerface.proto.FetchRequest;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.FunctionsRequest;
-import org.polypheny.db.protointerface.proto.FunctionsResponse;
-import org.polypheny.db.protointerface.proto.LanguageRequest;
-import org.polypheny.db.protointerface.proto.LanguageResponse;
-import org.polypheny.db.protointerface.proto.MetaStringResponse;
-import org.polypheny.db.protointerface.proto.Namespace;
-import org.polypheny.db.protointerface.proto.NamespaceRequest;
-import org.polypheny.db.protointerface.proto.NamespacesRequest;
-import org.polypheny.db.protointerface.proto.NamespacesResponse;
-import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
-import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
-import org.polypheny.db.protointerface.proto.ProceduresRequest;
-import org.polypheny.db.protointerface.proto.ProceduresResponse;
-import org.polypheny.db.protointerface.proto.ProtoInterfaceGrpc;
-import org.polypheny.db.protointerface.proto.RollbackRequest;
-import org.polypheny.db.protointerface.proto.RollbackResponse;
-import org.polypheny.db.protointerface.proto.SqlKeywordsRequest;
-import org.polypheny.db.protointerface.proto.SqlNumericFunctionsRequest;
-import org.polypheny.db.protointerface.proto.SqlStringFunctionsRequest;
-import org.polypheny.db.protointerface.proto.SqlSystemFunctionsRequest;
-import org.polypheny.db.protointerface.proto.SqlTimeDateFunctionsRequest;
-import org.polypheny.db.protointerface.proto.StatementBatchResponse;
-import org.polypheny.db.protointerface.proto.StatementResponse;
-import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.proto.TableTypesRequest;
-import org.polypheny.db.protointerface.proto.TableTypesResponse;
-import org.polypheny.db.protointerface.proto.TypesRequest;
-import org.polypheny.db.protointerface.proto.TypesResponse;
-import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
-import org.polypheny.db.protointerface.statements.PIPreparedIndexedStatement;
-import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
-import org.polypheny.db.protointerface.statements.PIStatement;
-import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
-import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
+import org.polypheny.db.PolyphenyDb;
+import org.polypheny.db.protointerface.proto.*;
+import org.polypheny.db.protointerface.statements.*;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
-import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
@@ -97,66 +32,185 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
     private ClientManager clientManager;
+    private StatementManager statementManager;
 
 
-    public PIService( ClientManager clientManager ) {
+    public PIService(ClientManager clientManager ) {
         this.clientManager = clientManager;
+        this.statementManager = new StatementManager();
     }
 
 
     @SneakyThrows
     @Override
-    public void connect( ConnectionRequest request, StreamObserver<ConnectionResponse> responseObserver ) {
-        ConnectionResponse.Builder responseBuilder = ConnectionResponse.newBuilder()
+    public void connect( ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver ) {
+        ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
                 .setMajorApiVersion( majorApiVersion )
                 .setMinorApiVersion( minorApiVersion );
-        if ( clientManager.getHeartbeatInterval() > 0 ) {
-            responseBuilder.setHeartbeatInterval( clientManager.getHeartbeatInterval() );
-        }
-        boolean isCompatible = checkApiVersion( request );
+        boolean isCompatible = checkApiVersion( connectionRequest );
         responseBuilder.setIsCompatible( isCompatible );
-        ConnectionResponse ConnectionResponse = responseBuilder.build();
+        ConnectionReply connectionReply = responseBuilder.build();
         // reject incompatible client
         if ( !isCompatible ) {
-            responseObserver.onNext( ConnectionResponse );
+            responseObserver.onNext( connectionReply );
             responseObserver.onCompleted();
             return;
         }
-        clientManager.registerConnection( request );
-        responseObserver.onNext( ConnectionResponse );
-        responseObserver.onCompleted();
-    }
-
-
-    @SneakyThrows
-    @Override
-    public void disconnect( DisconnectRequest request, StreamObserver<DisconnectionResponse> responseObserver ) {
-        PIClient client = getClient();
-        clientManager.unregisterConnection( client );
-        responseObserver.onNext( DisconnectionResponse.newBuilder().build() );
+        clientManager.registerConnection( connectionRequest );
+        responseObserver.onNext( connectionReply );
         responseObserver.onCompleted();
     }
 
 
     @Override
-    public void checkConnection( ConnectionCheckRequest request, StreamObserver<ConnectionCheckResponse> responseObserver ) {
-        getClient().setIsActive();
+    public void checkConnection( ConnectionCheckRequest connectionCheckRequest, StreamObserver<ConnectionCheckResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
         responseObserver.onNext( ConnectionCheckResponse.newBuilder().build() );
         responseObserver.onCompleted();
     }
 
 
     @Override
-    public void getDbmsVersion( DbmsVersionRequest request, StreamObserver<DbmsVersionResponse> responseObserver ) {
+    public void getDbmsVersion( DbmsVersionRequest dbmsVersionRequest, StreamObserver<DbmsVersionResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext( DbMetaRetriever.getDbmsVersion() );
+        try {
+            String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
+            int nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+            }
+            int majorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+
+            versionName = versionName.substring( nextSeparatorIndex + 1 );
+            nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+            }
+            int minorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+
+            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                    .setDbmsName( "Polypheny-DB" )
+                    .setVersionName( PolyphenyDb.class.getPackage().getImplementationVersion() )
+                    .setMajorVersion( majorVersion )
+                    .setMinorVersion( minorVersion )
+                    .build();
+            responseObserver.onNext( dbmsVersionResponse );
+            responseObserver.onCompleted();
+        } catch ( Exception e ) {
+            throw new ProtoInterfaceServiceException( "Could not parse database version info" );
+        }
+    }
+
+
+    @Override
+    public void getTables( TablesRequest tablesRequest, StreamObserver<TablesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = tablesRequest.hasNamespacePattern() ? tablesRequest.getNamespacePattern() : null;
+        String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
+        List<String> tableTypes = tablesRequest.getTableTypesCount() == 0 ? null : tablesRequest.getTableTypesList();
+        responseObserver.onNext( DbMetaRetriever.getTables( namespacePattern, tablePattern, tableTypes ) );
         responseObserver.onCompleted();
     }
 
 
     @Override
-    public void getSupportedLanguages( LanguageRequest request, StreamObserver<LanguageResponse> responseObserver ) {
+    public void getTableTypes( TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( DbMetaRetriever.getTableTypes() );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getNamespaces( NamespacesRequest namespacesRequest, StreamObserver<NamespacesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = namespacesRequest.hasNamespacePattern() ? namespacesRequest.getNamespacePattern() : null;
+        responseObserver.onNext( DbMetaRetriever.getNamespaces( namespacePattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getColumns( ColumnsRequest columnsRequest, StreamObserver<ColumnsResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
+        String tablePattern =  columnsRequest.hasTablePattern() ? columnsRequest.getTablePattern() : null;
+        String columnPattern =  columnsRequest.hasColumnPattern() ? columnsRequest.getColumnPattern() : null;
+        responseObserver.onNext( DbMetaRetriever.getColumns( namespacePattern, tablePattern, columnPattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getPrimaryKeys( PrimaryKeysRequest primaryKeysRequest, StreamObserver<PrimaryKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = primaryKeysRequest.hasNamespacePattern() ? primaryKeysRequest.getNamespacePattern() : null;
+        String tablePattern = primaryKeysRequest.getTablePattern();
+        responseObserver.onNext( DbMetaRetriever.getPrimaryKeys( namespacePattern, tablePattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getDatabases( DatabasesRequest databasesRequest, StreamObserver<DatabasesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( DbMetaRetriever.getDatabases() );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getImportedKeys( ImportedKeysRequest importedKeysRequest, StreamObserver<ImportedKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
+        String tablePattern = importedKeysRequest.getTablePattern();
+        responseObserver.onNext( DbMetaRetriever.getImportedKeys( namespacePattern, tablePattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getExportedKeys( ExportedKeysRequest exportedKeysRequest, StreamObserver<ExportedKeysResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = exportedKeysRequest.hasNamespacePattern() ? exportedKeysRequest.getNamespacePattern() : null;
+        String tablePattern = exportedKeysRequest.getTablePattern();
+        responseObserver.onNext( DbMetaRetriever.getExportedKeys( namespacePattern, tablePattern ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getTypes( TypesRequest typesRequest, StreamObserver<TypesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext( DbMetaRetriever.getTypes() );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getIndexes( IndexesRequest indexesRequest, StreamObserver<IndexesResponse> responseObserver ) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = indexesRequest.hasNamespacePattern() ? indexesRequest.getNamespacePattern() : null;
+        String tablePattern = indexesRequest.getTablePattern();
+        responseObserver.onNext( DbMetaRetriever.getIndexes( namespacePattern, tablePattern, indexesRequest.getUnique() ) );
+        responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getSupportedLanguages( LanguageRequest languageRequest, StreamObserver<LanguageResponse> responseObserver ) {
         /* called as client auth check */
         getClient();
         LanguageResponse supportedLanguages = LanguageResponse.newBuilder()
@@ -167,168 +221,35 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
 
-    private MetaStringResponse buildMetaStringResponse( String string ) {
-        return MetaStringResponse.newBuilder()
-                .setString( string )
-                .build();
-    }
-
-
+    @SneakyThrows
     @Override
-    public void getDatabases( DatabasesRequest request, StreamObserver<DatabasesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( DbMetaRetriever.getDatabases() );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getTableTypes( TableTypesRequest request, StreamObserver<TableTypesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( DbMetaRetriever.getTableTypes() );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getTypes( TypesRequest request, StreamObserver<TypesResponse> responseStreamObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseStreamObserver.onNext( DbMetaRetriever.getTypes() );
-        responseStreamObserver.onCompleted();
-    }
-
-
-    @Override
-    public void searchNamespaces( NamespacesRequest request, StreamObserver<NamespacesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
-        String namespaceType = request.hasNamespaceType() ? request.getNamespaceType() : null;
-        responseObserver.onNext( DbMetaRetriever.searchNamespaces( namespacePattern, namespaceType ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getNamespace( NamespaceRequest request, StreamObserver<Namespace> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( DbMetaRetriever.getNamespace( request.getNamespaceName() ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void searchEntities( EntitiesRequest request, StreamObserver<EntitiesResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
-        responseObserver.onNext( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getSqlStringFunctions( SqlStringFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( buildMetaStringResponse( SqlJdbcFunctionCall.getStringFunctions() ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getSqlSystemFunctions( SqlSystemFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( buildMetaStringResponse( SqlJdbcFunctionCall.getSystemFunctions() ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getSqlTimeDateFunctions( SqlTimeDateFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( buildMetaStringResponse( SqlJdbcFunctionCall.getTimeDateFunctions() ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getSqlNumericFunctions( SqlNumericFunctionsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext( buildMetaStringResponse( SqlJdbcFunctionCall.getNumericFunctions() ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getSqlKeywords( SqlKeywordsRequest request, StreamObserver<MetaStringResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        // TODO actually return keywords
-        responseObserver.onNext( buildMetaStringResponse( "" ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void searchProcedures( ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver ) {
-        /* called as client auth check */
-        getClient();
-        String procedurePattern = request.hasProcedureNamePattern() ? request.getProcedureNamePattern() : null;
-        responeObserver.onNext( DbMetaRetriever.getProcedures( request.getLanguage(), procedurePattern ) );
-        responeObserver.onCompleted();
-    }
-
-
-    @Override
-    public void searchFunctions( FunctionsRequest request, StreamObserver<FunctionsResponse> responseObserver ) {
-        /* called as client auth check */
-        getClient();
-        QueryLanguage queryLanguage = QueryLanguage.from( request.getQueryLanguage() );
-        FunctionCategory functionCategory = FunctionCategory.valueOf( request.getFunctionCategory() );
-        responseObserver.onNext( DbMetaRetriever.getFunctions( queryLanguage, functionCategory ) );
+    public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
+        PIClient client = getClient();
+        PIUnparameterizedStatement statement = statementManager.createUnparameterizedStatement( client, unparameterizedStatement );
+        responseObserver.onNext( ProtoUtils.createStatus( statement ) );
+        StatementResult result = statement.execute();
+        responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
         responseObserver.onCompleted();
     }
 
 
     @SneakyThrows
     @Override
-    public void executeUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request, StreamObserver<StatementResponse> responseObserver ) {
+    public void executeUnparameterizedStatementBatch( UnparameterizedStatementBatch unparameterizedStatementBatch, StreamObserver<StatementBatchStatus> responseObserver ) {
         PIClient client = getClient();
-        PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
-        responseObserver.onNext( ProtoUtils.createResult( statement ) );
-        StatementResult result = request.hasFetchSize()
-                ? statement.execute( request.getFetchSize() )
-                : statement.execute( PropertyUtils.DEFAULT_FETCH_SIZE );
-        responseObserver.onNext( ProtoUtils.createResult( statement, result ) );
-        responseObserver.onCompleted();
-    }
-
-
-    @SneakyThrows
-    @Override
-    public void executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, StreamObserver<StatementBatchResponse> responseObserver ) {
-        PIClient client = getClient();
-        PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
-        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch.getBatchId() ) );
+        PIUnparameterizedStatementBatch batch = statementManager.createUnparameterizedStatementBatch( client, unparameterizedStatementBatch.getStatementsList() );
+        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch ) );
         List<Long> updateCounts = batch.executeBatch();
-        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch, updateCounts ) );
         responseObserver.onCompleted();
     }
 
 
     @SneakyThrows
     @Override
-    public void prepareIndexedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
+    public void prepareIndexedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = client.getStatementManager().createIndexedPreparedInterfaceStatement( request );
+        PIPreparedIndexedStatement statement = statementManager.createIndexedPreparedInterfaceStatement( client, preparedStatement );
         responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
         responseObserver.onCompleted();
     }
@@ -336,34 +257,30 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
     @SneakyThrows
     @Override
-    public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public void executeIndexedStatement( ParameterList parameterList, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-        int fetchSize = request.hasFetchSize()
-                ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
+        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement( client, parameterList.getStatementId() );
+        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( parameterList.getParametersList() ) ) );
         responseObserver.onCompleted();
     }
 
 
     @SneakyThrows
     @Override
-    public void executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, StreamObserver<StatementBatchResponse> resultObserver ) {
+    public void executeIndexedStatementBatch( IndexedParameterBatch indexedParameterBatch, StreamObserver<StatementBatchStatus> resultObserver ) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-        List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
+        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement( client, indexedParameterBatch.getStatementId() );
+        List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( indexedParameterBatch.getParameterListsList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
-        resultObserver.onNext( ProtoUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
-        resultObserver.onCompleted();
+        resultObserver.onNext( ProtoUtils.createStatementBatchStatus( statement, updateCounts ) );
     }
 
 
     @SneakyThrows
     @Override
-    public void prepareNamedStatement( PrepareStatementRequest request, StreamObserver<PreparedStatementSignature> responseObserver ) {
+    public void prepareNamedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
         PIClient client = getClient();
-        PIPreparedNamedStatement statement = client.getStatementManager().createNamedPreparedInterfaceStatement( request );
+        PIPreparedNamedStatement statement = statementManager.createNamedPreparedInterfaceStatement( client, preparedStatement );
         responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
         responseObserver.onCompleted();
     }
@@ -371,33 +288,31 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
     @SneakyThrows
     @Override
-    public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
+    public void executeNamedStatement( ParameterSet parameterSet, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
-        PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
-        int fetchSize = request.hasFetchSize()
-                ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
+        PIPreparedNamedStatement statement = statementManager.getNamedPreparedStatement( client, parameterSet.getStatementId() );
+        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeValueMap( parameterSet.getParametersMap() ) ) );
         responseObserver.onCompleted();
     }
 
 
     @SneakyThrows
     @Override
-    public void fetchResult( FetchRequest request, StreamObserver<Frame> responseObserver ) {
+    public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
         PIClient client = getClient();
-        PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        int fetchSize = request.hasFetchSize()
-                ? request.getFetchSize()
-                : PropertyUtils.DEFAULT_FETCH_SIZE;
-        Frame frame = StatementProcessor.fetch( statement, fetchSize );
+        PIStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
+        Frame frame;
+        if ( fetchRequest.hasFetchSize() ) {
+            frame = statement.fetch( fetchRequest.getOffset(), fetchRequest.getFetchSize() );
+        }
+        frame = statement.fetch( fetchRequest.getOffset() );
         responseObserver.onNext( frame );
         responseObserver.onCompleted();
     }
 
 
     @Override
-    public void commitTransaction( CommitRequest request, StreamObserver<CommitResponse> responseStreamObserver ) {
+    public void commitTransaction( CommitRequest commitRequest, StreamObserver<CommitResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.commitCurrentTransaction();
         responseStreamObserver.onNext( CommitResponse.newBuilder().build() );
@@ -406,7 +321,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
 
     @Override
-    public void rollbackTransaction( RollbackRequest request, StreamObserver<RollbackResponse> responseStreamObserver ) {
+    public void rollbackTransaction( RollbackRequest rollbackRequest, StreamObserver<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
         client.rollbackCurrentTransaction();
         responseStreamObserver.onNext( RollbackResponse.newBuilder().build() );
@@ -415,55 +330,31 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
 
     @Override
-    public void closeStatement( CloseStatementRequest request, StreamObserver<CloseStatementResponse> responseObserver ) {
+    public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
         PIClient client = getClient();
-        client.getStatementManager().closeStatementOrBatch( request.getStatementId() );
+        statementManager.closeStatementOrBatch( client, closeStatementRequest.getStatementId() );
         responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
+    }
+
+    @Override
+    public void updateConnectionProperties(ConnectionProperties connectionProperties, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver) {
+        PIClient client = getClient();
+        client.updateClientProperties(connectionProperties);
+        responseObserver.onNext(ConnectionPropertiesUpdateResponse.newBuilder().build());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void updateStatementProperties(StatementProperties statementProperties, StreamObserver<StatementPropertiesUpdateResponse> responseObserver) {
+        PIClient client = getClient();
+        PIStatement statement = statementManager.getStatement(client, statementProperties.getStatementId());
+        statement.updateProperties(statementProperties);
+        responseObserver.onNext(StatementPropertiesUpdateResponse.newBuilder().build());
         responseObserver.onCompleted();
     }
 
 
-    @Override
-    public void updateConnectionProperties( ConnectionPropertiesUpdateRequest request, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver ) {
-        PIClient client = getClient();
-        ConnectionProperties properties = request.getConnectionProperties();
-        if ( properties.hasIsAutoCommit() ) {
-            client.setAutoCommit( properties.getIsAutoCommit() );
-        }
-        if ( properties.hasNamespaceName() ) {
-            String namespaceName = properties.getNamespaceName();
-            try {
-                client.setNamespace( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ) );
-            } catch ( Exception e ) {
-                throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
-            }
-        }
-        responseObserver.onNext( ConnectionPropertiesUpdateResponse.newBuilder().build() );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getClientInfoProperties( ClientInfoPropertiesRequest request, StreamObserver<ClientInfoProperties> responseObserver ) {
-        PIClient client = getClient();
-        org.polypheny.db.protointerface.proto.ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
-        PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
-        PIClientInfoProperties.stringPropertyNames().forEach( s -> responseBuilder.putProperties( s, PIClientInfoProperties.getProperty( s ) ) );
-        responseObserver.onNext( responseBuilder.build() );
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void setClientInfoProperties( ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver ) {
-        PIClient client = getClient();
-        client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
-        reponseObserver.onNext( ClientInfoPropertiesResponse.newBuilder().build() );
-        reponseObserver.onCompleted();
-    }
-
-
-    private PIClient getClient() throws PIServiceException {
+    private PIClient getClient() throws ProtoInterfaceServiceException {
         return clientManager.getClient( ClientMetaInterceptor.CLIENT.get() );
     }
 

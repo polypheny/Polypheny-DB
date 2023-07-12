@@ -17,27 +17,40 @@
 package org.polypheny.db.protointerface;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.protointerface.proto.ConnectionProperties;
+import org.polypheny.db.protointerface.proto.Holdability;
 
-public class InterfaceClientProperties {
-    public InterfaceClientProperties(ConnectionProperties clientProperties) {
+public class PIClientProperties {
+    public PIClientProperties(ConnectionProperties clientProperties) {
         update(clientProperties);
     }
 
-    @Getter
-    private String username;
-    @Getter
-    private String password;
+    private PIClientProperties() {
+    }
+
+
+    public static PIClientProperties getDefaultInstance() {
+        PIClientProperties defaults = new PIClientProperties();
+        defaults.isAutoCommit = true;
+        defaults.isReadOnly = false; // currently not in use
+        defaults.networkTimeout = 0;  // currently not in use (responsibility of client)
+        defaults.isolation = ConnectionProperties.Isolation.COMMITTED; // currently not in use
+        defaults.namespaceName = Catalog.defaultNamespaceName;
+        return defaults;
+    }
+
+
     @Getter
     private boolean isAutoCommit;
     @Getter
-    private boolean isReadOnly;
+    private boolean isReadOnly; // currently not in use
     @Getter
-    private ConnectionProperties.Holdability resultSetHoldability;
+    private Holdability holdability; // currently not in use
     @Getter
-    private int networkTimeout;
+    private int networkTimeout; // currently not in use
     @Getter
-    private ConnectionProperties.Isolation transactionIsolation;
+    private ConnectionProperties.Isolation isolation; // currently not in use
     @Getter
     private String namespaceName;
 
@@ -45,21 +58,14 @@ public class InterfaceClientProperties {
         this.namespaceName = namespaceName;
     }
 
-    public boolean haveCredentials() {
-        return username != null && password != null;
-    }
-
     public boolean haveNamespaceName() {
         return namespaceName != null;
     }
 
     public void update(ConnectionProperties clientProperties) {
-        this.username = clientProperties.hasUsername() ? clientProperties.getUsername() : null;
-        this.password = clientProperties.hasPassword() ? clientProperties.getPassword() : null;
         this.isAutoCommit = clientProperties.getIsAutoCommit();
         this.isReadOnly = clientProperties.getIsReadOnly();
-        this.resultSetHoldability = clientProperties.getHoldability();
-        this.transactionIsolation = clientProperties.getIsolation();
+        this.isolation = clientProperties.getIsolation();
         this.networkTimeout = clientProperties.getNetworkTimeout();
         this.namespaceName = clientProperties.hasNamespaceName() ? clientProperties.getNamespaceName() : null;
     }
