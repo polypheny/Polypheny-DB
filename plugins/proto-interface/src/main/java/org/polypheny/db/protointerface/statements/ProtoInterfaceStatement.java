@@ -16,9 +16,6 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
@@ -34,6 +31,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.protointerface.InterfaceStatementProperties;
 import org.polypheny.db.protointerface.ProtoInterfaceClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
@@ -46,6 +44,10 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 @Slf4j
 public abstract class ProtoInterfaceStatement {
@@ -63,28 +65,28 @@ public abstract class ProtoInterfaceStatement {
     protected Iterator<PolyValue> resultIterator;
 
 
-    public ProtoInterfaceStatement( int statementId, ProtoInterfaceClient protoInterfaceClient, QueryLanguage queryLanguage, String query ) {
-        if ( query == null ) {
-            throw new NullPointerException( "statement must not be null." );
+    protected ProtoInterfaceStatement(Builder builder) {
+        if (builder.query == null) {
+            throw new NullPointerException("statement must not be null.");
         }
-        if ( protoInterfaceClient == null ) {
-            throw new NullPointerException( "proto interface client must not be null." );
+        if (builder.protoInterfaceClient == null) {
+            throw new NullPointerException("proto interface client must not be null.");
         }
-        if ( queryLanguage == null ) {
-            throw new NullPointerException( "query language must not be null." );
+        if (builder.queryLanguage == null) {
+            throw new NullPointerException("query language must not be null.");
         }
-        this.statementId = statementId;
-        this.protoInterfaceClient = protoInterfaceClient;
-        this.queryLanguage = queryLanguage;
-        this.query = query;
+        this.statementId = builder.statementId;
+        this.protoInterfaceClient = builder.protoInterfaceClient;
+        this.queryLanguage = builder.queryLanguage;
+        this.query = builder.query;
         this.executionStopWatch = new StopWatch();
         this.allowOverwrite = true;
     }
 
 
-    protected void overwriteQuery( String query ) {
-        if ( !allowOverwrite ) {
-            throw new ProtoInterfaceServiceException( "Query overwrite not permitted after execution of statement" );
+    protected void overwriteQuery(String query) {
+        if (!allowOverwrite) {
+            throw new ProtoInterfaceServiceException("Query overwrite not permitted after execution of statement");
         }
         this.query = query;
     }
@@ -93,36 +95,36 @@ public abstract class ProtoInterfaceStatement {
     public abstract StatementResult execute() throws Exception;
 
 
-    protected StatementResult execute( Statement statement ) throws Exception {
+    protected StatementResult execute(Statement statement) throws Exception {
         this.allowOverwrite = false;
-        Processor queryProcessor = statement.getTransaction().getProcessor( queryLanguage );
-        Node parsedStatement = queryProcessor.parse( query ).get( 0 );
-        if ( parsedStatement.isA( Kind.DDL ) ) {
-            currentImplementation = queryProcessor.prepareDdl( statement, parsedStatement,
-                    new QueryParameters( query, queryLanguage.getNamespaceType() ) );
+        Processor queryProcessor = statement.getTransaction().getProcessor(queryLanguage);
+        Node parsedStatement = queryProcessor.parse(query).get(0);
+        if (parsedStatement.isA(Kind.DDL)) {
+            currentImplementation = queryProcessor.prepareDdl(statement, parsedStatement,
+                    new QueryParameters(query, queryLanguage.getNamespaceType()));
         } else {
-            Pair<Node, AlgDataType> validated = queryProcessor.validate( protoInterfaceClient.getCurrentTransaction(),
-                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
-            AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
-            currentImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
+            Pair<Node, AlgDataType> validated = queryProcessor.validate(protoInterfaceClient.getCurrentTransaction(),
+                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean());
+            AlgRoot logicalRoot = queryProcessor.translate(statement, validated.left, null);
+            AlgDataType parameterRowType = queryProcessor.getParameterRowType(validated.left);
+            currentImplementation = statement.getQueryProcessor().prepareQuery(logicalRoot, parameterRowType, true);
         }
 
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( Kind.DDL.contains( currentImplementation.getKind() ) ) {
-            resultBuilder.setScalar( 1 );
+        if (Kind.DDL.contains(currentImplementation.getKind())) {
+            resultBuilder.setScalar(1);
             commitIfAuto();
             return resultBuilder.build();
         }
-        if ( Kind.DML.contains( currentImplementation.getKind() ) ) {
-            resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
+        if (Kind.DML.contains(currentImplementation.getKind())) {
+            resultBuilder.setScalar(currentImplementation.getRowsChanged(statement));
             commitIfAuto();
             return resultBuilder.build();
         }
         //resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
 
         commitIfAuto();
-        resultBuilder.setFrame( fetchFirst() );
+        resultBuilder.setFrame(fetchFirst());
 
         return resultBuilder.build();
     }
@@ -130,7 +132,7 @@ public abstract class ProtoInterfaceStatement {
 
     protected void commitIfAuto() throws IllegalArgumentException {
         //TODO TH: debug why not updated
-        if ( !protoInterfaceClient.isAutocommit() ) {
+        if (!protoInterfaceClient.isAutocommit()) {
             return;
         }
         commitElseRollback();
@@ -138,83 +140,83 @@ public abstract class ProtoInterfaceStatement {
 
 
     public Frame fetchFirst() throws Exception {
-        return fetch( 0 );
+        return fetch(0);
     }
 
 
-    public Frame fetch( long offset ) throws Exception {
-        int fetchSize = Integer.parseInt( PropertyUtils.getDefaultOf( PropertyUtils.FETCH_SIZE_KEY ) );
-        return fetch( offset, fetchSize );
+    public Frame fetch(long offset) throws Exception {
+        int fetchSize = Integer.parseInt(PropertyUtils.getDefaultOf(PropertyUtils.FETCH_SIZE_KEY));
+        return fetch(offset, fetchSize);
     }
 
 
-    public Frame fetch( long offset, int fetchSize ) throws Exception {
-        switch ( queryLanguage.getNamespaceType() ) {
+    public Frame fetch(long offset, int fetchSize) throws Exception {
+        switch (queryLanguage.getNamespaceType()) {
             case RELATIONAL:
-                return relationalFetch( offset, fetchSize );
+                return relationalFetch(offset, fetchSize);
             case GRAPH:
-                return graphFetch( offset, fetchSize );
+                return graphFetch(offset, fetchSize);
             case DOCUMENT:
-                return documentFetch( offset, fetchSize );
+                return documentFetch(offset, fetchSize);
         }
-        throw new ProtoInterfaceServiceException( "Should never be thrown." );
+        throw new ProtoInterfaceServiceException("Should never be thrown.");
     }
 
 
-    public Frame relationalFetch( long offset, int fetchSize ) throws Exception {
-        if ( currentImplementation == null ) {
-            throw new ProtoInterfaceServiceException( "Can't fetch frames of an unexecuted statement" );
+    public Frame relationalFetch(long offset, int fetchSize) throws Exception {
+        if (currentImplementation == null) {
+            throw new ProtoInterfaceServiceException("Can't fetch frames of an unexecuted statement");
         }
-        synchronized ( protoInterfaceClient ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "fetch(long {}, int {} )", offset, fetchSize );
+        synchronized (protoInterfaceClient) {
+            if (log.isTraceEnabled()) {
+                log.trace("fetch(long {}, int {} )", offset, fetchSize);
             }
             startOrResumeStopwatch();
-            List<List<PolyValue>> rows = getRows( LimitIterator.of( getOrCreateIterator(), fetchSize ) );
+            List<List<PolyValue>> rows = getRows(LimitIterator.of(getOrCreateIterator(), fetchSize));
             executionStopWatch.suspend();
             boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
-            if ( isDone ) {
+            if (isDone) {
                 executionStopWatch.stop();
-                currentImplementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
+                currentImplementation.getExecutionTimeMonitor().setExecutionTime(executionStopWatch.getNanoTime());
             }
-            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( currentImplementation );
-            return ProtoUtils.buildRelationalFrame( offset, isDone, rows, columnMetas );
+            List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas(currentImplementation);
+            return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
         }
     }
 
 
-    private List<List<PolyValue>> getRows( Iterator sectionIterator ) {
-        return (List<List<PolyValue>>) MetaImpl.collect( currentImplementation.getCursorFactory(), sectionIterator, new ArrayList<>() );
+    private List<List<PolyValue>> getRows(Iterator sectionIterator) {
+        return (List<List<PolyValue>>) MetaImpl.collect(currentImplementation.getCursorFactory(), sectionIterator, new ArrayList<>());
     }
 
 
-    private Frame graphFetch( long offset, int fetchSize ) {
-        throw new NotImplementedException( "Graph Fetching is not yet implmented." );
+    private Frame graphFetch(long offset, int fetchSize) {
+        throw new NotImplementedException("Graph Fetching is not yet implmented.");
     }
 
 
-    private Frame documentFetch( long offset, int fetchSize ) {
-        throw new NotImplementedException( "Doument fetching is no yet implemented." );
+    private Frame documentFetch(long offset, int fetchSize) {
+        throw new NotImplementedException("Doument fetching is no yet implemented.");
     }
 
 
     protected Iterator<PolyValue> getOrCreateIterator() {
-        if ( resultIterator != null ) {
+        if (resultIterator != null) {
             return resultIterator;
         }
         Statement statement = currentImplementation.getStatement();
-        final Enumerable<PolyValue> enumerable = currentImplementation.enumerable( statement.getDataContext() );
+        final Enumerable<PolyValue> enumerable = currentImplementation.enumerable(statement.getDataContext());
         resultIterator = enumerable.iterator();
         return resultIterator;
     }
 
 
     protected void startOrResumeStopwatch() {
-        if ( executionStopWatch.isSuspended() ) {
+        if (executionStopWatch.isSuspended()) {
             executionStopWatch.resume();
             return;
         }
-        if ( executionStopWatch.isStopped() ) {
+        if (executionStopWatch.isStopped()) {
             executionStopWatch.start();
         }
     }
@@ -223,9 +225,24 @@ public abstract class ProtoInterfaceStatement {
     protected void commitElseRollback() {
         try {
             protoInterfaceClient.commitCurrentTransaction();
-        } catch ( Exception e ) {
+        } catch (Exception e) {
             protoInterfaceClient.rollbackCurrentTransaction();
         }
     }
+
+    static abstract class Builder {
+
+        protected int statementId;
+        protected ProtoInterfaceClient protoInterfaceClient;
+        protected QueryLanguage queryLanguage;
+        protected String query;
+        protected InterfaceStatementProperties properties;
+
+
+        protected Builder() {
+        }
+        
+    }
+
 
 }
