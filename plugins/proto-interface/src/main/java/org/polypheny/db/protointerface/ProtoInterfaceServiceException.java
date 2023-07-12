@@ -32,7 +32,9 @@ public class JupyterKernelSpec {
 ========
 package org.polypheny.db.protointerface;
 
-public class ProtoInterfaceServiceException extends RuntimeException{
+import java.io.Serializable;
+
+public class ProtoInterfaceServiceException extends RuntimeException implements Serializable {
     public ProtoInterfaceServiceException(String message) {
         super(message);
 >>>>>>>> 2944a6bca (add gRPC server and service for proto-interface):plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/ProtoInterfaceServiceException.java
