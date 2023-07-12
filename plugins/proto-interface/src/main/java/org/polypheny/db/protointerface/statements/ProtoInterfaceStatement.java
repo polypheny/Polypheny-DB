@@ -129,6 +129,7 @@ public abstract class ProtoInterfaceStatement {
 
 
     protected void commitIfAuto() throws IllegalArgumentException {
+        //TODO TH: debug why not updated
         if ( !protoInterfaceClient.isAutocommit() ) {
             return;
         }
