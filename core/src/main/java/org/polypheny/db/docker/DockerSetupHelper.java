@@ -17,7 +17,6 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,7 +212,7 @@ public final class DockerSetupHelper {
 
     static public final class DockerSetupResult {
 
-        private Map<String, String> handshake = Collections.EMPTY_MAP;
+        private Map<String, String> handshake = Map.of();
         private String error = "";
 
         private boolean success = false;
@@ -252,9 +251,9 @@ public final class DockerSetupHelper {
     static public final class DockerUpdateResult {
 
         private String error = "";
-        private Map<String, String> instance = Collections.EMPTY_MAP;
+        private Map<String, String> instance = Map.of();
 
-        private Map<String, String> handshake = Collections.EMPTY_MAP;
+        private Map<String, String> handshake = Map.of();
 
 
         private DockerUpdateResult( String err ) {

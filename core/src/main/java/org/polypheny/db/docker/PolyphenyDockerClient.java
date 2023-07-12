@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -212,7 +211,7 @@ final class PolyphenyDockerClient {
         Map<String, Map<Integer, Integer>> result = new HashMap<>();
         for ( Map.Entry<String, PortMapOrError> entry : resp.getGetPorts().getPortsMap().entrySet() ) {
             if ( entry.getValue().hasError() ) {
-                result.put( entry.getKey(), Collections.EMPTY_MAP );
+                result.put( entry.getKey(), Map.of() );
                 continue;
             }
             result.put( entry.getKey(), getPort( entry.getValue().getOk() ) );
@@ -298,7 +297,7 @@ final class PolyphenyDockerClient {
             this.containerName = DockerContainer.getPhysicalUniqueName( uniqueName );
             this.imageName = imageName;
             this.exposedPorts = new ArrayList<>();
-            this.initCommand = Collections.EMPTY_LIST;
+            this.initCommand = List.of();
             this.environmentVariables = new HashMap<>();
             this.volumes = new ArrayList<>();
         }
