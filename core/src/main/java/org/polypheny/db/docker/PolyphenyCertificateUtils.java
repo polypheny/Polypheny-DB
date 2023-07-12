@@ -28,19 +28,18 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
-import org.polypheny.db.config.RuntimeConfig;
 
 final class PolyphenyCertificateUtils {
 
     /**
      * Generate or load a keypair using the default algorithm.
      */
-    public static PolyphenyKeypair generateOrLoadCertificates( String certfile, String keyfile ) throws IOException {
+    static PolyphenyKeypair generateOrLoadCertificates( String certfile, String keyfile, String uuid ) throws IOException {
         Path keyfilePath = Paths.get( keyfile );
         if ( !Files.exists( keyfilePath ) || Files.size( keyfilePath ) == 0 ) {
-            generateEd25519Keypair().saveToDiskOverwrite( certfile, keyfile );
+            generateEd25519Keypair( uuid ).saveToDiskOverwrite( certfile, keyfile );
         }
-        return PolyphenyKeypair.loadFromDisk( certfile, keyfile );
+        return PolyphenyKeypair.loadFromDisk( certfile, keyfile, uuid );
     }
 
 
@@ -62,17 +61,17 @@ final class PolyphenyCertificateUtils {
     }
 
 
-    public static void saveAsPemOverwrite( String filename, String description, byte[] data ) throws IOException {
+    static void saveAsPemOverwrite( String filename, String description, byte[] data ) throws IOException {
         String encoded = encodeToPem( description, data );
         overWriteFile( filename, encoded );
     }
 
 
-    public static byte[] loadPemFromFile( String filename, String description ) throws IOException {
+    static byte[] loadPemFromFile( String filename, String description ) throws IOException {
         Path p = Paths.get( filename );
         PemObject o = new PemReader( Files.newBufferedReader( p ) ).readPemObject();
         if ( o == null ) {
-            throw new IOException( "No PEM object present" );
+            throw new IOException( "No PEM object present in " + filename );
         }
         if ( !description.equals( o.getType() ) ) {
             throw new IOException( "Unexpected object of type " + o.getType() + " expected " + description );
@@ -81,19 +80,19 @@ final class PolyphenyCertificateUtils {
     }
 
 
-    public static byte[] loadCertificateFromFile( String filename ) throws IOException {
+    static byte[] loadCertificateFromFile( String filename ) throws IOException {
         return loadPemFromFile( filename, "CERTIFICATE" );
     }
 
 
-    private static PolyphenyKeypair generateEd25519Keypair() throws IOException {
+    private static PolyphenyKeypair generateEd25519Keypair( String uuid ) throws IOException {
         Ed25519KeyPairGenerator gen = new Ed25519KeyPairGenerator();
         gen.init( new Ed25519KeyGenerationParameters( new SecureRandom() ) );
         AsymmetricCipherKeyPair keys = gen.generateKeyPair();
 
         SubjectPublicKeyInfo info = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo( keys.getPublic() );
         X500Name issuer = new X500Name( "CN=issuer" );
-        X500Name subject = new X500Name( "CN=" + RuntimeConfig.INSTANCE_UUID.getString() );
+        X500Name subject = new X500Name( "CN=" + uuid );
         Date notBefore = new Date();
         Calendar c = Calendar.getInstance();
         c.add( Calendar.YEAR, 10 );

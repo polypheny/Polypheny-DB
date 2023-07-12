@@ -17,9 +17,10 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
-final class PolyphenyCertificateManager {
+public final class PolyphenyCertificateManager {
 
 
     private static boolean isSafeHostname( String hostname ) {
@@ -42,7 +43,7 @@ final class PolyphenyCertificateManager {
     }
 
 
-    public static byte[] loadServerCertificate( String hostname ) throws IOException {
+    static byte[] loadServerCertificate( String hostname ) throws IOException {
         String serverCertificatePath = getServerCertificatePath( hostname );
 
         byte[] cert = PolyphenyCertificateUtils.loadCertificateFromFile( serverCertificatePath );
@@ -53,28 +54,27 @@ final class PolyphenyCertificateManager {
     }
 
 
-    public static void saveServerCertificate( String hostname, byte[] serverCertificate ) throws IOException {
+    static void saveServerCertificate( String hostname, byte[] serverCertificate ) throws IOException {
         String serverCertificatePath = getServerCertificatePath( hostname );
         PolyphenyCertificateUtils.saveAsPemOverwrite( serverCertificatePath, "CERTIFICATE", serverCertificate );
     }
 
 
-    public static PolyphenyKeypair loadClientKeypair( String hostname ) throws IOException {
+    static PolyphenyKeypair loadClientKeypair( String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
         String basePath = getBaseDirectory( hostname );
         String clientKeyPath = dirManager.getFileIfExists( basePath + "key.pem" ).getAbsolutePath();
         String clientCertificatePath = dirManager.getFileIfExists( basePath + "cert.pem" ).getAbsolutePath();
-        return PolyphenyKeypair.loadFromDisk( clientCertificatePath, clientKeyPath );
-
+        return PolyphenyKeypair.loadFromDisk( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 
 
-    public static PolyphenyKeypair generateOrLoadClientKeypair( String hostname ) throws IOException {
+    static PolyphenyKeypair generateOrLoadClientKeypair( String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
         String basePath = getBaseDirectory( hostname );
         String clientKeyPath = dirManager.registerNewFile( basePath + "key.pem" ).getAbsolutePath();
         String clientCertificatePath = dirManager.registerNewFile( basePath + "cert.pem" ).getAbsolutePath();
-        return PolyphenyCertificateUtils.generateOrLoadCertificates( clientCertificatePath, clientKeyPath );
+        return PolyphenyCertificateUtils.generateOrLoadCertificates( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 
 }

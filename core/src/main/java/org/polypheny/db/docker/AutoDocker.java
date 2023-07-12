@@ -33,7 +33,6 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 
 @Slf4j
 public final class AutoDocker {
@@ -181,16 +181,18 @@ public final class AutoDocker {
             return false;
         }
 
-        try {
-            DockerSetupHelper.tryConnectDirectly( "localhost" );
-            DockerManager.addDockerInstance( "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT );
+        DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost" );
+
+        if ( res.isSuccess() ) {
             return true;
-        } catch ( IOException e ) {
-            // Needs a handshake
         }
 
-        DockerSetupHelper.addPendingSetup( "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT );
+        if ( !res.getError().equals( "" ) ) {
+            log.info( "AutoDocker: Setup failed: " + res.getError() );
+            return false;
+        }
 
+        // If it is not successful and not an error, a handshake needs to be done
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {
                 Runnable r = this::doAutoHandshake;

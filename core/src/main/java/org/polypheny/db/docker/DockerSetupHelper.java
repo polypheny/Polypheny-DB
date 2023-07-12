@@ -56,7 +56,7 @@ public final class DockerSetupHelper {
     }
 
 
-    public static void tryConnectDirectly( String hostname ) throws IOException {
+    private static void tryConnectDirectly( String hostname ) throws IOException {
         byte[] serverCertificate;
 
         try {
@@ -176,13 +176,6 @@ public final class DockerSetupHelper {
     }
 
 
-    static void addPendingSetup( String hostname, String alias, int communicationPort ) {
-        synchronized ( pendingSetups ) {
-            pendingSetups.put( hostname, new PendingSetup( hostname, alias, communicationPort ) );
-        }
-    }
-
-
     static Optional<PendingSetup> getPendingSetup( String hostname ) {
         synchronized ( pendingSetups ) {
             return Optional.ofNullable( pendingSetups.getOrDefault( hostname, null ) );
@@ -213,10 +206,10 @@ public final class DockerSetupHelper {
     static public final class DockerSetupResult {
 
         private Map<String, String> handshake = Map.of();
+        @Getter
         private String error = "";
-
+        @Getter
         private boolean success = false;
-
         private int dockerId = -1;
 
 

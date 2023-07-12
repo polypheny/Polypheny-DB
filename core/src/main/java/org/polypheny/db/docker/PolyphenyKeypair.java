@@ -1,6 +1,7 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -24,14 +25,14 @@ final class PolyphenyKeypair {
     private final transient byte[] derEncoding;
 
 
-    public PolyphenyKeypair( X509CertificateHolder cert, AsymmetricKeyParameter key ) throws IOException {
+    PolyphenyKeypair( X509CertificateHolder cert, AsymmetricKeyParameter key ) throws IOException {
         this.cert = cert;
         this.key = key;
         this.derEncoding = cert.toASN1Structure().getEncoded( "DER" );
     }
 
 
-    public void saveToDiskOverwrite( String certfile, String keyfile ) throws IOException {
+    void saveToDiskOverwrite( String certfile, String keyfile ) throws IOException {
         PolyphenyCertificateUtils.saveAsPemOverwrite( certfile, "CERTIFICATE", cert.toASN1Structure().getEncoded( "DER" ) );
 
         // XXX: If we would save pkinfo1 directly, it would not be
@@ -43,18 +44,24 @@ final class PolyphenyKeypair {
     }
 
 
-    public static PolyphenyKeypair loadFromDisk( String certfile, String keyfile ) throws IOException {
+    static PolyphenyKeypair loadFromDisk( String certfile, String keyfile, String uuid ) throws IOException {
         byte[] rawKey = PolyphenyCertificateUtils.loadPemFromFile( keyfile, "PRIVATE KEY" );
         AsymmetricKeyParameter sk = PrivateKeyFactory.createKey( rawKey );
 
         byte[] rawCertificate = PolyphenyCertificateUtils.loadPemFromFile( certfile, "CERTIFICATE" );
         X509CertificateHolder cert = new X509CertificateHolder( rawCertificate );
 
-        return new PolyphenyKeypair( cert, sk );
+        PolyphenyKeypair kp = new PolyphenyKeypair( cert, sk );
+
+        if ( !kp.getUuid().equals( uuid ) ) {
+            throw new IOException( "Loaded certificate UUID does not match the expected UUID" );
+        }
+
+        return kp;
     }
 
 
-    public Certificate toASN1Structure() {
+    Certificate toASN1Structure() {
         return cert.toASN1Structure();
     }
 
@@ -62,13 +69,19 @@ final class PolyphenyKeypair {
     /**
      * Returns the DER encoded certificate
      */
-    public byte[] getEncodedCertificate() {
+    byte[] getEncodedCertificate() {
         return derEncoding;
     }
 
 
-    public AsymmetricKeyParameter getPrivateKey() {
+    AsymmetricKeyParameter getPrivateKey() {
         return key;
+    }
+
+
+    String getUuid() {
+        // 2.5.4.3 is the common name
+        return cert.getSubject().getRDNs( new ASN1ObjectIdentifier( "2.5.4.3" ) )[0].getFirst().getValue().toString();
     }
 
 
@@ -77,7 +90,7 @@ final class PolyphenyKeypair {
      * there ever is a way, that the TlsCredentialedSigner can
      * determine this automatically, it should be used.
      */
-    public SignatureAndHashAlgorithm getSignatureAndHashAlgorithm() {
+    SignatureAndHashAlgorithm getSignatureAndHashAlgorithm() {
         if ( key instanceof Ed25519PrivateKeyParameters ) {
             return SignatureAndHashAlgorithm.ed25519;
         }
