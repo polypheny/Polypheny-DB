@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.protointerface.proto.ConnectionProperties;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -60,6 +61,10 @@ public class ProtoInterfaceClient {
 
     public String getClientUUID() {
         return clientUUID;
+    }
+
+    public void updateClientProperties(ConnectionProperties connectionProperties) {
+        clientProperties.update(connectionProperties);
     }
 
 
