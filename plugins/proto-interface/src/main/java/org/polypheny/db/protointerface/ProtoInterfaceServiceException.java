@@ -16,7 +16,9 @@
 
 package org.polypheny.db.protointerface;
 
-public class ProtoInterfaceServiceException extends RuntimeException{
+import java.io.Serializable;
+
+public class ProtoInterfaceServiceException extends RuntimeException implements Serializable {
     public ProtoInterfaceServiceException(String message) {
         super(message);
     }
