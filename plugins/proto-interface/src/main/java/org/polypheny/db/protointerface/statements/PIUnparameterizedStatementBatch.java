@@ -16,16 +16,12 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import lombok.Getter;
-import org.polypheny.db.protointerface.PIClient;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
+import org.polypheny.db.protointerface.PIClient;
 
-@Getter
-public class PIUnparameterizedStatementBatch {
+public class PIUnparameterizedStatementBatch implements PIStatementBatch {
 
     List<PIUnparameterizedStatement> statements;
     PIClient protoInterfaceClient;
@@ -40,11 +36,23 @@ public class PIUnparameterizedStatementBatch {
 
 
     public List<Long> executeBatch() throws Exception {
-        int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new LinkedList<>();
         for ( PIUnparameterizedStatement statement : statements ) {
-            updateCounts.add( statement.execute(fetchSize).getScalar() );
+            updateCounts.add( statement.execute().getScalar() );
         }
         return updateCounts;
     }
+
+
+    @Override
+    public List<PIStatement> getStatements() {
+        return statements.stream().map( s -> (PIStatement) s ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public int getBatchId() {
+        return batchId;
+    }
+
 }

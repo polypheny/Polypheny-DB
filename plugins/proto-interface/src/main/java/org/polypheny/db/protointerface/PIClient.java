@@ -16,12 +16,11 @@
 
 package org.polypheny.db.protointerface;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.protointerface.statements.StatementManager;
+import org.polypheny.db.protointerface.proto.ConnectionProperties;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -29,97 +28,96 @@ import org.polypheny.db.transaction.TransactionManager;
 @Slf4j
 public class PIClient {
 
-    @Getter
     private String clientUUID;
     private CatalogUser catalogUser;
+    private CatalogDatabase catalogDatabase;
+    private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
-    @Getter
-    private StatementManager statementManager;
-    @Getter
-    private PIClientInfoProperties PIClientInfoProperties;
-    @Getter
-    @Setter
-    private boolean isAutoCommit;
-    @Getter
-    @Setter
-    private LogicalNamespace namespace;
-    private boolean isActive;
+    private PIClientProperties clientProperties;
+    private int minorApiVersion;
+    private int majorApiVersion;
 
 
-    public PIClient(
-            String clientUUID,
-            CatalogUser catalogUser,
-            TransactionManager transactionManager,
-            LogicalNamespace namespace,
-            boolean isAutoCommit ) {
-        this.statementManager = new StatementManager( this );
-        this.PIClientInfoProperties = new PIClientInfoProperties();
-        this.namespace = namespace;
-        this.clientUUID = clientUUID;
-        this.catalogUser = catalogUser;
-        this.transactionManager = transactionManager;
-        this.isAutoCommit = isAutoCommit;
-        this.isActive = true;
+    private PIClient(Builder connectionBuilder ) {
+        this.clientUUID = connectionBuilder.clientUUID;
+        this.catalogUser = connectionBuilder.catalogUser;
+        this.logicalNamespace = connectionBuilder.logicalNamespace;
+        this.currentTransaction = connectionBuilder.currentTransaction;
+        this.transactionManager = connectionBuilder.transactionManager;
+        this.clientProperties = connectionBuilder.clientProperties;
+        this.majorApiVersion = connectionBuilder.majorApiVersion;
+        this.minorApiVersion = connectionBuilder.minorApiVersion;
     }
 
 
-    public Transaction getCurrentOrCreateNewTransaction() {
-        synchronized ( this ) {
-            if ( currentTransaction == null || !currentTransaction.isActive() ) {
-                //TODO TH: can a single transaction contain changes to different namespaces -> use null
-                currentTransaction = transactionManager.startTransaction( catalogUser, namespace, false, "ProtoInterface" );
-            }
-            return currentTransaction;
+    public String getClientUUID() {
+        return clientUUID;
+    }
+
+    public PIClientProperties getClientProperties() {
+        return clientProperties;
+    }
+
+    public void updateClientProperties(ConnectionProperties connectionProperties) {
+        clientProperties.update(connectionProperties);
+    }
+
+
+    public synchronized Transaction getCurrentOrCreateNewTransaction() {
+        if ( currentTransaction == null || !currentTransaction.isActive() ) {
+            currentTransaction = transactionManager.startTransaction( catalogUser, logicalNamespace, false, "ProtoInterface" );
         }
+        return currentTransaction;
     }
 
-    public void commitCurrentTransactionIfAuto() {
-        if ( !isAutoCommit ) {
-            return;
+
+    public Transaction getCurrentTransaction() {
+        return currentTransaction;
+    }
+
+
+    public synchronized void commitCurrentTransaction() {
+        if ( log.isTraceEnabled() ) {
+            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
         }
-        commitCurrentTransactionUnsynchronized();
-    }
-
-
-    public void commitCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
-            commitCurrentTransactionUnsynchronized();
-        }
-    }
-
-
-    private void commitCurrentTransactionUnsynchronized() throws PIServiceException {
         if ( hasNoTransaction() ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for client: {}", clientUUID );
+            }
             return;
         }
         try {
             currentTransaction.commit();
         } catch ( TransactionException e ) {
-            throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
+            throw new ProtoInterfaceServiceException( "Committing current transaction failed: " + e.getLocalizedMessage() );
         } finally {
             endCurrentTransaction();
         }
     }
 
 
-    public void rollbackCurrentTransaction() throws PIServiceException {
-        synchronized ( this ) {
-            if ( hasNoTransaction() ) {
-                return;
+    public synchronized void rollbackCurrentTransaction() {
+        if ( log.isTraceEnabled() ) {
+            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
+        }
+        if ( hasNoTransaction() ) {
+            if ( log.isTraceEnabled() ) {
+                log.trace( "No open transaction for client: {}", clientUUID );
             }
-            try {
-                currentTransaction.rollback();
-            } catch ( TransactionException e ) {
-                throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
-            } finally {
-                endCurrentTransaction();
-            }
+            return;
+        }
+        try {
+            currentTransaction.rollback();
+        } catch ( TransactionException e ) {
+            throw new ProtoInterfaceServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
+        } finally {
+            endCurrentTransaction();
         }
     }
 
 
-    private void endCurrentTransaction() {
+    private synchronized void endCurrentTransaction() {
         currentTransaction = null;
     }
 
@@ -129,23 +127,79 @@ public class PIClient {
     }
 
 
-    public void prepareForDisposal() {
-        statementManager.closeAll();
-        if ( !hasNoTransaction() ) {
-            rollbackCurrentTransaction();
+    public boolean isAutocommit() throws IllegalArgumentException{
+        return clientProperties.isAutoCommit();
+    }
+
+
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+
+    static class Builder {
+
+        private String clientUUID;
+        private CatalogUser catalogUser;
+        private LogicalNamespace logicalNamespace;
+        private Transaction currentTransaction;
+        private TransactionManager transactionManager;
+        private PIClientProperties clientProperties;
+        private int minorApiVersion;
+        private int majorApiVersion;
+
+
+        private Builder() {
         }
-    }
 
 
-    public void setIsActive() {
-        isActive = true;
-    }
+        public Builder setClientUUID( String clientUUID ) {
+            this.clientUUID = clientUUID;
+            return this;
+        }
 
 
-    public boolean returnAndResetIsActive() {
-        boolean oldIsActive = isActive;
-        isActive = false;
-        return oldIsActive;
+        public Builder setCatalogUser( CatalogUser catalogUser ) {
+            this.catalogUser = catalogUser;
+            return this;
+        }
+
+
+        public Builder setLogicalNamespace( LogicalNamespace logicalNamespace ) {
+            this.logicalNamespace = logicalNamespace;
+            return this;
+        }
+
+
+
+        public Builder setTransactionManager( TransactionManager transactionManager ) {
+            this.transactionManager = transactionManager;
+            return this;
+        }
+
+
+        public Builder setClientProperties( PIClientProperties clientProperties ) {
+            this.clientProperties = clientProperties;
+            return this;
+        }
+
+
+        public Builder setMajorApiVersion( int majorApiVersion ) {
+            this.majorApiVersion = majorApiVersion;
+            return this;
+        }
+
+
+        public Builder setMinorApiVersion( int minorApiVersion ) {
+            this.minorApiVersion = minorApiVersion;
+            return this;
+        }
+
+
+        public PIClient build() {
+            return new PIClient( this );
+        }
+
     }
 
 }
