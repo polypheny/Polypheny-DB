@@ -19,16 +19,16 @@ package org.polypheny.db.protointerface.statements;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.PIClient;
 
-public class UnparameterizedInterfaceStatementBatch implements ProtoInterfaceStatementBatch {
+public class PIUnparameterizedStatementBatch implements PIStatementBatch {
 
-    List<UnparameterizedInterfaceStatement> statements;
-    ProtoInterfaceClient protoInterfaceClient;
+    List<PIUnparameterizedStatement> statements;
+    PIClient protoInterfaceClient;
     int batchId;
 
 
-    public UnparameterizedInterfaceStatementBatch( int batchId, ProtoInterfaceClient protoInterfaceClient, List<UnparameterizedInterfaceStatement> statements ) {
+    public PIUnparameterizedStatementBatch(int batchId, PIClient protoInterfaceClient, List<PIUnparameterizedStatement> statements ) {
         this.statements = statements;
         this.protoInterfaceClient = protoInterfaceClient;
         this.batchId = batchId;
@@ -37,7 +37,7 @@ public class UnparameterizedInterfaceStatementBatch implements ProtoInterfaceSta
 
     public List<Long> executeBatch() throws Exception {
         List<Long> updateCounts = new LinkedList<>();
-        for ( UnparameterizedInterfaceStatement statement : statements ) {
+        for ( PIUnparameterizedStatement statement : statements ) {
             updateCounts.add( statement.execute().getScalar() );
         }
         return updateCounts;
@@ -45,8 +45,8 @@ public class UnparameterizedInterfaceStatementBatch implements ProtoInterfaceSta
 
 
     @Override
-    public List<ProtoInterfaceStatement> getStatements() {
-        return statements.stream().map( s -> (ProtoInterfaceStatement) s ).collect( Collectors.toList() );
+    public List<PIStatement> getStatements() {
+        return statements.stream().map( s -> (PIStatement) s ).collect( Collectors.toList() );
     }
 
 

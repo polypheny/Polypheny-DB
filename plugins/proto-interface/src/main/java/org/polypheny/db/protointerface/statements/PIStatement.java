@@ -31,11 +31,12 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.protointerface.InterfaceStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
+import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
+import org.polypheny.db.protointerface.proto.StatementProperties;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.protointerface.utils.PropertyUtils;
@@ -45,18 +46,20 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 @Slf4j
-public abstract class ProtoInterfaceStatement {
+public abstract class PIStatement {
 
 
     @Getter
     protected final int statementId;
     @Getter
-    protected final ProtoInterfaceClient protoInterfaceClient;
+    protected final PIClient protoInterfaceClient;
+    protected final PIStatementProperties properties;
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage queryLanguage;
     protected String query;
@@ -65,7 +68,7 @@ public abstract class ProtoInterfaceStatement {
     protected Iterator<PolyValue> resultIterator;
 
 
-    protected ProtoInterfaceStatement(Builder builder) {
+    protected PIStatement(Builder builder) {
         if (builder.query == null) {
             throw new NullPointerException("statement must not be null.");
         }
@@ -80,6 +83,7 @@ public abstract class ProtoInterfaceStatement {
         this.queryLanguage = builder.queryLanguage;
         this.query = builder.query;
         this.executionStopWatch = new StopWatch();
+        this.properties = builder.properties;
         this.allowOverwrite = true;
     }
 
@@ -121,10 +125,9 @@ public abstract class ProtoInterfaceStatement {
             commitIfAuto();
             return resultBuilder.build();
         }
-        //resultBuilder.setScalar( currentImplementation.getRowsChanged( statement ) );
 
         commitIfAuto();
-        resultBuilder.setFrame(fetchFirst());
+        resultBuilder.setFrame(fetch(0));
 
         return resultBuilder.build();
     }
@@ -139,42 +142,32 @@ public abstract class ProtoInterfaceStatement {
     }
 
 
-    public Frame fetchFirst() throws Exception {
-        return fetch(0);
-    }
-
 
     public Frame fetch(long offset) throws Exception {
-        int fetchSize = Integer.parseInt(PropertyUtils.getDefaultOf(PropertyUtils.FETCH_SIZE_KEY));
-        return fetch(offset, fetchSize);
-    }
-
-
-    public Frame fetch(long offset, int fetchSize) throws Exception {
         switch (queryLanguage.getNamespaceType()) {
             case RELATIONAL:
-                return relationalFetch(offset, fetchSize);
+                return relationalFetch(offset);
             case GRAPH:
-                return graphFetch(offset, fetchSize);
+                return graphFetch(offset);
             case DOCUMENT:
-                return documentFetch(offset, fetchSize);
+                return documentFetch(offset);
         }
         throw new ProtoInterfaceServiceException("Should never be thrown.");
     }
 
 
-    public Frame relationalFetch(long offset, int fetchSize) throws Exception {
+    public Frame relationalFetch(long offset) {
         if (currentImplementation == null) {
             throw new ProtoInterfaceServiceException("Can't fetch frames of an unexecuted statement");
         }
         synchronized (protoInterfaceClient) {
             if (log.isTraceEnabled()) {
-                log.trace("fetch(long {}, int {} )", offset, fetchSize);
+                log.trace("fetch(long {}, int {} )", offset, properties.getFetchSize());
             }
             startOrResumeStopwatch();
-            List<List<PolyValue>> rows = getRows(LimitIterator.of(getOrCreateIterator(), fetchSize));
+            List<List<PolyValue>> rows = getRows(LimitIterator.of(getOrCreateIterator(), properties.getFetchSize()));
             executionStopWatch.suspend();
-            boolean isDone = fetchSize == 0 || rows.size() < fetchSize;
+            boolean isDone = properties.getFetchSize() == 0 || rows.size() < properties.getFetchSize();
             if (isDone) {
                 executionStopWatch.stop();
                 currentImplementation.getExecutionTimeMonitor().setExecutionTime(executionStopWatch.getNanoTime());
@@ -190,13 +183,13 @@ public abstract class ProtoInterfaceStatement {
     }
 
 
-    private Frame graphFetch(long offset, int fetchSize) {
-        throw new NotImplementedException("Graph Fetching is not yet implmented.");
+    private Frame graphFetch(long offset) throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException("Graph Fetching is not yet implmented.");
     }
 
 
-    private Frame documentFetch(long offset, int fetchSize) {
-        throw new NotImplementedException("Doument fetching is no yet implemented.");
+    private Frame documentFetch(long offset) throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException("Doument fetching is no yet implemented.");
     }
 
 
@@ -230,13 +223,17 @@ public abstract class ProtoInterfaceStatement {
         }
     }
 
+    public void updateProperties(StatementProperties statementProperties) {
+        properties.update(statementProperties);
+    }
+
     static abstract class Builder {
 
         protected int statementId;
-        protected ProtoInterfaceClient protoInterfaceClient;
+        protected PIClient protoInterfaceClient;
         protected QueryLanguage queryLanguage;
         protected String query;
-        protected InterfaceStatementProperties properties;
+        protected PIStatementProperties properties;
 
 
         protected Builder() {

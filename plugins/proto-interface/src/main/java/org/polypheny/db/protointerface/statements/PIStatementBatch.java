@@ -18,8 +18,8 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 
-public interface ProtoInterfaceStatementBatch {
-    List<ProtoInterfaceStatement> getStatements();
+public interface PIStatementBatch {
+    List<PIStatement> getStatements();
 
     int getBatchId();
 }

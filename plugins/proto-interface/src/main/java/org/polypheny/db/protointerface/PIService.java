@@ -27,7 +27,7 @@ import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
+public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
@@ -35,7 +35,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     private StatementManager statementManager;
 
 
-    public ProtoInterfaceService( ClientManager clientManager ) {
+    public PIService(ClientManager clientManager ) {
         this.clientManager = clientManager;
         this.statementManager = new StatementManager();
     }
@@ -224,8 +224,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeUnparameterizedStatement( UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        UnparameterizedInterfaceStatement statement = statementManager.createUnparameterizedStatement( client, unparameterizedStatement );
+        PIClient client = getClient();
+        PIUnparameterizedStatement statement = statementManager.createUnparameterizedStatement( client, unparameterizedStatement );
         responseObserver.onNext( ProtoUtils.createStatus( statement ) );
         StatementResult result = statement.execute();
         responseObserver.onNext( ProtoUtils.createStatus( statement, result ) );
@@ -236,8 +236,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeUnparameterizedStatementBatch( UnparameterizedStatementBatch unparameterizedStatementBatch, StreamObserver<StatementBatchStatus> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        UnparameterizedInterfaceStatementBatch batch = statementManager.createUnparameterizedStatementBatch( client, unparameterizedStatementBatch.getStatementsList() );
+        PIClient client = getClient();
+        PIUnparameterizedStatementBatch batch = statementManager.createUnparameterizedStatementBatch( client, unparameterizedStatementBatch.getStatementsList() );
         responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch ) );
         List<Long> updateCounts = batch.executeBatch();
         responseObserver.onNext( ProtoUtils.createStatementBatchStatus( batch, updateCounts ) );
@@ -248,8 +248,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void prepareIndexedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        IndexedPreparedInterfaceStatement statement = statementManager.createIndexedPreparedInterfaceStatement( client, preparedStatement );
+        PIClient client = getClient();
+        PIPreparedIndexedStatement statement = statementManager.createIndexedPreparedInterfaceStatement( client, preparedStatement );
         responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
         responseObserver.onCompleted();
     }
@@ -258,8 +258,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeIndexedStatement( ParameterList parameterList, StreamObserver<StatementResult> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        IndexedPreparedInterfaceStatement statement = statementManager.getIndexedPreparedStatement( client, parameterList.getStatementId() );
+        PIClient client = getClient();
+        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement( client, parameterList.getStatementId() );
         responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( parameterList.getParametersList() ) ) );
         responseObserver.onCompleted();
     }
@@ -268,8 +268,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeIndexedStatementBatch( IndexedParameterBatch indexedParameterBatch, StreamObserver<StatementBatchStatus> resultObserver ) {
-        ProtoInterfaceClient client = getClient();
-        IndexedPreparedInterfaceStatement statement = statementManager.getIndexedPreparedStatement( client, indexedParameterBatch.getStatementId() );
+        PIClient client = getClient();
+        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement( client, indexedParameterBatch.getStatementId() );
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( indexedParameterBatch.getParameterListsList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
         resultObserver.onNext( ProtoUtils.createStatementBatchStatus( statement, updateCounts ) );
@@ -279,8 +279,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void prepareNamedStatement( PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        NamedPreparedInterfaceStatement statement = statementManager.createNamedPreparedInterfaceStatement( client, preparedStatement );
+        PIClient client = getClient();
+        PIPreparedNamedStatement statement = statementManager.createNamedPreparedInterfaceStatement( client, preparedStatement );
         responseObserver.onNext( ProtoUtils.createPreparedStatementSignature( statement ) );
         responseObserver.onCompleted();
     }
@@ -289,8 +289,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void executeNamedStatement( ParameterSet parameterSet, StreamObserver<StatementResult> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        NamedPreparedInterfaceStatement statement = statementManager.getNamedPreparedStatement( client, parameterSet.getStatementId() );
+        PIClient client = getClient();
+        PIPreparedNamedStatement statement = statementManager.getNamedPreparedStatement( client, parameterSet.getStatementId() );
         responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeValueMap( parameterSet.getParametersMap() ) ) );
         responseObserver.onCompleted();
     }
@@ -299,8 +299,8 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
     @SneakyThrows
     @Override
     public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
-        ProtoInterfaceStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
+        PIClient client = getClient();
+        PIStatement statement = statementManager.getStatement( client, fetchRequest.getStatementId() );
         Frame frame;
         if ( fetchRequest.hasFetchSize() ) {
             frame = statement.fetch( fetchRequest.getOffset(), fetchRequest.getFetchSize() );
@@ -313,7 +313,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void commitTransaction( CommitRequest commitRequest, StreamObserver<CommitResponse> responseStreamObserver ) {
-        ProtoInterfaceClient client = getClient();
+        PIClient client = getClient();
         client.commitCurrentTransaction();
         responseStreamObserver.onNext( CommitResponse.newBuilder().build() );
         responseStreamObserver.onCompleted();
@@ -322,7 +322,7 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void rollbackTransaction( RollbackRequest rollbackRequest, StreamObserver<RollbackResponse> responseStreamObserver ) {
-        ProtoInterfaceClient client = getClient();
+        PIClient client = getClient();
         client.rollbackCurrentTransaction();
         responseStreamObserver.onNext( RollbackResponse.newBuilder().build() );
         responseStreamObserver.onCompleted();
@@ -331,21 +331,30 @@ public class ProtoInterfaceService extends ProtoInterfaceGrpc.ProtoInterfaceImpl
 
     @Override
     public void closeStatement( CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver ) {
-        ProtoInterfaceClient client = getClient();
+        PIClient client = getClient();
         statementManager.closeStatementOrBatch( client, closeStatementRequest.getStatementId() );
         responseObserver.onNext( CloseStatementResponse.newBuilder().build() );
     }
 
     @Override
     public void updateConnectionProperties(ConnectionProperties connectionProperties, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver) {
-        ProtoInterfaceClient client = getClient();
+        PIClient client = getClient();
         client.updateClientProperties(connectionProperties);
         responseObserver.onNext(ConnectionPropertiesUpdateResponse.newBuilder().build());
         responseObserver.onCompleted();
     }
 
+    @Override
+    public void updateStatementProperties(StatementProperties statementProperties, StreamObserver<StatementPropertiesUpdateResponse> responseObserver) {
+        PIClient client = getClient();
+        PIStatement statement = statementManager.getStatement(client, statementProperties.getStatementId());
+        statement.updateProperties(statementProperties);
+        responseObserver.onNext(StatementPropertiesUpdateResponse.newBuilder().build());
+        responseObserver.onCompleted();
+    }
 
-    private ProtoInterfaceClient getClient() throws ProtoInterfaceServiceException {
+
+    private PIClient getClient() throws ProtoInterfaceServiceException {
         return clientManager.getClient( ClientMetaInterceptor.CLIENT.get() );
     }
 

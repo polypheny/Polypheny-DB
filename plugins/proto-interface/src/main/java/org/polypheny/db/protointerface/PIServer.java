@@ -26,13 +26,13 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class ProtoInterfaceServer {
+public class PIServer {
 
     private final Server server;
     private final int port;
 
 
-    public ProtoInterfaceServer( int port, ProtoInterfaceService service, ClientManager clientManager ) {
+    public PIServer(int port, PIService service, ClientManager clientManager ) {
         this.port = port;
         ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
         server = serverBuilder
@@ -69,7 +69,7 @@ public class ProtoInterfaceServer {
             // Use stderr here since the logger may have been reset by its JVM shutdown hook.
             System.err.println( "shutting down gRPC server since JVM is shutting down" );
             try {
-                ProtoInterfaceServer.this.shutdown();
+                PIServer.this.shutdown();
             } catch ( InterruptedException e ) {
                 e.printStackTrace( System.err );
             }
