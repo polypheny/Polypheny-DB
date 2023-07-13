@@ -31,7 +31,7 @@ public class PIStatementProperties {
     }
 
 
-    public static PIStatementProperties getDefaultInstance(PIClientProperties properties) {
+    public static PIStatementProperties getDefaultInstance() {
         PIStatementProperties defaults = new PIStatementProperties();
         defaults.updateBehaviour = StatementProperties.ResultOperations.READ_ONLY; // currently not in use
         defaults.fetchSize = DEFAULT_FETCH_SIZE;
