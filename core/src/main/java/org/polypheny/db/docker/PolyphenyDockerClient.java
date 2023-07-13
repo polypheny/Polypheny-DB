@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -60,11 +59,6 @@ final class PolyphenyDockerClient {
     }
 
 
-    ContainerBuilder newBuilder( String imageName, String uniqueName ) {
-        return new ContainerBuilder( imageName, uniqueName );
-    }
-
-
     private Response executeRequest( Request.Builder r ) throws IOException {
         Request req = r.build();
         Response resp;
@@ -101,7 +95,7 @@ final class PolyphenyDockerClient {
     /**
      * Used by ContainerBuilder.deploy()
      */
-    private String createAndStartContainer( String containerName, String imageName, List<Integer> ports, List<String> initCommand, Map<String, String> environmentVariables, List<String> volumes ) throws IOException {
+    String createAndStartContainer( String containerName, String imageName, List<Integer> ports, List<String> initCommand, Map<String, String> environmentVariables, List<String> volumes ) throws IOException {
 
         PortMaps portMaps = createPortMap( ports );
         CreateContainerRequest ccr = CreateContainerRequest
@@ -273,82 +267,6 @@ final class PolyphenyDockerClient {
         if ( !resp.getError().equals( "" ) ) {
             throw new IOException( resp.getError() );
         }
-    }
-
-
-    final class ContainerBuilder {
-
-        private final String containerName;
-        private final String imageName;
-        private final List<Integer> exposedPorts;
-        private List<String> initCommand;
-        private final Map<String, String> environmentVariables;
-        private final List<String> volumes;
-
-
-        /**
-         * A Builder for a new container.
-         *
-         * @param imageName Name of the image to use as a base
-         * @param uniqueName The name of the container to create.  Must be unique for that docker instance, globally unique would be even better.
-         * Must start with "polypheny_" followed by the Polypheny UUID and another underscore.
-         */
-        private ContainerBuilder( String imageName, String uniqueName ) {
-            this.containerName = DockerContainer.getPhysicalUniqueName( uniqueName );
-            this.imageName = imageName;
-            this.exposedPorts = new ArrayList<>();
-            this.initCommand = List.of();
-            this.environmentVariables = new HashMap<>();
-            this.volumes = new ArrayList<>();
-        }
-
-
-        /**
-         * Creates the container.  The possible exception reasons
-         * include that a container with that name already exists.
-         *
-         * @return The UUID of the freshly created container.
-         */
-        public String deploy() throws IOException {
-            return createAndStartContainer( containerName, imageName, exposedPorts, initCommand, environmentVariables, volumes );
-        }
-
-
-        /**
-         * Sets the initial command of the container.
-         */
-        public ContainerBuilder setInitCommand( List<String> cmd ) {
-            initCommand = cmd;
-            return this;
-        }
-
-
-        /**
-         * Adds a port which Polypheny would like to use.  This is the
-         * port inside the container, a separate call to getUsedPorts
-         * is required to find out which port is used on the outside.
-         */
-        public ContainerBuilder addPort( int port ) {
-            exposedPorts.add( port );
-            return this;
-        }
-
-
-        /**
-         * Adds an environment variable.  If the same name is set multiple times, the last value will win.
-         */
-        public ContainerBuilder putEnvironmentVariable( String name, String value ) {
-            environmentVariables.put( name, value );
-            return this;
-        }
-
-
-        public ContainerBuilder addVolume( String volume ) {
-            volumes.add( volume );
-            return this;
-        }
-
-
     }
 
 }

@@ -249,40 +249,41 @@ public final class DockerInstance {
     public class ContainerBuilder {
 
         private final String uniqueName;
-        private final PolyphenyDockerClient.ContainerBuilder builder;
+        private final String imageName;
+        private List<String> initCommand = List.of();
+        private final List<Integer> exposedPorts = new ArrayList<>();
+        private final Map<String, String> environmentVariables = new HashMap<>();
 
 
         private ContainerBuilder( String imageName, String uniqueName ) {
+            this.imageName = imageName;
             this.uniqueName = uniqueName;
-            builder = client.newBuilder( imageName, uniqueName );
         }
 
 
         public ContainerBuilder withExposedPort( int port ) {
-            builder.addPort( port );
+            exposedPorts.add( port );
             return this;
         }
 
 
         public ContainerBuilder withEnvironmentVariable( String key, String value ) {
-            builder.putEnvironmentVariable( key, value );
+            environmentVariables.put( key, value );
             return this;
         }
 
 
         public ContainerBuilder withCommand( List<String> cmd ) {
-            builder.setInitCommand( cmd );
+            initCommand = cmd;
             return this;
         }
 
 
-        public DockerContainer build() {
-            try {
-                String uuid = builder.deploy();
+        public DockerContainer createAndStart() throws IOException {
+            synchronized ( DockerInstance.this ) {
+                String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageName, exposedPorts, initCommand, environmentVariables, List.of() );
                 DockerManager.getInstance().takeOwnership( uuid, DockerInstance.this );
                 return new DockerContainer( uuid, uniqueName, "RUNNING" );
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Could not create container ", e );
             }
         }
 

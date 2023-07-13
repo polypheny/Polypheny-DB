@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.monetdb.stores;
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -95,11 +96,15 @@ public class MonetdbStore extends AbstractJdbcStore {
 
             DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId )
                     .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
-            this.container = instance.newBuilder( "polypheny/monet", getUniqueName() )
-                    .withExposedPort( 50000 )
-                    .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
-                    .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )
-                    .build();
+            try {
+                this.container = instance.newBuilder( "polypheny/monet", getUniqueName() )
+                        .withExposedPort( 50000 )
+                        .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
+                        .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )
+                        .createAndStart();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
                 container.destroy();

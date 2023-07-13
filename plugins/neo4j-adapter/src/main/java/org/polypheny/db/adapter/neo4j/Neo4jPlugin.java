@@ -20,6 +20,7 @@ import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Time;
@@ -182,10 +183,14 @@ public class Neo4jPlugin extends Plugin {
                 int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                 DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                         .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
-                this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
-                        .withExposedPort( 7687 )
-                        .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
-                        .build();
+                try {
+                    this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
+                            .withExposedPort( 7687 )
+                            .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
+                            .createAndStart();
+                } catch ( IOException e ) {
+                    throw new RuntimeException( e );
+                }
 
                 if ( !container.waitTillStarted( this::testConnection, 100000 ) ) {
                     container.destroy();

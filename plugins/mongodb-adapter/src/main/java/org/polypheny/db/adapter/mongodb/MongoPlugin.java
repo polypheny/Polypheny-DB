@@ -157,10 +157,14 @@ public class MongoPlugin extends Plugin {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
-                    this.container = instance.newBuilder( "polypheny/mongo", getUniqueName() )
-                            .withExposedPort( 27017 )
-                            .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
-                            .build();
+                    try {
+                        this.container = instance.newBuilder( "polypheny/mongo", getUniqueName() )
+                                .withExposedPort( 27017 )
+                                .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
+                                .createAndStart();
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
 
                     if ( !container.waitTillStarted( this::testConnection, 20000 ) ) {
                         container.destroy();

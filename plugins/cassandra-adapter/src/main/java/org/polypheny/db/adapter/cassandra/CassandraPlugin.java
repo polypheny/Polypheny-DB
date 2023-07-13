@@ -38,6 +38,7 @@ import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -180,10 +181,16 @@ public class CassandraPlugin extends Plugin {
                 this.dbPassword = "cassandra";
 
                 if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                    DockerInstance instance = DockerManager.getInstance().getInstanceById( Integer.parseInt( settings.get( "instanceId" ) ) ).get();
-                    this.container = instance.newBuilder( "polypheny/cassandra", getUniqueName() )
-                            .withExposedPort( 9042 )
-                            .build();
+                    int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                    try {
+                        this.container = instance.newBuilder( "polypheny/cassandra", getUniqueName() )
+                                .withExposedPort( 9042 )
+                                .createAndStart();
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
 
                     // cassandra can take quite some time to start
                     if ( !container.waitTillStarted( this::testDockerConnection, 80000 ) ) {
@@ -197,7 +204,8 @@ public class CassandraPlugin extends Plugin {
                 } else {
                     deploymentId = settings.get( "deploymentId" );
                     DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
-                    container = DockerContainer.getContainerByUUID( deploymentId ).get();
+                    container = DockerContainer.getContainerByUUID( deploymentId )
+                            .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
                     if ( !testDockerConnection() ) {
                         throw new RuntimeException( "Could not connect to container" );
                     }

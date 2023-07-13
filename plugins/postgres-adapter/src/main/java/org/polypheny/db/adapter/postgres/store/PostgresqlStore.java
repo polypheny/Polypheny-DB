@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.postgres.store;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -109,10 +110,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                     .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
-            container = instance.newBuilder( "polypheny/postgres", getUniqueName() )
-                    .withExposedPort( 5432 )
-                    .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
-                    .build();
+            try {
+                container = instance.newBuilder( "polypheny/postgres", getUniqueName() )
+                        .withExposedPort( 5432 )
+                        .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
+                        .createAndStart();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
                 container.destroy();
