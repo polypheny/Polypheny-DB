@@ -196,3 +196,22 @@ message Index {
   string location = 8;
   int32 index_type = 9;
 }
+
+message SqlStringFunctionsRequest {
+}
+
+message SqlSystemFunctionsRequest {
+}
+
+message SqlTimeDateFunctionsRequest {
+}
+
+message SqlNumericFunctionsRequest {
+}
+
+message SqlKeywordsRequest {
+}
+
+message MetaStringResponse{
+  string string = 1;
+}
