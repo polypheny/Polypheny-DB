@@ -19,7 +19,6 @@ package org.polypheny.db.protointerface;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.protointerface.proto.ConnectionProperties;
-import org.polypheny.db.protointerface.proto.Holdability;
 
 public class PIClientProperties {
     public PIClientProperties(ConnectionProperties clientProperties) {
@@ -45,8 +44,6 @@ public class PIClientProperties {
     private boolean isAutoCommit;
     @Getter
     private boolean isReadOnly; // currently not in use
-    @Getter
-    private Holdability holdability; // currently not in use
     @Getter
     private int networkTimeout; // currently not in use
     @Getter
