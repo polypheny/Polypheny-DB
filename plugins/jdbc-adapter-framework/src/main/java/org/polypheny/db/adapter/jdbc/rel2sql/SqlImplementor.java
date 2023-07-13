@@ -576,7 +576,7 @@ public abstract class SqlImplementor {
                                 List<PolyValue> array = literal.getValue().asList();//toSql( program, e ) ).collect( Collectors.toList() );
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
-                                return SqlLiteral.createCharString( literal.value.serialize(), POS );
+                                return SqlLiteral.createCharString( PolyValue.GSON.toJson( literal.value ), POS );
                             }
                         case GRAPH:
                             // node or edge

@@ -173,7 +173,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         if ( column.collectionsType != null ) {
             builder.append( " " ).append( column.collectionsType );
         }
-        if ( column.length != null && column.type != PolyType.VARBINARY ) {
+        if ( column.length != null && doesTypeUseLength( column.type ) ) {
             builder.append( "(" );
             builder.append( column.length );
             if ( column.scale != null ) {
@@ -352,6 +352,16 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 return "ARRAY";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
+    }
+
+
+    @Override
+    public boolean doesTypeUseLength( PolyType type ) {
+        switch ( type ) {
+            case VARBINARY:
+                return false;
+        }
+        return super.doesTypeUseLength( type );
     }
 
 

@@ -239,7 +239,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
             builder.append( " " ).append( getTypeString( column.type ) );
-            if ( column.length != null ) {
+            if ( column.length != null && doesTypeUseLength( column.type ) ) {
                 builder.append( "(" ).append( column.length );
                 if ( column.scale != null ) {
                     builder.append( "," ).append( column.scale );
@@ -307,7 +307,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
         builder.append( " " ).append( getTypeString( column.type ) );
-        if ( column.length != null ) {
+        if ( column.length != null && doesTypeUseLength( column.type ) ) {
             builder.append( "(" );
             builder.append( column.length );
             if ( column.scale != null ) {
@@ -317,6 +317,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         }
         executeUpdate( builder, context );
 
+    }
+
+
+    public boolean doesTypeUseLength( PolyType type ) {
+        return true;
     }
 
 

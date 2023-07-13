@@ -3197,7 +3197,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.deserialize( stringValue ).asList();
+        return PolyValue.GSON.fromJson( stringValue, PolyList.class );
     }
 
 
