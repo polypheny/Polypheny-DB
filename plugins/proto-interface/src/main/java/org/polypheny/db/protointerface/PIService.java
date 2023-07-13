@@ -64,7 +64,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void disconnect(DisconnectionRequest disconnectionRequest, StreamObserver<DisconnectionResponse> responseObserver) {
         PIClient client = getClient();
-        ClientManager.unregisterConnection(client);
+        clientManager.unregisterConnection(client);
     }
 
 

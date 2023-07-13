@@ -18,8 +18,8 @@ package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.PIClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.transaction.Statement;
 
