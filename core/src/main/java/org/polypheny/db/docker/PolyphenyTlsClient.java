@@ -38,7 +38,7 @@ final class PolyphenyTlsClient {
     private final boolean insecure; // do not verify server certificate if true
 
 
-    public PolyphenyTlsClient( PolyphenyKeypair kp, byte[] serverCertificate, InputStream in, OutputStream out ) throws IOException {
+    PolyphenyTlsClient( PolyphenyKeypair kp, byte[] serverCertificate, InputStream in, OutputStream out ) throws IOException {
         this.insecure = false;
         this.serverCertificate = serverCertificate;
         this.kp = kp;
@@ -60,17 +60,17 @@ final class PolyphenyTlsClient {
     }
 
 
-    public static PolyphenyTlsClient insecureClient( PolyphenyKeypair kp, InputStream in, OutputStream out ) throws IOException {
+    static PolyphenyTlsClient insecureClient( PolyphenyKeypair kp, InputStream in, OutputStream out ) throws IOException {
         return new PolyphenyTlsClient( kp, in, out );
     }
 
 
-    public Optional<byte[]> getChannelBinding() {
+    Optional<byte[]> getChannelBinding() {
         return client.getChannelBinding();
     }
 
 
-    public Optional<InputStream> getInputStream() {
+    Optional<InputStream> getInputStream() {
         if ( !insecure && client.getIsVerified() ) {
             return Optional.of( proto.getInputStream() );
         }
@@ -79,7 +79,7 @@ final class PolyphenyTlsClient {
     }
 
 
-    public Optional<OutputStream> getOutputStream() {
+    Optional<OutputStream> getOutputStream() {
         if ( !insecure && client.getIsVerified() ) {
             return Optional.of( proto.getOutputStream() );
         }
@@ -91,17 +91,17 @@ final class PolyphenyTlsClient {
     /**
      * Insecure here means that the server certificate was not verified.
      */
-    public InputStream getInsecureInputStream() {
+    InputStream getInsecureInputStream() {
         return proto.getInputStream();
     }
 
 
-    public Optional<byte[]> getServerCertificate() {
+    Optional<byte[]> getServerCertificate() {
         return client.auth.getServerCertificate();
     }
 
 
-    public void close() {
+    void close() {
         try {
             proto.close();
         } catch ( IOException ignore ) {
@@ -115,7 +115,7 @@ final class PolyphenyTlsClient {
         private MyTlsAuthentication auth = null;
 
 
-        public MyTlsClient() {
+        private MyTlsClient() {
             super( bcTlsCrypto );
             protocolVersions = ProtocolVersion.TLSv13.only();
         }
@@ -137,12 +137,12 @@ final class PolyphenyTlsClient {
         }
 
 
-        public Optional<byte[]> getChannelBinding() {
+        private Optional<byte[]> getChannelBinding() {
             return Optional.ofNullable( channelBinding );
         }
 
 
-        public boolean getIsVerified() {
+        private boolean getIsVerified() {
             return auth != null && auth.getIsVerified();
         }
 
@@ -155,7 +155,7 @@ final class PolyphenyTlsClient {
             private boolean isVerified = false;
 
 
-            public MyTlsAuthentication( TlsContext ctx ) {
+            private MyTlsAuthentication( TlsContext ctx ) {
                 this.ctx = ctx;
             }
 
@@ -199,12 +199,12 @@ final class PolyphenyTlsClient {
             }
 
 
-            public boolean getIsVerified() {
+            private boolean getIsVerified() {
                 return isVerified;
             }
 
 
-            public Optional<byte[]> getServerCertificate() {
+            private Optional<byte[]> getServerCertificate() {
                 return Optional.ofNullable( rawServerCertificate );
             }
 
