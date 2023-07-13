@@ -168,8 +168,6 @@ public class Neo4jPlugin extends Plugin {
         public Neo4jStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
             super( adapterId, uniqueName, adapterSettings, Boolean.parseBoolean( adapterSettings.get( "persistent" ) ) );
 
-            this.port = Integer.parseInt( settings.get( "port" ) );
-
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
                 this.pass = PasswordGenerator.generatePassword( 256 );
