@@ -78,7 +78,7 @@ public final class DockerSetupHelper {
         }
 
         if ( hasHostname( hostname ) ) {
-            return new DockerSetupResult( true );
+            return new DockerSetupResult( "There is already a docker instance connected to " + hostname );
         }
 
         if ( alias.equals( "" ) ) {
@@ -86,7 +86,7 @@ public final class DockerSetupHelper {
         }
 
         if ( hasAlias( alias ) ) {
-            return new DockerSetupResult( "There is already a docker instance with that alias" );
+            return new DockerSetupResult( "There is already a docker instance with alias " + alias );
         }
 
         try {
