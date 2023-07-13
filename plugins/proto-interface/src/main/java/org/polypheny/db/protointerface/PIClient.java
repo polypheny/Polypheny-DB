@@ -136,6 +136,12 @@ public class PIClient{
         return clientProperties.isAutoCommit();
     }
 
+    public void prepareForDisposal() {
+        statementManager.closeAll();
+        if (!hasNoTransaction()) {
+            rollbackCurrentTransaction();
+        }
+    }
 
     public static Builder newBuilder() {
         return new Builder();

@@ -43,8 +43,9 @@ public class ClientManager {
         this.transactionManager = transactionManager;
     }
 
-    public static void unregisterConnection(PIClient client) {
-
+    public void unregisterConnection(PIClient client) {
+        client.prepareForDisposal();
+        openConnections.remove(client.getClientUUID());
     }
 
 
