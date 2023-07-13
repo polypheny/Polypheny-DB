@@ -43,6 +43,10 @@ public class ClientManager {
         this.transactionManager = transactionManager;
     }
 
+    public static void unregisterConnection(PIClient client) {
+
+    }
+
 
     public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
         if (log.isTraceEnabled()) {
