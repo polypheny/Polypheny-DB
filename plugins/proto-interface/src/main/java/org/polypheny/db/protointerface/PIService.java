@@ -268,6 +268,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void getSqlKeywords(SqlKeywordsRequest request, StreamObserver<MetaStringResponse> responseObserver) {
         /* called as client auth check */
         getClient();
+        // TODO actually return keywords
         responseObserver.onNext(buildMetaStringResponse(""));
         responseObserver.onCompleted();
     }
