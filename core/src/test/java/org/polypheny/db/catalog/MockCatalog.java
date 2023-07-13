@@ -894,6 +894,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings ) {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         throw new NotImplementedException();
     }
