@@ -58,6 +58,7 @@ import org.polypheny.db.protointerface.proto.TableTypesResponse;
 import org.polypheny.db.protointerface.proto.TablesResponse;
 import org.polypheny.db.protointerface.proto.Type;
 import org.polypheny.db.protointerface.proto.TypesResponse;
+import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.type.PolyType;
 
 public class DbMetaRetriever {
@@ -367,6 +368,27 @@ public class DbMetaRetriever {
         importedKeyBuilder.setLocation( parameters[13].toString() );
         importedKeyBuilder.setIndexType( Integer.parseInt( parameters[14].toString() ) );
         return importedKeyBuilder.build();
+    }
+
+    public static String getSqlStringFunctions() {
+        return SqlJdbcFunctionCall.getStringFunctions();
+    }
+
+    public static String getSqlSystemFunctions() {
+        return  SqlJdbcFunctionCall.getSystemFunctions();
+    }
+
+    public static String getSqlTimeDateFunctions() {
+        return SqlJdbcFunctionCall.getTimeDateFunctions();
+    }
+
+    public static String getSqlNumericFunctions() {
+        return SqlJdbcFunctionCall.getNumericFunctions();
+    }
+
+    public static String getSqlKeywords() {
+        //TODO impl
+        return "";
     }
 
 /*
