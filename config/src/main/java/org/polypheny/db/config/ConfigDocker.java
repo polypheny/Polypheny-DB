@@ -33,13 +33,10 @@ public class ConfigDocker extends ConfigObject {
 
     @Getter
     @Setter
-    private String alias;
-    @Getter
-    @Setter
-    private String uuid;
-    @Getter
-    @Setter
     private String host;
+    @Getter
+    @Setter
+    private String alias;
     @Getter
     @Setter
     private int port;
@@ -74,7 +71,6 @@ public class ConfigDocker extends ConfigObject {
         this.host = host;
         this.alias = alias;
         this.port = port;
-        this.uuid = null; /* set on first connection */
         this.webUiFormType = WebUiFormType.DOCKER_INSTANCE;
     }
 
@@ -107,8 +103,8 @@ public class ConfigDocker extends ConfigObject {
     public Map<String, String> getSettings() {
         Map<String, String> settings = new HashMap<>();
 
-        settings.put( "host", host );
         settings.put( "id", String.valueOf( id ) );
+        settings.put( "host", host );
         settings.put( "alias", alias );
         settings.put( "port", String.valueOf( port ) );
 
@@ -168,8 +164,8 @@ public class ConfigDocker extends ConfigObject {
     public static Map<String, Object> parseConfigToMap( com.typesafe.config.Config conf ) {
         Map<String, Object> confMap = new HashMap<>();
 
-        confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "id", conf.getDouble( "id" ) );
+        confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
         if ( conf.hasPath( "port" ) ) {
             confMap.put( "port", conf.getDouble( "port" ) );
@@ -194,9 +190,9 @@ public class ConfigDocker extends ConfigObject {
             return false;
         }
         ConfigDocker that = (ConfigDocker) o;
-        return port == that.port &&
-                host.equals( that.host ) &&
-                alias.equals( that.alias );
+        return host.equals( that.host ) &&
+                alias.equals( that.alias ) &&
+                port == that.port;
     }
 
 }
