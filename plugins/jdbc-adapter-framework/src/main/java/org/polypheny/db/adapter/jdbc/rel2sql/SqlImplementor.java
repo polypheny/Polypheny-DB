@@ -576,7 +576,8 @@ public abstract class SqlImplementor {
                                 List<PolyValue> array = literal.getValue().asList();//toSql( program, e ) ).collect( Collectors.toList() );
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
-                                return SqlLiteral.createCharString( PolyValue.GSON.toJson( literal.value ), POS );
+                                // atm arrays in adapter which do not support arrays are compared in their serialized form, this should be changed todo dl
+                                return SqlLiteral.createCharString( PolyValue.GSON.toJson( literal.value.asList() ), POS );
                             }
                         case GRAPH:
                             // node or edge
@@ -844,7 +845,7 @@ public abstract class SqlImplementor {
 
 
         public List<SqlNode> fieldList() {
-            return new AbstractList<SqlNode>() {
+            return new AbstractList<>() {
                 @Override
                 public SqlNode get( int index ) {
                     return field( index );

@@ -33,10 +33,10 @@ import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
+import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -274,7 +274,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogPartition> getPartitions( long partitionGroupId ) {
+    public List<LogicalPartition> getPartitions( long partitionGroupId ) {
         return null;
     }
 
@@ -328,13 +328,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
+    public List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
         return null;
     }
 
 
     @Override
-    public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
+    public List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId ) {
         return null;
     }
 

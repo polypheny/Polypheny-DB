@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
+import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -83,7 +83,7 @@ public interface AllocSnapshot {
      * @param partitionGroupId Table to be queried
      * @return list of all partitions on this table
      */
-    List<CatalogPartition> getPartitions( long partitionGroupId );
+    List<LogicalPartition> getPartitions( long partitionGroupId );
 
     /**
      * Get a list of all partition name belonging to a specific table
@@ -165,7 +165,7 @@ public interface AllocSnapshot {
      * @param tableId The table for which all partition placements on an adapter should be considered
      * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
-    List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
+    List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
 
     /**
      * Returns a list of all Partition Placements which are currently associated with a table.
@@ -173,7 +173,7 @@ public interface AllocSnapshot {
      * @param tableId The table on which the requested partition placements are currently associated with.
      * @return A list of all Partition Placements, that belong to the desired table
      */
-    List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
+    List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId );
 
 
     @NotNull

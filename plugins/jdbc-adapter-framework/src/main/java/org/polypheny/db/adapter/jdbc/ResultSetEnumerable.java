@@ -297,7 +297,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory
                 } else {
-                    preparedStatement.setString( i, PolyValue.GSON.toJson( value ) );
+                    preparedStatement.setString( i, PolyValue.GSON.toJson( value.asList() ) );
                 }
                 break;
             default:

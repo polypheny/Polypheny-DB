@@ -39,7 +39,7 @@ public class SqlArrayLiteral extends SqlLiteral {
     }
 
 
-    private static PolyValue adjust( PolyList<PolyValue> list, AlgDataType type ) {
+    public static PolyValue adjust( PolyList<PolyValue> list, AlgDataType type ) {
         AlgDataType component = type.getComponentType();
         while ( component.getPolyType() == PolyType.ARRAY ) {
             component = component.getComponentType();

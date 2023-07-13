@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.NonNull;
+import lombok.Value;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
@@ -26,18 +27,16 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 /**
  * This class is considered the logical representation of a physical table on a specific store.
  */
-public class CatalogPartitionPlacement extends CatalogEntityPlacement {
+@Value
+public class AllocationPartition implements CatalogObject {
 
     private static final long serialVersionUID = 8835793248417591036L;
 
-    public final long tableId;
-    public final long partitionId;
-    public final int adapterId;
-    public final String adapterUniqueName;
-    public final PlacementType placementType;
-
-    public final String physicalSchemaName;
-    public final String physicalTableName;
+    public long namespaceId;
+    public long adapterId;
+    public long entityId;
+    public long partitionId;
+    public PlacementType placementType;
 
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
     // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
@@ -51,28 +50,20 @@ public class CatalogPartitionPlacement extends CatalogEntityPlacement {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
-    public final DataPlacementRole role;
-    public final long namespaceId;
+    public DataPlacementRole role;
 
 
-    public CatalogPartitionPlacement(
+    public AllocationPartition(
             long namespaceId,
-            final long tableId,
-            final int adapterId,
-            @NonNull final String adapterUniqueName,
+            final long entityId,
+            final long adapterId,
             @NonNull final PlacementType placementType,
-            final String physicalSchemaName,
-            final String physicalTableName,
             final long partitionId,
             DataPlacementRole role ) {
-        super( namespaceId, (long) adapterId, tableId );
         this.namespaceId = namespaceId;
-        this.tableId = tableId;
+        this.entityId = entityId;
         this.adapterId = adapterId;
-        this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
-        this.physicalSchemaName = physicalSchemaName;
-        this.physicalTableName = physicalTableName;
         this.partitionId = partitionId;
         this.role = role;
     }

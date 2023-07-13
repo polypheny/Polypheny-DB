@@ -23,7 +23,6 @@ import lombok.Value;
 public class IdBuilder {
 
     AtomicLong snapshotId;
-    AtomicLong databaseId;
     AtomicLong namespaceId;
     AtomicLong entityId;
 
@@ -43,6 +42,10 @@ public class IdBuilder {
     AtomicLong interfaceId;
 
     AtomicLong constraintId;
+
+    AtomicLong partitionGroupId;
+
+    AtomicLong partitionId;
 
     private static IdBuilder INSTANCE;
 
@@ -69,13 +72,13 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
 
     public IdBuilder(
             AtomicLong snapshotId,
-            AtomicLong databaseId,
             AtomicLong namespaceId,
             AtomicLong entityId,
             AtomicLong fieldId,
@@ -86,10 +89,10 @@ public class IdBuilder {
             AtomicLong keyId,
             AtomicLong adapterId,
             AtomicLong interfaceId,
-            AtomicLong constraintId ) {
+            AtomicLong constraintId,
+            AtomicLong partitionGroupId,
+            AtomicLong partitionId ) {
         this.snapshotId = snapshotId;
-
-        this.databaseId = databaseId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.fieldId = fieldId;
@@ -103,6 +106,8 @@ public class IdBuilder {
 
         this.adapterId = adapterId;
         this.interfaceId = interfaceId;
+        this.partitionGroupId = partitionGroupId;
+        this.partitionId = partitionId;
     }
 
 
@@ -118,11 +123,6 @@ public class IdBuilder {
 
     public long getNewFieldId() {
         return fieldId.getAndIncrement();
-    }
-
-
-    public long getNewDatabaseId() {
-        return databaseId.getAndIncrement();
     }
 
 
@@ -168,6 +168,16 @@ public class IdBuilder {
 
     public long getNewPhysicalId() {
         return physicalId.getAndIncrement();
+    }
+
+
+    public long getNewPartitionGroupId() {
+        return partitionGroupId.getAndIncrement();
+    }
+
+
+    public long getNewPartitionId() {
+        return partitionId.getAndIncrement();
     }
 
 }

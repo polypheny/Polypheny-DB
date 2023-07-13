@@ -18,6 +18,9 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.entity.AllocationPartition;
+import org.polypheny.db.catalog.entity.LogicalPartition;
+import org.polypheny.db.catalog.entity.LogicalPartitionGroup;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -67,7 +70,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionType partition Type of the added partition
      * @return The id of the created partitionGroup
      */
-    long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
+    LogicalPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
 
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.
@@ -87,7 +90,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionGroupId partitionGroupId where the partition should be initially added to
      * @return The id of the created partition
      */
-    long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
+    LogicalPartition addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
 
     /**
      * Deletes a single partition and all references.
@@ -105,12 +108,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * Effectively partitions a table with the specified partitionType
      *
      * @param tableId Table to be partitioned
-     * @param partitionType Partition function to apply on the table
-     * @param partitionColumnId Column used to apply the partition function on
-     * @param numPartitionGroups Explicit number of partitions
-     * @param partitionGroupIds List of ids of the catalog partitions
      */
-    void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty );
+    void partitionTable( long tableId, PartitionProperty partitionProperty );
 
     /**
      * Merges a  partitioned table.
@@ -119,14 +118,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId Table to be merged
      */
     void mergeTable( long tableId );
-
-    /**
-     * Updates the specified partition group with the attached partitionIds
-     *
-     * @param partitionGroupId Partition Group to be updated
-     * @param partitionIds List of new partitionIds
-     */
-    void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds );
 
     /**
      * Assign the partition to a new partitionGroup
@@ -158,8 +149,9 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The table for which a partition placement shall be created
      * @param partitionId The id of a specific partition that shall create a new placement
      * @param placementType The type of placement
+     * @return
      */
-    void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, DataPlacementRole role );
+    AllocationPartition addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store

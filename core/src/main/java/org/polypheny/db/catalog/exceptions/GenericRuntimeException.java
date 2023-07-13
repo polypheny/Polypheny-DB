@@ -22,4 +22,9 @@ public class GenericRuntimeException extends RuntimeException {
         super( String.format( message, params ) );
     }
 
+
+    public GenericRuntimeException( Throwable e ) {
+        super( e );
+    }
+
 }

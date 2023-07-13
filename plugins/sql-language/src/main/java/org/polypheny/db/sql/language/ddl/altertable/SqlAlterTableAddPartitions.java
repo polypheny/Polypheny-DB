@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.ddl.DdlManager;
@@ -134,18 +135,22 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, table );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table == null ) {
+            throw new GenericRuntimeException( "The entity %s was not found.", String.join( ".", this.table.getNames() ) );
+        }
+
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
         try {
             // Check if table is already partitioned
-            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().partitionType == PartitionType.NONE ) {
+            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
-                                catalogTable,
+                                table,
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),
@@ -157,10 +162,10 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                         statement );
 
             } else {
-                throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
+                throw new GenericRuntimeException( "Table '%s' is already partitioned", table.name );
             }
         } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

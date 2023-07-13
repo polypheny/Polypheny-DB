@@ -20,24 +20,23 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-import org.apache.commons.lang.NotImplementedException;
+import lombok.Value;
 
 
 @EqualsAndHashCode
-public final class LogicalPartitionGroup implements CatalogObject {
+@Value
+public class LogicalPartitionGroup implements CatalogObject {
 
     private static final long serialVersionUID = 6229244317971622972L;
 
-    public final long id;
-    public final String partitionGroupName;
-    public final long tableId;
-    public final long schemaId;
-    public final ImmutableList<String> partitionQualifiers;
-    public final ImmutableList<Long> partitionIds;
-    public final boolean isUnbound;
+    public long id;
+    public String partitionGroupName;
+    public long tableId;
+    public long schemaId;
+    public ImmutableList<String> partitionQualifiers;
+    public boolean isUnbound;
 
-    public final long partitionKey;
+    public long partitionKey;
 
 
     public LogicalPartitionGroup(
@@ -47,7 +46,6 @@ public final class LogicalPartitionGroup implements CatalogObject {
             final long schemaId,
             final long partitionKey,
             final List<String> partitionQualifiers,
-            final List<Long> partitionIds,
             final boolean isUnbound ) {
         this.id = id;
         this.partitionGroupName = partitionGroupName;
@@ -61,23 +59,7 @@ public final class LogicalPartitionGroup implements CatalogObject {
         } else {
             this.partitionQualifiers = null;
         }
-        this.partitionIds = ImmutableList.copyOf( partitionIds );
         this.isUnbound = isUnbound;
-    }
-
-
-    @SneakyThrows
-    public String getTableName() {
-        // return Catalog.getInstance().getLogicalRel( schemaId ).getTable( tableId ).name;
-        throw new NotImplementedException();
-    }
-
-
-
-    @SneakyThrows
-    public String getSchemaName() {
-        // return Catalog.getInstance().getNamespace( schemaId ).name;
-        throw new NotImplementedException();
     }
 
 

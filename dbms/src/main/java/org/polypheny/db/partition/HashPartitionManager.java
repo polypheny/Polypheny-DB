@@ -17,7 +17,6 @@
 package org.polypheny.db.partition;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -84,17 +83,15 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .defaultValue( "" )
                 .build() );
 
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Partitions data based on a hash function which is automatically applied to the values of the partition column." )
                 .sqlPrefix( "WITH (" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
-                .headings( new ArrayList<>( Arrays.asList( "Partition Name" ) ) )
+                .headings( new ArrayList<>( List.of( "Partition Name" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 

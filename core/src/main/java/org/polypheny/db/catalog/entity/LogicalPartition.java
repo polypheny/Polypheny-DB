@@ -24,7 +24,7 @@ import lombok.Getter;
 
 
 @EqualsAndHashCode
-public class CatalogPartition implements CatalogObject {
+public class LogicalPartition implements CatalogObject {
 
     private static final long serialVersionUID = -1124423133579338133L;
 
@@ -37,20 +37,20 @@ public class CatalogPartition implements CatalogObject {
     @Getter
     public final long partitionGroupId;
     public final long tableId;
-    public final long schemaId;
+    public final long namespaceId;
     public final boolean isUnbound;
 
 
-    public CatalogPartition(
+    public LogicalPartition(
             final long id,
             final long tableId,
-            final long schemaId,
+            final long namespaceId,
             final List<String> partitionQualifiers,
             final boolean isUnbound,
             final long partitionGroupId ) {
         this.id = id;
         this.tableId = tableId;
-        this.schemaId = schemaId;
+        this.namespaceId = namespaceId;
         this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
         this.isUnbound = isUnbound;
         this.partitionGroupId = partitionGroupId;

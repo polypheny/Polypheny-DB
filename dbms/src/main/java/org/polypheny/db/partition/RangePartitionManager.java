@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -252,9 +252,9 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    private boolean isValueInRange( String columnValue, CatalogPartition catalogPartition ) {
-        int lowerBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 0 ) );
-        int upperBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 1 ) );
+    private boolean isValueInRange( String columnValue, LogicalPartition logicalPartition ) {
+        int lowerBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 0 ) );
+        int upperBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 

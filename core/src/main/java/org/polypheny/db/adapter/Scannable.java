@@ -41,7 +41,6 @@ public interface Scannable {
 
     void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
-
     void refreshTable( long allocId );
 
     void refreshGraph( long allocId );

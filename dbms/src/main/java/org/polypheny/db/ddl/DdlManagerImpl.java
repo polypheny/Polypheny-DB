@@ -19,7 +19,7 @@ package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +54,8 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
+import org.polypheny.db.catalog.entity.LogicalPartition;
+import org.polypheny.db.catalog.entity.LogicalPartitionGroup;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -2003,7 +2005,7 @@ public class DdlManagerImpl extends DdlManager {
         fields = new ArrayList<>( fields );
         constraints = new ArrayList<>( constraints );
 
-        checkDocumentModel( namespaceId, fields, constraints );
+        //checkDocumentModel( namespaceId, fields, constraints );
 
         boolean foundPk = false;
         for ( ConstraintInformation constraintInformation : constraints ) {
@@ -2245,7 +2247,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void checkDocumentModel( long namespaceId, List<FieldInformation> columns, List<ConstraintInformation> constraints ) {
+    /*private void checkDocumentModel( long namespaceId, List<FieldInformation> columns, List<ConstraintInformation> constraints ) {
         if ( catalog.getSnapshot().getNamespace( namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             List<String> names = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
 
@@ -2285,11 +2287,306 @@ public class DdlManagerImpl extends DdlManager {
                 columns.add( new FieldInformation( "_data", typeInformation, Collation.CASE_INSENSITIVE, null, 1 ) );
             }
         }
-    }
+    }*/
 
 
     @Override
     public void addPartitioning( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException {
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName ).orElseThrow();
+
+        PartitionType actualPartitionType = PartitionType.getByName( partitionInfo.typeName );
+
+        // Convert partition names and check whether they are unique
+        List<String> sanitizedPartitionGroupNames = partitionInfo.partitionGroupNames
+                .stream()
+                .map( name -> name.trim().toLowerCase() )
+                .collect( Collectors.toList() );
+        if ( sanitizedPartitionGroupNames.size() != new HashSet<>( sanitizedPartitionGroupNames ).size() ) {
+            throw new GenericRuntimeException( "Name is not unique" );
+        }
+
+        // Check if specified partitionColumn is even part of the table
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Creating partition group for table: {} with id {} on column: {}", partitionInfo.table.name, partitionInfo.table.id, logicalColumn.id );
+        }
+
+        LogicalTable unPartitionedTable = partitionInfo.table;
+
+        // Get partition manager
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( actualPartitionType );
+
+        // Check whether partition function supports type of partition column
+        if ( !partitionManager.supportsColumnOfType( logicalColumn.type ) ) {
+            throw new GenericRuntimeException( "The partition function %s does not support columns of type %s", actualPartitionType, logicalColumn.type );
+        }
+
+        int numberOfPartitionGroups = partitionInfo.numberOfPartitionGroups;
+        // Calculate how many partitions exist if partitioning is applied.
+        if ( partitionInfo.partitionGroupNames.size() >= 2 && partitionInfo.numberOfPartitionGroups == 0 ) {
+            numberOfPartitionGroups = partitionInfo.partitionGroupNames.size();
+        }
+
+        int numberOfPartitions = partitionInfo.numberOfPartitions;
+        int numberOfPartitionsPerGroup = partitionManager.getNumberOfPartitionsPerGroup( numberOfPartitions );
+
+        if ( partitionManager.requiresUnboundPartitionGroup() ) {
+            // Because of the implicit unbound partition
+            numberOfPartitionGroups = partitionInfo.partitionGroupNames.size();
+            numberOfPartitionGroups += 1;
+        }
+
+        // Validate partition setup
+        if ( !partitionManager.validatePartitionGroupSetup( partitionInfo.qualifiers, numberOfPartitionGroups, partitionInfo.partitionGroupNames, logicalColumn ) ) {
+            throw new GenericRuntimeException( "Partitioning failed for table: %s", partitionInfo.table.name );
+        }
+
+        // Loop over value to create those partitions with partitionKey to uniquelyIdentify partition
+        Map<LogicalPartitionGroup, List<LogicalPartition>> partitionGroups = new HashMap<>();
+        for ( int i = 0; i < numberOfPartitionGroups; i++ ) {
+            String partitionGroupName;
+            LogicalPartitionGroup group;
+
+            // Make last partition unbound partition
+            if ( partitionManager.requiresUnboundPartitionGroup() && i == numberOfPartitionGroups - 1 ) {
+                group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
+                        partitionInfo.table.id,
+                        "Unbound",
+                        partitionInfo.table.namespaceId,
+                        actualPartitionType,
+                        numberOfPartitionsPerGroup,
+                        new ArrayList<>(),
+                        true );
+            } else {
+                // If no names have been explicitly defined
+                if ( partitionInfo.partitionGroupNames.isEmpty() ) {
+                    partitionGroupName = "part_" + i;
+                } else {
+                    partitionGroupName = partitionInfo.partitionGroupNames.get( i );
+                }
+
+                // Mainly needed for HASH
+                if ( partitionInfo.qualifiers.isEmpty() ) {
+                    group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
+                            partitionInfo.table.id,
+                            partitionGroupName,
+                            partitionInfo.table.namespaceId,
+                            actualPartitionType,
+                            numberOfPartitionsPerGroup,
+                            new ArrayList<>(),
+                            false );
+                } else {
+                    group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
+                            partitionInfo.table.id,
+                            partitionGroupName,
+                            partitionInfo.table.namespaceId,
+                            actualPartitionType,
+                            numberOfPartitionsPerGroup,
+                            partitionInfo.qualifiers.get( i ),
+                            false );
+                }
+            }
+
+            List<LogicalPartition> partitions = new ArrayList<>();
+            for ( int j = 0; j < numberOfPartitionsPerGroup; j++ ) {
+                partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                        partitionInfo.table.id,
+                        partitionInfo.table.namespaceId,
+                        group.id,
+                        group.partitionQualifiers,
+                        group.isUnbound ) );
+            }
+
+            partitionGroups.put( group, partitions );
+        }
+
+        //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
+        List<LogicalPartition> partitions = partitionGroups.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+
+        PartitionProperty partitionProperty;
+        if ( actualPartitionType == PartitionType.TEMPERATURE ) {
+            long frequencyInterval = ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInterval();
+            switch ( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getIntervalUnit().toString() ) {
+                case "days":
+                    frequencyInterval = frequencyInterval * 60 * 60 * 24;
+                    break;
+
+                case "hours":
+                    frequencyInterval = frequencyInterval * 60 * 60;
+                    break;
+
+                case "minutes":
+                    frequencyInterval = frequencyInterval * 60;
+                    break;
+            }
+
+            int hotPercentageIn = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString() );
+            int hotPercentageOut = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString() );
+
+            //Initially distribute partitions as intended in a running system
+            long numberOfPartitionsInHot = (long) numberOfPartitions * hotPercentageIn / 100;
+            if ( numberOfPartitionsInHot == 0 ) {
+                numberOfPartitionsInHot = 1;
+            }
+
+            long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
+
+            // -1 because one partition is already created in COLD
+            LogicalPartitionGroup firstGroup = partitionGroups.keySet().stream().findFirst().orElseThrow();
+
+            // -1 because one partition is already created in HOT
+            for ( int i = 0; i < numberOfPartitionsInHot - 1; i++ ) {
+                LogicalPartition part = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                        partitionInfo.table.id,
+                        partitionInfo.table.namespaceId,
+                        firstGroup.id,
+                        partitionInfo.qualifiers.get( 0 ),
+                        false );
+                partitions.add( part );
+            }
+
+            // -1 because one partition is already created in COLD
+            LogicalPartitionGroup secondGroup = new ArrayList<>( partitionGroups.keySet() ).get( 0 );
+
+            for ( int i = 0; i < numberOfPartitionsInCold - 1; i++ ) {
+                LogicalPartition partition = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                        partitionInfo.table.id,
+                        partitionInfo.table.namespaceId,
+                        secondGroup.id,
+                        partitionInfo.qualifiers.get( 1 ),
+                        false );
+                partitions.add( partition );
+            }
+
+            partitionProperty = TemperaturePartitionProperty.builder()
+                    .partitionType( actualPartitionType )
+                    .isPartitioned( true )
+                    .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
+                    .partitionColumnId( logicalColumn.id )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
+                    .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
+                    .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase() ) )
+                    .frequencyInterval( frequencyInterval )
+                    .hotAccessPercentageIn( hotPercentageIn )
+                    .hotAccessPercentageOut( hotPercentageOut )
+                    .reliesOnPeriodicChecks( true )
+                    .hotPartitionGroupId( firstGroup.id )
+                    .coldPartitionGroupId( secondGroup.id )
+                    .numPartitions( partitions.size() )
+                    .numPartitionGroups( partitionGroups.size() )
+                    .build();
+        } else {
+            partitionProperty = PartitionProperty.builder()
+                    .partitionType( actualPartitionType )
+                    .isPartitioned( true )
+                    .partitionColumnId( logicalColumn.id )
+                    .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
+                    .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
+                    .reliesOnPeriodicChecks( false )
+                    .build();
+        }
+
+        // Update catalog table
+        catalog.getAllocRel( partitionInfo.table.namespaceId ).partitionTable(
+                partitionInfo.table.id,
+                partitionProperty );
+
+        // Get primary key of table and use PK to find all DataPlacements of table
+        long pkid = partitionInfo.table.primaryKey;
+        LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
+        List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).orElseThrow().columnIds;
+        // Basically get first part of PK even if its compound of PK it is sufficient
+        LogicalColumn pkColumn = relSnapshot.getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
+        // This gets us only one ccp per store (first part of PK)
+
+        boolean fillStores = false;
+        if ( stores == null ) {
+            stores = new ArrayList<>();
+            fillStores = true;
+        }
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( unPartitionedTable.id );
+        for ( AllocationEntity allocation : allocations ) {
+            if ( fillStores ) {
+                // Ask router on which store(s) the table should be placed
+                Adapter<?> adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId );
+                if ( adapter instanceof DataStore<?> ) {
+                    stores.add( (DataStore<?>) adapter );
+                }
+            }
+        }
+
+        // Now get the partitioned table, partitionInfo still contains the basic/unpartitioned table.
+        LogicalTable partitionedTable = relSnapshot.getTable( partitionInfo.table.id ).orElseThrow();
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        for ( DataStore<?> store : stores ) {
+            for ( LogicalPartition partition : partitions ) {
+                catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionPlacement(
+                        partitionedTable.namespaceId,
+                        store.getAdapterId(),
+                        unPartitionedTable.id,
+                        partition.id,
+                        PlacementType.AUTOMATIC,
+                        DataPlacementRole.UP_TO_DATE );
+            }
+
+            // First create new tables
+            store.createTable( statement.getPrepareContext(), null, (AllocationTableWrapper) null );
+
+            // Copy data from unpartitioned to partitioned
+            // Get only columns that are actually on that store
+            // Every store of a newly partitioned table, initially will hold all partitions
+            List<LogicalColumn> necessaryColumns = new ArrayList<>();
+            catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), unPartitionedTable.id ).forEach( cp -> necessaryColumns.add( relSnapshot.getColumn( cp.columnId ).orElseThrow() ) );
+
+            // Copy data from the old partition to new partitions
+            dataMigrator.copyPartitionData(
+                    statement.getTransaction(),
+                    catalog.getSnapshot().getAdapter( store.getAdapterId() ),
+                    unPartitionedTable,
+                    partitionedTable,
+                    necessaryColumns,
+                    snapshot.alloc().getPartitionProperty( unPartitionedTable.id ).orElseThrow().partitionIds,
+                    snapshot.alloc().getPartitionProperty( partitionedTable.id ).orElseThrow().partitionIds );
+        }
+
+        // Adjust indexes
+        List<LogicalIndex> indexes = relSnapshot.getIndexes( unPartitionedTable.id, false );
+        for ( LogicalIndex index : indexes ) {
+            // Remove old index
+            DataStore<?> ds = ((DataStore<?>) AdapterManager.getInstance().getAdapter( index.location ));
+            ds.dropIndex( statement.getPrepareContext(), index, snapshot.alloc().getPartitionProperty( unPartitionedTable.id ).orElseThrow().partitionIds );
+            catalog.getLogicalRel( partitionInfo.table.namespaceId ).deleteIndex( index.id );
+            // Add new index
+            LogicalIndex newIndex = catalog.getLogicalRel( partitionInfo.table.namespaceId ).addIndex(
+                    partitionedTable.id,
+                    index.key.columnIds,
+                    index.unique,
+                    index.method,
+                    index.methodDisplayName,
+                    index.location,
+                    index.type,
+                    index.name );
+            if ( index.location == 0 ) {
+                IndexManager.getInstance().addIndex( newIndex, statement );
+            } else {
+                String physicalName = ds.addIndex(
+                        statement.getPrepareContext(),
+                        index, (List<AllocationTable>) null );//catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( ds.getAdapterId(), unPartitionedTable.id ) );
+                catalog.getLogicalRel( partitionInfo.table.namespaceId ).setIndexPhysicalName( index.id, physicalName );
+            }
+        }
+
+        // Remove old tables
+        stores.forEach( store -> store.dropTable( statement.getPrepareContext(), -1 ) );
+        catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartitionGroup( unPartitionedTable.id, unPartitionedTable.namespaceId, snapshot.alloc().getPartitionProperty( unPartitionedTable.id ).orElseThrow().partitionIds.get( 0 ) );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    /*public void addPartitioningOld( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         LogicalColumn logicalColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName ).orElseThrow();
 
@@ -2477,7 +2774,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Update catalog table
-        catalog.getAllocRel( partitionInfo.table.namespaceId ).partitionTable( partitionInfo.table.id, actualPartitionType, logicalColumn.id, numberOfPartitionGroups, partitionGroupIds, partitionProperty );
+        catalog.getAllocRel( partitionInfo.table.namespaceId ).partitionTable( partitionInfo.table.id, partitionProperty );
 
         // Get primary key of table and use PK to find all DataPlacements of table
         long pkid = partitionInfo.table.primaryKey;
@@ -2570,7 +2867,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
-    }
+    }*/
 
 
     @Override

@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -219,19 +219,19 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             // Which of those are currently in cold --> action needed
 
-            List<CatalogPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().alloc().getPartitions( ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
-            for ( CatalogPartition catalogPartition : currentHotPartitions ) {
+            List<LogicalPartition> currentHotPartitions = Catalog.getInstance().getSnapshot().alloc().getPartitions( ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
+            for ( LogicalPartition logicalPartition : currentHotPartitions ) {
 
                 // Remove partitions from List if they are already in HOT (not necessary to send to DataMigrator)
-                if ( partitionsFromColdToHot.contains( catalogPartition.id ) ) {
-                    partitionsFromColdToHot.remove( catalogPartition.id );
+                if ( partitionsFromColdToHot.contains( logicalPartition.id ) ) {
+                    partitionsFromColdToHot.remove( logicalPartition.id );
 
                 } else { // If they are currently in hot but should not be placed in HOT anymore. This means that they should possibly be thrown out and placed in cold
 
-                    if ( partitionsAllowedInHot.contains( catalogPartition.id ) ) {
+                    if ( partitionsAllowedInHot.contains( logicalPartition.id ) ) {
                         continue;
                     } else { // place from HOT to cold
-                        partitionsFromHotToCold.add( catalogPartition.id );
+                        partitionsFromHotToCold.add( logicalPartition.id );
                     }
                 }
 
