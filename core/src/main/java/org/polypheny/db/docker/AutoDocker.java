@@ -131,7 +131,6 @@ public final class AutoDocker {
 
         String polyphenyDockerUuid = maybeUuid.get();
         status = "Starting handshake...";
-        HandshakeManager.getInstance().startOrGetHandshake( "localhost", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT );
         ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
@@ -158,6 +157,7 @@ public final class AutoDocker {
             public void close() {
             }
         } );
+        HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
         for ( int i = 0; i < 20; i++ ) {
             String status = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
             if ( status.equals( "RUNNING" ) ) {
@@ -212,10 +212,7 @@ public final class AutoDocker {
 
 
     private boolean isConnected() {
-        return RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class )
-                .stream()
-                .filter( c -> c.getHost().equals( "localhost" ) )
-                .anyMatch( c -> DockerManager.getInstance().getInstanceById( c.getId() ).map( DockerInstance::isConnected ).orElse( false ) );
+        return DockerManager.getInstance().getDockerInstances().values().stream().anyMatch( d -> d.getHost().equals( "localhost" ) && d.isConnected() );
     }
 
 

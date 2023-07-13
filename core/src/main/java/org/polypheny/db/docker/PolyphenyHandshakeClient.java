@@ -56,7 +56,7 @@ final class PolyphenyHandshakeClient {
     }
 
 
-    public PolyphenyHandshakeClient( String hostname, int port, AtomicLong timeout ) throws IOException {
+    PolyphenyHandshakeClient( String hostname, int port, AtomicLong timeout ) throws IOException {
         this.hostname = hostname;
         this.port = port;
         this.timeout = timeout;
@@ -72,12 +72,6 @@ final class PolyphenyHandshakeClient {
 
         this.lastErrorMessage = "";
 
-        this.state = State.STARTING;
-    }
-
-
-    public void prepareNextTry() {
-        this.lastErrorMessage = "";
         this.state = State.STARTING;
     }
 
@@ -128,7 +122,19 @@ final class PolyphenyHandshakeClient {
     }
 
 
-    public boolean doHandshake() {
+    void prepareNextTry() {
+        // TOOD: merge into doHandshake somehow
+        synchronized ( this ) {
+            if ( this.state == State.SUCCESS || this.state == State.RUNNING || this.state == State.FAILED ) {
+                return;
+            }
+            this.lastErrorMessage = "";
+            this.state = State.STARTING;
+        }
+    }
+
+
+    boolean doHandshake() {
         synchronized ( this ) {
             if ( state != State.NOT_RUNNING && state != State.STARTING ) {
                 return false;
@@ -238,11 +244,11 @@ final class PolyphenyHandshakeClient {
             return true;
         } else {
             log.error( "Server " + hostname + " has send an invalid authentication value, aborting handshake" );
+            // On purpose not NOT_RUNNING, because it could be an attack attempt.  This forces regeneration
+            // of the psk, so the attacker has one chance to guess.  The more likely explanation is pasting
+            // an old command, hence this error message.
+            lastErrorMessage = "Failed to authenticate the server: Be sure to use the displayed command, not an old one";
             synchronized ( this ) {
-                // On purpose not NOT_RUNNING, because it could be an attack attempt.  This forces regeneration
-                // of the psk, so the attacker has one chance to guess.  The more likely explanation is pasting
-                // an old command, hence this error message.
-                lastErrorMessage = "Failed to authenticate the server: Be sure to use the displayed command, not an old one.";
                 state = State.FAILED;
             }
             return false;

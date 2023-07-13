@@ -3644,12 +3644,11 @@ public class Crud implements InformationObserver {
     void getDockerInstance( final Context ctx ) {
         int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        ConfigDocker configDocker = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerId );
-        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( configDocker.id ).get();
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
 
         ctx.json( Map.of(
-                "host", configDocker.getHost(),
-                "alias", configDocker.getAlias(),
+                "host", dockerInstance.getHost(),
+                "alias", dockerInstance.getAlias(),
                 "connected", dockerInstance.isConnected()
         ) );
     }
@@ -3702,7 +3701,7 @@ public class Crud implements InformationObserver {
 
     void startHandshake( final Context ctx ) {
         String hostname = ctx.body();
-        ctx.json( HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT ) );
+        ctx.json( HandshakeManager.getInstance().restartOrGetHandshake( hostname ) );
     }
 
 
@@ -3714,7 +3713,7 @@ public class Crud implements InformationObserver {
 
     void cancelHandshake( final Context ctx ) {
         String hostname = ctx.body();
-        if ( DockerSetupHelper.cancelSetup( hostname ) ) {
+        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
             ctx.status( 200 );
         } else {
             ctx.status( 404 );

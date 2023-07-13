@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
 
 
 /**
@@ -49,8 +47,12 @@ public final class DockerInstance {
      */
     private static final Set<String> seenUuids = new HashSet<>();
 
+    private final int instanceId;
     @Getter
-    private ConfigDocker currentConfig;
+    private String host;
+    @Getter
+    private String alias;
+    int port;
 
     /**
      * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
@@ -62,27 +64,36 @@ public final class DockerInstance {
      */
     private PolyphenyDockerClient client;
 
-    private final int instanceId;
 
     private Status status = Status.NEW;
 
 
-    DockerInstance( Integer instanceId ) {
-        this.currentConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
+    private enum Status {
+        NEW,
+        CONNECTED,
+        DISCONNECTED,
+    }
+
+
+    DockerInstance( Integer instanceId, String host, String alias, int port ) {
+        log.info( "New Docker instance with ID " + instanceId );
+        this.host = host;
+        this.alias = alias;
+        this.port = port;
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
         try {
             checkConnection();
         } catch ( IOException e ) {
-            log.error( "Could not connect to docker ", e );
+            log.error( "Could not connect to docker instance " + alias + ": " + e.getMessage() );
         }
     }
 
 
     private void connectToDocker() throws IOException {
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( currentConfig.getHost() );
-        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( currentConfig.getHost() );
-        this.client = new PolyphenyDockerClient( currentConfig.getHost(), currentConfig.getPort(), kp, serverCertificate );
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( host );
+        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( host );
+        this.client = new PolyphenyDockerClient( host, port, kp, serverCertificate );
         this.client.ping();
     }
 
@@ -157,6 +168,23 @@ public final class DockerInstance {
     }
 
 
+    public void reconnect() {
+        synchronized ( this ) {
+            try {
+                status = Status.DISCONNECTED;
+                checkConnection();
+            } catch ( IOException e ) {
+                log.info( "Failed to reconnect: " + e );
+            }
+        }
+    }
+
+
+    public DockerStatus probeDockerStatus() {
+        return new DockerStatus( instanceId, isConnected() );
+    }
+
+
     void startContainer( DockerContainer container ) throws IOException {
         synchronized ( this ) {
             client.startContainer( container.getContainerId() );
@@ -208,43 +236,35 @@ public final class DockerInstance {
     }
 
 
-    public ContainerBuilder newBuilder( String imageName, String uniqueName ) {
-        return new ContainerBuilder( imageName, uniqueName );
-    }
-
-
-    void updateConfigs() {
-        ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
-        if ( !currentConfig.equals( newConfig ) ) {
-            synchronized ( this ) {
-                currentConfig = newConfig;
+    void updateConfig( String host, String alias ) {
+        synchronized ( this ) {
+            if ( !this.host.equals( host ) ) {
+                client.close();
+                status = Status.NEW;
                 try {
-                    this.client = null;
-                    this.dockerInstanceUuid = null;
-                    this.status = Status.NEW;
                     checkConnection();
                 } catch ( IOException e ) {
-                    log.error( "Failed to update config for instance " + instanceId, e );
+                    log.info( "Failed to connect to " + host );
                 }
             }
+            this.alias = alias;
         }
     }
 
 
-    public DockerStatus probeDockerStatus() {
-        try {
-            checkConnection();
-            return new DockerStatus( instanceId, true );
-        } catch ( IOException e ) {
-            return new DockerStatus( instanceId, false );
+    void close() {
+        synchronized ( this ) {
+            if ( client != null ) {
+                client.close();
+                client = null;
+            }
+            status = Status.DISCONNECTED;
         }
     }
 
 
-    private enum Status {
-        NEW,
-        CONNECTED,
-        DISCONNECTED,
+    public ContainerBuilder newBuilder( String imageName, String uniqueName ) {
+        return new ContainerBuilder( imageName, uniqueName );
     }
 
 

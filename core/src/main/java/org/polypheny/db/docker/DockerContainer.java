@@ -126,7 +126,7 @@ public final class DockerContainer {
 
 
     public String getIpAddress() {
-        return getDockerInstance().getCurrentConfig().getHost();
+        return getDockerInstance().getHost();
     }
 
 

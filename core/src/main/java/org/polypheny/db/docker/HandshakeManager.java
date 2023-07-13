@@ -51,61 +51,66 @@ public final class HandshakeManager {
     }
 
 
-    private Map<String, String> startHandshake( String hostname, int communicationPort, int handshakePort ) {
+    Map<String, String> startHandshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) {
         hostname = normalizeHostname( hostname );
-        Handshake h;
         synchronized ( this ) {
-            if ( !handshakes.containsKey( hostname ) ) {
-                try {
-                    handshakes.putIfAbsent( hostname, new Handshake( hostname, communicationPort, handshakePort ) );
-                } catch ( IOException e ) {
-                    throw new RuntimeException( e );
-                }
+            Handshake old = handshakes.remove( hostname );
+            if ( old != null ) {
+                old.cancel();
             }
-            h = handshakes.get( hostname );
+
+            try {
+                Handshake h = new Handshake( hostname, communicationPort, handshakePort, onCompletion );
+                handshakes.put( hostname, h );
+                h.startOrRestart();
+                return h.serializeHandshake();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
         }
-        h.start();
-        return h.serializeHandshake();
     }
 
 
-    public Map<String, String> startOrGetHandshake( String hostname, int communicationPort, int handshakePort ) {
+    public Map<String, String> restartOrGetHandshake( String hostname ) {
         hostname = normalizeHostname( hostname );
         synchronized ( this ) {
-            if ( handshakes.containsKey( hostname ) ) {
-                Handshake h = handshakes.get( hostname );
-                if ( h.client.getState() == State.RUNNING || h.client.getState() == State.NOT_RUNNING ) {
-                    h.start(); // No-op if already running
-                    return h.serializeHandshake();
-                } else {
-                    handshakes.remove( hostname );
-                }
+            Handshake h = handshakes.get( hostname );
+            if ( h == null ) {
+                throw new RuntimeException( "No handshake for hostname " + hostname );
+            }
+            try {
+                h.startOrRestart();
+                return h.serializeHandshake();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
             }
         }
-        return startHandshake( hostname, communicationPort, handshakePort );
     }
 
 
     public boolean cancelHandshake( String hostname ) {
         hostname = normalizeHostname( hostname );
-        Handshake h;
         synchronized ( this ) {
-            h = handshakes.remove( hostname );
+            Handshake h = handshakes.remove( hostname );
             if ( h != null ) {
                 h.cancel();
             }
+            return h != null;
         }
-        return h != null;
     }
 
 
     public Map<String, String> getHandshake( String hostname ) {
-        return handshakes.get( normalizeHostname( hostname ) ).serializeHandshake();
+        synchronized ( this ) {
+            return handshakes.get( normalizeHostname( hostname ) ).serializeHandshake();
+        }
     }
 
 
     String getHandshakeParameters( String hostname ) {
-        return handshakes.get( hostname ).getHandshakeParameters();
+        synchronized ( this ) {
+            return handshakes.get( normalizeHostname( hostname ) ).getHandshakeParameters();
+        }
     }
 
 
@@ -114,15 +119,21 @@ public final class HandshakeManager {
         private Thread handshakeThread = null;
         private final String hostname;
         private final int communicationPort;
+        private final int handshakePort;
         private boolean containerRunningGuess;
-        private final PolyphenyHandshakeClient client;
+        private PolyphenyHandshakeClient client;
+        private final Runnable onCompletion;
+        private boolean cancelled = false;
         private final AtomicLong timeout = new AtomicLong();
 
 
-        private Handshake( String hostname, int communicationPort, int handshakePort ) throws IOException {
+        private Handshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) throws IOException {
             this.hostname = hostname;
             this.communicationPort = communicationPort;
+            this.handshakePort = handshakePort;
             this.client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout );
+            this.onCompletion = onCompletion;
+
         }
 
 
@@ -142,30 +153,45 @@ public final class HandshakeManager {
         }
 
 
-        private void start() {
+        private void startOrRestart() throws IOException {
+            if ( cancelled || client.getState() == State.SUCCESS ) {
+                return;
+            }
             synchronized ( this ) {
+                if ( client.getState() == State.FAILED ) {
+                    client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout );
+                    // No issue, if the client is in failed state, it will not return a success
+                    handshakeThread = null;
+                }
                 if ( handshakeThread == null || !handshakeThread.isAlive() ) {
                     Runnable doHandshake = () -> {
                         if ( !client.doHandshake() ) {
                             log.info( "Handshake failed" );
                         } else {
-                            log.info( "Saving docker config" );
-                            DockerSetupHelper.getPendingSetup( hostname ).ifPresent( s -> DockerManager.addDockerInstance( s.getHostname(), s.getAlias(), s.getCommunicationPort() ) );
+                            log.info( "Handshake successful" );
+                            if ( !cancelled ) {
+                                onCompletion.run();
+                            }
                         }
                     };
-                    containerRunningGuess = guessIfContainerExists();
                     handshakeThread = new Thread( doHandshake );
+                } else if ( client.getState() == State.NOT_RUNNING ) {
                     client.prepareNextTry();
-                    timeout.set( Instant.now().getEpochSecond() + 20 );
-                    handshakeThread.start();
                 }
+                containerRunningGuess = guessIfContainerExists();
+                timeout.set( Instant.now().getEpochSecond() + 20 );
+                log.info( "Timeout is " + Instant.ofEpochSecond( timeout.get() ).toString() );
+                handshakeThread.start();
             }
         }
 
 
         private void cancel() {
-            timeout.set( 0 );
-            handshakeThread.interrupt();
+            synchronized ( this ) {
+                timeout.set( 0 );
+                handshakeThread.interrupt();
+                cancelled = true;
+            }
         }
 
 

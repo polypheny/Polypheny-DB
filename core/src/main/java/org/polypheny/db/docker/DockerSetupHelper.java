@@ -29,9 +29,6 @@ import org.polypheny.db.config.RuntimeConfig;
 @Slf4j
 public final class DockerSetupHelper {
 
-    private static final Map<String, PendingSetup> pendingSetups = new HashMap<>();
-
-
     // TODO racy
     private static boolean hasAlias( String alias ) {
         List<ConfigDocker> configlist = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
@@ -91,15 +88,50 @@ public final class DockerSetupHelper {
 
         try {
             tryConnectDirectly( hostname );
-            int id = DockerManager.addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT );
+            int id = DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT );
             return new DockerSetupResult( true, id );
         } catch ( IOException e ) {
-            synchronized ( pendingSetups ) {
-                pendingSetups.put( hostname, new PendingSetup( hostname, alias, ConfigDocker.COMMUNICATION_PORT ) );
-            }
-            return new DockerSetupResult( HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT ) );
+            return new DockerSetupResult( HandshakeManager.getInstance()
+                    .startHandshake(
+                            hostname,
+                            ConfigDocker.COMMUNICATION_PORT,
+                            ConfigDocker.HANDSHAKE_PORT,
+                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT )
+                    ) );
         }
 
+    }
+
+
+    public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias ) {
+        if ( hostname.equals( "" ) ) {
+            return new DockerUpdateResult( "hostname must not be empty" );
+        }
+
+        if ( alias.equals( "" ) ) {
+            return new DockerUpdateResult( "alias must not be empty" );
+        }
+
+        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
+
+        if ( maybeDockerInstance.isEmpty() ) {
+            return new DockerUpdateResult( "No docker instance with that id" );
+        }
+
+        DockerInstance dockerInstance = maybeDockerInstance.get();
+
+        boolean hostChanged = !dockerInstance.getHost().equals( hostname );
+        DockerManager.getInstance().updateDockerInstance( id, hostname, alias );
+
+        if ( hostChanged && !dockerInstance.isConnected() ) {
+            HandshakeManager.getInstance().startHandshake(
+                    hostname,
+                    ConfigDocker.COMMUNICATION_PORT,
+                    ConfigDocker.HANDSHAKE_PORT,
+                    () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ) );
+        }
+
+        return new DockerUpdateResult( id, hostChanged );
     }
 
 
@@ -116,90 +148,12 @@ public final class DockerSetupHelper {
                 return new DockerSetupResult( "DockerInstance still in use" );
             }
 
-            DockerManager.removeDockerInstance( id );
+            DockerManager.getInstance().removeDockerInstance( id );
+            HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost() );
             return new DockerSetupResult( true );
         } catch ( IOException e ) {
             return new DockerSetupResult( e.toString() );
         }
-    }
-
-
-    public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias ) {
-        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
-
-        if ( maybeDockerInstance.isEmpty() ) {
-            return new DockerUpdateResult( "No docker instance with that id" );
-        }
-
-        DockerInstance dockerInstance = maybeDockerInstance.get();
-
-        if ( hostname.equals( "" ) ) {
-            return new DockerUpdateResult( "hostname must not be empty" );
-        }
-
-        if ( alias.equals( "" ) ) {
-            return new DockerUpdateResult( "alias must not be empty" );
-        }
-
-        boolean aliasChanged = !dockerInstance.getCurrentConfig().getAlias().equals( alias );
-        boolean hostChanged = !dockerInstance.getCurrentConfig().getHost().equals( hostname );
-
-        if ( hasAlias( alias ) && aliasChanged ) {
-            return new DockerUpdateResult( "alias already in use" );
-        }
-
-        if ( hasHostname( hostname ) && hostChanged ) {
-            return new DockerUpdateResult( "hostname already in use" );
-        }
-
-        if ( aliasChanged ) {
-            dockerInstance.getCurrentConfig().setAlias( alias );
-        }
-
-        if ( hostChanged ) {
-            dockerInstance.getCurrentConfig().setHost( hostname );
-            synchronized ( pendingSetups ) {
-                pendingSetups.put( hostname, new PendingSetup( hostname, alias, ConfigDocker.COMMUNICATION_PORT ) );
-            }
-            HandshakeManager.getInstance().startOrGetHandshake( hostname, ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT );
-        }
-
-        return new DockerUpdateResult( id, hostChanged );
-    }
-
-
-    public static boolean cancelSetup( String hostname ) {
-        synchronized ( pendingSetups ) {
-            pendingSetups.remove( hostname );
-            return HandshakeManager.getInstance().cancelHandshake( hostname );
-        }
-    }
-
-
-    static Optional<PendingSetup> getPendingSetup( String hostname ) {
-        synchronized ( pendingSetups ) {
-            return Optional.ofNullable( pendingSetups.getOrDefault( hostname, null ) );
-        }
-    }
-
-
-    static final class PendingSetup {
-
-        @Getter
-        private final String hostname;
-        @Getter
-        private final String alias;
-        @Getter
-        private final int communicationPort;
-
-
-        private PendingSetup( String hostname, String alias, int communicationPort ) {
-            log.info( "Pending Setup" );
-            this.hostname = hostname;
-            this.alias = alias;
-            this.communicationPort = communicationPort;
-        }
-
     }
 
 
