@@ -37,24 +37,17 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private Set<String> supportedLanguages;
-    private ConcurrentHashMap<String, PIStatement> openStatments;
-    private ConcurrentHashMap<String, PIStatementBatch> openUnparameterizedBatches;
+    private PIClient protoInterfaceClient;
+    private ConcurrentHashMap<Integer, PIStatement> openStatments;
+    private ConcurrentHashMap<Integer, PIStatementBatch> openUnparameterizedBatches;
 
 
-    public StatementManager() {
+    public StatementManager(PIClient protoInterfaceClient) {
+        this.protoInterfaceClient = protoInterfaceClient;
         statementIdGenerator = new AtomicInteger();
         openStatments = new ConcurrentHashMap<>();
         openUnparameterizedBatches = new ConcurrentHashMap<>();
         supportedLanguages = new HashSet<>();
-        updateSupportedLanguages();
-    }
-
-
-    public void updateSupportedLanguages() {
-        supportedLanguages = LanguageManager.getLanguages()
-                .stream()
-                .map(QueryLanguage::getSerializedName)
-                .collect(Collectors.toSet());
     }
 
 
@@ -63,53 +56,48 @@ public class StatementManager {
     }
 
 
-    public synchronized PIUnparameterizedStatement createUnparameterizedStatement(PIClient protoInterfaceClient, UnparameterizedStatement statement) {
-        if (log.isTraceEnabled()) {
-            log.trace("createStatement( Connection {} )", protoInterfaceClient);
-        }
+    public synchronized PIUnparameterizedStatement createUnparameterizedStatement(UnparameterizedStatement statement) {
         String languageName = statement.getStatementLanguageName();
         if (!isSupportedLanguage(languageName)) {
             throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
         }
         final int statementId = statementIdGenerator.getAndIncrement();
-        final String statementKey = getId(protoInterfaceClient.getClientUUID(), statementId);
         final PIUnparameterizedStatement interfaceStatement = PIUnparameterizedStatement.newBuilder()
                 .setStatementId(statementId)
                 .setQuery(statement.getStatement())
                 .setQueryLanguage(QueryLanguage.from(languageName))
                 .setProtoInterfaceClient(protoInterfaceClient)
-                .setProperties(getPropertiesOrDefault(protoInterfaceClient, statement))
+                .setProperties(getPropertiesOrDefault(statement))
                 .build();
-        openStatments.put(statementKey, interfaceStatement);
+        openStatments.put(statementId, interfaceStatement);
         if (log.isTraceEnabled()) {
             log.trace("created statement {}", interfaceStatement);
         }
         return interfaceStatement;
     }
 
-    private PIStatementProperties getPropertiesOrDefault(PIClient client, UnparameterizedStatement unparameterizedStatement) {
+    private PIStatementProperties getPropertiesOrDefault(UnparameterizedStatement unparameterizedStatement) {
         if (unparameterizedStatement.hasProperties()) {
             return new PIStatementProperties(unparameterizedStatement.getProperties());
         }
-        return PIStatementProperties.getDefaultInstance(client.getClientProperties());
+        return PIStatementProperties.getDefaultInstance();
     }
 
-    private PIStatementProperties getPropertiesOrDefault(PIClient client, PreparedStatement preparedStatement) {
+    private PIStatementProperties getPropertiesOrDefault(PreparedStatement preparedStatement) {
         if (preparedStatement.hasProperties()) {
             return new PIStatementProperties(preparedStatement.getProperties());
         }
-        return PIStatementProperties.getDefaultInstance(client.getClientProperties());
+        return PIStatementProperties.getDefaultInstance();
     }
 
 
-    public synchronized PIUnparameterizedStatementBatch createUnparameterizedStatementBatch(PIClient protoInterfaceClient, List<UnparameterizedStatement> statements) {
+    public synchronized PIUnparameterizedStatementBatch createUnparameterizedStatementBatch(List<UnparameterizedStatement> statements) {
         List<PIUnparameterizedStatement> PIUnparameterizedStatements = statements.stream()
-                .map(s -> createUnparameterizedStatement(protoInterfaceClient, s))
+                .map(this::createUnparameterizedStatement)
                 .collect(Collectors.toList());
         final int batchId = statementIdGenerator.getAndIncrement();
-        final String batchKey = getId(protoInterfaceClient.getClientUUID(), batchId);
         final PIUnparameterizedStatementBatch batch = new PIUnparameterizedStatementBatch(batchId, protoInterfaceClient, PIUnparameterizedStatements);
-        openUnparameterizedBatches.put(batchKey, batch);
+        openUnparameterizedBatches.put(batchId, batch);
         if (log.isTraceEnabled()) {
             log.trace("created batch {}", batch);
         }
@@ -117,21 +105,20 @@ public class StatementManager {
     }
 
 
-    public synchronized PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement(PIClient protoInterfaceClient, PreparedStatement statement) {
+    public synchronized PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement(PreparedStatement statement) {
         String languageName = statement.getStatementLanguageName();
         if (!isSupportedLanguage(languageName)) {
             throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
         }
         final int statementId = statementIdGenerator.getAndIncrement();
-        final String statementKey = getId(protoInterfaceClient.getClientUUID(), statementId);
         final PIPreparedIndexedStatement interfaceStatement = PIPreparedIndexedStatement.newBuilder()
                 .setStatementId(statementId)
                 .setProtoInterfaceClient(protoInterfaceClient)
                 .setQuery(statement.getStatement())
                 .setQueryLanguage(QueryLanguage.from(languageName))
-                .setProperties(getPropertiesOrDefault(protoInterfaceClient, statement))
+                .setProperties(getPropertiesOrDefault(statement))
                 .build();
-        openStatments.put(statementKey, interfaceStatement);
+        openStatments.put(statementId, interfaceStatement);
         if (log.isTraceEnabled()) {
             log.trace("created named prepared statement {}", interfaceStatement);
         }
@@ -139,41 +126,40 @@ public class StatementManager {
     }
 
 
-    public synchronized PIPreparedNamedStatement createNamedPreparedInterfaceStatement(PIClient protoInterfaceClient, PreparedStatement statement) {
+    public synchronized PIPreparedNamedStatement createNamedPreparedInterfaceStatement(PreparedStatement statement) {
         String languageName = statement.getStatementLanguageName();
         if (!isSupportedLanguage(languageName)) {
             throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
         }
         final int statementId = statementIdGenerator.getAndIncrement();
-        final String statementKey = getId(protoInterfaceClient.getClientUUID(), statementId);
         final PIPreparedNamedStatement interfaceStatement = PIPreparedNamedStatement.newBuilder()
                 .setStatementId(statementId)
                 .setQuery(statement.getStatement())
                 .setQueryLanguage(QueryLanguage.from(statement.getStatementLanguageName()))
-                .setProperties(getPropertiesOrDefault(protoInterfaceClient, statement))
+                .setProperties(getPropertiesOrDefault(statement))
                 .setProtoInterfaceClient(protoInterfaceClient)
                 .build();
-        openStatments.put(statementKey, interfaceStatement);
+        openStatments.put(statementId, interfaceStatement);
         if (log.isTraceEnabled()) {
             log.trace("created named prepared statement {}", interfaceStatement);
         }
         return interfaceStatement;
     }
 
-
-    public void closeBatch(PIClient client, PIStatementBatch toClose) {
-        toClose.getStatements().forEach(s -> closeStatementOrBatch(s.getProtoInterfaceClient(), s.getStatementId()));
+    public void closeAll() {
+        openUnparameterizedBatches.values().forEach(this::closeBatch);
+        openStatments.values().forEach(s -> closeStatement(s.getStatementId()));
     }
 
 
-    private void closeStatement(PIClient client, int statementId) {
-        String statementKey = getId(client.getClientUUID(), statementId);
-        closeStatement(statementKey);
+    public void closeBatch(PIStatementBatch toClose) {
+        toClose.getStatements().forEach(s -> closeStatementOrBatch(s.getStatementId()));
     }
 
 
-    private void closeStatement(String statementKey) {
-        PIStatement statementToClose = openStatments.remove(statementKey);
+
+    private void closeStatement(int statementId) {
+        PIStatement statementToClose = openStatments.remove(statementId);
         if (statementToClose == null) {
             return;
         }
@@ -181,23 +167,18 @@ public class StatementManager {
     }
 
 
-    public void closeStatementOrBatch(PIClient client, int statementId) {
-        if (client == null) {
-            throw new RuntimeException("CLIENT NULL");
-        }
-        String statementKey = getId(client.getClientUUID(), statementId);
-        PIStatementBatch batchToClose = openUnparameterizedBatches.remove(statementKey);
+    public void closeStatementOrBatch(int statementId) {
+        PIStatementBatch batchToClose = openUnparameterizedBatches.remove(statementId);
         if (batchToClose != null) {
-            closeBatch(client, batchToClose);
+            closeBatch(batchToClose);
             return;
         }
-        closeStatement(statementKey);
+        closeStatement(statementId);
     }
 
 
-    public PIStatement getStatement(PIClient client, int statementId) {
-        String statementKey = getId(client.getClientUUID(), statementId);
-        PIStatement statement = openStatments.get(statementKey);
+    public PIStatement getStatement(int statementId) {
+        PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
             throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
         }
@@ -205,9 +186,8 @@ public class StatementManager {
     }
 
 
-    public PIPreparedNamedStatement getNamedPreparedStatement(PIClient client, int statementId) {
-        String statementKey = getId(client.getClientUUID(), statementId);
-        PIStatement statement = openStatments.get(statementKey);
+    public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) {
+        PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
             throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
         }
@@ -218,9 +198,8 @@ public class StatementManager {
     }
 
 
-    public PIPreparedIndexedStatement getIndexedPreparedStatement(PIClient client, int statementId) {
-        String statementKey = getId(client.getClientUUID(), statementId);
-        PIStatement statement = openStatments.get(statementKey);
+    public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) {
+        PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
             throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
         }
@@ -232,12 +211,11 @@ public class StatementManager {
 
 
     public boolean isSupportedLanguage(String statementLanguageName) {
-        return getSupportedLanguages().contains(statementLanguageName);
-    }
-
-
-    private String getId(String clientUUID, int statementId) {
-        return clientUUID + "::" + statementId;
+        return LanguageManager.getLanguages()
+                .stream()
+                .map(QueryLanguage::getSerializedName)
+                .collect(Collectors.toSet())
+                .contains(statementLanguageName);
     }
 
 }
