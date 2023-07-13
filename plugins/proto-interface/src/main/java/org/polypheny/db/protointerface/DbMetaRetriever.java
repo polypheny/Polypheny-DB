@@ -370,21 +370,6 @@ public class DbMetaRetriever {
         return importedKeyBuilder.build();
     }
 
-    public static String getSqlStringFunctions() {
-        return SqlJdbcFunctionCall.getStringFunctions();
-    }
-
-    public static String getSqlSystemFunctions() {
-        return  SqlJdbcFunctionCall.getSystemFunctions();
-    }
-
-    public static String getSqlTimeDateFunctions() {
-        return SqlJdbcFunctionCall.getTimeDateFunctions();
-    }
-
-    public static String getSqlNumericFunctions() {
-        return SqlJdbcFunctionCall.getNumericFunctions();
-    }
 
     public static String getSqlKeywords() {
         //TODO impl
