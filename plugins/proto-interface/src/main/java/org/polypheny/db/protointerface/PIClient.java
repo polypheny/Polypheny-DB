@@ -17,16 +17,18 @@
 package org.polypheny.db.protointerface;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.protointerface.proto.ConnectionProperties;
+import org.polypheny.db.protointerface.statements.StatementManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class PIClient {
+public class PIClient{
 
     private String clientUUID;
     private CatalogUser catalogUser;
@@ -34,12 +36,15 @@ public class PIClient {
     private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
+    @Getter
+    private StatementManager statementManager;
     private PIClientProperties clientProperties;
     private int minorApiVersion;
     private int majorApiVersion;
 
 
     private PIClient(Builder connectionBuilder ) {
+        this.statementManager = new StatementManager(this);
         this.clientUUID = connectionBuilder.clientUUID;
         this.catalogUser = connectionBuilder.catalogUser;
         this.logicalNamespace = connectionBuilder.logicalNamespace;
