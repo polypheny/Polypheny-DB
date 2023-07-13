@@ -26,9 +26,16 @@ service ProtoInterface {
   rpc GetTypes(TypesRequest) returns (TypesResponse) {}
   rpc GetIndexes(IndexesRequest) returns (IndexesResponse) {}
 
+  rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
+  rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
+
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
+  rpc Disconnect(DisconnectionRequest) returns (DisconnectionResponse) {}
 
   // Unparameterized statements
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
@@ -58,6 +65,9 @@ service ProtoInterface {
 message ConnectionCheckRequest{}
 
 message ConnectionCheckResponse{}
+
+message DisconnectionRequest{}
+message DisconnectionResponse{}
 
 message Property {
   oneof value {
@@ -156,7 +166,6 @@ message ParameterMeta {
 message FetchRequest {
   int32 statement_id = 1;
   int64 offset = 2;
-  optional int32 fetch_size = 3;
 }
 
 message UnparameterizedStatement {
