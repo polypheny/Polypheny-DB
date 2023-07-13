@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class StreamProcessing {
-
+//TODO: receive all additional info from Wrapper around MqttStream
     public static String processMsg( Mqtt3Publish subMsg ) {
         String msg = toString( subMsg );
 

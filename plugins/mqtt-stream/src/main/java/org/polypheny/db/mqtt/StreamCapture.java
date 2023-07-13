@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
+import org.bson.codecs.pojo.annotations.BsonId;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
@@ -60,24 +61,28 @@ public class StreamCapture {
     StreamCapture( final TransactionManager transactionManager, PolyStream stream ) {
         this.transactionManager = transactionManager;
         this.stream = stream;
-        Transaction transaction = getTransaction();
-        Statement statement = transaction.createStatement();
-        this.stream.setUserId( statement.getPrepareContext().getCurrentUserId() );
-        this.stream.setDatabaseId( statement.getPrepareContext().getDatabaseId() );
+
     }
 
 
     public void handleContent() {
-        //String path = registerTopicFolder(topic);
-        long storeId = getCollectionID();
-        if ( storeId != 0 ) {
-            stream.setStoreID( storeId );
-            boolean saved = saveContent();
-            //TODO: gescheite Tests
+
+        if ( stream.getStoreID() == 0 ) {
+            //TODO: get store id of already existing or create new one.
+
+            //TODO: maybe do this with interface
+            if ( stream.getNamespaceType() == NamespaceType.DOCUMENT ) {
+                long newstoreId = getCollectionID(  );
+                if ( newstoreId != 0 ) {
+                    stream.setStoreID( newstoreId );
+                }
+            }
+        }
+        boolean saved = saveContent();
+        //TODO: gescheite Tests
 //            Catalog catalog = Catalog.getInstance();
 //            CatalogSchema schema = null;
 //            schema = catalog.getSchema( stream.getNamespaceID() );
-        }
     }
 
 
@@ -86,59 +91,21 @@ public class StreamCapture {
      */
     long getCollectionID() {
         Catalog catalog = Catalog.getInstance();
-        List<CatalogSchema> schemaList = catalog.getSchemas( this.stream.getDatabaseId(), null );
-
-
-        // check for existing namespace with DOCUMENT NamespaceType:
-        if ( catalog.checkIfExistsSchema( this.stream.getDatabaseId(), this.stream.getNamespace() ) ) {
-
-            CatalogSchema schema = null;
-            try {
-                schema = catalog.getSchema( this.stream.getDatabaseId(), this.stream.getNamespace() );
-            } catch ( UnknownSchemaException e ) {
-                log.error( "The catalog seems to be corrupt, as it was impossible to retrieve an existing namespace." );
-                return 0;
-            }
-
-            assert schema != null;
-            if ( schema.namespaceType == NamespaceType.DOCUMENT ) {
-                this.stream.setNamespaceID( schema.id );
-                //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
-                List<CatalogCollection> collectionList = catalog.getCollections( schema.id, null );
-                for ( CatalogCollection collection : collectionList ) {
-                    if ( collection.name.equals( this.stream.topic ) ) {
-                        int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
-                        if ( !collection.placements.contains( queryInterfaceId ) ) {
-                            return collection.addPlacement( queryInterfaceId ).id;
-                        } else {
-                            return collection.id;
-                        }
-                    }
+        //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
+        List<CatalogCollection> collectionList = catalog.getCollections( stream.getNamespaceID(), null );
+        for ( CatalogCollection collection : collectionList ) {
+            if ( collection.name.equals( this.stream.topic ) ) {
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+                if ( !collection.placements.contains( queryInterfaceId ) ) {
+                    return collection.addPlacement( queryInterfaceId ).id;
+                } else {
+                    return collection.id;
                 }
-                return createNewCollection();
-
-            } else {
-                this.stream.setNamespaceID( createNewNamespace() );
-                return createNewCollection();
             }
-        } else {
-            this.stream.setNamespaceID( createNewNamespace() );
-            return createNewCollection();
         }
+        return createNewCollection();
+
     }
-
-
-    private long createNewNamespace() {
-        Catalog catalog = Catalog.getInstance();
-        long namespaceId = catalog.addNamespace( stream.getNamespace(), stream.getDatabaseId(), stream.getUserId(), NamespaceType.DOCUMENT );
-        try {
-            catalog.commit();
-        } catch ( NoTablePrimaryKeyException e ) {
-            log.error( "An error " );
-        }
-        return namespaceId;
-    }
-
 
     private long createNewCollection() {
         Catalog catalog = Catalog.getInstance();
@@ -159,10 +126,10 @@ public class StreamCapture {
             log.info( "Created Collection with name: {}", this.stream.topic );
             transaction.commit();
         } catch ( EntityAlreadyExistsException e ) {
-            log.error( "The generation of the collection was not possible because there is a collaction already existing with this name." );
+            log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
             return 0;
         } catch ( TransactionException e ) {
-            log.error( "The commit after creating a new Collection could be completed!" );
+            log.error( "The commit after creating a new Collection could not be completed!" );
             return 0;
         }
         //add placement
@@ -181,7 +148,7 @@ public class StreamCapture {
 
     // added by Datomo
     public void insertDocument() {
-        String collectionName = "users";
+        String collectionName = this.stream.topic;
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
@@ -190,8 +157,8 @@ public class StreamCapture {
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
-        document.put( "age", new BsonInt32( 28 ) );
-        document.put( "name", new BsonString( "David" ) );
+        document.put( "topic", new BsonString( this.stream.topic ) );
+        document.put( "content", new BsonString( this.stream.getContent() ) );
 
         AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
 
@@ -223,59 +190,9 @@ public class StreamCapture {
 
 
     boolean saveContent() {
-/**
- //TODO: save Message here -> Polyalgebra
- Transaction transaction = getTransaction();
- Statement statement = transaction.createStatement();
- AlgBuilder algBuilder = AlgBuilder.create( statement );
- JavaTypeFactory typeFactory = transaction.getTypeFactory();
- RexBuilder rexBuilder = new RexBuilder( typeFactory );
-
- PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
- List<String> names = new ArrayList<>();
- //TODO: change naming maybe
- names.add( this.stream.topic );
- AlgOptTable table = catalogReader.getCollection( names );
-
- // Values
- AlgDataType tableRowType = table.getRowType(  );
- List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
-
- AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
- AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder );
-
- List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
- List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
- algBuilder.push( LogicalValues.createOneRow( cluster ) );
- algBuilder.project( rexValues, valueColumnNames );
-
- // Table Modify
- AlgNode algNode = algBuilder.build();
- Modify modify = new LogicalModify(
- cluster,
- algNode.getTraitSet(),
- table,
- catalogReader,
- algNode,
- LogicalModify.Operation.INSERT,
- null,
- null,
- false
- );
-
- // Wrap {@link AlgNode} into a RelRoot
- final AlgDataType rowType = modify.getRowType();
- final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
- final AlgCollation collation =
- algNode instanceof Sort
- ? ((Sort) algNode).collation
- : AlgCollations.EMPTY;
- AlgRoot root = new AlgRoot( modify, rowType, Kind.INSERT, fields, collation );
- log.debug( "AlgRoot was built." );
-
- Context ctx = statement.getPrepareContext();
- log.info( executeAndTransformPolyAlg( root, statement, ctx ) );
- **/
+        if ( this.stream.getNamespaceType() == NamespaceType.DOCUMENT ) {
+            insertDocument();
+        }
         return true;
     }
 
@@ -297,11 +214,6 @@ public class StreamCapture {
             PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, false );
             log.debug( "AlgRoot was prepared." );
 
-            /*final Iterable<Object> iterable = result.enumerable( statement.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
-            while ( iterator.hasNext() ) {
-                iterator.next();
-            }*/
             // todo transform into desired output format
             List<List<Object>> rows = result.getRows( statement, -1 );
 
@@ -316,34 +228,6 @@ public class StreamCapture {
             }
             return null;
         }
-        //Pair<String, Integer> result = restResult.getResult( ctx );
-
-        //return result.left;
-        //return null;
-    }
-
-
-    private static String registerTopicFolder( String topic ) {
-        PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
-
-        String path = File.separator + "mqttStreamPlugin" + File.separator + topic.replace( "/", File.separator );
-        ;
-
-        File file = null;
-        if ( !homeDirManager.checkIfExists( path ) ) {
-            file = homeDirManager.registerNewFolder( path );
-            log.info( "New Directory created!" );
-        } else {
-            //TODO: rmv log
-            log.info( "Directory already exists" );
-        }
-
-        return path;
-
-    }
-
-
-    public static void main( String[] args ) {
 
     }
 
