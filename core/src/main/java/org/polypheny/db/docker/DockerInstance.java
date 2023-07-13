@@ -17,7 +17,9 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,6 @@ public final class DockerInstance {
     @Getter
     private ConfigDocker currentConfig;
 
-
     /**
      * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
      */
@@ -79,19 +80,17 @@ public final class DockerInstance {
 
 
     private void connectToDocker() throws IOException {
-        synchronized ( this ) {
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( currentConfig.getHost() );
-            byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( currentConfig.getHost() );
-            this.client = new PolyphenyDockerClient( currentConfig.getHost(), currentConfig.getPort(), kp, serverCertificate );
-            this.client.ping();
-        }
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( currentConfig.getHost() );
+        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( currentConfig.getHost() );
+        this.client = new PolyphenyDockerClient( currentConfig.getHost(), currentConfig.getPort(), kp, serverCertificate );
+        this.client.ping();
     }
 
 
     private void handleNewDockerInstance() throws IOException {
         this.dockerInstanceUuid = this.client.getDockerId();
 
-        // seenUuids used ust to lock out all DockerInstance instances
+        // seenUuids is used to lock out all the other DockerInstance instances
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
@@ -101,7 +100,6 @@ public final class DockerInstance {
         }
 
         boolean first;
-        // This is to prevent races in seenUuids when multiple instances are loaded at the same time
         synchronized ( seenUuids ) {
             first = seenUuids.add( this.dockerInstanceUuid ) && (Catalog.resetDocker || Catalog.resetCatalog);
         }
@@ -142,6 +140,8 @@ public final class DockerInstance {
                     }
                 }
                 status = Status.CONNECTED;
+            } else {
+                client.ping();
             }
         }
     }
@@ -157,24 +157,17 @@ public final class DockerInstance {
     }
 
 
-    /**
-     * This method may only be called from checkConnection, otherwise there is a race condition with dockerInstanceUuids,
-     * where two instances could be connected to the same host simultaneously when this method is called at the right moment.
-     */
-    private void connectionLoss() {
-        this.client = null;
-        this.dockerInstanceUuid = null;
-        this.status = Status.DISCONNECTED;
+    void startContainer( DockerContainer container ) throws IOException {
+        synchronized ( this ) {
+            client.startContainer( container.getContainerId() );
+        }
     }
 
 
-    public void startContainer( DockerContainer container ) throws IOException {
-        client.startContainer( container.getContainerId() );
-    }
-
-
-    public void stopContainer( DockerContainer container ) throws IOException {
-        client.stopContainer( container.getContainerId() );
+    void stopContainer( DockerContainer container ) throws IOException {
+        synchronized ( this ) {
+            client.stopContainer( container.getContainerId() );
+        }
     }
 
 
@@ -182,29 +175,36 @@ public final class DockerInstance {
      * Destroy the container.  Local resources are cleaned up regardless of whether the deallocation on the docker host
      * actually succeeded.
      */
-    public void destroyContainer( DockerContainer container ) {
-        try {
-            client.deleteContainer( container.getContainerId() );
-        } catch ( IOException e ) {
-            log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+    void destroyContainer( DockerContainer container ) {
+        synchronized ( this ) {
+            try {
+                DockerManager.getInstance().removeContainer( container.getContainerId() );
+                client.deleteContainer( container.getContainerId() );
+            } catch ( IOException e ) {
+                log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+            }
         }
-        DockerManager.getInstance().removeContainer( container.getContainerId() );
     }
 
 
-    public int execute( DockerContainer container, List<String> cmd ) throws IOException {
-        return client.executeCommand( container.getContainerId(), cmd );
+    int execute( DockerContainer container, List<String> cmd ) throws IOException {
+        synchronized ( this ) {
+            return client.executeCommand( container.getContainerId(), cmd );
+        }
     }
 
 
-    public Map<Integer, Integer> getPorts( DockerContainer container ) throws IOException {
-        Map<String, Map<Integer, Integer>> result = client.getPorts( Collections.singletonList( container.getContainerId() ) );
-        return result.getOrDefault( container.getContainerId(), Map.of() );
+    Map<Integer, Integer> getPorts( DockerContainer container ) throws IOException {
+        synchronized ( this ) {
+            return client.getPorts( Collections.singletonList( container.getContainerId() ) ).getOrDefault( container.getContainerId(), Map.of() );
+        }
     }
 
 
-    public boolean hasContainers() throws IOException {
-        return client.listContainers().size() > 0;
+    boolean hasContainers() throws IOException {
+        synchronized ( this ) {
+            return client.listContainers().size() > 0;
+        }
     }
 
 
@@ -216,13 +216,16 @@ public final class DockerInstance {
     void updateConfigs() {
         ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         if ( !currentConfig.equals( newConfig ) ) {
-            currentConfig = newConfig;
-            try {
-                connectionLoss();
-                status = Status.NEW;
-                checkConnection();
-            } catch ( IOException e ) {
-                log.error( "Failed to update config for instance " + instanceId, e );
+            synchronized ( this ) {
+                currentConfig = newConfig;
+                try {
+                    this.client = null;
+                    this.dockerInstanceUuid = null;
+                    this.status = Status.NEW;
+                    checkConnection();
+                } catch ( IOException e ) {
+                    log.error( "Failed to update config for instance " + instanceId, e );
+                }
             }
         }
     }
@@ -231,7 +234,6 @@ public final class DockerInstance {
     public DockerStatus probeDockerStatus() {
         try {
             checkConnection();
-            client.ping();
             return new DockerStatus( instanceId, true );
         } catch ( IOException e ) {
             return new DockerStatus( instanceId, false );

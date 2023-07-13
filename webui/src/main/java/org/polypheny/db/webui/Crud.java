@@ -3631,7 +3631,8 @@ public class Crud implements InformationObserver {
     void testDockerInstance( final Context ctx ) {
         int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        ctx.json( DockerManager.getInstance().probeDockerStatus( dockerId ) );
+        DockerInstance di = DockerManager.getInstance().getInstanceById( dockerId ).get();
+        ctx.json( di.probeDockerStatus() );
     }
 
 

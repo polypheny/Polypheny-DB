@@ -16,11 +16,11 @@
 
 package org.polypheny.db.docker;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.config.Config;
@@ -32,9 +32,10 @@ import org.polypheny.db.config.RuntimeConfig;
 public final class DockerManager {
 
     @Getter
-    private final Map<Integer, DockerInstance> dockerInstances = new HashMap<>();
-    private final Map<String, DockerInstance> containersToInstance = new HashMap<>();
-    private static DockerManager INSTANCE;
+    private final Map<Integer, DockerInstance> dockerInstances = new ConcurrentHashMap<>();
+    private final Map<String, DockerInstance> containerToInstance = new ConcurrentHashMap<>();
+    private static final DockerManager INSTANCE = new DockerManager();
+    private final AtomicBoolean initialized = new AtomicBoolean( false );
 
 
     private DockerManager() {
@@ -42,9 +43,7 @@ public final class DockerManager {
 
 
     public static DockerManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new DockerManager();
-
+        if ( !INSTANCE.initialized.getAndSet( true ) ) {
             // The following was previously inside the DockerManager constructor,
             // but this lead to an issue because getInstance() is called recursively
             // inside DockerInstance->checkConnection.
@@ -62,19 +61,8 @@ public final class DockerManager {
             };
             INSTANCE.resetClients();
             RuntimeConfig.DOCKER_INSTANCES.addObserver( listener );
-
         }
         return INSTANCE;
-    }
-
-
-    public DockerInstance getInstanceForContainer( String uuid ) {
-        return containersToInstance.get( uuid );
-    }
-
-
-    public void register( Integer instanceId, DockerInstance instance ) {
-        dockerInstances.put( instanceId, instance );
     }
 
 
@@ -83,13 +71,18 @@ public final class DockerManager {
     }
 
 
-    public void takeOwnership( String uuid, DockerInstance dockerInstance ) {
-        containersToInstance.put( uuid, dockerInstance );
+    void takeOwnership( String uuid, DockerInstance dockerInstance ) {
+        containerToInstance.put( uuid, dockerInstance );
     }
 
 
-    public void removeContainer( String uuid ) {
-        containersToInstance.remove( uuid );
+    DockerInstance getInstanceForContainer( String uuid ) {
+        return containerToInstance.get( uuid );
+    }
+
+
+    void removeContainer( String uuid ) {
+        containerToInstance.remove( uuid );
     }
 
 
@@ -97,49 +90,38 @@ public final class DockerManager {
      * Resets the used clients by pulling the {@link RuntimeConfig} for Docker
      * and deleting/adding new clients according to it
      */
-    public void resetClients() {
-        List<Integer> dockerInstanceIds = RuntimeConfig.DOCKER_INSTANCES
-                .getList( ConfigDocker.class )
-                .stream()
-                .map( config -> config.id )
-                .collect( Collectors.toList() );
-        // remove unused clients
-        List<Integer> removeIds = dockerInstances
-                .keySet()
-                .stream()
-                .filter( id -> !dockerInstanceIds.contains( id ) )
-                .collect( Collectors.toList() );
+    void resetClients() {
+        synchronized ( this ) {
+            List<Integer> dockerInstanceIds = RuntimeConfig.DOCKER_INSTANCES
+                    .getList( ConfigDocker.class )
+                    .stream()
+                    .map( config -> config.id )
+                    .collect( Collectors.toList() );
+            // remove unused clients
+            List<Integer> removeIds = dockerInstances
+                    .keySet()
+                    .stream()
+                    .filter( id -> !dockerInstanceIds.contains( id ) )
+                    .collect( Collectors.toList() );
 
-        removeIds.forEach( dockerInstances::remove );
-        // update internal values
-        updateConfigs();
+            removeIds.forEach( dockerInstances::remove );
+            // update internal values
+            dockerInstances.values().forEach( DockerInstance::updateConfigs );
 
-        // add new clients
-        dockerInstanceIds.forEach( id -> {
-            if ( !dockerInstances.containsKey( id ) ) {
-                dockerInstances.put( id, new DockerInstance( id ) );
-            }
-        } );
-    }
-
-
-    private void updateConfigs() {
-        dockerInstances.values().forEach( DockerInstance::updateConfigs );
-    }
-
-
-    public DockerStatus probeDockerStatus( int dockerId ) {
-        if ( dockerInstances.containsKey( dockerId ) ) {
-            return dockerInstances.get( dockerId ).probeDockerStatus();
+            // add new clients
+            dockerInstanceIds.forEach( id -> {
+                if ( !dockerInstances.containsKey( id ) ) {
+                    dockerInstances.put( id, new DockerInstance( id ) );
+                }
+            } );
         }
-        throw new RuntimeException( "There was a problem retrieving the correct Docker instance." );
     }
 
 
     /**
      * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
      */
-    public static Integer addDockerInstance( String host, String alias, int port ) {
+    static int addDockerInstance( String host, String alias, int port ) {
         // TODO: racy, someone else could modify the setting elsewhere
         List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
         for ( ConfigDocker c : configList ) {
@@ -155,15 +137,9 @@ public final class DockerManager {
     }
 
 
-    public static void removeDockerInstance( int id ) {
+    static void removeDockerInstance( int id ) {
         // TODO: racy, someone else could modify the setting elsewhere
-        List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-        List<ConfigDocker> newList = new ArrayList<>();
-        for ( ConfigDocker c : configList ) {
-            if ( c.getId() != id ) {
-                newList.add( c );
-            }
-        }
+        List<ConfigDocker> newList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( c -> c.getId() != id ).collect( Collectors.toList() );
         ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( newList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
     }
 
