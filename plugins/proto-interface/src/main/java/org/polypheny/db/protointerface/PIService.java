@@ -34,12 +34,9 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     private static final int majorApiVersion = 2;
     private static final int minorApiVersion = 0;
     private ClientManager clientManager;
-    private StatementManager statementManager;
-
 
     public PIService(ClientManager clientManager) {
         this.clientManager = clientManager;
-        this.statementManager = new StatementManager();
     }
 
 
@@ -271,7 +268,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void getSqlKeywords(SqlKeywordsRequest request, StreamObserver<MetaStringResponse> responseObserver) {
         /* called as client auth check */
         getClient();
-        responseObserver.onNext(buildMetaStringResponse("SqlJdbcFunctionCall.gettringFunctions()"));
+        responseObserver.onNext(buildMetaStringResponse(""));
         responseObserver.onCompleted();
     }
 
@@ -280,7 +277,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void executeUnparameterizedStatement(UnparameterizedStatement unparameterizedStatement, StreamObserver<StatementStatus> responseObserver) {
         PIClient client = getClient();
-        PIUnparameterizedStatement statement = statementManager.createUnparameterizedStatement(client, unparameterizedStatement);
+        PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement(unparameterizedStatement);
         responseObserver.onNext(ProtoUtils.createStatus(statement));
         StatementResult result = statement.execute();
         responseObserver.onNext(ProtoUtils.createStatus(statement, result));
@@ -292,7 +289,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void executeUnparameterizedStatementBatch(UnparameterizedStatementBatch unparameterizedStatementBatch, StreamObserver<StatementBatchStatus> responseObserver) {
         PIClient client = getClient();
-        PIUnparameterizedStatementBatch batch = statementManager.createUnparameterizedStatementBatch(client, unparameterizedStatementBatch.getStatementsList());
+        PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch(unparameterizedStatementBatch.getStatementsList());
         responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch));
         List<Long> updateCounts = batch.executeBatch();
         responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch, updateCounts));
@@ -304,7 +301,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void prepareIndexedStatement(PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = statementManager.createIndexedPreparedInterfaceStatement(client, preparedStatement);
+        PIPreparedIndexedStatement statement = client.getStatementManager().createIndexedPreparedInterfaceStatement(preparedStatement);
         responseObserver.onNext(ProtoUtils.createPreparedStatementSignature(statement));
         responseObserver.onCompleted();
     }
@@ -314,7 +311,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void executeIndexedStatement(ParameterList parameterList, StreamObserver<StatementResult> responseObserver) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement(client, parameterList.getStatementId());
+        PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement(parameterList.getStatementId());
         responseObserver.onNext(statement.execute(ProtoValueDeserializer.deserializeParameterList(parameterList.getParametersList())));
         responseObserver.onCompleted();
     }
@@ -324,7 +321,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void executeIndexedStatementBatch(IndexedParameterBatch indexedParameterBatch, StreamObserver<StatementBatchStatus> resultObserver) {
         PIClient client = getClient();
-        PIPreparedIndexedStatement statement = statementManager.getIndexedPreparedStatement(client, indexedParameterBatch.getStatementId());
+        PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement(indexedParameterBatch.getStatementId());
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists(indexedParameterBatch.getParameterListsList());
         List<Long> updateCounts = statement.executeBatch(valuesList);
         resultObserver.onNext(ProtoUtils.createStatementBatchStatus(statement, updateCounts));
@@ -335,7 +332,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void prepareNamedStatement(PreparedStatement preparedStatement, StreamObserver<PreparedStatementSignature> responseObserver) {
         PIClient client = getClient();
-        PIPreparedNamedStatement statement = statementManager.createNamedPreparedInterfaceStatement(client, preparedStatement);
+        PIPreparedNamedStatement statement = client.getStatementManager().createNamedPreparedInterfaceStatement(preparedStatement);
         responseObserver.onNext(ProtoUtils.createPreparedStatementSignature(statement));
         responseObserver.onCompleted();
     }
@@ -345,7 +342,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void executeNamedStatement(ParameterSet parameterSet, StreamObserver<StatementResult> responseObserver) {
         PIClient client = getClient();
-        PIPreparedNamedStatement statement = statementManager.getNamedPreparedStatement(client, parameterSet.getStatementId());
+        PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement(parameterSet.getStatementId());
         responseObserver.onNext(statement.execute(ProtoValueDeserializer.deserilaizeValueMap(parameterSet.getParametersMap())));
         responseObserver.onCompleted();
     }
@@ -355,7 +352,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void fetchResult(FetchRequest fetchRequest, StreamObserver<Frame> responseObserver) {
         PIClient client = getClient();
-        PIStatement statement = statementManager.getStatement(client, fetchRequest.getStatementId());
+        PIStatement statement = client.getStatementManager().getStatement(fetchRequest.getStatementId());
         Frame frame;
         frame = statement.fetch(fetchRequest.getOffset());
         responseObserver.onNext(frame);
@@ -384,7 +381,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void closeStatement(CloseStatementRequest closeStatementRequest, StreamObserver<CloseStatementResponse> responseObserver) {
         PIClient client = getClient();
-        statementManager.closeStatementOrBatch(client, closeStatementRequest.getStatementId());
+        client.getStatementManager().closeStatementOrBatch(closeStatementRequest.getStatementId());
         responseObserver.onNext(CloseStatementResponse.newBuilder().build());
     }
 
@@ -399,7 +396,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void updateStatementProperties(StatementProperties statementProperties, StreamObserver<StatementPropertiesUpdateResponse> responseObserver) {
         PIClient client = getClient();
-        PIStatement statement = statementManager.getStatement(client, statementProperties.getStatementId());
+        PIStatement statement = client.getStatementManager().getStatement(statementProperties.getStatementId());
         statement.updateProperties(statementProperties);
         responseObserver.onNext(StatementPropertiesUpdateResponse.newBuilder().build());
         responseObserver.onCompleted();
