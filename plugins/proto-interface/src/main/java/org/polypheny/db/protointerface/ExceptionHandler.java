@@ -18,6 +18,7 @@ package org.polypheny.db.protointerface;
 
 import io.grpc.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 
 @Slf4j
 public class ExceptionHandler implements ServerInterceptor {
@@ -42,6 +43,9 @@ public class ExceptionHandler implements ServerInterceptor {
         public void onHalfClose() {
             try {
                 super.onHalfClose();
+            }catch (AvaticaRuntimeException e) {
+                handleAvaticaRuntimeException(e, serverCall, metadata);
+                throw e;
             } catch (RuntimeException e) {
                 handleException(e, serverCall, metadata);
                 throw e;
@@ -49,10 +53,11 @@ public class ExceptionHandler implements ServerInterceptor {
         }
 
         private void handleException(RuntimeException exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
-            if ( log.isErrorEnabled() ) {
-                log.trace("proto-interface encountered gRPC error: {}", exception.getMessage());
-            }
             serverCall.close(Status.INTERNAL.withDescription(exception.getMessage()), metadata);
+        }
+
+        private void handleAvaticaRuntimeException(AvaticaRuntimeException avaticaRuntimeException, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+            serverCall.close(Status.INTERNAL.withDescription(avaticaRuntimeException.getErrorMessage()), metadata);
         }
     }
 }
