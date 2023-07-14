@@ -58,7 +58,7 @@ public class PolyphenyHomeDirManager {
         if ( !tryCreatingFolder( root ) ) {
             root = new File( "." );
             if ( !tryCreatingFolder( root ) ) {
-                throw new RuntimeException( "Could not create root directory: .polypheny neither in:" + System.getProperty( "user.home" ) + " nor \".\"" );
+                throw new RuntimeException( "Could not create root directory: .polypheny neither in: " + pathVar + " nor \".\"" );
             }
         }
 
