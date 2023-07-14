@@ -42,20 +42,24 @@ public class PIPreparedNamedStatement extends PIPreparedIndexedStatement {
 
 
     public List<ParameterMeta> determineParameterMeta() {
-        AlgDataType parameters = getParameterRowType();
-        return RelationalMetaRetriever.retrieveParameterMetas( parameters, namedValueProcessor.getNamedIndexes() );
+        synchronized(protoInterfaceClient) {
+            AlgDataType parameters = getParameterRowType();
+            return RelationalMetaRetriever.retrieveParameterMetas(parameters, namedValueProcessor.getNamedIndexes());
+        }
     }
 
 
     private void setParameters( Map<String, PolyValue> values ) {
-        List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
-        long index = 0;
-        for ( PolyValue value : valueList ) {
-            if ( value != null ) {
-                currentStatement.getDataContext().addParameterValues( index++, null, List.of( value ) );
+        synchronized(protoInterfaceClient) {
+            List<PolyValue> valueList = namedValueProcessor.transformValueMap(values);
+            long index = 0;
+            for (PolyValue value : valueList) {
+                if (value != null) {
+                    currentStatement.getDataContext().addParameterValues(index++, null, List.of(value));
+                }
             }
+            hasParametersSet = true;
         }
-        hasParametersSet = true;
     }
 
 
