@@ -17,7 +17,6 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,7 +91,7 @@ public final class DockerSetupHelper {
             return new DockerSetupResult( true, id );
         } catch ( IOException e ) {
             return new DockerSetupResult( HandshakeManager.getInstance()
-                    .startHandshake(
+                    .newHandshake(
                             hostname,
                             ConfigDocker.COMMUNICATION_PORT,
                             ConfigDocker.HANDSHAKE_PORT,
@@ -124,14 +123,34 @@ public final class DockerSetupHelper {
         DockerManager.getInstance().updateDockerInstance( id, hostname, alias );
 
         if ( hostChanged && !dockerInstance.isConnected() ) {
-            HandshakeManager.getInstance().startHandshake(
+            HandshakeManager.getInstance().newHandshake(
                     hostname,
                     ConfigDocker.COMMUNICATION_PORT,
                     ConfigDocker.HANDSHAKE_PORT,
                     () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ) );
+            return new DockerUpdateResult( id, true );
+        } else {
+            return new DockerUpdateResult( id, false );
+        }
+    }
+
+
+    public static DockerReconnectResult reconnectToInstance( int id ) {
+        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
+        if ( maybeDockerInstance.isEmpty() ) {
+            return new DockerReconnectResult( "No instance with that id" );
         }
 
-        return new DockerUpdateResult( id, hostChanged );
+        DockerInstance dockerInstance = maybeDockerInstance.get();
+
+        Map<String, String> m = HandshakeManager.getInstance().newHandshake(
+                dockerInstance.getHost(),
+                ConfigDocker.COMMUNICATION_PORT,
+                ConfigDocker.HANDSHAKE_PORT,
+                () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect )
+        );
+
+        return new DockerReconnectResult( m );
     }
 
 
@@ -147,13 +166,13 @@ public final class DockerSetupHelper {
             if ( dockerInstance.hasContainers() ) {
                 return new DockerSetupResult( "DockerInstance still in use" );
             }
-
-            DockerManager.getInstance().removeDockerInstance( id );
-            HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost() );
-            return new DockerSetupResult( true );
         } catch ( IOException e ) {
-            return new DockerSetupResult( e.toString() );
+            log.info( "Failed to retrieve list of docker containers " + e );
         }
+
+        DockerManager.getInstance().removeDockerInstance( id );
+        HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost() );
+        return new DockerSetupResult( true );
     }
 
 
@@ -209,17 +228,16 @@ public final class DockerSetupHelper {
 
 
         private DockerUpdateResult( int dockerId, boolean handshake ) {
-            ConfigDocker configDocker = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerId );
-            DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( configDocker.id ).get();
+            DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
 
             this.instance = Map.of(
-                    "host", configDocker.getHost(),
-                    "alias", configDocker.getAlias(),
+                    "host", dockerInstance.getHost(),
+                    "alias", dockerInstance.getAlias(),
                     "connected", dockerInstance.isConnected() ? "true" : "false"
             );
 
             if ( handshake ) {
-                this.handshake = HandshakeManager.getInstance().getHandshake( configDocker.getHost() );
+                this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost() );
             }
         }
 
@@ -229,6 +247,33 @@ public final class DockerSetupHelper {
                     "error", error,
                     "handshake", handshake,
                     "instance", instance
+            );
+        }
+
+    }
+
+
+    static public final class DockerReconnectResult {
+
+        @Getter
+        private String error = "";
+        private Map<String, String> handshake = Map.of();
+
+
+        private DockerReconnectResult( String error ) {
+            this.error = error;
+        }
+
+
+        private DockerReconnectResult( Map<String, String> handshake ) {
+            this.handshake = handshake;
+        }
+
+
+        public Map<String, Object> getMap() {
+            return Map.of(
+                    "error", error,
+                    "handshake", handshake
             );
         }
 

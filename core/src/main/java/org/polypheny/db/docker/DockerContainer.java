@@ -40,9 +40,6 @@ public final class DockerContainer {
 
     public final String uniqueName;
 
-    @Getter
-    private ContainerStatus status;
-
     /**
      * The UUID of this container.
      */
@@ -50,30 +47,20 @@ public final class DockerContainer {
     private final String containerId;
 
 
-    public DockerContainer(
-            String containerId,
-            String uniqueName,
-            String status
-    ) {
+    public DockerContainer( String containerId, String uniqueName ) {
         this.containerId = containerId;
         this.uniqueName = uniqueName;
-        updateStatus( status );
         containers.put( containerId, this );
     }
 
 
     public static Optional<DockerContainer> getContainerByUUID( String uuid ) {
-        return Optional.ofNullable( containers.getOrDefault( uuid, null ) );
-    }
-
-
-    public void updateStatus( String status ) {
-        this.status = ContainerStatus.valueOf( status );
+        return Optional.ofNullable( containers.get( uuid ) );
     }
 
 
     private DockerInstance getDockerInstance() {
-        return DockerManager.getInstance().getInstanceForContainer( containerId );
+        return DockerManager.getInstance().getInstanceForContainer( containerId ).get();
     }
 
 
@@ -111,9 +98,6 @@ public final class DockerContainer {
     }
 
 
-    /* In previous versions, there was an adapterId, but this doesn't make sense as not all containers belong
-     * to adapters, e.g. Jupyter Notebooks.
-     */
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
@@ -159,15 +143,5 @@ public final class DockerContainer {
         stopWatch.stop();
         return isStarted;
     }
-
-
-    public enum ContainerStatus {
-        INIT,
-        STOPPED,
-        RUNNING,
-        ERROR,
-        DESTROYED
-    }
-
 
 }

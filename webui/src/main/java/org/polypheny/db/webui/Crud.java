@@ -130,7 +130,6 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -138,6 +137,7 @@ import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerSetupHelper;
+import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
 import org.polypheny.db.docker.HandshakeManager;
@@ -3667,6 +3667,15 @@ public class Crud implements InformationObserver {
     }
 
 
+    void reconnectToDockerInstance( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+
+        DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ) );
+
+        ctx.json( res.getMap() );
+    }
+
+
     void removeDockerInstance( final Context ctx ) {
         try {
             Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
@@ -3690,7 +3699,7 @@ public class Crud implements InformationObserver {
 
 
     void doAutoHandshake( final Context ctx ) {
-        boolean success = AutoDocker.getInstance().start();
+        boolean success = AutoDocker.getInstance().doAutoConnect();
         ctx.json( Map.of(
                 "success", success,
                 "status", AutoDocker.getInstance().getStatus(),
@@ -3707,7 +3716,16 @@ public class Crud implements InformationObserver {
 
     void getHandshake( final Context ctx ) {
         String hostname = ctx.pathParam( "hostname" );
-        ctx.json( HandshakeManager.getInstance().getHandshake( hostname ) );
+        DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().filter( d -> d.getHost().equals( hostname ) ).findFirst().get();
+        ctx.json( Map.of(
+                        "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
+                        "instance", Map.of(
+                                "host", dockerInstance.getHost(),
+                                "alias", dockerInstance.getAlias(),
+                                "connected", dockerInstance.isConnected()
+                        )
+                )
+        );
     }
 
 

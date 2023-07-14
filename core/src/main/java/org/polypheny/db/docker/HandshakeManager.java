@@ -51,7 +51,7 @@ public final class HandshakeManager {
     }
 
 
-    Map<String, String> startHandshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) {
+    Map<String, String> newHandshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) {
         hostname = normalizeHostname( hostname );
         synchronized ( this ) {
             Handshake old = handshakes.remove( hostname );
@@ -126,7 +126,6 @@ public final class HandshakeManager {
         private boolean cancelled = false;
         private final AtomicLong timeout = new AtomicLong();
 
-
         private Handshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) throws IOException {
             this.hostname = hostname;
             this.communicationPort = communicationPort;
@@ -163,7 +162,13 @@ public final class HandshakeManager {
                     // No issue, if the client is in failed state, it will not return a success
                     handshakeThread = null;
                 }
+                containerRunningGuess = guessIfContainerExists();
+                timeout.set( Instant.now().getEpochSecond() + 20 );
+                log.info( "Timeout is " + Instant.ofEpochSecond( timeout.get() ).toString() );
                 if ( handshakeThread == null || !handshakeThread.isAlive() ) {
+                    if ( client.getState() == State.NOT_RUNNING ) {
+                        client.prepareNextTry();
+                    }
                     Runnable doHandshake = () -> {
                         if ( !client.doHandshake() ) {
                             log.info( "Handshake failed" );
@@ -175,13 +180,8 @@ public final class HandshakeManager {
                         }
                     };
                     handshakeThread = new Thread( doHandshake );
-                } else if ( client.getState() == State.NOT_RUNNING ) {
-                    client.prepareNextTry();
+                    handshakeThread.start();
                 }
-                containerRunningGuess = guessIfContainerExists();
-                timeout.set( Instant.now().getEpochSecond() + 20 );
-                log.info( "Timeout is " + Instant.ofEpochSecond( timeout.get() ).toString() );
-                handshakeThread.start();
             }
         }
 

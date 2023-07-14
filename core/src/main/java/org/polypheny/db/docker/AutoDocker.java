@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 
 @Slf4j
@@ -50,10 +50,6 @@ public final class AutoDocker {
     private String status = "";
 
     private Thread thread = null;
-
-
-    private AutoDocker() {
-    }
 
 
     public static AutoDocker getInstance() {
@@ -74,11 +70,14 @@ public final class AutoDocker {
     }
 
 
-    private Optional<String> findPolyphenyContainer( DockerClient client ) {
-        List<Container> resp = client.listContainersCmd().exec();
+    private Optional<String> findAndStartPolyphenyContainer( DockerClient client ) {
+        List<Container> resp = client.listContainersCmd().withShowAll( true ).exec();
         for ( Container c : resp ) {
             for ( String name : c.getNames() ) {
                 if ( name.equals( "/polypheny-docker-connector" ) ) {
+                    if ( !c.getState().equals( "running" ) ) {
+                        client.startContainerCmd( c.getId() ).exec();
+                    }
                     return Optional.of( c.getId() );
                 }
             }
@@ -120,7 +119,7 @@ public final class AutoDocker {
     private void doAutoHandshake() {
         status = "Starting...";
         DockerClient client = getClient();
-        Optional<String> maybeUuid = findPolyphenyContainer( client );
+        Optional<String> maybeUuid = findAndStartPolyphenyContainer( client );
 
         if ( maybeUuid.isEmpty() ) {
             maybeUuid = createAndStartPolyphenyContainer( client );
@@ -171,38 +170,50 @@ public final class AutoDocker {
     }
 
 
-    public boolean start() {
-        if ( isConnected() ) {
-            return true;
-        }
-
+    public boolean doAutoConnect() {
         if ( !isAvailable() ) {
             return false;
         }
 
-        DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost" );
-
-        if ( res.isSuccess() ) {
+        if ( isConnected() ) {
             return true;
         }
 
-        if ( !res.getError().equals( "" ) ) {
-            log.info( "AutoDocker: Setup failed: " + res.getError() );
-            return false;
+        Optional<Map.Entry<Integer, DockerInstance>> maybeDockerInstance = DockerManager.getInstance().getDockerInstances().entrySet().stream().filter( e -> e.getValue().getHost().equals( "localhost" ) ).findFirst();
+
+        if ( maybeDockerInstance.isPresent() ) {
+            DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
+
+            if ( !res.getError().equals( "" ) ) {
+                log.info( "AutoDocker: Reconnect failed: " + res.getError() );
+                status = res.getError();
+                return false;
+            }
+        } else {
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost" );
+
+            if ( res.isSuccess() ) {
+                return true;
+            }
+
+            if ( !res.getError().equals( "" ) ) {
+                log.info( "AutoDocker: Setup failed: " + res.getError() );
+                status = res.getError();
+                return false;
+            }
         }
 
         // If it is not successful and not an error, a handshake needs to be done
         synchronized ( this ) {
             if ( thread == null || !thread.isAlive() ) {
-                Runnable r = this::doAutoHandshake;
-                thread = new Thread( r );
+                thread = new Thread( this::doAutoHandshake );
                 thread.start();
             }
         }
         // thread != null
         while ( thread.isAlive() ) {
             try {
-                TimeUnit.SECONDS.sleep( 1 );
+                thread.join();
             } catch ( InterruptedException e ) {
                 // no problem
             }
@@ -228,14 +239,10 @@ public final class AutoDocker {
 
 
     public Map<String, Object> getStatus() {
-        boolean isRunning;
-        synchronized ( this ) {
-            isRunning = thread != null && thread.isAlive();
-        }
         return Map.of(
                 "available", isAvailable(),
                 "connected", isConnected(),
-                "running", isRunning,
+                "running", thread != null && thread.isAlive(),
                 "message", status
         );
     }
@@ -253,6 +260,5 @@ public final class AutoDocker {
 
         return DockerClientImpl.getInstance( config, httpClient );
     }
-
 
 }

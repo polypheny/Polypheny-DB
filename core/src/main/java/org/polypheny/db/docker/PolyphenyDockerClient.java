@@ -50,11 +50,19 @@ final class PolyphenyDockerClient {
 
 
     void close() {
+        connected = false;
         client.close();
 
         try {
             con.close();
         } catch ( IOException ignore ) {
+        }
+    }
+
+
+    private void checkConnected() throws IOException {
+        if ( !connected ) {
+            throw new IOException( "PolyphenyDockerClient is not connected" );
         }
     }
 
@@ -96,7 +104,7 @@ final class PolyphenyDockerClient {
      * Used by ContainerBuilder.deploy()
      */
     String createAndStartContainer( String containerName, String imageName, List<Integer> ports, List<String> initCommand, Map<String, String> environmentVariables, List<String> volumes ) throws IOException {
-
+        checkConnected();
         PortMaps portMaps = createPortMap( ports );
         CreateContainerRequest ccr = CreateContainerRequest
                 .newBuilder()
@@ -119,6 +127,7 @@ final class PolyphenyDockerClient {
 
 
     void startContainer( String uuid ) throws IOException {
+        checkConnected();
         StartContainerRequest cr = StartContainerRequest
                 .newBuilder()
                 .setUuid( uuid )
@@ -136,6 +145,7 @@ final class PolyphenyDockerClient {
      * Get the status string of the container.  See <a href="https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect">Docker API</a>
      */
     String getContainerStatus( String uuid ) throws IOException {
+        checkConnected();
         InspectContainerRequest ir = InspectContainerRequest.newBuilder().setUuid( uuid ).build();
         InspectContainerResponse resp = executeRequest( newRequest().setInspectContainer( ir ) ).getInspectContainer();
 
@@ -147,6 +157,7 @@ final class PolyphenyDockerClient {
 
 
     void stopContainer( String uuid ) throws IOException {
+        checkConnected();
         StopContainerRequest cr = StopContainerRequest
                 .newBuilder()
                 .setUuid( uuid )
@@ -164,6 +175,7 @@ final class PolyphenyDockerClient {
      * Deletes a container.  If it is running, it will be stopped forcefully.
      */
     void deleteContainer( String uuid ) throws IOException {
+        checkConnected();
         DeleteContainerRequest dr = DeleteContainerRequest.newBuilder().setUuid( uuid ).build();
         DeleteContainerResponse resp = executeRequest( newRequest().setDeleteContainer( dr ) ).getDeleteContainer();
 
@@ -175,6 +187,7 @@ final class PolyphenyDockerClient {
 
     /* TODO: This leaks ContainerInfo outside */
     List<ContainerInfo> listContainers() throws IOException {
+        checkConnected();
         ListContainersRequest lr = ListContainersRequest.newBuilder().build();
         ListContainersResponse resp = executeRequest( newRequest().setListContainers( lr ) ).getListContainers();
 
@@ -200,6 +213,7 @@ final class PolyphenyDockerClient {
 
 
     Map<String, Map<Integer, Integer>> getPorts( List<String> uuids ) throws IOException {
+        checkConnected();
         GetPortsRequest gr = GetPortsRequest.newBuilder().addAllUuid( uuids ).build();
         Response resp = executeRequest( newRequest().setGetPorts( gr ) );
         Map<String, Map<Integer, Integer>> result = new HashMap<>();
@@ -215,6 +229,7 @@ final class PolyphenyDockerClient {
 
 
     int executeCommand( String uuid, List<String> command ) throws IOException {
+        checkConnected();
         ExecuteCommandRequest er = ExecuteCommandRequest
                 .newBuilder()
                 .setUuid( uuid )
@@ -231,6 +246,7 @@ final class PolyphenyDockerClient {
 
 
     void createVolume( String driver, String uniqueName, Map<String, String> options ) throws IOException {
+        checkConnected();
         CreateVolumeRequest vr = CreateVolumeRequest
                 .newBuilder()
                 .setDriver( driver )
@@ -247,6 +263,7 @@ final class PolyphenyDockerClient {
 
 
     void deleteVolume( String uniqueName ) throws IOException {
+        checkConnected();
         DeleteVolumeRequest dv = DeleteVolumeRequest
                 .newBuilder()
                 .setName( uniqueName )
@@ -261,6 +278,7 @@ final class PolyphenyDockerClient {
 
 
     void ping() throws IOException {
+        checkConnected();
         PingRequest lr = PingRequest.newBuilder().build();
         PingResponse resp = executeRequest( newRequest().setPing( lr ) ).getPing();
 

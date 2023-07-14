@@ -29,15 +29,10 @@ import org.polypheny.db.config.RuntimeConfig;
 
 public final class DockerManager {
 
+    private static final DockerManager INSTANCE = new DockerManager();
     @Getter
     private final Map<Integer, DockerInstance> dockerInstances = new ConcurrentHashMap<>();
-    private final Map<String, DockerInstance> containerToInstance = new ConcurrentHashMap<>();
-    private static final DockerManager INSTANCE = new DockerManager();
     private final AtomicBoolean initialized = new AtomicBoolean( false );
-
-
-    private DockerManager() {
-    }
 
 
     public static DockerManager getInstance() {
@@ -54,18 +49,8 @@ public final class DockerManager {
     }
 
 
-    void takeOwnership( String uuid, DockerInstance dockerInstance ) {
-        containerToInstance.put( uuid, dockerInstance );
-    }
-
-
-    DockerInstance getInstanceForContainer( String uuid ) {
-        return containerToInstance.get( uuid );
-    }
-
-
-    void removeContainer( String uuid ) {
-        containerToInstance.remove( uuid );
+    Optional<DockerInstance> getInstanceForContainer( String uuid ) {
+        return dockerInstances.values().stream().filter( d -> d.hasContainer( uuid ) ).findFirst();
     }
 
 

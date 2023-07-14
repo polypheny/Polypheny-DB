@@ -355,6 +355,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateDockerInstance", crud::updateDockerInstance );
 
+        webuiServer.post( "/reconnectToDockerInstance", crud::reconnectToDockerInstance );
+
         webuiServer.post( "/removeDockerInstance", crud::removeDockerInstance );
 
         webuiServer.get( "/getAutoDockerStatus", crud::getAutoDockerStatus );

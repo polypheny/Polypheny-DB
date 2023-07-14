@@ -285,16 +285,6 @@ public class PolyphenyDb {
         log.info( "Polypheny UUID: " + uuid );
         RuntimeConfig.INSTANCE_UUID.setString( uuid.toString() );
 
-        if ( testMode && AutoDocker.getInstance().isAvailable() ) {
-            Catalog.resetDocker = true;
-            PolyphenyCertificateManager.deleteCertificates( "localhost" );
-            ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( List.of(), ConfigDocker.class );
-            AutoDocker.getInstance().start();
-            // This is done so we have a DockerInstance with id 0, Plugins using addAdapter depend on it...
-            List<ConfigDocker> configList = List.of( new ConfigDocker( 0, "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT ) );
-            ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
-        }
-
         class ShutdownHelper implements Runnable {
 
             private final Serializable[] joinOnNotStartedLock = new Serializable[0];
@@ -386,6 +376,23 @@ public class PolyphenyDb {
 
         // Startup and restore catalog
         Transaction trx = null;
+
+        if ( AutoDocker.getInstance().isAvailable() ) {
+            // TODO: find a cleaner way to have a working configuration with id 0
+            if ( testMode ) {
+                resetDocker = true;
+                Catalog.resetDocker = true;
+                PolyphenyCertificateManager.deleteCertificates( "localhost" );
+                ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( List.of(), ConfigDocker.class );
+                AutoDocker.getInstance().doAutoConnect();
+                // This is done so we have a DockerInstance with id 0, Plugins using addAdapter depend on it...
+                List<ConfigDocker> configList = List.of( new ConfigDocker( 0, "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT ) );
+                ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+            } else {
+                AutoDocker.getInstance().doAutoConnect();
+            }
+        }
+
         try {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;

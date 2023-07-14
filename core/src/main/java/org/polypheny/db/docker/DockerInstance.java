@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -52,7 +51,8 @@ public final class DockerInstance {
     private String host;
     @Getter
     private String alias;
-    int port;
+    private final int port;
+    private Set<String> uuids = new HashSet<>();
 
     /**
      * The UUID of the docker daemon we are talking to.  null if we are currently not connected.
@@ -63,7 +63,6 @@ public final class DockerInstance {
      * The client object used to communicate with Docker.  null if not connected.
      */
     private PolyphenyDockerClient client;
-
 
     private Status status = Status.NEW;
 
@@ -104,7 +103,7 @@ public final class DockerInstance {
         // seenUuids is used to lock out all the other DockerInstance instances
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
-                if ( instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
+                if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
                     throw new RuntimeException( "The same docker instance cannot be added twice" );
                 }
             }
@@ -139,17 +138,15 @@ public final class DockerInstance {
                 status = Status.DISCONNECTED; // This is so that the next block is executed as well, but that we never rerun handleNewDockerInstance
             }
 
+            // We only get here, if connectToDocker worked
             if ( status != Status.CONNECTED ) {
+                Set<String> uuids = new HashSet<>();
                 List<ContainerInfo> containers = this.client.listContainers();
                 for ( ContainerInfo containerInfo : containers ) {
-                    DockerManager.getInstance().takeOwnership( containerInfo.getUuid(), this );
-                    Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( containerInfo.getUuid() );
-                    if ( maybeContainer.isPresent() ) {
-                        maybeContainer.get().updateStatus( containerInfo.getStatus() );
-                    } else {
-                        new DockerContainer( containerInfo.getUuid(), containerInfo.getName(), containerInfo.getStatus().toUpperCase() );
-                    }
+                    uuids.add( containerInfo.getUuid() );
+                    new DockerContainer( containerInfo.getUuid(), containerInfo.getName() );
                 }
+                this.uuids = uuids;
                 status = Status.CONNECTED;
             } else {
                 client.ping();
@@ -206,7 +203,7 @@ public final class DockerInstance {
     void destroyContainer( DockerContainer container ) {
         synchronized ( this ) {
             try {
-                DockerManager.getInstance().removeContainer( container.getContainerId() );
+                uuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
                 log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
@@ -229,6 +226,13 @@ public final class DockerInstance {
     }
 
 
+    boolean hasContainer( String uuid ) {
+        synchronized ( this ) {
+            return uuids.contains( uuid );
+        }
+    }
+
+
     boolean hasContainers() throws IOException {
         synchronized ( this ) {
             return client.listContainers().size() > 0;
@@ -240,6 +244,7 @@ public final class DockerInstance {
         synchronized ( this ) {
             if ( !this.host.equals( host ) ) {
                 client.close();
+                this.host = host;
                 status = Status.NEW;
                 try {
                     checkConnection();
@@ -304,8 +309,8 @@ public final class DockerInstance {
         public DockerContainer createAndStart() throws IOException {
             synchronized ( DockerInstance.this ) {
                 String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageName, exposedPorts, initCommand, environmentVariables, List.of() );
-                DockerManager.getInstance().takeOwnership( uuid, DockerInstance.this );
-                return new DockerContainer( uuid, uniqueName, "RUNNING" );
+                uuids.add( uuid );
+                return new DockerContainer( uuid, uniqueName );
             }
         }
 
