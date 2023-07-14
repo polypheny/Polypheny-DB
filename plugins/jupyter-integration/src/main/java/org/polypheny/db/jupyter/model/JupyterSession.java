@@ -19,6 +19,9 @@ package org.polypheny.db.jupyter.model;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Represents a model of an open session in the jupyter server.
+ */
 public class JupyterSession {
 
     @Getter
@@ -36,11 +39,6 @@ public class JupyterSession {
         this.name = name;
         this.path = path;
         this.kernel = kernel;
-    }
-
-
-    public boolean isKernel( String kernelId ) {
-        return kernel.getKernelId().equals( kernelId );
     }
 
 }

@@ -68,6 +68,14 @@ public class JupyterKernel {
     private final JupyterSessionManager jsm = JupyterSessionManager.getInstance();
 
 
+    /**
+     * Create a new JupyterKernel and open a websocket connection to the corresponding kernel in the jupyter server.
+     *
+     * @param kernelId the ID of the kernel
+     * @param name the unique name of the Kernel, defining the programming language
+     * @param builder the Websocket.Builder used to open the websocket
+     * @param host the address of the Docker container running the jupyter server
+     */
     public JupyterKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
         this.kernelId = kernelId;
         this.name = name;
@@ -93,6 +101,11 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Subscribe to any incoming messages from the kernel.
+     *
+     * @param session the UI websocket session to be added to the list of subscribers
+     */
     public void subscribe( Session session ) {
         subscribers.add( session );
     }
@@ -103,6 +116,11 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Handle an incoming message from the kernel, according to its message type.
+     *
+     * @param data the data that makes up the message
+     */
     private void handleText( CharSequence data ) {
         String dataStr = data.toString();
         if ( dataStr.length() < 10000 ) { // reduce number of large json strings that need to be parsed
@@ -115,7 +133,7 @@ public class JupyterKernel {
                     handleShutdownReply( json );
                 } else if ( !activePolyCells.isEmpty() && msgType.equals( "input_request" ) ) {
                     handleInputRequest( json );
-                    return;
+                    return; // do not forward the query requests to the UI
                 }
             } catch ( JsonSyntaxException ignored ) {
 
@@ -147,6 +165,8 @@ public class JupyterKernel {
      * We use input_request messages to execute queries. If an ActivePolyCell exists with the corresponding parent msg_id,
      * the query specified in the prompt field is executed, else the request is ignored.
      * The serialized result is sent back as an input_reply message.
+     *
+     * @param json serialized JSON object as specified by the jupyter kernel messaging protocol
      */
     private void handleInputRequest( JsonObject json ) {
         String query = json.getAsJsonObject( "content" ).get( "prompt" ).getAsString();
@@ -166,12 +186,31 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Send the specified code for execution to the jupyter server.
+     * Code that tries to request input from the user via stdin is not supported.
+     *
+     * @param code the programming code to be executed
+     * @param uuid a unique ID that allows assigning this request to the responses
+     */
     public void execute( String code, String uuid ) {
         ByteBuffer request = buildExecutionRequest( code, uuid, false, false, true );
         webSocket.sendBinary( request, true );
     }
 
 
+    /**
+     * Initiate the execution of a query cell by first sending the query to the kernel
+     * (necessary for possible variable expansion).
+     * If this is the first query execution since the kernel was started, the initialization code is first executed.
+     *
+     * @param query the query to be executed
+     * @param uuid a unique ID that allows assigning this request to the responses
+     * @param language the query language to be used
+     * @param namespace the target namespace
+     * @param variable the name of the variable the result will be stored in
+     * @param expandParams whether to expand variables specified in the form ${varname}
+     */
     public void executePolyCell( String query, String uuid, String language, String namespace,
             String variable, boolean expandParams ) {
         if ( query.strip().length() == 0 ) {
@@ -197,6 +236,14 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Execute the specified query and return the serialized results as JSON.
+     *
+     * @param query the query to be executed
+     * @param language the query language to be used
+     * @param namespace the target namespace
+     * @return the serialized results in JSON format
+     */
     private String anyQuery( String query, String language, String namespace ) {
         QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace );
         List<Result> results = LanguageCrud.anyQuery(
@@ -211,6 +258,9 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Send initialization code that might be required by the corresponding kernel to support the execution of query cells.
+     */
     private void sendInitCode() {
         if ( supportsPolyCells ) {
             List<String> initCode = kernelLanguage.getInitCode();
@@ -218,13 +268,23 @@ public class JupyterKernel {
                 return;
             }
             for ( String code : initCode ) {
-                ByteBuffer request = buildExecutionRequest( code, true, false, true );
+                ByteBuffer request = buildExecutionRequest( code );
                 webSocket.sendBinary( request, true );
             }
         }
     }
 
 
+    /**
+     * Build an execution request for the given code that can be sent to the kernel
+     *
+     * @param code the code to be executed
+     * @param uuid the unique ID of the request
+     * @param silent if true, signals the kernel to execute this code as quietly as possible
+     * @param allowStdin if true, code running in the kernel can prompt the user for input
+     * @param stopOnError if true, aborts the execution queue if an exception is encountered
+     * @return a ByteBuffer representing the request
+     */
     private ByteBuffer buildExecutionRequest( String code, String uuid, boolean silent, boolean allowStdin, boolean stopOnError ) {
         JsonObject header = new JsonObject();
         header.addProperty( "msg_id", uuid );
@@ -241,11 +301,19 @@ public class JupyterKernel {
     }
 
 
-    private ByteBuffer buildExecutionRequest( String code, boolean silent, boolean allowStdin, boolean stopOnError ) {
-        return buildExecutionRequest( code, UUID.randomUUID().toString(), silent, allowStdin, stopOnError );
+    private ByteBuffer buildExecutionRequest( String code ) {
+        return buildExecutionRequest( code, UUID.randomUUID().toString(), true, false, true );
     }
 
 
+    /**
+     * Build a reply to an input request
+     *
+     * @param reply the reply message
+     * @param uuid the unique ID of the message
+     * @param parent_header the headerof the input request that initiated this reply
+     * @return a ByteBuffer representing the reply
+     */
     private ByteBuffer buildInputReply( String reply, String uuid, JsonObject parent_header ) {
         JsonObject header = new JsonObject();
         header.addProperty( "msg_id", uuid );
@@ -264,6 +332,19 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Build a kernel message according to the
+     * <a href="https://jupyter-server.readthedocs.io/en/latest/developers/websocket-protocols.html">
+     * Default WebSocket protocol
+     * </a>.
+     *
+     * @param channel the socket of the kernel to be used
+     * @param header the message header
+     * @param parentHeader the parent header
+     * @param metadata the message metadata
+     * @param content the message content
+     * @return a ByteBuffer representing the message
+     */
     private ByteBuffer buildMessage( String channel, JsonObject header, JsonObject parentHeader, JsonObject metadata, JsonObject content ) {
         JsonObject msg = new JsonObject();
         msg.addProperty( "channel", channel );
@@ -340,6 +421,9 @@ public class JupyterKernel {
     }
 
 
+    /**
+     * Represents a query cell that is currently being executed.
+     */
     private static class ActivePolyCell {
 
         @Getter

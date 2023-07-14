@@ -70,6 +70,9 @@ public interface JupyterKernelLanguage {
     List<String> exportedQuery( String query, String language, String namespace, String varName, boolean expandParams );
 
 
+    /**
+     * Every JupyterQueryPart is sent as an individual execution request to the kernel.
+     */
     class JupyterQueryPart {
 
         public final boolean silent, allowStdin;

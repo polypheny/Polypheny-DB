@@ -20,6 +20,10 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * The JupyterKernelLanguage implementation for Python. It uses the
+ * <a href="https://pypi.org/project/ipython-polypheny/">IPython Polypheny Extension</a>.
+ */
 public class IPythonKernelLanguage implements JupyterKernelLanguage {
 
     @Override

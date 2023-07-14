@@ -25,13 +25,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.transaction.TransactionManager;
 
+/**
+ * The JupyterSessionManager is a singleton class that mirrors the state of sessions and kernels of the jupyter server.
+ * Every running kernel has a corresponding JupyterKernel instance and open websocket connection.
+ */
 public class JupyterSessionManager {
 
     private static JupyterSessionManager INSTANCE = null;
-
     private final Map<String, JupyterKernel> kernels = new ConcurrentHashMap<>();
     private final Map<String, JupyterSession> sessions = new ConcurrentHashMap<>();
-
     private final Map<String, JupyterKernelSpec> kernelSpecs = new ConcurrentHashMap<>();
 
     @Getter
@@ -59,6 +61,11 @@ public class JupyterSessionManager {
     /**
      * Creates a new JupyterKernel, if no kernel with the same id already exists.
      * Otherwise, this has no effect.
+     *
+     * @param kernelId the kernel ID
+     * @param name the unique name of the kernel
+     * @param builder a Websocket.Builder used to open a websocket to the kernel
+     * @param host the address to the Docker container running the jupyter server
      */
     public void addKernel( String kernelId, String name, WebSocket.Builder builder, String host ) {
         kernels.computeIfAbsent( kernelId, k -> new JupyterKernel( kernelId, name, builder, host ) );
@@ -69,6 +76,11 @@ public class JupyterSessionManager {
      * Updates the specified session with the given values.
      * If no session with the specified sessionId exists, a new one is created.
      * If no kernel with the specified kernelId is known, the session is removed.
+     *
+     * @param sessionId the ID of the session
+     * @param name the name of the session
+     * @param path the path to the session
+     * @param kernelId the ID of the kernel used by this session
      */
     public void updateSession( String sessionId, String name, String path, String kernelId ) {
         JupyterKernel kernel = kernels.get( kernelId );
@@ -89,6 +101,8 @@ public class JupyterSessionManager {
 
     /**
      * Removes the session with the given session id, its associated kernel and all other sessions using that kernel.
+     *
+     * @param sessionId the ID of the session to be removed
      */
     public void invalidateSession( String sessionId ) {
         JupyterSession session = sessions.remove( sessionId );
@@ -105,11 +119,21 @@ public class JupyterSessionManager {
     }
 
 
+    /**
+     * Removes all sessions that are not in the specified Set.
+     *
+     * @param validSessionIds a Set containing the IDs of all sessions to be retained.
+     */
     public void retainValidSessions( Set<String> validSessionIds ) {
         sessions.keySet().retainAll( validSessionIds );
     }
 
 
+    /**
+     * Removes all kernels that are not in the specified Set.
+     *
+     * @param validKernelIds a Set containing the IDs of all kernels to be retained.
+     */
     public void retainValidKernels( Set<String> validKernelIds ) {
         for ( String id : kernels.keySet() ) {
             if ( !validKernelIds.contains( id ) ) {
@@ -119,6 +143,9 @@ public class JupyterSessionManager {
     }
 
 
+    /**
+     * Removes all sessions that have no valid kernel associated with them.
+     */
     public void removeSessionsWithInvalidKernels() {
         sessions.entrySet().removeIf( entry -> !kernels.containsKey( entry.getValue().getKernel().getKernelId() ) );
     }
@@ -146,6 +173,11 @@ public class JupyterSessionManager {
     }
 
 
+    /**
+     * Returns for each kernel the number of UI instances that are currently connected to it.
+     *
+     * @return A mapping of kernelIds to the number of UI instances connected to the corresponding JupyterKernel
+     */
     public Map<String, Integer> getOpenConnectionCount() {
         Map<String, Integer> openConnections = new HashMap<>();
         for ( JupyterKernel kernel : kernels.values() ) {
@@ -155,6 +187,12 @@ public class JupyterSessionManager {
     }
 
 
+    /**
+     * Get a string representation of the current state of stored sessions and kernels.
+     * This can be useful for debugging
+     *
+     * @return A string listing all sessions, kernels and kernelspecs
+     */
     public String getOverview() {
         // just for testing
         StringBuilder sb = new StringBuilder( "JupyterSessionManager Overview:\n" );
@@ -186,11 +224,12 @@ public class JupyterSessionManager {
     }
 
 
+    /**
+     * Remove all sessions and kernels. All websockets to the jupyter server are closed.
+     */
     public void reset() {
         sessions.clear();
-        kernels.forEach( ( id, kernel ) -> {
-            kernel.close();
-        } );
+        kernels.forEach( ( id, kernel ) -> kernel.close() );
         kernels.clear();
     }
 

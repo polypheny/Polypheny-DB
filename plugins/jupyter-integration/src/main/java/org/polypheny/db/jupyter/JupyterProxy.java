@@ -71,6 +71,10 @@ public class JupyterProxy {
     }
 
 
+    /**
+     * Return the Base64 encoded contents of a file (without metadata) stored in the jupyter server.
+     * This is used by the Markdown parser in the UI to retrieve local files (usually images).
+     */
     public void file( final Context ctx, Crud crud ) {
         String path = ctx.pathParam( "path" );
         try {
@@ -106,6 +110,9 @@ public class JupyterProxy {
     }
 
 
+    /**
+     * Exports all query cells of the notebook in the specified path to the specified target language.
+     */
     public void export( final Context ctx, Crud crud ) {
         String path = ctx.pathParam( "path" );
         String language = ctx.queryParam( "language" );
@@ -192,6 +199,13 @@ public class JupyterProxy {
     }
 
 
+    /**
+     * Forwards a request from the UI to the jupyter server and sends back the result.
+     * If JupyterServerException occurs, the details of the exception are returned to the UI.
+     *
+     * @param ctx the Context for replying to the UI
+     * @param supplier the HttpResponseSupplier that returns the response from the jupyter server.
+     */
     private void forward( Context ctx, HttpResponseSupplier supplier ) {
         ctx.contentType( "application/json" );
         try {
@@ -205,6 +219,9 @@ public class JupyterProxy {
     }
 
 
+    /**
+     * Represents a function that returns a HttpResponse when called and might throw a JupyterServerException.
+     */
     @FunctionalInterface
     private interface HttpResponseSupplier {
 

@@ -52,6 +52,14 @@ public class JupyterClient {
     private final JupyterSessionManager sessionManager = JupyterSessionManager.getInstance();
 
 
+    /**
+     * Create a new JupyterClient instance for sending REST requests to the jupyter server,
+     * adhering to the <a href="https://jupyter-server.readthedocs.io/en/latest/developers/rest-api.html">API</a>.
+     *
+     * @param token the token needed for authentication with the server
+     * @param host the address of the docker container
+     * @param port the port of the server
+     */
     public JupyterClient( String token, String host, int port ) {
         this.token = token;
         this.host = host + ":" + port;
@@ -62,6 +70,11 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Can be used to test the connection to the jupyter server.
+     *
+     * @return true if the server can be reached, false otherwise
+     */
     public boolean testConnection() {
         try {
             HttpResponse<String> response = sendGET( "status" );
@@ -72,11 +85,24 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Get the current status/activity of the server.
+     *
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getStatus() throws JupyterServerException {
         return sendGET( "status" );
     }
 
 
+    /**
+     * Get information about a specific session and its associated kernel.
+     *
+     * @param sessionId the ID of the requested session
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getSession( String sessionId ) throws JupyterServerException {
         HttpResponse<String> response = sendGET( "sessions/" + sessionId );
         if ( response.statusCode() == 200 ) {
@@ -89,6 +115,12 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Get a list of all running sessions with information about each session and its associated kernel.
+     *
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getSessions() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "sessions" );
         if ( response.statusCode() == 200 ) {
@@ -98,6 +130,13 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Create a new session, or return an existing session if a session of the same name already exists.
+     *
+     * @param body serialized JSON object as specified by the jupyter server API
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> createSession( String body ) throws JupyterServerException {
         HttpResponse<String> response = sendPOST( "sessions", body );
         if ( response.statusCode() == 201 ) {
@@ -108,6 +147,15 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Create a new session, or return an existing session if a session of the same name already exists.
+     *
+     * @param kernelName the unique name of the kerne to be used
+     * @param fileName name of the session
+     * @param filePath path to the session
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> createSession( String kernelName, String fileName, String filePath ) throws JupyterServerException {
         JsonObject kernel = new JsonObject();
         kernel.addProperty( "name", kernelName );
@@ -121,6 +169,14 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Can be used to change any information of the given session
+     *
+     * @param sessionId ID of the session to be changed
+     * @param body serialized JSON object as specified by the jupyter server API
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> patchSession( String sessionId, String body ) throws JupyterServerException {
         HttpResponse<String> response = sendPATCH( "sessions/" + sessionId, body );
         if ( response.statusCode() == 200 ) {
@@ -130,25 +186,13 @@ public class JupyterClient {
     }
 
 
-    public HttpResponse<String> renameSession( String sessionId, String fileName, String filePath ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "name", fileName );
-        body.addProperty( "path", filePath );
-
-        return patchSession( sessionId, body.toString() );
-    }
-
-
-    public HttpResponse<String> setKernelOfSession( String sessionId, String kernelId ) throws JupyterServerException {
-        JsonObject kernel = new JsonObject();
-        kernel.addProperty( "id", kernelId );
-        JsonObject body = new JsonObject();
-        body.add( "kernel", kernel );
-
-        return patchSession( sessionId, body.toString() );
-    }
-
-
+    /**
+     * Delete the specified session.
+     *
+     * @param sessionId ID of the session to be deleted
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> deleteSession( String sessionId ) throws JupyterServerException {
         HttpResponse<String> response = sendDELETE( "sessions/" + sessionId );
         if ( response.statusCode() == 204 ) {
@@ -158,6 +202,12 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Return a list containing information about each running kernel.
+     *
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getRunningKernels() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "kernels" );
         if ( response.statusCode() == 200 ) {
@@ -167,6 +217,12 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Return a list containing the specifications of each available (installed) kernel.
+     *
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getKernelspecs() throws JupyterServerException {
         HttpResponse<String> response = sendGET( "kernelspecs" );
         if ( response.statusCode() == 200 ) {
@@ -176,19 +232,38 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Interrupt the specified kernel.
+     *
+     * @param kernelId the ID of a running kernel to be interrupted
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> interruptKernel( String kernelId ) throws JupyterServerException {
         return sendPOST( "kernels/" + kernelId + "/interrupt", "" );
     }
 
 
+    /**
+     * Restart the specified kernel.
+     *
+     * @param kernelId the ID of a running kernel to be restarted
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> restartKernel( String kernelId ) throws JupyterServerException {
         return sendPOST( "kernels/" + kernelId + "/restart", "" );
     }
 
 
     /**
-     * @param content Return inner content ("0" for no content, "1" for return content)
-     * @param format Specify the content format (text, base64, text, null)
+     * Get contents of any file or directory.
+     *
+     * @param path the location of the file or directory
+     * @param content whether to return inner content ("0" for no content, "1" for return content)
+     * @param format specifies the content format (text, base64, text, null)
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
      */
     public HttpResponse<String> getContents( String path, String content, String format ) throws JupyterServerException {
         String queryParams = "content=" + content;
@@ -199,80 +274,52 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Get file contents encoded in Base64.
+     *
+     * @param path the location of the file
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> getFileBase64( String path ) throws JupyterServerException {
         String queryParams = "content=1&format=base64";
         return sendGET( "contents/" + path, queryParams );
     }
 
 
+    /**
+     * Create a new file in the specified path.
+     *
+     * @param parentPath the path to the directory in which the file will be created
+     * @param body serialized JSON object as specified by the jupyter server API
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> createFile( String parentPath, String body ) throws JupyterServerException {
         return sendPOST( "contents/" + parentPath, body );
     }
 
 
-    public HttpResponse<String> createNotebook( String parentPath ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "type", "notebook" );
-
-        return createFile( parentPath, body.toString() );
-    }
-
-
-    public HttpResponse<String> createDirectory( String parentPath ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "type", "directory" );
-
-        return createFile( parentPath, body.toString() );
-    }
-
-
-    public HttpResponse<String> createFileWithExtension( String parentPath, String extension ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "type", "file" );
-        body.addProperty( "ext", extension );
-        return createFile( parentPath, body.toString() );
-    }
-
-
-    public HttpResponse<String> copyFile( String destParentPath, String srcFilePath ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "copy_from", srcFilePath );
-        return createFile( destParentPath, body.toString() );
-    }
-
-
+    /**
+     * Save or upload a file.
+     *
+     * @param filePath the location of the file
+     * @param body serialized JSON object as specified by the jupyter server API
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     public HttpResponse<String> putFile( String filePath, String body ) throws JupyterServerException {
         return sendPUT( "contents/" + filePath, body );
     }
 
 
     /**
-     * Format can be json, text or base64
+     * Delete the file or directory in the specified path. A directory must be empty to be able to delete it.
+     *
+     * @param filePath the location of the file or directory to be deleted.
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
      */
-    public HttpResponse<String> saveFile( String filePath, String content, String format, String type ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "content", content );
-        body.addProperty( "format", format );
-        body.addProperty( "type", type );
-
-        return putFile( filePath, body.toString() );
-    }
-
-
-    /**
-     * Format can be json, text or base64
-     */
-    public HttpResponse<String> uploadFile( String filePath, String fileName, String content, String format, String type ) throws JupyterServerException {
-        JsonObject body = new JsonObject();
-        body.addProperty( "content", content );
-        body.addProperty( "format", format );
-        body.addProperty( "type", type );
-        body.addProperty( "name", fileName );
-
-        return putFile( filePath, body.toString() );
-    }
-
-
     public HttpResponse<String> deleteFile( String filePath ) throws JupyterServerException {
         HttpResponse<String> response = sendDELETE( "contents/" + filePath );
         if ( response.statusCode() == 400 ) {
@@ -284,19 +331,38 @@ public class JupyterClient {
 
 
     /**
-     * Move and/or rename an existing file or directory.
+     * Move and / or rename an existing file or directory.
+     *
+     * @param srcFilePath path to the original file or directory
+     * @param body serialized JSON object as specified by the jupyter server API
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
      */
-
     public HttpResponse<String> moveFile( String srcFilePath, String body ) throws JupyterServerException {
         return sendPATCH( "contents/" + srcFilePath, body );
     }
 
 
+    /**
+     * Send a GET request to the specified endpoint.
+     *
+     * @param resource the endpoint the GET request is sent to
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendGET( String resource ) throws JupyterServerException {
         return sendGET( resource, null );
     }
 
 
+    /**
+     * Send a GET request to the specified endpoint.
+     *
+     * @param resource the endpoint the GET request is sent to
+     * @param queryParams query parameters as string, correctly formatted (key1=value1&key2=value2...)
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendGET( String resource, String queryParams ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource, queryParams ) )
@@ -314,6 +380,14 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Send a POST request to the specified endpoint.
+     *
+     * @param resource the endpoint the request is sent to
+     * @param body the body of the request
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendPOST( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
@@ -331,6 +405,14 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Send a PUT request to the specified endpoint.
+     *
+     * @param resource the endpoint the request is sent to
+     * @param body the body of the request
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendPUT( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
@@ -348,6 +430,14 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Send a PATCH request to the specified endpoint.
+     *
+     * @param resource the endpoint the request is sent to
+     * @param body the body of the request
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendPATCH( String resource, String body ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
@@ -365,6 +455,13 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Send a DELETE request to the specified endpoint.
+     *
+     * @param resource the endpoint the request is sent to
+     * @return the HttpResponse from the jupyter server
+     * @throws JupyterServerException if the request fails
+     */
     private HttpResponse<String> sendDELETE( String resource ) throws JupyterServerException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri( getUriFromPath( resource ) )
@@ -385,6 +482,8 @@ public class JupyterClient {
     /**
      * Updates the sessions stored in the JupyterSessionManager according to the specified JsonArray.
      * Existing session that do not occur in sessions are removed.
+     *
+     * @param sessions the JsonArray containing the session information in the same format as returned by GET sessions
      */
     private void updateSessions( JsonArray sessions ) {
         Set<String> validSessionIds = new HashSet<>();
@@ -399,6 +498,11 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Updates the corresponding session stored in the JupyterSessionManager according to the specified JsonObject.
+     *
+     * @param session the JsonObject containing the session information in the same format as returned by GET session
+     */
     private void updateSession( JsonObject session ) {
         JsonObject kernel = session.getAsJsonObject( "kernel" );
         String kernelId = kernel.get( "id" ).getAsString();
@@ -413,6 +517,12 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Updates the kernels stored in the JupyterSessionManager according to the specified JsonArray.
+     * Existing kernels that do not occur in kernels are removed.
+     *
+     * @param kernels the JsonArray containing the kernel information in the same format as returned by GET kernels
+     */
     private void updateKernels( JsonArray kernels ) {
         Set<String> validKernelIds = new HashSet<>();
         for ( JsonElement kernelElem : kernels ) {
@@ -426,6 +536,11 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Updates the kernel specs stored in the JupyterSessionManager according to the specified JsonObject.
+     *
+     * @param kernelSpecs the JsonObject containing the kernel information in the same format as returned by GET kernelspecs
+     */
     private void updateKernelSpecs( JsonObject kernelSpecs ) {
         sessionManager.setDefaultKernel( kernelSpecs.get( "default" ).getAsString() );
         for ( Entry<String, JsonElement> entry : kernelSpecs.get( "kernelspecs" ).getAsJsonObject().entrySet() ) {
@@ -438,11 +553,26 @@ public class JupyterClient {
     }
 
 
+    /**
+     * Returns a URI object from the given endpoint.
+     *
+     * @param path a jupyter server endpoint without the "/api/" prefix
+     * @return the URI for the request
+     * @throws RuntimeException if no valid URI can be built from the given endpoint.
+     */
     private URI getUriFromPath( String path ) {
         return getUriFromPath( path, null );
     }
 
 
+    /**
+     * Returns a URI object from the given endpoint and query parameters.
+     *
+     * @param path a jupyter server endpoint without the "/api/" prefix
+     * @param queryParams the String containing the query parameters, or null if none are present.
+     * @return the URI for the request
+     * @throws RuntimeException if no valid URI can be built from the given endpoint and params.
+     */
     private URI getUriFromPath( String path, String queryParams ) {
         try {
             return new URI( "http", host, "/api/" + path, queryParams, null );
@@ -452,6 +582,9 @@ public class JupyterClient {
     }
 
 
+    /**
+     * A class representing any exception that might occur when a request is sent to the jupyter server.
+     */
     public static class JupyterServerException extends Exception {
 
         @Getter

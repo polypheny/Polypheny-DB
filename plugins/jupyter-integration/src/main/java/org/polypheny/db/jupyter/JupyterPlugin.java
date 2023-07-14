@@ -42,7 +42,7 @@ public class JupyterPlugin extends Plugin {
     private String host;
     private String token;
     private final int port = 14141;
-    public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";
+    public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";  // notebook storage location inside container
     private DockerManager.Container container;
     private JupyterProxy proxy;
     private boolean pluginLoaded = false;
@@ -72,13 +72,12 @@ public class JupyterPlugin extends Plugin {
     }
 
 
-    public void onContainerRunning() {
-        proxy = new JupyterProxy( new JupyterClient( token, host, port ) );
-        registerEndpoints();
-        pluginLoaded = true;
-    }
-
-
+    /**
+     * Deploys the docker container with polypheny-jupyter-server image.
+     * For storing the notebooks in the Polypheny Home directory, a bind mount is used.
+     *
+     * @return true if the jupyter server was successfully deployed, false otherwise
+     */
     private boolean startContainer() {
         token = generateToken();
         log.trace( "Token: {}", token );
@@ -103,6 +102,13 @@ public class JupyterPlugin extends Plugin {
             log.warn( "Unable to deploy Jupyter container." );
             return false;
         }
+    }
+
+
+    public void onContainerRunning() {
+        proxy = new JupyterProxy( new JupyterClient( token, host, port ) );
+        registerEndpoints();
+        pluginLoaded = true;
     }
 
 
@@ -137,6 +143,9 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    /**
+     * Adds all REST and websocket endpoints required for the notebook functionality to the HttpServer.
+     */
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
         final String REST_PATH = "/notebooks";
@@ -170,6 +179,11 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    /**
+     * Test connection to the jupyter server
+     *
+     * @return true, if the container has been deployed and the jupyter server is reachable, false otherwise
+     */
     private boolean testConnection() {
         if ( container == null ) {
             return false;
@@ -184,6 +198,11 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    /**
+     * Generate a secure random token for authentication with the jupyter server.
+     *
+     * @return A 24 byte hexadecimal token formatted as a string
+     */
     private String generateToken() {
         SecureRandom random = new SecureRandom();
         byte[] tokenBytes = new byte[24];

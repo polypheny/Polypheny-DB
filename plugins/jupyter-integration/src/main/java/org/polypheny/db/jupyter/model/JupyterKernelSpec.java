@@ -16,6 +16,9 @@
 
 package org.polypheny.db.jupyter.model;
 
+/**
+ * Represents a model of an available kernel specification in the jupyter server.
+ */
 public class JupyterKernelSpec {
 
     public final String name, displayName, language;

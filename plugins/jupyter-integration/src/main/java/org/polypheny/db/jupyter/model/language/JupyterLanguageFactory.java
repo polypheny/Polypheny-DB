@@ -18,6 +18,12 @@ package org.polypheny.db.jupyter.model.language;
 
 public class JupyterLanguageFactory {
 
+    /**
+     * Get the JupyterKernelLanguage implementation for the given kernel
+     *
+     * @param kernelName the name that uniquely identifies a kernel
+     * @return a JupyterKernelLanguage for the specified language or null if the language is not supported
+     */
     public static JupyterKernelLanguage getKernelLanguage( String kernelName ) {
         if ( kernelName == null ) {
             return null;

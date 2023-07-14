@@ -22,9 +22,7 @@ import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
@@ -34,13 +32,14 @@ import org.polypheny.db.jupyter.model.JupyterExecutionRequest;
 import org.polypheny.db.jupyter.model.JupyterKernel;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 
+/**
+ * Keeps track of websocket Sessions to the UI and maps each one to a JupyterKernel.
+ */
 @WebSocket
 @Slf4j
 public class JupyterWebSocket implements Consumer<WsConfig> {
 
     private final JupyterSessionManager jsm = JupyterSessionManager.getInstance();
-
-    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private static final Map<Session, JupyterKernel> kernels = new ConcurrentHashMap<>();
 
 
@@ -57,6 +56,12 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
     }
 
 
+    /**
+     * Forwards incoming messages from the UI to the corresponding JupyterKernel.
+     * Messages are serialized JupyterExecutionRequests. The requests are handled according to their type.
+     *
+     * @param ctx the WsMessageContext of the received message
+     */
     @OnWebSocketMessage
     public void onMessage( final WsMessageContext ctx ) {
         JupyterExecutionRequest request = ctx.messageAsClass( JupyterExecutionRequest.class );
@@ -68,7 +73,7 @@ public class JupyterWebSocket implements Consumer<WsConfig> {
                 }
                 break;
             case "poly":
-                if (kernel != null && kernel.isSupportsPolyCells()) {
+                if ( kernel != null && kernel.isSupportsPolyCells() ) {
                     kernel.executePolyCell( request.content, request.uuid, request.language, request.namespace,
                             request.variable, request.expand );
                 }

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
 
 @NoArgsConstructor
 public class NotebookCellModel {
