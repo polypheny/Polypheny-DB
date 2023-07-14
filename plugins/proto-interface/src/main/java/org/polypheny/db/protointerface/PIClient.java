@@ -69,61 +69,59 @@ public class PIClient{
     }
 
 
-    public synchronized Transaction getCurrentOrCreateNewTransaction() {
-        if ( currentTransaction == null || !currentTransaction.isActive() ) {
-            currentTransaction = transactionManager.startTransaction( catalogUser, logicalNamespace, false, "ProtoInterface" );
+    public Transaction getCurrentOrCreateNewTransaction() {
+        synchronized(this) {
+            if (currentTransaction == null || !currentTransaction.isActive()) {
+                currentTransaction = transactionManager.startTransaction(catalogUser, logicalNamespace, false, "ProtoInterface");
+            }
+            return currentTransaction;
         }
-        return currentTransaction;
     }
 
 
     public Transaction getCurrentTransaction() {
-        return currentTransaction;
+        synchronized(this) {
+            return currentTransaction;
+        }
     }
 
 
     public synchronized void commitCurrentTransaction() {
-        if ( log.isTraceEnabled() ) {
-            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
-        }
-        if ( hasNoTransaction() ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "No open transaction for client: {}", clientUUID );
+        synchronized(this) {
+            if (hasNoTransaction()) {
+                return;
             }
-            return;
-        }
-        try {
-            currentTransaction.commit();
-        } catch ( TransactionException e ) {
-            throw new ProtoInterfaceServiceException( "Committing current transaction failed: " + e.getLocalizedMessage() );
-        } finally {
-            endCurrentTransaction();
+            try {
+                currentTransaction.commit();
+            } catch (TransactionException e) {
+                throw new ProtoInterfaceServiceException("Committing current transaction failed: " + e.getLocalizedMessage());
+            } finally {
+                endCurrentTransaction();
+            }
         }
     }
 
 
     public synchronized void rollbackCurrentTransaction() {
-        if ( log.isTraceEnabled() ) {
-            log.trace( "commitCurrentTransaction() for client: {}", clientUUID );
-        }
-        if ( hasNoTransaction() ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "No open transaction for client: {}", clientUUID );
+        synchronized(this) {
+            if (hasNoTransaction()) {
+                return;
             }
-            return;
-        }
-        try {
-            currentTransaction.rollback();
-        } catch ( TransactionException e ) {
-            throw new ProtoInterfaceServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
-        } finally {
-            endCurrentTransaction();
+            try {
+                currentTransaction.rollback();
+            } catch (TransactionException e) {
+                throw new ProtoInterfaceServiceException("Rollback of current transaction failed: " + e.getLocalizedMessage());
+            } finally {
+                endCurrentTransaction();
+            }
         }
     }
 
 
     private synchronized void endCurrentTransaction() {
-        currentTransaction = null;
+        synchronized(this) {
+            currentTransaction = null;
+        }
     }
 
 
