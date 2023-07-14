@@ -41,15 +41,9 @@ public class JupyterPlugin extends Plugin {
 
     private String host;
     private String token;
-    private final int dockerInstanceId = 0;
-    private final int adapterId = 123456;
-    private final int PORT = 12345;
-    private final String UNIQUE_NAME = "jupyter-container";
+    private final int port = 14141;
     public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";
-    private final String REST_PATH = "/notebooks";
-    private final String WEBSOCKET_PATH = REST_PATH + "/webSocket";
     private DockerManager.Container container;
-    private File rootPath;
     private JupyterProxy proxy;
     private boolean pluginLoaded = false;
 
@@ -79,7 +73,7 @@ public class JupyterPlugin extends Plugin {
 
 
     public void onContainerRunning() {
-        proxy = new JupyterProxy( new JupyterClient( token, host, PORT ) );
+        proxy = new JupyterProxy( new JupyterClient( token, host, port ) );
         registerEndpoints();
         pluginLoaded = true;
     }
@@ -89,10 +83,11 @@ public class JupyterPlugin extends Plugin {
         token = generateToken();
         log.trace( "Token: {}", token );
         PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-        rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
+        File rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
         try {
-            DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/polypheny-jupyter-server", UNIQUE_NAME, dockerInstanceId )
-                    .withMappedPort( 8888, PORT )
+            int adapterId = -1;
+            DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/polypheny-jupyter-server", "jupyter-container", 0 )
+                    .withMappedPort( 8888, port )
                     .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
                     .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
                     .withReadyTest( this::testConnection, 20000 )
@@ -112,7 +107,9 @@ public class JupyterPlugin extends Plugin {
 
 
     private void stopContainer() {
-        DockerInstance.getInstance().destroyAll( adapterId );
+        if ( container != null ) {
+            DockerInstance.getInstance().destroy( container );
+        }
     }
 
 
@@ -121,7 +118,7 @@ public class JupyterPlugin extends Plugin {
         JupyterSessionManager.getInstance().reset();
         log.info( "Restarting Jupyter container..." );
         if ( startContainer() ) {
-            proxy.setClient( new JupyterClient( token, host, PORT ) );
+            proxy.setClient( new JupyterClient( token, host, port ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
             container = null;
@@ -142,8 +139,9 @@ public class JupyterPlugin extends Plugin {
 
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
+        final String REST_PATH = "/notebooks";
 
-        server.addWebsocket( WEBSOCKET_PATH + "/{kernelId}", new JupyterWebSocket() );
+        server.addWebsocket( REST_PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
 
         server.addSerializedRoute( REST_PATH + "/contents/<path>", proxy::contents, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/sessions", proxy::sessions, HandlerType.GET );
@@ -181,7 +179,7 @@ public class JupyterPlugin extends Plugin {
         if ( host == null ) {
             return false;
         }
-        JupyterClient client = new JupyterClient( token, host, PORT );
+        JupyterClient client = new JupyterClient( token, host, port );
         return client.testConnection();
     }
 
