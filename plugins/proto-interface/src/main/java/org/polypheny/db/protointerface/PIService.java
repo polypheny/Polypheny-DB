@@ -384,6 +384,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         PIClient client = getClient();
         client.getStatementManager().closeStatementOrBatch(closeStatementRequest.getStatementId());
         responseObserver.onNext(CloseStatementResponse.newBuilder().build());
+        responseObserver.onCompleted();
     }
 
     @Override

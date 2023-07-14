@@ -79,8 +79,6 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class PolyValueSerializer {
 
-    private static final String PROTO_TYPE_PREFIX = "PROTO_VALUE_TYPE_";
-
 
     public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
         return valuesList.stream().map( PolyValueSerializer::serialize ).collect( Collectors.toList() );
