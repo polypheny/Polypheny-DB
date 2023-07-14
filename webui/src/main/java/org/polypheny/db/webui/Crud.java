@@ -3637,20 +3637,16 @@ public class Crud implements InformationObserver {
 
 
     void getDockerInstances( final Context ctx ) {
-        ctx.json( new ArrayList<>( DockerManager.getInstance().getDockerInstances().keySet() ) );
+        ctx.json( DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
     }
 
 
     void getDockerInstance( final Context ctx ) {
         int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
+        Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
 
-        ctx.json( Map.of(
-                "host", dockerInstance.getHost(),
-                "alias", dockerInstance.getAlias(),
-                "connected", dockerInstance.isConnected()
-        ) );
+        ctx.json( res );
     }
 
 
@@ -3684,9 +3680,13 @@ public class Crud implements InformationObserver {
                 throw new RuntimeException( "Invalid id" );
             }
 
-            DockerSetupResult res = DockerSetupHelper.removeDockerInstance( id );
+            String res = DockerSetupHelper.removeDockerInstance( id );
 
-            ctx.json( res.getMap() );
+            ctx.json( Map.of(
+                    "error", res,
+                    "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
+                    "status", AutoDocker.getInstance().getStatus()
+            ) );
         } catch ( RuntimeException e ) {
             log.error( "removeDockerInstance", e );
         }
@@ -3703,7 +3703,7 @@ public class Crud implements InformationObserver {
         ctx.json( Map.of(
                 "success", success,
                 "status", AutoDocker.getInstance().getStatus(),
-                "instances", new ArrayList<>( DockerManager.getInstance().getDockerInstances().keySet() )
+                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() )
         ) );
     }
 
@@ -3719,11 +3719,7 @@ public class Crud implements InformationObserver {
         DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().filter( d -> d.getHost().equals( hostname ) ).findFirst().get();
         ctx.json( Map.of(
                         "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
-                        "instance", Map.of(
-                                "host", dockerInstance.getHost(),
-                                "alias", dockerInstance.getAlias(),
-                                "connected", dockerInstance.isConnected()
-                        )
+                        "instance", dockerInstance.getMap()
                 )
         );
     }

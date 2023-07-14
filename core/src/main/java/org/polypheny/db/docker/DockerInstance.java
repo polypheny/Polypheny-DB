@@ -182,6 +182,16 @@ public final class DockerInstance {
     }
 
 
+    public Map<String, Object> getMap() {
+        return Map.of(
+                "id", instanceId,
+                "host", host,
+                "alias", alias,
+                "connected", isConnected()
+        );
+    }
+
+
     void startContainer( DockerContainer container ) throws IOException {
         synchronized ( this ) {
             client.startContainer( container.getContainerId() );

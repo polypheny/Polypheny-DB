@@ -154,17 +154,17 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerSetupResult removeDockerInstance( int id ) {
+    public static String removeDockerInstance( int id ) {
         Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );
 
         if ( maybeDockerInstance.isEmpty() ) {
-            return new DockerSetupResult( "No docker instance with that id" );
+            return "No docker instance with that id";
         }
 
         DockerInstance dockerInstance = maybeDockerInstance.get();
         try {
             if ( dockerInstance.hasContainers() ) {
-                return new DockerSetupResult( "DockerInstance still in use" );
+                return "DockerInstance still in use";
             }
         } catch ( IOException e ) {
             log.info( "Failed to retrieve list of docker containers " + e );
@@ -172,7 +172,7 @@ public final class DockerSetupHelper {
 
         DockerManager.getInstance().removeDockerInstance( id );
         HandshakeManager.getInstance().cancelHandshake( dockerInstance.getHost() );
-        return new DockerSetupResult( true );
+        return "";
     }
 
 
@@ -184,11 +184,6 @@ public final class DockerSetupHelper {
         @Getter
         private boolean success = false;
         private int dockerId = -1;
-
-
-        private DockerSetupResult( boolean success ) {
-            this.success = success;
-        }
 
 
         private DockerSetupResult( boolean success, int dockerId ) {
