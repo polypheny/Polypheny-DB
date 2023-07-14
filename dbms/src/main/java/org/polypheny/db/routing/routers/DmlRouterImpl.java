@@ -252,7 +252,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( whereClauseValues != null ) {
                     for ( String value : whereClauseValues ) {
                         worstCaseRouting = false;
-                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, value );
+                        identPart = (int) partitionManager.getTargetPartitionId( null/*catalogTable*/, null/*targetProperty*/, value );
                         accessedPartitionList.add( identPart );
                         identifiedPartitionsInFilter.add( identPart );
                     }
@@ -277,9 +277,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 log.debug(
                                         "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
                                         partitionValue,
-                                        partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                                        partitionManager.getTargetPartitionId( null/*catalogTable*/, null/*targetProperty*/, partitionValue ) );
                             }
-                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            identPart = (int) partitionManager.getTargetPartitionId( null /*catalogTable*/, null/*targetProperty*/, partitionValue );
                             // Needed to verify if UPDATE shall be executed on two partitions or not
                             identifiedPartitionForSetValue = identPart;
                             accessedPartitionList.add( identPart );
@@ -360,11 +360,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             worstCaseRouting = false;
                             if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
-                                partitionValue = partitionManager.getUnifiedNullValue();
+                                partitionValue = PartitionManager.NULL_STRING;
                             } else {
                                 partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
                             }
-                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            identPart = (int) partitionManager.getTargetPartitionId( null/*catalogTable*/, null/*targetProperty*/, partitionValue );
                             accessedPartitionList.add( identPart );
 
                             if ( !tuplesOnPartition.containsKey( identPart ) ) {
@@ -449,7 +449,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     for ( Map<Long, PolyValue> currentRow : allValues ) {
                                         // first we sort the values to insert according to the partitionManager and their partitionId
 
-                                        tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
+                                        tempPartitionId = partitionManager.getTargetPartitionId( null/*catalogTable*/, null/*targetProperty*/, currentRow.get( partitionValueIndex ).toString() );
 
                                         if ( !snapshot.alloc().getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
                                             continue;
@@ -496,7 +496,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     worstCaseRouting = false;
                                 } else {
                                     partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
-                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                    identPart = (int) partitionManager.getTargetPartitionId( null/*catalogTable*/, null/*targetProperty*/, partitionValue );
                                     accessedPartitionList.add( identPart );
                                     worstCaseRouting = false;
                                 }

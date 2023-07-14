@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -103,7 +104,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * If not null, overrides the estimate from the actual table.
      */
     private final Double rowCount;
-    @Getter
+    //@Getter
     @Nullable
     private final AllocationPartition partitionPlacement;
 
@@ -193,6 +194,12 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
                     Expressions.constant( catalogEntity.id ) );
         }
 
+        return null;
+    }
+
+
+    @Override
+    public CatalogEntityPlacement getPartitionPlacement() {
         return null;
     }
 

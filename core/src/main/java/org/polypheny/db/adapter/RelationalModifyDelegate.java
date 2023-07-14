@@ -364,7 +364,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
         List<AllocationColumn> allocColumns = new ArrayList<>();
         i = 0;
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, table.id, column.id, PlacementType.AUTOMATIC, i, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.id, column.id, PlacementType.AUTOMATIC, i, allocation.adapterId );
             allocColumns.add( alloc );
             i++;
         }

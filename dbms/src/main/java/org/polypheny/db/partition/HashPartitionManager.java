@@ -19,9 +19,8 @@ package org.polypheny.db.partition;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -36,7 +35,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( List<AllocationTable> targetEntities, PartitionProperty targetProperty, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
@@ -44,13 +43,13 @@ public class HashPartitionManager extends AbstractPartitionManager {
             hashValue *= -1;
         }
 
-        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
 
         // Get designated HASH partition based on number of internal partitions
-        int partitionIndex = (int) (hashValue % property.partitionIds.size());
+        int partitionIndex = (int) (hashValue % targetEntities.size());
 
         // Finally decide on which partition to put it
-        return property.partitionIds.get( partitionIndex );
+        return targetEntities.get( partitionIndex ).id;
     }
 
 

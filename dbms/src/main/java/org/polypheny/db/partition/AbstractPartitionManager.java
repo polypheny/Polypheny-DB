@@ -25,8 +25,10 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.partition.properties.PartitionProperty;
 
 
 @Slf4j
@@ -38,7 +40,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // Returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionId( LogicalTable catalogTable, String columnValue );
+    public abstract long getTargetPartitionId( List<AllocationTable> targetEntities, PartitionProperty targetProperty, String columnValue );
 
 
     @Override
@@ -107,18 +109,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public int getNumberOfPartitionsPerGroup( int numberOfPartitions ) {
         return 1;
-    }
-
-
-    /**
-     * Returns the unified null value for all partition managers.
-     * Such that every partitionValue occurrence of null ist treated equally
-     *
-     * @return null String
-     */
-    @Override
-    public String getUnifiedNullValue() {
-        return "null";
     }
 
 

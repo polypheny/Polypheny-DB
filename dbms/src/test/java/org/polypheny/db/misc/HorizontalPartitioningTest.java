@@ -770,7 +770,7 @@ public class HorizontalPartitioningTest {
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
-                    long targetId = partitionManager.getTargetPartitionId( table, partitionValue );
+                    long targetId = partitionManager.getTargetPartitionId( null/*table*/, null/*targetProperty*/, partitionValue );
 
                     List<LogicalPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow() ) );

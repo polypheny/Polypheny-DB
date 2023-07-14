@@ -164,13 +164,17 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Override
     public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) {
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Deleting partitionGroup with id '{}'", partitionGroupId );
+        }
 
+        partitionGroups.remove( partitionGroupId );
     }
 
 
     @Override
     public LogicalPartition addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
-        long id = idBuilder.getNewPartitionId();
+        long id = idBuilder.getNewAllocId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition with id '{}'", id );
         }

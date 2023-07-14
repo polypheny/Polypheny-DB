@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity;
 
 
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.NonNull;
 import lombok.Value;
@@ -32,10 +34,15 @@ public class AllocationPartition implements CatalogObject {
 
     private static final long serialVersionUID = 8835793248417591036L;
 
+    @Serialize
     public long namespaceId;
+    @Serialize
     public long adapterId;
+    @Serialize
     public long entityId;
+    @Serialize
     public long partitionId;
+    @Serialize
     public PlacementType placementType;
 
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
@@ -50,16 +57,17 @@ public class AllocationPartition implements CatalogObject {
     // Although, partitionPlacements are those that get effectively updated
     // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
+    @Serialize
     public DataPlacementRole role;
 
 
     public AllocationPartition(
-            long namespaceId,
-            final long entityId,
-            final long adapterId,
-            @NonNull final PlacementType placementType,
-            final long partitionId,
-            DataPlacementRole role ) {
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("entityId") final long entityId,
+            @Deserialize("adapterId") final long adapterId,
+            @Deserialize("placementType") @NonNull final PlacementType placementType,
+            @Deserialize("partitionId") final long partitionId,
+            @Deserialize("role") DataPlacementRole role ) {
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.adapterId = adapterId;

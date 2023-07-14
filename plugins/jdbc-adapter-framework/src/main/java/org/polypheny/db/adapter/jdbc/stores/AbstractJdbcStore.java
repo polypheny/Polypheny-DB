@@ -174,7 +174,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     @Override
     public void refreshTable( long allocId ) {
-        PhysicalTable template = storeCatalog.getTable( allocId );
+        PhysicalTable template = storeCatalog.fromAllocation( allocId );
         storeCatalog.addTable( this.currentJdbcSchema.createJdbcTable( storeCatalog, template ) );
     }
 
@@ -350,7 +350,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.dropTable( table.id );
+        storeCatalog.dropTable( allocId );
         // }
     }
 

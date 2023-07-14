@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -40,15 +41,13 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( List<AllocationTable> targetEntities, PartitionProperty targetProperty, String columnValue ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
-        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager(
-                ((TemperaturePartitionProperty) property).getInternalPartitionFunction()
-        );
+        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( ((TemperaturePartitionProperty) targetProperty).getInternalPartitionFunction() );
 
-        return partitionManager.getTargetPartitionId( catalogTable, columnValue );
+        return partitionManager.getTargetPartitionId( targetEntities, targetProperty, columnValue );
     }
 
 

@@ -40,12 +40,12 @@ public interface AllocSnapshot {
      * Gets a collective list of column placements per column on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
      *
-     * @param adapterId The id of the adapter
+     * @param allocationEntityId The id of the adapter
      * @param columnId The id of the column
      * @return The specific column placement
      */
     @NotNull
-    Optional<AllocationColumn> getColumn( long adapterId, long columnId );
+    Optional<AllocationColumn> getColumn( long allocationEntityId, long columnId );
 
     /**
      * Get all column placements of a column

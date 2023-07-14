@@ -21,12 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -40,13 +39,13 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( List<AllocationTable> targetEntities, PartitionProperty targetProperty, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        for ( AllocationEntity entity : Catalog.getInstance().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
-            /*if ( catalogPartition.isUnbound ) {
+        /*for ( AllocationEntity entity : targetEntities ) {
+            if ( targetProperty.isUnbound ) {
                 unboundPartitionId = catalogPartition.id;
                 break;
             }
@@ -63,8 +62,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     selectedPartitionId = catalogPartition.id;
                     break;
                 }
-            }*/
-        }
+            }
+        }*/
 
         // If no concrete partition could be identified, report back the unbound/default partition
         if ( selectedPartitionId == -1 ) {

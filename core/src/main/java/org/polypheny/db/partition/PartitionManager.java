@@ -19,17 +19,21 @@ package org.polypheny.db.partition;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 
 
 public interface PartitionManager {
 
+    String NULL_STRING = "null";
+
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionId( LogicalTable catalogTable, String columnValue );
+    long getTargetPartitionId( List<AllocationTable> allocationTables, PartitionProperty targetProperty, String columnValue );
 
     boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold );
 
@@ -51,8 +55,6 @@ public interface PartitionManager {
     boolean requiresUnboundPartitionGroup();
 
     boolean supportsColumnOfType( PolyType type );
-
-    String getUnifiedNullValue();
 
     /**
      * Returns an instance of PartitionFunctionInfo specifying the available parameters of the partition function.

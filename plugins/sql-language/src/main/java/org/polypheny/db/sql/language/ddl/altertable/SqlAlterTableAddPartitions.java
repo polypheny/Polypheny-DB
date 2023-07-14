@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -147,7 +148,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
         try {
             // Check if table is already partitioned
-            if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
+            if ( Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
                                 table,

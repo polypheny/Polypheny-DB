@@ -117,7 +117,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildColumns( List<AllocationColumn> columns ) {
-        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.adapterId ), c -> c ) ) );
+        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.tableId ), c -> c ) ) );
 
     }
 
@@ -250,8 +250,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull Optional<AllocationColumn> getColumn( long adapterId, long columnId ) {
-        return Optional.ofNullable( columns.get( Pair.of( columnId, adapterId ) ) );
+    public @NonNull Optional<AllocationColumn> getColumn( long allocationEntityId, long columnId ) {
+        return Optional.ofNullable( columns.get( Pair.of( columnId, allocationEntityId ) ) );
     }
 
 
@@ -347,7 +347,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public @NotNull Optional<PartitionProperty> getPartitionProperty( long id ) {
-        log.warn( "replace me" );
         return Optional.ofNullable( properties.get( id ) );
     }
 
