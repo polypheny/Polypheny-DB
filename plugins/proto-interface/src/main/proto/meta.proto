@@ -215,3 +215,28 @@ message SqlKeywordsRequest {
 message MetaStringResponse{
   string string = 1;
 }
+
+message ProceduresRequest {
+  string language = 1;
+  optional string namespace_pattern = 2;
+  optional string procedure_pattern = 3;
+}
+
+message ProceduresResponse {
+  repeated Procedure procedures = 1;
+}
+
+message Procedure {
+  string trivial_name = 1;
+  string input_parameters = 2;
+  string description = 3;
+  ReturnType return_type = 4;
+  string unique_name = 5;
+
+  enum ReturnType {
+    UNSPECIFIED = 0;
+    UNKNOWN = 1;
+    NO_RESULT = 2;
+    RESULT = 3;
+  }
+}

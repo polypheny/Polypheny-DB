@@ -273,6 +273,16 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         responseObserver.onCompleted();
     }
 
+    @Override
+    public void getProcedures(ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() :null;
+        String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
+        responeObserver.onNext(DbMetaRetriever.getProcedures(request.getLanguage(), namespacePattern, procedurePattern));
+        responeObserver.onCompleted();
+    }
+
 
     @SneakyThrows
     @Override
