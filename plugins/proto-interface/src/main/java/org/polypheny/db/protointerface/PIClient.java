@@ -84,7 +84,7 @@ public class PIClient {
             return currentTransaction;
         }
     }
-    
+
 
     public synchronized void commitCurrentTransaction() {
         synchronized (this) {
