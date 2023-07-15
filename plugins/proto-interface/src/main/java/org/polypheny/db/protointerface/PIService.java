@@ -283,6 +283,16 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         responeObserver.onCompleted();
     }
 
+    @Override
+    public void getProcedureColumns(ProcedureColumnsRequest request, StreamObserver<ProcedureColumnsResponse> responsePbserver) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() :null;
+        String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
+        String columnPattern = request.hasColumnPattern() ? request.getColumnPattern() : null;
+        responsePbserver.onNext(DbMetaRetriever.getProcedureColumns(request.getLanguage(), namespacePattern, procedurePattern, columnPattern));
+    }
+
 
     @SneakyThrows
     @Override
