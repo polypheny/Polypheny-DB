@@ -71,7 +71,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final PolyXid xid;
 
-    @Setter
     @Getter
     private AtomicBoolean cancelFlag = new AtomicBoolean();
 
