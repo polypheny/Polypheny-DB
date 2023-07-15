@@ -1879,7 +1879,7 @@ public class Crud implements InformationObserver {
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
                         snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
-                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.logicalTableId ),
                         property.numPartitionGroups,
                         property.partitionType ) );
             }
@@ -3049,6 +3049,7 @@ public class Crud implements InformationObserver {
 
         return f;
     }
+
 
     void getDirectory( File dir, Context ctx ) {
         ctx.header( "Content-ExpressionType", "application/zip" );

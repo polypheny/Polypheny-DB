@@ -34,8 +34,8 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -651,7 +651,7 @@ public class HorizontalPartitioningTest {
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                    List<AllocationPartition> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+                    List<AllocationPartitionOld> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
@@ -732,8 +732,8 @@ public class HorizontalPartitioningTest {
                     }
                     long numberOfPartitionsInCold = partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
 
-                    List<LogicalPartition> hotPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
-                    List<LogicalPartition> coldPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
+                    List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
+                    List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
 
                     Assert.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
@@ -772,7 +772,7 @@ public class HorizontalPartitioningTest {
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
                     long targetId = partitionManager.getTargetPartitionId( null/*table*/, null/*targetProperty*/, partitionValue );
 
-                    List<LogicalPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
+                    List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
                     Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow() ) );
 
                     //Todo @Hennlo check number of access

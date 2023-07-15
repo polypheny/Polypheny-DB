@@ -168,8 +168,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 log.debug(
                         "\t\t -> '{}' {}\t{}",
                         dataPlacement.adapterId,
-                        snapshot.alloc().getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
-                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+                        snapshot.alloc().getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.logicalTableId ),
+                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.logicalTableId ) );
             }
         }
 

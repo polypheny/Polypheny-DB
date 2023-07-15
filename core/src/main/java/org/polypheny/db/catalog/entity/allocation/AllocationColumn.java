@@ -40,7 +40,11 @@ public class AllocationColumn implements CatalogObject {
     @Serialize
     public long namespaceId;
     @Serialize
-    public long tableId;
+    public long partitionId;
+    @Serialize
+    public long logicalTableId;
+    @Serialize
+    public long allocationTableId;
     @Serialize
     public long columnId;
     @Serialize
@@ -53,13 +57,17 @@ public class AllocationColumn implements CatalogObject {
 
     public AllocationColumn(
             @Deserialize("namespaceId") final long namespaceId,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("partitionId") final long partitionId,
+            @Deserialize("allocationTableId") final long allocationTableId,
+            @Deserialize("logicalTableId") final long logicalTableId,
             @Deserialize("columnId") final long columnId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
             @Deserialize("position") final int position,
             @Deserialize("adapterId") final long adapterId ) {
         this.namespaceId = namespaceId;
-        this.tableId = tableId;
+        this.partitionId = partitionId;
+        this.logicalTableId = logicalTableId;
+        this.allocationTableId = allocationTableId;
         this.columnId = columnId;
         this.placementType = placementType;
         this.position = position;
@@ -69,7 +77,8 @@ public class AllocationColumn implements CatalogObject {
 
 
     public String getLogicalTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
+        //return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
+        return null;
     }
 
 

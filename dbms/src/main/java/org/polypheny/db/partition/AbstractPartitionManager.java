@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -61,14 +60,14 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Long> excludedAdapters ) {
+    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationTable> partitionIds, List<Long> excludedAdapters ) {
         Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
 
         if ( partitionIds != null ) {
-            for ( long partitionId : partitionIds ) {
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
+            for ( AllocationTable allocation : partitionIds ) {
+                //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
                 List<AllocationColumn> relevantCcps = new ArrayList<>();
 
                 for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
@@ -78,11 +77,11 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                         // Get first column placement which contains partition
                         relevantCcps.add( ccps.get( 0 ) );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} with part. {}", ccps.get( 0 ).getLogicalColumnName(), partitionId );
+                            log.debug( "{} with part. {}", ccps.get( 0 ).getLogicalColumnName(), allocation.id );
                         }
                     }
                 }
-                placementDistribution.put( partitionId, relevantCcps );
+                placementDistribution.put( allocation.id, relevantCcps );
             }
         }
 

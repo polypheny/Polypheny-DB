@@ -38,10 +38,13 @@ public abstract class AllocationEntity extends CatalogEntity {
     public long adapterId;
     @Serialize
     public long logicalId;
+    @Serialize
+    public long partitionId;
 
 
     protected AllocationEntity(
             long id,
+            long partitionId,
             long logicalId,
             long namespaceId,
             long adapterId,
@@ -49,6 +52,7 @@ public abstract class AllocationEntity extends CatalogEntity {
         super( id, null, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;
+        this.partitionId = partitionId;
     }
 
 

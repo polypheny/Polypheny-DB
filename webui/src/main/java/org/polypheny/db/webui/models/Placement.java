@@ -190,7 +190,7 @@ public class Placement {
 
 
         public ColumnPlacement( AllocationColumn allocationColumn ) {
-            this.tableId = allocationColumn.tableId;
+            this.tableId = allocationColumn.logicalTableId;
             this.tableName = allocationColumn.getLogicalTableName();
             this.columnId = allocationColumn.columnId;
             this.columnName = allocationColumn.getLogicalColumnName();

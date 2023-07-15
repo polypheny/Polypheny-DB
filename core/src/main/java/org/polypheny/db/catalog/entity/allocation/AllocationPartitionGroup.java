@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.catalog.entity.allocation;
 
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
@@ -25,11 +25,12 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.entity.CatalogObject;
 
 
 @EqualsAndHashCode
 @Value
-public class LogicalPartitionGroup implements CatalogObject {
+public class AllocationPartitionGroup implements CatalogObject {
 
     private static final long serialVersionUID = 6229244317971622972L;
 
@@ -50,7 +51,7 @@ public class LogicalPartitionGroup implements CatalogObject {
     public long partitionKey;
 
 
-    public LogicalPartitionGroup(
+    public AllocationPartitionGroup(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
             @Deserialize("entityId") final long entityId,

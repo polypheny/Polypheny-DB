@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -100,18 +101,22 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         LogicalTable catalogTable = getEntityFromCatalog( context, table );
 
+        if ( catalogTable == null ) {
+            throw new GenericRuntimeException( "Could not find entity with name %s", String.join( ".", table.getNames() ) );
+        }
+
         if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
         if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().isPartitioned ) {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
+            throw new GenericRuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
         long tableId = catalogTable.id;
 
         if ( partitionGroupList.isEmpty() && partitionGroupNamesList.isEmpty() ) {
-            throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
+            throw new GenericRuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
         }
 
         DataStore<?> storeInstance = AdapterManager.getInstance().getStore( storeName.getSimple() );
@@ -138,8 +143,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 try {
                     tempPartitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
-                    throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                            + catalogTable.name + "', has only " + statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().numPartitionGroups + " partitions" );
+                    throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table '%s', has only %s partitions",
+                            partitionId, catalogTable.name, statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow().numPartitionGroups );
                 }
             }
         }
@@ -157,8 +162,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                     }*/
                 }
                 if ( !isPartOfTable ) {
-                    throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                            + catalogTable.name + "', has only " + catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) + " partitions" );
+                    throw new GenericRuntimeException( "Specified Partition-Name: '%s' is not part of table '%s', has only %s partitions",
+                            partitionName, catalogTable.name, catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) );
                 }
             }
         }

@@ -23,9 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 public interface AllocSnapshot {
@@ -83,7 +83,7 @@ public interface AllocSnapshot {
      * @param partitionGroupId Table to be queried
      * @return list of all partitions on this table
      */
-    List<LogicalPartition> getPartitions( long partitionGroupId );
+    List<AllocationPartition> getPartitions( long partitionGroupId );
 
     /**
      * Get a list of all partition name belonging to a specific table
@@ -165,7 +165,7 @@ public interface AllocSnapshot {
      * @param tableId The table for which all partition placements on an adapter should be considered
      * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
-    List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
+    List<AllocationPartitionOld> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
 
     /**
      * Returns a list of all Partition Placements which are currently associated with a table.
@@ -173,7 +173,7 @@ public interface AllocSnapshot {
      * @param tableId The table on which the requested partition placements are currently associated with.
      * @return A list of all Partition Placements, that belong to the desired table
      */
-    List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId );
+    List<AllocationPartitionOld> getAllPartitionPlacementsByTable( long tableId );
 
 
     @NotNull

@@ -39,8 +39,9 @@ public interface DataMigrator {
     void copyData(
             Transaction transaction,
             CatalogAdapter store,
+            LogicalTable source,
             List<LogicalColumn> columns,
-            List<Long> partitionIds );
+            List<AllocationTable> targets );
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
@@ -51,7 +52,7 @@ public interface DataMigrator {
      * @param sourceTable Source Table from where data is queried
      * @param targetTable Source Table from where data is queried
      * @param columns Necessary columns on target
-     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param placementDistribution Pre-computed mapping of partitions and the necessary column placements
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     void copySelectiveData(

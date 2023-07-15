@@ -42,10 +42,11 @@ public class AllocationTable extends AllocationEntity {
 
     public AllocationTable(
             @Deserialize("id") long id,
+            @Deserialize("partitionId") long partitionId,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
+        super( id, partitionId, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
     }
 
 

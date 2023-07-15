@@ -37,7 +37,7 @@ public interface PartitionManager {
 
     boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold );
 
-    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Long> excludedAdapters );
+    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationTable> allocations, List<Long> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
 

@@ -16,70 +16,63 @@
 
 package org.polypheny.db.catalog.entity;
 
-
+import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
-import lombok.NonNull;
+import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
-import org.polypheny.db.catalog.logistic.DataPlacementRole;
-import org.polypheny.db.catalog.logistic.PlacementType;
+import org.jetbrains.annotations.Nullable;
 
 
-/**
- * This class is considered the logical representation of a physical table on a specific store.
- */
+@EqualsAndHashCode
 @Value
 public class AllocationPartition implements CatalogObject {
 
-    private static final long serialVersionUID = 8835793248417591036L;
+    private static final long serialVersionUID = -1124423133579338133L;
 
     @Serialize
-    public long namespaceId;
+    public long id;
+
+    @Getter
     @Serialize
-    public long adapterId;
+    @SerializeNullable
+    public ImmutableList<String> partitionQualifiers;
+
+    // To be checked if even needed
+    @Getter
+    @Serialize
+    public long partitionGroupId;
     @Serialize
     public long entityId;
     @Serialize
-    public long partitionId;
+    public long namespaceId;
     @Serialize
-    public PlacementType placementType;
-
-    // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
-    // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
-    // This attribute is derived from an effective data placement (table entity on a store)
-
-    // Related to multi-tier replication. If Placement is considered a primary node it needs to receive every update eagerly.
-    // If false, nodes are considered refreshable and can be lazily replicated
-    // This attribute is derived from an effective data placement (table entity on a store)
-    // This means that the store is not entirely considered a primary and can therefore be different on another table
-    // Is present at the DataPlacement && the PartitionPlacement
-    // Although, partitionPlacements are those that get effectively updated
-    // A DataPlacement can directly forbid that any Placements within this DataPlacement container can get outdated.
-    // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
-    @Serialize
-    public DataPlacementRole role;
+    public boolean isUnbound;
 
 
     public AllocationPartition(
-            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("id") final long id,
             @Deserialize("entityId") final long entityId,
-            @Deserialize("adapterId") final long adapterId,
-            @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("partitionId") final long partitionId,
-            @Deserialize("role") DataPlacementRole role ) {
-        this.namespaceId = namespaceId;
+            @Deserialize("namespaceId") final long namespaceId,
+            @Deserialize("partitionQualifiers") @Nullable final List<String> partitionQualifiers,
+            @Deserialize("isUnbound") final boolean isUnbound,
+            @Deserialize("partitionGroupId") final long partitionGroupId ) {
+        this.id = id;
         this.entityId = entityId;
-        this.adapterId = adapterId;
-        this.placementType = placementType;
-        this.partitionId = partitionId;
-        this.role = role;
+        this.namespaceId = namespaceId;
+        this.partitionQualifiers = partitionQualifiers == null ? null : ImmutableList.copyOf( partitionQualifiers );
+        this.isUnbound = isUnbound;
+        this.partitionGroupId = partitionGroupId;
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[0];
+        throw new RuntimeException( "Not implemented" );
     }
 
 }

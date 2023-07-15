@@ -43,7 +43,7 @@ public class IdBuilder {
 
     AtomicLong constraintId;
 
-    AtomicLong partitionGroupId;
+    AtomicLong groupId;
 
     AtomicLong partitionId;
 
@@ -90,7 +90,7 @@ public class IdBuilder {
             AtomicLong adapterId,
             AtomicLong interfaceId,
             AtomicLong constraintId,
-            AtomicLong partitionGroupId,
+            AtomicLong groupId,
             AtomicLong partitionId ) {
         this.snapshotId = snapshotId;
         this.namespaceId = namespaceId;
@@ -106,7 +106,7 @@ public class IdBuilder {
 
         this.adapterId = adapterId;
         this.interfaceId = interfaceId;
-        this.partitionGroupId = partitionGroupId;
+        this.groupId = groupId;
         this.partitionId = partitionId;
     }
 
@@ -171,8 +171,8 @@ public class IdBuilder {
     }
 
 
-    public long getNewPartitionGroupId() {
-        return partitionGroupId.getAndIncrement();
+    public long getNewGroupId() {
+        return groupId.getAndIncrement();
     }
 
 

@@ -41,6 +41,8 @@ public interface Context {
 
     List<String> getDefaultSchemaPath();
 
+    void updateSnapshot();
+
     PolyphenyDbConnectionConfig config();
 
     DataContext getDataContext();

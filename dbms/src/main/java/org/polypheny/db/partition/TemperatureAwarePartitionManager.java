@@ -52,7 +52,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<Long> partitionIds, List<Long> excludedAdapters ) {
+    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationTable> allocationTables, List<Long> excludedAdapters ) {
         // Get partition manager
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
@@ -60,7 +60,7 @@ public class TemperatureAwarePartitionManager extends AbstractPartitionManager {
                 ((TemperaturePartitionProperty) property).getInternalPartitionFunction()
         );
 
-        return partitionManager.getRelevantPlacements( catalogTable, partitionIds, excludedAdapters );
+        return partitionManager.getRelevantPlacements( catalogTable, allocationTables, excludedAdapters );
     }
 
 

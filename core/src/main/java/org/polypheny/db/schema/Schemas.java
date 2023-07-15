@@ -52,6 +52,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -276,11 +277,15 @@ public final class Schemas {
             final PolyphenyDbConnectionConfig connectionConfig,
             final JavaTypeFactory typeFactory,
             final DataContext dataContext,
-            final Snapshot snapshot,
+            final Snapshot shot,
             final List<String> schemaPath,
             final List<String> objectPath_ ) {
         final ImmutableList<String> objectPath = objectPath_ == null ? null : ImmutableList.copyOf( objectPath_ );
         return new Context() {
+
+            Snapshot snapshot = shot;
+
+
             @Override
             public JavaTypeFactory getTypeFactory() {
                 return typeFactory;
@@ -303,6 +308,12 @@ public final class Schemas {
             public List<String> getDefaultSchemaPath() {
                 // schemaPath is usually null. If specified, it overrides schema as the context within which the SQL is validated.
                 return schemaPath;
+            }
+
+
+            @Override
+            public void updateSnapshot() {
+                snapshot = Catalog.snapshot();
             }
 
 

@@ -359,12 +359,12 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
             columns.add( column );
             i++;
         }
-        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), table.id, table.namespaceId, allocation.adapterId );
+        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
 
         List<AllocationColumn> allocColumns = new ArrayList<>();
         i = 0;
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.id, column.id, PlacementType.AUTOMATIC, i, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.partitionId, allocTable.logicalId, allocTable.id, column.id, PlacementType.AUTOMATIC, i, allocation.adapterId );
             allocColumns.add( alloc );
             i++;
         }

@@ -232,6 +232,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     statement );
 
             if ( partitionType != null ) {
+                context.updateSnapshot();
                 DdlManager.getInstance().addPartitioning(
                         PartitionInformation.fromNodeLists(
                                 getEntityFromCatalog( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),

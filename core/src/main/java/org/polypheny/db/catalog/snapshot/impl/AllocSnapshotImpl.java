@@ -36,11 +36,11 @@ import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.LogicalPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
@@ -117,7 +117,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildColumns( List<AllocationColumn> columns ) {
-        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.tableId ), c -> c ) ) );
+        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.allocationTableId ), c -> c ) ) );
 
     }
 
@@ -125,7 +125,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, Map<Long, List<Long>>> buildTableAdapterColumns() {
         Map<Long, Map<Long, List<Long>>> map = new HashMap<>();
         for ( AllocationColumn column : this.columns.values() ) {
-            AllocationTable table = tables.get( column.tableId );
+            AllocationTable table = tables.get( column.allocationTableId );
             if ( !map.containsKey( table.logicalId ) ) {
                 map.put( table.logicalId, new HashMap<>() );
             }
@@ -154,10 +154,10 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, TreeSet<AllocationColumn>> buildAllocColumns() {
         Map<Long, TreeSet<AllocationColumn>> map = new HashMap<>();
         for ( AllocationColumn value : columns.values() ) {
-            if ( !map.containsKey( value.tableId ) ) {
-                map.put( value.tableId, new TreeSet<>( Comparator.comparingLong( c -> c.position ) ) );
+            if ( !map.containsKey( value.logicalTableId ) ) {
+                map.put( value.allocationTableId, new TreeSet<>( Comparator.comparingLong( c -> c.position ) ) );
             }
-            map.get( value.tableId ).add( value );
+            map.get( value.allocationTableId ).add( value );
         }
 
         return ImmutableMap.copyOf( map );
@@ -274,7 +274,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<LogicalPartition> getPartitions( long partitionGroupId ) {
+    public List<AllocationPartition> getPartitions( long partitionGroupId ) {
         return null;
     }
 
@@ -328,13 +328,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
+    public List<AllocationPartitionOld> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
         return null;
     }
 
 
     @Override
-    public List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId ) {
+    public List<AllocationPartitionOld> getAllPartitionPlacementsByTable( long tableId ) {
         return null;
     }
 
