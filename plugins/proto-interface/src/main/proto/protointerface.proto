@@ -33,6 +33,7 @@ service ProtoInterface {
   rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
 
   rpc getProcedures(ProceduresRequest) returns (ProceduresResponse) {}
+  rpc getProcedureColumns(ProcedureColumnsRequest) returns (ProcedureColumnsResponse) {}
 
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
