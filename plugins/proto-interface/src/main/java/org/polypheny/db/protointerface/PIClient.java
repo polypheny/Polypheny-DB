@@ -16,8 +16,8 @@
 
 package org.polypheny.db.protointerface;
 
-import lombok.extern.slf4j.Slf4j;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -28,7 +28,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
-public class PIClient{
+public class PIClient {
 
     private String clientUUID;
     private CatalogUser catalogUser;
@@ -43,7 +43,7 @@ public class PIClient{
     private int majorApiVersion;
 
 
-    private PIClient(Builder connectionBuilder ) {
+    private PIClient(Builder connectionBuilder) {
         this.statementManager = new StatementManager(this);
         this.clientUUID = connectionBuilder.clientUUID;
         this.catalogUser = connectionBuilder.catalogUser;
@@ -70,7 +70,7 @@ public class PIClient{
 
 
     public Transaction getCurrentOrCreateNewTransaction() {
-        synchronized(this) {
+        synchronized (this) {
             if (currentTransaction == null || !currentTransaction.isActive()) {
                 currentTransaction = transactionManager.startTransaction(catalogUser, logicalNamespace, false, "ProtoInterface");
             }
@@ -80,14 +80,14 @@ public class PIClient{
 
 
     public Transaction getCurrentTransaction() {
-        synchronized(this) {
+        synchronized (this) {
             return currentTransaction;
         }
     }
-
+    
 
     public synchronized void commitCurrentTransaction() {
-        synchronized(this) {
+        synchronized (this) {
             if (hasNoTransaction()) {
                 return;
             }
@@ -103,7 +103,7 @@ public class PIClient{
 
 
     public synchronized void rollbackCurrentTransaction() {
-        synchronized(this) {
+        synchronized (this) {
             if (hasNoTransaction()) {
                 return;
             }
@@ -119,7 +119,7 @@ public class PIClient{
 
 
     private synchronized void endCurrentTransaction() {
-        synchronized(this) {
+        synchronized (this) {
             currentTransaction = null;
         }
     }
@@ -130,7 +130,7 @@ public class PIClient{
     }
 
 
-    public boolean isAutocommit() throws IllegalArgumentException{
+    public boolean isAutocommit() throws IllegalArgumentException {
         return clientProperties.isAutoCommit();
     }
 
@@ -162,51 +162,50 @@ public class PIClient{
         }
 
 
-        public Builder setClientUUID( String clientUUID ) {
+        public Builder setClientUUID(String clientUUID) {
             this.clientUUID = clientUUID;
             return this;
         }
 
 
-        public Builder setCatalogUser( CatalogUser catalogUser ) {
+        public Builder setCatalogUser(CatalogUser catalogUser) {
             this.catalogUser = catalogUser;
             return this;
         }
 
 
-        public Builder setLogicalNamespace( LogicalNamespace logicalNamespace ) {
+        public Builder setLogicalNamespace(LogicalNamespace logicalNamespace) {
             this.logicalNamespace = logicalNamespace;
             return this;
         }
 
 
-
-        public Builder setTransactionManager( TransactionManager transactionManager ) {
+        public Builder setTransactionManager(TransactionManager transactionManager) {
             this.transactionManager = transactionManager;
             return this;
         }
 
 
-        public Builder setClientProperties( PIClientProperties clientProperties ) {
+        public Builder setClientProperties(PIClientProperties clientProperties) {
             this.clientProperties = clientProperties;
             return this;
         }
 
 
-        public Builder setMajorApiVersion( int majorApiVersion ) {
+        public Builder setMajorApiVersion(int majorApiVersion) {
             this.majorApiVersion = majorApiVersion;
             return this;
         }
 
 
-        public Builder setMinorApiVersion( int minorApiVersion ) {
+        public Builder setMinorApiVersion(int minorApiVersion) {
             this.minorApiVersion = minorApiVersion;
             return this;
         }
 
 
         public PIClient build() {
-            return new PIClient( this );
+            return new PIClient(this);
         }
 
     }
