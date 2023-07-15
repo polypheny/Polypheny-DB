@@ -354,12 +354,18 @@ public class DbMetaRetriever {
 
 
     public static String getSqlKeywords() {
-        //TODO: get data after functionality is implemented
+        // TODO: get data after functionality is implemented
         return "";
     }
 
     public static ProceduresResponse getProcedures(String languageName, String schemaPattern, String procedureNamePattern) {
+        // TODO: get data after functionality is implemented
         return ProceduresResponse.newBuilder().build();
+    }
+
+    public static ProcedureColumnsResponse getProcedureColumns(String language, String namespacePattern, String procedurePattern, String columnPattern) {
+        // TODO: get data after functionality is implemented
+        return ProcedureColumnsResponse.newBuilder().build();
     }
 
 /*
@@ -380,21 +386,6 @@ public class DbMetaRetriever {
         }
     }
 
-
-
-
-
-    public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
-            return null;
-        }
-    }
 
 
     public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
