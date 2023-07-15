@@ -240,3 +240,18 @@ message Procedure {
     RESULT = 3;
   }
 }
+
+message ProcedureColumnsRequest {
+  string language = 1;
+  optional string namespace_pattern = 2;
+  optional string procedure_pattern = 3;
+  optional string column_pattern= 4;
+}
+
+message ProcedureColumnsResponse {
+  repeated ProcedureColumn procedure_columns = 1;
+}
+
+message ProcedureColumn {
+
+}
