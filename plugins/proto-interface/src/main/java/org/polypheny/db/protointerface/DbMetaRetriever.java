@@ -39,25 +39,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryK
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.protointerface.proto.Column;
-import org.polypheny.db.protointerface.proto.ColumnsResponse;
-import org.polypheny.db.protointerface.proto.Database;
-import org.polypheny.db.protointerface.proto.DatabasesResponse;
-import org.polypheny.db.protointerface.proto.ExportedKeysResponse;
-import org.polypheny.db.protointerface.proto.ForeignKey;
-import org.polypheny.db.protointerface.proto.ImportedKeysResponse;
-import org.polypheny.db.protointerface.proto.Index;
-import org.polypheny.db.protointerface.proto.IndexesResponse;
-import org.polypheny.db.protointerface.proto.Namespace;
-import org.polypheny.db.protointerface.proto.NamespacesResponse;
-import org.polypheny.db.protointerface.proto.PrimaryKey;
-import org.polypheny.db.protointerface.proto.PrimaryKeysResponse;
-import org.polypheny.db.protointerface.proto.Table;
-import org.polypheny.db.protointerface.proto.TableType;
-import org.polypheny.db.protointerface.proto.TableTypesResponse;
-import org.polypheny.db.protointerface.proto.TablesResponse;
-import org.polypheny.db.protointerface.proto.Type;
-import org.polypheny.db.protointerface.proto.TypesResponse;
+import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.type.PolyType;
 
@@ -372,8 +354,12 @@ public class DbMetaRetriever {
 
 
     public static String getSqlKeywords() {
-        //TODO impl
+        //TODO: get data after functionality is implemented
         return "";
+    }
+
+    public static ProceduresResponse getProcedures(String languageName, String schemaPattern, String procedureNamePattern) {
+        return ProceduresResponse.newBuilder().build();
     }
 
 /*
@@ -395,17 +381,7 @@ public class DbMetaRetriever {
     }
 
 
-    public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
-            }
 
-            log.error( "[NOT IMPLEMENTED YET] getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
-            return null;
-        }
-    }
 
 
     public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
