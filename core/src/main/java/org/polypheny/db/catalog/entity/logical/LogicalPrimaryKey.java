@@ -25,6 +25,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.C;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 
@@ -56,6 +57,10 @@ public final class LogicalPrimaryKey extends LogicalKey {
             list.add( new CatalogPrimaryKeyColumn( id, i++, columnName ) );
         }
         return list;
+    }
+
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
     }
 
 

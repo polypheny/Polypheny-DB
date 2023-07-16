@@ -21,10 +21,10 @@ import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import java.util.stream.Collectors;
+
+import lombok.*;
+import org.bouncycastle.jcajce.provider.asymmetric.X509;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
@@ -34,11 +34,14 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 @EqualsAndHashCode(callSuper = true)
 public final class LogicalForeignKey extends LogicalKey {
 
+    @Getter
     public final String name;
     public final long referencedKeyId;
     public final long referencedKeySchemaId;
     public final long referencedKeyTableId;
+    @Getter
     public final ForeignKeyOption updateRule;
+    @Getter
     public final ForeignKeyOption deleteRule;
     public final ImmutableList<Long> referencedKeyColumnIds;
 
@@ -88,6 +91,11 @@ public final class LogicalForeignKey extends LogicalKey {
         return columnNames;
     }
 
+    public List<LogicalColumn> getReferencedColumns() {
+        Snapshot snapshot = Catalog.snapshot();
+        return referencedKeyColumnIds.stream().map(i -> snapshot.rel().getColumn(i).orElseThrow()).collect(Collectors.toList());
+    }
+
 
     // Used for creating ResultSets
     public List<CatalogForeignKeyColumn> getCatalogForeignKeyColumns() {
@@ -99,6 +107,10 @@ public final class LogicalForeignKey extends LogicalKey {
             i++;
         }
         return list;
+    }
+
+    public String getReferencedKeyDatabaseName() {
+        return Catalog.DATABASE_NAME;
     }
 
 
