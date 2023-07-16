@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -340,11 +342,24 @@ public class MqttStreamPlugin extends Plugin {
 
         void processMsg( Mqtt3Publish subMsg ) {
             //TODO: attention: return values, not correct, might need a change of type.
-            String content = StreamProcessing.processMsg( subMsg );
+            Transaction transaction = getTransaction();
+            Statement statement = transaction.createStatement();
+            StreamProcessor streamProcessor = statement.getStreamProcessor();
+
+
+            String content = streamProcessor.processStream(extractPayload(subMsg));
+
+
+
             PolyStream stream = new PolyStream( subMsg.getTopic().toString(), getUniqueName(), content, this.namespace, this.namespaceType );
             stream.setNamespaceID( this.namespaceId );
             StreamCapture streamCapture = new StreamCapture( this.transactionManager, stream );
             streamCapture.handleContent();
+        }
+
+
+        private static String extractPayload( Mqtt3Publish subMsg ) {
+            return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
         }
 
 

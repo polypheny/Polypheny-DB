@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.mqtt;
+package org.polypheny.db.stream;
 
-import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class StreamProcessing {
-//TODO: receive all additional info from Wrapper around MqttStream
-    public static String processMsg( Mqtt3Publish subMsg ) {
-        String msg = toString( subMsg );
+public class MqttStreamProcessor extends StreamProcessorImpl implements StreamProcessor{
 
+
+    public MqttStreamProcessor() {
+    }
+
+
+    //TODO: receive all additional info from Wrapper around MqttStream
+    public String processStream( String msg ) {
         String info = extractInfo( msg );
         if ( validateMsg( info ) ) {
             log.info( "Extracted and validated message: {}", msg);
@@ -34,11 +37,6 @@ public class StreamProcessing {
             log.error( "Message is not valid!" );
             return null;
         }
-    }
-
-
-    private static String toString( Mqtt3Publish subMsg ) {
-        return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
     }
 
 

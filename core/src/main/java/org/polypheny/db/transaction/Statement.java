@@ -21,6 +21,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {
@@ -28,6 +29,8 @@ public interface Statement {
     Transaction getTransaction();
 
     QueryProcessor getQueryProcessor();
+
+    StreamProcessor getStreamProcessor();
 
     DataContext getDataContext();
 
