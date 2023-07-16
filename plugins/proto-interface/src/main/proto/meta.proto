@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "namespace_meta.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -32,13 +33,6 @@ message TablesResponse {
   repeated Table tables = 1;
 }
 
-message Table {
-  string source_database_name = 1;
-  string namespace_name = 2;
-  string table_name = 3;
-  string table_type = 4;
-  string owner_name = 5;
-}
 
 message ColumnsRequest {
   optional string namespace_pattern = 1;
@@ -50,34 +44,6 @@ message ColumnsResponse {
   repeated Column columns = 1;
 }
 
-message Column {
-  string database_name = 1;
-  string namespace_name = 2;
-  string table_name = 3;
-  string column_name = 4;
-  string type_name = 5;
-  optional int32 type_length = 6;
-  optional int32 type_scale = 7;
-  bool is_nullable = 8;
-  optional string default_value_as_string = 9;
-  int32 column_index = 10;
-  optional string collation = 11;
-}
-
-message NamespacesRequest {
-  optional string namespace_pattern = 1;
-}
-
-message NamespacesResponse {
-  repeated Namespace namespaces = 1;
-}
-
-message Namespace {
-  string namespace_name = 1;
-  string database_name = 2;
-  string owner_name = 3;
-  optional string namespace_type = 4;
-}
 
 message DatabasesRequest {
 }
@@ -113,13 +79,7 @@ message PrimaryKeysResponse {
   repeated PrimaryKey primary_keys = 1;
 }
 
-message PrimaryKey {
-  optional string database_name = 1;
-  optional string namespace_name = 2;
-  string table_name = 3;
-  string column_name = 4;
-  int32 sequence_index = 5;
-}
+
 
 message ImportedKeysRequest {
   optional string namespace_pattern = 1;
@@ -130,20 +90,6 @@ message ImportedKeysResponse {
   repeated ForeignKey imported_keys = 1;
 }
 
-message ForeignKey {
-  optional string referenced_database_name = 1;
-  optional string referenced_namespace_name = 2;
-  string referenced_table_name = 3;
-  string referenced_column_name = 4;
-  optional string foreign_database_name = 5;
-  optional string foreign_namespace_name = 6;
-  string foreign_table_name = 7;
-  string foreign_column_name = 8;
-  int32 sequence_index = 9;
-  int32 update_rule = 10;
-  int32 delete_rule = 11;
-  optional string key_name = 12;
-}
 
 message ExportedKeysRequest {
   optional string namespace_pattern = 1;
@@ -185,17 +131,6 @@ message IndexesResponse{
   repeated Index indexes = 1;
 }
 
-message Index {
-  string database_name = 1;
-  string namespace_name = 2;
-  string table_name = 3;
-  bool unique = 4;
-  string index_name = 5;
-  int32 position_index = 6;
-  string column_name = 7;
-  string location = 8;
-  int32 index_type = 9;
-}
 
 message SqlStringFunctionsRequest {
 }
@@ -255,3 +190,5 @@ message ProcedureColumnsResponse {
 message ProcedureColumn {
 
 }
+
+

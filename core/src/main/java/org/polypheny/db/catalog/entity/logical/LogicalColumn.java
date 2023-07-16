@@ -156,6 +156,9 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
+    }
 
     @Override
     public Serializable[] getParameterArray() {

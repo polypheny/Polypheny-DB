@@ -21,6 +21,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.type.PolyType;
 
@@ -35,6 +36,7 @@ public class CatalogDefaultValue implements Serializable {
     @Serialize
     public final PolyType type;
     @Serialize
+    @Getter
     public final String value;
     @Serialize
     public final String functionName;

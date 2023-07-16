@@ -62,6 +62,14 @@ public class LogicalNamespace implements CatalogObject, Comparable<LogicalNamesp
         this.caseSensitive = caseSensitive;
     }
 
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
+    }
+
+    public String getOwnerName() {
+        return Catalog.USER_NAME;
+    }
+
 
     // Used for creating ResultSets
     @Override
