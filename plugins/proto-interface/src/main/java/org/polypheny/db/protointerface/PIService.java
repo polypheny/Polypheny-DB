@@ -111,55 +111,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
 
     @Override
-    public void getTables(TablesRequest tablesRequest, StreamObserver<TablesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = tablesRequest.hasNamespacePattern() ? tablesRequest.getNamespacePattern() : null;
-        String tablePattern = tablesRequest.hasTablePattern() ? tablesRequest.getTablePattern() : null;
-        List<String> tableTypes = tablesRequest.getTableTypesCount() == 0 ? null : tablesRequest.getTableTypesList();
-        responseObserver.onNext(DbMetaRetriever.getTables(namespacePattern, tablePattern, tableTypes));
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
     public void getTableTypes(TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver) {
         /* called as client auth check */
         getClient();
         responseObserver.onNext(DbMetaRetriever.getTableTypes());
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getNamespaces(NamespacesRequest namespacesRequest, StreamObserver<NamespacesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = namespacesRequest.hasNamespacePattern() ? namespacesRequest.getNamespacePattern() : null;
-        responseObserver.onNext(DbMetaRetriever.getNamespaces(namespacePattern));
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getColumns(ColumnsRequest columnsRequest, StreamObserver<ColumnsResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = columnsRequest.hasNamespacePattern() ? columnsRequest.getNamespacePattern() : null;
-        String tablePattern = columnsRequest.hasTablePattern() ? columnsRequest.getTablePattern() : null;
-        String columnPattern = columnsRequest.hasColumnPattern() ? columnsRequest.getColumnPattern() : null;
-        responseObserver.onNext(DbMetaRetriever.getColumns(namespacePattern, tablePattern, columnPattern));
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getPrimaryKeys(PrimaryKeysRequest primaryKeysRequest, StreamObserver<PrimaryKeysResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = primaryKeysRequest.hasNamespacePattern() ? primaryKeysRequest.getNamespacePattern() : null;
-        String tablePattern = primaryKeysRequest.getTablePattern();
-        responseObserver.onNext(DbMetaRetriever.getPrimaryKeys(namespacePattern, tablePattern));
         responseObserver.onCompleted();
     }
 
@@ -174,43 +129,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
 
     @Override
-    public void getImportedKeys(ImportedKeysRequest importedKeysRequest, StreamObserver<ImportedKeysResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = importedKeysRequest.hasNamespacePattern() ? importedKeysRequest.getNamespacePattern() : null;
-        String tablePattern = importedKeysRequest.getTablePattern();
-        responseObserver.onNext(DbMetaRetriever.getImportedKeys(namespacePattern, tablePattern));
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getExportedKeys(ExportedKeysRequest exportedKeysRequest, StreamObserver<ExportedKeysResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = exportedKeysRequest.hasNamespacePattern() ? exportedKeysRequest.getNamespacePattern() : null;
-        String tablePattern = exportedKeysRequest.getTablePattern();
-        responseObserver.onNext(DbMetaRetriever.getExportedKeys(namespacePattern, tablePattern));
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
     public void getTypes(TypesRequest typesRequest, StreamObserver<TypesResponse> responseObserver) {
         /* called as client auth check */
         getClient();
         responseObserver.onNext(DbMetaRetriever.getTypes());
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getIndexes(IndexesRequest indexesRequest, StreamObserver<IndexesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = indexesRequest.hasNamespacePattern() ? indexesRequest.getNamespacePattern() : null;
-        String tablePattern = indexesRequest.getTablePattern();
-        responseObserver.onNext(DbMetaRetriever.getIndexes(namespacePattern, tablePattern, indexesRequest.getUnique()));
         responseObserver.onCompleted();
     }
 
@@ -277,7 +199,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void getProcedures(ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver) {
         /* called as client auth check */
         getClient();
-        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() :null;
+        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
         String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
         responeObserver.onNext(DbMetaRetriever.getProcedures(request.getLanguage(), namespacePattern, procedurePattern));
         responeObserver.onCompleted();
@@ -287,7 +209,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void getProcedureColumns(ProcedureColumnsRequest request, StreamObserver<ProcedureColumnsResponse> responsePbserver) {
         /* called as client auth check */
         getClient();
-        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() :null;
+        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
         String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
         String columnPattern = request.hasColumnPattern() ? request.getColumnPattern() : null;
         responsePbserver.onNext(DbMetaRetriever.getProcedureColumns(request.getLanguage(), namespacePattern, procedurePattern, columnPattern));
