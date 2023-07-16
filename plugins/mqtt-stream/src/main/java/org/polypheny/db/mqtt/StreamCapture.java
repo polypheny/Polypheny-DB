@@ -18,6 +18,7 @@ package org.polypheny.db.mqtt;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
@@ -26,9 +27,13 @@ import org.bson.BsonString;
 import org.bson.codecs.pojo.annotations.BsonId;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -42,12 +47,17 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
@@ -157,13 +167,30 @@ public class StreamCapture {
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
-        document.put( "topic", new BsonString( this.stream.topic ) );
+        //TODO: change to id:
+        document.put( "id", new BsonString( this.stream.topic ) );
         document.put( "content", new BsonString( this.stream.getContent() ) );
 
         AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
 
+        //final AlgDataType rowType = algNode.getExpectedInputRowType(0);
+        List<Integer> columnNumber = new ArrayList<>();
+        columnNumber.add( 0, 1 );
+        columnNumber.add( 1, 2 );
+
+        List<String> columnNames = new ArrayList<>();
+        columnNames.add( 0, "id" );
+        columnNames.add( 1, "content" );
+
+        final List<Pair<Integer, String>> fields = Pair.zip( columnNumber, columnNames );
+        final AlgCollation collation =
+                algNode instanceof Sort
+                        ? ((Sort) algNode).collation
+                        : AlgCollations.EMPTY;
+        AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.INSERT, fields, collation );
+
         // we can then wrap the tree in an AlgRoot and execute it
-        AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
+        // AlgRoot root = AlgRoot.of( algNode, algNode.getRowType(), Kind.INSERT );
         // for inserts and all DML queries only a number is returned
         String res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
 
