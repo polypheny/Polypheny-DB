@@ -66,6 +66,14 @@ public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace
         this.caseSensitive = caseSensitive;
     }
 
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
+    }
+
+    public String getOwnerName() {
+        return Catalog.USER_NAME;
+    }
+
 
     // Used for creating ResultSets
     @Override

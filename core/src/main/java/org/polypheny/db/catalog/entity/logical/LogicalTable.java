@@ -72,6 +72,16 @@ public class LogicalTable extends LogicalEntity {
         }
     }
 
+    public String getOwnerName() {
+        // TODO DL: implement at some point
+        return Catalog.USER_NAME;
+    }
+
+    public String getDatabaseName() {
+        // TODO DL: implement at some point
+        return Catalog.DATABASE_NAME;
+    }
+
 
     // Used for creating ResultSets
     @Override

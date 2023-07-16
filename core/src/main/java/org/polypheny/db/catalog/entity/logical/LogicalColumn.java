@@ -160,6 +160,9 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
+    }
 
     @Override
     public PolyValue[] getParameterArray() {
