@@ -40,10 +40,13 @@ public abstract class AllocationEntity extends CatalogEntity {
     public long logicalId;
     @Serialize
     public long partitionId;
+    @Serialize
+    public long placementId;
 
 
     protected AllocationEntity(
             long id,
+            long placementId,
             long partitionId,
             long logicalId,
             long namespaceId,
@@ -53,6 +56,7 @@ public abstract class AllocationEntity extends CatalogEntity {
         this.adapterId = adapterId;
         this.logicalId = logicalId;
         this.partitionId = partitionId;
+        this.placementId = placementId;
     }
 
 

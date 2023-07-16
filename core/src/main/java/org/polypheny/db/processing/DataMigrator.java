@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -45,7 +46,7 @@ public interface DataMigrator {
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, AllocationTable, PartitionProperty, List)}  } instead
+     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -68,14 +69,14 @@ public interface DataMigrator {
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
+     * @param sourcePlacement Source Table from where data is queried
      * @param targetProperty
      * @param targetTables Target Table where data is to be inserted
      */
     void copyAllocationData(
             Transaction transaction,
             CatalogAdapter store,
-            AllocationTable sourceTable,
+            AllocationPlacement sourcePlacement,
             PartitionProperty targetProperty,
             List<AllocationTable> targetTables );
 

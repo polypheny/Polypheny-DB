@@ -17,38 +17,39 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
-import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.NonFinal;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.entity.CatalogObject;
 
-@EqualsAndHashCode(callSuper = true)
 @Value
-@NonFinal
-public class AllocationCollection extends AllocationEntity {
+public class AllocationPlacement implements CatalogObject {
 
-    public AllocationCollection(
+    @Serialize
+    public long id;
+    @Serialize
+    public long adapterId;
+    @Serialize
+    public long namespaceId;
+    @Serialize
+    public long logicalEntityId;
+
+
+    public AllocationPlacement(
             @Deserialize("id") long id,
-            @Deserialize("logicalId") long logicalId,
+            @Deserialize("logicalEntityId") long logicalEntityId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, -1, -1, logicalId, namespaceId, adapterId, NamespaceType.DOCUMENT );
+        this.adapterId = adapterId;
+        this.namespaceId = namespaceId;
+        this.logicalEntityId = logicalEntityId;
+        this.id = id;
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[0];
-    }
-
-
-    @Override
-    public Expression asExpression() {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getAllocCollection", Expressions.constant( id ) );
     }
 
 }

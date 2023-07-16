@@ -37,7 +37,7 @@ public class AllocationGraph extends AllocationEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, -1, logicalId, namespaceId, adapterId, NamespaceType.GRAPH );
+        super( id, -1, -1, logicalId, namespaceId, adapterId, NamespaceType.GRAPH );
     }
 
 

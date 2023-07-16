@@ -50,6 +50,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -232,20 +233,21 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, List<AllocationEntity> allocationEntities ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, AllocationPlacement placement ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( allocationEntities.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( placement.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
         }
-        if ( allocationEntities.size() == 1 ) {
+        List<AllocationEntity> allocs = statement.getTransaction().getSnapshot().alloc().getAllocsOfPlacement( placement.id );
+        if ( allocs.size() == 1 ) {
             builder = handleRelScan(
                     builder,
                     statement,
-                    allocationEntities.get( 0 ) );
+                    allocs.get( 0 ) );
             // Final project
             //buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
             return builder.build();
@@ -342,14 +344,14 @@ public abstract class BaseRouter implements Router {
             }
         }*/
 
-        builder.union( true, allocationEntities.size() );
+        builder.union( true, allocs.size() );
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedScanCache.put( allocationEntities.hashCode(), node );
+            joinedScanCache.put( allocs.hashCode(), node );
         }
 
-        AllocationColumn placement = catalog.getSnapshot().alloc().getColumns( allocationEntities.get( 0 ).id ).get( 0 );
+        AllocationColumn column = catalog.getSnapshot().alloc().getColumns( allocs.get( 0 ).id ).get( 0 );
         // todo dl: remove after RowType refactor
         if ( Catalog.snapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );

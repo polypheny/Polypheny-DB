@@ -39,7 +39,7 @@ public class AllocationPartitionGroup implements CatalogObject {
     @Serialize
     public String name;
     @Serialize
-    public long entityId;
+    public long logicalEntityId;
     @Serialize
     public long namespaceId;
     @Serialize
@@ -54,14 +54,14 @@ public class AllocationPartitionGroup implements CatalogObject {
     public AllocationPartitionGroup(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
-            @Deserialize("entityId") final long entityId,
+            @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("partitionKey") final long partitionKey,
             @Deserialize("partitionQualifiers") @Nullable final List<String> partitionQualifiers,
             @Deserialize("isUnbound") final boolean isUnbound ) {
         this.id = id;
         this.name = name;
-        this.entityId = entityId;
+        this.logicalEntityId = logicalEntityId;
         this.namespaceId = namespaceId;
         this.partitionKey = partitionKey;
         // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to

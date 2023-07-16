@@ -18,10 +18,11 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.entity.AllocationPartition;
+import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -35,23 +36,23 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Adds a placement for a column.
      *
-     * @param partitionId
-     * @param allocationTableId
+     * @param placementId
      * @param logicalTableId
      * @param columnId The id of the column to be placed
+     * @param adapterId
      * @param placementType The type of placement
      * @param position
      * @return
      */
-    AllocationColumn addColumn( long partitionId, long allocationTableId, long logicalTableId, long columnId, PlacementType placementType, int position );
+    AllocationColumn addColumn( long placementId, long logicalTableId, long columnId, long adapterId, PlacementType placementType, int position );
 
     /**
      * Deletes all dependent column placements
      *
-     * @param allocationId The id of the adapter
+     * @param placementId The id of the adapter
      * @param columnId The id of the column
      */
-    void deleteColumn( long allocationId, long columnId );
+    void deleteColumn( long placementId, long columnId );
 
 
     /**
@@ -77,11 +78,9 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.
      *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId The partitionId to be deleted
+     * @param groupId The partitionId to be deleted
      */
-    void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId );
+    void deletePartitionGroup( long groupId );
 
 
     /**
@@ -90,18 +89,18 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
      * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @param placementType
+     * @param role
      * @return The id of the created partition
      */
-    AllocationPartition addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
+    AllocationPartition addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Deletes a single partition and all references.
      *
-     * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
      * @param partitionId The partitionId to be deleted
      */
-    void deletePartition( long tableId, long schemaId, long partitionId );
+    void deletePartition( long partitionId );
 
 
     void addPartitionProperty( long tableId, PartitionProperty partitionProperty );
@@ -152,16 +151,17 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param placementType The type of placement
      * @return
      */
-    AllocationPartitionOld addPartitionPlacement( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role );
+    AllocationPartition addPartitionPlacement( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
      *
      * @param adapterId adapter where placement should be located
+     * @param placementId
      * @param logicalId table to retrieve the placement from
      * @return
      */
-    AllocationTable addAllocation( long adapterId, long partitionId, long logicalId );
+    AllocationTable addAllocation( long adapterId, long placementId, long partitionId, long logicalId );
 
 
     void deleteAllocation( long allocId );
@@ -192,5 +192,13 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
 
     Map<Long, PartitionProperty> getProperties();
+
+    ConcurrentHashMap<Long, AllocationPartitionGroup> getPartitionGroups();
+
+    ConcurrentHashMap<Long, AllocationPartition> getPartitions();
+
+    AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId );
+
+    ConcurrentHashMap<Long, AllocationPlacement> getPlacements();
 
 }

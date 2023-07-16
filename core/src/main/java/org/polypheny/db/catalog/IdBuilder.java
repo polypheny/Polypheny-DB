@@ -46,6 +46,7 @@ public class IdBuilder {
     AtomicLong groupId;
 
     AtomicLong partitionId;
+    AtomicLong placementId;
 
     private static IdBuilder INSTANCE;
 
@@ -60,6 +61,7 @@ public class IdBuilder {
 
     private IdBuilder() {
         this(
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
@@ -91,7 +93,8 @@ public class IdBuilder {
             AtomicLong interfaceId,
             AtomicLong constraintId,
             AtomicLong groupId,
-            AtomicLong partitionId ) {
+            AtomicLong partitionId,
+            AtomicLong placementId ) {
         this.snapshotId = snapshotId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
@@ -108,6 +111,7 @@ public class IdBuilder {
         this.interfaceId = interfaceId;
         this.groupId = groupId;
         this.partitionId = partitionId;
+        this.placementId = placementId;
     }
 
 
@@ -178,6 +182,11 @@ public class IdBuilder {
 
     public long getNewPartitionId() {
         return partitionId.getAndIncrement();
+    }
+
+
+    public long getNewPlacementId() {
+        return placementId.getAndIncrement();
     }
 
 }

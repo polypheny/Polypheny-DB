@@ -146,7 +146,7 @@ public interface Modifiable extends Scannable {
         CatalogCollectionMapping mapping = catalog.getCollectionMapping( catalogCollection.id );
 
         LogicalTable collectionEntity = catalog.getTable( mapping.collectionId );
-        dropTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
+        deleteTable( prepareContext, collectionEntity, collectionEntity.partitionProperty.partitionIds );
         // todo dl
     }*/
 
@@ -206,16 +206,16 @@ public interface Modifiable extends Scannable {
         CatalogGraphMapping mapping = catalog.getGraphMapping( graphPlacement.graphId );
 
         LogicalTable nodes = catalog.getTable( mapping.nodesId );
-        dropTable( context, nodes, nodes.partitionProperty.partitionIds );
+        deleteTable( context, nodes, nodes.partitionProperty.partitionIds );
 
         LogicalTable nodeProperty = catalog.getTable( mapping.nodesPropertyId );
-        dropTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
+        deleteTable( context, nodeProperty, nodeProperty.partitionProperty.partitionIds );
 
         LogicalTable edges = catalog.getTable( mapping.edgesId );
-        dropTable( context, edges, edges.partitionProperty.partitionIds );
+        deleteTable( context, edges, edges.partitionProperty.partitionIds );
 
         LogicalTable edgeProperty = catalog.getTable( mapping.edgesPropertyId );
-        dropTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
+        deleteTable( context, edgeProperty, edgeProperty.partitionProperty.partitionIds );
         // todo dl
     }*/
 

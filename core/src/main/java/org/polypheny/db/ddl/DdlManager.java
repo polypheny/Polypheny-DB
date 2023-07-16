@@ -251,10 +251,10 @@ public abstract class DdlManager {
      * Drop the data placement of a table on a specified data store
      *
      * @param table the table for which to drop a placement
-     * @param storeInstance the data store from which to drop the placement
+     * @param store the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropTableAllocation( LogicalTable table, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropPlacement( LogicalTable table, DataStore<?> store, Statement statement );
 
     /**
      * Drop the primary key of a table
@@ -338,7 +338,7 @@ public abstract class DdlManager {
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -357,10 +357,10 @@ public abstract class DdlManager {
      *
      * @param table the table
      * @param columnName the column name for which to add a placement
-     * @param storeInstance the data store on which the column should be placed
+     * @param store the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void addColumnPlacement( LogicalTable table, String columnName, DataStore<?> store, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
@@ -368,10 +368,10 @@ public abstract class DdlManager {
      *
      * @param table the table
      * @param columnName the name of the column for which to drop a placement
-     * @param storeInstance the data store from which to remove the placement
+     * @param store the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> store, Statement statement );
 
     /**
      * Change the owner of a table
@@ -482,7 +482,7 @@ public abstract class DdlManager {
      * @param table the table to be dropped
      * @param statement the used statement
      */
-    public abstract void dropTable( LogicalTable table, Statement statement );
+    public abstract void deleteTable( LogicalTable table, Statement statement );
 
     /**
      * Drop View

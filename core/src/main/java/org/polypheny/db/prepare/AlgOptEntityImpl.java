@@ -58,7 +58,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity;
@@ -106,7 +106,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     private final Double rowCount;
     //@Getter
     @Nullable
-    private final AllocationPartitionOld partitionPlacement;
+    private final AllocationPartition partitionPlacement;
 
 
     private AlgOptEntityImpl(
@@ -114,7 +114,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             AlgDataType rowType,
             @Nullable Entity entity,
             @Nullable CatalogEntity catalogEntity,
-            @Nullable AllocationPartitionOld placement,
+            @Nullable AllocationPartition placement,
             @Nullable Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
@@ -130,7 +130,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, CatalogEntity catalogEntity, AllocationPartitionOld placement, Double count ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, CatalogEntity catalogEntity, AllocationPartition placement, Double count ) {
         Double rowCount;
         if ( count == null ) {
             rowCount = Double.valueOf( StatisticsManager.getInstance().rowCountPerTable( catalogEntity.id ) );
@@ -150,7 +150,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, AllocationPartitionOld placement ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, AllocationPartition placement ) {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
                 || entity instanceof ModifiableEntity;
@@ -185,8 +185,8 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             return Expressions.call(
                     Expressions.call( Catalog.class, "getInstance" ),
                     "getPartitionPlacement",
-                    Expressions.constant( partitionPlacement.adapterId ),
-                    Expressions.constant( partitionPlacement.adapterId ) );
+                    Expressions.constant( partitionPlacement.id ),
+                    Expressions.constant( partitionPlacement.id ) );
         } else if ( catalogEntity != null ) {
             return Expressions.call(
                     Expressions.call( Catalog.class, "getInstance" ),

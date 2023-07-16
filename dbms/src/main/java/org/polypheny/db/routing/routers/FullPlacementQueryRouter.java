@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -113,12 +114,12 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getFromLogical( table.id );
+        List<AllocationPlacement> allocationEntities = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
             //newBuilder.addPhysicalInfo( currentPlacementDistribution );
-            newBuilder.push( super.buildJoinedScan( statement, cluster, allocationEntities ) );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, allocationEntities.get( 0 ) ) );
             newBuilders.add( newBuilder );
         }
         //}

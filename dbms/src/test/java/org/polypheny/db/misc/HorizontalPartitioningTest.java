@@ -32,10 +32,9 @@ import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.AllocationPartition;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartitionOld;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -651,7 +650,7 @@ public class HorizontalPartitioningTest {
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                    List<AllocationPartitionOld> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+                    List<AllocationPartition> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );

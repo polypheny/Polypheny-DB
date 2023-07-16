@@ -58,6 +58,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -518,14 +519,14 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    public AlgRoot getSourceIterator( Statement statement, AllocationTable table ) {
+    public AlgRoot getSourceIterator( Statement statement, AllocationPlacement placement ) {
 
         // Build Query
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
-        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, List.of( table ) );
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placement );
         return AlgRoot.of( node, Kind.SELECT );
     }
 
@@ -543,21 +544,22 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        List<Long> columnIds = new LinkedList<>();
+        List<Long> columnIds = new ArrayList<>();
         for ( LogicalColumn logicalColumn : columns ) {
             columnIds.add( logicalColumn.id );
         }
 
         // Take the adapter with most placements as base and add missing column placements
-        List<AllocationColumn> placementList = new LinkedList<>();
+        List<AllocationColumn> placementList = new ArrayList<>();
         for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
-                if ( snapshot.alloc().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
+                AllocationPlacement placement = snapshot.alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
+                if ( snapshot.alloc().getColumn( placement.id, column.id ).isPresent() ) {
                     placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ).orElseThrow() );
                 } else {
-                    for ( AllocationColumn placement : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
-                        if ( placement.adapterId != excludingAdapterId ) {
-                            placementList.add( placement );
+                    for ( AllocationColumn allocationColumn : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
+                        if ( allocationColumn.adapterId != excludingAdapterId ) {
+                            placementList.add( allocationColumn );
                             break;
                         }
                     }
@@ -571,7 +573,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, AllocationTable, PartitionProperty, List)}  } instead
+     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -674,13 +676,13 @@ public class DataMigratorImpl implements DataMigrator {
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
+     * @param sourcePlacement Source Table from where data is queried
      * @param targetProperty
      * @param targetTables Target Table where data is to be inserted
      */
     @Override
-    public void copyAllocationData( Transaction transaction, CatalogAdapter store, AllocationTable sourceTable, PartitionProperty targetProperty, List<AllocationTable> targetTables ) {
-        if ( targetTables.stream().anyMatch( t -> t.logicalId != sourceTable.logicalId ) ) {
+    public void copyAllocationData( Transaction transaction, CatalogAdapter store, AllocationPlacement sourcePlacement, PartitionProperty targetProperty, List<AllocationTable> targetTables ) {
+        if ( targetTables.stream().anyMatch( t -> t.logicalId != sourcePlacement.logicalEntityId ) ) {
             throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
@@ -704,7 +706,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourcePlacement );
         //AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         /*if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
@@ -730,7 +732,7 @@ public class DataMigratorImpl implements DataMigrator {
                     i++;
                 }
             }*/
-            int columIndex = sourceTable.getColumnIds().indexOf( targetProperty.partitionColumnId );
+            int columIndex = 0; // todo dl //snapshot.alloc().getC sourcePlacement.indexOf( targetProperty.partitionColumnId );
 
             //int partitionColumnIndex = -1;
             String parsedValue = null;

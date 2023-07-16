@@ -17,9 +17,13 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 
+import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
+import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.CatalogObject;
@@ -31,18 +35,24 @@ import org.polypheny.db.catalog.logistic.PlacementType;
  * This class is considered the logical representation of a physical table on a specific store.
  */
 @Value
-public class AllocationPartitionOld implements CatalogObject {
+public class AllocationPartition implements CatalogObject {
 
     private static final long serialVersionUID = 8835793248417591036L;
 
     @Serialize
     public long namespaceId;
+
     @Serialize
-    public long adapterId;
+    public long logicalEntityId;
+
+    @Getter
     @Serialize
-    public long entityId;
+    @SerializeNullable
+    public ImmutableList<String> partitionQualifiers;
+
     @Serialize
     public long id;
+
     @Serialize
     public PlacementType placementType;
 
@@ -60,21 +70,29 @@ public class AllocationPartitionOld implements CatalogObject {
     // Therefore, the role at the DataPlacement specifies if underlying placements can even be outdated.s
     @Serialize
     public DataPlacementRole role;
+    @Serialize
+    public boolean isUnbound;
+    @Serialize
+    public long partitionGroupId;
 
 
-    public AllocationPartitionOld(
+    public AllocationPartition(
             @Deserialize("id") final long id,
             @Deserialize("namespaceId") long namespaceId,
-            @Deserialize("entityId") final long entityId,
-            @Deserialize("adapterId") final long adapterId,
+            @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("role") DataPlacementRole role ) {
+            @Deserialize("partitionQualifiers") final List<String> partitionQualifiers,
+            @Deserialize("role") DataPlacementRole role,
+            @Deserialize("isUnbound") final boolean isUnbound,
+            @Deserialize("partitionGroupId") final long partitionGroupId ) {
         this.namespaceId = namespaceId;
-        this.entityId = entityId;
-        this.adapterId = adapterId;
+        this.logicalEntityId = logicalEntityId;
         this.placementType = placementType;
         this.id = id;
         this.role = role;
+        this.isUnbound = isUnbound;
+        this.partitionGroupId = partitionGroupId;
+        this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
     }
 
 
