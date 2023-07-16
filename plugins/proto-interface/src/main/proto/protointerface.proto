@@ -4,6 +4,8 @@ import "relational_frame.proto";
 import "graph_frame.proto";
 import "document_frame.proto";
 import "meta.proto";
+import "namespace_meta.proto";
+
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
@@ -12,19 +14,12 @@ option java_outer_classname = "ProtoInterfaceProto";
 package polypheny.protointerface;
 
 service ProtoInterface {
+  // NewMetaFunctions
+  rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
+
   // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
-  rpc GetTables(TablesRequest) returns (TablesResponse) {}
-  rpc GetColumns(ColumnsRequest) returns (ColumnsResponse) {}
-  rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
-  rpc GetDatabases(DatabasesRequest) returns (DatabasesResponse) {}
-  rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
-  rpc GetPrimaryKeys(PrimaryKeysRequest) returns (PrimaryKeysResponse) {}
-  rpc GetImportedKeys(ImportedKeysRequest) returns (ImportedKeysResponse) {}
-  rpc GetExportedKeys(ExportedKeysRequest) returns (ExportedKeysResponse) {}
-  rpc GetTypes(TypesRequest) returns (TypesResponse) {}
-  rpc GetIndexes(IndexesRequest) returns (IndexesResponse) {}
 
   rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}

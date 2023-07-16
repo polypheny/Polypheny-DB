@@ -22,10 +22,8 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
+
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
@@ -46,6 +44,7 @@ public class LogicalIndex implements Serializable {
     @Serialize
     public String physicalName;
     @Serialize
+    @Getter
     public boolean unique;
     @Serialize
     public IndexType type;
@@ -113,6 +112,10 @@ public class LogicalIndex implements Serializable {
                 null,
                 location,
                 type.getId() };
+    }
+
+    public String getDatabaseName() {
+        return Catalog.DATABASE_NAME;
     }
 
 
