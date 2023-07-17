@@ -28,10 +28,11 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Optional;
@@ -121,7 +122,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     // used internally to serialize into binary format
-    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get()
+    public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
@@ -134,8 +135,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
-            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
-            .build( PolyValue.class );
+            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() ).build()
+            .create( PolySerializable.CLASS_LOADER, PolyValue.class );
 
     // used to serialize to Json
     public static final GsonBuilder GSON_BUILDER = new GsonBuilder()
@@ -816,7 +817,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 @Override
                 public PolyValue decode( BinaryInput in ) throws CorruptedDataException {
                     PolyType type = PolyType.valueOf( in.readUTF8() );
-                    return PolySerializable.deserialize( in.readUTF16(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
+                    return PolySerializable.deserialize( in.readUTF16(), PolySerializable.buildSerializer( PolyValue.classFrom( type ) ) );
                 }
             };
         }

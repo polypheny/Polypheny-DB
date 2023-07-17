@@ -39,7 +39,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Serialize
     public LogicalNamespace namespace;
     @Getter
-    public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.builder.get().build( PolyAllocGraphCatalog.class );
+    public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.buildSerializer( PolyAllocGraphCatalog.class );
 
     @Getter
     @Serialize

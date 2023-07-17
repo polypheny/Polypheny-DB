@@ -54,7 +54,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     public LogicalNamespace namespace;
 
     @Getter
-    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.builder.get().build( PolyAllocRelCatalog.class );
+    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     @Serialize
     @Getter

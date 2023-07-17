@@ -358,7 +358,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
         //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getEntity( columnPlacement.tableId ) ) {
-        PhysicalTable table = storeCatalog.getTable( allocId );
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
         PhysicalColumn column = storeCatalog.getColumn( columnId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )

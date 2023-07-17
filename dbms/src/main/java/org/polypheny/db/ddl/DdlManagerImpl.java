@@ -1000,9 +1000,16 @@ public class DdlManagerImpl extends DdlManager {
 
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
             if ( table.entityType == EntityType.ENTITY ) {
-                AdapterManager.getInstance().getStore( allocationColumn.adapterId ).dropColumn( statement.getPrepareContext(), allocationColumn.logicalTableId, allocationColumn.columnId );
+                for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
+                    AdapterManager.getInstance().getStore( allocationColumn.adapterId )
+                            .dropColumn(
+                                    statement.getPrepareContext(),
+                                    allocation.id,
+                                    allocationColumn.columnId );
+                }
+
             }
-            catalog.getAllocRel( table.namespaceId ).deleteColumn( allocationColumn.logicalTableId, allocationColumn.columnId );
+            catalog.getAllocRel( table.namespaceId ).deleteColumn( allocationColumn.placementId, allocationColumn.columnId );
         }
 
         // Delete from catalog
@@ -1147,10 +1154,12 @@ public class DdlManagerImpl extends DdlManager {
                 type.cardinality );
         catalog.updateSnapshot();
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( logicalColumn.id ).orElseThrow() ) {
-            AdapterManager.getInstance().getStore( allocationColumn.adapterId ).updateColumnType(
-                    statement.getPrepareContext(),
-                    allocationColumn.logicalTableId,
-                    catalog.getSnapshot().rel().getColumn( logicalColumn.id ).orElseThrow() );
+            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
+                AdapterManager.getInstance().getStore( allocationColumn.adapterId ).updateColumnType(
+                        statement.getPrepareContext(),
+                        allocation.id,
+                        catalog.getSnapshot().rel().getColumn( logicalColumn.id ).orElseThrow() );
+            }
         }
 
         // Reset plan cache implementation cache & routing cache

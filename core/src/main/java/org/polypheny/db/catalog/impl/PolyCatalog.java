@@ -66,7 +66,7 @@ import org.polypheny.db.type.PolySerializable;
 public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
-    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.builder.get().build( PolyCatalog.class );
+    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
     @Serialize
     public final Map<Long, LogicalCatalog> logicalCatalogs;

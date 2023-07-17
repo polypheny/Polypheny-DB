@@ -39,7 +39,7 @@ import org.polypheny.db.type.PolySerializable;
 public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog {
 
     @Getter
-    public BinarySerializer<DocumentCatalog> serializer = PolySerializable.builder.get().build( DocumentCatalog.class );
+    public BinarySerializer<DocumentCatalog> serializer = PolySerializable.buildSerializer( DocumentCatalog.class );
 
     IdBuilder idBuilder = IdBuilder.getInstance();
     @Serialize

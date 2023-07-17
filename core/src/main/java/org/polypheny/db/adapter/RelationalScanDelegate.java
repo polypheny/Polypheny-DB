@@ -110,16 +110,16 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public void refreshGraph( long allocId ) {
-        scannable.refreshTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        scannable.refreshTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        scannable.refreshTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        scannable.refreshTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
+        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) ).allocationId );
+        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) ).allocationId );
+        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) ).allocationId );
+        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) ).allocationId );
     }
 
 
     @Override
     public void refreshCollection( long allocId ) {
-        scannable.refreshTable( allocId );
+        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) ).allocationId );
     }
 
 }

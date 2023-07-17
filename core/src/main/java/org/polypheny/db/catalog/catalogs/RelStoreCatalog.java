@@ -126,7 +126,7 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> columns = new ArrayList<>( table.columns );
         columns.add( position - 1, column );
         addColumn( column );
-        tables.put( allocId, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 
@@ -134,14 +134,13 @@ public class RelStoreCatalog extends StoreCatalog {
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
         PhysicalColumn old = getColumn( newCol.id );
         PhysicalColumn column = new PhysicalColumn( old.name, allocId, adapterId, old.position, newCol );
-        PhysicalTable table = getTable( allocId );
+        PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
         pColumn.remove( old );
         pColumn.add( column );
-        tables.put( allocId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
         return column;
     }
-
 
 
     public PhysicalTable fromAllocation( long id ) {

@@ -58,7 +58,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
 
 
     @Getter
-    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.builder.get().build( PolyAllocDocCatalog.class );
+    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
 
 
     @Override

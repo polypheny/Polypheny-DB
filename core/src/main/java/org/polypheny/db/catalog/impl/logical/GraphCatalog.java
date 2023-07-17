@@ -38,7 +38,7 @@ import org.polypheny.db.type.PolySerializable;
 public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Getter
-    public BinarySerializer<GraphCatalog> serializer = PolySerializable.builder.get().build( GraphCatalog.class );
+    public BinarySerializer<GraphCatalog> serializer = PolySerializable.buildSerializer( GraphCatalog.class );
     @Getter
     @Serialize
     public LogicalNamespace logicalNamespace;
