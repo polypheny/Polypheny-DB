@@ -137,11 +137,11 @@ public class MqttStreamPlugin extends Plugin {
             this.databaseId = statement.getPrepareContext().getDatabaseId();
 
             String name = settings.get( "namespace" );
-            NamespaceType type = NamespaceType.valueOf(settings.get( "namespace type" ));
+            NamespaceType type = NamespaceType.valueOf( settings.get( "namespace type" ) );
             long namespaceId = getNamespaceId( name, type );
             if ( namespaceId != 0 ) {
                 this.namespace = name;
-                this.namespaceType =  type;
+                this.namespaceType = type;
                 this.namespaceId = namespaceId;
             }
 
@@ -216,7 +216,7 @@ public class MqttStreamPlugin extends Plugin {
                 try {
                     schema = catalog.getSchema( this.databaseId, namespaceName );
                 } catch ( UnknownSchemaException e ) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException( e );
                 }
                 assert schema != null;
                 if ( schema.namespaceType == namespaceType ) {
@@ -232,7 +232,7 @@ public class MqttStreamPlugin extends Plugin {
                     catalog.commit();
                     namespaceId = id;
                 } catch ( NoTablePrimaryKeyException e ) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException( e );
                 }
             }
             return namespaceId;
@@ -271,7 +271,7 @@ public class MqttStreamPlugin extends Plugin {
 
                     case "namespace":
                         String newNamespaceName = this.getCurrentSettings().get( "namespace" );
-                        long namespaceId1 = this.getNamespaceId( newNamespaceName, this.namespaceType);
+                        long namespaceId1 = this.getNamespaceId( newNamespaceName, this.namespaceType );
                         if ( namespaceId1 != 0 ) {
                             this.namespaceId = namespaceId1;
                             this.namespace = newNamespaceName;
@@ -279,7 +279,7 @@ public class MqttStreamPlugin extends Plugin {
                         break;
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
-                        long namespaceId2 = this.getNamespaceId( this.namespace, newNamespaceType);
+                        long namespaceId2 = this.getNamespaceId( this.namespace, newNamespaceType );
                         if ( namespaceId2 != 0 ) {
                             this.namespaceId = namespaceId2;
                             this.namespaceType = newNamespaceType;
@@ -345,11 +345,11 @@ public class MqttStreamPlugin extends Plugin {
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
 
-            ReceivedMqttMessage receivedMqttMessage = new ReceivedMqttMessage(new MqttMessage( extractPayload(subMsg), subMsg.getTopic().toString() ), this.namespace, this.namespaceId, this.namespaceType, getUniqueName(), this.databaseId, this.userId );
+            ReceivedMqttMessage receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), subMsg.getTopic().toString() ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId );
 
             StreamProcessor streamProcessor = statement.getStreamProcessor();
             //TODO: ganzes ReceivedMqttMEssage objekt übergeben und arbeiten lassen.
-            String content = streamProcessor.processStream(receivedMqttMessage.getMessage());
+            String content = streamProcessor.processStream( receivedMqttMessage.getMessage() );
 
             StreamCapture streamCapture = new StreamCapture( this.transactionManager, receivedMqttMessage );
             streamCapture.handleContent();
@@ -425,11 +425,11 @@ public class MqttStreamPlugin extends Plugin {
                 informationGroupMsg = new InformationGroup( informationPage, "Publish a message" ).setOrder( 2 );
                 im.addGroup( informationGroupMsg );
 
-                msgButton = new InformationAction( informationGroupMsg, "Send a msg", (parameters) -> {
+                msgButton = new InformationAction( informationGroupMsg, "Send a msg", ( parameters ) -> {
                     String end = "Msg was published!";
                     client.publishWith().topic( parameters.get( "topic" ) ).payload( parameters.get( "msg" ).getBytes() ).send();
                     return end;
-                }).withParameters( "topic", "msg" );
+                } ).withParameters( "topic", "msg" );
                 im.registerInformation( msgButton );
 
             }

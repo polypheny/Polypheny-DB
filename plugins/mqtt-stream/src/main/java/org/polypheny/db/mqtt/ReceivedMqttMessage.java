@@ -21,6 +21,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
 public class ReceivedMqttMessage {
+
     private final MqttMessage msg;
     @Getter
     private final String namespaceName;
@@ -34,8 +35,9 @@ public class ReceivedMqttMessage {
     private final long databaseId;
     @Getter
     private final int userId;
-    @Getter @Setter
-    private long storeId;
+    @Getter
+    @Setter
+    private long storeId;   // the ID of collection/graph/table... the place where info is/should be saved
 
 
     public ReceivedMqttMessage( MqttMessage msg, String namespaceName, long namespaceId, NamespaceType namespaceType, long storeId, String uniqueNameOfInterface, long databaseId, int userId ) {
@@ -49,9 +51,11 @@ public class ReceivedMqttMessage {
         this.storeId = storeId;
     }
 
+
     public String getTopic() {
         return this.msg.getTopic();
     }
+
 
     public String getMessage() {
         return this.msg.getMessage();

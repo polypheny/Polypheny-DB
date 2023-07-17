@@ -16,10 +16,7 @@
 
 package org.polypheny.db.stream;
 
-import lombok.Getter;
-
-public interface StreamMessage<T> {
-
+public interface StreamMessage {
 
 
 }

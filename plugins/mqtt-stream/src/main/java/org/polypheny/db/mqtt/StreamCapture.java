@@ -90,7 +90,7 @@ public class StreamCapture {
      */
     long getCollectionId() {
         Catalog catalog = Catalog.getInstance();
-        //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
+        //check for collection with same name
         List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
         for ( CatalogCollection collection : collectionList ) {
             if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
@@ -105,6 +105,7 @@ public class StreamCapture {
         return createNewCollection();
 
     }
+
 
     private long createNewCollection() {
         Catalog catalog = Catalog.getInstance();

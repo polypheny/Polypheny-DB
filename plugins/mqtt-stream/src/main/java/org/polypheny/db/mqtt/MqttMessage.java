@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.stream.StreamMessage;
 
 public class MqttMessage implements StreamMessage {
+
     @Getter
     final String message;
     @Getter
