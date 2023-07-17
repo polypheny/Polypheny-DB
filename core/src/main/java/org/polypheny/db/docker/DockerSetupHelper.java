@@ -87,15 +87,15 @@ public final class DockerSetupHelper {
 
         try {
             tryConnectDirectly( hostname );
-            int id = DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT );
-            return new DockerSetupResult( true, id );
+            DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null );
+            return new DockerSetupResult( true );
         } catch ( IOException e ) {
             return new DockerSetupResult( HandshakeManager.getInstance()
                     .newHandshake(
                             hostname,
                             ConfigDocker.COMMUNICATION_PORT,
                             ConfigDocker.HANDSHAKE_PORT,
-                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT )
+                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null )
                     ) );
         }
 
@@ -183,12 +183,10 @@ public final class DockerSetupHelper {
         private String error = "";
         @Getter
         private boolean success = false;
-        private int dockerId = -1;
 
 
-        private DockerSetupResult( boolean success, int dockerId ) {
+        private DockerSetupResult( boolean success ) {
             this.success = success;
-            this.dockerId = dockerId;
         }
 
 
@@ -203,7 +201,7 @@ public final class DockerSetupHelper {
 
 
         public Map<String, Object> getMap() {
-            return Map.of( "handshake", handshake, "error", error, "success", success, "dockerId", dockerId );
+            return Map.of( "handshake", handshake, "error", error, "success", success );
         }
 
     }

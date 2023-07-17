@@ -183,12 +183,14 @@ public final class DockerInstance {
 
 
     public Map<String, Object> getMap() {
-        return Map.of(
-                "id", instanceId,
-                "host", host,
-                "alias", alias,
-                "connected", isConnected()
-        );
+        synchronized ( this ) {
+            return Map.of(
+                    "id", instanceId,
+                    "host", host,
+                    "alias", alias,
+                    "connected", isConnected()
+            );
+        }
     }
 
 

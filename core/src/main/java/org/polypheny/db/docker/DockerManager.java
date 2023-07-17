@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
@@ -37,7 +38,7 @@ public final class DockerManager {
 
     public static DockerManager getInstance() {
         if ( !INSTANCE.initialized.getAndSet( true ) ) {
-            RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).forEach( c -> INSTANCE.addDockerInstance( c.getHost(), c.getAlias(), c.getPort() ) );
+            RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).forEach( c -> INSTANCE.addDockerInstance( c.getHost(), c.getAlias(), c.getPort(), c ) );
         }
 
         return INSTANCE;
@@ -66,7 +67,7 @@ public final class DockerManager {
     /**
      * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
      */
-    int addDockerInstance( String host, String alias, int port ) {
+    void addDockerInstance( String host, String alias, int port, @Nullable ConfigDocker existingConfig ) {
         synchronized ( this ) {
             if ( dockerInstances.values().stream().anyMatch( d -> d.getHost().equals( host ) ) ) {
                 throw new RuntimeException( "There is already a docker instance connected to " + host );
@@ -74,13 +75,15 @@ public final class DockerManager {
             if ( dockerInstances.values().stream().anyMatch( d -> d.getAlias().equals( alias ) ) ) {
                 throw new RuntimeException( "There is already a docker instance with alias " + alias );
             }
-            // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
-            List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-            ConfigDocker configDocker = new ConfigDocker( host, alias, port );
-            configList.add( configDocker );
-            ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+            ConfigDocker configDocker = existingConfig;
+            if ( configDocker == null ) {
+                // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
+                List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
+                configDocker = new ConfigDocker( host, alias, port );
+                configList.add( configDocker );
+                ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+            }
             dockerInstances.put( configDocker.getId(), new DockerInstance( configDocker.getId(), host, alias, port ) );
-            return configDocker.getId();
         }
     }
 
