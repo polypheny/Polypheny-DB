@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeVarLength;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -36,11 +37,16 @@ public abstract class AllocationEntity extends CatalogEntity {
 
     @Serialize
     public long adapterId;
+
     @Serialize
     public long logicalId;
+
     @Serialize
+    @SerializeVarLength
     public long partitionId;
+
     @Serialize
+    @SerializeVarLength
     public long placementId;
 
 

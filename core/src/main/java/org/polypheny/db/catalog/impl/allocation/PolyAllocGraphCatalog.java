@@ -62,7 +62,9 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Override
     public AllocationGraph addAllocation( long adapterId, long graphId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationGraph graph = new AllocationGraph( id, graphId, namespace.id, adapterId );
+        long placementId = idBuilder.getNewPlacementId();
+        long partitionId = idBuilder.getNewPartitionId();
+        AllocationGraph graph = new AllocationGraph( id, placementId, partitionId, graphId, namespace.id, adapterId );
         graphs.put( id, graph );
         return graph;
     }

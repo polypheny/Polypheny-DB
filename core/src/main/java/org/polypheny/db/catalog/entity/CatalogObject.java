@@ -27,6 +27,10 @@ public interface CatalogObject extends Serializable {
 
     Serializable[] getParameterArray();
 
+    default Visibility getVisibility() {
+        return Visibility.EXTERNAL;
+    }
+
 
     static String getEnumNameOrNull( Enum<?> theEnum ) {
         if ( theEnum == null ) {
@@ -34,6 +38,11 @@ public interface CatalogObject extends Serializable {
         } else {
             return theEnum.name();
         }
+    }
+
+    enum Visibility {
+        INTERNAL,
+        EXTERNAL
     }
 
 }

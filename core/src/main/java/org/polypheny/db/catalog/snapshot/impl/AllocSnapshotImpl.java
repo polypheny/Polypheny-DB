@@ -77,6 +77,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, List<AllocationPlacement>> logicalToPlacements;
     ImmutableMap<Pair<Long, Long>, AllocationEntity> placementPartitionToAlloc;
     ImmutableMap<Pair<Long, Long>, AllocationPlacement> adapterLogicalToPlacement;
+    ImmutableMap<Long, List<AllocationEntity>> placementToPartitions;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
@@ -137,13 +138,26 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
         this.placementPartitionToAlloc = buildPlacementPartitionToAlloc();
         this.adapterLogicalToPlacement = buildAdapterLogicalToPlacement();
+        this.placementToPartitions = buildPlacementToPartitions();
+    }
+
+
+    private ImmutableMap<Long, List<AllocationEntity>> buildPlacementToPartitions() {
+        Map<Long, List<AllocationEntity>> map = new HashMap<>();
+        for ( AllocationEntity value : this.allocs.values() ) {
+            if ( !map.containsKey( value.placementId ) ) {
+                map.put( value.placementId, new ArrayList<>() );
+            }
+            map.get( value.placementId ).add( value );
+        }
+        return ImmutableMap.copyOf( map );
     }
 
 
     private ImmutableMap<Pair<Long, Long>, AllocationPlacement> buildAdapterLogicalToPlacement() {
         Map<Pair<Long, Long>, AllocationPlacement> map = new HashMap<>();
         for ( AllocationPlacement value : this.placements.values() ) {
-            Pair<Long, Long> key = Pair.of( value.adapterId, value.id );
+            Pair<Long, Long> key = Pair.of( value.adapterId, value.logicalEntityId );
             map.put( key, value );
         }
         return ImmutableMap.copyOf( map );
@@ -503,7 +517,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     @Override
     public @NotNull List<AllocationEntity> getAllocsOfPlacement( long placementId ) {
-        return null;
+        return Optional.ofNullable( placementToPartitions.get( placementId ) ).orElse( List.of() );
     }
 
 }

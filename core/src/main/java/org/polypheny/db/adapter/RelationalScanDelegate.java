@@ -119,7 +119,7 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public void refreshCollection( long allocId ) {
-        scannable.refreshTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
+        scannable.refreshTable( allocId );
     }
 
 }

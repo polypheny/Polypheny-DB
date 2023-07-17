@@ -320,7 +320,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             Statement targetStatement = transaction.createStatement();
 
             if ( allocation.unwrap( AllocationTable.class ) != null ) {
-                List<AllocationColumn> allocColumns = Catalog.snapshot().alloc().getColumns( allocation.id );
+                List<AllocationColumn> allocColumns = Catalog.snapshot().alloc().getColumns( allocation.placementId );
 
                 //columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
                 // If partitions should be allowed for materialized views this needs to be changed that all partitions are considered

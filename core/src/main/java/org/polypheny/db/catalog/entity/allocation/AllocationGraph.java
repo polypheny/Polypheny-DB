@@ -34,10 +34,12 @@ public class AllocationGraph extends AllocationEntity {
 
     public AllocationGraph(
             @Deserialize("id") long id,
+            @Deserialize("placementId") long placementId,
+            @Deserialize("partitionId") long partitionId,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, -1, -1, logicalId, namespaceId, adapterId, NamespaceType.GRAPH );
+        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, NamespaceType.GRAPH );
     }
 
 

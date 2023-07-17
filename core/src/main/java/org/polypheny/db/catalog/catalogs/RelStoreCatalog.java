@@ -120,13 +120,13 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalColumn addColumn( String name, long tableId, long adapterId, int position, LogicalColumn lColumn ) {
-        PhysicalColumn column = new PhysicalColumn( name, tableId, adapterId, position, lColumn );
-        PhysicalTable table = getTable( tableId );
+    public PhysicalColumn addColumn( String name, long allocId, long adapterId, int position, LogicalColumn lColumn ) {
+        PhysicalColumn column = new PhysicalColumn( name, allocId, adapterId, position, lColumn );
+        PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> columns = new ArrayList<>( table.columns );
         columns.add( position - 1, column );
         addColumn( column );
-        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
+        tables.put( allocId, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 

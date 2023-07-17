@@ -70,7 +70,9 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Override
     public AllocationCollection addAllocation( long adapterId, long logicalId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationCollection collection = new AllocationCollection( id, logicalId, namespace.id, adapterId );
+        long placementId = idBuilder.getNewPlacementId();
+        long partitionId = idBuilder.getNewPartitionId();
+        AllocationCollection collection = new AllocationCollection( id, placementId, partitionId, logicalId, namespace.id, adapterId );
         collections.put( id, collection );
         return collection;
     }

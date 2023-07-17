@@ -492,16 +492,22 @@ public class DdlManagerImpl extends DdlManager {
 
         // Add column on underlying data stores and insert default value
         for ( DataStore<?> store : stores ) {
-            AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).orElseThrow();
+            AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
+
             catalog.getAllocRel( table.namespaceId ).addColumn(
-                    allocation.partitionId,
+                    placement.id,
                     // Will be set later
                     table.id,     // Will be set later
                     addedColumn.id,
                     store.adapterId,
                     PlacementType.AUTOMATIC,
-                    catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );// we just append it at the end //Not a valid partitionID --> placeholder
-            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( statement.getPrepareContext(), allocation.id, addedColumn );
+                    catalog.getSnapshot().alloc().getColumns( placement.id ).size() );// we just append it at the end //Not a valid partitionID --> placeholder
+            for ( AllocationEntity entity : catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ) ) {
+                AdapterManager
+                        .getInstance()
+                        .getStore( store.getAdapterId() )
+                        .addColumn( statement.getPrepareContext(), entity.id, addedColumn );
+            }
         }
 
         catalog.updateSnapshot();
@@ -1768,21 +1774,17 @@ public class DdlManagerImpl extends DdlManager {
         // Sets previously created primary key
         //catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, columnIds );
 
-        //catalog.updateSnapshot();
+        AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, List.of(), false );
+        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, group.id, List.of(), false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE );
 
         for ( DataStore<?> store : stores ) {
-            AllocationTable alloc = catalog.getAllocRel( namespaceId ).addAllocation( store.getAdapterId(), store.adapterId, -1, view.id );
-            List<AllocationColumn> columns = new ArrayList<>();
+            AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( view.id, namespaceId, store.adapterId );
 
-            int i = 0;
-            for ( LogicalColumn column : ids.values() ) {
-                columns.add( catalog.getAllocRel( namespaceId ).addColumn( alloc.partitionId, alloc.partitionId, column.id, store.adapterId, PlacementType.AUTOMATIC, i++ ) );
-            }
+            addAllocationsForPlacement( namespaceId, statement, view, placement.id, List.copyOf( ids.values() ), List.of( partition.id ), store );
 
-            buildNamespace( namespaceId, view, store );
-
-            store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( view, List.copyOf( ids.values() ) ), AllocationTableWrapper.of( alloc, columns ) );
         }
+        addBlankPartition( namespaceId, view.id, List.of( group.id ), List.of( partition.id ) );
+
         catalog.updateSnapshot();
 
         // Selected data from tables is added into the newly crated materialized view
