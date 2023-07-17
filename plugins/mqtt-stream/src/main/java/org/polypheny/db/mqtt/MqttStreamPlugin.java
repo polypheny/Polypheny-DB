@@ -344,16 +344,14 @@ public class MqttStreamPlugin extends Plugin {
             //TODO: attention: return values, not correct, might need a change of type.
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
+
+            ReceivedMqttMessage receivedMqttMessage = new ReceivedMqttMessage(new MqttMessage( extractPayload(subMsg), subMsg.getTopic().toString() ), this.namespace, this.namespaceId, this.namespaceType, getUniqueName(), this.databaseId, this.userId );
+
             StreamProcessor streamProcessor = statement.getStreamProcessor();
+            //TODO: ganzes ReceivedMqttMEssage objekt übergeben und arbeiten lassen.
+            String content = streamProcessor.processStream(receivedMqttMessage.getMessage());
 
-
-            String content = streamProcessor.processStream(extractPayload(subMsg));
-
-
-
-            PolyStream stream = new PolyStream( subMsg.getTopic().toString(), getUniqueName(), content, this.namespace, this.namespaceType );
-            stream.setNamespaceID( this.namespaceId );
-            StreamCapture streamCapture = new StreamCapture( this.transactionManager, stream );
+            StreamCapture streamCapture = new StreamCapture( this.transactionManager, receivedMqttMessage );
             streamCapture.handleContent();
         }
 

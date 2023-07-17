@@ -16,15 +16,11 @@
 
 package org.polypheny.db.mqtt;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonString;
-import org.bson.codecs.pojo.annotations.BsonId;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgCollation;
@@ -33,31 +29,23 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Sort;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
@@ -66,26 +54,26 @@ public class StreamCapture {
 
     TransactionManager transactionManager;
     PolyphenyHomeDirManager homeDirManager;
-    PolyStream stream;
+    ReceivedMqttMessage receivedMqttMessage;
 
 
-    StreamCapture( final TransactionManager transactionManager, PolyStream stream ) {
+    StreamCapture( final TransactionManager transactionManager, ReceivedMqttMessage receivedMqttMessage ) {
         this.transactionManager = transactionManager;
-        this.stream = stream;
+        this.receivedMqttMessage = receivedMqttMessage;
 
     }
 
 
     public void handleContent() {
 
-        if ( stream.getStoreID() == 0 ) {
+        if ( receivedMqttMessage.getStoreId() == 0 ) {
             //TODO: get store id of already existing or create new one.
 
             //TODO: maybe do this with interface
-            if ( stream.getNamespaceType() == NamespaceType.DOCUMENT ) {
-                long newstoreId = getCollectionID(  );
+            if ( receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
+                long newstoreId = getCollectionId();
                 if ( newstoreId != 0 ) {
-                    stream.setStoreID( newstoreId );
+                    receivedMqttMessage.setStoreId( newstoreId );
                 }
             }
         }
@@ -100,13 +88,13 @@ public class StreamCapture {
     /**
      * @return the id of the collection that was either already existing with the topic as name or that was newly created
      */
-    long getCollectionID() {
+    long getCollectionId() {
         Catalog catalog = Catalog.getInstance();
         //check for collection with same name //TODO: maybe change the collection name, currently collection name is the topic
-        List<CatalogCollection> collectionList = catalog.getCollections( stream.getNamespaceID(), null );
+        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
         for ( CatalogCollection collection : collectionList ) {
-            if ( collection.name.equals( this.stream.topic ) ) {
-                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+            if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
                 if ( !collection.placements.contains( queryInterfaceId ) ) {
                     return collection.addPlacement( queryInterfaceId ).id;
                 } else {
@@ -128,13 +116,13 @@ public class StreamCapture {
         try {
             List<DataStore> dataStores = new ArrayList<>();
             DdlManager.getInstance().createCollection(
-                    this.stream.getNamespaceID(),
-                    this.stream.topic,
+                    this.receivedMqttMessage.getNamespaceId(),
+                    this.receivedMqttMessage.getTopic(),
                     true,   //only creates collection if it does not already exist.
                     dataStores.size() == 0 ? null : dataStores,
                     PlacementType.MANUAL,
                     statement );
-            log.info( "Created Collection with name: {}", this.stream.topic );
+            log.info( "Created Collection with name: {}", this.receivedMqttMessage.getTopic() );
             transaction.commit();
         } catch ( EntityAlreadyExistsException e ) {
             log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
@@ -144,10 +132,10 @@ public class StreamCapture {
             return 0;
         }
         //add placement
-        List<CatalogCollection> collectionList = catalog.getCollections( this.stream.getNamespaceID(), null );
+        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
         for ( int i = 0; i < collectionList.size(); i++ ) {
-            if ( collectionList.get( i ).name.equals( this.stream.topic ) ) {
-                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.stream.getUniqueNameOfInterface() ).getQueryInterfaceId();
+            if ( collectionList.get( i ).name.equals( this.receivedMqttMessage.getTopic() ) ) {
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
                 collectionList.set( i, collectionList.get( i ).addPlacement( queryInterfaceId ) );
 
                 return collectionList.get( i ).id;
@@ -159,7 +147,7 @@ public class StreamCapture {
 
     // added by Datomo
     public void insertDocument() {
-        String collectionName = "wohnzimmer." + this.stream.topic;
+        String collectionName = "wohnzimmer." + this.receivedMqttMessage.getTopic();
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
@@ -169,8 +157,8 @@ public class StreamCapture {
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
         //TODO: change to id:
-        document.put( "topic", new BsonString( this.stream.topic ) );
-        document.put( "content", new BsonString( this.stream.getContent() ) );
+        document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
+        document.put( "content", new BsonString( this.receivedMqttMessage.getMessage() ) );
 
         AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
 
@@ -218,7 +206,7 @@ public class StreamCapture {
 
 
     boolean saveContent() {
-        if ( this.stream.getNamespaceType() == NamespaceType.DOCUMENT ) {
+        if ( this.receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
             insertDocument();
         }
         return true;
@@ -227,7 +215,7 @@ public class StreamCapture {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( this.stream.getUserId(), this.stream.getDatabaseId(), false, "MQTT Stream" );
+            return transactionManager.startTransaction( this.receivedMqttMessage.getUserId(), this.receivedMqttMessage.getDatabaseId(), false, "MQTT Stream" );
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | GenericCatalogException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
