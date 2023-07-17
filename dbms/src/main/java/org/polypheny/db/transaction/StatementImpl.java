@@ -36,7 +36,6 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.stream.StreamProcessor;
-import org.polypheny.db.stream.MqttStreamProcessor;
 import org.polypheny.db.stream.StreamProcessorImpl;
 import org.polypheny.db.util.FileInputHandle;
 
@@ -81,7 +80,7 @@ public class StatementImpl implements Statement {
         /**if ( streamProcessor == null ) {
 
         }**/
-        return new MqttStreamProcessor();
+        return new StreamProcessorImpl();
     }
 
 
