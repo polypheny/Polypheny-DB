@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -51,14 +50,12 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.PolyphenyCertificateManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -378,19 +375,11 @@ public class PolyphenyDb {
         Transaction trx = null;
 
         if ( AutoDocker.getInstance().isAvailable() ) {
-            // TODO: find a cleaner way to have a working configuration with id 0
             if ( testMode ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
-                PolyphenyCertificateManager.deleteCertificates( "localhost" );
-                ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( List.of(), ConfigDocker.class );
-                AutoDocker.getInstance().doAutoConnect();
-                // This is done so we have a DockerInstance with id 0, Plugins using addAdapter depend on it...
-                List<ConfigDocker> configList = List.of( new ConfigDocker( 0, "localhost", "localhost", ConfigDocker.COMMUNICATION_PORT ) );
-                ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
-            } else {
-                AutoDocker.getInstance().doAutoConnect();
             }
+            AutoDocker.getInstance().doAutoConnect();
         }
 
         try {

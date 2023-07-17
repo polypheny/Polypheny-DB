@@ -16,13 +16,14 @@
 
 package org.polypheny.db.docker;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
@@ -30,7 +31,6 @@ import org.polypheny.db.config.RuntimeConfig;
 public final class DockerManager {
 
     private static final DockerManager INSTANCE = new DockerManager();
-    @Getter
     private final Map<Integer, DockerInstance> dockerInstances = new ConcurrentHashMap<>();
     private final AtomicBoolean initialized = new AtomicBoolean( false );
 
@@ -44,13 +44,22 @@ public final class DockerManager {
     }
 
 
-    public Optional<DockerInstance> getInstanceById( Integer instanceId ) {
-        return Optional.ofNullable( dockerInstances.getOrDefault( instanceId, null ) );
+    public Optional<DockerInstance> getInstanceById( int instanceId ) {
+        // Tests expect a localhost docker instance with id 0
+        if ( Catalog.testMode && instanceId == 0 ) {
+            return dockerInstances.values().stream().filter( d -> d.getHost().equals( "localhost" ) ).findFirst();
+        }
+        return Optional.ofNullable( dockerInstances.get( instanceId ) );
     }
 
 
     Optional<DockerInstance> getInstanceForContainer( String uuid ) {
         return dockerInstances.values().stream().filter( d -> d.hasContainer( uuid ) ).findFirst();
+    }
+
+
+    public ImmutableMap<Integer, DockerInstance> getDockerInstances() {
+        return ImmutableMap.copyOf( dockerInstances );
     }
 
 
