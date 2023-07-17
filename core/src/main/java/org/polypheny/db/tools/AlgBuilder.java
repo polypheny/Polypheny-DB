@@ -297,6 +297,12 @@ public class AlgBuilder {
         return create( statement, cluster );
     }
 
+    public static AlgBuilder createDocumentBuilder( Statement statement ) {
+        final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
+        final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        return create( statement, cluster );
+    }
+
 
     public static AlgBuilder create( Statement statement, AlgOptCluster cluster ) {
         return new AlgBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );

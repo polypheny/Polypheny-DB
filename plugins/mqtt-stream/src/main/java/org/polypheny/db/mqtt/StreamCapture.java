@@ -47,6 +47,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -158,17 +159,17 @@ public class StreamCapture {
 
     // added by Datomo
     public void insertDocument() {
-        String collectionName = this.stream.topic;
+        String collectionName = "wohnzimmer." + this.stream.topic;
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
-        AlgBuilder builder = AlgBuilder.create( statement );
+        AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
         //TODO: change to id:
-        document.put( "id", new BsonString( this.stream.topic ) );
+        document.put( "topic", new BsonString( this.stream.topic ) );
         document.put( "content", new BsonString( this.stream.getContent() ) );
 
         AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
@@ -247,7 +248,7 @@ public class StreamCapture {
             statement.getTransaction().commit();
             return rows.toString();
         } catch ( Throwable e ) {
-            log.error( "Error during execution of REST query", e );
+            log.error( "Error during execution of stream capture query", e );
             try {
                 statement.getTransaction().rollback();
             } catch ( TransactionException transactionException ) {
