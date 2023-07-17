@@ -68,7 +68,7 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerSetupResult newDockerInstance( String hostname, String alias ) {
+    public static DockerSetupResult newDockerInstance( String hostname, String alias, boolean startHandshake ) {
         if ( hostname.equals( "" ) ) {
             return new DockerSetupResult( "hostname must not be empty" );
         }
@@ -95,7 +95,8 @@ public final class DockerSetupHelper {
                             hostname,
                             ConfigDocker.COMMUNICATION_PORT,
                             ConfigDocker.HANDSHAKE_PORT,
-                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null )
+                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null ),
+                            startHandshake
                     ) );
         }
 
@@ -127,7 +128,9 @@ public final class DockerSetupHelper {
                     hostname,
                     ConfigDocker.COMMUNICATION_PORT,
                     ConfigDocker.HANDSHAKE_PORT,
-                    () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ) );
+                    () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
+                    true
+            );
             return new DockerUpdateResult( id, true );
         } else {
             return new DockerUpdateResult( id, false );
@@ -147,7 +150,8 @@ public final class DockerSetupHelper {
                 dockerInstance.getHost(),
                 ConfigDocker.COMMUNICATION_PORT,
                 ConfigDocker.HANDSHAKE_PORT,
-                () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect )
+                () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
+                true
         );
 
         return new DockerReconnectResult( m );

@@ -3619,7 +3619,7 @@ public class Crud implements InformationObserver {
     void addDockerInstance( final Context ctx ) {
         try {
             Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ) );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ), true );
 
             ctx.json( res.getMap() );
         } catch ( RuntimeException e ) {

@@ -57,6 +57,12 @@ public final class AutoDocker {
     }
 
 
+    private void updateStatus( String newStatus ) {
+        status = newStatus;
+        log.info( "AutoDocker: " + newStatus );
+    }
+
+
     private void createPolyphenyConnectorVolumeIfNotExists( DockerClient client ) {
         List<InspectVolumeResponse> volumes = client.listVolumesCmd().exec().getVolumes();
 
@@ -87,14 +93,14 @@ public final class AutoDocker {
 
 
     private Optional<String> createAndStartPolyphenyContainer( DockerClient client ) {
-        status = "Pulling container image...";
+        updateStatus( "Pulling container image polypheny/polypheny-docker-connector" );
         PullImageResultCallback callback = new PullImageResultCallback();
         client.pullImageCmd( "polypheny/polypheny-docker-connector" ).exec( callback );
         try {
             callback.awaitCompletion();
         } catch ( InterruptedException e ) {
             log.error( "PullImage: ", e );
-            status = "Error while pulling image";
+            updateStatus( "Failed to pull image." );
             return Optional.empty();
         }
         createPolyphenyConnectorVolumeIfNotExists( client );
@@ -117,7 +123,7 @@ public final class AutoDocker {
 
 
     private void doAutoHandshake() {
-        status = "Starting...";
+        updateStatus( "Starting automatic setup procedure" );
         DockerClient client = getClient();
         Optional<String> maybeUuid = findAndStartPolyphenyContainer( client );
 
@@ -129,7 +135,7 @@ public final class AutoDocker {
         }
 
         String polyphenyDockerUuid = maybeUuid.get();
-        status = "Starting handshake...";
+        updateStatus( "Performing handshake with container" );
         ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
@@ -158,8 +164,8 @@ public final class AutoDocker {
         } );
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
         for ( int i = 0; i < 20; i++ ) {
-            String status = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
-            if ( status.equals( "RUNNING" ) ) {
+            String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
+            if ( handshakeStatus.equals( "RUNNING" ) ) {
                 try {
                     TimeUnit.SECONDS.sleep( 1 );
                 } catch ( InterruptedException e ) {
@@ -186,11 +192,11 @@ public final class AutoDocker {
 
             if ( !res.getError().equals( "" ) ) {
                 log.info( "AutoDocker: Reconnect failed: " + res.getError() );
-                status = res.getError();
+                updateStatus( "error: " + res.getError() );
                 return false;
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost" );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", false );
 
             if ( res.isSuccess() ) {
                 return true;
@@ -198,7 +204,7 @@ public final class AutoDocker {
 
             if ( !res.getError().equals( "" ) ) {
                 log.info( "AutoDocker: Setup failed: " + res.getError() );
-                status = res.getError();
+                updateStatus( "setup failed: " + res.getError() );
                 return false;
             }
         }

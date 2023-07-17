@@ -51,7 +51,7 @@ public final class HandshakeManager {
     }
 
 
-    Map<String, String> newHandshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion ) {
+    Map<String, String> newHandshake( String hostname, int communicationPort, int handshakePort, Runnable onCompletion, boolean startHandshake ) {
         hostname = normalizeHostname( hostname );
         synchronized ( this ) {
             Handshake old = handshakes.remove( hostname );
@@ -62,7 +62,9 @@ public final class HandshakeManager {
             try {
                 Handshake h = new Handshake( hostname, communicationPort, handshakePort, onCompletion );
                 handshakes.put( hostname, h );
-                h.startOrRestart();
+                if ( startHandshake ) {
+                    h.startOrRestart();
+                }
                 return h.serializeHandshake();
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
@@ -164,19 +166,18 @@ public final class HandshakeManager {
                 }
                 containerRunningGuess = guessIfContainerExists();
                 timeout.set( Instant.now().getEpochSecond() + 20 );
-                log.info( "Timeout is " + Instant.ofEpochSecond( timeout.get() ).toString() );
                 if ( handshakeThread == null || !handshakeThread.isAlive() ) {
                     if ( client.getState() == State.NOT_RUNNING ) {
                         client.prepareNextTry();
                     }
                     Runnable doHandshake = () -> {
-                        if ( !client.doHandshake() ) {
-                            log.info( "Handshake failed" );
-                        } else {
-                            log.info( "Handshake successful" );
+                        if ( client.doHandshake() ) {
+                            log.info( "Handshake with " + hostname + " successful" );
                             if ( !cancelled ) {
                                 onCompletion.run();
                             }
+                        } else {
+                            log.info( "Handshake with " + hostname + " failed" );
                         }
                     };
                     handshakeThread = new Thread( doHandshake );

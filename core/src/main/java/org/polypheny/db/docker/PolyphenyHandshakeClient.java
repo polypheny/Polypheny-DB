@@ -225,7 +225,6 @@ final class PolyphenyHandshakeClient {
         byte[] serverCertificate = client.getServerCertificate().get();
         byte[] authValue = computeAuthenticationValueV1( psk, polyphenyUUID, cb, serverCertificate, kp.getEncodedCertificate() );
         if ( Arrays.constantTimeAreEqual( authValue, serverValue ) ) {
-            log.info( "Handshake with " + hostname + " succeeded" );
             try {
                 PolyphenyCertificateManager.saveServerCertificate( hostname, serverCertificate );
             } catch ( IOException e ) {
