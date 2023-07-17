@@ -16,10 +16,11 @@ jobs:
         name: Integration Tests (Java 11)
         steps:
             -   name: Checkout
-                uses: actions/checkout@v2
+                uses: actions/checkout@v3
             -   name: Set up JDK
-                uses: actions/setup-java@v1
+                uses: actions/setup-java@v2
                 with:
+                    distribution: 'zulu'
                     java-version: 11
             -   name: Set env variable
                 run: |
