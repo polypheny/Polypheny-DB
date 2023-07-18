@@ -76,11 +76,8 @@ public class StatementImpl implements Statement {
 
 
     @Override
-    public StreamProcessor getStreamProcessor() {
-        /**if ( streamProcessor == null ) {
-
-        }**/
-        return new StreamProcessorImpl();
+    public StreamProcessor getStreamProcessor(String message) {
+        return new StreamProcessorImpl(message);
     }
 
 

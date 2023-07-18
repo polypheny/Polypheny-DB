@@ -20,36 +20,15 @@ import static org.reflections.Reflections.log;
 
 public class StreamProcessorImpl implements StreamProcessor {
 
-    public StreamProcessorImpl() {
-
+    String stream;
+    public StreamProcessorImpl(String stream) {
+        this.stream = stream;
     }
 
 
     @Override
-    //TODO: receive all additional info from Wrapper around MqttStream
-    public String processStream( String msg ) {
-        String info = extractInfo( msg );
-        if ( validateMsg( info ) ) {
-            log.info( "Extracted and validated message: {}", msg);
-            return info;
-        } else {
-            log.error( "Message is not valid!" );
-            return null;
-        }
+    public String getStream() {
+        return stream;
     }
-
-
-    private static boolean validateMsg( String msg ) {
-        //TODO: Implement
-        return true;
-    }
-
-
-    private static String extractInfo( String msg ) {
-        //TODO: extract the needed Info only -> based on topic attribut on right side!!};
-        return msg;
-    }
-
-
 
 }

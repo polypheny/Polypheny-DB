@@ -30,7 +30,7 @@ public interface Statement {
 
     QueryProcessor getQueryProcessor();
 
-    StreamProcessor getStreamProcessor();
+    StreamProcessor getStreamProcessor(String message);
 
     DataContext getDataContext();
 
