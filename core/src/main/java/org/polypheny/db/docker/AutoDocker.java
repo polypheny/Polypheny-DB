@@ -34,6 +34,8 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -137,7 +139,8 @@ public final class AutoDocker {
 
         String polyphenyDockerUuid = maybeUuid.get();
         updateStatus( "Performing handshake with container" );
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).exec();
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
+        StringBuffer sb = new StringBuffer();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
             public void onStart( Closeable closeable ) {
@@ -146,6 +149,9 @@ public final class AutoDocker {
 
             @Override
             public void onNext( Frame object ) {
+                synchronized ( sb ) {
+                    sb.append( StandardCharsets.UTF_8.decode( ByteBuffer.wrap( object.getPayload() ) ) );
+                }
             }
 
 
@@ -171,6 +177,9 @@ public final class AutoDocker {
                     InspectExecResponse s = client.inspectExecCmd( execResponse.getId() ).exec();
                     if ( s.getExitCodeLong() != null ) {
                         updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
+                        synchronized ( sb ) {
+                            log.info( "Output: " + sb );
+                        }
                         break;
                     }
                     HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
