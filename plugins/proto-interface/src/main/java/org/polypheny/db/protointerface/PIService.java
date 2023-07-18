@@ -67,6 +67,8 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void disconnect(DisconnectionRequest disconnectionRequest, StreamObserver<DisconnectionResponse> responseObserver) {
         PIClient client = getClient();
         clientManager.unregisterConnection(client);
+        responseObserver.onNext(DisconnectionResponse.newBuilder().build());
+        responseObserver.onCompleted();
     }
 
 
@@ -83,32 +85,8 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void getDbmsVersion(DbmsVersionRequest dbmsVersionRequest, StreamObserver<DbmsVersionResponse> responseObserver) {
         /* called as client auth check */
         getClient();
-        try {
-            String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
-            int nextSeparatorIndex = versionName.indexOf('.');
-            if (nextSeparatorIndex <= 0) {
-                throw new PIServiceException("Could not parse database version info");
-            }
-            int majorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
-
-            versionName = versionName.substring(nextSeparatorIndex + 1);
-            nextSeparatorIndex = versionName.indexOf('.');
-            if (nextSeparatorIndex <= 0) {
-                throw new PIServiceException("Could not parse database version info");
-            }
-            int minorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
-
-            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                    .setDbmsName("Polypheny-DB")
-                    .setVersionName(PolyphenyDb.class.getPackage().getImplementationVersion())
-                    .setMajorVersion(majorVersion)
-                    .setMinorVersion(minorVersion)
-                    .build();
-            responseObserver.onNext(dbmsVersionResponse);
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            throw new PIServiceException("Could not parse database version info");
-        }
+        responseObserver.onNext(DbMetaRetriever.getDbmsVersion());
+        responseObserver.onCompleted();
     }
 
 
@@ -293,6 +271,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists(indexedParameterBatch.getParameterListsList());
         List<Long> updateCounts = statement.executeBatch(valuesList);
         resultObserver.onNext(ProtoUtils.createStatementBatchStatus(statement, updateCounts));
+        resultObserver.onCompleted();
     }
 
 
@@ -385,6 +364,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void  setClientInfoProperties(ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver) {
         PIClient client = getClient();
         client.getPIClientInfoProperties().putAll(properties.getPropertiesMap());
+        reponseObserver.onNext(ClientInfoPropertiesResponse.newBuilder().build());
         reponseObserver.onCompleted();
     }
 
