@@ -72,7 +72,7 @@ public class RelationalMetaRetriever {
         metaBuilder.setTypeName( algDataType.getPolyType().getTypeName() );
         metaBuilder.setPrecision( QueryProcessorHelpers.getPrecision( algDataType ) );
         metaBuilder.setScale( QueryProcessorHelpers.getScale( algDataType ) );
-        Optional.of( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
+        Optional.ofNullable( parameterName ).ifPresent( p -> metaBuilder.setParameterName( parameterName ) );
         return metaBuilder.build();
     }
 
