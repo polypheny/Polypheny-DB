@@ -25,7 +25,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
+import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
@@ -85,7 +85,7 @@ public class PIPreparedIndexedStatement extends PIStatement implements Signaturi
     @Override
     public StatementResult execute() throws Exception {
         if ( currentStatement == null || !hasParametersSet ) {
-            throw new ProtoInterfaceServiceException( "Can't execute parameterized statement before preparation." );
+            throw new PIServiceException( "Can't execute parameterized statement before preparation." );
         }
         return execute( currentStatement );
     }
