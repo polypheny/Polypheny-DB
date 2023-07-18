@@ -172,8 +172,6 @@ public final class HandshakeManager {
                     Runnable doHandshake = () -> {
                         if ( client.doHandshake() ) {
                             log.info( "Handshake with " + hostname + " successful" );
-                        } else {
-                            log.info( "Handshake with " + hostname + " failed" );
                         }
                     };
                     handshakeThread = new Thread( doHandshake );

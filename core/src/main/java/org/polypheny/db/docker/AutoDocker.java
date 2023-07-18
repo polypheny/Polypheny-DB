@@ -20,6 +20,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.command.InspectExecResponse;
 import com.github.dockerjava.api.command.InspectVolumeResponse;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.Bind;
@@ -165,7 +166,15 @@ public final class AutoDocker {
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
         while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
-            if ( handshakeStatus.equals( "STARTING" ) || handshakeStatus.equals( "RUNNING" ) ) {
+            if ( !handshakeStatus.equals( "FAILED" ) && !handshakeStatus.equals( "SUCCESS" ) ) {
+                if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
+                    InspectExecResponse s = client.inspectExecCmd( execResponse.getId() ).exec();
+                    if ( s.getExitCodeLong() != null ) {
+                        updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
+                        break;
+                    }
+                    HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+                }
                 try {
                     TimeUnit.SECONDS.sleep( 1 );
                 } catch ( InterruptedException e ) {

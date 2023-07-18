@@ -185,7 +185,9 @@ final class PolyphenyHandshakeClient {
                 } else if ( e instanceof SocketException ) {
                     SocketException socketException = (SocketException) e;
                     lastErrorMessage = socketException.getMessage();
-                    log.error( "SocketException", socketException );
+                    if ( !socketException.getMessage().equals( "Connection reset" ) ) {
+                        log.error( "SocketException", socketException );
+                    }
                     continue;
                 }
                 lastErrorMessage = "Unknown error, check the logs";
