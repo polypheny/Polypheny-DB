@@ -80,10 +80,10 @@ public class DbMetaRetriever {
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace(namespaceName);
         switch (namespace.getNamespaceType()) {
             case RELATIONAL:
-                responseBuilder.addAllEntities(getRelationalEntities(namespace.getId(), namespaceName));
+                responseBuilder.addAllEntities(getRelationalEntities(namespace.getId(), entityPattern));
                 break;
             case GRAPH:
-                responseBuilder.addAllEntities(getGraphEntities(namespace.getId(), namespaceName));
+                responseBuilder.addAllEntities(getGraphEntities(namespace.getId(), entityPattern));
                 break;
             case DOCUMENT:
                 responseBuilder.addAllEntities(getDocumentEntities(namespace.getId(), entityPattern));
@@ -106,18 +106,20 @@ public class DbMetaRetriever {
     }
 
     private static Table getTableMeta(LogicalTable logicalTable) {
-        return Table.newBuilder()
-                .setSourceDatabaseName(logicalTable.getDatabaseName())
-                .setNamespaceName(logicalTable.getNamespaceName())
-                .setTableName(logicalTable.getName())
-                .setTableType(logicalTable.getEntityType().name())
-                .setOwnerName(logicalTable.getOwnerName())
-                .addAllColumns(getColumns(logicalTable))
-                .setPrimaryKey(getPrimaryKeyMeta(logicalTable))
-                .addAllForeignKeys(getForeignKeys(logicalTable))
-                .addAllExportedKeys(getExportedKeys(logicalTable))
-                .addAllIndexes(getIndexes(logicalTable, true))
-                .build();
+        Table.Builder tableBuilder = Table.newBuilder();
+        tableBuilder.setSourceDatabaseName(logicalTable.getDatabaseName());
+        tableBuilder.setNamespaceName(logicalTable.getNamespaceName());
+        tableBuilder.setTableName(logicalTable.getName());
+        tableBuilder.setTableType(logicalTable.getEntityType().name());
+        tableBuilder.setOwnerName(logicalTable.getOwnerName());
+        tableBuilder.addAllColumns(getColumns(logicalTable));
+        if (logicalTable.primaryKey != null) {
+            tableBuilder.setPrimaryKey(getPrimaryKeyMeta(logicalTable));
+        }
+        tableBuilder.addAllForeignKeys(getForeignKeys(logicalTable));
+        tableBuilder.addAllExportedKeys(getExportedKeys(logicalTable));
+        tableBuilder.addAllIndexes(getIndexes(logicalTable, true));
+        return tableBuilder.build();
     }
 
     private static List<Column> getColumns(LogicalTable logicalTable) {
@@ -312,5 +314,42 @@ public class DbMetaRetriever {
         functionBuilder.setFunctionCategory(function.getFunctionCategory().name());
         functionBuilder.setIsTableFunction(function.getFunctionCategory().isTableFunction());
         return functionBuilder.build();
+    }
+
+    public static DbmsVersionResponse getDbmsVersion() {
+        /*
+        String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
+        if (versionName == null) {
+            throw new PIServiceException("Could not retrieve database version info");
+        }
+        int nextSeparatorIndex = versionName.indexOf('.');
+        if (nextSeparatorIndex <= 0) {
+            throw new PIServiceException("Could not parse database version info");
+        }
+        int majorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
+
+        versionName = versionName.substring(nextSeparatorIndex + 1);
+        nextSeparatorIndex = versionName.indexOf('.');
+        if (nextSeparatorIndex <= 0) {
+            throw new PIServiceException("Could not parse database version info");
+        }
+        int minorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
+
+        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                .setDbmsName("Polypheny-DB")
+                .setVersionName(PolyphenyDb.class.getPackage().getImplementationVersion())
+                .setMajorVersion(majorVersion)
+                .setMinorVersion(minorVersion)
+                .build();
+        return dbmsVersionResponse;
+        */
+        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                .setDbmsName("Polypheny-DB")
+                .setVersionName("DUMMY VERSION NAME")
+                .setMajorVersion(-1)
+                .setMinorVersion(-1)
+                .build();
+        return dbmsVersionResponse;
+
     }
 }
