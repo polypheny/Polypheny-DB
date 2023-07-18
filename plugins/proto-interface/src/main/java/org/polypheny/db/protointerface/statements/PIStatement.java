@@ -162,9 +162,7 @@ public abstract class PIStatement {
             if (log.isTraceEnabled()) {
                 log.trace("fetch(long {}, int {} )", offset, properties.getFetchSize());
             }
-            startOrResumeStopwatch();
             List<List<PolyValue>> rows = getRows(LimitIterator.of(getOrCreateIterator(), properties.getFetchSize()));
-            executionStopWatch.suspend();
             boolean isDone = properties.getFetchSize() == 0 || rows.size() < properties.getFetchSize();
             if (isDone) {
                 executionStopWatch.stop();
@@ -177,7 +175,10 @@ public abstract class PIStatement {
 
 
     private List<List<PolyValue>> getRows(Iterator sectionIterator) {
-        return (List<List<PolyValue>>) MetaImpl.collect(currentImplementation.getCursorFactory(), sectionIterator, new ArrayList<>());
+        startOrResumeStopwatch();
+        List<List<PolyValue>> rows = (List<List<PolyValue>>) MetaImpl.collect(currentImplementation.getCursorFactory(), sectionIterator, new ArrayList<>());
+        executionStopWatch.suspend();
+        return rows;
     }
 
 
