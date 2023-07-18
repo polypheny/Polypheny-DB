@@ -191,7 +191,6 @@ public class DbMetaRetriever {
     }
 
 
-
     private static Index getIndexMeta(LogicalIndex logicalIndex) {
         Index.Builder importedKeyBuilder = Index.newBuilder();
         importedKeyBuilder.setDatabaseName(logicalIndex.getDatabaseName());
@@ -296,13 +295,14 @@ public class DbMetaRetriever {
                 .build();
     }
 
-    public static List<Function> getFunctions(QueryLanguage language, FunctionCategory functionCategory) {
-        return OperatorRegistry.getMatchingOperators(language).values().stream()
+    public static FunctionsResponse getFunctions(QueryLanguage language, FunctionCategory functionCategory) {
+        List<Function> functions = OperatorRegistry.getMatchingOperators(language).values().stream()
                 .filter(o -> o instanceof org.polypheny.db.nodes.Function)
                 .map(org.polypheny.db.nodes.Function.class::cast)
                 .filter(f -> f.getFunctionCategory() == functionCategory || functionCategory == null)
                 .map(DbMetaRetriever::getFunctionMeta)
                 .collect(Collectors.toList());
+        return FunctionsResponse.newBuilder().addAllFunctions(functions).build();
     }
 
     private static Function getFunctionMeta(org.polypheny.db.nodes.Function function) {
