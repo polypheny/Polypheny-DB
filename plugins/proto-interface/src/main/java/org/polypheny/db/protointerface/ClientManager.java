@@ -51,16 +51,16 @@ public class ClientManager {
     }
 
 
-    public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, ProtoInterfaceServiceException {
+    public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, PIServiceException {
         if (log.isTraceEnabled()) {
             log.trace("User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid());
         }
         // reject already connected user
         if (isConnected(connectionRequest.getClientUuid())) {
-            throw new ProtoInterfaceServiceException("A user with uid " + connectionRequest.getClientUuid() + "is already connected.");
+            throw new PIServiceException("A user with uid " + connectionRequest.getClientUuid() + "is already connected.");
         }
         if (!connectionRequest.hasUsername() || !connectionRequest.hasPassword()) {
-            throw new ProtoInterfaceServiceException("No username or password given.");
+            throw new PIServiceException("No username or password given.");
         }
         PIClientProperties properties = getPropertiesOrDefault(connectionRequest);
         final CatalogUser user = authenticateUser(connectionRequest.getUsername(), connectionRequest.getPassword());
@@ -97,9 +97,9 @@ public class ClientManager {
     }
 
 
-    public PIClient getClient(String clientUUID) throws ProtoInterfaceServiceException {
+    public PIClient getClient(String clientUUID) throws PIServiceException {
         if (!openConnections.containsKey(clientUUID)) {
-            throw new ProtoInterfaceServiceException("Client not registered");
+            throw new PIServiceException("Client not registered");
         }
         return openConnections.get(clientUUID);
     }

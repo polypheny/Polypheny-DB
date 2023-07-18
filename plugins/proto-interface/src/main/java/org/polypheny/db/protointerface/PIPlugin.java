@@ -34,9 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProtoInterfacePlugin extends PolyPlugin {
+public class PIPlugin extends PolyPlugin {
 
-    public ProtoInterfacePlugin(PluginContext context ) {
+    public PIPlugin(PluginContext context ) {
         super( context );
     }
 
