@@ -21,7 +21,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
+import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
 
@@ -60,7 +60,7 @@ public class StatementManager {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
-                throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
+                throw new PIServiceException("Language " + languageName + " not supported.");
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIUnparameterizedStatement interfaceStatement = PIUnparameterizedStatement.newBuilder()
@@ -113,7 +113,7 @@ public class StatementManager {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
-                throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
+                throw new PIServiceException("Language " + languageName + " not supported.");
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIPreparedIndexedStatement interfaceStatement = PIPreparedIndexedStatement.newBuilder()
@@ -136,7 +136,7 @@ public class StatementManager {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
-                throw new ProtoInterfaceServiceException("Language " + languageName + " not supported.");
+                throw new PIServiceException("Language " + languageName + " not supported.");
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIPreparedNamedStatement interfaceStatement = PIPreparedNamedStatement.newBuilder()
@@ -196,7 +196,7 @@ public class StatementManager {
     public PIStatement getStatement(int statementId) {
         PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
-            throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
+            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
         return statement;
     }
@@ -205,10 +205,10 @@ public class StatementManager {
     public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) {
         PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
-            throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
+            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
         if (!(statement instanceof PIPreparedNamedStatement)) {
-            throw new ProtoInterfaceServiceException("A prepared statement with id " + statementId + " does not exist for that client");
+            throw new PIServiceException("A prepared statement with id " + statementId + " does not exist for that client");
         }
         return (PIPreparedNamedStatement) statement;
     }
@@ -217,10 +217,10 @@ public class StatementManager {
     public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) {
         PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
-            throw new ProtoInterfaceServiceException("A statement with id " + statementId + " does not exist for that client");
+            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
         if (!(statement instanceof PIPreparedIndexedStatement)) {
-            throw new ProtoInterfaceServiceException("A prepared statement with id " + statementId + " does not exist for that client");
+            throw new PIServiceException("A prepared statement with id " + statementId + " does not exist for that client");
         }
         return (PIPreparedIndexedStatement) statement;
     }
