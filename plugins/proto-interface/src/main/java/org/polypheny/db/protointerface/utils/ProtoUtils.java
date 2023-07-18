@@ -18,14 +18,8 @@ package org.polypheny.db.protointerface.utils;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.polypheny.db.protointerface.proto.ColumnMeta;
-import org.polypheny.db.protointerface.proto.Frame;
-import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
-import org.polypheny.db.protointerface.proto.RelationalFrame;
-import org.polypheny.db.protointerface.proto.Row;
-import org.polypheny.db.protointerface.proto.StatementBatchStatus;
-import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.proto.StatementStatus;
+
+import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.protointerface.statements.PIStatementBatch;
 import org.polypheny.db.protointerface.statements.Signaturizable;
@@ -95,5 +89,4 @@ public class ProtoUtils {
                 .setRelationalFrame( relationalFrame )
                 .build();
     }
-
 }

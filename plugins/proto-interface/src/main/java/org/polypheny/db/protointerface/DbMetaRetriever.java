@@ -16,14 +16,16 @@
 
 package org.polypheny.db.protointerface;
 
+import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.logical.*;
-import org.polypheny.db.catalog.entity.logical.LogicalIndex.CatalogIndexColumn;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.type.PolyType;
 
@@ -68,9 +70,13 @@ public class DbMetaRetriever {
         return pattern == null ? null : new Pattern(pattern);
     }
 
+    public static Namespace getNamespace(String namespaceName) {
+        return getNamespaceMeta(Catalog.getInstance().getSnapshot().getNamespace(namespaceName));
+    }
+
     // Entity search by namespace
-    public static EntityResponse searchEntities(String namespaceName, String entityPattern) {
-        EntityResponse.Builder responseBuilder = EntityResponse.newBuilder();
+    public static EntitiesResponse searchEntities(String namespaceName, String entityPattern) {
+        EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace(namespaceName);
         switch (namespace.getNamespaceType()) {
             case RELATIONAL:
@@ -109,6 +115,7 @@ public class DbMetaRetriever {
                 .addAllColumns(getColumns(logicalTable))
                 .setPrimaryKey(getPrimaryKeyMeta(logicalTable))
                 .addAllForeignKeys(getForeignKeys(logicalTable))
+                .addAllExportedKeys(getExportedKeys(logicalTable))
                 .addAllIndexes(getIndexes(logicalTable, true))
                 .build();
     }
@@ -145,6 +152,8 @@ public class DbMetaRetriever {
         Optional.ofNullable(logicalColumn.getDefaultValue()).ifPresent(p -> columnBuilder.setDefaultValueAsString(p.getValue()));
         columnBuilder.setColumnIndex(logicalColumn.getPosition());
         Optional.ofNullable(CatalogObject.getEnumNameOrNull(logicalColumn.getCollation())).ifPresent(columnBuilder::setCollation);
+        columnBuilder.setIsHidden(false); //TODO: get from flag in catalog
+        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: get from catalog
         return columnBuilder.build();
     }
 
@@ -171,10 +180,17 @@ public class DbMetaRetriever {
         return logicalForeignKey.getReferencedColumns().stream().map(DbMetaRetriever::getColumnMeta).collect(Collectors.toList());
     }
 
+    private static List<ForeignKey> getExportedKeys(LogicalTable logicalTable) {
+        return Catalog.getInstance().getSnapshot().rel().getExportedKeys(logicalTable.getId())
+                .stream().map(DbMetaRetriever::getForeignKeyMeta).collect(Collectors.toList());
+    }
+
     private static List<Index> getIndexes(LogicalTable logicalTable, boolean unique) {
         return Catalog.getInstance().getSnapshot().rel().getIndexes(logicalTable.getId(), unique)
                 .stream().map(DbMetaRetriever::getIndexMeta).collect(Collectors.toList());
     }
+
+
 
     private static Index getIndexMeta(LogicalIndex logicalIndex) {
         Index.Builder importedKeyBuilder = Index.newBuilder();
@@ -258,209 +274,43 @@ public class DbMetaRetriever {
         return "";
     }
 
-    public static ProceduresResponse getProcedures(String languageName, String schemaPattern, String procedureNamePattern) {
+    public static ProceduresResponse getProcedures(String languageName, String procedureNamePattern) {
         // TODO: get data after functionality is implemented
         return ProceduresResponse.newBuilder().build();
     }
 
-    public static ProcedureColumnsResponse getProcedureColumns(String language, String namespacePattern, String procedurePattern, String columnPattern) {
-        // TODO: get data after functionality is implemented
-        return ProcedureColumnsResponse.newBuilder().build();
+    public static ClientInfoPropertyMetaResponse getClientInfoProperties() {
+        List<ClientInfoPropertyMeta> propertyInfoMetas = PIClientInfoProperties.DEFAULTS.stream()
+                .map(DbMetaRetriever::getClientInfoPropertyMeta).collect(Collectors.toList());
+        return ClientInfoPropertyMetaResponse.newBuilder()
+                .addAllClientInfoPropertyMetas(propertyInfoMetas)
+                .build();
     }
 
-/*
-
-
-    public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
-            }
-
-            final Map<DatabaseProperty, Object> map = new HashMap<>();
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getDatabaseProperties( ConnectionHandle {} )", ch );
-            return map;
-        }
+    private static ClientInfoPropertyMeta getClientInfoPropertyMeta(PIClientInfoProperties.ClientInfoPropertiesDefault clientInfoPropertiesDefault) {
+        return ClientInfoPropertyMeta.newBuilder()
+                .setKey(clientInfoPropertiesDefault.key)
+                .setDefaultValue(clientInfoPropertiesDefault.default_value)
+                .setMaxlength(clientInfoPropertiesDefault.maxlength)
+                .setDescription(clientInfoPropertiesDefault.description)
+                .build();
     }
 
-
-
-    public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
-            }
-
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
-            return null;
-        }
+    public static List<Function> getFunctions(QueryLanguage language, FunctionCategory functionCategory) {
+        return OperatorRegistry.getMatchingOperators(language).values().stream()
+                .filter(o -> o instanceof org.polypheny.db.nodes.Function)
+                .map(org.polypheny.db.nodes.Function.class::cast)
+                .filter(f -> f.getFunctionCategory() == functionCategory || functionCategory == null)
+                .map(DbMetaRetriever::getFunctionMeta)
+                .collect(Collectors.toList());
     }
 
-
-    public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
-            }
-
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
-            return null;
-        }
+    private static Function getFunctionMeta(org.polypheny.db.nodes.Function function) {
+        Function.Builder functionBuilder = Function.newBuilder();
+        functionBuilder.setName(function.getName());
+        functionBuilder.setSyntax(function.getAllowedSignatures());
+        functionBuilder.setFunctionCategory(function.getFunctionCategory().name());
+        functionBuilder.setIsTableFunction(function.getFunctionCategory().isTableFunction());
+        return functionBuilder.build();
     }
-
-
-    public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
-            return null;
-        }
-    }
-
-
-    @SuppressWarnings("Duplicates")
-    public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-            }
-
-            // TODO
-
-            log.error( "[NOT IMPLEMENTED YET] getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getClientInfoProperties( ConnectionHandle {} )", ch );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
-            return null;
-        }
-    }
-
-
-    public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        synchronized ( connection ) {
-            if ( log.isTraceEnabled() ) {
-                log.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
-            }
-
-            log.error( "[NOT IMPLEMENTED YET] getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
-            return null;
-        }
-    }
-    */
 }

@@ -29,7 +29,6 @@ import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
 public class PIClient {
-
     private String clientUUID;
     private CatalogUser catalogUser;
     private CatalogDatabase catalogDatabase;
@@ -39,6 +38,8 @@ public class PIClient {
     @Getter
     private StatementManager statementManager;
     private PIClientProperties clientProperties;
+    @Getter
+    private PIClientInfoProperties PIClientInfoProperties;
     private int minorApiVersion;
     private int majorApiVersion;
 
@@ -53,8 +54,8 @@ public class PIClient {
         this.clientProperties = connectionBuilder.clientProperties;
         this.majorApiVersion = connectionBuilder.majorApiVersion;
         this.minorApiVersion = connectionBuilder.minorApiVersion;
+        this.PIClientInfoProperties = new PIClientInfoProperties();
     }
-
 
     public String getClientUUID() {
         return clientUUID;
@@ -94,7 +95,7 @@ public class PIClient {
             try {
                 currentTransaction.commit();
             } catch (TransactionException e) {
-                throw new ProtoInterfaceServiceException("Committing current transaction failed: " + e.getLocalizedMessage());
+                throw new PIServiceException("Committing current transaction failed: " + e.getLocalizedMessage());
             } finally {
                 endCurrentTransaction();
             }
@@ -110,7 +111,7 @@ public class PIClient {
             try {
                 currentTransaction.rollback();
             } catch (TransactionException e) {
-                throw new ProtoInterfaceServiceException("Rollback of current transaction failed: " + e.getLocalizedMessage());
+                throw new PIServiceException("Rollback of current transaction failed: " + e.getLocalizedMessage());
             } finally {
                 endCurrentTransaction();
             }

@@ -14,87 +14,29 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:plugins/notebooks/src/main/java/org/polypheny/db/notebooks/model/JupyterKernelSpec.java
+package org.polypheny.db.notebooks.model;
+
+/**
+ * Represents a model of an available kernel specification in the jupyter server.
+ */
+public class JupyterKernelSpec {
+
+    public final String name, displayName, language;
+
+
+    public JupyterKernelSpec( String name, String displayName, String language ) {
+        this.name = name;
+        this.displayName = displayName;
+        this.language = language;
+========
 package org.polypheny.db.protointerface;
 
-import java.sql.SQLException;
-import java.util.Optional;
-import lombok.Getter;
-import org.polypheny.db.protointerface.proto.ErrorDetails;
+import java.io.Serializable;
 
-public class PIServiceException extends RuntimeException {
-
-    @Getter
-    private String state;
-    @Getter
-    private int errorCode;
-
-
-    public PIServiceException( String reason, String state, int errorCode ) {
-        super( reason );
-        this.state = state;
-        this.errorCode = errorCode;
+public class PIServiceException extends RuntimeException implements Serializable {
+    public PIServiceException(String message) {
+        super(message);
+>>>>>>>> 2944a6bca (add gRPC server and service for proto-interface):plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/ProtoInterfaceServiceException.java
     }
-
-
-    public PIServiceException( String reason, String state ) {
-        super( reason );
-        this.state = state;
-    }
-
-
-    public PIServiceException( SQLException sqlException ) {
-        super( sqlException.getMessage(), sqlException );
-        this.state = sqlException.getSQLState();
-        this.errorCode = sqlException.getErrorCode();
-    }
-
-
-    public PIServiceException( String reason ) {
-        super( reason );
-    }
-
-
-    public PIServiceException() {
-        super();
-    }
-
-
-    public PIServiceException( Throwable cause ) {
-        super( cause );
-    }
-
-
-    public PIServiceException( String reason, Throwable cause ) {
-        super( reason, cause );
-    }
-
-
-    public PIServiceException( String reason, String state, Throwable cause ) {
-        super( reason, cause );
-        this.state = state;
-    }
-
-
-    public PIServiceException( String reason, String state, int errorCode, Throwable cause ) {
-        super( reason, cause );
-        this.state = state;
-        this.errorCode = errorCode;
-    }
-
-
-    public PIServiceException( ErrorDetails errorDetails ) {
-        super( errorDetails.hasMessage() ? errorDetails.getMessage() : null );
-        this.state = errorDetails.hasState() ? errorDetails.getState() : null;
-        this.errorCode = errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0;
-    }
-
-
-    public ErrorDetails getProtoErrorDetails() {
-        ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-        errorDetailsBuilder.setErrorCode( getErrorCode() );
-        Optional.ofNullable( getState() ).ifPresent( errorDetailsBuilder::setState );
-        Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
-        return errorDetailsBuilder.build();
-    }
-
 }

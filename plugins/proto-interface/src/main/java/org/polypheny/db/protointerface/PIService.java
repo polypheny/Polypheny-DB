@@ -85,14 +85,14 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
             String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
             int nextSeparatorIndex = versionName.indexOf('.');
             if (nextSeparatorIndex <= 0) {
-                throw new ProtoInterfaceServiceException("Could not parse database version info");
+                throw new PIServiceException("Could not parse database version info");
             }
             int majorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
 
             versionName = versionName.substring(nextSeparatorIndex + 1);
             nextSeparatorIndex = versionName.indexOf('.');
             if (nextSeparatorIndex <= 0) {
-                throw new ProtoInterfaceServiceException("Could not parse database version info");
+                throw new PIServiceException("Could not parse database version info");
             }
             int minorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
 
@@ -105,35 +105,8 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
             responseObserver.onNext(dbmsVersionResponse);
             responseObserver.onCompleted();
         } catch (Exception e) {
-            throw new ProtoInterfaceServiceException("Could not parse database version info");
+            throw new PIServiceException("Could not parse database version info");
         }
-    }
-
-
-    @Override
-    public void getTableTypes(TableTypesRequest tableTypesRequest, StreamObserver<TableTypesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext(DbMetaRetriever.getTableTypes());
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getDatabases(DatabasesRequest databasesRequest, StreamObserver<DatabasesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext(DbMetaRetriever.getDatabases());
-        responseObserver.onCompleted();
-    }
-
-
-    @Override
-    public void getTypes(TypesRequest typesRequest, StreamObserver<TypesResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
-        responseObserver.onNext(DbMetaRetriever.getTypes());
-        responseObserver.onCompleted();
     }
 
 
@@ -152,6 +125,57 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         return MetaStringResponse.newBuilder()
                 .setString(string)
                 .build();
+    }
+
+    @Override
+    public void getDatabases(DatabasesRequest request, StreamObserver<DatabasesResponse> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext(DbMetaRetriever.getDatabases());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getTableTypes(TableTypesRequest request, StreamObserver<TableTypesResponse> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext(DbMetaRetriever.getTableTypes());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getTypes(TypesRequest request, StreamObserver<TypesResponse> responseStreamObserver) {
+        /* called as client auth check */
+        getClient();
+        responseStreamObserver.onNext(DbMetaRetriever.getTypes());
+        responseStreamObserver.onCompleted();
+    }
+
+    @Override
+    public void searchNamespaces(NamespacesRequest request, StreamObserver<NamespacesResponse> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
+        String namespaceType = request.hasNamespaceType() ? request.getNamespaceType() : null;
+        responseObserver.onNext(DbMetaRetriever.searchNamespaces(namespacePattern, namespaceType));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getNamespace(NamespaceRequest request, StreamObserver<Namespace> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        responseObserver.onNext(DbMetaRetriever.getNamespace(request.getNamespaceName()));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void searchEntities(EntitiesRequest request, StreamObserver<EntitiesResponse> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
+        responseObserver.onNext(DbMetaRetriever.searchEntities(request.getNamespaceName(), entityPattern));
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -196,23 +220,12 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
     @Override
-    public void getProcedures(ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver) {
+    public void searchProcedures(ProceduresRequest request, StreamObserver<ProceduresResponse> responeObserver) {
         /* called as client auth check */
         getClient();
-        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
-        String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
-        responeObserver.onNext(DbMetaRetriever.getProcedures(request.getLanguage(), namespacePattern, procedurePattern));
+        String procedurePattern = request.hasProcedureNamePattern() ? request.getProcedureNamePattern() : null;
+        responeObserver.onNext(DbMetaRetriever.getProcedures(request.getLanguage(), procedurePattern));
         responeObserver.onCompleted();
-    }
-
-    @Override
-    public void getProcedureColumns(ProcedureColumnsRequest request, StreamObserver<ProcedureColumnsResponse> responsePbserver) {
-        /* called as client auth check */
-        getClient();
-        String namespacePattern = request.hasNamespacePattern() ? request.getNamespacePattern() : null;
-        String procedurePattern = request.hasProcedurePattern() ? request.getProcedurePattern() : null;
-        String columnPattern = request.hasColumnPattern() ? request.getColumnPattern() : null;
-        responsePbserver.onNext(DbMetaRetriever.getProcedureColumns(request.getLanguage(), namespacePattern, procedurePattern, columnPattern));
     }
 
 
@@ -346,8 +359,27 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         responseObserver.onCompleted();
     }
 
+    @Override
+    public void getClientInfoProperties(ClientInfoPropertiesRequest request, StreamObserver<ClientInfoProperties> responseObserver) {
+        PIClient client = getClient();
+        org.polypheny.db.protointerface.proto.ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
+        PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
+        PIClientInfoProperties.stringPropertyNames().forEach(s -> responseBuilder.putProperties(s, PIClientInfoProperties.getProperty(s)));
+        responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
+    }
 
-    private PIClient getClient() throws ProtoInterfaceServiceException {
+    @Override
+    public void  setClientInfoProperties(ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver) {
+        PIClient client = getClient();
+        client.getPIClientInfoProperties().putAll(properties.getPropertiesMap());
+        reponseObserver.onCompleted();
+    }
+
+
+
+
+    private PIClient getClient() throws PIServiceException {
         return clientManager.getClient(ClientMetaInterceptor.CLIENT.get());
     }
 
