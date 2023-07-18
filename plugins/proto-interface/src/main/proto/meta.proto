@@ -159,7 +159,12 @@ message ClientInfoPropertyMeta {
   string description = 4;
 }
 
-message FunctionsRequest {}
+
+message FunctionsRequest {
+  string queryLanguage = 1;
+  string functionCategory = 2;
+}
+
 
 message FunctionsResponse {
   repeated Function functions = 1;

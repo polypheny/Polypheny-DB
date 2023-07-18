@@ -26,6 +26,7 @@ service ProtoInterface {
   rpc GetUserDefinedTypes(UserDefinedTypesRequest) returns (UserDefinedTypesResponse) {}
   rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse){}
   rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
+  rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
 
   rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
   rpc getNamespace(NamespaceRequest) returns (Namespace) {}
