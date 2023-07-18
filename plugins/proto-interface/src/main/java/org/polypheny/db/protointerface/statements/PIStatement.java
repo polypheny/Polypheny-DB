@@ -32,7 +32,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.ProtoInterfaceServiceException;
+import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.ColumnMeta;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementProperties;
@@ -88,7 +88,7 @@ public abstract class PIStatement {
 
     protected void overwriteQuery(String query) {
         if (!allowOverwrite) {
-            throw new ProtoInterfaceServiceException("Query overwrite not permitted after execution of statement");
+            throw new PIServiceException("Query overwrite not permitted after execution of statement");
         }
         this.query = query;
     }
@@ -150,13 +150,13 @@ public abstract class PIStatement {
             case DOCUMENT:
                 return documentFetch(offset);
         }
-        throw new ProtoInterfaceServiceException("Should never be thrown.");
+        throw new PIServiceException("Should never be thrown.");
     }
 
 
     public Frame relationalFetch(long offset) {
         if (currentImplementation == null) {
-            throw new ProtoInterfaceServiceException("Can't fetch frames of an unexecuted statement");
+            throw new PIServiceException("Can't fetch frames of an unexecuted statement");
         }
         synchronized (protoInterfaceClient) {
             if (log.isTraceEnabled()) {
