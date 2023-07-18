@@ -180,8 +180,8 @@ message ProtoInterval {
 }
 
 message ProtoUserDefinedType {
-  map<string, ProtoValue.ProtoValueType> template = 1;
-  map<string, ProtoValue> value = 2;
+  map<string, ProtoValue.ProtoValueType> template = 2;
+  map<string, ProtoValue> value = 3;
 }
 
 message ProtoFile {
