@@ -113,7 +113,7 @@ public class DbMetaRetriever {
         tableBuilder.setTableType(logicalTable.getEntityType().name());
         tableBuilder.setOwnerName(logicalTable.getOwnerName());
         tableBuilder.addAllColumns(getColumns(logicalTable));
-        if (logicalTable.primaryKey != null) {
+        if (hasPrimaryKey(logicalTable)) {
             tableBuilder.setPrimaryKey(getPrimaryKeyMeta(logicalTable));
         }
         tableBuilder.addAllForeignKeys(getForeignKeys(logicalTable));
@@ -124,6 +124,13 @@ public class DbMetaRetriever {
 
     private static List<Column> getColumns(LogicalTable logicalTable) {
         return logicalTable.getColumns().stream().map(DbMetaRetriever::getColumnMeta).collect(Collectors.toList());
+    }
+
+    private static boolean hasPrimaryKey(LogicalTable logicalTable) {
+        if (logicalTable.primaryKey == null) {
+            return false;
+        }
+        return Catalog.getInstance().getSnapshot().rel().getPrimaryKey(logicalTable.primaryKey).isPresent();
     }
 
 
