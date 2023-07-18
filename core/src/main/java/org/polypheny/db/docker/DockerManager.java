@@ -17,14 +17,17 @@
 package org.polypheny.db.docker;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
@@ -34,6 +37,7 @@ public final class DockerManager {
     private static final DockerManager INSTANCE = new DockerManager();
     private final Map<Integer, DockerInstance> dockerInstances = new ConcurrentHashMap<>();
     private final AtomicBoolean initialized = new AtomicBoolean( false );
+    private final Set<ConfigListener> listener = new HashSet<>();
 
 
     public static DockerManager getInstance() {
@@ -110,6 +114,8 @@ public final class DockerManager {
 
             dockerInstance.updateConfig( host, alias );
 
+            listener.forEach( c -> c.onConfigChange( null ) );
+
             // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
             List<ConfigDocker> configs = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
             configs.forEach( c -> {
@@ -132,6 +138,20 @@ public final class DockerManager {
             // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
             List<ConfigDocker> newList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( c -> c.getId() != id ).collect( Collectors.toList() );
             ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( newList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
+        }
+    }
+
+
+    public void addListener( ConfigListener l ) {
+        synchronized ( this ) {
+            listener.add( l );
+        }
+    }
+
+
+    public void removeListener( ConfigListener l ) {
+        synchronized ( this ) {
+            listener.remove( l );
         }
     }
 

@@ -56,10 +56,10 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigObject;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -374,7 +374,7 @@ public abstract class Adapter {
     public void shutdownAndRemoveListeners() {
         shutdown();
         if ( deployMode == DeployMode.DOCKER ) {
-            RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
+            DockerManager.getInstance().removeListener( this.listener );
             DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
         }
     }
@@ -420,12 +420,6 @@ public abstract class Adapter {
 
     public Map<String, String> getCurrentSettings() {
         // we unwrap the dockerInstance details here, for convenience
-        if ( deployMode == DeployMode.DOCKER ) {
-            Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
-                    .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();
-            settings.forEach( dockerSettings::put );
-            return dockerSettings;
-        }
         return settings;
     }
 
@@ -522,10 +516,6 @@ public abstract class Adapter {
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
-                List<ConfigDocker> configs = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-                if ( !configs.stream().map( conf -> conf.id ).collect( Collectors.toList() ).contains( dockerInstanceId ) ) {
-                    throw new RuntimeException( "This DockerInstance has adapters on it, while this is the case it can not be deleted." );
-                }
                 resetDockerConnection();
             }
 
@@ -535,7 +525,7 @@ public abstract class Adapter {
                 resetDockerConnection();
             }
         };
-        RuntimeConfig.DOCKER_INSTANCES.addObserver( listener );
+        DockerManager.getInstance().addListener( listener );
         return listener;
     }
 
