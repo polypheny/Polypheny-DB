@@ -46,6 +46,8 @@ final class PolyphenyHandshakeClient {
     @Getter
     private String lastErrorMessage;
 
+    private final Runnable onCompletion;
+
 
     enum State {
         STARTING,
@@ -56,7 +58,7 @@ final class PolyphenyHandshakeClient {
     }
 
 
-    PolyphenyHandshakeClient( String hostname, int port, AtomicLong timeout ) throws IOException {
+    PolyphenyHandshakeClient( String hostname, int port, AtomicLong timeout, Runnable onCompletion ) throws IOException {
         this.hostname = hostname;
         this.port = port;
         this.timeout = timeout;
@@ -71,6 +73,8 @@ final class PolyphenyHandshakeClient {
         this.handshakeParameters = getHandshakeParameters( kp );
 
         this.lastErrorMessage = "";
+
+        this.onCompletion = onCompletion;
 
         this.state = State.STARTING;
     }
@@ -229,7 +233,7 @@ final class PolyphenyHandshakeClient {
                 PolyphenyCertificateManager.saveServerCertificate( hostname, serverCertificate );
             } catch ( IOException e ) {
                 lastErrorMessage = "Failed to save the server certificate to disk";
-                log.error( "Failed to persist server certificate", e );
+                log.error( "Failed to save server certificate", e );
                 synchronized ( this ) {
                     state = State.NOT_RUNNING;
                 }
@@ -237,6 +241,12 @@ final class PolyphenyHandshakeClient {
             }
 
             lastErrorMessage = new Date().toString();
+
+            // timeout 0 means cancelled
+            if ( onCompletion != null && timeout.get() != 0 ) {
+                onCompletion.run();
+            }
+
             synchronized ( this ) {
                 state = State.SUCCESS;
             }

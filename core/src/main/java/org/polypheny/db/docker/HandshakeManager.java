@@ -132,9 +132,8 @@ public final class HandshakeManager {
             this.hostname = hostname;
             this.communicationPort = communicationPort;
             this.handshakePort = handshakePort;
-            this.client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout );
+            this.client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout, onCompletion );
             this.onCompletion = onCompletion;
-
         }
 
 
@@ -160,7 +159,7 @@ public final class HandshakeManager {
             }
             synchronized ( this ) {
                 if ( client.getState() == State.FAILED ) {
-                    client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout );
+                    client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout, onCompletion );
                     // No issue, if the client is in failed state, it will not return a success
                     handshakeThread = null;
                 }
@@ -173,9 +172,6 @@ public final class HandshakeManager {
                     Runnable doHandshake = () -> {
                         if ( client.doHandshake() ) {
                             log.info( "Handshake with " + hostname + " successful" );
-                            if ( !cancelled ) {
-                                onCompletion.run();
-                            }
                         } else {
                             log.info( "Handshake with " + hostname + " failed" );
                         }

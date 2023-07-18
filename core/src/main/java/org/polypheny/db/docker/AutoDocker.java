@@ -105,7 +105,7 @@ public final class AutoDocker {
         }
         createPolyphenyConnectorVolumeIfNotExists( client );
 
-        status = "Creating container...";
+        updateStatus( "Creating container polypheny-docker-connector" );
         HostConfig hostConfig = new HostConfig();
         hostConfig.withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) );
         hostConfig.withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) );
