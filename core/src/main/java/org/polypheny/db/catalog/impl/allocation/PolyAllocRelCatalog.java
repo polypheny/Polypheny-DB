@@ -181,15 +181,15 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Override
     public AllocationPartition addPartition( long tableId, long namespaceId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound, PlacementType placementType, DataPlacementRole role ) {
-        long id = idBuilder.getNewAllocId();
+        long id = idBuilder.getNewPartitionId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition with id '{}'", id );
         }
 
         AllocationPartition partition = new AllocationPartition(
                 id,
-                tableId,
                 namespaceId,
+                tableId,
                 placementType,
                 effectivePartitionGroupQualifier,
                 role,
@@ -232,12 +232,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
 
-    }
-
-
-    @Override
-    public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
-        return false;
     }
 
 

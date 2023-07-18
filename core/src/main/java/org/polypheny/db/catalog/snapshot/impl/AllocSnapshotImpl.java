@@ -78,6 +78,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Pair<Long, Long>, AllocationEntity> placementPartitionToAlloc;
     ImmutableMap<Pair<Long, Long>, AllocationPlacement> adapterLogicalToPlacement;
     ImmutableMap<Long, List<AllocationEntity>> placementToPartitions;
+    ImmutableMap<Long, List<AllocationPlacement>> placementsOfColumn;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
@@ -139,6 +140,19 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.placementPartitionToAlloc = buildPlacementPartitionToAlloc();
         this.adapterLogicalToPlacement = buildAdapterLogicalToPlacement();
         this.placementToPartitions = buildPlacementToPartitions();
+        this.placementsOfColumn = buildPlacementsOfColumn();
+    }
+
+
+    private ImmutableMap<Long, List<AllocationPlacement>> buildPlacementsOfColumn() {
+        Map<Long, List<AllocationPlacement>> map = new HashMap<>();
+        for ( AllocationColumn value : this.columns.values() ) {
+            if ( !map.containsKey( value.columnId ) ) {
+                map.put( value.columnId, new ArrayList<>() );
+            }
+            map.get( value.columnId ).add( placements.get( value.placementId ) );
+        }
+        return ImmutableMap.copyOf( map );
     }
 
 
@@ -253,14 +267,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, Map<Long, List<Long>>> buildTableAdapterColumns() {
         Map<Long, Map<Long, List<Long>>> map = new HashMap<>();
         for ( AllocationColumn column : this.columns.values() ) {
-            AllocationPlacement table = placements.get( column.placementId );
-            if ( !map.containsKey( table.id ) ) {
-                map.put( table.id, new HashMap<>() );
+            if ( !map.containsKey( column.logicalTableId ) ) {
+                map.put( column.logicalTableId, new HashMap<>() );
             }
-            if ( !map.get( table.id ).containsKey( column.adapterId ) ) {
-                map.get( table.id ).put( column.adapterId, new ArrayList<>() );
+            if ( !map.get( column.logicalTableId ).containsKey( column.adapterId ) ) {
+                map.get( column.logicalTableId ).put( column.adapterId, new ArrayList<>() );
             }
-            map.get( table.id ).get( column.adapterId ).add( column.columnId );
+            map.get( column.logicalTableId ).get( column.adapterId ).add( column.columnId );
         }
 
         return ImmutableMap.copyOf( map );
@@ -518,6 +531,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     @Override
     public @NotNull List<AllocationEntity> getAllocsOfPlacement( long placementId ) {
         return Optional.ofNullable( placementToPartitions.get( placementId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPlacement> getPlacementsOfColumn( long logicalId ) {
+        return Optional.ofNullable( placementsOfColumn.get( logicalId ) ).orElse( List.of() );
     }
 
 }

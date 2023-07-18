@@ -19,7 +19,7 @@ package org.polypheny.db.partition;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -33,11 +33,11 @@ public interface PartitionManager {
     /**
      * Returns the Index of the partition where to place the object
      */
-    long getTargetPartitionId( List<AllocationTable> allocationTables, PartitionProperty targetProperty, String columnValue );
+    long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue );
 
     boolean probePartitionGroupDistributionChange( LogicalTable catalogTable, int storeId, long columnId, int threshold );
 
-    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationTable> allocations, List<Long> excludedAdapters );
+    Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationEntity> allocs, List<Long> excludedAdapters );
 
     boolean validatePartitionGroupSetup( List<List<String>> partitionGroupQualifiers, long numPartitionGroups, List<String> partitionGroupNames, LogicalColumn partitionColumn );
 

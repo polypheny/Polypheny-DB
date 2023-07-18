@@ -769,10 +769,10 @@ public class HorizontalPartitioningTest {
                     // Manually get the target partitionID of query
                     PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
-                    long targetId = partitionManager.getTargetPartitionId( null/*table*/, null/*targetProperty*/, partitionValue );
+                    long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
                     List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow() ) );
+                    Assert.assertTrue( hotPartitionsAfterChange.contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow().partitionId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {

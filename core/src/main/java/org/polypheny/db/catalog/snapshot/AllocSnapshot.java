@@ -205,4 +205,7 @@ public interface AllocSnapshot {
     @NotNull
     List<AllocationEntity> getAllocsOfPlacement( long placementId );
 
+    @NotNull
+    List<AllocationPlacement> getPlacementsOfColumn( long logicalId );
+
 }

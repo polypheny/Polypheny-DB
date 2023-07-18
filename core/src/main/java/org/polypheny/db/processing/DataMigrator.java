@@ -42,7 +42,7 @@ public interface DataMigrator {
             CatalogAdapter store,
             LogicalTable source,
             List<LogicalColumn> columns,
-            List<AllocationTable> targets );
+            AllocationPlacement target );
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.

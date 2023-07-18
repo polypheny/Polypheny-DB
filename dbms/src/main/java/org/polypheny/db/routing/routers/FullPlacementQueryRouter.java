@@ -67,7 +67,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
         }
@@ -115,11 +115,12 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
         List<AllocationPlacement> allocationEntities = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
+        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocsOfPlacement( allocationEntities.get( 0 ).id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
             //newBuilder.addPhysicalInfo( currentPlacementDistribution );
-            newBuilder.push( super.buildJoinedScan( statement, cluster, allocationEntities.get( 0 ) ) );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, Map.of( allocs.get( 0 ).partitionId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
             newBuilders.add( newBuilder );
         }
         //}

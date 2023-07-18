@@ -735,17 +735,16 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        AllocationPartitionGroup group = catalog.getAllocRel( table.namespaceId ).addPartitionGroup( table.id, UNPARTITIONED, Catalog.defaultNamespaceId, PartitionType.NONE, 1, List.of(), false );
-        AllocationPartition partition = catalog.getAllocRel( table.namespaceId ).addPartition( table.id, table.namespaceId, group.id, List.of(), false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE );
         AllocationPlacement placement = catalog.getAllocRel( table.namespaceId ).addPlacement( table.id, table.namespaceId, dataStore.adapterId );
+        PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
-        List<AllocationTable> allocations = addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, List.of( partition.id ), dataStore );
+        addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, property.partitionIds, dataStore );
 
         Catalog.getInstance().updateSnapshot();
 
         // Copy data to the newly added placements
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-        dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( dataStore.getAdapterId() ), table, adjustedColumns, List.of( allocations.get( 0 ) ) );
+        dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( dataStore.getAdapterId() ), table, adjustedColumns, placement );
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -999,17 +998,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
-            if ( table.entityType == EntityType.ENTITY ) {
-                for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
-                    AdapterManager.getInstance().getStore( allocationColumn.adapterId )
-                            .dropColumn(
-                                    statement.getPrepareContext(),
-                                    allocation.id,
-                                    allocationColumn.columnId );
-                }
-
-            }
-            catalog.getAllocRel( table.namespaceId ).deleteColumn( allocationColumn.placementId, allocationColumn.columnId );
+            deleteAllocationColumn( table, statement, allocationColumn );
         }
 
         // Delete from catalog
@@ -1026,6 +1015,21 @@ public class DdlManagerImpl extends DdlManager {
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void deleteAllocationColumn( LogicalTable table, Statement statement, AllocationColumn allocationColumn ) {
+        if ( table.entityType == EntityType.ENTITY ) {
+            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationColumn.placementId ) ) {
+                AdapterManager.getInstance().getStore( allocationColumn.adapterId )
+                        .dropColumn(
+                                statement.getPrepareContext(),
+                                allocation.id,
+                                allocationColumn.columnId );
+            }
+
+        }
+        catalog.getAllocRel( table.namespaceId ).deleteColumn( allocationColumn.placementId, allocationColumn.columnId );
     }
 
 
@@ -1094,7 +1098,7 @@ public class DdlManagerImpl extends DdlManager {
                 .alloc().getPlacement( store.adapterId, table.id ).orElseThrow();
 
 
-        /*if ( !catalog.getAllocRel( table.namespaceId ).validateDataPlacementsConstraints( table.id, store.getAdapterId(), dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
+        /*if ( !catalog.getAllocRel( table.namespaceId ).validatePlacementsConstraints( table.id, store.getAdapterId(), dataPlacement.columnPlacementsOnAdapter, dataPlacement.getAllPartitionIds() ) ) {
 
             throw new GenericRuntimeException( "The last placement cannot be deleted" );
         }*/ // todo check not last
@@ -1283,7 +1287,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void modifyPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> store, Statement statement ) {
         Optional<AllocationPlacement> placementOptional = statement.getDataContext().getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id );
-        // Check whether this placement already exists
+        // Check whether this placement exists
         if ( placementOptional.isEmpty() ) {
             throw new GenericRuntimeException( "The requested placement does not exists" );
         }
@@ -1291,174 +1295,77 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this
         checkViewDependencies( table );
 
-        List<Long> columnsToRemove = new ArrayList<>();
+        List<AllocationColumn> columnsToRemove = new ArrayList<>();
 
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
 
         // Checks before physically removing of placement that the partition distribution is still valid and sufficient
         // Identifies which columns need to be removed
-        for ( AllocationColumn placement : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ) ) {
-            if ( !columnIds.contains( placement.columnId ) ) {
-                // Check whether there are any indexes located on the store requiring this column
-                for ( LogicalIndex index : snapshot.getIndexes( table.id, false ) ) {
-                    if ( index.location == store.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
-                        throw new GenericRuntimeException( "The index with name %s prevents the removal of the placement %s", index.name, snapshot.getColumn( placement.columnId ).map( c -> c.name ).orElse( "null" ) );
-                    }
-                }
+        for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumns( placementOptional.get().id ) ) {
+            if ( !columnIds.contains( allocationColumn.columnId ) ) {
+                checkIndexDependent( table, store, snapshot, allocationColumn );
                 // Check whether the column is a primary key column
                 LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
-                if ( primaryKey.columnIds.contains( placement.columnId ) ) {
+                if ( primaryKey.columnIds.contains( allocationColumn.columnId ) ) {
                     // Check if the placement type is manual. If so, change to automatic
-                    if ( placement.placementType == PlacementType.MANUAL ) {
+                    if ( allocationColumn.placementType == PlacementType.MANUAL ) {
                         // Make placement manual
                         catalog.getAllocRel( table.namespaceId ).updateColumnPlacementType(
                                 store.getAdapterId(),
-                                placement.columnId,
+                                allocationColumn.columnId,
                                 PlacementType.AUTOMATIC );
                     }
                 } else {
                     // It is not a primary key. Remove the column
-                    columnsToRemove.add( placement.columnId );
+                    columnsToRemove.add( allocationColumn );
                 }
             }
         }
 
-        if ( !catalog.getAllocRel( table.namespaceId ).validateDataPlacementsConstraints( table.id, store.getAdapterId(), columnsToRemove, new ArrayList<>() ) ) {
+        if ( !validatePlacementsConstraints( placementOptional.get(), columnsToRemove, new ArrayList<>() ) ) {
             throw new GenericRuntimeException( "Cannot remove placement as it is the last" );
         }
 
-        //boolean adjustPartitions = true;
-
         // Remove columns physically
-        for ( long columnId : columnsToRemove ) {
-            //AllocationColumn column = catalog.getSnapshot().alloc().getColumn( store.adapterId, table.id ).orElseThrow();
-            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( placementOptional.get().id ) ) {
-                // Drop Column on store
-                store.dropColumn( statement.getPrepareContext(), allocation.id, columnId );
-            }
-            // Drop column placement
-            catalog.getAllocRel( table.namespaceId ).deleteColumn( placementOptional.get().id, columnId );
-        }
+        columnsToRemove.forEach( column -> deleteAllocationColumn( table, statement, column ) );
 
-        List<Long> tempPartitionGroupList = new ArrayList<>();
-
-        PartitionProperty partition = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
-
-        // Select partitions to create on this placement
-        if ( partition.isPartitioned ) {
-            long tableId = table.id;
-            // If index partitions are specified
-            if ( !partitionGroupIds.isEmpty() && partitionGroupNames.isEmpty() ) {
-                // First convert specified index to correct partitionGroupId
-                for ( long partitionGroupId : partitionGroupIds ) {
-                    // Check if specified partition index is even part of table and if so get corresponding uniquePartId
-                    try {
-                        int index = partition.partitionGroupIds.indexOf( partitionGroupId );
-                        tempPartitionGroupList.add( partition.partitionGroupIds.get( index ) );
-                    } catch ( IndexOutOfBoundsException e ) {
-                        throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table "
-                                + "'%s', has only %s partitions", partitionGroupId, table.name, partition.partitionGroupIds.size() );
-                    }
-                }
-            }
-            // If name partitions are specified
-            else if ( !partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
-                List<AllocationEntity> entities = catalog.getSnapshot().alloc().getFromLogical( tableId );
-                for ( String partitionName : partitionGroupNames ) {
-                    boolean isPartOfTable = false;
-                    for ( AllocationEntity entity : entities ) {
-                        /*if ( partitionName.equals( catalogPartitionGroup.partitionGroupName.toLowerCase() ) ) {
-                            tempPartitionGroupList.add( catalogPartitionGroup.id );
-                            isPartOfTable = true;
-                            break;
-                        }*/
-                    }
-                    if ( !isPartOfTable ) {
-                        throw new GenericRuntimeException( "Specified partition name: '%s' is not part of table "
-                                + "'%s'. Available partitions: %s", partitionName, table.name, String.join( ",", catalog.getSnapshot().alloc().getPartitionGroupNames( tableId ) ) );
-                    }
-                }
-            } else if ( partitionGroupNames.isEmpty() && partitionGroupIds.isEmpty() ) {
-                // If nothing has been explicitly specified keep current placement of partitions.
-                // Since it's impossible to have a placement without any partitions anyway
-                log.debug( "Table is partitioned and concrete partitionList has NOT been specified " );
-                tempPartitionGroupList = partition.partitionGroupIds;
-            }
-        } else {
-            tempPartitionGroupList.add( partition.partitionGroupIds.get( 0 ) );
-        }
-
-        // All internal partitions placed on this store
-        List<Long> intendedPartitionIds = new ArrayList<>();
-
-        // Gather all partitions relevant to add depending on the specified partitionGroup
-        tempPartitionGroupList.forEach( pg -> catalog.getSnapshot().alloc().getPartitions( pg ).forEach( p -> intendedPartitionIds.add( p.id ) ) );
-
-        // Which columns to add
-        List<LogicalColumn> addedColumns = new LinkedList<>();
-
-        for ( long cid : columnIds ) {
-            if ( catalog.getSnapshot().alloc().getColumn( store.getAdapterId(), cid ).isPresent() ) {
-                AllocationColumn placement = catalog.getSnapshot().alloc().getColumn( store.getAdapterId(), cid ).orElseThrow();
-                if ( placement.placementType == PlacementType.AUTOMATIC ) {
-                    // Make placement manual
-                    catalog.getAllocRel( table.namespaceId ).updateColumnPlacementType( store.getAdapterId(), cid, PlacementType.MANUAL );
-                }
-            } else {
-                AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
-                // Create column placement
-                catalog.getAllocRel( table.namespaceId ).addColumn(
-                        allocation.placementId,
-                        table.id,
-                        cid,
-                        store.adapterId,
-                        PlacementType.MANUAL, 0 );
-                // Add column on store
-                store.addColumn( statement.getPrepareContext(), allocation.id, snapshot.getColumn( cid ).orElseThrow() );
-                // Add to list of columns for which we need to copy data
-                addedColumns.add( snapshot.getColumn( cid ).orElseThrow() );
-            }
-        }
-
-        AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
-        List<Long> removedPartitionIdsFromDataPlacement = new ArrayList<>();
-        // Removed Partition Ids
-        /*for ( AllocationEntity partition : catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ) ) {
-            if ( !intendedPartitionIds.contains( partition.id ) ) {
-                removedPartitionIdsFromDataPlacement.add( partitionId.id );
-            }
-        }*/
-
-        List<Long> newPartitionIdsOnDataPlacement = new ArrayList<>();
-        // Added Partition Ids
-        /*for ( long partitionId : intendedPartitionIds ) {
-            if ( !dataPlacement.getAllPartitionIds().contains( partitionId ) ) {
-                newPartitionIdsOnDataPlacement.add( partitionId );
-            }
-        }*/
-
-        if ( removedPartitionIdsFromDataPlacement.size() > 0 ) {
-            store.dropTable( statement.getPrepareContext(), placement.logicalEntityId );
-        }
-
-        if ( newPartitionIdsOnDataPlacement.size() > 0 ) {
-            newPartitionIdsOnDataPlacement.forEach( partitionId -> catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
-                    table.namespaceId, store.getAdapterId(),
-                    table.id,
-                    PlacementType.MANUAL,
-                    DataPlacementRole.UP_TO_DATE )
-            );
-            store.createTable( statement.getPrepareContext(), null, (AllocationTableWrapper) null );
-        }
-
-        // Copy the data to the newly added column placements
-        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-        if ( addedColumns.size() > 0 ) {
-            dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( store.getAdapterId() ), table, addedColumns, null );
-        }
-
+        catalog.updateSnapshot();
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private static void checkIndexDependent( LogicalTable table, DataStore<?> store, LogicalRelSnapshot snapshot, AllocationColumn allocationColumn ) {
+        // Check whether there are any indexes located on the store requiring this column
+        for ( LogicalIndex index : snapshot.getIndexes( table.id, false ) ) {
+            if ( index.location == store.getAdapterId() && index.key.columnIds.contains( allocationColumn.columnId ) ) {
+                throw new GenericRuntimeException( "The index with name %s depends on the columns %s", index.name, snapshot.getColumn( allocationColumn.columnId ).map( c -> c.name ).orElse( "null" ) );
+            }
+        }
+    }
+
+
+    /**
+     * Checks if the planned changes are allowed in terms of placements that need to be present.
+     * Each column must be present for all partitions somewhere.
+     *
+     * @param columnIdsToBeRemoved columns that shall be removed
+     * @param partitionsIdsToBeRemoved partitions that shall be removed
+     * @return true if these changes can be made to the data placement, false if not
+     */
+    public boolean validatePlacementsConstraints( AllocationPlacement placement, List<AllocationColumn> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
+        if ( (columnIdsToBeRemoved.isEmpty() && partitionsIdsToBeRemoved.isEmpty()) ) {
+            log.warn( "Invoked validation with two empty lists of columns and partitions to be revoked. Is therefore always true..." );
+            return true;
+        }
+        LogicalTable table = catalog.getSnapshot().rel().getTable( placement.logicalEntityId ).orElseThrow();
+        LogicalPrimaryKey key = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
+
+        if ( columnIdsToBeRemoved.stream().anyMatch( o -> key.columnIds.contains( o.columnId ) ) ) {
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -1477,9 +1384,9 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( !catalog.getAllocRel( table.namespaceId ).validateDataPlacementsConstraints( table.id, storeInstance.getAdapterId(), new ArrayList<>(), removedPartitions ) ) {
+        /*if ( !validatePlacementsConstraints( table.id, storeInstance.getAdapterId(), new ArrayList<>(), removedPartitions ) ) {
             throw new GenericRuntimeException( "Cannot remove the placement as it is the last" );
-        }
+        }*/
 
         // Get PartitionGroups that have been newly added
         for ( Long partitionGroupId : partitionGroupIds ) {
@@ -1600,9 +1507,9 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( !catalog.getAllocRel( table.namespaceId ).validateDataPlacementsConstraints( logicalColumn.tableId, store.getAdapterId(), List.of( logicalColumn.id ), new ArrayList<>() ) ) {
+        /*if ( !validatePlacementsConstraints( logicalColumn.tableId, store.getAdapterId(), List.of( logicalColumn.id ), new ArrayList<>() ) ) {
             throw new GenericRuntimeException( "Cannot drop the placement as it is the last" );
-        }
+        }*/
 
         // Check whether the column to drop is a primary key
         LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();

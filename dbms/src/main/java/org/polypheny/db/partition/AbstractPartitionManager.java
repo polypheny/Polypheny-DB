@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -39,7 +39,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     // Returns the Index of the partition where to place the object
     @Override
-    public abstract long getTargetPartitionId( List<AllocationTable> targetEntities, PartitionProperty targetProperty, String columnValue );
+    public abstract long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue );
 
 
     @Override
@@ -60,13 +60,13 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationTable> partitionIds, List<Long> excludedAdapters ) {
+    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationEntity> allocs, List<Long> excludedAdapters ) {
         Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
 
-        if ( partitionIds != null ) {
-            for ( AllocationTable allocation : partitionIds ) {
+        if ( allocs != null ) {
+            for ( AllocationEntity allocation : allocs ) {
                 //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
                 List<AllocationColumn> relevantCcps = new ArrayList<>();
 

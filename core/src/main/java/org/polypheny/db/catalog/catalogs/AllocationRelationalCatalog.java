@@ -130,19 +130,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
 
     /**
-     * Checks if the planned changes are allowed in terms of placements that need to be present.
-     * Each column must be present for all partitions somewhere.
-     *
-     * @param tableId Table to be checked
-     * @param adapterId Adapter where Ids will be removed from
-     * @param columnIdsToBeRemoved columns that shall be removed
-     * @param partitionsIdsToBeRemoved partitions that shall be removed
-     * @return true if these changes can be made to the data placement, false if not
-     */
-    boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved );
-
-
-    /**
      * Adds a placement for a partition.
      *
      * @param namespaceId

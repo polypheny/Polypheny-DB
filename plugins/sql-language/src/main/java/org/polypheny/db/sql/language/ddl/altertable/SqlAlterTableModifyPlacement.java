@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -112,13 +113,17 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         LogicalTable table = getEntityFromCatalog( context, this.table );
 
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Could not find the entity with name %s.", String.join( ".", this.table.names ) );
+        }
+
         if ( table.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
         if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
+            throw new GenericRuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
         }
 
         // Check if all columns exist

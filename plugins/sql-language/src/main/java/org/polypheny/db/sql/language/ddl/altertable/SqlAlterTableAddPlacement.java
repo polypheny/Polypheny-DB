@@ -18,7 +18,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -135,6 +134,11 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         for ( SqlNode node : columnList.getSqlList() ) {
             LogicalColumn logicalColumn = getCatalogColumn( context, table.id, (SqlIdentifier) node );
             columns.add( logicalColumn );
+        }
+
+        if ( columns.isEmpty() ) {
+            // full placement
+            columns.addAll( statement.getTransaction().getSnapshot().rel().getColumns( table.id ) );
         }
 
         DdlManager.getInstance().addDataPlacement(

@@ -21,11 +21,13 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
@@ -41,16 +43,12 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -67,7 +65,6 @@ import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -115,7 +112,6 @@ public abstract class BaseRouter implements Router {
             put( allocs.get( 0 ).id, placementList );
         }};
     }
-
 
 
     public AlgNode recursiveCopy( AlgNode node ) {
@@ -233,25 +229,47 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, AllocationPlacement placement ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> partitionsColumns ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( placement.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( partitionsColumns.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
         }
-        List<AllocationEntity> allocs = statement.getTransaction().getSnapshot().alloc().getAllocsOfPlacement( placement.id );
-        if ( allocs.size() == 1 ) {
+
+        Set<Long> placementIds = partitionsColumns.values().stream().findFirst().stream().flatMap( Collection::stream ).map( c -> c.placementId ).collect( Collectors.toSet() );
+        List<Long> partitionIds = new ArrayList<>( partitionsColumns.keySet() );
+
+        //List<AllocationEntity> allocs = statement.getTransaction().getSnapshot().alloc().getAllocsOfPlacement( partitionsColumns.id );
+        if ( partitionsColumns.size() == 1 && placementIds.size() == 1 ) {
+            // only one placement -> no vertical partition // only one partition -> no horizontal partition
+            AllocationEntity entity = catalog.getSnapshot().alloc().getAlloc(
+                    new ArrayList<>( placementIds ).get( 0 ),
+                    partitionIds.get( 0 ) ).orElseThrow();
             builder = handleRelScan(
                     builder,
                     statement,
-                    allocs.get( 0 ) );
+                    entity );
             // Final project
             //buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
             return builder.build();
         }
+
+        if ( placementIds.size() == 1 ) {
+            // only one placement -> no vertical partition but horizontal
+            return null;
+        }
+
+        if ( partitionIds.size() == 1 ) {
+            // only one partition -> no horizontal partition but vertical
+            return handleOnePartitionScan( statement, cluster, partitionsColumns, builder, partitionIds.get( 0 ) );
+        }
+
+        return null;
+
+
 
 
         /*for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : allocationEntities.entrySet() ) {
@@ -344,7 +362,7 @@ public abstract class BaseRouter implements Router {
             }
         }*/
 
-        builder.union( true, allocs.size() );
+        /*builder.union( true, allocs.size() );
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -353,7 +371,7 @@ public abstract class BaseRouter implements Router {
 
         AllocationColumn column = catalog.getSnapshot().alloc().getColumns( allocs.get( 0 ).id ).get( 0 );
         // todo dl: remove after RowType refactor
-        if ( Catalog.snapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( Catalog.snapshot().getNamespace( partitionsColumns.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),
@@ -366,7 +384,21 @@ public abstract class BaseRouter implements Router {
             node = builder.build();
         }
 
-        return node;
+        return node;*/
+    }
+
+
+    private AlgNode handleOnePartitionScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> partitionsColumns, RoutedAlgBuilder builder, Long partitionId ) {
+        List<AllocationColumn> columns = partitionsColumns.get( partitionId );
+
+        // each column is one entity
+        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ) ).collect( Collectors.toList() );
+
+        List<AlgNode> nodes = tables.stream().map( t -> handleRelScan( RoutedAlgBuilder.create( statement, cluster ), statement, t ).build() ).collect( Collectors.toList() );
+        // todo remove multiple scans, add projection
+        nodes.forEach( builder::push );
+
+        return nodes.size() == 1 ? builder.build() : builder.union( true ).build();
     }
 
 
