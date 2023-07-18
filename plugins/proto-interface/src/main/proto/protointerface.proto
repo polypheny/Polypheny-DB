@@ -20,6 +20,17 @@ service ProtoInterface {
   // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
+  rpc GetDatabases(DatabasesRequest) returns (DatabasesResponse) {}
+  rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
+  rpc GetTypes(TypesRequest) returns (TypesResponse) {}
+  rpc GetUserDefinedTypes(UserDefinedTypesRequest) returns (UserDefinedTypesResponse) {}
+  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse){}
+  rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
+
+  rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
+  rpc getNamespace(NamespaceRequest) returns (Namespace) {}
+  rpc SearchEntities(EntitiesRequest) returns (EntitiesResponse) {}
+
 
   rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
@@ -27,13 +38,14 @@ service ProtoInterface {
   rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
 
-  rpc getProcedures(ProceduresRequest) returns (ProceduresResponse) {}
-  rpc getProcedureColumns(ProcedureColumnsRequest) returns (ProcedureColumnsResponse) {}
 
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
   rpc Disconnect(DisconnectionRequest) returns (DisconnectionResponse) {}
+
+  rpc GetClientInfoProperties(ClientInfoPropertiesRequest) returns (ClientInfoProperties) {}
+  rpc SetClientInfoProperties(ClientInfoProperties) returns (ClientInfoPropertiesResponse) {}
 
   // Unparameterized statements
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}

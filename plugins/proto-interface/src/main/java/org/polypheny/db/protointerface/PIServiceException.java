@@ -18,8 +18,8 @@ package org.polypheny.db.protointerface;
 
 import java.io.Serializable;
 
-public class ProtoInterfaceServiceException extends RuntimeException implements Serializable {
-    public ProtoInterfaceServiceException(String message) {
+public class PIServiceException extends RuntimeException implements Serializable {
+    public PIServiceException(String message) {
         super(message);
     }
 }

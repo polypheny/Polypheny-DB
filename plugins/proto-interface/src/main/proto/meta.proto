@@ -23,27 +23,6 @@ message LanguageResponse {
   repeated string language_names = 1;
 }
 
-message TablesRequest{
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  repeated string table_types = 3;
-}
-
-message TablesResponse {
-  repeated Table tables = 1;
-}
-
-
-message ColumnsRequest {
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  optional string column_pattern = 3;
-}
-
-message ColumnsResponse {
-  repeated Column columns = 1;
-}
-
 
 message DatabasesRequest {
 }
@@ -70,36 +49,6 @@ message TableType {
   string table_type = 1;
 }
 
-message PrimaryKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message PrimaryKeysResponse {
-  repeated PrimaryKey primary_keys = 1;
-}
-
-
-
-message ImportedKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message ImportedKeysResponse {
-  repeated ForeignKey imported_keys = 1;
-}
-
-
-message ExportedKeysRequest {
-  optional string namespace_pattern = 1;
-  string table_pattern = 2;
-}
-
-message ExportedKeysResponse {
-  repeated ForeignKey exported_keys = 1;
-}
-
 message TypesRequest {
 
 }
@@ -121,16 +70,24 @@ message Type {
   int32 radix = 10;
 }
 
-message IndexesRequest {
-  optional string namespace_pattern = 1;
-  optional string table_pattern = 2;
-  bool unique = 3;
+message UserDefinedTypesRequest {
+
 }
 
-message IndexesResponse{
-  repeated Index indexes = 1;
+message UserDefinedTypesResponse {
+  repeated UserDefinedType user_defined_types = 1;
 }
 
+message UserDefinedType {
+  string type_name = 1;
+  repeated ValueMeta value_metas= 2;
+  // more parameters describing a user defined type
+}
+
+message ValueMeta {
+  string value_name = 1;
+  // more parameters describing a value in the template
+}
 
 message SqlStringFunctionsRequest {
 }
@@ -153,8 +110,7 @@ message MetaStringResponse{
 
 message ProceduresRequest {
   string language = 1;
-  optional string namespace_pattern = 2;
-  optional string procedure_pattern = 3;
+  optional string procedure_name_pattern = 3;
 }
 
 message ProceduresResponse {
@@ -176,19 +132,42 @@ message Procedure {
   }
 }
 
-message ProcedureColumnsRequest {
-  string language = 1;
-  optional string namespace_pattern = 2;
-  optional string procedure_pattern = 3;
-  optional string column_pattern= 4;
+message ClientInfoPropertiesRequest {
+
 }
 
-message ProcedureColumnsResponse {
-  repeated ProcedureColumn procedure_columns = 1;
+message ClientInfoProperties {
+  map<string, string> properties = 1;
 }
 
-message ProcedureColumn {
+message ClientInfoPropertiesResponse {
 
 }
 
 
+message ClientInfoPropertyMetaRequest {
+}
+
+message ClientInfoPropertyMetaResponse {
+  repeated ClientInfoPropertyMeta clientInfoPropertyMetas = 1;
+}
+
+message ClientInfoPropertyMeta {
+  string key = 1;;
+  string default_value = 2;
+  int32 maxlength = 3;
+  string description = 4;
+}
+
+message FunctionsRequest {}
+
+message FunctionsResponse {
+  repeated Function functions = 1;
+}
+
+message Function {
+  string name = 1;
+  string syntax = 2;
+  string function_category = 3;
+  bool is_table_function = 4;
+}
