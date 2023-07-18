@@ -3716,10 +3716,16 @@ public class Crud implements InformationObserver {
 
     void getHandshake( final Context ctx ) {
         String hostname = ctx.pathParam( "hostname" );
-        DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().filter( d -> d.getHost().equals( hostname ) ).findFirst().get();
+        Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
+                .values()
+                .stream()
+                .filter( d -> d.getHost().equals( hostname ) )
+                .map( DockerInstance::getMap )
+                .findFirst()
+                .orElse( Map.of() );
         ctx.json( Map.of(
                         "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
-                        "instance", dockerInstance.getMap()
+                        "instance", dockerInstance
                 )
         );
     }
