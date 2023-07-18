@@ -374,18 +374,6 @@ public class PolyphenyDb {
         // Startup and restore catalog
         Transaction trx = null;
 
-        if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( testMode ) {
-                resetDocker = true;
-                Catalog.resetDocker = true;
-            }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( testMode && !success ) {
-                log.error( "Failed to connect to docker instance" );
-                return;
-            }
-        }
-
         try {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
@@ -396,6 +384,18 @@ public class PolyphenyDb {
             catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
             if ( catalog == null ) {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
+            }
+
+            if ( AutoDocker.getInstance().isAvailable() ) {
+                if ( testMode ) {
+                    resetDocker = true;
+                    Catalog.resetDocker = true;
+                }
+                boolean success = AutoDocker.getInstance().doAutoConnect();
+                if ( testMode && !success ) {
+                    log.error( "Failed to connect to docker instance" );
+                    return;
+                }
             }
 
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );
