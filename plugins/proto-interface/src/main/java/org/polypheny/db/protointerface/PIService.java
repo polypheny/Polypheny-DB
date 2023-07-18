@@ -19,6 +19,8 @@ package org.polypheny.db.protointerface;
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.polypheny.db.PolyphenyDb;
+import org.polypheny.db.algebra.constant.FunctionCategory;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
 import org.polypheny.db.protointerface.statements.*;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
@@ -226,6 +228,16 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         String procedurePattern = request.hasProcedureNamePattern() ? request.getProcedureNamePattern() : null;
         responeObserver.onNext(DbMetaRetriever.getProcedures(request.getLanguage(), procedurePattern));
         responeObserver.onCompleted();
+    }
+
+    @Override
+    public void searchFunctions(FunctionsRequest request, StreamObserver<FunctionsResponse> responseObserver) {
+        /* called as client auth check */
+        getClient();
+        QueryLanguage queryLanguage = QueryLanguage.from(request.getQueryLanguage());
+        FunctionCategory functionCategory = FunctionCategory.valueOf(request.getFunctionCategory());
+        responseObserver.onNext(DbMetaRetriever.getFunctions(queryLanguage, functionCategory));
+        responseObserver.onCompleted();
     }
 
 
