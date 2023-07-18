@@ -17,39 +17,14 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
 
 @Slf4j
 public final class DockerSetupHelper {
-
-    // TODO racy
-    private static boolean hasAlias( String alias ) {
-        List<ConfigDocker> configlist = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-        for ( ConfigDocker c : configlist ) {
-            if ( c.getAlias().equals( alias ) ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    // TODO racy
-    private static boolean hasHostname( String hostname ) {
-        List<ConfigDocker> configlist = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-        for ( ConfigDocker c : configlist ) {
-            if ( c.getHost().equals( hostname ) ) {
-                return true;
-            }
-        }
-        return false;
-    }
 
 
     private static void tryConnectDirectly( String hostname ) throws IOException {
@@ -73,15 +48,15 @@ public final class DockerSetupHelper {
             return new DockerSetupResult( "hostname must not be empty" );
         }
 
-        if ( hasHostname( hostname ) ) {
-            return new DockerSetupResult( "There is already a docker instance connected to " + hostname );
-        }
-
         if ( alias.equals( "" ) ) {
             return new DockerSetupResult( "alias must not be empty" );
         }
 
-        if ( hasAlias( alias ) ) {
+        if ( DockerManager.getInstance().hasHost( hostname ) ) {
+            return new DockerSetupResult( "There is already a docker instance connected to " + hostname );
+        }
+
+        if ( DockerManager.getInstance().hasAlias( alias ) ) {
             return new DockerSetupResult( "There is already a docker instance with alias " + alias );
         }
 
@@ -182,9 +157,9 @@ public final class DockerSetupHelper {
 
     static public final class DockerSetupResult {
 
-        private Map<String, String> handshake = Map.of();
         @Getter
         private String error = "";
+        private Map<String, String> handshake = Map.of();
         @Getter
         private boolean success = false;
 
@@ -205,7 +180,11 @@ public final class DockerSetupHelper {
 
 
         public Map<String, Object> getMap() {
-            return Map.of( "handshake", handshake, "error", error, "success", success );
+            return Map.of(
+                    "error", error,
+                    "handshake", handshake,
+                    "success", success
+            );
         }
 
     }
@@ -214,9 +193,8 @@ public final class DockerSetupHelper {
     static public final class DockerUpdateResult {
 
         private String error = "";
-        private Map<String, String> instance = Map.of();
-
         private Map<String, String> handshake = Map.of();
+        private Map<String, String> instance = Map.of();
 
 
         private DockerUpdateResult( String err ) {

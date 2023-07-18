@@ -64,15 +64,25 @@ public final class DockerManager {
     }
 
 
+    public boolean hasHost( String host ) {
+        return dockerInstances.values().stream().anyMatch( d -> d.getHost().equals( host ) );
+    }
+
+
+    public boolean hasAlias( String alias ) {
+        return dockerInstances.values().stream().anyMatch( d -> d.getAlias().equals( alias ) );
+    }
+
+
     /**
      * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
      */
     void addDockerInstance( String host, String alias, int port, @Nullable ConfigDocker existingConfig ) {
         synchronized ( this ) {
-            if ( dockerInstances.values().stream().anyMatch( d -> d.getHost().equals( host ) ) ) {
+            if ( hasHost( host ) ) {
                 throw new RuntimeException( "There is already a docker instance connected to " + host );
             }
-            if ( dockerInstances.values().stream().anyMatch( d -> d.getAlias().equals( alias ) ) ) {
+            if ( hasAlias( alias ) ) {
                 throw new RuntimeException( "There is already a docker instance with alias " + alias );
             }
             ConfigDocker configDocker = existingConfig;
