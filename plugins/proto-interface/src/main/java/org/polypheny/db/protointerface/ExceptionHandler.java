@@ -46,17 +46,19 @@ public class ExceptionHandler implements ServerInterceptor {
             }catch (AvaticaRuntimeException e) {
                 handleAvaticaRuntimeException(e, serverCall, metadata);
                 throw e;
-            } catch (RuntimeException e) {
+            } catch (Exception e) {
                 handleException(e, serverCall, metadata);
                 throw e;
             }
         }
 
-        private void handleException(RuntimeException exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+        private void handleException(Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+            //serverCall.close(Status.fromThrowable(exception), metadata);
             serverCall.close(Status.INTERNAL.withDescription(exception.getMessage()), metadata);
         }
 
         private void handleAvaticaRuntimeException(AvaticaRuntimeException avaticaRuntimeException, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+            //serverCall.close(Status.fromThrowable(avaticaRuntimeException), metadata);
             serverCall.close(Status.INTERNAL.withDescription(avaticaRuntimeException.getErrorMessage()), metadata);
         }
     }
