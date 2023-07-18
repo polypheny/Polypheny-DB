@@ -100,8 +100,8 @@ message ConnectionRequest {
 
 message ConnectionReply {
   bool is_compatible = 1;
-  uint32 major_api_version = 2;
-  uint32 minor_api_version = 3;
+  int32 major_api_version = 2;
+  int32 minor_api_version = 3;
 }
 
 message ConnectionProperties {
