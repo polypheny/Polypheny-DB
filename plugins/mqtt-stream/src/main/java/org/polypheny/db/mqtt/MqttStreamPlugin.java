@@ -26,6 +26,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -101,13 +106,14 @@ public class MqttStreamPlugin extends Plugin {
                 new QueryInterfaceSettingString( "topics", false, true, true, null )
         );
 
+        @Getter
         private final String broker;
-
+        @Getter
         private final int brokerPort;
 
-        private ArrayList<String> topics = new ArrayList<String>();
+        private Map<String, AtomicLong> topics = new ConcurrentHashMap<>();
 
-        private static Mqtt3AsyncClient client;
+        private Mqtt3AsyncClient client;
 
         private String namespace;
 
@@ -249,7 +255,7 @@ public class MqttStreamPlugin extends Plugin {
 
                         List<String> topicsToSub = new ArrayList<>();
                         for ( String newTopic : newTopicsList ) {
-                            if ( !topics.contains( newTopic ) ) {
+                            if ( !topics.containsKey( newTopic ) ) {
                                 topicsToSub.add( newTopic );
                             }
                         }
@@ -259,7 +265,7 @@ public class MqttStreamPlugin extends Plugin {
                         }
 
                         List<String> topicsToUnsub = new ArrayList<>();
-                        for ( String oldTopic : topics ) {
+                        for ( String oldTopic : topics.keySet() ) {
                             if ( !newTopicsList.contains( oldTopic ) ) {
                                 topicsToUnsub.add( oldTopic );
                             }
@@ -312,7 +318,7 @@ public class MqttStreamPlugin extends Plugin {
                 if ( throwable != null ) {
                     log.info( "Subscription was not successfull. Please try again." );
                 } else {
-                    this.topics.add( topic );
+                    this.topics.put( topic, new AtomicLong(0));
                     log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
@@ -342,16 +348,20 @@ public class MqttStreamPlugin extends Plugin {
 
 
         void processMsg( Mqtt3Publish subMsg ) {
-            //TODO: attention: return values, not correct, might need a change of type.
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
 
             ReceivedMqttMessage receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), subMsg.getTopic().toString() ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId );
             MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
             String content = streamProcessor.processStream();
-
+            //TODO: what is returned from processStream if this Stream is not valid/ not result of filter...?
+            if ( !Objects.equals( content, "" ) ) {
+                Long incrementedCount = topics.get( receivedMqttMessage.getTopic() ).incrementAndGet();
+                topics.replace( receivedMqttMessage.getTopic(), new AtomicLong( incrementedCount ) );
+            }
             StreamCapture streamCapture = new StreamCapture( getTransaction(), receivedMqttMessage );
             streamCapture.handleContent();
+            this.monitoringPage.update();
         }
 
 
@@ -400,6 +410,10 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationGroup informationGroupInfo;
             private final InformationTable topicsTable;
             private final InformationAction msgButton;
+            private final InformationText brokerInfo;
+            private final InformationText clientInfo;
+            private final InformationText namespaceName;
+
 
 
             public MonitoringPage() {
@@ -409,9 +423,12 @@ public class MqttStreamPlugin extends Plugin {
 
                 informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
                 im.addGroup( informationGroupInfo );
-                InformationText brokerInfo = new InformationText( informationGroupInfo, "Broker IP: " + broker + ":" + brokerPort );
-                InformationText namespaceName = new InformationText( informationGroupInfo,"Namespace name: " + namespace);
+
+                brokerInfo = new InformationText( informationGroupInfo, "0.0.0.0:0000" );
                 im.registerInformation( brokerInfo );
+                clientInfo = new InformationText( informationGroupInfo, "o" );
+                im.registerInformation( clientInfo );
+                namespaceName = new InformationText( informationGroupInfo, "namespace" );
                 im.registerInformation( namespaceName );
 
                 informationGroupTopics = new InformationGroup( informationPage, "Subscribed Topics" ).setOrder( 2 );
@@ -422,7 +439,7 @@ public class MqttStreamPlugin extends Plugin {
                 // table to display topics
                 topicsTable = new InformationTable(
                         informationGroupTopics,
-                        List.of( "Topics" )
+                        List.of( "Topic", "Number of received messages" )
                 );
 
                 im.registerInformation( topicsTable );
@@ -447,10 +464,18 @@ public class MqttStreamPlugin extends Plugin {
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
-                    for ( String topic : topics ) {
-                        topicsTable.addRow( topic );
+                    for ( String topic : topics.keySet() ) {
+                        //TODO: format
+                        topicsTable.addRow( topic, topics.get( topic ) );
                     }
                 }
+                this.brokerInfo.setText( "Broker address: " + client.getConfig().getServerHost()
+                        + "\n" + "Broker port:" + client.getConfig().getServerPort()
+                        + "\n Broker version of MQTT : " + String.valueOf( client.getConfig().getMqttVersion() )
+                        + "\n" + "SSL configuration: " + client.getConfig().getSslConfig() );
+                //TODO: check this after having SSL Configuration.
+                this.clientInfo.setText( "Client state: " + String.valueOf( client.getState() ) );
+                this.namespaceName.setText( "Namespace name: " + namespace );
 
             }
 
