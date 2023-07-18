@@ -55,6 +55,7 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -173,7 +174,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
             List<List<?>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
             if ( rows.size() != 0 ) {
-                Integer index = ((List<Integer>) rows.get( 0 ).get( 0 )).get( 1 );
+                int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
                 rollback();
                 throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
             }

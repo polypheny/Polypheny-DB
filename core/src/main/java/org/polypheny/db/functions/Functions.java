@@ -356,26 +356,26 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Function0<Enumerable<Object>> modify, Enumerable<Object[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
-        List<Object> results = new ArrayList<>();
+    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue>> modify, Enumerable<PolyValue[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+        List<PolyValue> results = new ArrayList<>();
         try {
-            for ( Object object : modify.apply() ) {
+            for ( PolyValue object : modify.apply() ) {
                 results.add( object );
             }
         } catch ( Exception e ) {
             throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
         }
 
-        List<Integer> validationIndexes = new ArrayList<>();
-        for ( Object object : control ) {
-            validationIndexes.add( (Integer) ((Object[]) object)[1] );
+        List<PolyNumber> validationIndexes = new ArrayList<>();
+        for ( PolyValue[] object : control ) {
+            validationIndexes.add( object[1].asNumber() );
         }
         if ( validationIndexes.size() == 0 ) {
             return Linq4j.asEnumerable( results );
         } else {
             // force rollback
             throw new ConstraintViolationException( Joiner.on( "\n" )
-                    .join( validationIndexes.stream().map( msgs::get ).collect( Collectors.toList() ) ) );
+                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).collect( Collectors.toList() ) ) );
         }
     }
 

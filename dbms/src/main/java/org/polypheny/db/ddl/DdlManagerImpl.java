@@ -587,21 +587,21 @@ public class DdlManagerImpl extends DdlManager {
                     throw new GenericRuntimeException( "It is not possible to specify a index method if no location has been specified." );
                 }
                 boolean createdAtLeastOne = false;
-                for ( CatalogDataPlacement dataPlacement : catalog.getSnapshot().alloc().getDataPlacements( table.id ) ) {
+                for ( AllocationPlacement placement : catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id ) ) {
                     boolean hasAllColumns = true;
-                    if ( ((DataStore<?>) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
+                    if ( ((DataStore<?>) AdapterManager.getInstance().getAdapter( placement.adapterId )).getAvailableIndexMethods().size() > 0 ) {
                         for ( long columnId : columnIds ) {
-                            if ( catalog.getSnapshot().alloc().getEntity( dataPlacement.adapterId, columnId ).isEmpty() ) {
+                            if ( catalog.getSnapshot().alloc().getColumn( placement.id, columnId ).isEmpty() ) {
                                 hasAllColumns = false;
                             }
                         }
                         if ( hasAllColumns ) {
-                            DataStore<?> loc = (DataStore<?>) AdapterManager.getInstance().getAdapter( dataPlacement.adapterId );
+                            DataStore<?> loc = (DataStore<?>) AdapterManager.getInstance().getAdapter( placement.adapterId );
                             String name = indexName + "_" + loc.getUniqueName();
                             String nameSuffix = "";
                             int counter = 0;
                             while ( catalog.getSnapshot().rel().getIndex( table.id, name + nameSuffix ).isPresent() ) {
-                                nameSuffix = counter++ + "";
+                                nameSuffix = String.valueOf( counter++ );
                             }
                             addDataStoreIndex( table, indexMethodName, name + nameSuffix, isUnique, loc, statement, columnIds, type );
                             createdAtLeastOne = true;

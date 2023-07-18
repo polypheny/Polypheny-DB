@@ -102,7 +102,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .map( c -> (AllocationGraphCatalog) c )
                 .collect( Collectors.toList() ) );
 
-        this.columns = buildColumns( allocationCatalogs.values()
+        this.columns = buildPlacementColumns( allocationCatalogs.values()
                 .stream()
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
@@ -244,8 +244,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildColumns( List<AllocationColumn> columns ) {
-        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.placementId ), c -> c ) ) );
+    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildPlacementColumns( List<AllocationColumn> columns ) {
+        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.placementId, c.columnId ), c -> c ) ) );
 
     }
 
