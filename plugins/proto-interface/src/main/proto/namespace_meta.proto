@@ -52,7 +52,7 @@ message Table {
   string table_type = 4;
   string owner_name = 5;
   repeated Column columns = 6;
-  PrimaryKey primary_key = 7;
+  optional PrimaryKey primary_key = 7;
   repeated ForeignKey foreign_keys = 8;
   repeated ForeignKey exported_keys = 9;
   repeated Index indexes = 10;
