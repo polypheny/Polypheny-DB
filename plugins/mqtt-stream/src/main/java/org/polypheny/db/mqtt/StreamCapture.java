@@ -52,13 +52,13 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 public class StreamCapture {
 
-    TransactionManager transactionManager;
+    Transaction transaction;
     PolyphenyHomeDirManager homeDirManager;
     ReceivedMqttMessage receivedMqttMessage;
 
 
-    StreamCapture( final TransactionManager transactionManager, ReceivedMqttMessage receivedMqttMessage ) {
-        this.transactionManager = transactionManager;
+    StreamCapture( final Transaction transaction, ReceivedMqttMessage receivedMqttMessage ) {
+        this.transaction = transaction;
         this.receivedMqttMessage = receivedMqttMessage;
 
     }
@@ -96,8 +96,10 @@ public class StreamCapture {
             if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
                 int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
                 if ( !collection.placements.contains( queryInterfaceId ) ) {
+                    log.info( "found matching collection!" );
                     return collection.addPlacement( queryInterfaceId ).id;
                 } else {
+                    log.info( "found matching collection!" );
                     return collection.id;
                 }
             }
@@ -111,7 +113,6 @@ public class StreamCapture {
         Catalog catalog = Catalog.getInstance();
 
         //Catalog.PlacementType placementType = Catalog.PlacementType.AUTOMATIC;
-        Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
         try {
@@ -123,7 +124,7 @@ public class StreamCapture {
                     dataStores.size() == 0 ? null : dataStores,
                     PlacementType.MANUAL,
                     statement );
-            log.info( "Created Collection with name: {}", this.receivedMqttMessage.getTopic() );
+            log.info( "Created new collection with name: {}", this.receivedMqttMessage.getTopic() );
             transaction.commit();
         } catch ( EntityAlreadyExistsException e ) {
             log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
@@ -133,6 +134,7 @@ public class StreamCapture {
             return 0;
         }
         //add placement
+        //TODO:insert Placements permanently: currently new placement is only inserted locally!!!!
         List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
         for ( int i = 0; i < collectionList.size(); i++ ) {
             if ( collectionList.get( i ).name.equals( this.receivedMqttMessage.getTopic() ) ) {
@@ -149,7 +151,6 @@ public class StreamCapture {
     // added by Datomo
     public void insertDocument() {
         String collectionName = "wohnzimmer." + this.receivedMqttMessage.getTopic();
-        Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
@@ -163,27 +164,16 @@ public class StreamCapture {
 
         AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
 
-        //final AlgDataType rowType = algNode.getExpectedInputRowType(0);
-        List<Integer> columnNumber = new ArrayList<>();
-        columnNumber.add( 0, 1 );
-        columnNumber.add( 1, 2 );
-
-        List<String> columnNames = new ArrayList<>();
-        columnNames.add( 0, "id" );
-        columnNames.add( 1, "content" );
-
-        final List<Pair<Integer, String>> fields = Pair.zip( columnNumber, columnNames );
-        final AlgCollation collation =
-                algNode instanceof Sort
-                        ? ((Sort) algNode).collation
-                        : AlgCollations.EMPTY;
-        AlgRoot root = new AlgRoot( algNode, algNode.getRowType(), Kind.INSERT, fields, collation );
-
         // we can then wrap the tree in an AlgRoot and execute it
-        // AlgRoot root = AlgRoot.of( algNode, algNode.getRowType(), Kind.INSERT );
+        AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
         // for inserts and all DML queries only a number is returned
         String res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
-
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
+        log.info( "inserted message as document" );
 
     }
 
@@ -191,7 +181,6 @@ public class StreamCapture {
     // added by Datomo
     public void scanDocument() {
         String collectionName = "users";
-        Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
@@ -211,15 +200,6 @@ public class StreamCapture {
             insertDocument();
         }
         return true;
-    }
-
-
-    private Transaction getTransaction() {
-        try {
-            return transactionManager.startTransaction( this.receivedMqttMessage.getUserId(), this.receivedMqttMessage.getDatabaseId(), false, "MQTT Stream" );
-        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | GenericCatalogException e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
-        }
     }
 
 
