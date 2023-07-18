@@ -163,14 +163,16 @@ public final class AutoDocker {
             }
         } );
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
-        for ( int i = 0; i < 20; i++ ) {
+        while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
-            if ( handshakeStatus.equals( "RUNNING" ) ) {
+            if ( handshakeStatus.equals( "STARTING" ) || handshakeStatus.equals( "RUNNING" ) ) {
                 try {
                     TimeUnit.SECONDS.sleep( 1 );
                 } catch ( InterruptedException e ) {
                     // no problem
                 }
+            } else {
+                break;
             }
         }
     }
