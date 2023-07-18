@@ -31,6 +31,9 @@ public class AuthenticatorImpl implements Authenticator {
     @Override
     public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+        if (catalogUser == null) {
+            throw new AuthenticationException("There exists no user with the username " + username);
+        }
         if ( catalogUser.password.equals( password ) ) {
             return catalogUser;
         } else {
