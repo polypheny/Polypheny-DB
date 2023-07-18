@@ -19,21 +19,28 @@ package org.polypheny.db.mqtt;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.mqtt.ReceivedMqttMessage;
+import org.polypheny.db.stream.StreamProcessor;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 
 @Slf4j
-public class MqttStreamProcessor {
-    ReceivedMqttMessage receivedMqttMessage;
+public class MqttStreamProcessor implements StreamProcessor {
 
-    public MqttStreamProcessor(ReceivedMqttMessage receivedMqttMessage) {
+    private final ReceivedMqttMessage receivedMqttMessage;
+    private final StreamProcessor streamProcessor;
+
+    public MqttStreamProcessor(ReceivedMqttMessage receivedMqttMessage, Statement statement ) {
         this.receivedMqttMessage = receivedMqttMessage;
+        this.streamProcessor = statement.getStreamProcessor( receivedMqttMessage.getMessage() );
+
     }
 
 
     //TODO: receive all additional info from Wrapper around MqttStream
-    public String processStream( ReceivedMqttMessage msg ) {
-        String info = extractInfo( msg.getMessage(), msg.getTopic() );
+    public String processStream( ) {
+        String info = extractInfo( this.receivedMqttMessage.getMessage(), this.receivedMqttMessage.getTopic() );
         if ( validateMsg( info ) ) {
-            log.info( "Extracted and validated message: {}", msg);
+            log.info( "Extracted and validated message: {}", this.receivedMqttMessage.getMessage());
             return info;
         } else {
             log.error( "Message is not valid!" );
@@ -53,5 +60,10 @@ public class MqttStreamProcessor {
         return msg;
     }
 
+
+    @Override
+    public String getStream() {
+        return streamProcessor.getStream();
+    }
 
 }

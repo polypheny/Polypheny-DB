@@ -46,6 +46,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -346,12 +347,10 @@ public class MqttStreamPlugin extends Plugin {
             Statement statement = transaction.createStatement();
 
             ReceivedMqttMessage receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), subMsg.getTopic().toString() ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId );
+            MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
+            String content = streamProcessor.processStream();
 
-            StreamProcessor streamProcessor = statement.getStreamProcessor();
-            //TODO: ganzes ReceivedMqttMEssage objekt übergeben und arbeiten lassen.
-            String content = streamProcessor.processStream( receivedMqttMessage.getMessage() );
-
-            StreamCapture streamCapture = new StreamCapture( this.transactionManager, receivedMqttMessage );
+            StreamCapture streamCapture = new StreamCapture( getTransaction(), receivedMqttMessage );
             streamCapture.handleContent();
         }
 
@@ -398,7 +397,7 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationGroup informationGroupTopics;
 
             private final InformationGroup informationGroupMsg;
-
+            private final InformationGroup informationGroupInfo;
             private final InformationTable topicsTable;
             private final InformationAction msgButton;
 
@@ -407,7 +406,15 @@ public class MqttStreamPlugin extends Plugin {
                 InformationManager im = InformationManager.getInstance();
 
                 informationPage = new InformationPage( getUniqueName(), INTERFACE_NAME ).fullWidth().setLabel( "Interfaces" );
-                informationGroupTopics = new InformationGroup( informationPage, "Subscribed Topics" ).setOrder( 1 );
+
+                informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
+                im.addGroup( informationGroupInfo );
+                InformationText brokerInfo = new InformationText( informationGroupInfo, "Broker IP: " + broker + ":" + brokerPort );
+                InformationText namespaceName = new InformationText( informationGroupInfo,"Namespace name: " + namespace);
+                im.registerInformation( brokerInfo );
+                im.registerInformation( namespaceName );
+
+                informationGroupTopics = new InformationGroup( informationPage, "Subscribed Topics" ).setOrder( 2 );
 
                 im.addPage( informationPage );
                 im.addGroup( informationGroupTopics );
@@ -422,7 +429,7 @@ public class MqttStreamPlugin extends Plugin {
                 informationGroupTopics.setRefreshFunction( this::update );
 
                 //TODO: rmv button
-                informationGroupMsg = new InformationGroup( informationPage, "Publish a message" ).setOrder( 2 );
+                informationGroupMsg = new InformationGroup( informationPage, "Publish a message" ).setOrder( 3 );
                 im.addGroup( informationGroupMsg );
 
                 msgButton = new InformationAction( informationGroupMsg, "Send a msg", ( parameters ) -> {

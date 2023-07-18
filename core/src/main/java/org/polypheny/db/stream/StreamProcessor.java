@@ -22,6 +22,6 @@ package org.polypheny.db.stream;
 public interface StreamProcessor {
 
     //TODO: maybe change type to MqttStream?
-    String processStream( String msg );
+    String getStream( );
 
 }
