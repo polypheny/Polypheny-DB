@@ -29,15 +29,35 @@ import org.polypheny.db.iface.Authenticator;
 public class AuthenticatorImpl implements Authenticator {
 
     @Override
-    public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
-        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+    public CatalogUser authenticate(final String username, final String password) throws AuthenticationException {
+        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser(username);
         if (catalogUser == null) {
             throw new AuthenticationException("There exists no user with the username " + username);
         }
-        if ( catalogUser.password.equals( password ) ) {
+
+        /******************************************************************
+         *                                                                *
+         *  WARNING!                                                      *
+         *                                                                *
+         *  Until user authentication is fully implemented,               *
+         *  this bypass ensures backwards compatibility                   *
+         *  with the old default password which was an empty string.      *
+         *                                                                *
+         *  This should be removed upon implementation                    *
+         *  of user authentication!                                       *
+         *                                                                *
+         *  TODO: remove this upon implementation of user authentication  *
+         *                                                                *
+         ******************************************************************/
+        if (password.equals("")) {
+            return catalogUser;
+        }
+        /******************************************************************/
+
+        if (catalogUser.password.equals(password)) {
             return catalogUser;
         } else {
-            throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
+            throw new AuthenticationException("Wrong password for user '" + username + "'!");
         }
     }
 
