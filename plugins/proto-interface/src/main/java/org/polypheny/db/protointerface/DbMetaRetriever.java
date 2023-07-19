@@ -270,8 +270,8 @@ public class DbMetaRetriever {
         typeBuilder.setIsCaseSensitive(typeSystem.isCaseSensitive(polyType));
         typeBuilder.setIsSearchable(DatabaseMetaData.typeSearchable);
         typeBuilder.setIsAutoIncrement(typeSystem.isAutoincrement(polyType));
-        typeBuilder.setMinScale(polyType.getMinScale());
-        typeBuilder.setMaxScale(typeSystem.getMaxScale(polyType));
+        typeBuilder.setMinScale(polyType.getMinScale() == -1 ? 0 : polyType.getMinScale());
+        typeBuilder.setMaxScale(typeSystem.getMaxScale(polyType) == -1 ? 0 : typeSystem.getMaxScale(polyType) );
         typeBuilder.setRadix(typeSystem.getNumTypeRadix(polyType));
         return typeBuilder.build();
     }
