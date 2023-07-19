@@ -736,14 +736,10 @@ public class TestHelper {
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port;
             log.debug( "Connecting to database @ {}", url );
 
-            Properties props = new Properties();
-            props.setProperty( "user", "pa" );
-            //props.setProperty( "serialization", "PROTOBUF" ); deprecated parameter for jdbc-driver
-
-            conn = DriverManager.getConnection( url, props );
+            conn = DriverManager.getConnection( url, "pa", "" );
             conn.setAutoCommit( autoCommit );
         }
 
