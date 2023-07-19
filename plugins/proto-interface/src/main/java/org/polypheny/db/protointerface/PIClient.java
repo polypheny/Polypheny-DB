@@ -42,6 +42,7 @@ public class PIClient {
     private PIClientInfoProperties PIClientInfoProperties;
     private int minorApiVersion;
     private int majorApiVersion;
+    private boolean isActive;
 
 
     private PIClient(Builder connectionBuilder) {
@@ -55,6 +56,7 @@ public class PIClient {
         this.majorApiVersion = connectionBuilder.majorApiVersion;
         this.minorApiVersion = connectionBuilder.minorApiVersion;
         this.PIClientInfoProperties = new PIClientInfoProperties();
+        this.isActive = true;
     }
 
     public String getClientUUID() {
@@ -144,6 +146,16 @@ public class PIClient {
 
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    public void setIsActive() {
+        isActive = true;
+    }
+
+    public boolean returnAndResetIsActive() {
+        boolean oldIsActive = isActive;
+        isActive = false;
+        return oldIsActive;
     }
 
 
