@@ -109,6 +109,9 @@ public class PolyValueSerializer {
 
 
     public static ProtoValue serialize( PolyValue polyValue ) {
+        if (polyValue == null) {
+            return serializeAsProtoNull();
+        }
         switch ( polyValue.getType() ) {
             case BOOLEAN:
                 // used by PolyBoolean
@@ -540,6 +543,13 @@ public class PolyValueSerializer {
         return ProtoValue.newBuilder()
                 .setNull( ProtoNull.newBuilder().build() )
                 .setType( getType( polyNull ) )
+                .build();
+    }
+
+    private static ProtoValue serializeAsProtoNull() {
+        return ProtoValue.newBuilder()
+                .setNull(ProtoNull.newBuilder().build())
+                .setType(ProtoValue.ProtoValueType.NULL)
                 .build();
     }
 
