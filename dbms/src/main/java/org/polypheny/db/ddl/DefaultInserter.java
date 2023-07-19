@@ -75,7 +75,7 @@ public class DefaultInserter {
         // init users
         long systemId = catalog.addUser( "system", "" );
 
-        catalog.addUser( "pa", "" );
+        catalog.addUser( "pa", "pa" );
 
         Catalog.defaultUserId = systemId;
     }
