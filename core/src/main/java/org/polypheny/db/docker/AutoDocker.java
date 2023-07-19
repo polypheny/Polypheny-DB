@@ -125,22 +125,10 @@ public final class AutoDocker {
     }
 
 
-    private void doAutoHandshake() {
-        updateStatus( "Starting automatic setup procedure" );
-        DockerClient client = getClient();
-        Optional<String> maybeUuid = findAndStartPolyphenyContainer( client );
+    // TODO: remove sb before merge
+    private String createAndStartHandshakeCommand( DockerClient client, String containerUuid, StringBuffer sb ) {
+        ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
 
-        if ( maybeUuid.isEmpty() ) {
-            maybeUuid = createAndStartPolyphenyContainer( client );
-            if ( maybeUuid.isEmpty() ) {
-                return;
-            }
-        }
-
-        String polyphenyDockerUuid = maybeUuid.get();
-        updateStatus( "Performing handshake with container" );
-        ExecCreateCmdResponse execResponse = client.execCreateCmd( polyphenyDockerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
-        StringBuffer sb = new StringBuffer();
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
             @Override
             public void onStart( Closeable closeable ) {
@@ -169,13 +157,43 @@ public final class AutoDocker {
             public void close() {
             }
         } );
+
+        return execResponse.getId();
+    }
+
+
+    private void doAutoHandshake() {
+        updateStatus( "Starting automatic setup procedure" );
+        DockerClient client = getClient();
+        Optional<String> maybeUuid = findAndStartPolyphenyContainer( client );
+
+        if ( maybeUuid.isEmpty() ) {
+            maybeUuid = createAndStartPolyphenyContainer( client );
+            if ( maybeUuid.isEmpty() ) {
+                return;
+            }
+        }
+
+        StringBuffer sb = new StringBuffer();
+
+        String execId = createAndStartHandshakeCommand( client, maybeUuid.get(), sb );
+        updateStatus( "Performing handshake with container" );
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+        int retries = 0;
         while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
             if ( !handshakeStatus.equals( "FAILED" ) && !handshakeStatus.equals( "SUCCESS" ) ) {
                 if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
-                    InspectExecResponse s = client.inspectExecCmd( execResponse.getId() ).exec();
+                    InspectExecResponse s = client.inspectExecCmd( execId ).exec();
                     if ( s.getExitCodeLong() != null ) {
+                        // 137 seems to be the code of an OOM kill, this happens often during tests, so try again
+                        if ( s.getExitCodeLong() == 137 && retries < 3 ) {
+                            retries += 1;
+                            updateStatus( "Handshake process killed, retry " + retries + " of 3" );
+                            sb = new StringBuffer();
+                            execId = createAndStartHandshakeCommand( client, maybeUuid.get(), sb );
+                            continue;
+                        }
                         updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
                         synchronized ( sb ) {
                             log.info( "Output: " + sb );
