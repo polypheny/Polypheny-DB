@@ -186,7 +186,6 @@ public class MqttStreamPlugin extends Plugin {
                                 }
                             }
                     );
-
         }
 
 
@@ -231,6 +230,7 @@ public class MqttStreamPlugin extends Plugin {
                 } else {
                     log.info( "There is already a namespace existing in this database with the given name but of type {}.", schema.getNamespaceType() );
                     log.info( "Please change the name or the type to {} to use the existing namespace.", schema.getNamespaceType() );
+                    throw new RuntimeException();
                 }
             } else {
 
@@ -341,6 +341,7 @@ public class MqttStreamPlugin extends Plugin {
                     log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
                 } else {
                     this.topics.remove( topic );
+                    //TODO: remove collction in StreamCapture
                     log.info( "Unsubscribed from topic:{}.", topic );
                 }
             } );
@@ -359,8 +360,8 @@ public class MqttStreamPlugin extends Plugin {
                 Long incrementedCount = topics.get( receivedMqttMessage.getTopic() ).incrementAndGet();
                 topics.replace( receivedMqttMessage.getTopic(), new AtomicLong( incrementedCount ) );
             }
-            StreamCapture streamCapture = new StreamCapture( getTransaction(), receivedMqttMessage );
-            streamCapture.handleContent();
+            StreamCapture streamCapture = new StreamCapture( getTransaction() );
+            streamCapture.handleContent(receivedMqttMessage);
             this.monitoringPage.update();
         }
 
@@ -439,7 +440,7 @@ public class MqttStreamPlugin extends Plugin {
                 // table to display topics
                 topicsTable = new InformationTable(
                         informationGroupTopics,
-                        List.of( "Topic", "Number of received messages" )
+                        List.of( "Topic", "Number of received messages", "Recently received messages" )
                 );
 
                 im.registerInformation( topicsTable );
@@ -465,8 +466,16 @@ public class MqttStreamPlugin extends Plugin {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
                     for ( String topic : topics.keySet() ) {
-                        //TODO: format
-                        topicsTable.addRow( topic, topics.get( topic ) );
+                        Long numberMessages = topics.get( topic ).get();
+                        if ( numberMessages != 0 ) {
+                            StreamCapture streamCapture = new StreamCapture( getTransaction() );
+                            List<String> messages = streamCapture.getRecentMessages(namespace, topic);
+                            topicsTable.addRow( topic, numberMessages, messages);
+                        } else {
+                            topicsTable.addRow( topic, topics.get( topic ), "No messages received yet." );
+                        }
+
+
                     }
                 }
                 this.brokerInfo.setText( "Broker address: " + client.getConfig().getServerHost()
