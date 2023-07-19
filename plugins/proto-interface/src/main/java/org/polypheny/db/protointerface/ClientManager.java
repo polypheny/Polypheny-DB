@@ -27,20 +27,28 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ClientManager {
+    private static final long CLEANUP_INTERVALL = 1_200_000; // 20 minutes
 
     private ConcurrentHashMap<String, PIClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
+    private final Timer cleanupTimer;
 
 
     public ClientManager(Authenticator authenticator, TransactionManager transactionManager) {
         this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = authenticator;
         this.transactionManager = transactionManager;
+        this.cleanupTimer = new Timer();
+        cleanupTimer.schedule(createNewCleanupTask(), 0, CLEANUP_INTERVALL);
     }
 
     public void unregisterConnection(PIClient client) {
@@ -101,12 +109,30 @@ public class ClientManager {
         if (!openConnections.containsKey(clientUUID)) {
             throw new PIServiceException("Client not registered! Has the server been restarted in the meantime?");
         }
-        return openConnections.get(clientUUID);
+        PIClient client = openConnections.get(clientUUID);
+        client.setIsActive();
+        return client;
     }
 
 
     private CatalogUser authenticateUser(String username, String password) throws AuthenticationException {
         return authenticator.authenticate(username, password);
+    }
+
+    private TimerTask createNewCleanupTask() {
+        Runnable runnable = this::unregisterInactiveClients;
+        return new TimerTask() {
+            @Override
+            public void run() {
+                runnable.run();
+            }
+        };
+    }
+
+    private void unregisterInactiveClients() {
+        List<PIClient> inactiveClients = openConnections.values().stream()
+                .filter(c -> !c.returnAndResetIsActive()).collect(Collectors.toList());
+        inactiveClients.forEach(this::unregisterConnection);
     }
 
 
