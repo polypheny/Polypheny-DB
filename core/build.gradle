@@ -71,8 +71,11 @@ dependencies {
     api group: 'io.activej', name: 'activej-serializer', version: activej_serializer_version // Apache 2.0
 
     // --- Test Compile ---
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.1.0'
     testImplementation group: "junit", name: "junit", version: junit_version
-    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'// BSD 3-clause
 
 
 }
