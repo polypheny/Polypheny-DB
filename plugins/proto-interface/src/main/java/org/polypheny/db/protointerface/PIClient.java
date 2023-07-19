@@ -87,7 +87,7 @@ public class PIClient {
     }
 
 
-    public synchronized void commitCurrentTransaction() {
+    public void commitCurrentTransaction() {
         synchronized (this) {
             if (hasNoTransaction()) {
                 return;
@@ -95,7 +95,7 @@ public class PIClient {
             try {
                 currentTransaction.commit();
             } catch (TransactionException e) {
-                throw new PIServiceException("Committing current transaction failed: " + e.getLocalizedMessage());
+                throw new PIServiceException("Committing current transaction failed: " + e.getMessage());
             } finally {
                 endCurrentTransaction();
             }
@@ -103,7 +103,7 @@ public class PIClient {
     }
 
 
-    public synchronized void rollbackCurrentTransaction() {
+    public void rollbackCurrentTransaction() {
         synchronized (this) {
             if (hasNoTransaction()) {
                 return;
@@ -119,7 +119,7 @@ public class PIClient {
     }
 
 
-    private synchronized void endCurrentTransaction() {
+    private void endCurrentTransaction() {
         synchronized (this) {
             currentTransaction = null;
         }
