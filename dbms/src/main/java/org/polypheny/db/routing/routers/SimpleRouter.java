@@ -25,7 +25,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -47,9 +46,15 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+        Map<Long, List<AllocationColumn>> placements = selectPlacement( table );
+
+        // Only one builder available
+        builders.get( 0 ).addPhysicalInfo( placements );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
+
+        return builders;
     }
 
 
@@ -68,17 +73,17 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<AllocationColumn>> placementDistribution = partitionIds != null
-                ? partitionManager.getRelevantPlacements( catalogTable, null, Collections.emptyList() )
-                : partitionManager.getRelevantPlacements( catalogTable, null, Collections.emptyList() );
+                ? partitionManager.getRelevantPlacements( table, null, Collections.emptyList() )
+                : partitionManager.getRelevantPlacements( table, null, Collections.emptyList() );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );

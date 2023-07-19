@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -49,18 +48,17 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is horizontally partitioned", catalogTable.name );
+            log.debug( "{} is horizontally partitioned", table.name );
         }
 
-        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
+        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, table, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( Map<Long, List<AllocationColumn>> placementCombination : placements ) {
@@ -82,14 +80,14 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
+        cancelQuery = true;
         // Same as no partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+        return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
     }
 
 

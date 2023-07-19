@@ -131,7 +131,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             getCatalogColumn( context, table.id, (SqlIdentifier) node );
         }
 
-        DataStore<?> storeInstance = getDataStoreInstance( storeName );
+        DataStore<?> store = getDataStoreInstance( storeName );
         DdlManager.getInstance().modifyPlacement(
                 table,
                 columnList.getList().stream()
@@ -141,7 +141,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 partitionGroupNamesList.stream()
                         .map( SqlIdentifier::toString )
                         .collect( Collectors.toList() ),
-                storeInstance,
+                store,
                 statement );
 
     }

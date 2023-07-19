@@ -88,7 +88,7 @@ public class VerticalPartitioningTest {
                             statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 33, "foo" },
-                                    new Object[]{ 4, 22, "bar" } ) );
+                                    new Object[]{ 4, 22, "bar" } ), true );
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE partitioningtest" );

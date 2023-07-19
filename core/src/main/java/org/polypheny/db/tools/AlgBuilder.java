@@ -626,6 +626,23 @@ public class AlgBuilder {
     }
 
 
+    public RexNode field( int inputCount, String fieldName ) {
+        Objects.requireNonNull( fieldName );
+        final List<String> fields = new ArrayList<>();
+        for ( int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal ) {
+            final Frame frame = peek_( inputOrdinal );
+            for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
+                // If alias and field name match, reference that field.
+                if ( p.e.right.getName().equals( fieldName ) ) {
+                    return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
+                }
+                fields.add( String.format( Locale.ROOT, "{aliases=%s,fieldName=%s}", p.e.left, p.e.right.getName() ) );
+            }
+        }
+        throw new IllegalArgumentException( "no aliased field found; fields are: " + fields );
+    }
+
+
     /**
      * Returns a reference to a given field of a record-valued expression.
      */

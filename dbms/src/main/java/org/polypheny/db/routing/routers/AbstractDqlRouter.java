@@ -39,7 +39,6 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -87,25 +86,23 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
      */
     protected abstract List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation );
 
     protected abstract List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation );
 
     protected abstract List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
@@ -205,15 +202,13 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
             // Check if table is even horizontal partitioned
 
-            if ( false && Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) { // todo dl replace vert atm
-                return handleHorizontalPartitioning( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
-            } else {
-                // At the moment multiple strategies
-                if ( Catalog.snapshot().alloc().getFromLogical( catalogTable.id ).size() > 1 ) {
-                    return handleVerticalPartitioningOrReplication( node, catalogTable, statement, logicalTable, builders, cluster, queryInformation );
-                }
-                return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( catalogTable.id ).size() > 1 ) { // todo dl replace vert atm
+                return handleHorizontalPartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+            } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( catalogTable.id ).size() > 1 ) { // At the moment multiple strategies
+                return handleVerticalPartitioningOrReplication( node, catalogTable, statement, builders, cluster, queryInformation );
             }
+
+            return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
 
         } else if ( node instanceof LogicalValues ) {
             return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );

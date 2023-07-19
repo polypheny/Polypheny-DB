@@ -20,20 +20,22 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.document.DocumentAlg;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -43,7 +45,10 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -60,11 +65,13 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -229,55 +236,22 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> partitionsColumns ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> placements ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( partitionsColumns.hashCode() );
+            AlgNode cachedNode = joinedScanCache.getIfPresent( placements.hashCode() );
             if ( cachedNode != null ) {
                 return cachedNode;
             }
         }
 
-        Set<Long> placementIds = partitionsColumns.values().stream().findFirst().stream().flatMap( Collection::stream ).map( c -> c.placementId ).collect( Collectors.toSet() );
-        List<Long> partitionIds = new ArrayList<>( partitionsColumns.keySet() );
-
-        //List<AllocationEntity> allocs = statement.getTransaction().getSnapshot().alloc().getAllocsOfPlacement( partitionsColumns.id );
-        if ( partitionsColumns.size() == 1 && placementIds.size() == 1 ) {
-            // only one placement -> no vertical partition // only one partition -> no horizontal partition
-            AllocationEntity entity = catalog.getSnapshot().alloc().getAlloc(
-                    new ArrayList<>( placementIds ).get( 0 ),
-                    partitionIds.get( 0 ) ).orElseThrow();
-            builder = handleRelScan(
-                    builder,
-                    statement,
-                    entity );
-            // Final project
-            //buildFinalProject( builder, allocationEntities.get( 0 ).unwrap( AllocationTable.class ) );
-            return builder.build();
-        }
-
-        if ( placementIds.size() == 1 ) {
-            // only one placement -> no vertical partition but horizontal
-            return null;
-        }
-
-        if ( partitionIds.size() == 1 ) {
-            // only one partition -> no horizontal partition but vertical
-            return handleOnePartitionScan( statement, cluster, partitionsColumns, builder, partitionIds.get( 0 ) );
-        }
-
-        return null;
-
-
-
-
-        /*for ( Map.Entry<Long, List<CatalogColumnPlacement>> partitionToPlacement : allocationEntities.entrySet() ) {
+        for ( Map.Entry<Long, List<AllocationColumn>> partitionToPlacement : placements.entrySet() ) {
             long partitionId = partitionToPlacement.getKey();
-            List<CatalogColumnPlacement> currentPlacements = partitionToPlacement.getValue();
+            List<AllocationColumn> currentPlacements = partitionToPlacement.getValue();
             // Sort by adapter
-            /*Map<Long, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
-            for ( CatalogColumnPlacement placement : currentPlacements ) {
+            Map<Long, List<AllocationColumn>> placementsByAdapter = new HashMap<>();
+            for ( AllocationColumn placement : currentPlacements ) {
                 if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
                     placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
                 }
@@ -285,15 +259,14 @@ public abstract class BaseRouter implements Router {
             }
 
             if ( placementsByAdapter.size() == 1 ) {
-                // List<CatalogColumnPlacement> ccps = placementsByAdapter.values().iterator().next();
-                // CatalogColumnPlacement ccp = ccps.get( 0 );
-                // CatalogPartitionPlacement cpp = catalog.getPartitionPlacement( ccp.adapterId, partitionId );
-                partitionId = snapshot.alloc().getEntity( partitionId, currentPlacements.get( 0 ).tableId ).id;
+                List<AllocationColumn> ccps = placementsByAdapter.values().iterator().next();
+                AllocationColumn ccp = ccps.get( 0 );
+                AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( ccp.placementId, partitionId ).orElseThrow();
 
                 builder = handleRelScan(
                         builder,
                         statement,
-                        partitionId );
+                        cpp );
                 // Final project
                 buildFinalProject( builder, currentPlacements );
 
@@ -301,44 +274,44 @@ public abstract class BaseRouter implements Router {
                 // We need to join placements on different adapters
 
                 // Get primary key
-                LogicalRelSnapshot relSnapshot = snapshot.rel().namespaceId );
-                long pkid = relSnapshot.getTable( currentPlacements.get( 0 ).tableId ).primaryKey;
-                List<Long> pkColumnIds = relSnapshot.getPrimaryKey( pkid ).columnIds;
-                List<LogicalColumn> pkColumns = new LinkedList<>();
+                LogicalTable table = catalog.getSnapshot().rel().getTable( currentPlacements.get( 0 ).logicalTableId ).orElseThrow();
+                long pkid = table.primaryKey;
+                List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+                List<LogicalColumn> pkColumns = new ArrayList<>();
                 for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( relSnapshot.getColumn( pkColumnId ) );
+                    pkColumns.add( catalog.getSnapshot().rel().getColumn( pkColumnId ).orElseThrow() );
                 }
 
                 // Add primary key
-                for ( Entry<Long, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
+                for ( Entry<Long, List<AllocationColumn>> entry : placementsByAdapter.entrySet() ) {
                     for ( LogicalColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getSnapshot().alloc().getColumnFromLogical( pkColumn.id ).get( 0 );
+                        AllocationColumn pkPlacement = catalog.getSnapshot().alloc().getColumn( entry.getValue().get( 0 ).placementId, pkColumn.id ).orElseThrow();
                         if ( !entry.getValue().contains( pkPlacement ) ) {
                             entry.getValue().add( pkPlacement );
                         }
                     }
                 }
 
-                Deque<String> queue = new LinkedList<>();
+                Deque<String> queue = new ArrayDeque<>();
                 boolean first = true;
-                for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
-                    CatalogColumnPlacement ccp = ccps.get( 0 );
-                    CatalogPartitionPlacement cpp = Catalog.getInstance().getSnapshot().alloc().getPartitionPlacement( ccp.adapterId, partitionId );
+                for ( List<AllocationColumn> ccps : placementsByAdapter.values() ) {
+                    AllocationColumn ccp = ccps.get( 0 );
+                    AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( ccp.placementId, partitionId ).orElseThrow();
 
                     handleRelScan(
                             builder,
                             statement,
-                            cpp.partitionId
-                    );
+                            cpp );
                     if ( first ) {
                         first = false;
                     } else {
                         ArrayList<RexNode> rexNodes = new ArrayList<>();
-                        for ( CatalogColumnPlacement p : ccps ) {
+                        for ( AllocationColumn p : ccps ) {
                             if ( pkColumnIds.contains( p.columnId ) ) {
-                                String alias = ccps.get( 0 ).adapterId + "_" + p.getLogicalColumnName();
-                                rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
-                                queue.addFirst( alias );
+                                //CatalogAdapter adapter = catalog.getSnapshot().getAdapter( p.adapterId );
+                                //String alias = adapter.uniqueName + "_" + p.getLogicalColumnName();
+                                //rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
+                                queue.addFirst( p.getLogicalColumnName() );
                                 queue.addFirst( p.getLogicalColumnName() );
                             } else {
                                 rexNodes.add( builder.field( p.getLogicalColumnName() ) );
@@ -347,10 +320,9 @@ public abstract class BaseRouter implements Router {
                         builder.project( rexNodes );
                         List<RexNode> joinConditions = new LinkedList<>();
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
-                            joinConditions.add( builder.call(
-                                    OperatorRegistry.get( OperatorName.EQUALS ),
-                                    builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ),
-                                    builder.field( 2, ccp.getLogicalTableName() + "_" + partitionId, queue.removeFirst() ) ) );
+                            joinConditions.add( builder.equals(
+                                    builder.field( 2, queue.removeFirst() ),
+                                    builder.field( 2, queue.removeFirst() ) ) );
                         }
                         builder.join( JoinAlgType.INNER, joinConditions );
                     }
@@ -360,18 +332,18 @@ public abstract class BaseRouter implements Router {
             } else {
                 throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
             }
-        }*/
+        }
 
-        /*builder.union( true, allocs.size() );
+        builder.union( true, placements.size() );
 
         AlgNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedScanCache.put( allocs.hashCode(), node );
+            joinedScanCache.put( placements.hashCode(), node );
         }
 
-        AllocationColumn column = catalog.getSnapshot().alloc().getColumns( allocs.get( 0 ).id ).get( 0 );
+        AllocationColumn placement = new ArrayList<>( placements.values() ).get( 0 ).get( 0 );
         // todo dl: remove after RowType refactor
-        if ( Catalog.snapshot().getNamespace( partitionsColumns.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),
@@ -384,7 +356,20 @@ public abstract class BaseRouter implements Router {
             node = builder.build();
         }
 
-        return node;*/
+        return node;
+    }
+
+
+    private void buildFinalProject( RoutedAlgBuilder builder, List<AllocationColumn> currentPlacements ) {
+        List<RexNode> rexNodes = new ArrayList<>();
+        List<LogicalColumn> placementList = currentPlacements.stream()
+                .map( col -> catalog.getSnapshot().rel().getColumn( col.columnId ).orElseThrow() )
+                .sorted( Comparator.comparingInt( col -> col.position ) )
+                .collect( Collectors.toList() );
+        for ( LogicalColumn catalogColumn : placementList ) {
+            rexNodes.add( builder.field( catalogColumn.name ) );
+        }
+        builder.project( rexNodes );
     }
 
 

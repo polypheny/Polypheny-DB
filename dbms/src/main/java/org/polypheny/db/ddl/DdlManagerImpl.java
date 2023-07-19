@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
@@ -425,7 +426,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private int updateAdjacentPositions( LogicalTable catalogTable, LogicalColumn beforeColumn, LogicalColumn afterColumn ) {
-        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( catalogTable.id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
+        List<LogicalColumn> columns = sortByPosition( catalog.getSnapshot().rel().getColumns( catalogTable.id ) );
         int position = columns.size() + 1;
         if ( beforeColumn != null || afterColumn != null ) {
             if ( beforeColumn != null ) {
@@ -2058,9 +2059,8 @@ public class DdlManagerImpl extends DdlManager {
 
     private List<AllocationTable> addAllocationsForPlacement( long namespaceId, Statement statement, LogicalTable logical, long placementId, List<LogicalColumn> lColumns, List<Long> partitionIds, Adapter<?> adapter ) {
         List<AllocationColumn> columns = new ArrayList<>();
-        int i = 0;
         for ( LogicalColumn column : lColumns ) {
-            columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, i++ ) );
+            columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, column.position ) );
         }
 
         buildNamespace( namespaceId, logical, adapter );
@@ -2091,8 +2091,20 @@ public class DdlManagerImpl extends DdlManager {
     private AllocationTable addAllocationTable( long namespaceId, Statement statement, LogicalTable logical, List<LogicalColumn> lColumns, long placementId, Long partitionId, List<AllocationColumn> aColumns, Adapter<?> adapter ) {
         AllocationTable alloc = catalog.getAllocRel( namespaceId ).addAllocation( adapter.adapterId, placementId, partitionId, logical.id );
 
-        adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( logical, lColumns ), AllocationTableWrapper.of( alloc, aColumns ) );
+        adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( logical, sortByPosition( lColumns ) ), AllocationTableWrapper.of( alloc, sortByPositionAlloc( aColumns ) ) );
         return alloc;
+    }
+
+
+    @NotNull
+    private static List<LogicalColumn> sortByPosition( List<LogicalColumn> columns ) {
+        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
+    }
+
+
+    @NotNull
+    private static List<AllocationColumn> sortByPositionAlloc( List<AllocationColumn> columns ) {
+        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
     }
 
 

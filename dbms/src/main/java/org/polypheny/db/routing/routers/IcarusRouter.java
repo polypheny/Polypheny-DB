@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -43,21 +42,34 @@ import org.polypheny.db.util.Pair;
 public class IcarusRouter extends FullPlacementQueryRouter {
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        // same as no partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
+            AlgNode node,
+            LogicalTable table,
+            Statement statement,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
+        cancelQuery = true;
+        // Same as no partitioning
+        return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning(
+            AlgNode node,
+            LogicalTable table,
+            Statement statement,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
