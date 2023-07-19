@@ -29,6 +29,7 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.RestartPolicy;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
@@ -109,9 +110,10 @@ public final class AutoDocker {
         createPolyphenyConnectorVolumeIfNotExists( client );
 
         updateStatus( "Creating container polypheny-docker-connector" );
-        HostConfig hostConfig = new HostConfig();
-        hostConfig.withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) );
-        hostConfig.withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) );
+        HostConfig hostConfig = new HostConfig()
+                .withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
+                .withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) )
+                .withRestartPolicy( RestartPolicy.unlessStoppedRestart() );
 
         CreateContainerResponse containerResponse = client.createContainerCmd( "polypheny/polypheny-docker-connector" )
                 .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ) )
