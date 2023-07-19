@@ -1234,7 +1234,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
     @Override
     public void addRuleDuringRuntime( AlgOptRule rule ) {
-        if ( !addRule( rule ) ) {
+        // we register dynamically so we might to register twice todo dl maybe add convention cache for faster aboard
+        if ( getRuleByDescription( rule.toString() ) != null || !addRule( rule ) ) {
             return;
         }
 
@@ -1255,8 +1256,9 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
                     visitedSubsets.add( subset );
 
+                    int i = 0;
                     for ( AlgNode alg : subset.set.algs ) {
-                        visit( alg, -1, subset );
+                        visit( alg, i++, subset );
                     }
                 } else {
                     if ( operand.matches( node ) ) {
@@ -1268,7 +1270,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         };
         visitor.go( root );
         for ( Pair<AlgNode, AlgSubset> pair : matches ) {
-            //ruleQueue.recompute( pair.right );
+            ruleQueue.recompute( pair.right );
             fireRules( pair.left, true );
         }
 

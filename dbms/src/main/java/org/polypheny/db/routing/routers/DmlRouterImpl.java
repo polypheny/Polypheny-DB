@@ -115,11 +115,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( table.entityType == EntityType.ENTITY ) {
                 throw new GenericRuntimeException( "Unable to modify a table marked as read-only!" );
             } else if ( table.entityType == EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "The table '" + table.name + "' is provided by a data source which does not support data modification." );
+                throw new GenericRuntimeException( "The table '%s' is provided by a data source which does not support data modification.", table.name );
             } else if ( table.entityType == EntityType.VIEW ) {
                 throw new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
             }
-            throw new RuntimeException( "Unknown table type: " + table.entityType.name() );
+            throw new GenericRuntimeException( "Unknown table type: " + table.entityType.name() );
         }
 
         long pkid = table.primaryKey;
@@ -302,9 +302,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 } else if ( modify.getOperation() == Operation.INSERT ) {
                     int i;
-
                     if ( modify.getInput() instanceof LogicalValues ) {
-
                         // Get fieldList and map columns to index since they could be in arbitrary order
                         int partitionColumnIndex = -1;
                         Map<Long, Integer> resultColMapping = new HashMap<>();
@@ -349,7 +347,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                             Long currentPartitionId = partitionMapping.getKey();
 
-                            if ( !catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().map( p -> p.id ).collect( Collectors.toList() ).contains( currentPartitionId ) ) {
+                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == currentPartitionId ) ) {
                                 continue;
                             }
 
@@ -769,7 +767,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private AlgBuilder buildDml(
             AlgNode node,
             RoutedAlgBuilder builder,
-            LogicalTable catalogTable,
+            LogicalTable table,
             List<AllocationColumn> placements,
             AllocationEntity allocationTable,
             Statement statement,
@@ -777,7 +775,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
+            buildDml( node.getInput( i ), builder, table, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -788,95 +786,117 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            builder = super.handleRelScan(
-                    builder,
-                    statement,
-                    null );
-            LogicalRelScan scan = (LogicalRelScan) builder.build();
-            builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
-            return builder;
+            return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-
-            // Special handling for INSERT INTO foo SELECT * FROM foo2
-            if ( false ) {
-                return handleSelectFromOtherTable( builder, catalogTable, statement );
-            }
-
-            builder = super.handleRelScan(
-                    builder,
-                    statement,
-                    node.getEntity()
-            );
-
-            return builder;
-
+            return handleLogicalRelScan( builder, table, allocationTable, statement );
         } else if ( node instanceof LogicalDocumentValues ) {
-
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
+            return handleValues( node, builder, table, placements );
+        } else if ( node instanceof LogicalProject ) {
+            return handleLogicalProject( node, builder, table, placements, statement, remapParameterValues, parameterValues );
+        } else if ( node instanceof LogicalFilter ) {
+            return handleLogicalFilter( node, builder, table, placements, statement );
+        } else {
+            return super.handleGeneric( node, builder );
+        }
+    }
 
-            LogicalValues values = (LogicalValues) node;
 
-            builder = super.handleValues( values, builder );
+    private RoutedAlgBuilder handleLogicalFilter( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements, Statement statement ) {
+        List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
+        if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
+            RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
 
-            List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( catalogTable.id );
-            if ( columns.size() == placements.size() ) { // full placement, no additional checks required
-                return builder;
-            } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                // This is a prepared statement. Actual values are in the project. Do nothing
-                return builder;
-            } else { // partitioned, add additional project
+            for ( RexNode operand : call.operands ) {
+                dmlConditionCheck( (LogicalFilter) node, table, placements, operand );
+            }
+        }
+        return super.handleGeneric( node, builder );
+    }
+
+
+    private AlgBuilder handleLogicalRelScan( RoutedAlgBuilder builder, LogicalTable table, AllocationEntity allocationTable, Statement statement ) {
+        // Special handling for INSERT INTO foo SELECT * FROM foo2
+        if ( false ) {
+            return handleSelectFromOtherTable( builder, table, statement );
+        }
+
+        builder = super.handleRelScan(
+                builder,
+                statement,
+                allocationTable
+        );
+
+        return builder;
+    }
+
+
+    @NotNull
+    private RoutedAlgBuilder handleLogicalDocumentScan( RoutedAlgBuilder builder, Statement statement ) {
+        builder = super.handleRelScan(
+                builder,
+                statement,
+                null );
+        LogicalRelScan scan = (LogicalRelScan) builder.build();
+        builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
+        return builder;
+    }
+
+
+    private AlgBuilder handleLogicalProject( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements, Statement statement, boolean remapParameterValues, List<Map<Long, PolyValue>> parameterValues ) {
+        List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
+        PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+        if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
+            if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+                return remapParameterizedDml( node, builder, statement, parameterValues );
+            } else {
+                return super.handleGeneric( node, builder );
+            }
+        } else { // vertically partitioned, adjust project
+            if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                if ( property.isPartitioned && remapParameterValues ) {
+                    builder = remapParameterizedDml( node, builder, statement, parameterValues );
+                }
+                builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
                 return builder.project( rexNodes );
-            }
-        } else if ( node instanceof LogicalProject ) {
-            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
-            PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
-            if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
-                if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
-                    return remapParameterizedDml( node, builder, statement, parameterValues );
-                } else {
-                    return super.handleGeneric( node, builder );
+            } else {
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                for ( AllocationColumn ccp : placements ) {
+                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
-            } else { // vertically partitioned, adjust project
-                if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                    if ( property.isPartitioned && remapParameterValues ) {
-                        builder = remapParameterizedDml( node, builder, statement, parameterValues );
+                for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                    if ( !(rexNode instanceof RexIndexRef) ) {
+                        rexNodes.add( rexNode );
                     }
-                    builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
-                    ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( AllocationColumn ccp : placements ) {
-                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-                    }
-                    return builder.project( rexNodes );
-                } else {
-                    ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( AllocationColumn ccp : placements ) {
-                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-                    }
-                    for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
-                        if ( !(rexNode instanceof RexIndexRef) ) {
-                            rexNodes.add( rexNode );
-                        }
-                    }
-                    return builder.project( rexNodes );
                 }
+                return builder.project( rexNodes );
             }
-        } else if ( node instanceof LogicalFilter ) {
-            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
-            if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
-                RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
+        }
+    }
 
-                for ( RexNode operand : call.operands ) {
-                    dmlConditionCheck( (LogicalFilter) node, catalogTable, placements, operand );
-                }
+
+    private AlgBuilder handleValues( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements ) {
+        LogicalValues values = (LogicalValues) node;
+
+        builder = super.handleValues( values, builder );
+
+        List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
+        if ( columns.size() == placements.size() ) { // full placement, no additional checks required
+            return builder;
+        } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+            // This is a prepared statement. Actual values are in the project. Do nothing
+            return builder;
+        } else { // partitioned, add additional project
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            for ( AllocationColumn ccp : placements ) {
+                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
-            return super.handleGeneric( node, builder );
-        } else {
-            return super.handleGeneric( node, builder );
+            return builder.project( rexNodes );
         }
     }
 
@@ -923,23 +943,23 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 columnName = columnNames[0];
             } else if ( columnNames.length == 2 ) { // tableName.columnName
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
-                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    throw new GenericRuntimeException( "Table name does not match expected table name: " + field.getName() );
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
                 if ( !Catalog.snapshot().getNamespace( catalogTable.id ).name.equalsIgnoreCase( columnNames[0] ) ) {
-                    throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
+                    throw new GenericRuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
-                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    throw new GenericRuntimeException( "Table name does not match expected table name: " + field.getName() );
                 }
                 columnName = columnNames[2];
             } else {
-                throw new RuntimeException( "Invalid column name: " + field.getName() );
+                throw new GenericRuntimeException( "Invalid column name: " + field.getName() );
             }
             column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
-            if ( Catalog.snapshot().alloc().getEntity( placements.get( 0 ).adapterId, column.id ).isEmpty() ) {
-                throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
+            if ( Catalog.snapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
+                throw new GenericRuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes
             }
@@ -954,7 +974,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, PolyValue>> parameterValues ) {
         if ( parameterValues.size() <= 1 ) {
             // changed for now, this should not be a problem
-            throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
+            throw new GenericRuntimeException( "The parameter values is expected to have a size of one in this case!" );
         }
 
         List<RexNode> projects = new ArrayList<>();

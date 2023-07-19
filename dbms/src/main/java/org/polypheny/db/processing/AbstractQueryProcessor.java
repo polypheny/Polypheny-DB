@@ -393,7 +393,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Parameterize" );
         }
 
-        // Add optional parameterizedRoots and results for all routed RelRoots.
+        // Add optional parameterizedRoots and results for all routed AlgRoots.
         // Index of routedRoot, parameterizedRootList and results correspond!
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             AlgRoot routedRoot = routingPlan.getRoutedRoot();

@@ -59,7 +59,7 @@ public class AlgTraitPropagationVisitor extends AlgVisitor {
 
     @Override
     public void visit( AlgNode alg, int ordinal, AlgNode parent ) {
-        // REVIEW: SWZ: We assume that any special RelNodes, such as the VolcanoPlanner's RelSubset always have a full complement of traits and that they
+        // REVIEW: SWZ: We assume that any special AlgNodes, such as the VolcanoPlanner's AlgSubset always have a full complement of traits and that they
         // either appear as registered or do nothing when childrenAccept is called on them.
 
         if ( planner.isRegistered( alg ) ) {
@@ -72,7 +72,7 @@ public class AlgTraitPropagationVisitor extends AlgVisitor {
                 // Copy traits that the new alg doesn't know about.
                 Util.discard( AlgOptUtil.addTrait( alg, baseTraits.getTrait( i ) ) );
 
-                // FIXME: Return the new alg. We can no longer traits in-place, because rels and traits are immutable.
+                // FIXME: Return the new alg. We can no longer traits in-place, because algs and traits are immutable.
                 throw new AssertionError();
             } else {
                 // Verify that the traits are from the same RelTraitDef

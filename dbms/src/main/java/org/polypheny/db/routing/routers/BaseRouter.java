@@ -144,8 +144,8 @@ public abstract class BaseRouter implements Router {
             throw new NotImplementedException();
         }
 
-        if ( !table.getRowType().equals( builder.peek().getRowType() ) ) {
-            // we adjust the
+        if ( table.getRowType().getFieldCount() == builder.peek().getRowType().getFieldCount() && !table.getRowType().equals( builder.peek().getRowType() ) ) {
+            // we adjust the // is this even necessary
             Map<String, Integer> namesIndexMapping = table.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
             List<Integer> target = builder.peek().getRowType().getFieldList().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
             builder.permute( Mappings.bijection( target ) );

@@ -99,7 +99,7 @@ public abstract class FilterScanRule extends AlgOptRule {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     final Filter filter = call.alg( 0 );
-                    final RelScan scan = call.alg( 2 );
+                    final RelScan<?> scan = call.alg( 2 );
                     apply( call, filter, scan );
                 }
             };
