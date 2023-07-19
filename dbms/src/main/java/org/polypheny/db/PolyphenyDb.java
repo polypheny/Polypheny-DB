@@ -392,7 +392,7 @@ public class PolyphenyDb {
                     Catalog.resetDocker = true;
                 }
                 boolean success = AutoDocker.getInstance().doAutoConnect();
-                if ( testMode && !success ) {
+                if ( testMode && !success && !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
                     log.error( "Failed to connect to docker instance" );
                     return;
                 }
