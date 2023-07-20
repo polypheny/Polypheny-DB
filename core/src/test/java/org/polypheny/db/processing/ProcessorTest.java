@@ -21,11 +21,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.util.DeadlockException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 public class ProcessorTest {
 
@@ -39,7 +46,7 @@ public class ProcessorTest {
 
     @Test
     @DisplayName("Should throw a RuntimeException when a TransactionException is caught")
-    void prepareDdlWhenTransactionExceptionIsCaughtThenThrowException() {
+    void prepareDdlWhenTransactionExceptionIsCaughtThenThrowException() throws TransactionException {
         Statement statement = mock(Statement.class);
         ExecutableStatement parsed = mock(ExecutableStatement.class);
         QueryParameters parameters = new QueryParameters("CREATE TABLE students (id INT, name VARCHAR)", NamespaceType.RELATIONAL);
@@ -51,7 +58,7 @@ public class ProcessorTest {
 
     @Test
     @DisplayName("Should throw a RuntimeException when a DeadlockException is caught")
-    void prepareDdlWhenDeadlockExceptionIsCaughtThenThrowException() {
+    void prepareDdlWhenDeadlockExceptionIsCaughtThenThrowException() throws TransactionException {
         Statement statement = mock(Statement.class);
         ExecutableStatement parsed = mock(ExecutableStatement.class);
         QueryParameters parameters = new QueryParameters("CREATE TABLE students (id INT, name VARCHAR)", NamespaceType.RELATIONAL);
@@ -63,7 +70,7 @@ public class ProcessorTest {
 
     @Test
     @DisplayName("Should return the result when the parsed node is an instance of ExecutableStatement")
-    void prepareDdlWhenParsedNodeIsExecutableStatement() {
+    void prepareDdlWhenParsedNodeIsExecutableStatement() throws TransactionException {
         Statement statement = mock(Statement.class);
         ExecutableStatement parsed = mock(ExecutableStatement.class);
         QueryParameters parameters = new QueryParameters("CREATE TABLE students (id INT, name VARCHAR)", NamespaceType.RELATIONAL);
