@@ -100,49 +100,7 @@ public class StreamCapture {
                 }
             }
         }
-        return createNewCollection();
 
-    }
-
-
-    private long createNewCollection() {
-        Catalog catalog = Catalog.getInstance();
-
-        //Catalog.PlacementType placementType = Catalog.PlacementType.AUTOMATIC;
-        Statement statement = transaction.createStatement();
-
-        try {
-            List<DataStore> dataStores = new ArrayList<>();
-            DdlManager.getInstance().createCollection(
-                    this.receivedMqttMessage.getNamespaceId(),
-                    this.receivedMqttMessage.getTopic(),
-                    true,   //only creates collection if it does not already exist.
-                    dataStores.size() == 0 ? null : dataStores,
-                    PlacementType.MANUAL,
-                    statement );
-            log.info( "Created new collection with name: {}", this.receivedMqttMessage.getTopic() );
-            transaction.commit();
-        } catch ( EntityAlreadyExistsException e ) {
-            log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
-            return 0;
-        } catch ( TransactionException e2 ) {
-            log.error( "The commit after creating a new Collection could not be completed!" );
-            return 0;
-        } /*catch ( UnknownSchemaIdRuntimeException e3) {
-            MqttStreamServer.
-            //TODO: wenn man neue Namespace mit Collection erstellt nachdem man Mqtt interface erstellt hat, und diese für Mqtt benutzt -> muss man gerade Polypheny neu starten.
-            // saubere Lösung: methode getNamespaceId aufrufen, aber wie aufrufen aus StreamCapture? -> villeicht Button in Ui einfügen?
-        }*/
-
-        //add placement
-        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
-        for ( CatalogCollection collection : collectionList ) {
-            if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
-                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
-                catalog.addCollectionPlacement( queryInterfaceId, collection.id, PlacementType.MANUAL );
-                return collection.id;
-            }
-        }
         return 0;
     }
 

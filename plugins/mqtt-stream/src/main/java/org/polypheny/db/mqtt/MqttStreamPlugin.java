@@ -35,14 +35,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -55,6 +60,7 @@ import org.polypheny.db.information.InformationText;
 import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -229,7 +235,6 @@ public class MqttStreamPlugin extends Plugin {
                     namespaceId = schema.id;
                 } else {
                     log.info( "There is already a namespace existing in this database with the given name but of type {}.", schema.getNamespaceType() );
-                    log.info( "Please change the name or the type to {} to use the existing namespace.", schema.getNamespaceType() );
                     throw new RuntimeException();
                 }
             } else {
@@ -283,6 +288,9 @@ public class MqttStreamPlugin extends Plugin {
                             this.namespaceId = namespaceId1;
                             this.namespace = newNamespaceName;
                         }
+                        //create collections
+                        //TODO: problem, if there is already collection with this name existing and has data inside: for getting the messages this can be problemeatic!
+                        //TODO: mit marco abklären!!!
                         break;
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
@@ -291,6 +299,7 @@ public class MqttStreamPlugin extends Plugin {
                             this.namespaceId = namespaceId2;
                             this.namespaceType = newNamespaceType;
                         }
+                        //TODO: problem vrom above reggarding creation of new collections
                         break;
                     //TODO: handle change of Database maybe?
                 }
@@ -319,11 +328,67 @@ public class MqttStreamPlugin extends Plugin {
                     log.info( "Subscription was not successfull. Please try again." );
                 } else {
                     this.topics.put( topic, new AtomicLong(0));
+                    if ( !collectionExists( topic ) ) {
+                        createNewCollection( topic );
+                    }
                     log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
 
+        }
+
+
+        private boolean collectionExists(String topic) {
+            Catalog catalog = Catalog.getInstance();
+            List<CatalogCollection> collectionList = catalog.getCollections( this.namespaceId, null );
+            for ( CatalogCollection collection : collectionList ) {
+                if ( collection.name.equals( topic ) ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private void createNewCollection(String topic) {
+            Catalog catalog = Catalog.getInstance();
+            Transaction transaction  = getTransaction();
+            //TODO: Catalog.PlacementType placementType = Catalog.PlacementType.AUTOMATIC;
+            Statement statement = transaction.createStatement();
+
+            //need to create new Collection
+            try {
+                List<DataStore> dataStores = new ArrayList<>();
+                DdlManager.getInstance().createCollection(
+                        this.namespaceId,
+                        topic,
+                        true,   //only creates collection if it does not already exist.
+                        dataStores.size() == 0 ? null : dataStores,
+                        PlacementType.MANUAL,
+                        statement );
+                log.info( "Created new collection with name: {}", topic );
+                transaction.commit();
+            } catch ( EntityAlreadyExistsException e ) {
+                log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
+                return;
+            } catch ( TransactionException e2 ) {
+                log.error( "The commit after creating a new Collection could not be completed!" );
+                return;
+            } /*catch ( UnknownSchemaIdRuntimeException e3 ) {
+            MqttStreamServer.
+            //TODO: wenn man neue Namespace mit Collection erstellt nachdem man Mqtt interface erstellt hat, und diese für Mqtt benutzt -> muss man gerade Polypheny neu starten.
+            // saubere Lösung: methode getNamespaceId aufrufen, aber wie aufrufen aus StreamCapture? -> villeicht Button in Ui einfügen?
+            }*/
+
+            //add placement
+            List<CatalogCollection> collectionList2 = catalog.getCollections( this.namespaceId, null );
+            for ( CatalogCollection collection : collectionList2 ) {
+                if ( collection.name.equals( topic ) ) {
+                    // TODO: fix issue with placement!
+                    //catalog.addCollectionPlacement( this.getQueryInterfaceId(), collection.id, PlacementType.MANUAL );
+                }
+            }
         }
 
 
