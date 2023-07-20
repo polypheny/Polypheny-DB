@@ -16,38 +16,31 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.List;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
+import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
-import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
+
+import java.util.List;
 
 public abstract class PIPreparedStatement extends PIStatement implements Signaturizable {
 
     protected List<ParameterMeta> parameterMetas;
 
-
-    public void setParameterMetas( List<ParameterMeta> parameterMetas ) {
+    public void setParameterMetas(List<ParameterMeta> parameterMetas) {
         this.parameterMetas = parameterMetas;
     }
 
-
     public List<ParameterMeta> getParameterMetas() {
-        if ( parameterMetas == null ) {
-            StatementProcessor.prepare( this );
+        if (parameterMetas == null) {
+            StatementUtils.prepare(this);
         }
         return parameterMetas;
     }
 
-
-    protected PIPreparedStatement(
-            int id,
-            @NotNull PIClient client,
-            @NotNull QueryLanguage language,
-            @NotNull LogicalNamespace namespace ) {
-        super( id, client, language, namespace );
+    protected PIPreparedStatement(int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language) {
+        super(id, client, properties, language);
     }
 
 
