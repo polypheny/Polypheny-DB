@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface;
 
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
-import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.*;
@@ -236,9 +235,9 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void executeUnparameterizedStatementBatch(UnparameterizedStatementBatch unparameterizedStatementBatch, StreamObserver<StatementBatchStatus> responseObserver) {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch(unparameterizedStatementBatch.getStatementsList());
-        responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch));
+        responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch.getBatchId()));
         List<Long> updateCounts = batch.executeBatch();
-        responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch, updateCounts));
+        responseObserver.onNext(ProtoUtils.createStatementBatchStatus(batch.getBatchId(), updateCounts));
         responseObserver.onCompleted();
     }
 
@@ -270,7 +269,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement(indexedParameterBatch.getStatementId());
         List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists(indexedParameterBatch.getParameterListsList());
         List<Long> updateCounts = statement.executeBatch(valuesList);
-        resultObserver.onNext(ProtoUtils.createStatementBatchStatus(statement, updateCounts));
+        resultObserver.onNext(ProtoUtils.createStatementBatchStatus(statement.getId(), updateCounts));
         resultObserver.onCompleted();
     }
 
@@ -300,8 +299,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void fetchResult(FetchRequest fetchRequest, StreamObserver<Frame> responseObserver) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement(fetchRequest.getStatementId());
-        Frame frame;
-        frame = statement.fetch(fetchRequest.getOffset());
+        Frame frame = statement.fetch(fetchRequest.getOffset());
         responseObserver.onNext(frame);
         responseObserver.onCompleted();
     }
@@ -336,7 +334,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     @Override
     public void updateConnectionProperties(ConnectionProperties connectionProperties, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver) {
         PIClient client = getClient();
-        client.updateClientProperties(connectionProperties);
+        client.setClientProperties(connectionProperties);
         responseObserver.onNext(ConnectionPropertiesUpdateResponse.newBuilder().build());
         responseObserver.onCompleted();
     }

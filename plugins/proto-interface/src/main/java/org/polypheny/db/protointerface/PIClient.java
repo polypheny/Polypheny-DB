@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.protointerface.proto.ConnectionProperties;
@@ -29,19 +28,18 @@ import org.polypheny.db.transaction.TransactionManager;
 
 @Slf4j
 public class PIClient {
+    @Getter
     private String clientUUID;
     private CatalogUser catalogUser;
-    private CatalogDatabase catalogDatabase;
     private LogicalNamespace logicalNamespace;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
     @Getter
     private StatementManager statementManager;
-    private PIClientProperties clientProperties;
+    @Getter
+    private PIClientProperties properties;
     @Getter
     private PIClientInfoProperties PIClientInfoProperties;
-    private int minorApiVersion;
-    private int majorApiVersion;
     private boolean isActive;
 
 
@@ -50,31 +48,21 @@ public class PIClient {
         this.clientUUID = connectionBuilder.clientUUID;
         this.catalogUser = connectionBuilder.catalogUser;
         this.logicalNamespace = connectionBuilder.logicalNamespace;
-        this.currentTransaction = connectionBuilder.currentTransaction;
         this.transactionManager = connectionBuilder.transactionManager;
-        this.clientProperties = connectionBuilder.clientProperties;
-        this.majorApiVersion = connectionBuilder.majorApiVersion;
-        this.minorApiVersion = connectionBuilder.minorApiVersion;
+        this.properties = connectionBuilder.clientProperties;
         this.PIClientInfoProperties = new PIClientInfoProperties();
         this.isActive = true;
     }
 
-    public String getClientUUID() {
-        return clientUUID;
-    }
-
-    public PIClientProperties getClientProperties() {
-        return clientProperties;
-    }
-
-    public void updateClientProperties(ConnectionProperties connectionProperties) {
-        clientProperties.update(connectionProperties);
+    public void setClientProperties(ConnectionProperties connectionProperties) {
+        properties.set(connectionProperties);
     }
 
 
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized (this) {
             if (currentTransaction == null || !currentTransaction.isActive()) {
+                //TODO TH: can a single transaction contain changes to different namespaces
                 currentTransaction = transactionManager.startTransaction(catalogUser, logicalNamespace, false, "ProtoInterface");
             }
             return currentTransaction;
@@ -86,6 +74,13 @@ public class PIClient {
         synchronized (this) {
             return currentTransaction;
         }
+    }
+
+    public void commitCurrentTransactionIfAuto() {
+        if (!properties.isAutoCommit()) {
+            return;
+        }
+        commitCurrentTransaction();
     }
 
 
@@ -133,10 +128,6 @@ public class PIClient {
     }
 
 
-    public boolean isAutocommit() throws IllegalArgumentException {
-        return clientProperties.isAutoCommit();
-    }
-
     public void prepareForDisposal() {
         statementManager.closeAll();
         if (!hasNoTransaction()) {
@@ -164,11 +155,8 @@ public class PIClient {
         private String clientUUID;
         private CatalogUser catalogUser;
         private LogicalNamespace logicalNamespace;
-        private Transaction currentTransaction;
         private TransactionManager transactionManager;
         private PIClientProperties clientProperties;
-        private int minorApiVersion;
-        private int majorApiVersion;
 
 
         private Builder() {
@@ -201,18 +189,6 @@ public class PIClient {
 
         public Builder setClientProperties(PIClientProperties clientProperties) {
             this.clientProperties = clientProperties;
-            return this;
-        }
-
-
-        public Builder setMajorApiVersion(int majorApiVersion) {
-            this.majorApiVersion = majorApiVersion;
-            return this;
-        }
-
-
-        public Builder setMinorApiVersion(int minorApiVersion) {
-            this.minorApiVersion = minorApiVersion;
             return this;
         }
 
