@@ -184,7 +184,7 @@ public class Neo4jPlugin extends Plugin {
                 DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                         .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                 try {
-                    this.container = instance.newBuilder( "polypheny/neo", getUniqueName() )
+                    this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
                             .withExposedPort( 7687 )
                             .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
                             .createAndStart();

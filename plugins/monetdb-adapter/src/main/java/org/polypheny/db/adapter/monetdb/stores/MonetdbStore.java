@@ -97,7 +97,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId )
                     .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
             try {
-                this.container = instance.newBuilder( "polypheny/monet", getUniqueName() )
+                this.container = instance.newBuilder( "polypheny/monet:latest", getUniqueName() )
                         .withExposedPort( 50000 )
                         .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
                         .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )

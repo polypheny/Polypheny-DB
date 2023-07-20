@@ -185,7 +185,7 @@ public class CassandraPlugin extends Plugin {
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                     try {
-                        this.container = instance.newBuilder( "polypheny/cassandra", getUniqueName() )
+                        this.container = instance.newBuilder( "polypheny/cassandra:latest", getUniqueName() )
                                 .withExposedPort( 9042 )
                                 .createAndStart();
                     } catch ( IOException e ) {

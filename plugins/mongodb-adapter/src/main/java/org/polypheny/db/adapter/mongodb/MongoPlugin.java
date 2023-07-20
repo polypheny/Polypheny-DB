@@ -158,7 +158,7 @@ public class MongoPlugin extends Plugin {
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                     try {
-                        this.container = instance.newBuilder( "polypheny/mongo", getUniqueName() )
+                        this.container = instance.newBuilder( "polypheny/mongo:latest", getUniqueName() )
                                 .withExposedPort( 27017 )
                                 .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
                                 .createAndStart();
