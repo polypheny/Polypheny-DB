@@ -31,8 +31,11 @@ import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -88,7 +91,9 @@ public class StreamCapture {
                 int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
                 if ( !collection.placements.contains( queryInterfaceId ) ) {
                     log.info( "found matching collection!" );
-                    return collection.addPlacement( queryInterfaceId ).id;
+                    //TODO: Nur AdapterID können als Placements hinzugefügt werden. nicht QueryInterfaceIds -> Marco fragen.
+                    //catalog.addCollectionPlacement( queryInterfaceId, collection.id, PlacementType.MANUAL );
+                    return collection.id;
                 } else {
                     log.info( "found matching collection!" );
                     return collection.id;
@@ -120,19 +125,22 @@ public class StreamCapture {
         } catch ( EntityAlreadyExistsException e ) {
             log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
             return 0;
-        } catch ( TransactionException e ) {
+        } catch ( TransactionException e2 ) {
             log.error( "The commit after creating a new Collection could not be completed!" );
             return 0;
-        }
-        //add placement
-        //TODO:insert Placements permanently: currently new placement is only inserted locally!!!!
-        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
-        for ( int i = 0; i < collectionList.size(); i++ ) {
-            if ( collectionList.get( i ).name.equals( this.receivedMqttMessage.getTopic() ) ) {
-                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
-                collectionList.set( i, collectionList.get( i ).addPlacement( queryInterfaceId ) );
+        } /*catch ( UnknownSchemaIdRuntimeException e3) {
+            MqttStreamServer.
+            //TODO: wenn man neue Namespace mit Collection erstellt nachdem man Mqtt interface erstellt hat, und diese für Mqtt benutzt -> muss man gerade Polypheny neu starten.
+            // saubere Lösung: methode getNamespaceId aufrufen, aber wie aufrufen aus StreamCapture? -> villeicht Button in Ui einfügen?
+        }*/
 
-                return collectionList.get( i ).id;
+        //add placement
+        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
+        for ( CatalogCollection collection : collectionList ) {
+            if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
+                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
+                catalog.addCollectionPlacement( queryInterfaceId, collection.id, PlacementType.MANUAL );
+                return collection.id;
             }
         }
         return 0;
