@@ -24,6 +24,7 @@ import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
+import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +40,7 @@ public class StatementManager {
     private Set<String> supportedLanguages;
     private final PIClient protoInterfaceClient;
     private ConcurrentHashMap<Integer, PIStatement> openStatments;
-    private ConcurrentHashMap<Integer, PIStatementBatch> openUnparameterizedBatches;
+    private ConcurrentHashMap<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
 
 
     public StatementManager(PIClient protoInterfaceClient) {
@@ -64,10 +65,10 @@ public class StatementManager {
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIUnparameterizedStatement interfaceStatement = PIUnparameterizedStatement.newBuilder()
-                    .setStatementId(statementId)
+                    .setId(statementId)
                     .setQuery(statement.getStatement())
-                    .setQueryLanguage(QueryLanguage.from(languageName))
-                    .setProtoInterfaceClient(protoInterfaceClient)
+                    .setLanguage(QueryLanguage.from(languageName))
+                    .setClient(protoInterfaceClient)
                     .setProperties(getPropertiesOrDefault(statement))
                     .build();
             openStatments.put(statementId, interfaceStatement);
@@ -117,10 +118,10 @@ public class StatementManager {
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIPreparedIndexedStatement interfaceStatement = PIPreparedIndexedStatement.newBuilder()
-                    .setStatementId(statementId)
-                    .setProtoInterfaceClient(protoInterfaceClient)
+                    .setId(statementId)
+                    .setClient(protoInterfaceClient)
                     .setQuery(statement.getStatement())
-                    .setQueryLanguage(QueryLanguage.from(languageName))
+                    .setLanguage(QueryLanguage.from(languageName))
                     .setProperties(getPropertiesOrDefault(statement))
                     .build();
             openStatments.put(statementId, interfaceStatement);
@@ -140,11 +141,11 @@ public class StatementManager {
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             final PIPreparedNamedStatement interfaceStatement = PIPreparedNamedStatement.newBuilder()
-                    .setStatementId(statementId)
+                    .setId(statementId)
                     .setQuery(statement.getStatement())
-                    .setQueryLanguage(QueryLanguage.from(statement.getStatementLanguageName()))
+                    .setQuery(QueryLanguage.from(statement.getStatementLanguageName()))
                     .setProperties(getPropertiesOrDefault(statement))
-                    .setProtoInterfaceClient(protoInterfaceClient)
+                    .setClient(protoInterfaceClient)
                     .build();
             openStatments.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
@@ -157,14 +158,14 @@ public class StatementManager {
     public void closeAll() {
         synchronized(protoInterfaceClient) {
             openUnparameterizedBatches.values().forEach(this::closeBatch);
-            openStatments.values().forEach(s -> closeStatement(s.getStatementId()));
+            openStatments.values().forEach(s -> closeStatement(s.getId()));
         }
     }
 
 
-    public void closeBatch(PIStatementBatch toClose) {
+    public void closeBatch(PIUnparameterizedStatementBatch toClose) {
         synchronized(protoInterfaceClient) {
-            toClose.getStatements().forEach(s -> closeStatementOrBatch(s.getStatementId()));
+            toClose.getStatements().forEach(s -> closeStatementOrBatch(s.getId()));
         }
     }
 
@@ -183,7 +184,7 @@ public class StatementManager {
 
     public void closeStatementOrBatch(int statementId) {
         synchronized(protoInterfaceClient) {
-            PIStatementBatch batchToClose = openUnparameterizedBatches.remove(statementId);
+            PIUnparameterizedStatementBatch batchToClose = openUnparameterizedBatches.remove(statementId);
             if (batchToClose != null) {
                 closeBatch(batchToClose);
                 return;

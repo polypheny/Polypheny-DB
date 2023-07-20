@@ -16,127 +16,134 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.PIServiceException;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
-public class PIPreparedIndexedStatement extends PIStatement implements Signaturizable, PIStatementBatch {
+import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
+
+public class PIPreparedIndexedStatement extends PIPreparedStatement {
+    String query;
+    Statement statement;
+    PolyImplementation<PolyValue> implementation;
 
     protected Statement currentStatement;
-    protected boolean hasParametersSet;
+
 
 
     protected PIPreparedIndexedStatement(Builder builder) {
-        super( builder );
-        this.hasParametersSet = false;
+        super(
+                builder.id,
+                builder.client,
+                builder.properties,
+                builder.language
+        );
+        this.query = builder.query;
     }
 
-    protected AlgDataType getParameterRowType() {
-        Transaction transaction = protoInterfaceClient.getCurrentOrCreateNewTransaction();
-        currentStatement = transaction.createStatement();
-        Processor queryProcessor = transaction.getProcessor( queryLanguage );
-        Node parsed = queryProcessor.parse( query ).get( 0 );
-        // It is important not to add default values for missing fields in insert statements. If we did this, the
-        // JDBC driver would expect more parameter fields than there actually are in the query.
-        Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
-        return queryProcessor.getParameterRowType( validated.left );
-    }
-
-
-    public List<ParameterMeta> determineParameterMeta() {
-        AlgDataType parameterRowType = getParameterRowType();
-        return RelationalMetaRetriever.retrieveParameterMetas( parameterRowType );
-    }
-
-
-    private void setParameters( List<PolyValue> values ) {
-        long index = 0;
-        for ( PolyValue value : values ) {
-            if ( value != null ) {
-                currentStatement.getDataContext().addParameterValues( index++, null, List.of( value ) );
-            }
-        }
-        this.hasParametersSet = true;
-    }
-
-    public StatementResult execute( List<PolyValue> values ) throws Exception {
-        if ( currentStatement == null ) {
-            currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
-        }
-        setParameters( values );
-        return execute();
-    }
-
-
-    @Override
-    public StatementResult execute() throws Exception {
-        if ( currentStatement == null || !hasParametersSet ) {
-            throw new PIServiceException( "Can't execute parameterized statement before preparation." );
-        }
-        return execute( currentStatement );
-    }
-
-
-    public List<Long> executeBatch(List<List<PolyValue>> valueLists) throws Exception {
+    public List<Long> executeBatch(List<List<PolyValue>> valuesBatch) throws Exception {
         List<Long> updateCounts = new LinkedList<>();
-        for (List<PolyValue> values : valueLists) {
-            updateCounts.add( execute(values).getScalar() );
+        for (List<PolyValue> values : valuesBatch) {
+            updateCounts.add(execute(values).getScalar());
         }
         return updateCounts;
     }
 
+    @SuppressWarnings("Duplicates")
+    public StatementResult execute(List<PolyValue> values) throws Exception {
+        synchronized (client) {
+            if (currentStatement == null) {
+                currentStatement = client.getCurrentOrCreateNewTransaction().createStatement();
+            }
+            long index = 0;
+            for (PolyValue value : values) {
+                if (value != null) {
+                    currentStatement.getDataContext().addParameterValues(index++, null, List.of(value));
+                }
+            }
+            StatementUtils.execute(this);
+            StatementResult.Builder resultBuilder = StatementResult.newBuilder();
+            if (Kind.DDL.contains(implementation.getKind())) {
+                resultBuilder.setScalar(1);
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
+            if (Kind.DML.contains(implementation.getKind())) {
+                resultBuilder.setScalar(implementation.getRowsChanged(statement));
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
 
-    @Override
-    public List<PIStatement> getStatements() {
-        return Collections.singletonList( this );
+            Frame frame = StatementUtils.relationalFetch(this, 0);
+            resultBuilder.setFrame(frame);
+            if (frame.getIsLast()) {
+                //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
+                client.commitCurrentTransactionIfAuto();
+            }
+            return resultBuilder.build();
+        }
     }
 
+    @Override
+    public PolyImplementation<PolyValue> getImplementation() {
+        return null;
+    }
 
     @Override
-    public int getBatchId() {
-        // As prepared statements implement tProtoInterfaceStatementBatch directly, thy don't have a separate batch id.
-        return statementId;
+    public void setImplementation(PolyImplementation<PolyValue> implementation) {
+        this.implementation = implementation;
+    }
+
+    @Override
+    public Statement getStatement() {
+        return null;
+    }
+
+    @Override
+    public String getQuery() {
+        return null;
     }
 
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    @Override
+    public void setParameterMetas(List<ParameterMeta> parameterMetas) {
+        this.parameterMetas = parameterMetas;
+    }
 
-    static class Builder extends PIStatement.Builder {
 
-        protected Builder() {
-            super();
-        }
+    static class Builder {
+        int id;
+        PIClient client;
+        QueryLanguage language;
+        String query;
+        PIStatementProperties properties;
 
-        public Builder setStatementId(int statementId) {
-            this.statementId = statementId;
+        public Builder setId(int id) {
+            this.id = id;
             return this;
         }
 
 
-        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
-            this.protoInterfaceClient = protoInterfaceClient;
+        public Builder setClient(PIClient client) {
+            this.client = client;
             return this;
         }
 
 
-        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
-            this.queryLanguage = queryLanguage;
+        public Builder setLanguage(QueryLanguage language) {
+            this.language = language;
             return this;
         }
 
