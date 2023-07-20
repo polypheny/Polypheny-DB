@@ -17,50 +17,105 @@
 package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class PIUnparameterizedStatement extends PIStatement {
+    String query;
+    Statement statement;
+    PolyImplementation<PolyValue> implementation;
+
 
     private PIUnparameterizedStatement(Builder builder) {
-        super(builder);
+        super(
+                builder.id,
+                builder.client,
+                builder.properties,
+                builder.language
+        );
+        this.query = builder.query;
     }
 
     public StatementResult execute() throws Exception {
-        Statement currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
-        return execute(currentStatement);
+        synchronized (client) {
+            Statement statement = client.getCurrentOrCreateNewTransaction().createStatement();
+            StatementUtils.execute(this);
+            StatementResult.Builder resultBuilder = StatementResult.newBuilder();
+            if (Kind.DDL.contains(implementation.getKind())) {
+                resultBuilder.setScalar(1);
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
+            if (Kind.DML.contains(implementation.getKind())) {
+                resultBuilder.setScalar(implementation.getRowsChanged(statement));
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
 
+            Frame frame = StatementUtils.relationalFetch(this, 0);
+            resultBuilder.setFrame(frame);
+            if (frame.getIsLast()) {
+                //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
+                client.commitCurrentTransactionIfAuto();
+            }
+            return resultBuilder.build();
+        }
     }
 
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    @Override
+    public PolyImplementation<PolyValue> getImplementation() {
+        return implementation;
+    }
 
-    static class Builder extends PIStatement.Builder {
+    @Override
+    public void setImplementation(PolyImplementation<PolyValue> implementation) {
+        this.implementation = implementation;
+    }
 
-        private Builder() {
-            super();
-        }
+    @Override
+    public Statement getStatement() {
+        return statement;
+    }
 
-        public Builder setStatementId(int statementId) {
-            this.statementId = statementId;
+    @Override
+    public String getQuery() {
+        return query;
+    }
+
+
+    static class Builder {
+        int id;
+        PIClient client;
+        QueryLanguage language;
+        String query;
+        PIStatementProperties properties;
+
+        public Builder setId(int id) {
+            this.id = id;
             return this;
         }
 
 
-        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
-            this.protoInterfaceClient = protoInterfaceClient;
+        public Builder setClient(PIClient client) {
+            this.client = client;
             return this;
         }
 
 
-        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
-            this.queryLanguage = queryLanguage;
+        public Builder setLanguage(QueryLanguage language) {
+            this.language = language;
             return this;
         }
 
