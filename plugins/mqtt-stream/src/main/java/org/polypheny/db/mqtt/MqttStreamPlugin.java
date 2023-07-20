@@ -212,7 +212,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private long getNamespaceId( String namespaceName, NamespaceType namespaceType ) {
+        public long getNamespaceId( String namespaceName, NamespaceType namespaceType ) {
             // TODO: Nachrichten an UI schicken falls Namespace name nicht geht
             long namespaceId = 0;
 
@@ -408,9 +408,11 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationGroup informationGroupTopics;
 
             private final InformationGroup informationGroupMsg;
+            private final InformationGroup informationGroupReconn;
             private final InformationGroup informationGroupInfo;
             private final InformationTable topicsTable;
             private final InformationAction msgButton;
+            private final InformationAction reconnButton;
             private final InformationText brokerInfo;
             private final InformationText clientInfo;
             private final InformationText namespaceName;
@@ -456,6 +458,25 @@ public class MqttStreamPlugin extends Plugin {
                     return end;
                 } ).withParameters( "topic", "msg" );
                 im.registerInformation( msgButton );
+
+                // Reconnection button
+                informationGroupReconn = new InformationGroup( informationPage, "Reconnect to broker" ).setOrder( 4 );
+                im.addGroup( informationGroupReconn );
+
+                reconnButton = new InformationAction( informationGroupReconn, "Reconnect", ( parameters ) -> {
+                    String end = "Reconnected to broker";
+                    client.disconnect().whenComplete( ( disconn, throwable ) -> {
+                                if ( throwable != null ) {
+                                    log.info( "{} could not disconnect from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                                } else {
+                                    run();
+                                    update();
+                                }
+                            }
+                    );
+                    return end;
+                } );
+                im.registerInformation( reconnButton );
 
             }
 
