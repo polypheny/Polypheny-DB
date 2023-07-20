@@ -332,14 +332,13 @@ public abstract class DdlManager {
      * changed to manual.
      *
      * @param table the table
-     * @param addColumns which columns should be placed on the specified data store
-     * @param dropColumns
+     * @param columns which columns should be placed on the specified data store
      * @param partitionGroupIds the ids of the partitions of this column
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyPlacement( LogicalTable table, List<Long> addColumns, List<Long> dropColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPlacement( LogicalTable table, List<Long> columns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -357,22 +356,22 @@ public abstract class DdlManager {
      * the column with type automatic, the placement type is changed to manual.
      *
      * @param table the table
-     * @param columnName the column name for which to add a placement
+     * @param column the column name for which to add a placement
      * @param store the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable table, String columnName, DataStore<?> store, Statement statement );
+    public abstract void addColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
      * is changed to automatic.
      *
      * @param table the table
-     * @param columnName the name of the column for which to drop a placement
+     * @param column the name of the column for which to drop a placement
      * @param store the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> store, Statement statement );
+    public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
      * Change the owner of a table

@@ -1227,8 +1227,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier beforeColumn;
     final SqlIdentifier afterColumn;
     final SqlAlterTable statement;
-    SqlNodeList columnList = null;
-    SqlNodeList dropColumnList = null;
+    final SqlNodeList columnList;
     final SqlNodeList referencesList;
     final SqlIdentifier refColumn;
     final SqlIdentifier refTable;
@@ -1506,14 +1505,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 return new SqlAlterTableModifyPlacementDropColumn(s.end(this), entity, column, store);
             }
         |
-            [
-                <ADD>
-                columnList = ParenthesizedSimpleIdentifierList()
-            ]
-            [
-                <DROP>
-                dropColumnList = ParenthesizedSimpleIdentifierList()
-            ]
+            columnList = ParenthesizedSimpleIdentifierList()
             <ON>
             <STORE>
             store = SimpleIdentifier()
@@ -1535,7 +1527,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                <RPAREN>
             ]
             {
-                return new SqlAlterTableModifyPlacement(s.end(this), entity, columnList, dropColumnList, store, partitionList, partitionNamesList);
+                return new SqlAlterTableModifyPlacement(s.end(this), entity, columnList, store, partitionList, partitionNamesList);
             }
         )
 

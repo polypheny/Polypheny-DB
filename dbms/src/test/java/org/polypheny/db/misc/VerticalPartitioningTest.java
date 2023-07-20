@@ -333,28 +333,27 @@ public class VerticalPartitioningTest {
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
 
-                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP(tinteger) ON STORE anotherstore" );
+                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tinteger) ON STORE anotherstore" );
 
-                    // By executing the following statement, technically the column tprimary would not be present
+                    // By executing the following statement, technically the column tinteger would not be present
                     // on any of the partitions of the placement anymore. Therefore, it has to fail and all placements should remain
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" );
                         Assert.fail();
                     } catch ( AvaticaSqlException e ) {
-                        failed = true;
+                        // empty on purpose
                     }
-                    Assert.assertTrue( failed );
 
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary,tvarchar) ON STORE hsqldb" );
 
-                    failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" DROP PLACEMENT ON STORE anotherstore" );
+                        Assert.fail();
                     } catch ( AvaticaSqlException e ) {
-                        failed = true;
+                        // empty on purpose
                     }
-                    Assert.assertTrue( failed );
+
                 } finally {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE IF EXISTS verticalDataPlacementTest" );

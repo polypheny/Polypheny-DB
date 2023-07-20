@@ -20,7 +20,6 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
@@ -52,8 +51,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     SqlIdentifier table;
-    SqlNodeList addColumnList;
-    SqlNodeList dropColumnList;
+    SqlNodeList columnList;
     SqlIdentifier storeName;
     List<Integer> partitionGroupList;
     List<SqlIdentifier> partitionGroupNamesList;
@@ -62,15 +60,13 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     public SqlAlterTableModifyPlacement(
             ParserPos pos,
             @NonNull SqlIdentifier table,
-            SqlNodeList addColumnList,
-            SqlNodeList dropColumnList,
+            @NonNull SqlNodeList columnList,
             @NonNull SqlIdentifier storeName,
             List<Integer> partitionGroupList,
             List<SqlIdentifier> partitionGroupNamesList ) {
         super( pos );
         this.table = table;
-        this.addColumnList = addColumnList == null ? SqlNodeList.EMPTY : addColumnList;
-        this.dropColumnList = dropColumnList == null ? SqlNodeList.EMPTY : dropColumnList;
+        this.columnList = columnList;
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionGroupList = partitionGroupList;
         this.partitionGroupNamesList = partitionGroupNamesList;
@@ -79,13 +75,13 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( table, addColumnList, dropColumnList, storeName );
+        return ImmutableNullableList.of( table, columnList, storeName );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( table, addColumnList, dropColumnList, storeName );
+        return ImmutableNullableList.of( table, columnList, storeName );
     }
 
 
@@ -96,10 +92,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "MODIFY" );
         writer.keyword( "PLACEMENT" );
-        writer.keyword( "ADD" );
-        addColumnList.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "DROP" );
-        dropColumnList.unparse( writer, leftPrec, rightPrec );
+        columnList.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
@@ -139,17 +132,17 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
         // Check if all columns exist
-        for ( SqlNode node : Stream.concat( addColumnList.getSqlList().stream(), dropColumnList.getSqlList().stream() ).collect( Collectors.toList() ) ) {
+        for ( SqlNode node : columnList.getSqlList() ) {
             if ( getColumn( context, table.id, (SqlIdentifier) node ) == null ) {
                 throw new GenericRuntimeException( "Could not find column with name %s", String.join( ".", ((SqlIdentifier) node).names ) );
             }
         }
 
         DataStore<?> store = getDataStoreInstance( storeName );
+
         DdlManager.getInstance().modifyPlacement(
                 table,
-                getColumns( context, table.id, addColumnList ).stream().map( c -> c.id ).collect( Collectors.toList() ),
-                getColumns( context, table.id, dropColumnList ).stream().map( c -> c.id ).collect( Collectors.toList() ),
+                getColumns( context, table.id, columnList ).stream().map( c -> c.id ).collect( Collectors.toList() ),
                 partitionGroupList,
                 partitionGroupNamesList.stream()
                         .map( SqlIdentifier::toString )

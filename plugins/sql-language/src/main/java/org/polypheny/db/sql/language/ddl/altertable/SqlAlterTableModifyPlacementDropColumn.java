@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -95,9 +96,15 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
+        LogicalColumn column = getColumn( context, table.id, columnName );
+
+        if ( column == null ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a column.", columnName );
+        }
+
         DdlManager.getInstance().dropColumnPlacement(
                 table,
-                columnName.getSimple(),
+                column,
                 store,
                 statement );
     }
