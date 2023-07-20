@@ -22,20 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -138,26 +131,22 @@ public class StreamCapture {
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
         }
-        log.info( "inserted message as document" );
     }
 
 
-    public List<String> getRecentMessages( String namespaceName, String topic ) {
-        List<String> listOfDocuments = scanCollection( namespaceName, topic );
-        List<String> listOfMessage = new ArrayList<>();
-        //TODO: rmv debugging log: log.info( "listOfDocuments:{}", listOfDocuments );
-        //only show last 20 Messages:
-        int indexLastMessage = 0;
-        if ( listOfDocuments.size() > 20 ) {
-            indexLastMessage = listOfDocuments.size() - 20;
-        }
-        for ( int i = indexLastMessage; i < listOfDocuments.size(); i++ ) {
-            String message = listOfDocuments.get( i ).split( "," )[1].trim();
+    public List<MqttMessage> getMessages( String namespaceName, String collectionName ) {
+        List<String> listOfDocuments = scanCollection( namespaceName, collectionName );
+        List<MqttMessage> listOfMessage = new ArrayList<>();
+        for ( String document : listOfDocuments ) {
+            String[] documentAsList = document.split( "," );
+            String topic = documentAsList[0].substring( documentAsList[0].indexOf( ':' ) );
+            topic = topic.substring( topic.indexOf( '"' ) + 1, topic.lastIndexOf( '"' ) );
+
+            String message = documentAsList[1].trim();
             message = message.substring( message.indexOf( ':' ) ).trim();
             message = message.substring( message.indexOf( '"' ) + 1, message.lastIndexOf( '"' ) );
-            listOfMessage.add( message );
+            listOfMessage.add( new MqttMessage( message, topic ) );
         }
-        log.info( "extracted messages: {}", listOfMessage );
         return listOfMessage;
     }
 

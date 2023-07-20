@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +56,6 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
-import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -85,6 +83,8 @@ public class MqttStreamPlugin extends Plugin {
         // TODO namespace und type müssen dringend eingegeben werden, so machen wie bei topics?
         mqttDefaultSettings.put( "namespace", "public" );
         mqttDefaultSettings.put( "namespace type", "RELATIONAL" );
+        mqttDefaultSettings.put( "collection per topic", "TRUE" );
+        mqttDefaultSettings.put( "collection name", null );
         QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttDefaultSettings );
     }
 
@@ -107,8 +107,10 @@ public class MqttStreamPlugin extends Plugin {
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingString( "broker", false, true, false, "localhost" ),
                 new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 1883 ),
-                new QueryInterfaceSettingString( "namespace", false, true, true, null ),
+                new QueryInterfaceSettingString( "namespace", false, true, true, "public" ),
                 new QueryInterfaceSettingList( "namespace type", false, true, true, new ArrayList<>( List.of( "RELATIONAL", "DOCUMENT", "GRAPH" ) ) ),
+                new QueryInterfaceSettingList( "collection per topic", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
+                new QueryInterfaceSettingString( "collection name", true, true, true, null ),
                 new QueryInterfaceSettingString( "topics", false, true, true, null )
         );
 
@@ -126,6 +128,8 @@ public class MqttStreamPlugin extends Plugin {
         private long namespaceId;
 
         private NamespaceType namespaceType;
+        private boolean collectionPerTopic;
+        private String collectionName;
 
         private long databaseId;
 
@@ -157,7 +161,8 @@ public class MqttStreamPlugin extends Plugin {
                 this.namespaceType = type;
                 this.namespaceId = namespaceId;
             }
-
+            this.collectionPerTopic = Boolean.parseBoolean( settings.get( "collection per topic" ) );
+            this.collectionName = settings.get( "collection name" );
         }
 
 
@@ -292,6 +297,7 @@ public class MqttStreamPlugin extends Plugin {
                         //TODO: problem, if there is already collection with this name existing and has data inside: for getting the messages this can be problemeatic!
                         //TODO: mit marco abklären!!!
                         break;
+
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
                         long namespaceId2 = this.getNamespaceId( this.namespace, newNamespaceType );
@@ -301,7 +307,16 @@ public class MqttStreamPlugin extends Plugin {
                         }
                         //TODO: problem vrom above reggarding creation of new collections
                         break;
-                    //TODO: handle change of Database maybe?
+
+                    case "collection per topic":
+                        this.collectionPerTopic = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
+                        //TODO: if false: create collection with name
+                        break;
+                    case "collection name":
+                        this.collectionName = this.getCurrentSettings().get( "collection name" );
+                        //TODO: create Collection
+                        break;
+
                 }
             }
         }
@@ -327,15 +342,42 @@ public class MqttStreamPlugin extends Plugin {
                 if ( throwable != null ) {
                     log.info( "Subscription was not successfull. Please try again." );
                 } else {
-                    this.topics.put( topic, new AtomicLong(0));
+                    //create collection:
+                    /*
+                    if(collectionPerTopic){
+                        if ( !collectionExists( topic ) ) {
+                            createNewCollection( topic );
+                            this.topics.put( topic, new AtomicLong(0));
+                            this.settings.put( topic, String.valueOf( 0 ) );
+                        } else {//new AtomicLong( getMessageCount( topic ) )
+                            this.topics.put( topic, new AtomicLong( Long.valueOf( this.settings.get( topic ) ) ) );
+                        }
+
+                    } else {
+                        if ( !collectionExists( this.collectionName ) ) {
+                            createNewCollection( this.collectionName );
+                        }
+                    }
+                    */
+
                     if ( !collectionExists( topic ) ) {
+                        this.topics.put( topic, new AtomicLong(0));
                         createNewCollection( topic );
+                    } else {
+                        this.topics.put( topic, new AtomicLong(getMessageCount( topic )));
                     }
                     log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
 
+        }
+
+
+        private long getMessageCount( String topic ) {
+            StreamCapture streamCapture = new StreamCapture( getTransaction() );
+            List<MqttMessage> messages = streamCapture.getMessages( namespace, topic );
+            return messages.size();
         }
 
 
@@ -406,7 +448,7 @@ public class MqttStreamPlugin extends Plugin {
                     log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
                 } else {
                     this.topics.remove( topic );
-                    //TODO: remove collction in StreamCapture
+
                     log.info( "Unsubscribed from topic:{}.", topic );
                 }
             } );
@@ -551,14 +593,23 @@ public class MqttStreamPlugin extends Plugin {
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
+                    //TODO: distinguisch btw. Collecion per topic and per StreamInterface
                     for ( String topic : topics.keySet() ) {
-                        Long numberMessages = topics.get( topic ).get();
-                        if ( numberMessages != 0 ) {
-                            StreamCapture streamCapture = new StreamCapture( getTransaction() );
-                            List<String> messages = streamCapture.getRecentMessages(namespace, topic);
-                            topicsTable.addRow( topic, numberMessages, messages);
+                        StreamCapture streamCapture = new StreamCapture( getTransaction() );
+                        List<MqttMessage> messages = streamCapture.getMessages( namespace, topic );
+                        if ( messages.isEmpty() ) {
+                            topicsTable.addRow( topic, 0, "No messages received yet." );
                         } else {
-                            topicsTable.addRow( topic, topics.get( topic ), "No messages received yet." );
+                            //only show last 20 Messages:
+                            int indexLastMessage = 0;
+                            if ( messages.size() > 20 ) {
+                                indexLastMessage = messages.size() - 20;
+                            }
+                            List<String> recentMessages = new ArrayList<>();
+                            for ( int i = indexLastMessage; i < messages.size(); i++ ) {
+                                recentMessages.add( messages.get( i ).getMessage() );
+                            }
+                            topicsTable.addRow( topic, topics.get( topic ), recentMessages );
                         }
 
 
