@@ -22,7 +22,7 @@ import org.polypheny.db.protointerface.proto.ConnectionProperties;
 
 public class PIClientProperties {
     public PIClientProperties(ConnectionProperties clientProperties) {
-        update(clientProperties);
+        set(clientProperties);
     }
 
     private PIClientProperties() {
@@ -59,7 +59,7 @@ public class PIClientProperties {
         return namespaceName != null;
     }
 
-    public void update(ConnectionProperties clientProperties) {
+    public void set(ConnectionProperties clientProperties) {
         this.isAutoCommit = clientProperties.getIsAutoCommit();
         this.isReadOnly = clientProperties.getIsReadOnly();
         this.isolation = clientProperties.getIsolation();

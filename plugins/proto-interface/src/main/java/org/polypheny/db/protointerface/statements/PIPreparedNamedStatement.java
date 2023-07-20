@@ -16,41 +16,45 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
+import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.relational.RelationalMetaRetriever;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
 import java.util.List;
 import java.util.Map;
 
-public class PIPreparedNamedStatement extends PIPreparedIndexedStatement {
-
+public class PIPreparedNamedStatement extends PIPreparedStatement {
+    String query;
+    Statement statement;
+    PolyImplementation<PolyValue> implementation;
+    protected Statement currentStatement;
     private final NamedValueProcessor namedValueProcessor;
 
 
-    public PIPreparedNamedStatement(Builder builder ) {
-        super( builder );
-        this.namedValueProcessor = new NamedValueProcessor( builder.query );
-        overwriteQuery( namedValueProcessor.getProcessedQuery() );
+    public PIPreparedNamedStatement(Builder builder) {
+        super(
+                builder.id,
+                builder.client,
+                builder.properties,
+                builder.language
+        );
+        this.namedValueProcessor = new NamedValueProcessor(builder.query);
+        this.query = namedValueProcessor.getProcessedQuery();
     }
 
-
-    public List<ParameterMeta> determineParameterMeta() {
-        synchronized(protoInterfaceClient) {
-            AlgDataType parameters = getParameterRowType();
-            return RelationalMetaRetriever.retrieveParameterMetas(parameters, namedValueProcessor.getNamedIndexes());
-        }
-    }
-
-
-    private void setParameters( Map<String, PolyValue> values ) {
-        synchronized(protoInterfaceClient) {
+    @SuppressWarnings("Duplicates")
+    public StatementResult execute(Map<String, PolyValue> values) throws Exception {
+        synchronized (client) {
+            if (currentStatement == null) {
+                currentStatement = client.getCurrentOrCreateNewTransaction().createStatement();
+            }
             List<PolyValue> valueList = namedValueProcessor.transformValueMap(values);
             long index = 0;
             for (PolyValue value : valueList) {
@@ -58,44 +62,75 @@ public class PIPreparedNamedStatement extends PIPreparedIndexedStatement {
                     currentStatement.getDataContext().addParameterValues(index++, null, List.of(value));
                 }
             }
-            hasParametersSet = true;
-        }
-    }
+            StatementUtils.execute(this);
+            StatementResult.Builder resultBuilder = StatementResult.newBuilder();
+            if (Kind.DDL.contains(implementation.getKind())) {
+                resultBuilder.setScalar(1);
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
+            if (Kind.DML.contains(implementation.getKind())) {
+                resultBuilder.setScalar(implementation.getRowsChanged(statement));
+                client.commitCurrentTransactionIfAuto();
+                return resultBuilder.build();
+            }
 
-
-    public StatementResult execute( Map<String, PolyValue> values ) throws Exception {
-        if ( currentStatement == null ) {
-            currentStatement = protoInterfaceClient.getCurrentOrCreateNewTransaction().createStatement();
+            Frame frame = StatementUtils.relationalFetch(this, 0);
+            resultBuilder.setFrame(frame);
+            if (frame.getIsLast()) {
+                //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
+                client.commitCurrentTransactionIfAuto();
+            }
+            return resultBuilder.build();
         }
-        setParameters( values );
-        return execute();
     }
 
     public static Builder newBuilder() {
         return new Builder();
     }
 
+    @Override
+    public PolyImplementation<PolyValue> getImplementation() {
+        return null;
+    }
 
-    static class Builder extends PIPreparedIndexedStatement.Builder {
+    @Override
+    public void setImplementation(PolyImplementation<PolyValue> implementation) {
 
-        private Builder() {
-            super();
-        }
+    }
 
-        public Builder setStatementId(int statementId) {
-            this.statementId = statementId;
+    @Override
+    public Statement getStatement() {
+        return null;
+    }
+
+    @Override
+    public String getQuery() {
+        return null;
+    }
+
+
+    static class Builder {
+        int id;
+        PIClient client;
+        QueryLanguage language;
+        String query;
+        PIStatementProperties properties;
+
+        public Builder setId(int id) {
+            this.id = id;
             return this;
         }
 
 
-        public Builder setProtoInterfaceClient(PIClient protoInterfaceClient) {
-            this.protoInterfaceClient = protoInterfaceClient;
+        public Builder setClient(PIClient client) {
+            this.client = client;
             return this;
         }
 
 
-        public Builder setQueryLanguage(QueryLanguage queryLanguage) {
-            this.queryLanguage = queryLanguage;
+        public Builder setQuery(QueryLanguage language) {
+            this.language = language;
             return this;
         }
 
