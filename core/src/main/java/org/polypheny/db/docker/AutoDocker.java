@@ -35,8 +35,6 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -127,8 +125,7 @@ public final class AutoDocker {
     }
 
 
-    // TODO: remove sb before merge
-    private String createAndStartHandshakeCommand( DockerClient client, String containerUuid, StringBuffer sb ) {
+    private String createAndStartHandshakeCommand( DockerClient client, String containerUuid ) {
         ExecCreateCmdResponse execResponse = client.execCreateCmd( containerUuid ).withCmd( "./main", "handshake", HandshakeManager.getInstance().getHandshakeParameters( "localhost" ) ).withAttachStdin( true ).withAttachStderr( true ).exec();
 
         client.execStartCmd( execResponse.getId() ).exec( new ResultCallback<Frame>() {
@@ -139,9 +136,6 @@ public final class AutoDocker {
 
             @Override
             public void onNext( Frame object ) {
-                synchronized ( sb ) {
-                    sb.append( StandardCharsets.UTF_8.decode( ByteBuffer.wrap( object.getPayload() ) ) );
-                }
             }
 
 
@@ -176,9 +170,7 @@ public final class AutoDocker {
             }
         }
 
-        StringBuffer sb = new StringBuffer();
-
-        String execId = createAndStartHandshakeCommand( client, maybeUuid.get(), sb );
+        String execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
         updateStatus( "Performing handshake with container" );
         HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
         int retries = 0;
@@ -192,14 +184,10 @@ public final class AutoDocker {
                         if ( s.getExitCodeLong() == 137 && retries < 3 ) {
                             retries += 1;
                             updateStatus( "Handshake process killed, retry " + retries + " of 3" );
-                            sb = new StringBuffer();
-                            execId = createAndStartHandshakeCommand( client, maybeUuid.get(), sb );
+                            execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
                             continue;
                         }
                         updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
-                        synchronized ( sb ) {
-                            log.info( "Output: " + sb );
-                        }
                         break;
                     }
                     HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
