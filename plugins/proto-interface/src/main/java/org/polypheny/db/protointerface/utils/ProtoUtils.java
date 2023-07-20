@@ -16,77 +16,76 @@
 
 package org.polypheny.db.protointerface.utils;
 
+import org.polypheny.db.protointerface.proto.*;
+import org.polypheny.db.protointerface.statements.PIPreparedStatement;
+import org.polypheny.db.protointerface.statements.PIStatement;
+import org.polypheny.db.type.entity.PolyValue;
+
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.polypheny.db.protointerface.proto.*;
-import org.polypheny.db.protointerface.statements.PIStatement;
-import org.polypheny.db.protointerface.statements.PIStatementBatch;
-import org.polypheny.db.protointerface.statements.Signaturizable;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoUtils {
 
 
-    public static StatementStatus createStatus( PIStatement protoInterfaceStatement ) {
+    public static StatementStatus createStatus(PIStatement protoInterfaceStatement) {
         return StatementStatus.newBuilder()
-                .setStatementId( protoInterfaceStatement.getStatementId() )
+                .setStatementId(protoInterfaceStatement.getId())
                 .build();
     }
 
 
-    public static StatementStatus createStatus(PIStatement protoInterfaceStatement, StatementResult result ) {
+    public static StatementStatus createStatus(PIStatement protoInterfaceStatement, StatementResult result) {
         return StatementStatus.newBuilder()
-                .setStatementId( protoInterfaceStatement.getStatementId() )
-                .setResult( result )
+                .setStatementId(protoInterfaceStatement.getId())
+                .setResult(result)
                 .build();
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus( PIStatementBatch PIStatementBatch) {
+    public static StatementBatchStatus createStatementBatchStatus(int batchId) {
         return StatementBatchStatus.newBuilder()
-                .setBatchId( PIStatementBatch.getBatchId() )
+                .setBatchId(batchId)
                 .build();
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus(PIStatementBatch PIStatementBatch, List<Long> updateCounts ) {
+    public static StatementBatchStatus createStatementBatchStatus(int batchId, List<Long> updateCounts) {
         return StatementBatchStatus.newBuilder()
-                .setBatchId( PIStatementBatch.getBatchId() )
-                .addAllScalars( updateCounts )
+                .setBatchId(batchId)
+                .addAllScalars(updateCounts)
                 .build();
     }
 
 
-    public static PreparedStatementSignature createPreparedStatementSignature( Signaturizable preparedStatement ) {
+    public static PreparedStatementSignature createPreparedStatementSignature(PIPreparedStatement preparedStatement) {
         return PreparedStatementSignature.newBuilder()
-                .setStatementId( preparedStatement.getStatementId() )
-                .addAllParameterMetas( preparedStatement.determineParameterMeta() )
+                .setStatementId(preparedStatement.getId())
+                .addAllParameterMetas(preparedStatement.getParameterMetas())
                 .build();
     }
 
 
-    public static Row serializeToRow( List<PolyValue> row ) {
+    public static Row serializeToRow(List<PolyValue> row) {
         return Row.newBuilder()
-                .addAllValues( PolyValueSerializer.serializeList( row ) )
+                .addAllValues(PolyValueSerializer.serializeList(row))
                 .build();
     }
 
 
-    public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
-        return rows.stream().map( ProtoUtils::serializeToRow ).collect( Collectors.toList() );
+    public static List<Row> serializeToRows(List<List<PolyValue>> rows) {
+        return rows.stream().map(ProtoUtils::serializeToRow).collect(Collectors.toList());
     }
 
 
-    public static Frame buildRelationalFrame( long offset, boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
+    public static Frame buildRelationalFrame(long offset, boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas) {
         RelationalFrame relationalFrame = RelationalFrame.newBuilder()
-                .addAllColumnMeta( metas )
-                .addAllRows( serializeToRows( rows ) )
+                .addAllColumnMeta(metas)
+                .addAllRows(serializeToRows(rows))
                 .build();
         return Frame.newBuilder()
-                .setIsLast( isLast )
-                .setOffset( offset )
-                .setRelationalFrame( relationalFrame )
+                .setIsLast(isLast)
+                .setOffset(offset)
+                .setRelationalFrame(relationalFrame)
                 .build();
     }
 }
