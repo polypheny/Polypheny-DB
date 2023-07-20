@@ -3060,8 +3060,8 @@ public class AlgBuilder {
      */
     private static class RelField extends Pair<ImmutableSet<String>, AlgDataTypeField> implements Field {
 
-        RelField( ImmutableSet<String> left, AlgDataTypeField right ) {
-            super( left, right );
+        RelField( ImmutableSet<String> aliases, AlgDataTypeField right ) {
+            super( aliases, right );
         }
 
 

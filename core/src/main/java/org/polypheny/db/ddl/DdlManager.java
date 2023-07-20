@@ -332,13 +332,14 @@ public abstract class DdlManager {
      * changed to manual.
      *
      * @param table the table
-     * @param columnIds which columns should be placed on the specified data store
+     * @param addColumns which columns should be placed on the specified data store
+     * @param dropColumns
      * @param partitionGroupIds the ids of the partitions of this column
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPlacement( LogicalTable table, List<Long> addColumns, List<Long> dropColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.

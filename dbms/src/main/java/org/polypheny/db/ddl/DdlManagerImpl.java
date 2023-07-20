@@ -1286,7 +1286,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void modifyPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> store, Statement statement ) {
+    public void modifyPlacement( LogicalTable table, List<Long> addColumns, List<Long> dropColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> store, Statement statement ) {
         Optional<AllocationPlacement> placementOptional = statement.getDataContext().getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id );
         // Check whether this placement exists
         if ( placementOptional.isEmpty() ) {
@@ -1296,14 +1296,25 @@ public class DdlManagerImpl extends DdlManager {
         // Check if views are dependent from this
         checkViewDependencies( table );
 
+        // todo add add
+
+        // Checks before physically removing of placement that the partition distribution is still valid and sufficient
+        dropPlacementColumns( table, dropColumns, store, statement, placementOptional.get() );
+        catalog.updateSnapshot();
+
+        // Reset query plan cache, implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void dropPlacementColumns( LogicalTable table, List<Long> columns, DataStore<?> store, Statement statement, AllocationPlacement placement ) {
         List<AllocationColumn> columnsToRemove = new ArrayList<>();
 
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
 
-        // Checks before physically removing of placement that the partition distribution is still valid and sufficient
         // Identifies which columns need to be removed
-        for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumns( placementOptional.get().id ) ) {
-            if ( !columnIds.contains( allocationColumn.columnId ) ) {
+        for ( AllocationColumn allocationColumn : catalog.getSnapshot().alloc().getColumns( placement.id ) ) {
+            if ( !columns.contains( allocationColumn.columnId ) ) {
                 checkIndexDependent( table, store, snapshot, allocationColumn );
                 // Check whether the column is a primary key column
                 LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
@@ -1323,16 +1334,12 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( !validatePlacementsConstraints( placementOptional.get(), columnsToRemove, new ArrayList<>() ) ) {
+        if ( !validatePlacementsConstraints( placementOptional.get(), columnsToRemove, List.of() ) ) {
             throw new GenericRuntimeException( "Cannot remove placement as it is the last" );
         }
 
         // Remove columns physically
         columnsToRemove.forEach( column -> deleteAllocationColumn( table, statement, column ) );
-
-        catalog.updateSnapshot();
-        // Reset query plan cache, implementation cache & routing cache
-        statement.getQueryProcessor().resetCaches();
     }
 
 
@@ -1360,9 +1367,17 @@ public class DdlManagerImpl extends DdlManager {
             return true;
         }
         LogicalTable table = catalog.getSnapshot().rel().getTable( placement.logicalEntityId ).orElseThrow();
-        LogicalPrimaryKey key = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
 
+        // check primary constraint
+        LogicalPrimaryKey key = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         if ( columnIdsToBeRemoved.stream().anyMatch( o -> key.columnIds.contains( o.columnId ) ) ) {
+            return false;
+        }
+
+        // check last column
+        List<AllocationColumn> remainder = catalog.getSnapshot().alloc().getColumns( placement.id ).stream().filter( c -> !columnIdsToBeRemoved.contains( c ) ).collect( Collectors.toList() );
+
+        if ( remainder.isEmpty() ) {
             return false;
         }
 
@@ -1490,15 +1505,16 @@ public class DdlManagerImpl extends DdlManager {
     public void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> store, Statement statement ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        // Check whether this placement already exists
-        if ( snapshot.alloc().getEntity( store.getAdapterId(), table.id ).isEmpty() ) {
-            throw new GenericRuntimeException( "The placement already exists" );
+        // Check whether this placement even exists
+        Optional<AllocationPlacement> optionalPlacement = snapshot.alloc().getPlacement( store.getAdapterId(), table.id );
+        if ( optionalPlacement.isEmpty() ) {
+            throw new GenericRuntimeException( "The placement does not exist" );
         }
 
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 
         // Check whether this store actually contains a placement of this column
-        if ( catalog.getSnapshot().alloc().getColumn( store.getAdapterId(), logicalColumn.id ).isEmpty() ) {
+        if ( catalog.getSnapshot().alloc().getColumn( optionalPlacement.get().id, logicalColumn.id ).isEmpty() ) {
             throw new GenericRuntimeException( "The placement does not exist on the store" );
         }
         // Check whether there are any indexes located on the store requiring this column
@@ -1508,19 +1524,19 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        /*if ( !validatePlacementsConstraints( logicalColumn.tableId, store.getAdapterId(), List.of( logicalColumn.id ), new ArrayList<>() ) ) {
+        if ( !validatePlacementsConstraints( optionalPlacement.get(), List.of( catalog.getSnapshot().alloc().getColumn( optionalPlacement.get().id, logicalColumn.id ).orElseThrow() ), List.of() ) ) {
             throw new GenericRuntimeException( "Cannot drop the placement as it is the last" );
-        }*/
+        }
 
         // Check whether the column to drop is a primary key
         LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         if ( primaryKey.columnIds.contains( logicalColumn.id ) ) {
             throw new GenericRuntimeException( "Cannot drop primary key" );
         }
-        AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).orElseThrow();
+        AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( optionalPlacement.get().adapterId, table.id ).orElseThrow();
         // Drop Column on store
         store.dropColumn( statement.getPrepareContext(), allocation.id, logicalColumn.id );
-        allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).orElseThrow();
+        //allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).orElseThrow();
         // Drop column placement
         catalog.getAllocRel( table.namespaceId ).deleteColumn( allocation.id, logicalColumn.id );
 

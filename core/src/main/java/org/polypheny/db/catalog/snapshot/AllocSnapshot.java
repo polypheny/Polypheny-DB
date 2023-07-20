@@ -208,4 +208,8 @@ public interface AllocSnapshot {
     @NotNull
     List<AllocationPlacement> getPlacementsOfColumn( long logicalId );
 
+    @NotNull
+    Optional<AllocationPartition> getPartition( long partitionId );
+
+
 }

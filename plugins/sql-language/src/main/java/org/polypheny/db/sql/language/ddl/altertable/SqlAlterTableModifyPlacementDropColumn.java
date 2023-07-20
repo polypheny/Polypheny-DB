@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -83,17 +84,21 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, table );
-        DataStore storeInstance = getDataStoreInstance( storeName );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
+        DataStore<?> store = getDataStoreInstance( storeName );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because there is no entity with name %s.", String.join( ".", this.table.names ) );
+        }
+
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
         DdlManager.getInstance().dropColumnPlacement(
-                catalogTable,
+                table,
                 columnName.getSimple(),
-                storeInstance,
+                store,
                 statement );
     }
 

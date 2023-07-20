@@ -81,6 +81,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, List<AllocationPlacement>> placementsOfColumn;
 
 
+
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
         this.tables = buildTables( allocationCatalogs
                 .values()
@@ -538,5 +539,12 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public @NotNull List<AllocationPlacement> getPlacementsOfColumn( long logicalId ) {
         return Optional.ofNullable( placementsOfColumn.get( logicalId ) ).orElse( List.of() );
     }
+
+
+    @Override
+    public @NotNull Optional<AllocationPartition> getPartition( long partitionId ) {
+        return Optional.ofNullable( partitions.get( partitionId ) );
+    }
+
 
 }

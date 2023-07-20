@@ -122,17 +122,17 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         }
 
         if ( table.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because '%s' is not a table.", table.name );
         }
 
         // You can't partition placements if the table is not partitioned
         if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + table.name + "'" );
+            throw new GenericRuntimeException( "Partition Placement is not allowed for unpartitioned table '%s'", table.name );
         }
 
         List<LogicalColumn> columns = new ArrayList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            LogicalColumn logicalColumn = getCatalogColumn( context, table.id, (SqlIdentifier) node );
+            LogicalColumn logicalColumn = getColumn( context, table.id, (SqlIdentifier) node );
             columns.add( logicalColumn );
         }
 

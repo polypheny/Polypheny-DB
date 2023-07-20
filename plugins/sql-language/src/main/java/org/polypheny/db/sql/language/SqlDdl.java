@@ -19,7 +19,9 @@ package org.polypheny.db.sql.language;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -80,8 +82,16 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected LogicalColumn getCatalogColumn( Context context, long tableId, SqlIdentifier columnName ) {
-        return context.getSnapshot().rel().getColumn( tableId, columnName.getSimple() ).orElseThrow();
+    @Nullable
+    protected LogicalColumn getColumn( Context context, long tableId, SqlIdentifier columnName ) {
+        return context.getSnapshot().rel().getColumn( tableId, columnName.getSimple() ).orElse( null );
+    }
+
+
+    protected List<LogicalColumn> getColumns( Context context, long tableId, SqlNodeList columns ) {
+        return columns.getList().stream()
+                .map( c -> getColumn( context, tableId, (SqlIdentifier) c ) )
+                .collect( Collectors.toList() );
     }
 
 

@@ -308,10 +308,9 @@ public abstract class BaseRouter implements Router {
                         ArrayList<RexNode> rexNodes = new ArrayList<>();
                         for ( AllocationColumn p : ccps ) {
                             if ( pkColumnIds.contains( p.columnId ) ) {
-                                //CatalogAdapter adapter = catalog.getSnapshot().getAdapter( p.adapterId );
-                                //String alias = adapter.uniqueName + "_" + p.getLogicalColumnName();
-                                //rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
-                                queue.addFirst( p.getLogicalColumnName() );
+                                String alias = ccps.get( 0 ).placementId + "_" + p.getLogicalColumnName();
+                                rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
+                                queue.addFirst( alias );
                                 queue.addFirst( p.getLogicalColumnName() );
                             } else {
                                 rexNodes.add( builder.field( p.getLogicalColumnName() ) );

@@ -74,7 +74,22 @@ public class VerticalPartitioningTest {
 
                     // Insert data
                     statement.executeUpdate( "INSERT INTO partitioningtest VALUES (1,5,'foo')" );
+
+                    // Checks
+                    /*TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 5, "foo" } ) );*/
+
                     statement.executeUpdate( "INSERT INTO partitioningtest VALUES (2,22,'bar'),(3,69,'xyz')" );
+
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 5, "foo" },
+                                    new Object[]{ 2, 22, "bar" },
+                                    new Object[]{ 3, 69, "xyz" } ) );
 
                     // Update data
                     statement.executeUpdate( "UPDATE partitioningtest SET tinteger = 33 WHERE tprimary = 1" );
@@ -88,7 +103,7 @@ public class VerticalPartitioningTest {
                             statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 33, "foo" },
-                                    new Object[]{ 4, 22, "bar" } ), true );
+                                    new Object[]{ 4, 22, "bar" } ) );
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
@@ -318,13 +333,14 @@ public class VerticalPartitioningTest {
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
 
-                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tinteger) ON STORE anotherstore" );
+                    statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP(tinteger) ON STORE anotherstore" );
 
                     // By executing the following statement, technically the column tprimary would not be present
-                    // on any DataPlacement anymore. Therefore, it has to fail and all placements should remain
+                    // on any of the partitions of the placement anymore. Therefore, it has to fail and all placements should remain
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE hsqldb" );
+                        Assert.fail();
                     } catch ( AvaticaSqlException e ) {
                         failed = true;
                     }

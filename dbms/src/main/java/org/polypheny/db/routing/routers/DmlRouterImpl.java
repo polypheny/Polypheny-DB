@@ -119,7 +119,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             } else if ( table.entityType == EntityType.VIEW ) {
                 throw new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
             }
-            throw new GenericRuntimeException( "Unknown table type: " + table.entityType.name() );
+            throw new GenericRuntimeException( "Unknown table type: %s", table.entityType.name() );
         }
 
         long pkid = table.primaryKey;

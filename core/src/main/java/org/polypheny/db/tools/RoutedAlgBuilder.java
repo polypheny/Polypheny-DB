@@ -106,8 +106,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    private List<Pair<Long, Long>> map( List<AllocationColumn> catalogCols ) {
-        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
+    private List<Pair<Long, Long>> map( List<AllocationColumn> columns ) {
+        return columns.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
     }
 
 
