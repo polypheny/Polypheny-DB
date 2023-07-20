@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class PIUnparameterizedStatementBatch implements PIStatementBatch {
+public class PIUnparameterizedStatementBatch {
 
     List<PIUnparameterizedStatement> statements;
     PIClient protoInterfaceClient;
@@ -44,16 +44,12 @@ public class PIUnparameterizedStatementBatch implements PIStatementBatch {
         return updateCounts;
     }
 
-
-    @Override
-    public List<PIStatement> getStatements() {
-        return statements.stream().map( s -> (PIStatement) s ).collect( Collectors.toList() );
-    }
-
-
-    @Override
     public int getBatchId() {
         return batchId;
+    }
+
+    public List<PIUnparameterizedStatement> getStatements() {
+        return statements;
     }
 
 }
