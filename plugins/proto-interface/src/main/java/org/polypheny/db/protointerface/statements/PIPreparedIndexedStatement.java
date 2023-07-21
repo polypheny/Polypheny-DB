@@ -74,7 +74,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             StatementResult.Builder resultBuilder = StatementResult.newBuilder();
             if (Kind.DDL.contains(implementation.getKind())) {
                 resultBuilder.setScalar(1);
-                client.commitCurrentTransactionIfAuto();
                 return resultBuilder.build();
             }
             if (Kind.DML.contains(implementation.getKind())) {
