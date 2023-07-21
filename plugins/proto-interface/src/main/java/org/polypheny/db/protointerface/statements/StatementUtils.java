@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -33,9 +35,12 @@ import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,8 +60,9 @@ public class StatementUtils {
         int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+
         startOrResumeStopwatch(executionStopWatch);
-        // TODO: implement continuation of fetching
+        // TODO TH implement properly fetching as currently only one frame gets retrieved
         List<List<PolyValue>> rows = implementation.getRows(implementation.getStatement(), fetchSize);
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull(rows).size() < fetchSize;
@@ -65,7 +71,8 @@ public class StatementUtils {
             implementation.getExecutionTimeMonitor().setExecutionTime(executionStopWatch.getNanoTime());
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas(implementation);
-        return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
+        return ProtoUtils.buildRelationalFrame(offset, true, rows, columnMetas);
+        //return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
     }
 
     public static Frame graphFetch(PIStatement statement, long offset) throws SQLFeatureNotSupportedException {
