@@ -299,7 +299,8 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void fetchResult(FetchRequest fetchRequest, StreamObserver<Frame> responseObserver) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement(fetchRequest.getStatementId());
-        Frame frame = statement.fetch(fetchRequest.getOffset());
+        //TODO TH: handle different models
+        Frame frame = StatementUtils.relationalFetch(statement, fetchRequest.getOffset());
         responseObserver.onNext(frame);
         responseObserver.onCompleted();
     }
