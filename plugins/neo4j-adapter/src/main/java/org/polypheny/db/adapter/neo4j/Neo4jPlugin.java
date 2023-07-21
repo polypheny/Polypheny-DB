@@ -140,7 +140,7 @@ public class Neo4jPlugin extends Plugin {
     @Slf4j
     @AdapterProperties(
             name = "Neo4j",
-            description = "Neo4j is a graph-model based database system. If stores data in a graph structure which consists of nodes and edges.",
+            description = "Neo4j is a graph-model based database system. It stores data in a graph structure which consists of nodes and edges.",
             usedModes = { DeployMode.DOCKER },
             supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
     @Extension
