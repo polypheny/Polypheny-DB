@@ -54,9 +54,7 @@ public class StreamCapture {
     public void handleContent( ReceivedMqttMessage receivedMqttMessage ) {
         this.receivedMqttMessage = receivedMqttMessage;
         if ( receivedMqttMessage.getStoreId() == 0 ) {
-            //TODO: get store id of already existing or create new one.
-
-            //TODO: maybe do this with interface
+            //TODO: maybe do this with interface for different types
             if ( receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
                 long newstoreId = getCollectionId();
                 if ( newstoreId != 0 ) {
@@ -65,10 +63,6 @@ public class StreamCapture {
             }
         }
         boolean saved = saveContent();
-        //TODO: gescheite Tests
-//            Catalog catalog = Catalog.getInstance();
-//            CatalogSchema schema = null;
-//            schema = catalog.getSchema( stream.getNamespaceID() );
     }
 
 
@@ -116,7 +110,6 @@ public class StreamCapture {
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
-        //TODO: vll: data type einfügen
         document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
         document.put( "content", new BsonString( this.receivedMqttMessage.getMessage() ) );
 
@@ -135,7 +128,6 @@ public class StreamCapture {
 
 
     public List<MqttMessage> getMessages( String namespaceName, String collectionName ) {
-        //TODO: data type abfragen vll:
         List<String> listOfDocuments = scanCollection( namespaceName, collectionName );
         List<MqttMessage> listOfMessage = new ArrayList<>();
         for ( String document : listOfDocuments ) {

@@ -45,6 +45,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -157,12 +158,9 @@ public class MqttStreamPlugin extends Plugin {
 
             String name = settings.get( "namespace" ).trim();
             NamespaceType type = NamespaceType.valueOf( settings.get( "namespace type" ) );
-            long namespaceId = getNamespaceId( name, type );
-            if ( namespaceId != 0 ) {
-                this.namespace = name;
-                this.namespaceType = type;
-                this.namespaceId = namespaceId;
-            }
+            this.namespaceId = getNamespaceId( name, type );
+            this.namespace = name;
+            this.namespaceType = type;
 
             this.collectionPerTopic = Boolean.parseBoolean( settings.get( "collection per topic" ) );
             this.collectionName = settings.get( "collection name" ).trim();
@@ -230,7 +228,7 @@ public class MqttStreamPlugin extends Plugin {
 
         public long getNamespaceId( String namespaceName, NamespaceType namespaceType ) {
             // TODO: Nachrichten an UI schicken falls Namespace name nicht geht
-            long namespaceId = 0;
+            long namespaceId;
 
             Catalog catalog = Catalog.getInstance();
             if ( catalog.checkIfExistsSchema( this.databaseId, namespaceName ) ) {
@@ -244,11 +242,10 @@ public class MqttStreamPlugin extends Plugin {
                 if ( schema.namespaceType == namespaceType ) {
                     namespaceId = schema.id;
                 } else {
-                    log.info( "There is already a namespace existing in this database with the given name but of type {}.", schema.getNamespaceType() );
-                    throw new RuntimeException();
+                    throw new RuntimeException("There is already a namespace existing in this database with the given name but of another type.");
                 }
             } else {
-
+                //create new namespace
                 long id = catalog.addNamespace( namespaceName, this.databaseId, this.userId, namespaceType );
                 try {
                     catalog.commit();
@@ -293,25 +290,19 @@ public class MqttStreamPlugin extends Plugin {
 
                     case "namespace":
                         String newNamespaceName = this.getCurrentSettings().get( "namespace" ).trim();
-                        long namespaceId1 = this.getNamespaceId( newNamespaceName, this.namespaceType );
-                        if ( namespaceId1 != 0 ) {
-                            this.namespaceId = namespaceId1;
-                            this.namespace = newNamespaceName;
-                        }
+                        this.namespaceId = this.getNamespaceId( newNamespaceName, this.namespaceType );
+                        this.namespace = newNamespaceName;
+
                         //TODO: create collections + special case beachten!!
                         //TODO: abfrage ob sich auch namespaceType geändert hat: in dem Fall erst im namesoace type case collecitons erstellen!
 
-                        //TODO: problem, if there is already collection with this name existing and has data inside: for getting the messages this can be problemeatic!
-                        //TODO: mit marco abklären!!!
                         break;
 
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
-                        long namespaceId2 = this.getNamespaceId( this.namespace, newNamespaceType );
-                        if ( namespaceId2 != 0 ) {
-                            this.namespaceId = namespaceId2;
-                            this.namespaceType = newNamespaceType;
-                        }
+                        this.namespaceId = this.getNamespaceId( this.namespace, newNamespaceType );
+                        this.namespaceType = newNamespaceType;
+
                         //TODO: problem vrom above reggarding creation of new collections
                         break;
 
@@ -396,7 +387,6 @@ public class MqttStreamPlugin extends Plugin {
                 messages = streamCapture.getMessages( namespace, topic );
             } else {
                 messages = streamCapture.getMessages( namespace, this.collectionName );
-                //TODO: test if insert of Interface collection was implemented!
                 messages.removeIf( mqttMessage -> !Objects.equals( mqttMessage.getTopic(), topic ) );
             }
             return messages;
@@ -423,7 +413,6 @@ public class MqttStreamPlugin extends Plugin {
         private void createNewCollection(String collectionName) {
             Catalog catalog = Catalog.getInstance();
             Transaction transaction  = getTransaction();
-            //TODO: Catalog.PlacementType placementType = Catalog.PlacementType.AUTOMATIC;
             Statement statement = transaction.createStatement();
 
             //need to create new Collection
@@ -444,11 +433,9 @@ public class MqttStreamPlugin extends Plugin {
             } catch ( TransactionException e2 ) {
                 log.error( "The commit after creating a new Collection could not be completed!" );
                 return;
-            } /*catch ( UnknownSchemaIdRuntimeException e3 ) {
-            MqttStreamServer.
-            //TODO: wenn man neue Namespace mit Collection erstellt nachdem man Mqtt interface erstellt hat, und diese für Mqtt benutzt -> muss man gerade Polypheny neu starten.
-            // saubere Lösung: methode getNamespaceId aufrufen, aber wie aufrufen aus StreamCapture? -> villeicht Button in Ui einfügen?
-            }*/
+            } catch ( UnknownSchemaIdRuntimeException e3 ) {
+            this.namespaceId = getNamespaceId( this.namespace, this.namespaceType );
+            }
 
             //add placement
             List<CatalogCollection> collectionList2 = catalog.getCollections( this.namespaceId, null );
@@ -567,8 +554,7 @@ public class MqttStreamPlugin extends Plugin {
                     brokerKv.putPair( "Broker port", client.getConfig().getServerPort() + "" );
                     brokerKv.putPair( "Broker version of MQTT", client.getConfig().getMqttVersion() + "" );
                     brokerKv.putPair( "Client state", client.getState() + "" );
-                    //TODO: get relevant info for cient identifier
-                    brokerKv.putPair( "Client identifier", client.getConfig().getClientIdentifier()+ "" );
+                    brokerKv.putPair( "Client identifier", client.getConfig().getClientIdentifier().get()+ "" );
                     //TODO: check this after having SSL Configuration.
                     brokerKv.putPair( "SSL configuration", client.getConfig().getSslConfig() + "" );
                 } );
