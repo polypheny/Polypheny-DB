@@ -50,8 +50,6 @@ public abstract class PIStatement {
     @Getter
     @Setter
     private Iterator<PolyValue> iterator;
-    private ReentrantLock lock;
-
 
     protected PIStatement(int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language) {
         this.id = id;
