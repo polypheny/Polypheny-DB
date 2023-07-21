@@ -38,9 +38,11 @@ public class ReceivedMqttMessage {
     @Getter
     @Setter
     private long storeId;   // the ID of collection/graph/table... the place where info is/should be saved
+    @Getter
+    private final String collectionName;    // if MqttStreamServer.collectionPerTopic = TRUE, then collectionName is name of the topic
+                                            // if MqttStreamServer.collectionPerTopic = TRUE, then collectionName is the name of the common collection
 
-
-    public ReceivedMqttMessage( MqttMessage msg, String namespaceName, long namespaceId, NamespaceType namespaceType, long storeId, String uniqueNameOfInterface, long databaseId, int userId ) {
+    public ReceivedMqttMessage( MqttMessage msg, String namespaceName, long namespaceId, NamespaceType namespaceType, long storeId, String uniqueNameOfInterface, long databaseId, int userId, String collectionName ) {
         this.msg = msg;
         this.namespaceName = namespaceName;
         this.namespaceId = namespaceId;
@@ -49,6 +51,7 @@ public class ReceivedMqttMessage {
         this.databaseId = databaseId;
         this.userId = userId;
         this.storeId = storeId;
+        this.collectionName = collectionName;
     }
 
 

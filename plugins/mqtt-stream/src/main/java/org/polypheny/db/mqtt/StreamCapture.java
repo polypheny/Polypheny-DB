@@ -80,7 +80,7 @@ public class StreamCapture {
         //check for collection with same name
         List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
         for ( CatalogCollection collection : collectionList ) {
-            if ( collection.name.equals( this.receivedMqttMessage.getTopic() ) ) {
+            if ( collection.name.equals( this.receivedMqttMessage.getCollectionName() ) ) {
                 int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
                 if ( !collection.placements.contains( queryInterfaceId ) ) {
                     log.info( "found matching collection!" );
@@ -100,15 +100,15 @@ public class StreamCapture {
 
     boolean saveContent() {
         if ( this.receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
-            insertDocument();
+            insertDocument(this.receivedMqttMessage.getCollectionName());
         }
         return true;
     }
 
 
     // added by Datomo
-    public void insertDocument() {
-        String collectionName = this.receivedMqttMessage.getNamespaceName() + "." + this.receivedMqttMessage.getTopic();
+    public void insertDocument( String collectionName) {
+        String sqlCollectionName = this.receivedMqttMessage.getNamespaceName() + "." + collectionName;
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
@@ -116,11 +116,11 @@ public class StreamCapture {
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
-        //TODO: change to id:
+        //TODO: vll: data type einfügen
         document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
         document.put( "content", new BsonString( this.receivedMqttMessage.getMessage() ) );
 
-        AlgNode algNode = builder.docInsert( statement, collectionName, document ).build();
+        AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
 
         // we can then wrap the tree in an AlgRoot and execute it
         AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
@@ -135,6 +135,7 @@ public class StreamCapture {
 
 
     public List<MqttMessage> getMessages( String namespaceName, String collectionName ) {
+        //TODO: data type abfragen vll:
         List<String> listOfDocuments = scanCollection( namespaceName, collectionName );
         List<MqttMessage> listOfMessage = new ArrayList<>();
         for ( String document : listOfDocuments ) {
@@ -152,14 +153,14 @@ public class StreamCapture {
 
 
     // added by Datomo
-    public List<String> scanCollection( String namespaceName, String topic ) {
-        String collectionName = namespaceName + "." + topic;
+    public List<String> scanCollection( String namespaceName, String collectionName ) {
+        String sqlCollectionName = namespaceName + "." + collectionName;
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        AlgNode algNode = builder.docScan( statement, collectionName ).build();
+        AlgNode algNode = builder.docScan( statement, sqlCollectionName ).build();
 
         // we can then wrap the tree in an AlgRoot and execute it
         AlgRoot root = AlgRoot.of( algNode, Kind.SELECT );
