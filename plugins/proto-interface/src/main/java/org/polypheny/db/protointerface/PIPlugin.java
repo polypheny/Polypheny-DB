@@ -18,6 +18,8 @@ package org.polypheny.db.protointerface;
 
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
+
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.iface.Authenticator;
@@ -63,9 +65,14 @@ public class PIPlugin extends PolyPlugin {
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
         );
+        @Getter
         private final int port;
+        @Getter
         private TransactionManager transactionManager;
+        @Getter
         private Authenticator authenticator;
+        @Getter
+        private ClientManager clientManager;
         private PIServer protoInterfaceServer;
 
 
@@ -122,9 +129,9 @@ public class PIPlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            ClientManager clientManager = new ClientManager( authenticator, transactionManager );
-            PIService protoInterfaceService = new PIService( clientManager );
-            protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
+            clientManager = new ClientManager( this );
+            protoInterfaceServer = new PIServer( this );
+            // protoInterfaceServer = new PIServer( port, protoInterfaceService, clientManager );
             try {
                 protoInterfaceServer.start();
             } catch ( IOException e ) {
