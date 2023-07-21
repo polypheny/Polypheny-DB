@@ -78,7 +78,11 @@ final class PolyphenyDockerClient {
                 connected = false;
                 throw e;
             }
-
+            // https://protobuf.dev/reference/java/api-docs/com/google/protobuf/Parser.html#parseFrom-java.io.InputStream-
+            if ( resp == null ) {
+                connected = false;
+                throw new IOException( "EOF" );
+            }
         }
         if ( req.getMessageId() != resp.getMessageId() ) {
             throw new IOException( "Response has the wrong message ID" );
