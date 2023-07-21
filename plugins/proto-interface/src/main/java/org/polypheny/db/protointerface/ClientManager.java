@@ -42,14 +42,14 @@ public class ClientManager {
     private final TransactionManager transactionManager;
     private final Timer cleanupTimer;
 
-
-    public ClientManager(Authenticator authenticator, TransactionManager transactionManager) {
+    public ClientManager(PIPlugin.ProtoInterface protoInterface) {
         this.openConnections = new ConcurrentHashMap<>();
-        this.authenticator = authenticator;
-        this.transactionManager = transactionManager;
+        this.authenticator = protoInterface.getAuthenticator();
+        this.transactionManager = protoInterface.getTransactionManager();
         this.cleanupTimer = new Timer();
         cleanupTimer.schedule(createNewCleanupTask(), 0, CLEANUP_INTERVALL);
     }
+
 
     public void unregisterConnection(PIClient client) {
         synchronized (client) {
