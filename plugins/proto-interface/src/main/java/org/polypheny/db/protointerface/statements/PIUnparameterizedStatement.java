@@ -45,8 +45,8 @@ public class PIUnparameterizedStatement extends PIStatement {
     }
 
     public StatementResult execute() throws Exception {
+        statement = client.getCurrentOrCreateNewTransaction().createStatement();
         synchronized (client) {
-            Statement statement = client.getCurrentOrCreateNewTransaction().createStatement();
             StatementUtils.execute(this);
             StatementResult.Builder resultBuilder = StatementResult.newBuilder();
             if (Kind.DDL.contains(implementation.getKind())) {
