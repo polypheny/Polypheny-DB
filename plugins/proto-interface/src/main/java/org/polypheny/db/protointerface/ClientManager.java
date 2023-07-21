@@ -83,8 +83,6 @@ public class ClientManager {
         transaction.commit();
         properties.updateNamespaceName(namespace.getName());
         PIClient client = PIClient.newBuilder()
-                .setMajorApiVersion(connectionRequest.getMajorApiVersion())
-                .setMinorApiVersion(connectionRequest.getMinorApiVersion())
                 .setClientUUID(connectionRequest.getClientUuid())
                 .setTransactionManager(transactionManager)
                 .setCatalogUser(user)
