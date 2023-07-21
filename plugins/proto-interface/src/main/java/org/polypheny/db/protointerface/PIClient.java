@@ -71,31 +71,32 @@ public class PIClient {
 
 
     public Transaction getCurrentTransaction() {
-        synchronized (this) {
-            return currentTransaction;
-        }
+        return currentTransaction;
     }
 
     public void commitCurrentTransactionIfAuto() {
         if (!properties.isAutoCommit()) {
             return;
         }
-        commitCurrentTransaction();
+        commitCurrentTransactionUnsynchronized();
     }
-
 
     public void commitCurrentTransaction() {
         synchronized (this) {
-            if (hasNoTransaction()) {
-                return;
-            }
-            try {
-                currentTransaction.commit();
-            } catch (TransactionException e) {
-                throw new PIServiceException("Committing current transaction failed: " + e.getMessage());
-            } finally {
-                endCurrentTransaction();
-            }
+            commitCurrentTransactionUnsynchronized();
+        }
+    }
+
+    private void commitCurrentTransactionUnsynchronized() {
+        if (hasNoTransaction()) {
+            return;
+        }
+        try {
+            currentTransaction.commit();
+        } catch (TransactionException e) {
+            throw new PIServiceException("Committing current transaction failed: " + e.getMessage());
+        } finally {
+            endCurrentTransaction();
         }
     }
 
@@ -117,9 +118,7 @@ public class PIClient {
 
 
     private void endCurrentTransaction() {
-        synchronized (this) {
-            currentTransaction = null;
-        }
+        currentTransaction = null;
     }
 
 
