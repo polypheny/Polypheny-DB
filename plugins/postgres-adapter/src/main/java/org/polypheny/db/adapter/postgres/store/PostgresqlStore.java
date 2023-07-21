@@ -121,7 +121,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
                 container.destroy();
-                throw new RuntimeException( "Failed to connect to postrges container" );
+                throw new RuntimeException( "Failed to connect to postgres container" );
             }
 
             deploymentId = container.getContainerId();
