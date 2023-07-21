@@ -46,12 +46,14 @@ import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationKeyValue;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
@@ -548,10 +550,6 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationTable topicsTable;
             private final InformationAction msgButton;
             private final InformationAction reconnButton;
-            private final InformationText brokerInfo;
-            private final InformationText clientInfo;
-            private final InformationText namespaceName;
-
 
 
             public MonitoringPage() {
@@ -562,12 +560,19 @@ public class MqttStreamPlugin extends Plugin {
                 informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
                 im.addGroup( informationGroupInfo );
 
-                brokerInfo = new InformationText( informationGroupInfo, "0.0.0.0:0000" );
-                im.registerInformation( brokerInfo );
-                clientInfo = new InformationText( informationGroupInfo, "o" );
-                im.registerInformation( clientInfo );
-                namespaceName = new InformationText( informationGroupInfo, "namespace" );
-                im.registerInformation( namespaceName );
+                InformationKeyValue brokerKv = new InformationKeyValue( informationGroupInfo );
+                im.registerInformation( brokerKv );
+                informationGroupInfo.setRefreshFunction( () -> {
+                    brokerKv.putPair( "Broker address", client.getConfig().getServerHost() );
+                    brokerKv.putPair( "Broker port", client.getConfig().getServerPort() + "" );
+                    brokerKv.putPair( "Broker version of MQTT", client.getConfig().getMqttVersion() + "" );
+                    brokerKv.putPair( "Client state", client.getState() + "" );
+                    //TODO: get relevant info for cient identifier
+                    brokerKv.putPair( "Client identifier", client.getConfig().getClientIdentifier()+ "" );
+                    //TODO: check this after having SSL Configuration.
+                    brokerKv.putPair( "SSL configuration", client.getConfig().getSslConfig() + "" );
+                } );
+
 
                 informationGroupTopics = new InformationGroup( informationPage, "Subscribed Topics" ).setOrder( 2 );
 
@@ -628,31 +633,26 @@ public class MqttStreamPlugin extends Plugin {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
                     for ( String topic : topics.keySet() ) {
-                        List<MqttMessage> messages = getMessages( topic );
-                        if ( messages.isEmpty() ) {
+                        List<MqttMessage> mqttMessageList = getMessages( topic );
+                        if ( mqttMessageList.isEmpty() ) {
                             topicsTable.addRow( topic, 0, "No messages received yet." );
                         } else {
                             //only show last 20 Messages:
                             int indexLastMessage = 0;
-                            if ( messages.size() > 20 ) {
-                                indexLastMessage = messages.size() - 20;
+                            if ( mqttMessageList.size() > 20 ) {
+                                indexLastMessage = mqttMessageList.size() - 20;
                             }
                             List<String> recentMessages = new ArrayList<>();
-                            for ( int i = indexLastMessage; i < messages.size(); i++ ) {
-                                recentMessages.add( messages.get( i ).getMessage() );
+                            for ( int i = indexLastMessage; i < mqttMessageList.size(); i++ ) {
+                                recentMessages.add( mqttMessageList.get( i ).getMessage() );
                             }
-                            topicsTable.addRow( topic, topics.get( topic ), recentMessages );
+                            topicsTable.addRow( topic, topics.get( topic ), "" );
+                            for ( String message : recentMessages ) {
+                                topicsTable.addRow( "", "", message );
+                            }
                         }
                     }
                 }
-                this.brokerInfo.setText( "Broker address: " + client.getConfig().getServerHost()
-                        + "\n" + "Broker port:" + client.getConfig().getServerPort()
-                        + "\n Broker version of MQTT : " + String.valueOf( client.getConfig().getMqttVersion() )
-                        + "\n" + "SSL configuration: " + client.getConfig().getSslConfig() );
-                //TODO: check this after having SSL Configuration.
-                this.clientInfo.setText( "Client state: " + String.valueOf( client.getState() ) );
-                this.namespaceName.setText( "Namespace name: " + namespace );
-
             }
 
 
