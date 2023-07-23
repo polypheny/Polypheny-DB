@@ -87,4 +87,18 @@ public class ProtoUtils {
                 .setRelationalFrame(relationalFrame)
                 .build();
     }
+
+    public static Frame buildDocumentFrame(boolean isLast, List<PolyValue> data) {
+        List<ProtoDocument> documents = data.stream()
+                .map(PolyValue::asDocument)
+                .map(PolyValueSerializer::buildProtoDocument)
+                .collect(Collectors.toList());
+        DocumentFrame documentFrame = DocumentFrame.newBuilder()
+                .addAllDocuments(documents)
+                .build();
+        return Frame.newBuilder()
+                .setIsLast(isLast)
+                .setDocumentFrame(documentFrame)
+                .build();
+    }
 }
