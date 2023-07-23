@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -35,7 +36,9 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ClientManager {
-    private static final long CLEANUP_INTERVALL = 1_200_000; // 20 minutes
+    @Getter
+    private static final long HEARTBEAT_INTERVAL = 1_200_000; // 20 minutes
+    private static final long HEARTBEAT_TOLERANCE = 2000;
 
     private ConcurrentHashMap<String, PIClient> openConnections;
     private final Authenticator authenticator;
@@ -47,7 +50,7 @@ public class ClientManager {
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
         this.cleanupTimer = new Timer();
-        cleanupTimer.schedule(createNewCleanupTask(), 0, CLEANUP_INTERVALL);
+        cleanupTimer.schedule(createNewCleanupTask(), 0, HEARTBEAT_INTERVAL + HEARTBEAT_TOLERANCE);
     }
 
 
@@ -107,9 +110,7 @@ public class ClientManager {
         if (!openConnections.containsKey(clientUUID)) {
             throw new PIServiceException("Client not registered! Has the server been restarted in the meantime?");
         }
-        PIClient client = openConnections.get(clientUUID);
-        client.setIsActive();
-        return client;
+        return openConnections.get(clientUUID);
     }
 
 
