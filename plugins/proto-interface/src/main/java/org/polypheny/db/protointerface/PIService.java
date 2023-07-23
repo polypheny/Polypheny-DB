@@ -300,7 +300,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement(fetchRequest.getStatementId());
         //TODO TH: handle different models
-        Frame frame = StatementUtils.relationalFetch(statement, fetchRequest.getOffset());
+        Frame frame = StatementUtils.relationalFetch(statement);
         responseObserver.onNext(frame);
         responseObserver.onCompleted();
     }
