@@ -177,7 +177,6 @@ message ParameterMeta {
 
 message FetchRequest {
   int32 statement_id = 1;
-  int64 offset = 2;
 }
 
 message UnparameterizedStatement {
