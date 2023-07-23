@@ -36,21 +36,25 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ClientManager {
-    @Getter
-    private static final long HEARTBEAT_INTERVAL = 1_200_000; // 20 minutes
     private static final long HEARTBEAT_TOLERANCE = 2000;
+    @Getter
+    private long heartbeatInterval;
 
     private ConcurrentHashMap<String, PIClient> openConnections;
     private final Authenticator authenticator;
     private final TransactionManager transactionManager;
-    private final Timer cleanupTimer;
+    private Timer cleanupTimer;
 
     public ClientManager(PIPlugin.ProtoInterface protoInterface) {
         this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
-        this.cleanupTimer = new Timer();
-        cleanupTimer.schedule(createNewCleanupTask(), 0, HEARTBEAT_INTERVAL + HEARTBEAT_TOLERANCE);
+        if (protoInterface.isRequiresHeartbeat()) {
+            this.heartbeatInterval = protoInterface.getHeartbeatIntervall();
+            this.cleanupTimer = new Timer();
+            cleanupTimer.schedule(createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE);
+        }
+        this.heartbeatInterval = 0;
     }
 
 
