@@ -74,7 +74,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
                 return resultBuilder.build();
             }
 
-            Frame frame = StatementUtils.relationalFetch(this, 0);
+            Frame frame = StatementUtils.fetch(this);
             resultBuilder.setFrame(frame);
             if (frame.getIsLast()) {
                 //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
