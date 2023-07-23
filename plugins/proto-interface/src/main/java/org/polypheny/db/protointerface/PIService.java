@@ -46,7 +46,8 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void connect(ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver) {
         ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
                 .setMajorApiVersion(majorApiVersion)
-                .setMinorApiVersion(minorApiVersion);
+                .setMinorApiVersion(minorApiVersion)
+                .setHeartbeatInterval(ClientManager.getHEARTBEAT_INTERVAL());
         boolean isCompatible = checkApiVersion(connectionRequest);
         responseBuilder.setIsCompatible(isCompatible);
         ConnectionReply connectionReply = responseBuilder.build();
@@ -73,8 +74,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
 
     @Override
     public void checkConnection(ConnectionCheckRequest connectionCheckRequest, StreamObserver<ConnectionCheckResponse> responseObserver) {
-        /* called as client auth check */
-        getClient();
+        getClient().setIsActive();
         responseObserver.onNext(ConnectionCheckResponse.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -360,14 +360,12 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     }
 
     @Override
-    public void  setClientInfoProperties(ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver) {
+    public void setClientInfoProperties(ClientInfoProperties properties, StreamObserver<ClientInfoPropertiesResponse> reponseObserver) {
         PIClient client = getClient();
         client.getPIClientInfoProperties().putAll(properties.getPropertiesMap());
         reponseObserver.onNext(ClientInfoPropertiesResponse.newBuilder().build());
         reponseObserver.onCompleted();
     }
-
-
 
 
     private PIClient getClient() throws PIServiceException {
