@@ -102,6 +102,7 @@ message ConnectionReply {
   bool is_compatible = 1;
   int32 major_api_version = 2;
   int32 minor_api_version = 3;
+  int64 heartbeat_interval = 4;
 }
 
 message ConnectionProperties {
