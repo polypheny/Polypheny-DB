@@ -244,7 +244,6 @@ public class LanguageCrud {
 
 
     private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
-
         List<PolyValue[]> data = implementation.getArrayRows( statement, noLimit );
 
         return GraphResult.builder()
