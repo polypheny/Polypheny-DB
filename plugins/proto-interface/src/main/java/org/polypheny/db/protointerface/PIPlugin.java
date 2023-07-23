@@ -63,10 +63,16 @@ public class PIPlugin extends PolyPlugin {
         public static final String INTERFACE_NAME = "Proto Interface";
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-                new QueryInterfaceSettingInteger( "port", false, true, false, 20590 )
+                new QueryInterfaceSettingInteger( "port", false, true, false, 20590 ),
+                new QueryInterfaceSettingBoolean("requires heartbeat", false, true, false, false),
+                new QueryInterfaceSettingInteger("heartbeat intervall", false, true, false,0)
         );
         @Getter
         private final int port;
+        @Getter
+        private final boolean requiresHeartbeat;
+        @Getter
+        private final long heartbeatIntervall;
         @Getter
         private TransactionManager transactionManager;
         @Getter
@@ -85,6 +91,8 @@ public class PIPlugin extends PolyPlugin {
                 // Port is already in use
                 throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
+            this.requiresHeartbeat = Boolean.getBoolean(settings.get("requires heartbeat"));
+            this.heartbeatIntervall = Long.parseLong(settings.get("heartbeat intervall"));
         }
 
 
