@@ -255,8 +255,7 @@ public class LanguageCrud {
 
 
     private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
-
-        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue[]> data = iterator.getArrayRows();
         try {
             iterator.close();

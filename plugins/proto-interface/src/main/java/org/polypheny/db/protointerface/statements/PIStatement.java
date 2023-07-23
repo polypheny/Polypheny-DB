@@ -16,10 +16,10 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.Iterator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
@@ -30,9 +30,6 @@ import org.polypheny.db.protointerface.proto.StatementProperties;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-
-import java.util.Iterator;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public abstract class PIStatement {
@@ -51,7 +48,8 @@ public abstract class PIStatement {
     @Setter
     private Iterator<PolyValue> iterator;
 
-    protected PIStatement(int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language) {
+
+    protected PIStatement( int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language ) {
         this.id = id;
         this.client = client;
         this.properties = properties;
@@ -62,17 +60,20 @@ public abstract class PIStatement {
 
     public abstract PolyImplementation<PolyValue> getImplementation();
 
-    public abstract void setImplementation(PolyImplementation<PolyValue> implementation);
+    public abstract void setImplementation( PolyImplementation<PolyValue> implementation );
 
     public abstract Statement getStatement();
 
     public abstract String getQuery();
 
+
     public Transaction getTransaction() {
         return client.getCurrentTransaction();
     }
 
-    public void updateProperties(StatementProperties statementProperties) {
-        properties.update(statementProperties);
+
+    public void updateProperties( StatementProperties statementProperties ) {
+        properties.update( statementProperties );
     }
+
 }

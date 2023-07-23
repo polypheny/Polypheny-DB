@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -35,90 +37,107 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
-import java.sql.SQLFeatureNotSupportedException;
-import java.util.List;
-import java.util.Objects;
-
 public class StatementUtils {
 
-    private static void startOrResumeStopwatch(StopWatch stopWatch) {
-        if (stopWatch.isSuspended()) {
+    private static void startOrResumeStopwatch( StopWatch stopWatch ) {
+        if ( stopWatch.isSuspended() ) {
             stopWatch.resume();
             return;
         }
-        if (stopWatch.isStopped()) {
+        if ( stopWatch.isStopped() ) {
             stopWatch.start();
         }
     }
 
-    public static Frame relationalFetch(PIStatement piStatement) {
+
+    public static Frame fetch( PIStatement piStatement ) {
+        QueryLanguage language = piStatement.getLanguage();
+        if ( language == QueryLanguage.from( "mql" ) ) {
+            return getchDocumentFrame( piStatement );
+        } else if ( language == QueryLanguage.from( "cypher" ) ) {
+            return fetchGraphFrame( piStatement );
+        }
+        return fetchRelationalFrame( piStatement );
+    }
+
+
+    public static Frame fetchRelationalFrame( PIStatement piStatement ) {
         int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
 
-        startOrResumeStopwatch(executionStopWatch);
-        // TODO TH implement properly fetching as currently only one frame gets retrieved
-        List<List<PolyValue>> rows = implementation.getRows(implementation.getStatement(), fetchSize);
+        startOrResumeStopwatch( executionStopWatch );
+        // TODO TH: implement continuous fetching
+        List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
         executionStopWatch.suspend();
-        boolean isDone = fetchSize == 0 || Objects.requireNonNull(rows).size() < fetchSize;
-        if (isDone) {
+        boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
+        if ( isDone ) {
             executionStopWatch.stop();
-            implementation.getExecutionTimeMonitor().setExecutionTime(executionStopWatch.getNanoTime());
+            implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
-        List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas(implementation);
-        return ProtoUtils.buildRelationalFrame(true, rows, columnMetas);
+        List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
+        return ProtoUtils.buildRelationalFrame( true, rows, columnMetas );
         //return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
     }
 
-    public static Frame graphFetch(PIStatement statement, long offset) throws SQLFeatureNotSupportedException {
 
-        throw new SQLFeatureNotSupportedException("Graph Fetching is not yet implmented.");
+    public static Frame fetchGraphFrame( PIStatement piStatement ) {
+        throw new RuntimeException( "Feature not implemented" );
+        /*
+        Statement statement = piStatement.getStatement();
+        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        //TODO TH:  Whats the actual type here?
+        List<PolyValue[]> data = implementation.getArrayRows( statement, true );
+        return ProtoUtils.buildGraphFrame();
+        */
     }
 
 
-    public static Frame documentFetch(PIStatement piStatement, long offset) throws SQLFeatureNotSupportedException {
+    public static Frame getchDocumentFrame( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
         // TODO implement continuous fetching
         // are those actually poly documents
-        List<PolyValue> data = implementation.getSingleRows(statement, false);
-        return ProtoUtils.buildDocumentFrame(true, data);
+        List<PolyValue> data = implementation.getSingleRows( statement, true );
+        return ProtoUtils.buildDocumentFrame( true, data );
     }
 
 
-    public static void execute(PIStatement piStatement) throws Exception {
+    public static void execute( PIStatement piStatement ) throws Exception {
         PolyImplementation<PolyValue> implementation;
 
         String query = piStatement.getQuery();
         QueryLanguage queryLanguage = piStatement.getLanguage();
         Statement statement = piStatement.getStatement();
 
-        Processor queryProcessor = statement.getTransaction().getProcessor(queryLanguage);
-        Node parsedStatement = queryProcessor.parse(query).get(0);
-        if (parsedStatement.isA(Kind.DDL)) {
-            implementation = queryProcessor.prepareDdl(statement, parsedStatement,
-                    new QueryParameters(query, queryLanguage.getNamespaceType()));
+        Processor queryProcessor = statement.getTransaction().getProcessor( queryLanguage );
+        Node parsedStatement = queryProcessor.parse( query ).get( 0 );
+        if ( parsedStatement.isA( Kind.DDL ) ) {
+            implementation = queryProcessor.prepareDdl( statement, parsedStatement,
+                    new QueryParameters( query, queryLanguage.getNamespaceType() ) );
         } else {
-            Pair<Node, AlgDataType> validated = queryProcessor.validate(piStatement.getTransaction(),
-                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean());
-            AlgRoot logicalRoot = queryProcessor.translate(statement, validated.left, null);
-            AlgDataType parameterRowType = queryProcessor.getParameterRowType(validated.left);
-            implementation = statement.getQueryProcessor().prepareQuery(logicalRoot, parameterRowType, true);
+            Pair<Node, AlgDataType> validated = queryProcessor.validate( piStatement.getTransaction(),
+                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
+            AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
+            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
-        piStatement.setImplementation(implementation);
+        piStatement.setImplementation( implementation );
     }
 
-    public static void prepare(PIPreparedStatement piStatement) {
+
+    public static void prepare( PIPreparedStatement piStatement ) {
         Transaction transaction = piStatement.getClient().getCurrentOrCreateNewTransaction();
         String query = piStatement.getQuery();
         QueryLanguage queryLanguage = piStatement.getLanguage();
 
-        Processor queryProcessor = transaction.getProcessor(queryLanguage);
-        Node parsed = queryProcessor.parse(query).get(0);
+        Processor queryProcessor = transaction.getProcessor( queryLanguage );
+        Node parsed = queryProcessor.parse( query ).get( 0 );
         // It is important not to add default values for missing fields in insert statements. If we did this, the
         // JDBC driver would expect more parameter fields than there actually are in the query.
-        Pair<Node, AlgDataType> validated = queryProcessor.validate(transaction, parsed, false);
-        AlgDataType parameterRowType = queryProcessor.getParameterRowType(validated.left);
-        piStatement.setParameterMetas(RelationalMetaRetriever.retrieveParameterMetas(parameterRowType));
+        Pair<Node, AlgDataType> validated = queryProcessor.validate( transaction, parsed, false );
+        AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
+        piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
     }
+
 }
