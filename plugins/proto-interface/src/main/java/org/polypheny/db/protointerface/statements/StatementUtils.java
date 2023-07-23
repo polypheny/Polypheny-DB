@@ -16,8 +16,6 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -35,12 +33,9 @@ import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -76,12 +71,18 @@ public class StatementUtils {
     }
 
     public static Frame graphFetch(PIStatement statement, long offset) throws SQLFeatureNotSupportedException {
+
         throw new SQLFeatureNotSupportedException("Graph Fetching is not yet implmented.");
     }
 
 
-    public static Frame documentFetch(PIStatement statement, long offset) throws SQLFeatureNotSupportedException {
-        throw new SQLFeatureNotSupportedException("Doument fetching is no yet implemented.");
+    public static Frame documentFetch(PIStatement piStatement, long offset) throws SQLFeatureNotSupportedException {
+        Statement statement = piStatement.getStatement();
+        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        // TODO implement continuous fetching
+        // are those actually poly documents
+        List<PolyValue> data = implementation.getSingleRows(statement, false);
+        return ProtoUtils.buildDocumentFrame(true, data);
     }
 
 
