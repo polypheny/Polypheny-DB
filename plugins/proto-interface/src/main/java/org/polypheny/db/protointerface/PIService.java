@@ -47,7 +47,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
                 .setMajorApiVersion(majorApiVersion)
                 .setMinorApiVersion(minorApiVersion)
-                .setHeartbeatInterval(ClientManager.getHEARTBEAT_INTERVAL());
+                .setHeartbeatInterval(clientManager.getHeartbeatInterval());
         boolean isCompatible = checkApiVersion(connectionRequest);
         responseBuilder.setIsCompatible(isCompatible);
         ConnectionReply connectionReply = responseBuilder.build();
