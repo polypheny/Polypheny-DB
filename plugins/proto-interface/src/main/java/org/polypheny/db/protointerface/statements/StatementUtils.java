@@ -56,7 +56,7 @@ public class StatementUtils {
         }
     }
 
-    public static Frame relationalFetch(PIStatement piStatement, long offset) {
+    public static Frame relationalFetch(PIStatement piStatement) {
         int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
@@ -71,7 +71,7 @@ public class StatementUtils {
             implementation.getExecutionTimeMonitor().setExecutionTime(executionStopWatch.getNanoTime());
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas(implementation);
-        return ProtoUtils.buildRelationalFrame(offset, true, rows, columnMetas);
+        return ProtoUtils.buildRelationalFrame(true, rows, columnMetas);
         //return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
     }
 
