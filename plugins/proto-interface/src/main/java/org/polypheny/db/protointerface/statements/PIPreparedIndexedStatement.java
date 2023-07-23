@@ -27,7 +27,6 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
-import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -82,7 +81,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 return resultBuilder.build();
             }
 
-            Frame frame = StatementUtils.relationalFetch(this, 0);
+            Frame frame = StatementUtils.fetch(this);
             resultBuilder.setFrame(frame);
             if (frame.getIsLast()) {
                 //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?

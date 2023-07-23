@@ -47,7 +47,9 @@ public class PIUnparameterizedStatement extends PIStatement {
     public StatementResult execute() throws Exception {
         statement = client.getCurrentOrCreateNewTransaction().createStatement();
         synchronized (client) {
+
             StatementUtils.execute(this);
+
             StatementResult.Builder resultBuilder = StatementResult.newBuilder();
             if (Kind.DDL.contains(implementation.getKind())) {
                 resultBuilder.setScalar(1);
@@ -59,7 +61,7 @@ public class PIUnparameterizedStatement extends PIStatement {
                 return resultBuilder.build();
             }
 
-            Frame frame = StatementUtils.relationalFetch(this, 0);
+            Frame frame = StatementUtils.fetchRelationalFrame(this);
             resultBuilder.setFrame(frame);
             if (frame.getIsLast()) {
                 //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
