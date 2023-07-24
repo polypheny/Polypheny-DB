@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +65,7 @@ import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.prepare.Context;
@@ -185,7 +185,6 @@ public class Neo4jPlugin extends Plugin {
                         .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                 try {
                     this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
-                            .withExposedPort( 7687 )
                             .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
                             .createAndStart();
                 } catch ( IOException e ) {
@@ -232,13 +231,10 @@ public class Neo4jPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            this.host = container.getIpAddress();
-            Optional<Integer> maybePort = container.getExposedPort( 7687 );
-            if ( this.host == null || maybePort.isEmpty() ) {
-                return false;
-            }
 
-            this.port = maybePort.get();
+            HostAndPort hp = container.connectToContainer( 7687 );
+            this.host = hp.getHost();
+            this.port = hp.getPort();
 
             try {
                 this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );

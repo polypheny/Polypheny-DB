@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -46,6 +45,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -112,7 +112,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
                     .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
             try {
                 container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
-                        .withExposedPort( 5432 )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .createAndStart();
             } catch ( IOException e ) {
@@ -413,14 +412,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             return false;
         }
 
-        this.host = container.getIpAddress();
-        Optional<Integer> maybePort = container.getExposedPort( 5432 );
-
-        if ( this.host == null || maybePort.isEmpty() ) {
-            return false;
-        }
-
-        this.port = maybePort.get();
+        HostAndPort hp = container.connectToContainer( 5432 );
+        this.host = hp.getHost();
+        this.port = hp.getPort();
 
         return testConnection();
     }

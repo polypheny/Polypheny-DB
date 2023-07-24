@@ -132,11 +132,11 @@ public final class AutoDocker {
         updateStatus( "Creating container polypheny-docker-connector" );
         HostConfig hostConfig = new HostConfig()
                 .withBinds( Bind.parse( "polypheny-docker-connector-data:/data" ), Bind.parse( "/var/run/docker.sock:/var/run/docker.sock" ) )
-                .withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ) )
+                .withPortBindings( PortBinding.parse( "7001:7001" ), PortBinding.parse( "7002:7002" ), PortBinding.parse( "7003:7003" ) )
                 .withRestartPolicy( RestartPolicy.unlessStoppedRestart() );
 
-        CreateContainerResponse containerResponse = client.createContainerCmd( "polypheny/polypheny-docker-connector" )
-                .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ) )
+        CreateContainerResponse containerResponse = client.createContainerCmd( imageName )
+                .withExposedPorts( ExposedPort.tcp( ConfigDocker.COMMUNICATION_PORT ), ExposedPort.tcp( ConfigDocker.HANDSHAKE_PORT ), ExposedPort.tcp( ConfigDocker.PROXY_PORT ) )
                 .withHostConfig( hostConfig )
                 .withName( "polypheny-docker-connector" )
                 .withCmd( "server" )

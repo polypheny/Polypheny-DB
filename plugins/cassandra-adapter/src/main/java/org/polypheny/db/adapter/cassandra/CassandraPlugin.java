@@ -43,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +64,7 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -186,7 +186,6 @@ public class CassandraPlugin extends Plugin {
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/cassandra:latest", getUniqueName() )
-                                .withExposedPort( 9042 )
                                 .createAndStart();
                     } catch ( IOException e ) {
                         throw new RuntimeException( e );
@@ -579,12 +578,10 @@ public class CassandraPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            this.dbHostname = container.getIpAddress();
-            Optional<Integer> port = container.getExposedPort( 9042 );
-            if ( this.dbHostname == null || port.isEmpty() ) {
-                return false;
-            }
-            this.dbPort = port.get();
+
+            HostAndPort hp = container.connectToContainer( 9042 );
+            this.dbHostname = hp.getHost();
+            this.dbPort = hp.getPort();
 
             try {
                 mySession = getSession();

@@ -16,7 +16,16 @@
 
 package org.polypheny.db.docker;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,7 +35,11 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
+import org.bouncycastle.tls.AlertDescription;
+import org.bouncycastle.tls.TlsFatalAlert;
+import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 
 /**
@@ -45,6 +58,8 @@ public final class DockerContainer {
      */
     @Getter
     private final String containerId;
+
+    private final Map<Integer, ServerSocket> proxies = new HashMap<>();
 
 
     public DockerContainer( String containerId, String uniqueName ) {
@@ -90,6 +105,13 @@ public final class DockerContainer {
         log.info( "Destroying container with ID " + this.getContainerId() );
         getDockerInstance().destroyContainer( this );
         containers.remove( containerId );
+        proxies.forEach( ( k, v ) -> {
+            try {
+                v.close();
+            } catch ( IOException ignore ) {
+                // ignore
+            }
+        } );
     }
 
 
@@ -109,7 +131,7 @@ public final class DockerContainer {
     }
 
 
-    public String getIpAddress() {
+    public String getHost() {
         return getDockerInstance().getHost();
     }
 
@@ -121,6 +143,106 @@ public final class DockerContainer {
         } catch ( IOException e ) {
             log.error( "Failed to retrieve portlist for container " + containerId );
             return Optional.empty();
+        }
+    }
+
+
+    private Runnable pipe( InputStream in, OutputStream out, String name ) {
+        return () -> {
+            try ( in; out ) {
+                while ( true ) {
+                    byte[] buf = new byte[256];
+                    int n = in.read( buf );
+                    if ( n >= 0 ) {
+                        out.write( buf, 0, n );
+                    } else {
+                        break;
+                    }
+                }
+            } catch ( TlsNoCloseNotifyException ignore ) {
+                // ignore
+            } catch ( IOException e ) {
+                if ( e instanceof SocketException ) {
+                    if ( e.getMessage().equals( "Socket closed" ) || e.getMessage().startsWith( "Connection reset by peer" ) ) {
+                        return;
+                    }
+                }
+                log.error( "Pipe " + name, e );
+            }
+        };
+    }
+
+
+    private void startProxyForConnection( Socket local, int port ) {
+        try {
+            Socket remote = new Socket( getHost(), ConfigDocker.PROXY_PORT );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( getHost() );
+            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( getHost() );
+            PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
+            InputStream in = client.getInputStream().get();
+            OutputStream out = client.getOutputStream().get();
+
+            out.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
+
+            Runnable handleOutput = pipe( local.getInputStream(), out, String.format( "polypheny => {}", uniqueName ) );
+            Runnable handleInput = pipe( in, local.getOutputStream(), String.format( "polypheny <= {}", uniqueName ) );
+            new Thread( handleOutput ).start();
+            new Thread( handleInput ).start();
+        } catch ( IOException e ) {
+            if ( e instanceof SocketException || e instanceof EOFException ) {
+                // ignore
+            } else if ( e instanceof TlsFatalAlert && ((TlsFatalAlert) e).getAlertDescription() == AlertDescription.handshake_failure ) {
+                // ignore
+            } else {
+                log.info( "startProxyForConnection: " + e );
+            }
+            try {
+                local.close();
+            } catch ( IOException ignore ) {
+                // ignore failures during cleanup
+            }
+        }
+    }
+
+
+    private ServerSocket startServer( int port ) {
+        try {
+            ServerSocket s = new ServerSocket( 0, 10, InetAddress.getLoopbackAddress() );
+            Runnable r = () -> {
+                while ( true ) {
+                    try {
+                        Socket local = s.accept();
+                        startProxyForConnection( local, port );
+                    } catch ( Exception e ) {
+                        if ( e instanceof SocketException && e.getMessage().equals( "Socket closed" ) ) {
+                            log.info( "Server Socket for port " + port + " closed" );
+                        } else {
+                            log.info( "Server Socket for port " + port + " closed", e );
+                        }
+                        synchronized ( this ) {
+                            proxies.remove( port );
+                        }
+                        break;
+                    }
+                }
+            };
+            new Thread( r ).start();
+            return s;
+        } catch ( Exception e ) {
+            log.error( "Failed to start local proxy server: ", e );
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    public HostAndPort connectToContainer( int port ) {
+        synchronized ( this ) {
+            ServerSocket s = proxies.get( port );
+            if ( s == null ) {
+                s = startServer( port );
+                proxies.put( port, s );
+            }
+            return new HostAndPort( s.getInetAddress().getHostAddress(), s.getLocalPort() );
         }
     }
 
@@ -142,6 +264,22 @@ public final class DockerContainer {
         }
         stopWatch.stop();
         return isStarted;
+    }
+
+
+    static public class HostAndPort {
+
+        @Getter
+        final String host;
+        @Getter
+        final int port;
+
+
+        HostAndPort( String host, int port ) {
+            this.host = host;
+            this.port = port;
+        }
+
     }
 
 }

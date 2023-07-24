@@ -143,7 +143,7 @@ public final class DockerSetupHelper {
         DockerInstance dockerInstance = maybeDockerInstance.get();
         try {
             if ( dockerInstance.hasContainers() ) {
-                return "DockerInstance still in use";
+                return "Docker instance still in use";
             }
         } catch ( IOException e ) {
             log.info( "Failed to retrieve list of docker containers " + e );

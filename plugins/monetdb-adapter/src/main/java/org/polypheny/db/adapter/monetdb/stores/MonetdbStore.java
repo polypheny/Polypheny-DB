@@ -23,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -43,6 +42,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -98,7 +98,6 @@ public class MonetdbStore extends AbstractJdbcStore {
                     .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
             try {
                 this.container = instance.newBuilder( "polypheny/monet:latest", getUniqueName() )
-                        .withExposedPort( 50000 )
                         .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
                         .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )
                         .createAndStart();
@@ -366,14 +365,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             return false;
         }
 
-        this.host = container.getIpAddress();
-        Optional<Integer> maybePort = container.getExposedPort( 50000 );
-
-        if ( this.host == null || maybePort.isEmpty() ) {
-            return false;
-        }
-
-        this.port = maybePort.get();
+        HostAndPort hp = container.connectToContainer( 50000 );
+        this.host = hp.getHost();
+        this.port = hp.getPort();
 
         return testConnection();
     }

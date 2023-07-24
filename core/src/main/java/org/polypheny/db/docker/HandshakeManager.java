@@ -192,7 +192,7 @@ public final class HandshakeManager {
 
         // Don't forget to change AutoDocker as well!
         private String getRunCommand() {
-            return "docker run -d -v polypheny-docker-connector-data:/data -v /var/run/docker.sock:/var/run/docker.sock -p 7001:7001 -p 7002:7002 --restart unless-stopped --name polypheny-docker-connector polypheny/polypheny-docker-connector server " + client.getHandshakeParameters();
+            return "docker run -d -v polypheny-docker-connector-data:/data -v /var/run/docker.sock:/var/run/docker.sock -p 7001-7003:7001-7003 --restart unless-stopped --name polypheny-docker-connector polypheny/polypheny-docker-connector server " + client.getHandshakeParameters();
         }
 
 

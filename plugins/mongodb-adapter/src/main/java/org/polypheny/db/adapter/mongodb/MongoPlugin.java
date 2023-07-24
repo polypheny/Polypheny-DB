@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +71,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.prepare.Context;
@@ -159,7 +159,6 @@ public class MongoPlugin extends Plugin {
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/mongo:latest", getUniqueName() )
-                                .withExposedPort( 27017 )
                                 .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
                                 .createAndStart();
                     } catch ( IOException e ) {
@@ -240,14 +239,9 @@ public class MongoPlugin extends Plugin {
             DockerContainer c = DockerContainer.getContainerByUUID( deploymentId )
                     .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
 
-            int exposedPort = c.getExposedPort( 27017 )
-                    .orElseThrow( () -> new RuntimeException( "Could not find exposed port for internal port 27017" ) );
-            if ( client != null && c.getIpAddress().equals( host ) && exposedPort == port ) {
-                return;
-            }
-
-            host = c.getIpAddress();
-            port = exposedPort;
+            HostAndPort hp = container.connectToContainer( 27017 );
+            host = hp.getHost();
+            port = hp.getPort();
 
             MongoClientSettings mongoSettings = MongoClientSettings
                     .builder()
@@ -642,12 +636,10 @@ public class MongoPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            host = container.getIpAddress();
-            Optional<Integer> maybePort = container.getExposedPort( 27017 );
-            if ( host == null || maybePort.isEmpty() ) {
-                return false;
-            }
-            port = maybePort.get();
+
+            HostAndPort hp = container.connectToContainer( 27017 );
+            host = hp.getHost();
+            port = hp.getPort();
 
             try {
                 MongoClientSettings mongoSettings = MongoClientSettings

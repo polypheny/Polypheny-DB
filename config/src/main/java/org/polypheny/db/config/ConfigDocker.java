@@ -30,6 +30,7 @@ public class ConfigDocker extends ConfigObject {
 
     public static final int COMMUNICATION_PORT = 7001;
     public static final int HANDSHAKE_PORT = 7002;
+    public static final int PROXY_PORT = 7003;
 
     @Getter
     @Setter
