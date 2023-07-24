@@ -14,28 +14,69 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:plugins/notebooks/src/main/java/org/polypheny/db/notebooks/model/JupyterKernelSpec.java
-package org.polypheny.db.notebooks.model;
-
-/**
- * Represents a model of an available kernel specification in the jupyter server.
- */
-public class JupyterKernelSpec {
-
-    public final String name, displayName, language;
-
-
-    public JupyterKernelSpec( String name, String displayName, String language ) {
-        this.name = name;
-        this.displayName = displayName;
-        this.language = language;
-========
 package org.polypheny.db.protointerface;
 
-public class PIServiceException extends RuntimeException {
+import java.sql.SQLException;
+import java.util.Optional;
+import org.polypheny.db.protointerface.proto.ErrorDetails;
 
-    public PIServiceException(String message) {
-        super(message);
->>>>>>>> 2944a6bca (add gRPC server and service for proto-interface):plugins/proto-interface/src/main/java/org/polypheny/db/protointerface/ProtoInterfaceServiceException.java
+public class PIServiceException extends SQLException {
+
+    public PIServiceException( String reason, String state, int errorCode ) {
+        super( reason, state, errorCode );
+    }
+
+
+    public PIServiceException( String reason, String state ) {
+        super( reason, state );
+
+    }
+
+
+    public PIServiceException( String reason ) {
+        super( reason );
+    }
+
+
+    public PIServiceException() {
+        super();
+    }
+
+
+    public PIServiceException( Throwable cause ) {
+        super( cause );
+    }
+
+
+    public PIServiceException( String reason, Throwable cause ) {
+        super( reason, cause );
+    }
+
+
+    public PIServiceException( String reason, String state, Throwable cause ) {
+        super( reason, state, cause );
+    }
+
+
+    public PIServiceException( String reason, String state, int errorCode, Throwable cause ) {
+        super( reason, state, errorCode, cause );
+    }
+
+
+    public PIServiceException( ErrorDetails errorDetails ) {
+        super(
+                errorDetails.hasMessage() ? errorDetails.getMessage() : null,
+                errorDetails.hasState() ? errorDetails.getState() : null,
+                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0
+        );
+    }
+
+
+    public ErrorDetails getProtoErrorDetails() {
+        ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
+        errorDetailsBuilder.setErrorCode( getErrorCode() );
+        Optional.ofNullable( getSQLState() ).ifPresent( errorDetailsBuilder::setState );
+        Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
+        return errorDetailsBuilder.build();
     }
 }
