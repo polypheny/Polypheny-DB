@@ -97,6 +97,12 @@ public final class AutoDocker {
     }
 
 
+    private boolean hasLocalImage( DockerClient client, String imageName ) {
+        List<Image> images = client.listImagesCmd().withShowAll( true ).exec();
+        return images.stream().anyMatch( i -> Arrays.asList( i.getRepoDigests() ).contains( imageName ) );
+    }
+
+
     private Optional<String> createAndStartPolyphenyContainer( DockerClient client ) {
         final String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
         final String imageName;
@@ -113,9 +119,13 @@ public final class AutoDocker {
         try {
             callback.awaitCompletion();
         } catch ( InterruptedException e ) {
-            log.error( "PullImage: ", e );
-            updateStatus( "Failed to pull image." );
-            return Optional.empty();
+            if ( !hasLocalImage( client, imageName ) ) {
+                log.error( "PullImage: ", e );
+                updateStatus( "Failed to pull image." );
+                return Optional.empty();
+            }
+            log.info( "Cannot pull image from registry, using cached version" );
+            updateStatus( "Using local image." );
         }
         createPolyphenyConnectorVolumeIfNotExists( client );
 
