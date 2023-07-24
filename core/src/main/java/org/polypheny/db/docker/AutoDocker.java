@@ -28,6 +28,7 @@ import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.RestartPolicy;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -35,12 +36,14 @@ import com.github.dockerjava.core.DockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import java.io.Closeable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
 import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
 
@@ -95,9 +98,18 @@ public final class AutoDocker {
 
 
     private Optional<String> createAndStartPolyphenyContainer( DockerClient client ) {
+        final String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
+        final String imageName;
+
+        if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
+            imageName = registry + "polypheny/polypheny-docker-connector";
+        } else {
+            imageName = registry + "/" + "polypheny/polypheny-docker-connector";
+        }
+
         updateStatus( "Pulling container image polypheny/polypheny-docker-connector" );
         PullImageResultCallback callback = new PullImageResultCallback();
-        client.pullImageCmd( "polypheny/polypheny-docker-connector" ).exec( callback );
+        client.pullImageCmd( imageName ).exec( callback );
         try {
             callback.awaitCompletion();
         } catch ( InterruptedException e ) {

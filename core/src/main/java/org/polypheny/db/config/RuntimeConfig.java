@@ -399,7 +399,14 @@ public enum RuntimeConfig {
             "Configure different docker instances, which can be used to place adapters on.",
             Collections.EMPTY_LIST,
             ConfigType.DOCKER_LIST,
-            "dockerGroup" ),
+            "dockerHostsGroup" ),
+
+    DOCKER_CONTAINER_REGISTRY(
+            "docker/containerRegistry",
+            "The container registry to be used when pull container. Leave empty to use Docker Hub.",
+            "docker.io",
+            ConfigType.STRING,
+            "dockerGeneralGroup" ),
 
     FILE_HANDLE_CACHE_SIZE(
             "runtime/fileHandleCacheSize",
@@ -540,16 +547,23 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
 
-        // Docker Settings
+        // Docker Hosts
         final WebUiPage dockerPage = new WebUiPage(
                 "dockerPage",
-                "Docker",
-                "Settings for the Docker-based data store deployment." );
+                "Docker Hosts",
+                "Management of connected Docker hosts" );
 
-        final WebUiGroup dockerGroup = new WebUiGroup( "dockerGroup", dockerPage.getId() );
-        dockerGroup.withTitle( "Docker" );
+        // Docker Settings
+        final WebUiPage dockerSettings = new WebUiPage(
+                "dockerSettings",
+                "Docker Settings",
+                "Settings for the Docker-based data store deployment." );
         configManager.registerWebUiPage( dockerPage );
-        configManager.registerWebUiGroup( dockerGroup );
+
+        final WebUiGroup dockerGeneralGroup = new WebUiGroup( "dockerGeneralGroup", dockerSettings.getId() );
+        dockerGeneralGroup.withTitle( "General" );
+        configManager.registerWebUiPage( dockerSettings );
+        configManager.registerWebUiGroup( dockerGeneralGroup );
 
         // Plugin Settings
         final WebUiPage pluginPage = new WebUiPage(

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.RuntimeConfig;
 
 
 /**
@@ -295,6 +296,13 @@ public final class DockerInstance {
 
 
         private ContainerBuilder( String imageName, String uniqueName ) {
+            String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
+            if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
+                imageName = registry + imageName;
+            } else {
+                imageName = registry + "/" + imageName;
+            }
+
             this.imageName = imageName;
             this.uniqueName = uniqueName;
         }
