@@ -53,6 +53,7 @@ import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
@@ -406,7 +407,13 @@ public abstract class Adapter {
         this.validateSettings( newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
-        Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
+        Catalog catalog = Catalog.getInstance();
+        catalog.updateAdapterSettings( getAdapterId(), getCurrentSettings() );
+        try {
+            catalog.commit();
+        } catch ( NoTablePrimaryKeyException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,8 @@ public class OperatorsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID != A.NumberData" ),
-                        expectedResult2
+                        expectedResult2,
+                        true
                 );
 
                 // Greater than or Equal (>=)
