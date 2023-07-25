@@ -52,6 +52,7 @@ public final class DockerInstance {
     private String host;
     @Getter
     private String alias;
+    private String registry;
     private final int port;
     private Set<String> uuids = new HashSet<>();
 
@@ -75,10 +76,11 @@ public final class DockerInstance {
     }
 
 
-    DockerInstance( Integer instanceId, String host, String alias, int port ) {
+    DockerInstance( Integer instanceId, String host, String alias, String registry, int port ) {
         log.info( "New Docker instance with ID " + instanceId );
         this.host = host;
         this.alias = alias;
+        this.registry = registry;
         this.port = port;
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
@@ -189,6 +191,7 @@ public final class DockerInstance {
                     "id", instanceId,
                     "host", host,
                     "alias", alias,
+                    "registry", registry,
                     "connected", isConnected()
             );
         }
@@ -253,7 +256,7 @@ public final class DockerInstance {
     }
 
 
-    void updateConfig( String host, String alias ) {
+    void updateConfig( String host, String alias, String registry ) {
         synchronized ( this ) {
             if ( !this.host.equals( host ) ) {
                 client.close();
@@ -266,6 +269,7 @@ public final class DockerInstance {
                 }
             }
             this.alias = alias;
+            this.registry = registry;
         }
     }
 
@@ -296,13 +300,6 @@ public final class DockerInstance {
 
 
         private ContainerBuilder( String imageName, String uniqueName ) {
-            String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
-            if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
-                imageName = registry + imageName;
-            } else {
-                imageName = registry + "/" + imageName;
-            }
-
             this.imageName = imageName;
             this.uniqueName = uniqueName;
         }
@@ -328,7 +325,16 @@ public final class DockerInstance {
 
         public DockerContainer createAndStart() throws IOException {
             synchronized ( DockerInstance.this ) {
-                String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageName, exposedPorts, initCommand, environmentVariables, List.of() );
+                final String registry = DockerInstance.this.registry.equals( "" ) ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : DockerInstance.this.registry;
+
+                final String imageNameWithRegistry;
+                if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
+                    imageNameWithRegistry = registry + imageName;
+                } else {
+                    imageNameWithRegistry = registry + "/" + imageName;
+                }
+
+                String uuid = client.createAndStartContainer( DockerContainer.getPhysicalUniqueName( uniqueName ), imageNameWithRegistry, exposedPorts, initCommand, environmentVariables, List.of() );
                 uuids.add( uuid );
                 return new DockerContainer( uuid, uniqueName );
             }

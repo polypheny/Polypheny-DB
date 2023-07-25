@@ -680,9 +680,10 @@ public class ConfigManagerTest implements ConfigListener {
 
             String url = "test";
             String alias = "name";
-            ConfigDocker c = new ConfigDocker( 0, url, alias, 7001 );
+            ConfigDocker c = new ConfigDocker( 0, url, alias, "docker.io", 7001 );
             Assert.assertEquals( c.getAlias(), alias );
             Assert.assertEquals( c.getHost(), url );
+            Assert.assertEquals( c.getRegistry(), "docker.io" );
             Assert.assertEquals( 7001, c.getPort() );
 
             cm.registerConfig( c );

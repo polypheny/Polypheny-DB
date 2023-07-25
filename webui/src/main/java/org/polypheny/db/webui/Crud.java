@@ -3619,7 +3619,7 @@ public class Crud implements InformationObserver {
     void addDockerInstance( final Context ctx ) {
         try {
             Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ), true );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ), true );
 
             Map<String, Object> json = new HashMap<>( res.getMap() );
             json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
@@ -3656,7 +3656,7 @@ public class Crud implements InformationObserver {
         try {
             Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
 
-            DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ) );
+            DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
 
             ctx.json( res.getMap() );
         } catch ( RuntimeException e ) {

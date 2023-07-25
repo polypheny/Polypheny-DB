@@ -40,30 +40,23 @@ public class ConfigDocker extends ConfigObject {
     private String alias;
     @Getter
     @Setter
+    private String registry;
+    @Getter
+    @Setter
     private int port;
 
 
     public ConfigDocker( String host, String alias ) {
-        this( idBuilder.getAndIncrement(), host, alias, COMMUNICATION_PORT );
+        this( idBuilder.getAndIncrement(), host, alias, "", COMMUNICATION_PORT );
     }
 
 
-    public ConfigDocker( String host ) {
-        this( idBuilder.getAndIncrement(), host, host, COMMUNICATION_PORT );
+    public ConfigDocker( String host, String alias, String registry, int port ) {
+        this( idBuilder.getAndIncrement(), host, alias, registry, port );
     }
 
 
-    public ConfigDocker( String host, int port ) {
-        this( idBuilder.getAndIncrement(), host, host, port );
-    }
-
-
-    public ConfigDocker( String host, String alias, int port ) {
-        this( idBuilder.getAndIncrement(), host, alias, port );
-    }
-
-
-    public ConfigDocker( int id, String host, String alias, int port ) {
+    public ConfigDocker( int id, String host, String alias, String registry, int port ) {
         super( "dockerConfig" + id );
         this.id = id;
         if ( idBuilder.get() <= id ) {
@@ -71,6 +64,7 @@ public class ConfigDocker extends ConfigObject {
         }
         this.host = host;
         this.alias = alias;
+        this.registry = registry;
         this.port = port;
         this.webUiFormType = WebUiFormType.DOCKER_INSTANCE;
     }
@@ -86,6 +80,7 @@ public class ConfigDocker extends ConfigObject {
                 newId.intValue(),
                 (String) value.get( "host" ),
                 (String) value.get( "alias" ),
+                (String) value.getOrDefault( "registry", "" ),
                 ((Double) value.getOrDefault( "port", (double) COMMUNICATION_PORT )).intValue()
         );
     }
@@ -96,6 +91,7 @@ public class ConfigDocker extends ConfigObject {
         m.put( "id", (double) id );
         m.put( "host", host );
         m.put( "alias", alias );
+        m.put( "registry", registry );
         m.put( "port", (double) port );
         return m;
     }
@@ -107,6 +103,7 @@ public class ConfigDocker extends ConfigObject {
         settings.put( "id", String.valueOf( id ) );
         settings.put( "host", host );
         settings.put( "alias", alias );
+        settings.put( "registry", registry );
         settings.put( "port", String.valueOf( port ) );
 
         return settings;
@@ -168,6 +165,7 @@ public class ConfigDocker extends ConfigObject {
         confMap.put( "id", conf.getDouble( "id" ) );
         confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
+        confMap.put( "registry", conf.getString( "registry" ) );
         if ( conf.hasPath( "port" ) ) {
             confMap.put( "port", conf.getDouble( "port" ) );
         }
@@ -193,6 +191,7 @@ public class ConfigDocker extends ConfigObject {
         ConfigDocker that = (ConfigDocker) o;
         return host.equals( that.host ) &&
                 alias.equals( that.alias ) &&
+                registry.equals( that.registry ) &&
                 port == that.port;
     }
 

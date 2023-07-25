@@ -43,7 +43,7 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerSetupResult newDockerInstance( String hostname, String alias, boolean startHandshake ) {
+    public static DockerSetupResult newDockerInstance( String hostname, String alias, String registry, boolean startHandshake ) {
         if ( hostname.equals( "" ) ) {
             return new DockerSetupResult( "hostname must not be empty" );
         }
@@ -62,7 +62,7 @@ public final class DockerSetupHelper {
 
         try {
             tryConnectDirectly( hostname );
-            DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null );
+            DockerManager.getInstance().addDockerInstance( hostname, alias, registry, ConfigDocker.COMMUNICATION_PORT, null );
             return new DockerSetupResult( true );
         } catch ( IOException e ) {
             return new DockerSetupResult( HandshakeManager.getInstance()
@@ -70,7 +70,7 @@ public final class DockerSetupHelper {
                             hostname,
                             ConfigDocker.COMMUNICATION_PORT,
                             ConfigDocker.HANDSHAKE_PORT,
-                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, ConfigDocker.COMMUNICATION_PORT, null ),
+                            () -> DockerManager.getInstance().addDockerInstance( hostname, alias, registry, ConfigDocker.COMMUNICATION_PORT, null ),
                             startHandshake
                     ) );
         }
@@ -78,7 +78,7 @@ public final class DockerSetupHelper {
     }
 
 
-    public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias ) {
+    public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias, String registry ) {
         if ( hostname.equals( "" ) ) {
             return new DockerUpdateResult( "hostname must not be empty" );
         }
@@ -96,7 +96,7 @@ public final class DockerSetupHelper {
         DockerInstance dockerInstance = maybeDockerInstance.get();
 
         boolean hostChanged = !dockerInstance.getHost().equals( hostname );
-        DockerManager.getInstance().updateDockerInstance( id, hostname, alias );
+        DockerManager.getInstance().updateDockerInstance( id, hostname, alias, registry );
 
         if ( hostChanged && !dockerInstance.isConnected() ) {
             HandshakeManager.getInstance().newHandshake(
@@ -194,7 +194,7 @@ public final class DockerSetupHelper {
 
         private String error = "";
         private Map<String, String> handshake = Map.of();
-        private Map<String, String> instance = Map.of();
+        private Map<String, Object> instance = Map.of();
 
 
         private DockerUpdateResult( String err ) {
@@ -205,11 +205,7 @@ public final class DockerSetupHelper {
         private DockerUpdateResult( int dockerId, boolean handshake ) {
             DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
 
-            this.instance = Map.of(
-                    "host", dockerInstance.getHost(),
-                    "alias", dockerInstance.getAlias(),
-                    "connected", dockerInstance.isConnected() ? "true" : "false"
-            );
+            this.instance = dockerInstance.getMap();
 
             if ( handshake ) {
                 this.handshake = HandshakeManager.getInstance().getHandshake( dockerInstance.getHost() );

@@ -246,7 +246,7 @@ public final class AutoDocker {
                 return false;
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", false );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", "", false );
 
             if ( res.isSuccess() ) {
                 return true;
