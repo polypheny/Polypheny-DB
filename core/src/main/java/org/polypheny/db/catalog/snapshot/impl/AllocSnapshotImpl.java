@@ -464,6 +464,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
+    @Deprecated
     public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
         return null;
     }

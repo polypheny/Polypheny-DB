@@ -58,11 +58,11 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     /**
      * Update the type of a placement.
      *
-     * @param adapterId The id of the adapter
+     * @param placementId The id of the adapter
      * @param columnId The id of the column
      * @param placementType The new type of placement
      */
-    void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType );
+    void updateColumnPlacementType( long placementId, long columnId, PlacementType placementType );
 
 
     /**

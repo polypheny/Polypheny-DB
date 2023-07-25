@@ -469,7 +469,7 @@ public class DataMigratorImpl implements DataMigrator {
         LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).logicalTableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         for ( long cid : primaryKey.columnIds ) {
-            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid ).orElseThrow();
+            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),

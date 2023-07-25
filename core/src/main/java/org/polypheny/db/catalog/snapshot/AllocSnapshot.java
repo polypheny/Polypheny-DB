@@ -185,6 +185,7 @@ public interface AllocSnapshot {
     Optional<PartitionProperty> getPartitionProperty( long id );
 
     @NotNull
+    @Deprecated
     Optional<AllocationEntity> getEntity( long adapterId, long entityId );
 
     @NotNull

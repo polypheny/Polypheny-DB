@@ -142,8 +142,9 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType ) {
-
+    public void updateColumnPlacementType( long placementId, long columnId, PlacementType placementType ) {
+        AllocationColumn column = columns.get( Pair.of( placementId, columnId ) ).toBuilder().placementType( placementType ).build();
+        columns.put( Pair.of( placementId, columnId ), column );
     }
 
 

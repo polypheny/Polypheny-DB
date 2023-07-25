@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -277,12 +276,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropAdapter( String name, Statement statement ) {
         long defaultNamespaceId = 1;
-        if ( name.startsWith( "'" ) ) {
-            name = name.substring( 1 );
-        }
-        if ( name.endsWith( "'" ) ) {
-            name = StringUtils.chop( name );
-        }
+        name = name.replace( "'", "" );
 
         CatalogAdapter adapter = catalog.getSnapshot().getAdapter( name );
         if ( adapter.type == AdapterType.SOURCE ) {
@@ -1518,10 +1512,12 @@ public class DdlManagerImpl extends DdlManager {
                 .getEntity( store.getAdapterId(), table.id )
                 .orElseThrow( () -> new GenericRuntimeException( "The requested placement does not exist" ) );
 
+        AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.adapterId, table.id ).orElseThrow();
+
+        Optional<AllocationColumn> optionalColumn = catalog.getSnapshot().alloc().getColumn( placement.id, logicalColumn.id );
         // Make sure that this store does not contain a placement of this column
-        if ( catalog.getSnapshot().alloc().getColumn( store.getAdapterId(), logicalColumn.id ).isPresent() ) {
-            AllocationColumn column = catalog.getSnapshot().alloc().getColumn( store.getAdapterId(), logicalColumn.id ).orElseThrow();
-            if ( column.placementType != PlacementType.AUTOMATIC ) {
+        if ( optionalColumn.isPresent() ) {
+            if ( optionalColumn.get().placementType != PlacementType.AUTOMATIC ) {
                 throw new GenericRuntimeException( "There already exist a placement" );
             }
 
@@ -1532,22 +1528,28 @@ public class DdlManagerImpl extends DdlManager {
                     PlacementType.MANUAL );
 
         } else {
-            AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( store.getAdapterId(), table.id ).orElseThrow();
+            //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( placement.id, table.id ).orElseThrow();
             // Create column placement
             catalog.getAllocRel( table.namespaceId ).addColumn(
-                    allocation.partitionId,
+                    placement.id,
                     table.id,
                     logicalColumn.id,
                     store.adapterId,
                     PlacementType.MANUAL,
-                    0 );
-            // Add column on store
-            store.addColumn( statement.getPrepareContext(), allocation.id, logicalColumn );
-            // Copy the data to the newly added column placements
-            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( store.getAdapterId() ), table,
-                    ImmutableList.of( logicalColumn ), null/*catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( storeInstance.getAdapterId(), table.id )*/ );
+                    logicalColumn.position );
+
+            for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ) ) {
+                // Add column on store
+                store.addColumn( statement.getPrepareContext(), allocation.id, logicalColumn );
+                // Copy the data to the newly added column placements
+                DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+                dataMigrator.copyData( statement.getTransaction(), catalog.getSnapshot().getAdapter( store.getAdapterId() ), table,
+                        ImmutableList.of( logicalColumn ), placement );
+            }
+
         }
+
+        catalog.updateSnapshot();
 
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
