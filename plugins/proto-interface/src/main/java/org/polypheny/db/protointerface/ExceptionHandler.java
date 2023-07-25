@@ -16,50 +16,73 @@
 
 package org.polypheny.db.protointerface;
 
-import io.grpc.*;
+import io.grpc.ForwardingServerCallListener;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+import io.grpc.Status;
+import io.grpc.protobuf.ProtoUtils;
+import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.polypheny.db.protointerface.proto.ErrorDetails;
 
 @Slf4j
 public class ExceptionHandler implements ServerInterceptor {
+
+    private static final Metadata.Key<ErrorDetails> ERROR_DETAILS_KEY = ProtoUtils.keyForProto( ErrorDetails.getDefaultInstance() );
+
+
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata metadata,
-                                                                 ServerCallHandler<ReqT, RespT> nextHandler) {
-        ServerCall.Listener<ReqT> listener = nextHandler.startCall(call, metadata);
-        return new ExceptionHandlingServerCallListener<>(listener, call, metadata);
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+            ServerCall<ReqT, RespT> call, Metadata metadata,
+            ServerCallHandler<ReqT, RespT> nextHandler ) {
+        ServerCall.Listener<ReqT> listener = nextHandler.startCall( call, metadata );
+        return new ExceptionHandlingServerCallListener<>( listener, call, metadata );
     }
 
+
     private class ExceptionHandlingServerCallListener<ReqT, RespT> extends ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+
         private final ServerCall<ReqT, RespT> serverCall;
         private final Metadata metadata;
 
-        ExceptionHandlingServerCallListener(ServerCall.Listener<ReqT> listener, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
-            super(listener);
+
+        ExceptionHandlingServerCallListener( ServerCall.Listener<ReqT> listener, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
+            super( listener );
             this.serverCall = serverCall;
             this.metadata = metadata;
         }
+
 
         @Override
         public void onHalfClose() {
             try {
                 super.onHalfClose();
-            }catch (AvaticaRuntimeException e) {
-                handleAvaticaRuntimeException(e, serverCall, metadata);
-                throw e;
-            } catch (Exception e) {
-                handleException(e, serverCall, metadata);
+            } catch ( PIServiceException e ) {
+                handleProtoInterfaceServiceException( e, serverCall, metadata );
                 throw e;
             }
         }
 
-        private void handleException(Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+
+        private void handleGenericExceptions( Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
             //serverCall.close(Status.fromThrowable(exception), metadata);
-            serverCall.close(Status.INTERNAL.withDescription(exception.getMessage()), metadata);
+            serverCall.close( Status.INTERNAL.withDescription( exception.getMessage() ), metadata );
         }
 
-        private void handleAvaticaRuntimeException(AvaticaRuntimeException avaticaRuntimeException, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
-            //serverCall.close(Status.fromThrowable(avaticaRuntimeException), metadata);
-            serverCall.close(Status.INTERNAL.withDescription(avaticaRuntimeException.getErrorMessage()), metadata);
+
+        private void handleProtoInterfaceServiceException( PIServiceException exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
+
         }
+
+
+        private void handleAvaticaRuntimeException( AvaticaRuntimeException avaticaRuntimeException, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
+            //serverCall.close(Status.fromThrowable(avaticaRuntimeException), metadata);
+            serverCall.close( Status.INTERNAL.withDescription( avaticaRuntimeException.getErrorMessage() ), metadata );
+        }
+
     }
+
 }
