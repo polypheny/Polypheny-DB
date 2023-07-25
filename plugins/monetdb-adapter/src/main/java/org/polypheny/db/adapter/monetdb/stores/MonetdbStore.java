@@ -80,7 +80,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
