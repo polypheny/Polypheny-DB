@@ -607,7 +607,7 @@ public class FindTest extends MqlTestTemplate {
         Result result = find( "{\"test\": {\"$regex\": 'test'}}", "{}" );
 
         assertTrue(
-                MongoConnection.checkResultSet(
+                MongoConnection.checkUnorderedResultSet(
                         result,
                         ImmutableList.of(
                                 new String[]{ "{\"test\":\"test2\", \"key\": 3}" },

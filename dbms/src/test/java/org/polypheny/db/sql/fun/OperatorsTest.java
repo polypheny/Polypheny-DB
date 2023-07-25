@@ -117,7 +117,8 @@ public class OperatorsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, TextData FROM TestTable AS A Where A.ID != A.NumberData" ),
-                        expectedResult2
+                        expectedResult2,
+                        true
                 );
 
                 // Greater than or Equal (>=)
