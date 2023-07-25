@@ -45,11 +45,11 @@ public final class DockerSetupHelper {
 
     public static DockerSetupResult newDockerInstance( String hostname, String alias, String registry, boolean startHandshake ) {
         if ( hostname.equals( "" ) ) {
-            return new DockerSetupResult( "hostname must not be empty" );
+            return new DockerSetupResult( "Host must not be empty" );
         }
 
         if ( alias.equals( "" ) ) {
-            return new DockerSetupResult( "alias must not be empty" );
+            return new DockerSetupResult( "Alias must not be empty" );
         }
 
         if ( DockerManager.getInstance().hasHost( hostname ) ) {
@@ -81,11 +81,11 @@ public final class DockerSetupHelper {
 
     public static DockerUpdateResult updateDockerInstance( int id, String hostname, String alias, String registry ) {
         if ( hostname.equals( "" ) ) {
-            return new DockerUpdateResult( "hostname must not be empty" );
+            return new DockerUpdateResult( "Host must not be empty" );
         }
 
         if ( alias.equals( "" ) ) {
-            return new DockerUpdateResult( "alias must not be empty" );
+            return new DockerUpdateResult( "Alias must not be empty" );
         }
 
         Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( id );

@@ -402,8 +402,8 @@ public enum RuntimeConfig {
             "dockerHostsGroup" ),
 
     DOCKER_CONTAINER_REGISTRY(
-            "docker/containerRegistry",
-            "The container registry to be used when pull container. Leave empty to use Docker Hub.",
+            "docker/defaultContainerRegistry",
+            "The default container registry to be used when pull container. Leave empty to use Docker Hub.",
             "docker.io",
             ConfigType.STRING,
             "dockerGeneralGroup" ),
