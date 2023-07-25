@@ -68,6 +68,7 @@ public final class DockerSetupHelper {
             return new DockerSetupResult( HandshakeManager.getInstance()
                     .newHandshake(
                             hostname,
+                            registry,
                             ConfigDocker.COMMUNICATION_PORT,
                             ConfigDocker.HANDSHAKE_PORT,
                             () -> DockerManager.getInstance().addDockerInstance( hostname, alias, registry, ConfigDocker.COMMUNICATION_PORT, null ),
@@ -101,6 +102,7 @@ public final class DockerSetupHelper {
         if ( hostChanged && !dockerInstance.isConnected() ) {
             HandshakeManager.getInstance().newHandshake(
                     hostname,
+                    registry,
                     ConfigDocker.COMMUNICATION_PORT,
                     ConfigDocker.HANDSHAKE_PORT,
                     () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),
@@ -123,6 +125,7 @@ public final class DockerSetupHelper {
 
         Map<String, String> m = HandshakeManager.getInstance().newHandshake(
                 dockerInstance.getHost(),
+                dockerInstance.getRegistry(),
                 ConfigDocker.COMMUNICATION_PORT,
                 ConfigDocker.HANDSHAKE_PORT,
                 () -> DockerManager.getInstance().getInstanceById( id ).ifPresent( DockerInstance::reconnect ),

@@ -52,6 +52,7 @@ public final class DockerInstance {
     private String host;
     @Getter
     private String alias;
+    @Getter
     private String registry;
     private final int port;
     private Set<String> uuids = new HashSet<>();
