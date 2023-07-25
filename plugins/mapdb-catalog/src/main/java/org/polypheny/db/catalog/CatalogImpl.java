@@ -4020,9 +4020,7 @@ public class CatalogImpl extends Catalog {
      */
     public void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings ) {
         CatalogQueryInterface old = getQueryInterface( queryInterfaceId );
-        Map<String, String> temp = new HashMap<>();
-        newSettings.forEach( temp::put );
-        CatalogQueryInterface queryInterface = new CatalogQueryInterface( old.id, old.name, old.clazz, temp );
+        CatalogQueryInterface queryInterface = new CatalogQueryInterface( old.id, old.name, old.clazz, newSettings );
         synchronized ( this ) {
             queryInterfaces.put( queryInterface.id, queryInterface );
             queryInterfaceNames.put( queryInterface.name, queryInterface );
