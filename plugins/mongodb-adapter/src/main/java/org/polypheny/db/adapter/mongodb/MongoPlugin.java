@@ -51,7 +51,6 @@ import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
@@ -104,7 +103,6 @@ public class MongoPlugin extends Plugin {
     @Override
     public void start() {
         Map<String, String> settings = ImmutableMap.copyOf( Map.of(
-                "persistent", "true",
                 "port", "27017",
                 "type", "mongo",
                 "instanceId", "0",
@@ -126,10 +124,9 @@ public class MongoPlugin extends Plugin {
     @Extension
     @AdapterProperties(
             name = "MongoDB",
-            description = "MongoDB is a document-based database system.",
+            description = "MongoDB is a document-oriented database system.",
             supportedNamespaceTypes = { NamespaceType.DOCUMENT, NamespaceType.RELATIONAL },
             usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
-    @AdapterSettingBoolean(name = "persistent", defaultValue = false)
     @AdapterSettingInteger(name = "port", defaultValue = 27017)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
@@ -156,7 +153,7 @@ public class MongoPlugin extends Plugin {
 
 
         public MongoStore( int adapterId, String uniqueName, Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, Boolean.parseBoolean( settings.get( "persistent" ) ) );
+            super( adapterId, uniqueName, settings, true );
 
             this.port = Integer.parseInt( settings.get( "port" ) );
 
