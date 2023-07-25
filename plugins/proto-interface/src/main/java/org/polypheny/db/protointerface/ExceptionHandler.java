@@ -23,7 +23,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import io.grpc.protobuf.ProtoUtils;
-import java.sql.SQLException;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.polypheny.db.protointerface.proto.ErrorDetails;
@@ -63,23 +63,37 @@ public class ExceptionHandler implements ServerInterceptor {
             } catch ( PIServiceException e ) {
                 handleProtoInterfaceServiceException( e, serverCall, metadata );
                 throw e;
+            } catch ( AvaticaRuntimeException e ) {
+                handleAvaticaRuntimeException( e, serverCall, metadata );
+            } catch ( Exception e ) {
+                handleGenericExceptions( e, serverCall, metadata );
             }
         }
 
 
         private void handleGenericExceptions( Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
             //serverCall.close(Status.fromThrowable(exception), metadata);
+            ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
+            Optional.ofNullable( exception.getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
+            metadata.put( ERROR_DETAILS_KEY, errorDetailsBuilder.build() );
             serverCall.close( Status.INTERNAL.withDescription( exception.getMessage() ), metadata );
         }
 
 
         private void handleProtoInterfaceServiceException( PIServiceException exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
-
+            ErrorDetails errorDetails = exception.getProtoErrorDetails();
+            metadata.put( ERROR_DETAILS_KEY, errorDetails );
+            serverCall.close( Status.INTERNAL.withDescription( exception.getMessage() ), metadata );
         }
 
 
         private void handleAvaticaRuntimeException( AvaticaRuntimeException avaticaRuntimeException, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
             //serverCall.close(Status.fromThrowable(avaticaRuntimeException), metadata);
+            ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
+            errorDetailsBuilder.setErrorCode( avaticaRuntimeException.getErrorCode() );
+            errorDetailsBuilder.setState( avaticaRuntimeException.getSqlState() );
+            Optional.ofNullable( avaticaRuntimeException.getErrorMessage() ).ifPresent( errorDetailsBuilder::setMessage );
+            metadata.put( ERROR_DETAILS_KEY, errorDetailsBuilder.build() );
             serverCall.close( Status.INTERNAL.withDescription( avaticaRuntimeException.getErrorMessage() ), metadata );
         }
 
