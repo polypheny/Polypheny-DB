@@ -18,18 +18,36 @@ package org.polypheny.db.protointerface;
 
 import java.sql.SQLException;
 import java.util.Optional;
+import lombok.Getter;
 import org.polypheny.db.protointerface.proto.ErrorDetails;
 
-public class PIServiceException extends SQLException {
+public class PIServiceException extends RuntimeException {
+
+    @Getter
+    private String state;
+    @Getter
+    private int errorCode;
+
 
     public PIServiceException( String reason, String state, int errorCode ) {
-        super( reason, state, errorCode );
+        super( reason );
+        this.state = state;
+        this.errorCode = errorCode;
     }
 
 
     public PIServiceException( String reason, String state ) {
-        super( reason, state );
+        super( reason );
+        this.state = state;
+    }
 
+
+    public PIServiceException( SQLException sqlException ) {
+        super( sqlException.getMessage(),
+                sqlException.getCause()
+        );
+        this.state = sqlException.getSQLState();
+        this.errorCode = sqlException.getErrorCode();
     }
 
 
@@ -54,29 +72,31 @@ public class PIServiceException extends SQLException {
 
 
     public PIServiceException( String reason, String state, Throwable cause ) {
-        super( reason, state, cause );
+        super( reason, cause );
+        this.state = state;
     }
 
 
     public PIServiceException( String reason, String state, int errorCode, Throwable cause ) {
-        super( reason, state, errorCode, cause );
+        super( reason, cause );
+        this.state = state;
+        this.errorCode = errorCode;
     }
 
 
     public PIServiceException( ErrorDetails errorDetails ) {
-        super(
-                errorDetails.hasMessage() ? errorDetails.getMessage() : null,
-                errorDetails.hasState() ? errorDetails.getState() : null,
-                errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0
-        );
+        super( errorDetails.hasMessage() ? errorDetails.getMessage() : null );
+        this.state = errorDetails.hasState() ? errorDetails.getState() : null;
+        this.errorCode = errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0;
     }
 
 
     public ErrorDetails getProtoErrorDetails() {
         ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
         errorDetailsBuilder.setErrorCode( getErrorCode() );
-        Optional.ofNullable( getSQLState() ).ifPresent( errorDetailsBuilder::setState );
+        Optional.ofNullable( getState() ).ifPresent( errorDetailsBuilder::setState );
         Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
         return errorDetailsBuilder.build();
     }
+
 }
