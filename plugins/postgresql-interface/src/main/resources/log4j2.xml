@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %level %C{1} - %msg%n"/>
+            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="io" level="ERROR">
+            <AppenderRef ref="Console"/>
+        </logger>
+        <logger name="org" level="INFO">
+            <AppenderRef ref="Console"/>
+        </logger>
+        <logger name="ch" level="DEBUG">
+            <AppenderRef ref="Console"/>
+        </logger>
+        <Root level="info"/>
+    </Loggers>
+</Configuration>

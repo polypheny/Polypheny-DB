@@ -1,0 +1,52 @@
+group "org.polypheny"
+
+
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+dependencies {
+    compileOnly project(":core")
+    compileOnly project(":monitoring")
+
+    ////// NETTY
+    // https://mvnrepository.com/artifact/io.netty/netty-all
+    implementation group: 'io.netty', name: 'netty-all', version: '4.1.24.Final'
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "tests")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+}
+
+
+
+
+/**
+ * Tests
+ */
+test {
+    maxHeapSize = "2g" // Increase heap size (default is 512MB)
+}
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('Apache-2.0')
+}
