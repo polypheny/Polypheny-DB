@@ -57,7 +57,7 @@ public class StatementManager {
     }
 
 
-    public PIUnparameterizedStatement createUnparameterizedStatement(UnparameterizedStatement statement) {
+    public PIUnparameterizedStatement createUnparameterizedStatement(UnparameterizedStatement statement) throws PIServiceException {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
@@ -110,7 +110,7 @@ public class StatementManager {
     }
 
 
-    public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement(PreparedStatement statement) {
+    public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement(PreparedStatement statement) throws PIServiceException {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
@@ -133,7 +133,7 @@ public class StatementManager {
     }
 
 
-    public PIPreparedNamedStatement createNamedPreparedInterfaceStatement(PreparedStatement statement) {
+    public PIPreparedNamedStatement createNamedPreparedInterfaceStatement(PreparedStatement statement) throws PIServiceException {
         synchronized(protoInterfaceClient) {
             String languageName = statement.getStatementLanguageName();
             if (!isSupportedLanguage(languageName)) {
@@ -203,7 +203,7 @@ public class StatementManager {
     }
 
 
-    public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) {
+    public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) throws PIServiceException {
         PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
             throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
@@ -215,7 +215,7 @@ public class StatementManager {
     }
 
 
-    public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) {
+    public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) throws PIServiceException {
         PIStatement statement = openStatments.get(statementId);
         if (statement == null) {
             throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
