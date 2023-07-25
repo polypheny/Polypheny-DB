@@ -81,13 +81,13 @@ public class PIClient {
         commitCurrentTransactionUnsynchronized();
     }
 
-    public void commitCurrentTransaction() {
+    public void commitCurrentTransaction() throws PIServiceException {
         synchronized (this) {
             commitCurrentTransactionUnsynchronized();
         }
     }
 
-    private void commitCurrentTransactionUnsynchronized() {
+    private void commitCurrentTransactionUnsynchronized() throws PIServiceException {
         if (hasNoTransaction()) {
             return;
         }
@@ -101,7 +101,7 @@ public class PIClient {
     }
 
 
-    public void rollbackCurrentTransaction() {
+    public void rollbackCurrentTransaction() throws PIServiceException {
         synchronized (this) {
             if (hasNoTransaction()) {
                 return;
