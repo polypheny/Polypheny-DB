@@ -43,9 +43,7 @@ public class PIServiceException extends RuntimeException {
 
 
     public PIServiceException( SQLException sqlException ) {
-        super( sqlException.getMessage(),
-                sqlException.getCause()
-        );
+        super( sqlException.getMessage(), sqlException );
         this.state = sqlException.getSQLState();
         this.errorCode = sqlException.getErrorCode();
     }
