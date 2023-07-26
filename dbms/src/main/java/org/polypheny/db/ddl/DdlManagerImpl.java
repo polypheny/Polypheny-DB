@@ -231,7 +231,9 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
-        uniqueName = uniqueName.toLowerCase();
+        if ( !uniqueName.matches( "^[a-z_][a-z0-9_]*$" ) ) {
+            throw new RuntimeException( "Invalid unique name: unique name must only contain lower case letters, digits and underscores" );
+        }
         Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
