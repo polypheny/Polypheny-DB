@@ -1,28 +1,28 @@
 package org.polypheny.db.docker;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
-import java.util.Optional;
 import java.security.SecureRandom;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.Certificate;
 import org.bouncycastle.tls.CertificateEntry;
 import org.bouncycastle.tls.CertificateRequest;
+import org.bouncycastle.tls.DefaultTlsClient;
 import org.bouncycastle.tls.ProtocolVersion;
 import org.bouncycastle.tls.TlsAuthentication;
+import org.bouncycastle.tls.TlsClientProtocol;
 import org.bouncycastle.tls.TlsContext;
+import org.bouncycastle.tls.TlsCredentials;
+import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsServerCertificate;
 import org.bouncycastle.tls.crypto.TlsCertificate;
 import org.bouncycastle.tls.crypto.TlsCryptoParameters;
 import org.bouncycastle.tls.crypto.impl.bc.BcDefaultTlsCredentialedSigner;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCertificate;
 import org.bouncycastle.tls.crypto.impl.bc.BcTlsCrypto;
-import org.bouncycastle.tls.DefaultTlsClient;
-import org.bouncycastle.tls.TlsClientProtocol;
-import org.bouncycastle.tls.TlsCredentials;
-import org.bouncycastle.tls.AlertDescription;
-import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.util.Arrays;
 
 @Slf4j

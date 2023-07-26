@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.docker;
 import lombok.Getter;
 
 @Getter
-final class DockerStatus {
+public final class DockerStatus {
 
     private final boolean successful;
     private final String errorMessage;

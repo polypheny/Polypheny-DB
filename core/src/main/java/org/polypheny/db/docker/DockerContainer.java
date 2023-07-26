@@ -141,7 +141,7 @@ public final class DockerContainer {
             Map<Integer, Integer> portMap = getDockerInstance().getPorts( this );
             return Optional.ofNullable( portMap.getOrDefault( port, null ) );
         } catch ( IOException e ) {
-            log.error( "Failed to retrieve portlist for container " + containerId );
+            log.error( "Failed to retrieve list of ports for container " + containerId );
             return Optional.empty();
         }
     }
@@ -184,8 +184,8 @@ public final class DockerContainer {
 
             out.write( (containerId + ":" + port + "\n").getBytes( StandardCharsets.UTF_8 ) );
 
-            Runnable handleOutput = pipe( local.getInputStream(), out, String.format( "polypheny => {}", uniqueName ) );
-            Runnable handleInput = pipe( in, local.getOutputStream(), String.format( "polypheny <= {}", uniqueName ) );
+            Runnable handleOutput = pipe( local.getInputStream(), out, String.format( "polypheny => %s", uniqueName ) );
+            Runnable handleInput = pipe( in, local.getOutputStream(), String.format( "polypheny <= %s", uniqueName ) );
             new Thread( handleOutput ).start();
             new Thread( handleInput ).start();
         } catch ( IOException e ) {
