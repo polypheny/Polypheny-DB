@@ -43,6 +43,9 @@ public final class DockerSetupHelper {
 
 
     public static DockerSetupResult newDockerInstance( String hostname, String alias, String registry, int communicationPort, int handshakePort, int proxyPort, boolean startHandshake ) {
+        if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
+            return new DockerSetupResult( "Communication, handshake and proxy port must be different" );
+        }
         if ( hostname.isEmpty() ) {
             return new DockerSetupResult( "Host must not be empty" );
         }

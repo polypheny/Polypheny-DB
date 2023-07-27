@@ -83,6 +83,9 @@ public final class DockerInstance {
 
 
     DockerInstance( Integer instanceId, String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
+        if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
+            throw new RuntimeException( "Communication, handshake and proxy port must be different" );
+        }
         log.info( "New Docker instance with ID " + instanceId );
         this.host = host;
         this.alias = alias;
@@ -269,7 +272,7 @@ public final class DockerInstance {
 
     boolean hasContainers() throws IOException {
         synchronized ( this ) {
-            return client.listContainers().size() > 0;
+            return !client.listContainers().isEmpty();
         }
     }
 
@@ -343,10 +346,10 @@ public final class DockerInstance {
 
         public DockerContainer createAndStart() throws IOException {
             synchronized ( DockerInstance.this ) {
-                final String registry = DockerInstance.this.registry.equals( "" ) ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : DockerInstance.this.registry;
+                final String registry = DockerInstance.this.registry.isEmpty() ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : DockerInstance.this.registry;
 
                 final String imageNameWithRegistry;
-                if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
+                if ( registry.isEmpty() || registry.endsWith( "/" ) ) {
                     imageNameWithRegistry = registry + imageName;
                 } else {
                     imageNameWithRegistry = registry + "/" + imageName;
