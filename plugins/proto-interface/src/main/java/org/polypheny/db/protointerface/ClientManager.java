@@ -74,11 +74,13 @@ public class ClientManager {
         if (isConnected(connectionRequest.getClientUuid())) {
             throw new PIServiceException("A user with uid " + connectionRequest.getClientUuid() + "is already connected.");
         }
-        if (!connectionRequest.hasUsername() || !connectionRequest.hasPassword()) {
-            throw new PIServiceException("No username or password given.");
+        String username;
+        if (!connectionRequest.hasUsername()) {
+            username = Catalog.USER_NAME;
         }
         PIClientProperties properties = getPropertiesOrDefault(connectionRequest);
-        final CatalogUser user = authenticateUser(connectionRequest.getUsername(), connectionRequest.getPassword());
+        String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
+        final CatalogUser user = authenticateUser(connectionRequest.getUsername(), password);
         Transaction transaction = transactionManager.startTransaction(user, null, false, "proto-interface");
         LogicalNamespace namespace;
         if (properties.haveNamespaceName()) {
