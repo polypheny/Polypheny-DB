@@ -84,7 +84,7 @@ public class MqttStreamPlugin extends Plugin {
         Map<String, String> mqttDefaultSettings = new HashMap<>();
         mqttDefaultSettings.put( "broker", "localhost" );
         mqttDefaultSettings.put( "brokerPort", "1883" );
-        mqttDefaultSettings.put( "namespace", "public" );
+        mqttDefaultSettings.put( "namespace", "namespace1" );
         mqttDefaultSettings.put( "namespace type", "DOCUMENT" );
         mqttDefaultSettings.put( "collection per topic", "TRUE" );
         mqttDefaultSettings.put( "collection name", "default" );
@@ -111,11 +111,11 @@ public class MqttStreamPlugin extends Plugin {
                 new QueryInterfaceSettingString( "broker", false, true, false, "localhost" ),
                 new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 1883 ),
                 //TODO: namespace modifieable machen
-                new QueryInterfaceSettingString( "namespace", false, true, true, "public" ),
+                new QueryInterfaceSettingString( "namespace", false, true, true, "namespace1" ),
                 // "RELATIONAL", "GRAPH"  type are not supported.
                 new QueryInterfaceSettingList( "namespace type", false, true, true, new ArrayList<>( List.of( "DOCUMENT") ) ),
                 new QueryInterfaceSettingList( "collection per topic", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
-                new QueryInterfaceSettingString( "collection name", true, true, true, null ),
+                new QueryInterfaceSettingString( "collection name", true, false, true, null ),
                 new QueryInterfaceSettingString( "topics", false, true, true, null )
         );
 
@@ -155,11 +155,11 @@ public class MqttStreamPlugin extends Plugin {
 
             this.collectionPerTopic = Boolean.parseBoolean( settings.get( "collection per topic" ) );
             this.collectionName = settings.get( "collection name" ).trim();
-            if ( !this.collectionPerTopic && !collectionExists( this.collectionName ) ) {
-                if ( !this.collectionName.equals( "null" ) ) {
+            if ( !this.collectionPerTopic ) {
+                if ( (this.collectionName.equals( "null" ) | this.collectionName.equals( "" ) ) ) {
+                    throw new NullPointerException( "Collection per topic is set to FALSE but no collection name was given! Please enter a collection name." );
+                } else if ( !collectionExists( this.collectionName ) ) {
                     createNewCollection( this.collectionName );
-                } else {
-                    log.error( "Collection per topic is set as FALSE but no collection name was given! Please enter a collection name." );
                 }
             }
         }
@@ -185,7 +185,7 @@ public class MqttStreamPlugin extends Plugin {
                     .send()
                     .whenComplete( ( connAck, throwable ) -> {
                                 if ( throwable != null ) {
-                                    log.error( "Connection to broker could not be established. Please delete and recreate the Plug-In." );
+                                    throw new RuntimeException( "Connection to broker could not be established. Please delete and recreate the Plug-In." + throwable );
                                 } else {
                                     log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
                                     subscribe( topicsToList( this.settings.get( "topics" ) ) );
@@ -206,7 +206,7 @@ public class MqttStreamPlugin extends Plugin {
 
             client.disconnect().whenComplete( ( disconn, throwable ) -> {
                         if ( throwable != null ) {
-                            log.info( "{} could not disconnect from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                            throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + broker +":" + brokerPort + ". Please try again.",throwable);
                         } else {
                             log.info( "{} stopped.", INTERFACE_NAME );
                             monitoringPage.remove();
@@ -233,7 +233,7 @@ public class MqttStreamPlugin extends Plugin {
                 if ( schema.namespaceType == namespaceType ) {
                     namespaceId = schema.id;
                 } else {
-                    log.info("There is already a namespace existing in this database with the given name but of another type.");
+                    throw new RuntimeException("There is already a namespace existing in this database with the given name but of another type.");
                 }
             } else {
                 //create new namespace
@@ -301,20 +301,20 @@ public class MqttStreamPlugin extends Plugin {
                         this.collectionPerTopic = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
                         //TODO: Reihenfolge von updatedSettings anschauen!
                         if ( !this.collectionPerTopic && !updatedSettings.contains( "collection name" ) && !collectionExists( this.collectionName ) ) {
-                            if ( !this.collectionName.equals( "null" ) ) {
+                            if ( ! (this.collectionName.equals( "null" ) | this.collectionName.equals( "" ) ) ) {
                                 createNewCollection( this.collectionName );
                             } else {
-                                log.error( "Collection per topic is set as FALSE but no collection name was given! Please enter a collection name." );
+                                throw new NullPointerException( "Collection per topic is set to FALSE but no collection name was given! Please enter a collection name." );
                             }
                         }
                         break;
                     case "collection name":
                         this.collectionName = this.getCurrentSettings().get( "collection name" ).trim();
                         if ( !this.collectionPerTopic && !collectionExists( this.collectionName ) ) {
-                            if ( !this.collectionName.equals( "null" ) ) {
+                            if ( ! (this.collectionName.equals( "null" ) | this.collectionName.equals( "" ) ) ) {
                                 createNewCollection( this.collectionName );
                             } else {
-                                log.error( "Collection per topic is set as FALSE but no collection name was given! Please enter a collection name." );
+                                throw new NullPointerException( "Collection per topic is set to FALSE but no collection name was given! Please enter a collection name." );
                             }
                         }
                         break;
@@ -341,12 +341,13 @@ public class MqttStreamPlugin extends Plugin {
                 processMsg( subMsg );
             } ).send().whenComplete( ( subAck, throwable ) -> {
                 if ( throwable != null ) {
-                    throw new RuntimeException( "Subscription was not successful. Please try again." );
+                    throw new RuntimeException( "Subscription was not successful. Please try again.", throwable );
                 } else {
                     this.topics.put( topic, new AtomicLong( 0 ) );
                     if ( collectionPerTopic && !collectionExists( topic ) ) {
                         createNewCollection( topic );
                     }
+                    //TODO: rmv, only for debugging needed
                     log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
@@ -403,25 +404,13 @@ public class MqttStreamPlugin extends Plugin {
                         dataStores.size() == 0 ? null : dataStores,
                         PlacementType.MANUAL,
                         statement );
-                log.info( "Created new collection with name: {}", collectionName );
                 transaction.commit();
-            } catch ( EntityAlreadyExistsException e ) {
-                log.error( "The generation of the collection was not possible because there is a collection already existing with this name." );
-                return;
-            } catch ( TransactionException e2 ) {
-                log.error( "The commit after creating a new Collection could not be completed!" );
-                return;
+            } catch ( EntityAlreadyExistsException | TransactionException e ) {
+                throw new RuntimeException( "Error while creating a new collection:", e );
             } catch ( UnknownSchemaIdRuntimeException e3 ) {
+                //TODO: überlegen, was in diesem Fall passiert.
                 this.namespaceId = getNamespaceId( this.namespace, this.namespaceType );
-            }
-
-            //add placement
-            List<CatalogCollection> collectionList2 = catalog.getCollections( this.namespaceId, null );
-            for ( CatalogCollection collection : collectionList2 ) {
-                if ( collection.name.equals( collectionName ) ) {
-                    // TODO: fix issue with placement!
-                    //catalog.addCollectionPlacement( this.getQueryInterfaceId(), collection.id, PlacementType.MANUAL );
-                }
+                throw new RuntimeException( "Collection could not be created, but the correct namespace id was determined." );
             }
         }
 
@@ -436,10 +425,9 @@ public class MqttStreamPlugin extends Plugin {
         public void unsubscribe( String topic ) {
             client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
                 if ( throwable != null ) {
-                    log.error( String.format( "Topic %s could not be unsubscribed.", topic ) );
+                    throw new RuntimeException( "Topic " + topic + " could not be unsubscribed.", throwable );
                 } else {
                     this.topics.remove( topic );
-                    log.info( "Unsubscribed from topic:{}.", topic );
                 }
             } );
         }
@@ -451,8 +439,10 @@ public class MqttStreamPlugin extends Plugin {
             ReceivedMqttMessage receivedMqttMessage;
             String topic = subMsg.getTopic().toString();
 
-            topics.replace( topic, new AtomicLong( topics.get( topic ).incrementAndGet() ) );
+            Long incrementedMsgCount = topics.get( topic ).incrementAndGet();
+            topics.replace( topic, new AtomicLong( incrementedMsgCount ) );
 
+            //TODO: storeiD beachten was ist das?
             if ( this.collectionPerTopic ) {
                 receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId, topic );
             } else {
@@ -567,20 +557,24 @@ public class MqttStreamPlugin extends Plugin {
                 im.addGroup( informationGroupReconn );
                 reconnButton = new InformationAction( informationGroupReconn, "Reconnect", ( parameters ) -> {
                     String end = "Reconnected to broker";
-                    //TOD0: abfrage nach state und jenach dem erst disconn oder nicht
                     if ( client.getState().toString().equals( "DISCONNECTED" ) ) {
                         run();
                         update();
                     } else {
+                        client.toBlocking().disconnect();
+                        run();
+                        update();
+                        /*
                         client.disconnect().whenComplete( ( disconn, throwable ) -> {
                                     if ( throwable != null ) {
-                                        log.info( "{} could not disconnect from MQTT broker {}:{}. Please try again.", INTERFACE_NAME, broker, brokerPort );
+                                        throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + broker + ":" + brokerPort + ".", throwable );
                                     } else {
                                         run();
                                         update();
                                     }
                                 }
                         );
+                        */
                     }
                     return end;
                 } );
