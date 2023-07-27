@@ -46,7 +46,7 @@ public interface DataMigrator {
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List)}  } instead
+     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -72,13 +72,14 @@ public interface DataMigrator {
      * @param sourcePlacement Source Table from where data is queried
      * @param targetProperty
      * @param targetTables Target Table where data is to be inserted
+     * @param table
      */
     void copyAllocationData(
             Transaction transaction,
             CatalogAdapter store,
             AllocationPlacement sourcePlacement,
             PartitionProperty targetProperty,
-            List<AllocationTable> targetTables );
+            List<AllocationTable> targetTables, LogicalTable table );
 
     AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
@@ -94,7 +95,7 @@ public interface DataMigrator {
 
     AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
-    AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, LogicalTable table, Map<Long, List<AllocationColumn>> placementDistribution );
 
 
     void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction );

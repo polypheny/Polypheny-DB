@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
@@ -54,6 +55,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -61,6 +63,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -96,28 +99,44 @@ public abstract class BaseRouter implements Router {
 
     /**
      * Execute the table scan on the first placement of a table
+     *
+     * Recursively take the largest placements to build the complete placement (guarantees least amount of placements used => least amount of scans)
      */
-    protected static Map<Long, List<AllocationColumn>> selectPlacement( LogicalTable table ) {
+    protected static Map<Long, List<AllocationColumn>> selectPlacement( LogicalTable table, List<LogicalColumn> logicalColumns, List<Long> excludedAdapterIds ) {
         // Find the adapter with the most column placements
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
         for ( Entry<Long, List<Long>> entry : Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
-            if ( entry.getValue().size() > numOfPlacements ) {
+            if ( !excludedAdapterIds.contains( entry.getKey() ) && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
 
-        // Take the adapter with most placements as base and add missing column placements
-        List<AllocationColumn> placementList = new LinkedList<>();
-        for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            placementList.add( Catalog.snapshot().alloc().getColumnFromLogical( column.id ).orElseThrow().get( 0 ) );
+        List<LogicalColumn> missingColumns = new ArrayList<>();
+
+        // Take the adapter with most placements as base and add missing column placements recursively
+        List<AllocationColumn> placementList = new ArrayList<>();
+        AllocationPlacement longestPlacement = catalog.getSnapshot().alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
+        for ( LogicalColumn column : logicalColumns ) {
+            Optional<AllocationColumn> optionalColumn = catalog.getSnapshot().alloc().getColumn( longestPlacement.id, column.id );
+            if ( optionalColumn.isPresent() ) {
+                placementList.add( optionalColumn.get() );
+            } else {
+                missingColumns.add( column );
+            }
         }
 
-        return new HashMap<>() {{
-            List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( table.id );
-            put( allocs.get( 0 ).id, placementList );
-        }};
+        Map<Long, List<AllocationColumn>> placementToColumns = new HashMap<>();
+        placementToColumns.put( longestPlacement.id, placementList );
+        if ( !missingColumns.isEmpty() ) {
+            List<Long> newExcludedAdapterIds = new ArrayList<>( excludedAdapterIds );
+            newExcludedAdapterIds.add( longestPlacement.adapterId );
+            Map<Long, List<AllocationColumn>> rest = selectPlacement( table, missingColumns, newExcludedAdapterIds );
+            placementToColumns.putAll( rest );
+        }
+        return placementToColumns;
+
     }
 
 
@@ -152,7 +171,7 @@ public abstract class BaseRouter implements Router {
         }
 
         if ( table.getRowType().getFieldCount() == builder.peek().getRowType().getFieldCount() && !table.getRowType().equals( builder.peek().getRowType() ) ) {
-            // we adjust the // is this even necessary
+            // we adjust the
             Map<String, Integer> namesIndexMapping = table.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
             List<Integer> target = builder.peek().getRowType().getFieldList().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
             builder.permute( Mappings.bijection( target ) );
@@ -236,7 +255,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, Map<Long, List<AllocationColumn>> placements ) {
+    public AlgNode buildJoinedScan( Statement statement, AlgOptCluster cluster, LogicalTable table, Map<Long, List<AllocationColumn>> placements ) {
         RoutedAlgBuilder builder = RoutedAlgBuilder.create( statement, cluster );
 
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -246,35 +265,39 @@ public abstract class BaseRouter implements Router {
             }
         }
 
-        for ( Map.Entry<Long, List<AllocationColumn>> partitionToPlacement : placements.entrySet() ) {
-            long partitionId = partitionToPlacement.getKey();
-            List<AllocationColumn> currentPlacements = partitionToPlacement.getValue();
+        for ( Map.Entry<Long, List<AllocationColumn>> placementToColumns : placements.entrySet() ) {
+
+            //List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( placements.values().iterator().next().get( 0 ).logicalTableId );
+            //long placementId = placementToColumns.getKey();
+            List<AllocationColumn> currentPlacements = placementToColumns.getValue();
+            long partitionId = placementToColumns.getKey();
             // Sort by adapter
-            Map<Long, List<AllocationColumn>> placementsByAdapter = new HashMap<>();
-            for ( AllocationColumn placement : currentPlacements ) {
-                if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
-                    placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
+            Map<Long, List<AllocationColumn>> columnsByPlacements = new HashMap<>();
+            for ( AllocationColumn column : currentPlacements ) {
+                if ( !columnsByPlacements.containsKey( column.placementId ) ) {
+                    columnsByPlacements.put( column.placementId, new LinkedList<>() );
                 }
-                placementsByAdapter.get( placement.adapterId ).add( placement );
+                columnsByPlacements.get( column.placementId ).add( column );
             }
 
-            if ( placementsByAdapter.size() == 1 ) {
-                List<AllocationColumn> ccps = placementsByAdapter.values().iterator().next();
-                AllocationColumn ccp = ccps.get( 0 );
-                AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( ccp.placementId, partitionId ).orElseThrow();
+            if ( columnsByPlacements.size() == 1 ) {
+                long placementId = placements.get( partitionId ).get( 0 ).placementId;
+                List<AllocationColumn> columns = columnsByPlacements.get( placementId );
+
+                AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( placementId, partitionId ).orElseThrow();
 
                 builder = handleRelScan(
                         builder,
                         statement,
                         cpp );
                 // Final project
-                buildFinalProject( builder, currentPlacements );
+                buildFinalProject( builder, columns );
 
-            } else if ( placementsByAdapter.size() > 1 ) {
+
+            } else if ( columnsByPlacements.size() > 1 ) {
                 // We need to join placements on different adapters
 
                 // Get primary key
-                LogicalTable table = catalog.getSnapshot().rel().getTable( currentPlacements.get( 0 ).logicalTableId ).orElseThrow();
                 long pkid = table.primaryKey;
                 List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
                 List<LogicalColumn> pkColumns = new ArrayList<>();
@@ -283,7 +306,7 @@ public abstract class BaseRouter implements Router {
                 }
 
                 // Add primary key
-                for ( Entry<Long, List<AllocationColumn>> entry : placementsByAdapter.entrySet() ) {
+                for ( Entry<Long, List<AllocationColumn>> entry : columnsByPlacements.entrySet() ) {
                     for ( LogicalColumn pkColumn : pkColumns ) {
                         AllocationColumn pkPlacement = catalog.getSnapshot().alloc().getColumn( entry.getValue().get( 0 ).placementId, pkColumn.id ).orElseThrow();
                         if ( !entry.getValue().contains( pkPlacement ) ) {
@@ -294,7 +317,8 @@ public abstract class BaseRouter implements Router {
 
                 Deque<String> queue = new ArrayDeque<>();
                 boolean first = true;
-                for ( List<AllocationColumn> ccps : placementsByAdapter.values() ) {
+                for ( List<AllocationColumn> ccps : columnsByPlacements.values() ) {
+                    List<AllocationColumn> ordered = ccps.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
                     AllocationColumn ccp = ccps.get( 0 );
                     AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( ccp.placementId, partitionId ).orElseThrow();
 
@@ -305,10 +329,10 @@ public abstract class BaseRouter implements Router {
                     if ( first ) {
                         first = false;
                     } else {
-                        ArrayList<RexNode> rexNodes = new ArrayList<>();
-                        for ( AllocationColumn p : ccps ) {
+                        List<RexNode> rexNodes = new ArrayList<>();
+                        for ( AllocationColumn p : ordered ) {
                             if ( pkColumnIds.contains( p.columnId ) ) {
-                                String alias = ccps.get( 0 ).placementId + "_" + p.getLogicalColumnName();
+                                String alias = ccps.get( 0 ).placementId + "_" + p.columnId;
                                 rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
                                 queue.addFirst( alias );
                                 queue.addFirst( p.getLogicalColumnName() );
@@ -329,7 +353,7 @@ public abstract class BaseRouter implements Router {
                 // Final project
                 buildFinalProject( builder, currentPlacements );
             } else {
-                throw new RuntimeException( "The table '" + currentPlacements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
+                throw new GenericRuntimeException( "The table '%s' seems to have no placement. This should not happen!", table.name );
             }
         }
 
@@ -426,7 +450,7 @@ public abstract class BaseRouter implements Router {
         AlgOptCluster cluster = alg.getCluster();
         List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         List<Pair<String, AlgNode>> scans = tables.stream()
-                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, null ) ) )
+                .map( t -> Pair.of( t.name, buildJoinedScan( statement, cluster, tables.get( 0 ), null ) ) )
                 .collect( Collectors.toList() );
 
         // Builder infoBuilder = cluster.getTypeFactory().builder();

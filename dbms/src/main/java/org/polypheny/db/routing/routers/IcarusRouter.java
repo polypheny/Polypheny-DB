@@ -90,7 +90,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, null ) );
                 newBuilders.add( newBuilder );
             }
         } else {
@@ -107,7 +107,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same
-                final long adapterId = currentPlacement.get( 0 ).adapterId;
+                final long placementId = currentPlacement.get( 0 ).placementId;
 
                 // Find corresponding builder:
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
@@ -116,7 +116,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                             .collect( Collectors.toList() );
                     final Optional<Long> found = listPairs.stream()
                             .map( elem -> elem.left )
-                            .filter( elem -> elem == adapterId )
+                            .filter( elem -> elem == placementId )
                             .findFirst();
                             return found.isPresent();
                         }
@@ -129,7 +129,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, null ) );
                 newBuilders.add( newBuilder );
             }
             if ( newBuilders.isEmpty() ) {

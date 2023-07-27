@@ -289,7 +289,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             Map<Long, List<AllocationColumn>> subDistribution = new HashMap<>( placementDistribution );
             subDistribution.keySet().retainAll( List.of( id ) );
-            AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
+            AlgRoot sourceAlg = getSourceIterator( sourceStatement, source, subDistribution );
             AlgRoot targetAlg;
             AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
             if ( allocation.getColumns().size() == columns.size() ) {
@@ -507,14 +507,14 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution ) {
+    public AlgRoot getSourceIterator( Statement statement, LogicalTable table, Map<Long, List<AllocationColumn>> placementDistribution ) {
 
         // Build Query
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
-        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placementDistribution );
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, table, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );
     }
 
@@ -569,7 +569,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List)}  } instead
+     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, AllocationPlacement, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -603,7 +603,7 @@ public class DataMigratorImpl implements DataMigrator {
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AlgRoot targetAlg;
         AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
@@ -675,21 +675,30 @@ public class DataMigratorImpl implements DataMigrator {
      * @param sourcePlacement Source Table from where data is queried
      * @param targetProperty
      * @param targetTables Target Table where data is to be inserted
+     * @param table
      */
     @Override
-    public void copyAllocationData( Transaction transaction, CatalogAdapter store, AllocationPlacement sourcePlacement, PartitionProperty targetProperty, List<AllocationTable> targetTables ) {
+    public void copyAllocationData( Transaction transaction, CatalogAdapter store, AllocationPlacement sourcePlacement, PartitionProperty targetProperty, List<AllocationTable> targetTables, LogicalTable table ) {
         if ( targetTables.stream().anyMatch( t -> t.logicalId != sourcePlacement.logicalEntityId ) ) {
             throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
+        List<LogicalColumn> selectColumnList = new LinkedList<>();
+
+        // Add partition columns to select column list
+        long partitionColumnId = targetProperty.partitionColumnId;
+        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
+        if ( !selectColumnList.contains( partitionColumn ) ) {
+            selectColumnList.add( partitionColumn );
+        }
 
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetProperty.partitionType );
 
         //We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        //PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( sourceTable.id ).orElseThrow();
-        //placementDistribution.put( sourceProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
+        PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
+        placementDistribution.put( sourceProperty.partitionIds.get( 0 ), selectSourcePlacements( table, selectColumnList, -1 ) );
 
         Statement sourceStatement = transaction.createStatement();
 
@@ -702,7 +711,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, null );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, table, placementDistribution );
         //AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         /*if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
@@ -852,7 +861,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement

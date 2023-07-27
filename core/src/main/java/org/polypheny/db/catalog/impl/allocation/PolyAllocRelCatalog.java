@@ -171,12 +171,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Override
     public void deletePartitionGroup( long groupId ) {
-        /*if ( log.isDebugEnabled() ) {
-            log.debug( "Deleting partitionGroup with id '{}'", partitionGroupId );
-        }
-
-        partitionGroups.remove( partitionGroupId );*/
-        return;
+        partitionGroups.remove( groupId );
     }
 
 
@@ -289,6 +284,18 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
         placements.put( id, placement );
         return placement;
+    }
+
+
+    @Override
+    public void deletePlacement( long id ) {
+        placements.remove( id );
+    }
+
+
+    @Override
+    public void deleteProperty( long id ) {
+        properties.remove( id );
     }
 
 

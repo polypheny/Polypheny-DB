@@ -188,4 +188,8 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
     ConcurrentHashMap<Long, AllocationPlacement> getPlacements();
 
+    void deletePlacement( long id );
+
+    void deleteProperty( long id );
+
 }

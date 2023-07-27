@@ -18,6 +18,7 @@ package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, placementCombination ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
         }
@@ -86,8 +87,11 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
         cancelQuery = true;
+
+        return Collections.emptyList();
+
         // Same as no partitioning
-        return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
+        //return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
     }
 
 
@@ -118,7 +122,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
             //newBuilder.addPhysicalInfo( currentPlacementDistribution );
-            newBuilder.push( super.buildJoinedScan( statement, cluster, Map.of( allocs.get( 0 ).partitionId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, table, Map.of( allocs.get( 0 ).placementId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
             newBuilders.add( newBuilder );
         }
         //}

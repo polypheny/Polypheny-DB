@@ -117,7 +117,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     @Override
     public Map<Long, Map<Long, List<AllocationColumn>>> getAllPlacements( LogicalTable catalogTable, List<Long> partitionIds ) {
-        Map<Long, Map<Long, List<AllocationColumn>>> adapterPlacements = new HashMap<>(); // adapterId -> partitionId ; placements
+        Map<Long, Map<Long, List<AllocationColumn>>> adapterPlacements = new HashMap<>(); // placementId -> partitionId ; placements
         if ( partitionIds != null ) {
             for ( long partitionId : partitionIds ) {
                 List<CatalogAdapter> adapters = catalog.getSnapshot().alloc().getAdaptersByPartitionGroup( catalogTable.id, partitionId );
@@ -127,7 +127,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                         adapterPlacements.put( adapter.id, new HashMap<>() );
                     }
                     List<AllocationColumn> placements = catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapter.id, catalogTable.id );
-                    adapterPlacements.get( adapter.id ).put( partitionId, placements );
+                    adapterPlacements.get( placements.get( 0 ).placementId ).put( partitionId, placements );
                 }
             }
         }

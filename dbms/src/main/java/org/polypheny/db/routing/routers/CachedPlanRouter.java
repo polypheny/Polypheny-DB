@@ -62,20 +62,20 @@ public class CachedPlanRouter extends BaseRouter {
         }
 
         if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            LogicalTable catalogTable = node.getEntity().unwrap( LogicalTable.class );
-            PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+            LogicalTable table = node.getEntity().unwrap( LogicalTable.class );
+            PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
             List<Long> partitionIds = property.partitionIds;
-            Map<Long, List<AllocationColumn>> placement = new HashMap<>();
+            Map<Long, List<AllocationColumn>> partitions = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
                     List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
-                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumn( catalog.getSnapshot().alloc().getPlacement( placementInfo.left, catalogTable.id ).orElseThrow().id, placementInfo.right ).orElseThrow() )
+                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumn( placementInfo.left, placementInfo.right ).orElseThrow() )
                             .collect( Collectors.toList() );
-                    placement.put( partition, colPlacements );
+                    partitions.put( partition, colPlacements );
                 }
             }
 
-            return builder.push( super.buildJoinedScan( statement, cluster, placement ) );
+            return builder.push( super.buildJoinedScan( statement, cluster, table, partitions ) );
         } else if ( node instanceof LogicalValues ) {
             return super.handleValues( (LogicalValues) node, builder );
         } else {

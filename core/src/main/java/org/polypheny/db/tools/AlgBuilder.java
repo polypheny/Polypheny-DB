@@ -1380,13 +1380,16 @@ public class AlgBuilder {
     }
 
 
-    private void reorder( List<Long> order, Map<String, Long> namesIdMapping ) {
+    public AlgBuilder reorder( AlgDataType target ) {
         List<String> names = peek().getRowType().getFieldNames();
+        List<String> targetNames = target.getFieldNames();
         List<Integer> mapping = new ArrayList<>();
         for ( String name : names ) {
-            mapping.add( order.indexOf( namesIdMapping.get( name ) ) );
+            mapping.add( targetNames.indexOf( name ) );
         }
         permute( new Permutation( mapping ) );
+
+        return this;
     }
 
 

@@ -17,14 +17,19 @@
 package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -48,11 +53,18 @@ public class SimpleRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
-        Map<Long, List<AllocationColumn>> placements = selectPlacement( table );
+        // placementId -> List<AllocColumn>
+        Map<Long, List<AllocationColumn>> placements = selectPlacement( table, catalog.getSnapshot().rel().getColumns( table.id ), List.of() );
+
+        List<AllocationPartition> partitionIds = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
+
+        List<AllocationColumn> singlePartition = placements.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+
+        Map<Long, List<AllocationColumn>> partitionToColumns = partitionIds.stream().collect( Collectors.toMap( id -> id.id, id -> singlePartition ) );
 
         // Only one builder available
-        builders.get( 0 ).addPhysicalInfo( placements );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, placements ) );
+        builders.get( 0 ).addPhysicalInfo( partitionToColumns );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, table, partitionToColumns ) );
 
         return builders;
     }
@@ -82,14 +94,26 @@ public class SimpleRouter extends AbstractDqlRouter {
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<AllocationColumn>> placementDistribution = partitionIds != null
-                ? partitionManager.getRelevantPlacements( table, null, Collections.emptyList() )
-                : partitionManager.getRelevantPlacements( table, null, Collections.emptyList() );
+                ? partitionManager.getRelevantPlacements( table, getAllocOfPartitions( partitionIds, table ), Collections.emptyList() )
+                : partitionManager.getRelevantPlacements( table, getAllocOfPartitions( property.partitionIds, table ), Collections.emptyList() );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, null ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, table, null ) );
 
         return builders;
+    }
+
+
+    private List<AllocationEntity> getAllocOfPartitions( List<Long> partitionIds, LogicalTable table ) {
+        List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
+        List<AllocationEntity> entities = new ArrayList<>();
+        for ( AllocationPlacement placement : placements ) {
+            for ( long partitionId : partitionIds ) {
+                entities.add( catalog.getSnapshot().alloc().getAlloc( placement.id, partitionId ).orElseThrow() );
+            }
+        }
+        return entities;
     }
 
 

@@ -23,6 +23,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
@@ -81,7 +82,7 @@ public class AllocationPartition implements CatalogObject {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("partitionQualifiers") final List<String> partitionQualifiers,
+            @Deserialize("partitionQualifiers") @Nullable final List<String> partitionQualifiers,
             @Deserialize("role") DataPlacementRole role,
             @Deserialize("isUnbound") final boolean isUnbound,
             @Deserialize("partitionGroupId") final long partitionGroupId ) {
@@ -92,7 +93,7 @@ public class AllocationPartition implements CatalogObject {
         this.role = role;
         this.isUnbound = isUnbound;
         this.partitionGroupId = partitionGroupId;
-        this.partitionQualifiers = ImmutableList.copyOf( partitionQualifiers );
+        this.partitionQualifiers = partitionQualifiers == null ? null : ImmutableList.copyOf( partitionQualifiers );
     }
 
 

@@ -23,9 +23,12 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.tools.AlgBuilder;
 
 public class AllocationToPhysicalScanRule extends AlgOptRule {
 
@@ -48,7 +51,21 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
         }
 
         AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getScan( alloc.id, call.builder() );
+        if ( scan.entity.namespaceType == NamespaceType.RELATIONAL ) {
+            newAlg = attachReorder( newAlg, scan, call.builder() );
+        }
         call.transformTo( newAlg );
+    }
+
+
+    private AlgNode attachReorder( AlgNode newAlg, Scan<?> original, AlgBuilder builder ) {
+        if ( newAlg.getRowType().equals( original.getRowType() ) ) {
+            return newAlg;
+        }
+        builder.push( newAlg );
+        AlgDataType originalType = original.getRowType();
+        builder.reorder( originalType );
+        return builder.build();
     }
 
 }
