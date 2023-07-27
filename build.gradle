@@ -10,7 +10,6 @@ buildscript {
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
         classpath group: "org.reflections", name: "reflections", version: reflections_version
-        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: "0.9.3"
     }
 }
 
