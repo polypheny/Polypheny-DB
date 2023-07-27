@@ -27,8 +27,11 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -46,30 +49,19 @@ public class StreamCapture {
 
     StreamCapture( final Transaction transaction ) {
         this.transaction = transaction;
-        //this.receivedMqttMessage = receivedMqttMessage;
-
     }
 
 
     public void handleContent( ReceivedMqttMessage receivedMqttMessage ) {
         this.receivedMqttMessage = receivedMqttMessage;
-        if ( receivedMqttMessage.getStoreId() == 0 ) {
-            //TODO: maybe do this with interface for different types
-            if ( receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
-                long newstoreId = getCollectionId();
-                if ( newstoreId != 0 ) {
-                    receivedMqttMessage.setStoreId( newstoreId );
-                }
-            }
-        }
-        boolean saved = saveContent();
+        insertDocument( this.receivedMqttMessage.getCollectionName() );
     }
 
 
     /**
      * @return the id of the collection that was either already existing with the topic as name or that was newly created
      */
-    long getCollectionId() {
+/*    long getCollectionId() {
         Catalog catalog = Catalog.getInstance();
         //check for collection with same name
         List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
@@ -90,14 +82,7 @@ public class StreamCapture {
 
         return 0;
     }
-
-
-    boolean saveContent() {
-        if ( this.receivedMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
-            insertDocument(this.receivedMqttMessage.getCollectionName());
-        }
-        return true;
-    }
+    */
 
 
     // added by Datomo

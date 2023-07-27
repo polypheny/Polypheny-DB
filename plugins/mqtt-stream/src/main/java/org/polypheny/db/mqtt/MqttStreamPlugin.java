@@ -37,6 +37,7 @@ import org.pf4j.PluginWrapper;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -126,9 +127,6 @@ public class MqttStreamPlugin extends Plugin {
         private Map<String, AtomicLong> topics = new ConcurrentHashMap<>();
         private Mqtt3AsyncClient client;
         private String namespace;
-
-        private long namespaceId;
-
         private NamespaceType namespaceType;
         private boolean collectionPerTopic;
         private String collectionName;
@@ -149,7 +147,9 @@ public class MqttStreamPlugin extends Plugin {
 
             String name = settings.get( "namespace" ).trim();
             NamespaceType type = NamespaceType.valueOf( settings.get( "namespace type" ) );
-            this.namespaceId = getNamespaceId( name, type );
+            if ( !namespaceExists( name, type ) ) {
+                createNamespace( name, type );
+            }
             this.namespace = name;
             this.namespaceType = type;
 
@@ -217,36 +217,56 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        public long getNamespaceId( String namespaceName, NamespaceType namespaceType ) {
-            // TODO: Nachrichten an UI schicken falls Namespace name nicht geht
-            long namespaceId = 0;
 
+        private boolean namespaceExists (String namespaceName, NamespaceType namespaceType) {
             Catalog catalog = Catalog.getInstance();
-            if ( catalog.checkIfExistsSchema( this.databaseId, namespaceName ) ) {
-                CatalogSchema schema = null;
-                try {
-                    schema = catalog.getSchema( this.databaseId, namespaceName );
-                } catch ( UnknownSchemaException e ) {
-                    throw new RuntimeException( e );
-                }
-                assert schema != null;
-                if ( schema.namespaceType == namespaceType ) {
-                    namespaceId = schema.id;
-                } else {
-                    throw new RuntimeException("There is already a namespace existing in this database with the given name but of another type.");
-                }
+            if ( catalog.checkIfExistsSchema( Catalog.defaultDatabaseId, namespaceName ) ) {
+                getExistingNamespaceId( namespaceName, namespaceType );
+                return true;
             } else {
-                //create new namespace
-                long id = catalog.addNamespace( namespaceName, this.databaseId, this.userId, namespaceType );
-                try {
-                    catalog.commit();
-                    namespaceId = id;
-                } catch ( NoTablePrimaryKeyException e ) {
-                    throw new RuntimeException( e );
-                }
+                return false;
             }
-            return namespaceId;
         }
+
+
+        private long getNamespaceId( String namespaceName, NamespaceType namespaceType ) {
+            Catalog catalog = Catalog.getInstance();
+            if ( catalog.checkIfExistsSchema( Catalog.defaultDatabaseId, namespaceName ) ) {
+                return getExistingNamespaceId( namespaceName, namespaceType );
+            } else {
+                return createNamespace( namespaceName, namespaceType );
+            }
+        }
+
+
+
+    private long getExistingNamespaceId(String namespaceName, NamespaceType namespaceType) {
+        Catalog catalog = Catalog.getInstance();
+        CatalogSchema schema = null;
+        try {
+            schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
+        } catch ( UnknownSchemaException e ) {
+            throw new RuntimeException( e );
+        }
+        assert schema != null;
+        if ( schema.namespaceType == namespaceType ) {
+            return schema.id;
+        } else {
+            throw new RuntimeException( "There is already a namespace existing in this database with the given name but of another type." );
+        }
+    }
+
+
+    private long createNamespace(String namespaceName, NamespaceType namespaceType) {
+        Catalog catalog = Catalog.getInstance();
+        long id = catalog.addNamespace( namespaceName, Catalog.defaultDatabaseId, Catalog.defaultUserId, namespaceType );
+        try {
+            catalog.commit();
+            return id;
+        } catch ( NoTablePrimaryKeyException e ) {
+            throw new RuntimeException( e );
+        }
+    }
 
 
         @Override
@@ -281,7 +301,6 @@ public class MqttStreamPlugin extends Plugin {
 
                     case "namespace":
                         String newNamespaceName = this.getCurrentSettings().get( "namespace" ).trim();
-                        this.namespaceId = this.getNamespaceId( newNamespaceName, this.namespaceType );
                         this.namespace = newNamespaceName;
 
                         //TODO: create collections + special case beachten!!
@@ -291,7 +310,6 @@ public class MqttStreamPlugin extends Plugin {
 
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
-                        this.namespaceId = this.getNamespaceId( this.namespace, newNamespaceType );
                         this.namespaceType = newNamespaceType;
 
                         //TODO: problem vrom above reggarding creation of new collections
@@ -379,13 +397,9 @@ public class MqttStreamPlugin extends Plugin {
          */
         private boolean collectionExists( String collectionName ) {
             Catalog catalog = Catalog.getInstance();
-            List<CatalogCollection> collectionList = catalog.getCollections( this.namespaceId, null );
-            for ( CatalogCollection collection : collectionList ) {
-                if ( collection.name.equals( collectionName ) ) {
-                    return true;
-                }
-            }
-            return false;
+            Pattern pattern = new Pattern( collectionName );
+            List<CatalogCollection> collectionList = catalog.getCollections( getNamespaceId( this.namespace, this.namespaceType ), pattern );
+            return !collectionList.isEmpty();
         }
 
 
@@ -398,7 +412,7 @@ public class MqttStreamPlugin extends Plugin {
             try {
                 List<DataStore> dataStores = new ArrayList<>();
                 DdlManager.getInstance().createCollection(
-                        this.namespaceId,
+                        getNamespaceId( this.namespace, this.namespaceType ),
                         collectionName,
                         true,   //only creates collection if it does not already exist.
                         dataStores.size() == 0 ? null : dataStores,
@@ -408,9 +422,7 @@ public class MqttStreamPlugin extends Plugin {
             } catch ( EntityAlreadyExistsException | TransactionException e ) {
                 throw new RuntimeException( "Error while creating a new collection:", e );
             } catch ( UnknownSchemaIdRuntimeException e3 ) {
-                //TODO: überlegen, was in diesem Fall passiert.
-                this.namespaceId = getNamespaceId( this.namespace, this.namespaceType );
-                throw new RuntimeException( "Collection could not be created, but the correct namespace id was determined." );
+                throw new RuntimeException( "New collection could not be created.", e3 );
             }
         }
 
@@ -444,9 +456,9 @@ public class MqttStreamPlugin extends Plugin {
 
             //TODO: storeiD beachten was ist das?
             if ( this.collectionPerTopic ) {
-                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId, topic );
+                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
             } else {
-                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, this.namespaceId, this.namespaceType, 0, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
             }
 
             MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
