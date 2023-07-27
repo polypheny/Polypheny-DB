@@ -65,6 +65,7 @@ dependencies {
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
 
+    // TODO MV: Remove these dependencies and reactivate the corresponding tests using docker deployed data stores
     testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
     testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
