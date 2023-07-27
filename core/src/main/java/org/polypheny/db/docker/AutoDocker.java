@@ -107,7 +107,7 @@ public final class AutoDocker {
         final String registry = RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString();
         final String imageName;
 
-        if ( registry.equals( "" ) || registry.endsWith( "/" ) ) {
+        if ( registry.isEmpty() || registry.endsWith( "/" ) ) {
             imageName = registry + "polypheny/polypheny-docker-connector";
         } else {
             imageName = registry + "/" + "polypheny/polypheny-docker-connector";
@@ -240,19 +240,19 @@ public final class AutoDocker {
         if ( maybeDockerInstance.isPresent() ) {
             DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( maybeDockerInstance.get().getKey() );
 
-            if ( !res.getError().equals( "" ) ) {
+            if ( !res.getError().isEmpty() ) {
                 log.info( "AutoDocker: Reconnect failed: " + res.getError() );
                 updateStatus( "error: " + res.getError() );
                 return false;
             }
         } else {
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", "", false );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance( "localhost", "localhost", "", ConfigDocker.COMMUNICATION_PORT, ConfigDocker.HANDSHAKE_PORT, ConfigDocker.PROXY_PORT, false );
 
             if ( res.isSuccess() ) {
                 return true;
             }
 
-            if ( !res.getError().equals( "" ) ) {
+            if ( !res.getError().isEmpty() ) {
                 log.info( "AutoDocker: Setup failed: " + res.getError() );
                 updateStatus( "setup failed: " + res.getError() );
                 return false;

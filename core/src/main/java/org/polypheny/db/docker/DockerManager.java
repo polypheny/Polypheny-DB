@@ -42,7 +42,7 @@ public final class DockerManager {
 
     public static DockerManager getInstance() {
         if ( !INSTANCE.initialized.getAndSet( true ) ) {
-            RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).forEach( c -> INSTANCE.addDockerInstance( c.getHost(), c.getAlias(), c.getRegistry(), c.getPort(), c ) );
+            RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).forEach( c -> INSTANCE.addDockerInstance( c.getHost(), c.getAlias(), c.getRegistry(), c.getCommunicationPort(), c.getHandshakePort(), c.getProxyPort(), c ) );
         }
 
         return INSTANCE;
@@ -81,7 +81,7 @@ public final class DockerManager {
     /**
      * Returns the id of the new DockerInstance for host, or if it already exists the id for that.
      */
-    void addDockerInstance( String host, String alias, String registry, int port, @Nullable ConfigDocker existingConfig ) {
+    void addDockerInstance( String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort, @Nullable ConfigDocker existingConfig ) {
         synchronized ( this ) {
             if ( hasHost( host ) ) {
                 throw new RuntimeException( "There is already a docker instance connected to " + host );
@@ -93,11 +93,11 @@ public final class DockerManager {
             if ( configDocker == null ) {
                 // TODO: racy, someone else could modify runtime/dockerInstances elsewhere
                 List<ConfigDocker> configList = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-                configDocker = new ConfigDocker( host, alias, registry, port );
+                configDocker = new ConfigDocker( host, alias, registry, communicationPort, handshakePort, proxyPort );
                 configList.add( configDocker );
                 ConfigManager.getInstance().getConfig( "runtime/dockerInstances" ).setConfigObjectList( configList.stream().map( ConfigDocker::toMap ).collect( Collectors.toList() ), ConfigDocker.class );
             }
-            dockerInstances.put( configDocker.getId(), new DockerInstance( configDocker.getId(), host, alias, registry, port ) );
+            dockerInstances.put( configDocker.getId(), new DockerInstance( configDocker.getId(), host, alias, registry, communicationPort, handshakePort, proxyPort ) );
         }
     }
 

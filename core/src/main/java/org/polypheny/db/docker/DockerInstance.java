@@ -54,7 +54,12 @@ public final class DockerInstance {
     private String alias;
     @Getter
     private String registry;
-    private final int port;
+    @Getter
+    private final int communicationPort;
+    @Getter
+    private final int handshakePort;
+    @Getter
+    private final int proxyPort;
     private Set<String> uuids = new HashSet<>();
 
     /**
@@ -77,12 +82,14 @@ public final class DockerInstance {
     }
 
 
-    DockerInstance( Integer instanceId, String host, String alias, String registry, int port ) {
+    DockerInstance( Integer instanceId, String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
         log.info( "New Docker instance with ID " + instanceId );
         this.host = host;
         this.alias = alias;
         this.registry = registry;
-        this.port = port;
+        this.communicationPort = communicationPort;
+        this.handshakePort = handshakePort;
+        this.proxyPort = proxyPort;
         this.instanceId = instanceId;
         this.dockerInstanceUuid = null;
         try {
@@ -96,7 +103,7 @@ public final class DockerInstance {
     private void connectToDocker() throws IOException {
         PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( host );
         byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( host );
-        this.client = new PolyphenyDockerClient( host, port, kp, serverCertificate );
+        this.client = new PolyphenyDockerClient( host, communicationPort, kp, serverCertificate );
         this.client.ping();
     }
 
@@ -188,12 +195,22 @@ public final class DockerInstance {
 
     public Map<String, Object> getMap() {
         synchronized ( this ) {
+            int numberOfContainers;
+            try {
+                numberOfContainers = client.listContainers().size();
+            } catch ( IOException e ) {
+                numberOfContainers = -1;
+            }
             return Map.of(
                     "id", instanceId,
                     "host", host,
                     "alias", alias,
+                    "connected", isConnected(),
                     "registry", registry,
-                    "connected", isConnected()
+                    "communicationPort", communicationPort,
+                    "handshakePort", handshakePort,
+                    "proxyPort", proxyPort,
+                    "numberOfContainers", numberOfContainers
             );
         }
     }

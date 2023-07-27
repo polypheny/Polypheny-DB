@@ -43,20 +43,26 @@ public class ConfigDocker extends ConfigObject {
     private String registry;
     @Getter
     @Setter
-    private int port;
+    private int communicationPort;
+    @Getter
+    @Setter
+    private int handshakePort;
+    @Getter
+    @Setter
+    private int proxyPort;
 
 
     public ConfigDocker( String host, String alias ) {
-        this( idBuilder.getAndIncrement(), host, alias, "", COMMUNICATION_PORT );
+        this( idBuilder.getAndIncrement(), host, alias, "", COMMUNICATION_PORT, HANDSHAKE_PORT, PROXY_PORT );
     }
 
 
-    public ConfigDocker( String host, String alias, String registry, int port ) {
-        this( idBuilder.getAndIncrement(), host, alias, registry, port );
+    public ConfigDocker( String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
+        this( idBuilder.getAndIncrement(), host, alias, registry, communicationPort, handshakePort, proxyPort );
     }
 
 
-    public ConfigDocker( int id, String host, String alias, String registry, int port ) {
+    public ConfigDocker( int id, String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
         super( "dockerConfig" + id );
         this.id = id;
         if ( idBuilder.get() <= id ) {
@@ -65,7 +71,9 @@ public class ConfigDocker extends ConfigObject {
         this.host = host;
         this.alias = alias;
         this.registry = registry;
-        this.port = port;
+        this.communicationPort = communicationPort;
+        this.handshakePort = handshakePort;
+        this.proxyPort = proxyPort;
         this.webUiFormType = WebUiFormType.DOCKER_INSTANCE;
     }
 
@@ -81,7 +89,9 @@ public class ConfigDocker extends ConfigObject {
                 (String) value.get( "host" ),
                 (String) value.get( "alias" ),
                 (String) value.getOrDefault( "registry", "" ),
-                ((Double) value.getOrDefault( "port", (double) COMMUNICATION_PORT )).intValue()
+                ((Double) value.getOrDefault( "communicationPort", (double) COMMUNICATION_PORT )).intValue(),
+                ((Double) value.getOrDefault( "handshakePort", (double) HANDSHAKE_PORT )).intValue(),
+                ((Double) value.getOrDefault( "proxyPort", (double) PROXY_PORT )).intValue()
         );
     }
 
@@ -92,7 +102,10 @@ public class ConfigDocker extends ConfigObject {
         m.put( "host", host );
         m.put( "alias", alias );
         m.put( "registry", registry );
-        m.put( "port", (double) port );
+        m.put( "communicationPort", (double) communicationPort );
+        m.put( "handshakePort", (double) handshakePort );
+        m.put( "proxyPort", (double) proxyPort );
+
         return m;
     }
 
@@ -104,7 +117,9 @@ public class ConfigDocker extends ConfigObject {
         settings.put( "host", host );
         settings.put( "alias", alias );
         settings.put( "registry", registry );
-        settings.put( "port", String.valueOf( port ) );
+        settings.put( "communicationPort", String.valueOf( communicationPort ) );
+        settings.put( "handshakePort", String.valueOf( handshakePort ) );
+        settings.put( "proxyPort", String.valueOf( proxyPort ) );
 
         return settings;
     }
@@ -166,8 +181,14 @@ public class ConfigDocker extends ConfigObject {
         confMap.put( "host", conf.getString( "host" ) );
         confMap.put( "alias", conf.getString( "alias" ) );
         confMap.put( "registry", conf.getString( "registry" ) );
-        if ( conf.hasPath( "port" ) ) {
-            confMap.put( "port", conf.getDouble( "port" ) );
+        if ( conf.hasPath( "communicationPort" ) ) {
+            confMap.put( "communicationPort", conf.getDouble( "communicationPort" ) );
+        }
+        if ( conf.hasPath( "handshakePort" ) ) {
+            confMap.put( "handshakePort", conf.getDouble( "handshakePort" ) );
+        }
+        if ( conf.hasPath( "proxyPort" ) ) {
+            confMap.put( "proxyPort", conf.getDouble( "proxyPort" ) );
         }
 
         return confMap;
@@ -192,7 +213,9 @@ public class ConfigDocker extends ConfigObject {
         return host.equals( that.host ) &&
                 alias.equals( that.alias ) &&
                 registry.equals( that.registry ) &&
-                port == that.port;
+                communicationPort == that.communicationPort &&
+                handshakePort == that.handshakePort &&
+                proxyPort == that.proxyPort;
     }
 
 }

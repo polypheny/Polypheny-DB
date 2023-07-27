@@ -130,6 +130,7 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -3618,8 +3619,16 @@ public class Crud implements InformationObserver {
 
     void addDockerInstance( final Context ctx ) {
         try {
-            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance( config.getOrDefault( "host", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ), true );
+            Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
+            DockerSetupResult res = DockerSetupHelper.newDockerInstance(
+                    (String) config.getOrDefault( "host", "" ),
+                    (String) config.getOrDefault( "alias", "" ),
+                    (String) config.getOrDefault( "registry", "" ),
+                    ((Double) config.getOrDefault( "communicationPort", String.valueOf( ConfigDocker.COMMUNICATION_PORT ) )).intValue(),
+                    ((Double) config.getOrDefault( "handshakePort", String.valueOf( ConfigDocker.HANDSHAKE_PORT ) )).intValue(),
+                    ((Double) config.getOrDefault( "proxyPort", String.valueOf( ConfigDocker.PROXY_PORT ) )).intValue(),
+                    true
+            );
 
             Map<String, Object> json = new HashMap<>( res.getMap() );
             json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );

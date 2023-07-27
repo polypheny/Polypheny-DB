@@ -22,7 +22,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.PolyphenyHandshakeClient.State;
 
@@ -45,14 +48,14 @@ public final class HandshakeManager {
     private String normalizeHostname( String hostname ) {
         // TODO: add more validation/sanity checks
         String newHostname = hostname.strip();
-        if ( newHostname.equals( "" ) ) {
+        if ( newHostname.isEmpty() ) {
             throw new RuntimeException( "invalid hostname \"" + newHostname + "\"" );
         }
         return newHostname;
     }
 
 
-    Map<String, String> newHandshake( String hostname, String registry, int communicationPort, int handshakePort, Runnable onCompletion, boolean startHandshake ) {
+    Map<String, String> newHandshake( String hostname, String registry, int communicationPort, int handshakePort, int proxyPort, Runnable onCompletion, boolean startHandshake ) {
         hostname = normalizeHostname( hostname );
         synchronized ( this ) {
             Handshake old = handshakes.remove( hostname );
@@ -61,7 +64,7 @@ public final class HandshakeManager {
             }
 
             try {
-                Handshake h = new Handshake( hostname, registry, communicationPort, handshakePort, onCompletion );
+                Handshake h = new Handshake( hostname, registry, communicationPort, handshakePort, proxyPort, onCompletion );
                 handshakes.put( hostname, h );
                 if ( startHandshake ) {
                     h.startOrRestart();
@@ -124,6 +127,7 @@ public final class HandshakeManager {
         private final String registry;
         private final int communicationPort;
         private final int handshakePort;
+        private final int proxyPort;
         private boolean containerRunningGuess;
         private PolyphenyHandshakeClient client;
         private final Runnable onCompletion;
@@ -131,11 +135,12 @@ public final class HandshakeManager {
         private final AtomicLong timeout = new AtomicLong();
 
 
-        private Handshake( String hostname, String registry, int communicationPort, int handshakePort, Runnable onCompletion ) throws IOException {
+        private Handshake( String hostname, String registry, int communicationPort, int handshakePort, int proxyPort, Runnable onCompletion ) throws IOException {
             this.hostname = hostname;
             this.registry = registry;
             this.communicationPort = communicationPort;
             this.handshakePort = handshakePort;
+            this.proxyPort = proxyPort;
             this.client = new PolyphenyHandshakeClient( hostname, handshakePort, timeout, onCompletion );
             this.onCompletion = onCompletion;
         }
@@ -195,8 +200,8 @@ public final class HandshakeManager {
 
 
         private String getContainerName() {
-            final String registryToUse = registry.equals( "" ) ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : registry;
-            if ( registryToUse.equals( "" ) || registryToUse.endsWith( "/" ) ) {
+            final String registryToUse = registry.isEmpty() ? RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString() : registry;
+            if ( registryToUse.isEmpty() || registryToUse.endsWith( "/" ) ) {
                 return registryToUse + "polypheny/polypheny-docker-connector";
             } else {
                 return registryToUse + "/" + "polypheny/polypheny-docker-connector";
@@ -204,9 +209,18 @@ public final class HandshakeManager {
         }
 
 
+        private String getPortMapping() {
+            return Stream.of(
+                    new int[]{ communicationPort, ConfigDocker.COMMUNICATION_PORT },
+                    new int[]{ handshakePort, ConfigDocker.HANDSHAKE_PORT },
+                    new int[]{ proxyPort, ConfigDocker.PROXY_PORT }
+            ).map( p -> String.format( "-p %d:%d", p[0], p[1] ) ).collect( Collectors.joining( " " ) );
+        }
+
+
         // Don't forget to change AutoDocker as well!
         private String getRunCommand() {
-            return "docker run -d -v polypheny-docker-connector-data:/data -v /var/run/docker.sock:/var/run/docker.sock -p 7001-7003:7001-7003 --restart unless-stopped --name polypheny-docker-connector " + getContainerName() + " server " + client.getHandshakeParameters();
+            return "docker run -d -v polypheny-docker-connector-data:/data -v /var/run/docker.sock:/var/run/docker.sock " + getPortMapping() + " --restart unless-stopped --name polypheny-docker-connector " + getContainerName() + " server " + client.getHandshakeParameters();
         }
 
 
