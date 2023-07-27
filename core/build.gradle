@@ -82,7 +82,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:$protobuf_version'
+        artifact = "com.google.protobuf:protoc:$protobuf_version"
     }
 }
 
