@@ -2930,7 +2930,7 @@ public class Crud implements InformationObserver {
             Statement statement = transaction.createStatement();
             Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
-            String query = String.format( "CREATE DATABASE %s", schema.getName() );
+            String query = String.format( "CREATE DATABASE %s ON STORE %s", schema.getName(), schema.getStore() );
 
             List<? extends Node> nodes = processor.parse( query );
             ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
