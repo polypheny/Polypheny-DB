@@ -128,7 +128,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             updateSettings( settings );
         } else {
             deploymentId = settings.get( "deploymentId" );
-            DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
+            DockerManager.getInstance(); // Make sure docker instances are loaded. Very hacky, but it works.
             container = DockerContainer.getContainerByUUID( deploymentId )
                     .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
             if ( !testDockerConnection() ) {

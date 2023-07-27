@@ -403,7 +403,7 @@ public enum RuntimeConfig {
 
     DOCKER_CONTAINER_REGISTRY(
             "docker/defaultContainerRegistry",
-            "The default container registry to be used when pull container. Leave empty to use Docker Hub.",
+            "The default container registry to be used when pull container. Default is Docker Hub.",
             "docker.io",
             ConfigType.STRING,
             "dockerGeneralGroup" ),
@@ -478,7 +478,7 @@ public enum RuntimeConfig {
 
     INSTANCE_UUID(
             "runtime/uuid",
-            "Unique ID of this instance",
+            "Unique ID of this instance of Polypheny.",
             "WARNING! YOU SHOULD NOT BE SEEING THIS",
             ConfigType.STRING
     );

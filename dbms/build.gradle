@@ -50,12 +50,13 @@ dependencies {
 
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
-    // workaround so org.polypheny.db.docker gets the right protobuf during testing
-    //implementation 'com.google.protobuf:protobuf-java:3.23.0' // BSD 3-clause
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
+
+    // Workaround so org.polypheny.db.docker gets the right protobuf during testing
+    testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
