@@ -135,12 +135,12 @@ allprojects {
 
     dependencies {
         ////// PF4J
-        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
-        annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+        annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4j_version
 
-        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
     }

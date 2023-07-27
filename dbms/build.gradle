@@ -40,7 +40,7 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
     ////// SLF4J
-    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4j_version // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
@@ -51,7 +51,7 @@ dependencies {
     // workaround to fix cottontail todo remove: when grpc-all is same in cottontail and for plugin
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
     // workaround so org.polypheny.db.docker gets the right protobuf during testing
-    implementation 'com.google.protobuf:protobuf-java:3.23.0' // BSD 3-clause
+    //implementation 'com.google.protobuf:protobuf-java:3.23.0' // BSD 3-clause
 
 
     // --- Test Compile ---
