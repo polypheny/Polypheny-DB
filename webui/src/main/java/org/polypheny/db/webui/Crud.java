@@ -3624,9 +3624,9 @@ public class Crud implements InformationObserver {
                     (String) config.getOrDefault( "host", "" ),
                     (String) config.getOrDefault( "alias", "" ),
                     (String) config.getOrDefault( "registry", "" ),
-                    ((Double) config.getOrDefault( "communicationPort", String.valueOf( ConfigDocker.COMMUNICATION_PORT ) )).intValue(),
-                    ((Double) config.getOrDefault( "handshakePort", String.valueOf( ConfigDocker.HANDSHAKE_PORT ) )).intValue(),
-                    ((Double) config.getOrDefault( "proxyPort", String.valueOf( ConfigDocker.PROXY_PORT ) )).intValue(),
+                    ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
+                    ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
+                    ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
                     true
             );
 
