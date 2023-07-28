@@ -3752,6 +3752,23 @@ public class Crud implements InformationObserver {
     }
 
 
+    void getDockerSettings( final Context ctx ) {
+        ctx.json( Map.of(
+                "registry", RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString()
+        ) );
+    }
+
+
+    void changeDockerSettings( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        String newRegistry = config.get( "registry" );
+        if ( newRegistry != null ) {
+            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( newRegistry );
+        }
+        getDockerSettings( ctx );
+    }
+
+
     /**
      * Loads the plugin in the supplied path.
      */

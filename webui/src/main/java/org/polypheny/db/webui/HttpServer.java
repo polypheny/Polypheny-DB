@@ -369,6 +369,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/cancelHandshake", crud::cancelHandshake );
 
+        webuiServer.get( "/getDockerSettings", crud::getDockerSettings );
+
+        webuiServer.post( "/changeDockerSettings", crud::changeDockerSettings );
+
         webuiServer.get( "/getDocumentDatabases", crud.languageCrud::getDocumentDatabases );
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
