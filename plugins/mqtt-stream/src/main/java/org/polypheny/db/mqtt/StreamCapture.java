@@ -95,6 +95,7 @@ public class StreamCapture {
 
         // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
+        document.put( "source", new BsonString( this.receivedMqttMessage.getUniqueNameOfInterface() ) );
         document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
         document.put( "content", new BsonString( this.receivedMqttMessage.getMessage() ) );
 
@@ -117,10 +118,10 @@ public class StreamCapture {
         List<MqttMessage> listOfMessage = new ArrayList<>();
         for ( String document : listOfDocuments ) {
             String[] documentAsList = document.split( "," );
-            String topic = documentAsList[0].substring( documentAsList[0].indexOf( ':' ) );
+            String topic = documentAsList[1].substring( documentAsList[0].indexOf( ':' ) );
             topic = topic.substring( topic.indexOf( '"' ) + 1, topic.lastIndexOf( '"' ) );
 
-            String message = documentAsList[1].trim();
+            String message = documentAsList[2].trim();
             message = message.substring( message.indexOf( ':' ) ).trim();
             message = message.substring( message.indexOf( '"' ) + 1, message.lastIndexOf( '"' ) );
             listOfMessage.add( new MqttMessage( message, topic ) );
