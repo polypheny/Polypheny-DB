@@ -547,23 +547,13 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
 
-        // Docker Hosts
+        // Docker Settings
         final WebUiPage dockerPage = new WebUiPage(
                 "dockerPage",
-                "Docker Hosts",
-                "Management of connected Docker hosts" );
+                "Docker",
+                "Settings and configuration related to Docker" );
 
-        // Docker Settings
-        final WebUiPage dockerSettings = new WebUiPage(
-                "dockerSettings",
-                "Docker Settings",
-                "Settings for the Docker-based data store deployment." );
         configManager.registerWebUiPage( dockerPage );
-
-        final WebUiGroup dockerGeneralGroup = new WebUiGroup( "dockerGeneralGroup", dockerSettings.getId() );
-        dockerGeneralGroup.withTitle( "General" );
-        configManager.registerWebUiPage( dockerSettings );
-        configManager.registerWebUiGroup( dockerGeneralGroup );
 
         // Plugin Settings
         final WebUiPage pluginPage = new WebUiPage(
