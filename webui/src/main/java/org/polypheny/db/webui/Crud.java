@@ -63,6 +63,7 @@ import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -73,6 +74,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
@@ -229,6 +231,8 @@ public class Crud implements InformationObserver {
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
     private final Catalog catalog = Catalog.getInstance();
+    @Setter
+    private Function<String, List<String>> sqlStatmentSplitter; // Set by SqlLanguagePlugin
 
 
     /**
@@ -740,24 +744,23 @@ public class Crud implements InformationObserver {
 
         // TODO: make it possible to use pagination
 
+        if ( crud.sqlStatmentSplitter == null ) {
+            throw new RuntimeException( "No way to split SQL statements" );
+        }
+
+        String[] queries = crud.sqlStatmentSplitter.apply( request.query ).toArray( new String[0] );
+
         // No autoCommit if the query has commits.
         // Ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
         Pattern p = Pattern.compile( ".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-        Matcher m = p.matcher( request.query );
-        if ( m.matches() ) {
-            autoCommit = false;
+        for ( String query : queries ) {
+            if ( p.matcher( query ).matches() ) {
+                autoCommit = false;
+                break;
+            }
         }
-
         long executionTime = 0;
         long temp = 0;
-        // remove all comments
-        String allQueries = request.query;
-        //remove comments
-        allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
-        allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
-        //remove whitespace at the end
-        allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-        String[] queries = allQueries.split( ";(?=(?:[^\']*\'[^\']*\')*[^\']*$)" );
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
@@ -789,7 +792,7 @@ public class Crud implements InformationObserver {
                 }
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
-                Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                Pattern p2 = Pattern.compile( "(?si:limit)[\\s]+[0-9]+[\\s]*$" );
                 if ( !p2.matcher( query ).find() && !request.noLimit ) {
                     noLimit = false;
                 }
