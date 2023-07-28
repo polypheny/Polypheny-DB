@@ -138,6 +138,27 @@ public class PolyphenyHomeDirManager {
     }
 
 
+    public boolean moveFile( String oldPath, String newPath ) {
+        if ( checkIfExists( newPath ) ) {
+            throw new RuntimeException( "Target file does already exist." );
+        }
+        File file = new File( this.root, oldPath );
+        return file.renameTo( new File( this.root, newPath ) );
+    }
+
+
+    public boolean deleteFile( String path ) {
+        File file = new File( this.root, path );
+        if ( file.exists() ) {
+            if ( !file.isFile() ) {
+                throw new RuntimeException( "Target is not a file." );
+            }
+            return file.delete();
+        }
+        return true;
+    }
+
+
     public boolean recursiveDeleteFolder( String path ) {
         File folder = new File( this.root, path );
         if ( folder.exists() ) {
@@ -201,7 +222,7 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File getDefaultPath() {
+    public File getRootPath() {
         return root;
     }
 

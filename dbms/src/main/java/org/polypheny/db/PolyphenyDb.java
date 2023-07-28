@@ -223,12 +223,30 @@ public class PolyphenyDb {
             System.exit( 0 );
         }
 
-        // Restore data folder
-        if ( PolyphenyHomeDirManager.getInstance().checkIfExists( "data.backup" ) ) {
-            PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" );
-            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data.backup", "data" ) ) {
-                throw new RuntimeException( "Unable to restore data folder." );
+        // Restore content of Polypheny folder
+        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.getInstance();
+        if ( phdm.checkIfExists( "_test_backup" ) && phdm.getFileIfExists( "_test_backup" ).isDirectory() ) {
+            File backupFolder = phdm.getFileIfExists( "_test_backup" );
+            // Cleanup Polypheny folder
+            for ( File item : phdm.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( phdm.getFileIfExists( item.getName() ).isFile() ) {
+                    phdm.deleteFile( item.getName() );
+                } else {
+                    phdm.recursiveDeleteFolder( item.getName() );
+                }
             }
+            // Restore contents from backup
+            for ( File item : backupFolder.listFiles() ) {
+                if ( phdm.checkIfExists( "_test_backup/" + item.getName() ) ) {
+                    if ( !item.renameTo( new File( phdm.getRootPath(), item.getName() ) ) ) {
+                        throw new RuntimeException( "Unable to restore the Polypheny folder." );
+                    }
+                }
+            }
+            backupFolder.delete();
             log.info( "Restoring the data folder." );
         }
 
@@ -237,14 +255,27 @@ public class PolyphenyDb {
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
             }
+            if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "monitoring" ) ) {
+                log.error( "Unable to delete the monitoring folder." );
+            }
             ConfigManager.getInstance().resetDefaultConfiguration();
         }
 
-        // Backup data folder (running in test mode / memory mode)
-        if ( (testMode || memoryCatalog) && PolyphenyHomeDirManager.getInstance().checkIfExists( "data" ) ) {
-            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data", "data.backup" ) ) {
-                throw new RuntimeException( "Unable to create the backup folder." );
+        // Backup content of Polypheny folder
+        if ( testMode || memoryCatalog ) {
+            if ( phdm.checkIfExists( "_test_backup" ) ) {
+                throw new RuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
+            File backupFolder = phdm.registerNewFolder( "_test_backup" );
+            for ( File item : phdm.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( !item.renameTo( new File( backupFolder, item.getName() ) ) ) {
+                    throw new RuntimeException( "Unable to backup the Polypheny folder." );
+                }
+            }
+            log.info( "Restoring the Polypheny folder." );
         }
 
         // Enables Polypheny to be started with a different config.
