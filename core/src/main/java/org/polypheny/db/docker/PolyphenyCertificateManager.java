@@ -28,23 +28,26 @@ public final class PolyphenyCertificateManager {
     }
 
 
-    private static String getBaseDirectory( String hostname ) throws IOException {
+    private static String getBaseDirectory( String context, String hostname ) throws IOException {
+        if ( !context.matches( "^[a-z]+$" ) ) {
+            throw new IOException( "Invalid context string" );
+        }
         if ( !isSafeHostname( hostname ) ) {
             throw new IOException( "Insecure hostname" );
         }
-        return "certs/" + hostname + "/";
+        return "certs/" + context + "/" + hostname + "/";
     }
 
 
-    private static String getServerCertificatePath( String hostname ) throws IOException {
+    private static String getServerCertificatePath( String context, String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
-        String basePath = getBaseDirectory( hostname );
+        String basePath = getBaseDirectory( context, hostname );
         return dirManager.registerNewFile( basePath + "server.pem" ).getAbsolutePath();
     }
 
 
-    static byte[] loadServerCertificate( String hostname ) throws IOException {
-        String serverCertificatePath = getServerCertificatePath( hostname );
+    static byte[] loadServerCertificate( String context, String hostname ) throws IOException {
+        String serverCertificatePath = getServerCertificatePath( context, hostname );
 
         byte[] cert = PolyphenyCertificateUtils.loadCertificateFromFile( serverCertificatePath );
         if ( cert.length == 0 ) {
@@ -54,36 +57,27 @@ public final class PolyphenyCertificateManager {
     }
 
 
-    static void saveServerCertificate( String hostname, byte[] serverCertificate ) throws IOException {
-        String serverCertificatePath = getServerCertificatePath( hostname );
+    static void saveServerCertificate( String context, String hostname, byte[] serverCertificate ) throws IOException {
+        String serverCertificatePath = getServerCertificatePath( context, hostname );
         PolyphenyCertificateUtils.saveAsPemOverwrite( serverCertificatePath, "CERTIFICATE", serverCertificate );
     }
 
 
-    static PolyphenyKeypair loadClientKeypair( String hostname ) throws IOException {
+    static PolyphenyKeypair loadClientKeypair( String context, String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
-        String basePath = getBaseDirectory( hostname );
+        String basePath = getBaseDirectory( context, hostname );
         String clientKeyPath = dirManager.getFileIfExists( basePath + "key.pem" ).getAbsolutePath();
         String clientCertificatePath = dirManager.getFileIfExists( basePath + "cert.pem" ).getAbsolutePath();
         return PolyphenyKeypair.loadFromDisk( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
     }
 
 
-    static PolyphenyKeypair generateOrLoadClientKeypair( String hostname ) throws IOException {
+    static PolyphenyKeypair generateOrLoadClientKeypair( String context, String hostname ) throws IOException {
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.getInstance();
-        String basePath = getBaseDirectory( hostname );
+        String basePath = getBaseDirectory( context, hostname );
         String clientKeyPath = dirManager.registerNewFile( basePath + "key.pem" ).getAbsolutePath();
         String clientCertificatePath = dirManager.registerNewFile( basePath + "cert.pem" ).getAbsolutePath();
         return PolyphenyCertificateUtils.generateOrLoadCertificates( clientCertificatePath, clientKeyPath, RuntimeConfig.INSTANCE_UUID.getString() );
-    }
-
-
-    public static void deleteCertificates( String hostname ) {
-        try {
-            PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( getBaseDirectory( hostname ) );
-        } catch ( IOException e ) {
-            // ignore
-        }
     }
 
 }

@@ -69,7 +69,7 @@ final class PolyphenyHandshakeClient {
         // authentication value.
         this.polyphenyUUID = RuntimeConfig.INSTANCE_UUID.getString().getBytes( StandardCharsets.UTF_8 );
 
-        this.kp = PolyphenyCertificateManager.generateOrLoadClientKeypair( hostname );
+        this.kp = PolyphenyCertificateManager.generateOrLoadClientKeypair( "docker", hostname );
         this.handshakeParameters = getHandshakeParameters( kp );
 
         this.lastErrorMessage = "";
@@ -232,7 +232,7 @@ final class PolyphenyHandshakeClient {
         byte[] authValue = computeAuthenticationValueV1( psk, polyphenyUUID, cb, serverCertificate, kp.getEncodedCertificate() );
         if ( Arrays.constantTimeAreEqual( authValue, serverValue ) ) {
             try {
-                PolyphenyCertificateManager.saveServerCertificate( hostname, serverCertificate );
+                PolyphenyCertificateManager.saveServerCertificate( "docker", hostname, serverCertificate );
             } catch ( IOException e ) {
                 lastErrorMessage = "Failed to save the server certificate to disk";
                 log.error( "Failed to save server certificate", e );

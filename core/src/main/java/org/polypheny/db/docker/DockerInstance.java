@@ -104,8 +104,8 @@ public final class DockerInstance {
 
 
     private void connectToDocker() throws IOException {
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( host );
-        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( host );
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", host );
+        byte[] serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", host );
         this.client = new PolyphenyDockerClient( host, communicationPort, kp, serverCertificate );
         this.client.ping();
     }

@@ -188,8 +188,8 @@ public final class DockerContainer {
             }
             DockerInstance dockerInstance = maybeDockerInstance.get();
             Socket remote = new Socket( dockerInstance.getHost(), dockerInstance.getProxyPort() );
-            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( dockerInstance.getHost() );
-            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( dockerInstance.getHost() );
+            PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", dockerInstance.getHost() );
+            byte[] serverCert = PolyphenyCertificateManager.loadServerCertificate( "docker", dockerInstance.getHost() );
             PolyphenyTlsClient client = new PolyphenyTlsClient( kp, serverCert, remote.getInputStream(), remote.getOutputStream() );
             InputStream remote_in = client.getInputStream().get();
             OutputStream remote_out = client.getOutputStream().get();

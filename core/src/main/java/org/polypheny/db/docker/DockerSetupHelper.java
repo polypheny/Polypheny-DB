@@ -30,12 +30,12 @@ public final class DockerSetupHelper {
         byte[] serverCertificate;
 
         try {
-            serverCertificate = PolyphenyCertificateManager.loadServerCertificate( hostname );
+            serverCertificate = PolyphenyCertificateManager.loadServerCertificate( "docker", hostname );
         } catch ( IOException e ) {
             throw new IOException( "No valid server certificate present" );
         }
 
-        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( hostname );
+        PolyphenyKeypair kp = PolyphenyCertificateManager.loadClientKeypair( "docker", hostname );
         PolyphenyDockerClient client = new PolyphenyDockerClient( hostname, communicationPort, kp, serverCertificate );
         client.ping();
         client.close();
