@@ -286,32 +286,34 @@ public class PolyphenyDb {
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
-        UUID uuid;
+        String uuid;
         if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
-            uuid = UUID.randomUUID();
+            UUID id = UUID.randomUUID();
             File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
 
             try ( FileOutputStream out = new FileOutputStream( f ) ) {
-                out.write( uuid.toString().getBytes( StandardCharsets.UTF_8 ) );
+                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
             } catch ( IOException e ) {
                 throw new RuntimeException( "Failed to store UUID " + e );
             }
+
+            uuid = id.toString();
         } else {
             Path path = PolyphenyHomeDirManager.getInstance().getFileIfExists( "uuid" ).toPath();
 
             try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
-                uuid = UUID.fromString( in.readLine() );
+                uuid = UUID.fromString( in.readLine() ).toString();
             } catch ( IOException e ) {
                 throw new RuntimeException( "Failed to load UUID " + e );
             }
         }
 
         if ( testMode ) {
-            uuid = UUID.fromString( "027719c8-ae3e-4eae-aa9e-7dd82ebe510c" );
+            uuid = "polypheny-test";
         }
 
         log.info( "Polypheny UUID: " + uuid );
-        RuntimeConfig.INSTANCE_UUID.setString( uuid.toString() );
+        RuntimeConfig.INSTANCE_UUID.setString( uuid );
 
         class ShutdownHelper implements Runnable {
 
