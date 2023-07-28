@@ -276,6 +276,44 @@ public class SqlUtilTest {
     }
 
 
+    @Test
+    public void brackets() {
+        String statement = "SELECT (1 + 1) * 2";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT (1 + 1) * 2", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void brackets2() {
+        String statement = "SELECT timeseries[0]";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT timeseries[0]", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void brackets3() {
+        String statement = "SELECT {1, 2, 3}";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT {1, 2, 3}", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void mixedBrackets() {
+        String statement = "SELECT {({1, 2, 3}[0] + timeseries[(3 * t)])}";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT {({1, 2, 3}[0] + timeseries[(3 * t)])}", statements.get( 0 ) );
+    }
+
+
+
+
     @Rule
     public ExpectedException unterminatedComment = ExpectedException.none();
 
@@ -291,6 +329,26 @@ public class SqlUtilTest {
     @Test
     public void unterminatedComment2() {
         String statement = "SELECT /**";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Rule
+    public ExpectedException unbalancedBrackets = ExpectedException.none();
+
+
+    @Test
+    public void unbalancedBrackets() {
+        String statement = "SELECT (";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void unbalancedBrackets2() {
+        String statement = "SELECT ([)";
         unterminatedComment.expect( RuntimeException.class );
         SqlUtil.splitStatements( statement );
     }

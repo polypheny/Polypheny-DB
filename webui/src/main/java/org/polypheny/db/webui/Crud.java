@@ -725,7 +725,7 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    public static ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+    public static List<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
         Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
@@ -745,10 +745,15 @@ public class Crud implements InformationObserver {
         // TODO: make it possible to use pagination
 
         if ( crud.sqlStatmentSplitter == null ) {
-            throw new RuntimeException( "No way to split SQL statements" );
+            return List.of( new Result( "No function to split SQL statements registered" ) );
         }
 
-        String[] queries = crud.sqlStatmentSplitter.apply( request.query ).toArray( new String[0] );
+        String[] queries;
+        try {
+            queries = crud.sqlStatmentSplitter.apply( request.query ).toArray( new String[0] );
+        } catch ( RuntimeException e ) {
+            return List.of( new Result( "Syntax error: " + e.getMessage() ) );
+        }
 
         // No autoCommit if the query has commits.
         // Ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method

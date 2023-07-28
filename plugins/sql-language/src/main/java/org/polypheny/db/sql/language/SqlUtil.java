@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -755,6 +756,7 @@ public abstract class SqlUtil {
      */
     public static List<String> splitStatements( String statements ) {
         List<String> split = new ArrayList<>();
+        Stack<Character> brackets = new Stack<>();
         StringBuilder currentStatement = new StringBuilder();
         Character quote = null;
 
@@ -773,6 +775,12 @@ public abstract class SqlUtil {
             } else if ( quote == null ) {
                 if ( ch == '\'' || ch == '"' ) {
                     quote = ch;
+                } else if ( ch == '(' || ch == '[' || ch == '{' ) {
+                    brackets.push( ch == '(' ? ')' : ch == '[' ? ']' : '}' );
+                } else if ( ch == ')' || ch == ']' || ch == '}' ) {
+                    if ( ch != brackets.pop() ) {
+                        throw new RuntimeException( "Unbalanced brackets" );
+                    }
                 } else if ( ch == ';' ) {
                     split.add( currentStatement.toString() );
                     currentStatement = new StringBuilder();
@@ -806,6 +814,10 @@ public abstract class SqlUtil {
 
         if ( quote != null ) {
             throw new RuntimeException( String.format( "Unterminated %s", quote ) );
+        }
+
+        if ( !brackets.empty() ) {
+            throw new RuntimeException( "Unclosed " + brackets.pop() );
         }
 
         if ( !currentStatement.toString().isBlank() ) {
