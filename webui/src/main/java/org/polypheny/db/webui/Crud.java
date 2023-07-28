@@ -3618,24 +3618,20 @@ public class Crud implements InformationObserver {
 
 
     void addDockerInstance( final Context ctx ) {
-        try {
-            Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
-            DockerSetupResult res = DockerSetupHelper.newDockerInstance(
-                    (String) config.getOrDefault( "host", "" ),
-                    (String) config.getOrDefault( "alias", "" ),
-                    (String) config.getOrDefault( "registry", "" ),
-                    ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
-                    ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
-                    ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
-                    true
-            );
+        Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
+        DockerSetupResult res = DockerSetupHelper.newDockerInstance(
+                (String) config.getOrDefault( "host", "" ),
+                (String) config.getOrDefault( "alias", "" ),
+                (String) config.getOrDefault( "registry", "" ),
+                ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
+                ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
+                ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
+                true
+        );
 
-            Map<String, Object> json = new HashMap<>( res.getMap() );
-            json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
-            ctx.json( json );
-        } catch ( RuntimeException e ) {
-            log.error( "addDockerInstance", e );
-        }
+        Map<String, Object> json = new HashMap<>( res.getMap() );
+        json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
+        ctx.json( json );
     }
 
 
@@ -3662,15 +3658,11 @@ public class Crud implements InformationObserver {
 
 
     void updateDockerInstance( final Context ctx ) {
-        try {
-            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
 
-            DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
+        DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
 
-            ctx.json( res.getMap() );
-        } catch ( RuntimeException e ) {
-            log.error( "updateDockerInstance", e );
-        }
+        ctx.json( res.getMap() );
     }
 
 
@@ -3684,23 +3676,19 @@ public class Crud implements InformationObserver {
 
 
     void removeDockerInstance( final Context ctx ) {
-        try {
-            Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
-            int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
-            if ( id == -1 ) {
-                throw new RuntimeException( "Invalid id" );
-            }
-
-            String res = DockerSetupHelper.removeDockerInstance( id );
-
-            ctx.json( Map.of(
-                    "error", res,
-                    "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
-                    "status", AutoDocker.getInstance().getStatus()
-            ) );
-        } catch ( RuntimeException e ) {
-            log.error( "removeDockerInstance", e );
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
+        if ( id == -1 ) {
+            throw new RuntimeException( "Invalid id" );
         }
+
+        String res = DockerSetupHelper.removeDockerInstance( id );
+
+        ctx.json( Map.of(
+                "error", res,
+                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
+                "status", AutoDocker.getInstance().getStatus()
+        ) );
     }
 
 
