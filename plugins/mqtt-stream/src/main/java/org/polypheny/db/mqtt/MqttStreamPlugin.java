@@ -30,6 +30,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +132,7 @@ public class MqttStreamPlugin extends Plugin {
         private Mqtt3AsyncClient client;
         private String namespace;
         private NamespaceType namespaceType;
-        private boolean collectionPerTopic;
+        private AtomicBoolean collectionPerTopic;
         private String collectionName;
         private final long databaseId;
         private final int userId;
@@ -155,9 +157,10 @@ public class MqttStreamPlugin extends Plugin {
             this.namespace = name;
             this.namespaceType = type;
 
-            this.collectionPerTopic = Boolean.parseBoolean( settings.get( "collection per topic" ) );
+
+            this.collectionPerTopic = new AtomicBoolean(Boolean.parseBoolean( settings.get( "collection per topic" ) ) );
             this.collectionName = settings.get( "collection name" ).trim();
-            if ( !this.collectionPerTopic ) {
+            if ( !this.collectionPerTopic.get() ) {
                 if ( (this.collectionName.equals( "null" ) | this.collectionName.equals( "" )) ) {
                     throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
                 } else if ( !collectionExists( this.collectionName ) ) {
@@ -242,7 +245,7 @@ public class MqttStreamPlugin extends Plugin {
 
         private long getExistingNamespaceId( String namespaceName, NamespaceType namespaceType ) {
             Catalog catalog = Catalog.getInstance();
-            CatalogSchema schema = null;
+            CatalogSchema schema;
             try {
                 schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
             } catch ( UnknownSchemaException e ) {
@@ -275,25 +278,21 @@ public class MqttStreamPlugin extends Plugin {
                 switch ( changedSetting ) {
                     case "topics":
                         List<String> newTopicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
-
                         List<String> topicsToSub = new ArrayList<>();
                         for ( String newTopic : newTopicsList ) {
                             if ( !topics.containsKey( newTopic ) ) {
                                 topicsToSub.add( newTopic );
                             }
                         }
-
                         if ( !topicsToSub.isEmpty() ) {
                             subscribe( topicsToSub );
                         }
-
                         List<String> topicsToUnsub = new ArrayList<>();
                         for ( String oldTopic : topics.keySet() ) {
                             if ( !newTopicsList.contains( oldTopic ) ) {
                                 topicsToUnsub.add( oldTopic );
                             }
                         }
-
                         if ( !topicsToUnsub.isEmpty() ) {
                             unsubscribe( topicsToUnsub );
                         }
@@ -319,7 +318,6 @@ public class MqttStreamPlugin extends Plugin {
 
 
                          */
-
                         synchronized ( this.namespace ) {
                             String newNamespaceName = this.getCurrentSettings().get( "namespace" ).trim();
                             if ( updatedSettings.contains( "namespace type" ) ) {
@@ -350,13 +348,8 @@ public class MqttStreamPlugin extends Plugin {
                                     throw new RuntimeException( e );
                                 }
                             }
-
-                            //TODO: rmv sout:
-                            System.out.println( "namespace changed " + this.namespace );
                         }
-
-                        //client.notify();
-                        break;
+                    break;
 
                     case "namespace type":
                         NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
@@ -389,21 +382,21 @@ public class MqttStreamPlugin extends Plugin {
                                     throw new RuntimeException( e );
                                 }
                             }
-                        }
-                        break;
 
+                        }
+
+                        break;
                     case "collection per topic":
-                        this.collectionPerTopic = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
+                        this.collectionPerTopic.set( Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) ) );
                         createAllCollections();
                         break;
-
                     case "collection name":
                         String newCollectionName = this.getCurrentSettings().get( "collection name" ).trim();
                         boolean mode;
                         if ( updatedSettings.contains( "collection per topic" ) ) {
                             mode = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
                         } else {
-                            mode = this.collectionPerTopic;
+                            mode = this.collectionPerTopic.get();
                         }
                         if ( !mode ) {
                             if ( !(newCollectionName.equals( "null" ) | newCollectionName.equals( "" )) ) {
@@ -420,9 +413,7 @@ public class MqttStreamPlugin extends Plugin {
                         } else {
                             this.collectionName = newCollectionName;
                         }
-
                         break;
-
                 }
             }
         }
@@ -462,7 +453,7 @@ public class MqttStreamPlugin extends Plugin {
                     throw new RuntimeException( "Subscription was not successful. Please try again.", throwable );
                 } else {
                     this.topics.put( topic, new AtomicLong( 0 ) );
-                    if ( collectionPerTopic && !collectionExists( topic ) ) {
+                    if ( collectionPerTopic.get() && !collectionExists( topic ) ) {
                         createNewCollection( topic );
                     }
                     //TODO: rmv, only for debugging needed
@@ -504,13 +495,11 @@ public class MqttStreamPlugin extends Plugin {
             Long incrementedMsgCount = topics.get( topic ).incrementAndGet();
             topics.replace( topic, new AtomicLong( incrementedMsgCount ) );
             addMessageToQueue( topic, message );
-
-            if ( this.collectionPerTopic ) {
+            if ( this.collectionPerTopic.get() ) {
                 receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
             } else {
                 receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
             }
-
             MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
             String content = streamProcessor.processStream();
             //TODO: what is returned from processStream if this Stream is not valid/ not result of filter...?
@@ -545,13 +534,13 @@ public class MqttStreamPlugin extends Plugin {
         private boolean collectionExists( String collectionName ) {
             Catalog catalog = Catalog.getInstance();
             Pattern pattern = new Pattern( collectionName );
-            List<CatalogCollection> collectionList = catalog.getCollections( getNamespaceId( this.namespace, this.namespaceType ), pattern );
+            List<CatalogCollection> collectionList = null;
+            collectionList = catalog.getCollections( getNamespaceId( this.namespace, this.namespaceType), pattern );
             return !collectionList.isEmpty();
         }
 
 
         private void createNewCollection( String collectionName ) {
-            Catalog catalog = Catalog.getInstance();
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
             try {
@@ -573,7 +562,7 @@ public class MqttStreamPlugin extends Plugin {
 
 
         private void createAllCollections() {
-            if ( this.collectionPerTopic ) {
+            if ( this.collectionPerTopic.get() ) {
                 for ( String t : this.topics.keySet() ) {
                     if ( !collectionExists( t ) ) {
                         createNewCollection( t );
@@ -636,14 +625,9 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationPage informationPage;
 
             private final InformationGroup informationGroupTopics;
-            private final InformationGroup informationGroupMessage;
-            private final InformationGroup informationGroupPub;
-            private final InformationGroup informationGroupReconn;
-            private final InformationGroup informationGroupInfo;
             private final InformationTable topicsTable;
             private final InformationTable messageTable;
             private final InformationKeyValue brokerKv;
-            private final InformationAction msgButton;
             private final InformationAction reconnButton;
 
 
@@ -653,7 +637,7 @@ public class MqttStreamPlugin extends Plugin {
                 informationPage = new InformationPage( getUniqueName(), INTERFACE_NAME ).setLabel( "Interfaces" );
                 im.addPage( informationPage );
 
-                informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
+                InformationGroup informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
                 im.addGroup( informationGroupInfo );
                 brokerKv = new InformationKeyValue( informationGroupInfo );
                 im.registerInformation( brokerKv );
@@ -668,7 +652,7 @@ public class MqttStreamPlugin extends Plugin {
                 im.registerInformation( topicsTable );
                 informationGroupTopics.setRefreshFunction( this::update );
 
-                informationGroupMessage = new InformationGroup( informationPage, "Recently arrived messages" ).setOrder( 2 );
+                InformationGroup informationGroupMessage = new InformationGroup( informationPage, "Recently arrived messages" ).setOrder( 2 );
                 im.addGroup( informationGroupMessage );
                 messageTable = new InformationTable(
                         informationGroupMessage,
@@ -678,9 +662,9 @@ public class MqttStreamPlugin extends Plugin {
                 informationGroupMessage.setRefreshFunction( this::update );
 
                 //TODO: rmv button
-                informationGroupPub = new InformationGroup( informationPage, "Publish a message" ).setOrder( 3 );
+                InformationGroup informationGroupPub = new InformationGroup( informationPage, "Publish a message" ).setOrder( 3 );
                 im.addGroup( informationGroupPub );
-                msgButton = new InformationAction( informationGroupPub, "Send a msg", ( parameters ) -> {
+                InformationAction msgButton = new InformationAction( informationGroupPub, "Send a msg", ( parameters ) -> {
                     String end = "Msg was published!";
                     client.publishWith().topic( parameters.get( "topic" ) ).payload( parameters.get( "msg" ).getBytes() ).send();
                     return end;
@@ -688,7 +672,7 @@ public class MqttStreamPlugin extends Plugin {
                 im.registerInformation( msgButton );
 
                 // Reconnection button
-                informationGroupReconn = new InformationGroup( informationPage, "Reconnect to broker" ).setOrder( 5 );
+                InformationGroup informationGroupReconn = new InformationGroup( informationPage, "Reconnect to broker" ).setOrder( 5 );
                 im.addGroup( informationGroupReconn );
                 reconnButton = new InformationAction( informationGroupReconn, "Reconnect", ( parameters ) -> {
                     String end = "Reconnected to broker";
@@ -719,6 +703,20 @@ public class MqttStreamPlugin extends Plugin {
 
 
             public void update() {
+                /* TODO : rmv concurency trial
+                String s = namespace;
+                String c;
+                for ( ;; ) {
+                    if ( s.equals( namespace ) ) {
+                        c = "!";
+                    } else {
+                        c = ".";
+                    }
+                    System.out.print(c);
+                }
+
+                 */
+
                 topicsTable.reset();
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
