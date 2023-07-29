@@ -26,8 +26,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -124,6 +126,7 @@ public class MqttStreamPlugin extends Plugin {
         @Getter
         private final int brokerPort;
         private Map<String, AtomicLong> topics = new ConcurrentHashMap<>();
+        private ConcurrentLinkedQueue<String[]> messageQueue = new ConcurrentLinkedQueue<>();
         private Mqtt3AsyncClient client;
         private String namespace;
         private NamespaceType namespaceType;
@@ -471,20 +474,67 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        /**
-         * @param topic
-         * @return list of MqttMessages belonging to given topic.
-         */
-        private List<MqttMessage> getMessages( String topic ) {
-            StreamCapture streamCapture = new StreamCapture( getTransaction() );
-            List<MqttMessage> messages;
-            if ( this.collectionPerTopic ) {
-                messages = streamCapture.getMessages( namespace, topic );
-            } else {
-                messages = streamCapture.getMessages( namespace, this.collectionName );
-                messages.removeIf( mqttMessage -> !Objects.equals( mqttMessage.getTopic(), topic ) );
+        public void unsubscribe( List<String> topics ) {
+            for ( String t : topics ) {
+                unsubscribe( t );
             }
-            return messages;
+        }
+
+
+        public void unsubscribe( String topic ) {
+            client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
+                if ( throwable != null ) {
+                    // change settings:
+                    this.settings.put( "topics", this.settings.get( "topics" ) + "," + topic );
+                    throw new RuntimeException( "Topic " + topic + " could not be unsubscribed.", throwable );
+                } else {
+                    this.topics.remove( topic );
+                }
+            } );
+        }
+
+
+        void processMsg( Mqtt3Publish subMsg ) {
+            Transaction transaction = getTransaction();
+            Statement statement = transaction.createStatement();
+            ReceivedMqttMessage receivedMqttMessage;
+            String topic = subMsg.getTopic().toString();
+            String message = extractPayload( subMsg );
+            MqttMessage mqttMessage = new MqttMessage( message, topic );
+            Long incrementedMsgCount = topics.get( topic ).incrementAndGet();
+            topics.replace( topic, new AtomicLong( incrementedMsgCount ) );
+            addMessageToQueue( topic, message );
+
+            if ( this.collectionPerTopic ) {
+                receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
+            } else {
+                receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+            }
+
+            MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
+            String content = streamProcessor.processStream();
+            //TODO: what is returned from processStream if this Stream is not valid/ not result of filter...?
+            if ( !Objects.equals( content, "" ) ) {
+                StreamCapture streamCapture = new StreamCapture( getTransaction() );
+                streamCapture.handleContent( receivedMqttMessage );
+            }
+        }
+
+
+        private static String extractPayload( Mqtt3Publish subMsg ) {
+            return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
+        }
+
+
+        public List<String> topicsToList( String topics ) {
+            List<String> topicsList = new ArrayList<>( List.of( topics.split( "," ) ) );
+            for ( int i = 0; i < topicsList.size(); i++ ) {
+                String topic = topicsList.get( i ).trim();
+                if ( !topic.isEmpty() ) {
+                    topicsList.set( i, topic );
+                }
+            }
+            return topicsList;
         }
 
 
@@ -541,67 +591,13 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        public void unsubscribe( List<String> topics ) {
-            for ( String t : topics ) {
-                unsubscribe( t );
-            }
-        }
-
-
-        public void unsubscribe( String topic ) {
-            client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
-                if ( throwable != null ) {
-                    // change settings:
-                    this.settings.put( "topics", this.settings.get( "topics" ) + "," + topic );
-                    throw new RuntimeException( "Topic " + topic + " could not be unsubscribed.", throwable );
-                } else {
-                    this.topics.remove( topic );
-                }
-            } );
-        }
-
-
-        void processMsg( Mqtt3Publish subMsg ) {
-            Transaction transaction = getTransaction();
-            Statement statement = transaction.createStatement();
-            ReceivedMqttMessage receivedMqttMessage;
-            String topic = subMsg.getTopic().toString();
-
-            Long incrementedMsgCount = topics.get( topic ).incrementAndGet();
-            topics.replace( topic, new AtomicLong( incrementedMsgCount ) );
-
-            if ( this.collectionPerTopic ) {
-                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
+        private void addMessageToQueue( String topic, String message ) {
+            if ( this.messageQueue.size() >= 20 ) {
+                this.messageQueue.poll();
+                this.messageQueue.add( new String[]{ topic, message } );
             } else {
-                receivedMqttMessage = new ReceivedMqttMessage( new MqttMessage( extractPayload( subMsg ), topic ), this.namespace, getNamespaceId( this.namespace, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+                this.messageQueue.add( new String[]{ topic, message } );
             }
-
-            MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
-            String content = streamProcessor.processStream();
-            //TODO: what is returned from processStream if this Stream is not valid/ not result of filter...?
-            if ( !Objects.equals( content, "" ) ) {
-                StreamCapture streamCapture = new StreamCapture( getTransaction() );
-                streamCapture.handleContent( receivedMqttMessage );
-                this.monitoringPage.update();
-            }
-
-        }
-
-
-        private static String extractPayload( Mqtt3Publish subMsg ) {
-            return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
-        }
-
-
-        public List<String> topicsToList( String topics ) {
-            List<String> topicsList = new ArrayList<>( List.of( topics.split( "," ) ) );
-            for ( int i = 0; i < topicsList.size(); i++ ) {
-                String topic = topicsList.get( i ).trim();
-                if ( !topic.isEmpty() ) {
-                    topicsList.set( i, topic );
-                }
-            }
-            return topicsList;
         }
 
 
@@ -640,11 +636,12 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationPage informationPage;
 
             private final InformationGroup informationGroupTopics;
-
+            private final InformationGroup informationGroupMessage;
             private final InformationGroup informationGroupPub;
             private final InformationGroup informationGroupReconn;
             private final InformationGroup informationGroupInfo;
             private final InformationTable topicsTable;
+            private final InformationTable messageTable;
             private final InformationKeyValue brokerKv;
             private final InformationAction msgButton;
             private final InformationAction reconnButton;
@@ -653,7 +650,8 @@ public class MqttStreamPlugin extends Plugin {
             public MonitoringPage() {
                 InformationManager im = InformationManager.getInstance();
 
-                informationPage = new InformationPage( getUniqueName(), INTERFACE_NAME ).fullWidth().setLabel( "Interfaces" );
+                informationPage = new InformationPage( getUniqueName(), INTERFACE_NAME ).setLabel( "Interfaces" );
+                im.addPage( informationPage );
 
                 informationGroupInfo = new InformationGroup( informationPage, "Information" ).setOrder( 1 );
                 im.addGroup( informationGroupInfo );
@@ -662,19 +660,26 @@ public class MqttStreamPlugin extends Plugin {
                 informationGroupInfo.setRefreshFunction( this::update );
 
                 informationGroupTopics = new InformationGroup( informationPage, "Subscribed Topics" ).setOrder( 2 );
-                im.addPage( informationPage );
                 im.addGroup( informationGroupTopics );
                 topicsTable = new InformationTable(
                         informationGroupTopics,
-                        List.of( "Topic", "Number of received messages", "Recently received messages" )
+                        List.of( "Topic", "Number of received messages" )
                 );
                 im.registerInformation( topicsTable );
                 informationGroupTopics.setRefreshFunction( this::update );
 
+                informationGroupMessage = new InformationGroup( informationPage, "Recently arrived messages" ).setOrder( 2 );
+                im.addGroup( informationGroupMessage );
+                messageTable = new InformationTable(
+                        informationGroupMessage,
+                        List.of( "Topic", "Message" )
+                );
+                im.registerInformation( messageTable );
+                informationGroupMessage.setRefreshFunction( this::update );
+
                 //TODO: rmv button
                 informationGroupPub = new InformationGroup( informationPage, "Publish a message" ).setOrder( 3 );
                 im.addGroup( informationGroupPub );
-
                 msgButton = new InformationAction( informationGroupPub, "Send a msg", ( parameters ) -> {
                     String end = "Msg was published!";
                     client.publishWith().topic( parameters.get( "topic" ) ).payload( parameters.get( "msg" ).getBytes() ).send();
@@ -718,25 +723,17 @@ public class MqttStreamPlugin extends Plugin {
                 if ( topics.isEmpty() ) {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
-                    for ( String topic : topics.keySet() ) {
-                        List<MqttMessage> mqttMessageList = getMessages( topic );
-                        if ( mqttMessageList.isEmpty() ) {
-                            topicsTable.addRow( topic, 0, "No messages received yet." );
-                        } else {
-                            //only show last 20 Messages:
-                            int indexLastMessage = 0;
-                            if ( mqttMessageList.size() > 20 ) {
-                                indexLastMessage = mqttMessageList.size() - 20;
-                            }
-                            List<String> recentMessages = new ArrayList<>();
-                            for ( int i = indexLastMessage; i < mqttMessageList.size(); i++ ) {
-                                recentMessages.add( mqttMessageList.get( i ).getMessage() );
-                            }
-                            topicsTable.addRow( topic, topics.get( topic ), "" );
-                            for ( String message : recentMessages ) {
-                                topicsTable.addRow( "", "", message );
-                            }
-                        }
+                    for ( Entry<String, AtomicLong> t : topics.entrySet() ) {
+                        topicsTable.addRow( t.getKey(), t.getValue() );
+                    }
+                }
+
+                messageTable.reset();
+                if ( messageQueue.isEmpty() ) {
+                    messageTable.addRow( "No messages received yet." );
+                } else {
+                    for ( String[] message : messageQueue ) {
+                        messageTable.addRow( List.of( message ) );
                     }
                 }
 
