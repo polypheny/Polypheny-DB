@@ -113,7 +113,7 @@ public class MqttStreamPlugin extends Plugin {
                 new QueryInterfaceSettingInteger( "brokerPort", false, true, false, 1883 ),
                 new QueryInterfaceSettingString( "namespace", false, true, true, "namespace1" ),
                 // "RELATIONAL", "GRAPH"  type are not supported yet.
-                new QueryInterfaceSettingList( "namespace type", false, true, true, new ArrayList<>( List.of( "DOCUMENT", "RELATIONAL", "GRAPH") ) ),
+                new QueryInterfaceSettingList( "namespace type", false, true, true, new ArrayList<>( List.of( "DOCUMENT", "RELATIONAL", "GRAPH" ) ) ),
                 new QueryInterfaceSettingList( "collection per topic", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
                 new QueryInterfaceSettingString( "collection name", true, false, true, null ),
                 new QueryInterfaceSettingString( "topics", false, true, true, null )
@@ -155,7 +155,7 @@ public class MqttStreamPlugin extends Plugin {
             this.collectionPerTopic = Boolean.parseBoolean( settings.get( "collection per topic" ) );
             this.collectionName = settings.get( "collection name" ).trim();
             if ( !this.collectionPerTopic ) {
-                if ( (this.collectionName.equals( "null" ) | this.collectionName.equals( "" ) ) ) {
+                if ( (this.collectionName.equals( "null" ) | this.collectionName.equals( "" )) ) {
                     throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
                 } else if ( !collectionExists( this.collectionName ) ) {
                     createNewCollection( this.collectionName );
@@ -205,7 +205,7 @@ public class MqttStreamPlugin extends Plugin {
 
             client.disconnect().whenComplete( ( disconn, throwable ) -> {
                         if ( throwable != null ) {
-                            throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + broker +":" + brokerPort + ". Please try again.",throwable);
+                            throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + broker + ":" + brokerPort + ". Please try again.", throwable );
                         } else {
                             log.info( "{} stopped.", INTERFACE_NAME );
                             monitoringPage.remove();
@@ -216,8 +216,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-
-        private boolean namespaceExists (String namespaceName, NamespaceType namespaceType) {
+        private boolean namespaceExists( String namespaceName, NamespaceType namespaceType ) {
             Catalog catalog = Catalog.getInstance();
             if ( catalog.checkIfExistsSchema( Catalog.defaultDatabaseId, namespaceName ) ) {
                 getExistingNamespaceId( namespaceName, namespaceType );
@@ -238,34 +237,33 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-
-    private long getExistingNamespaceId(String namespaceName, NamespaceType namespaceType) {
-        Catalog catalog = Catalog.getInstance();
-        CatalogSchema schema = null;
-        try {
-            schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( e );
+        private long getExistingNamespaceId( String namespaceName, NamespaceType namespaceType ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogSchema schema = null;
+            try {
+                schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
+            } catch ( UnknownSchemaException e ) {
+                throw new RuntimeException( e );
+            }
+            assert schema != null;
+            if ( schema.namespaceType == namespaceType ) {
+                return schema.id;
+            } else {
+                throw new RuntimeException( "There is already a namespace existing in this database with the given name but of another type. Please change the namespace name or the type." );
+            }
         }
-        assert schema != null;
-        if ( schema.namespaceType == namespaceType ) {
-            return schema.id;
-        } else {
-            throw new RuntimeException( "There is already a namespace existing in this database with the given name but of another type. Please change the namespace name or the type." );
-        }
-    }
 
 
-    private long createNamespace(String namespaceName, NamespaceType namespaceType) {
-        Catalog catalog = Catalog.getInstance();
-        long id = catalog.addNamespace( namespaceName, Catalog.defaultDatabaseId, Catalog.defaultUserId, namespaceType );
-        try {
-            catalog.commit();
-            return id;
-        } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( e );
+        private long createNamespace( String namespaceName, NamespaceType namespaceType ) {
+            Catalog catalog = Catalog.getInstance();
+            long id = catalog.addNamespace( namespaceName, Catalog.defaultDatabaseId, Catalog.defaultUserId, namespaceType );
+            try {
+                catalog.commit();
+                return id;
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( e );
+            }
         }
-    }
 
 
         @Override
@@ -330,6 +328,7 @@ public class MqttStreamPlugin extends Plugin {
                                         }
                                         this.namespace = newNamespaceName;
                                         this.namespaceType = type;
+                                        createAllCollections();
                                     } catch ( RuntimeException e ) {
                                         this.settings.put( "namespace", this.namespace );
                                         this.settings.put( "namespace type", String.valueOf( this.namespaceType ) );
@@ -342,6 +341,7 @@ public class MqttStreamPlugin extends Plugin {
                                         createNamespace( newNamespaceName, this.namespaceType );
                                     }
                                     this.namespace = newNamespaceName;
+                                    createAllCollections();
                                 } catch ( RuntimeException e ) {
                                     this.settings.put( "namespace", this.namespace );
                                     throw new RuntimeException( e );
@@ -349,7 +349,7 @@ public class MqttStreamPlugin extends Plugin {
                             }
 
                             //TODO: rmv sout:
-                            System.out.println("namespace changed" + this.namespace);
+                            System.out.println( "namespace changed " + this.namespace );
                         }
 
                         //client.notify();
@@ -367,6 +367,7 @@ public class MqttStreamPlugin extends Plugin {
                                         }
                                         this.namespace = newName;
                                         this.namespaceType = newNamespaceType;
+                                        createAllCollections();
                                     } catch ( RuntimeException e ) {
                                         this.settings.put( "namespace", this.namespace );
                                         this.settings.put( "namespace type", String.valueOf( this.namespaceType ) );
@@ -379,6 +380,7 @@ public class MqttStreamPlugin extends Plugin {
                                         createNamespace( this.namespace, newNamespaceType );
                                     }
                                     this.namespaceType = newNamespaceType;
+                                    createAllCollections();
                                 } catch ( RuntimeException e ) {
                                     this.settings.put( "namespace type", String.valueOf( this.namespaceType ) );
                                     throw new RuntimeException( e );
@@ -389,22 +391,24 @@ public class MqttStreamPlugin extends Plugin {
 
                     case "collection per topic":
                         this.collectionPerTopic = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
+                        createAllCollections();
                         break;
 
                     case "collection name":
                         String newCollectionName = this.getCurrentSettings().get( "collection name" ).trim();
                         boolean mode;
-                        if (updatedSettings.contains( "collection per topic" ) ) {
+                        if ( updatedSettings.contains( "collection per topic" ) ) {
                             mode = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
                         } else {
                             mode = this.collectionPerTopic;
                         }
                         if ( !mode ) {
-                            if ( ! (newCollectionName.equals( "null" ) | newCollectionName.equals( "" ) ) ) {
+                            if ( !(newCollectionName.equals( "null" ) | newCollectionName.equals( "" )) ) {
                                 if ( !collectionExists( newCollectionName ) ) {
                                     createNewCollection( this.collectionName );
                                 }
                                 this.collectionName = newCollectionName;
+                                createAllCollections();
                             } else {
                                 this.settings.put( "collection name", this.collectionName );
                                 throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
@@ -413,6 +417,7 @@ public class MqttStreamPlugin extends Plugin {
                         } else {
                             this.collectionName = newCollectionName;
                         }
+
                         break;
 
                 }
@@ -438,7 +443,7 @@ public class MqttStreamPlugin extends Plugin {
             } ).send().whenComplete( ( subAck, throwable ) -> {
                 if ( throwable != null ) {
                     // change settings:
-                    List<String> topicsList = topicsToList( this.settings.get( "topics" ) );
+                    List<String> topicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
                     StringBuilder stringBuilder = new StringBuilder();
                     for ( String t : topicsList ) {
                         if ( !t.equals( topic ) ) {
@@ -446,7 +451,11 @@ public class MqttStreamPlugin extends Plugin {
                         }
                     }
                     String topicsString = stringBuilder.toString();
-                    this.settings.replace( "topics", topicsString.substring( 0, topicsString.lastIndexOf( ',' ) ) );
+                    if ( !topicsString.isEmpty() ) {
+                        topicsString = topicsString.substring( 0, topicsString.lastIndexOf( ',' ) );
+                    }
+                    this.settings.put( "topics", topicsString );
+                    log.info( "not successful: {}", topic );
                     throw new RuntimeException( "Subscription was not successful. Please try again.", throwable );
                 } else {
                     this.topics.put( topic, new AtomicLong( 0 ) );
@@ -513,6 +522,25 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
+        private void createAllCollections() {
+            if ( this.collectionPerTopic ) {
+                for ( String t : this.topics.keySet() ) {
+                    if ( !collectionExists( t ) ) {
+                        createNewCollection( t );
+                    }
+                }
+            } else {
+                if ( !(this.collectionName.equals( "null" ) | this.collectionName.equals( "" )) ) {
+                    if ( !collectionExists( this.collectionName ) ) {
+                        createNewCollection( this.collectionName );
+                    }
+                } else {
+                    throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
+                }
+            }
+        }
+
+
         public void unsubscribe( List<String> topics ) {
             for ( String t : topics ) {
                 unsubscribe( t );
@@ -524,7 +552,7 @@ public class MqttStreamPlugin extends Plugin {
             client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
                 if ( throwable != null ) {
                     // change settings:
-                    this.settings.put( "topics", this.settings.get( "topics" ) +  "," + topic );
+                    this.settings.put( "topics", this.settings.get( "topics" ) + "," + topic );
                     throw new RuntimeException( "Topic " + topic + " could not be unsubscribed.", throwable );
                 } else {
                     this.topics.remove( topic );
@@ -570,7 +598,7 @@ public class MqttStreamPlugin extends Plugin {
             for ( int i = 0; i < topicsList.size(); i++ ) {
                 String topic = topicsList.get( i ).trim();
                 if ( !topic.isEmpty() ) {
-                    topicsList.set( i, topic);
+                    topicsList.set( i, topic );
                 }
             }
             return topicsList;

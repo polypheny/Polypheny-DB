@@ -16,7 +16,8 @@
 
 package org.polypheny.db.stream;
 
-public interface StreamMessage {
+public interface StreamMessage<T> {
 
 
+    T getMessage();
 }
