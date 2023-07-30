@@ -58,33 +58,6 @@ public class StreamCapture {
     }
 
 
-    /**
-     * @return the id of the collection that was either already existing with the topic as name or that was newly created
-     */
-/*    long getCollectionId() {
-        Catalog catalog = Catalog.getInstance();
-        //check for collection with same name
-        List<CatalogCollection> collectionList = catalog.getCollections( this.receivedMqttMessage.getNamespaceId(), null );
-        for ( CatalogCollection collection : collectionList ) {
-            if ( collection.name.equals( this.receivedMqttMessage.getCollectionName() ) ) {
-                int queryInterfaceId = QueryInterfaceManager.getInstance().getQueryInterface( this.receivedMqttMessage.getUniqueNameOfInterface() ).getQueryInterfaceId();
-                if ( !collection.placements.contains( queryInterfaceId ) ) {
-                    log.info( "found matching collection!" );
-                    //TODO: Nur AdapterID können als Placements hinzugefügt werden. nicht QueryInterfaceIds -> Marco fragen.
-                    //catalog.addCollectionPlacement( queryInterfaceId, collection.id, PlacementType.MANUAL );
-                    return collection.id;
-                } else {
-                    log.info( "found matching collection!" );
-                    return collection.id;
-                }
-            }
-        }
-
-        return 0;
-    }
-    */
-
-
     // added by Datomo
     public void insertDocument( String collectionName) {
         String sqlCollectionName = this.receivedMqttMessage.getNamespaceName() + "." + collectionName;
@@ -110,23 +83,6 @@ public class StreamCapture {
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
         }
-    }
-
-
-    public List<MqttMessage> getMessages( String namespaceName, String collectionName ) {
-        List<String> listOfDocuments = scanCollection( namespaceName, collectionName );
-        List<MqttMessage> listOfMessage = new ArrayList<>();
-        for ( String document : listOfDocuments ) {
-            String[] documentAsList = document.split( "," );
-            String topic = documentAsList[1].substring( documentAsList[0].indexOf( ':' ) );
-            topic = topic.substring( topic.indexOf( '"' ) + 1, topic.lastIndexOf( '"' ) );
-
-            String message = documentAsList[2].trim();
-            message = message.substring( message.indexOf( ':' ) ).trim();
-            message = message.substring( message.indexOf( '"' ) + 1, message.lastIndexOf( '"' ) );
-            listOfMessage.add( new MqttMessage( message, topic ) );
-        }
-        return listOfMessage;
     }
 
 
