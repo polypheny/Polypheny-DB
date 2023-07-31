@@ -68,6 +68,8 @@ dependencies {
         exclude group: "com.github.spotbugs"
     }
 
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause

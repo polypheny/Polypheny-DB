@@ -18,14 +18,24 @@ package org.polypheny.db.adapter.ethereum;
 
 
 import com.google.common.collect.ImmutableMap;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -47,6 +57,10 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
@@ -93,6 +107,12 @@ public class EthereumPlugin extends Plugin {
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
+    @AdapterSettingString(name = "SmartContractAddress", description = "Address of the smart contract address", defaultValue = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", position = 4, modifiable = true) // Event Data: Add annotation
+    @AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 5, modifiable = true) // Event Data: Add annotation
+    @AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 6, modifiable = true)
+    @AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 7, modifiable = true)
+    @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 8, modifiable = true)
+    @AdapterSettingString(name = "AdapterTargetName", description = "Adapter Target Name", defaultValue = "ethereum", position = 6, modifiable = true)
     public static class EthereumDataSource extends DataSource {
 
         private String clientURL;
@@ -101,6 +121,14 @@ public class EthereumPlugin extends Plugin {
         @Getter
         private boolean experimentalFiltering;
         private EthereumSchema currentSchema;
+        private final String smartContractAddress;
+        private final String etherscanApiKey;
+        private final BigInteger fromBlock;
+        private final BigInteger toBlock;
+        private final Map<String, EventData> eventInputsMap;
+        private Boolean startCaching;
+        private String adpaterTargetName;
+        List<Event> events = new ArrayList<>(); // for caching
 
 
         public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -108,6 +136,13 @@ public class EthereumPlugin extends Plugin {
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
+            this.smartContractAddress = settings.get( "SmartContractAddress" ); // Event Data; Add smartContractAddress to EDataSource
+            this.etherscanApiKey = settings.get( "EtherscanApiKey" );
+            this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
+            this.toBlock = new BigInteger( settings.get( "toBlock" ) );
+            this.eventInputsMap = new HashMap<>();
+            this.startCaching = Boolean.parseBoolean( settings.get( "Caching" ) );
+            this.adpaterTargetName = settings.get( "AdapterTargetName" );
             createInformationPage();
             enableInformationPage();
         }
@@ -157,6 +192,43 @@ public class EthereumPlugin extends Plugin {
             String[] transactionColumns = { "hash", "nonce", "block_hash", "block_number", "transaction_index", "from", "to", "value", "gas_price", "gas", "input", "creates", "public_key", "raw", "r", "s" };
             PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
 
+            String[] commonEventColumns = { "removed", "log_index", "transaction_index", "transaction_hash", "block_hash", "block_number", "address" };
+            PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
+
+            // Caching: Init own caching class. Start caching with "startCaching (idAdapter, smartContractAddress, wo gecached (in welchen Store))".
+            // In the background (another Thread) logs are fetched (also see restrictions eth_logs)
+            // As usual: Schema is still created here.
+            // Caching: We can define a threshold in which part of the data is inserted into the tables. (use flag for this)
+
+            // Event Data Dynamic Scheme
+            List<JSONObject> eventList = getEventsFromABI( etherscanApiKey, smartContractAddress );
+            eventInputsMap.clear(); // clear the map
+            events.clear(); // clear the map
+            for ( JSONObject event : eventList ) {
+                String eventName = event.getString( "name" ); // to match it later with catalogTable.name
+                JSONArray inputsArray = event.getJSONArray( "inputs" );
+                List<JSONObject> inputsList = new ArrayList<>();
+                List<TypeReference<?>> eventParameters = new ArrayList<>();
+                for ( int i = 0; i < inputsArray.length(); i++ ) {
+                    JSONObject inputObject = inputsArray.getJSONObject( i );
+                    inputsList.add( inputObject );
+                    // put this into a method (modular)
+                    String type = inputObject.getString( "type" );
+                    boolean indexed = inputObject.getBoolean( "indexed" );
+                    if ( type.equals( "address" ) ) {
+                        eventParameters.add( indexed ? new TypeReference<Address>( true ) {
+                        } : new TypeReference<Address>( false ) {
+                        } );
+                    } else if ( type.equals( "uint256" ) ) {
+                        eventParameters.add( indexed ? new TypeReference<Uint256>( true ) {
+                        } : new TypeReference<Uint256>( false ) {
+                        } );
+                    }
+                }
+                eventInputsMap.put( eventName.toLowerCase(), new EventData( eventName, inputsList ) );
+                events.add( new Event( eventName, eventParameters ) );
+            }
+
             PolyType type = PolyType.VARCHAR;
             PolyType collectionsType = null;
             Integer length = 300;
@@ -204,6 +276,66 @@ public class EthereumPlugin extends Plugin {
                 position++;
             }
             map.put( "transaction", transactCols );
+
+            // Event Data: Creating columns for each event for specified smart contract based on ABI
+            for ( Map.Entry<String, EventData> eventEntry : eventInputsMap.entrySet() ) {
+                String eventName = eventEntry.getValue().getOriginalKey(); // Get the original event name
+                List<JSONObject> inputsList = eventEntry.getValue().getData(); // Get the data
+                List<ExportedColumn> eventDataCols = new ArrayList<>();
+                int inputPosition = 0;
+
+                for ( JSONObject input : inputsList ) {
+                    String inputName = input.getString( "name" );
+                    PolyType inputType = convertToPolyType( input.getString( "type" ) ); // convert event types to polytype
+                    eventDataCols.add( new ExportedColumn(
+                            inputName,
+                            inputType,
+                            collectionsType,
+                            length,
+                            scale,
+                            dimension,
+                            cardinality,
+                            false,
+                            "public",
+                            eventName, // event name
+                            inputName,
+                            inputPosition,
+                            inputPosition == 0
+                    ) );
+                    inputPosition++;
+                }
+
+                // Adding common columns
+                for ( int i = 0; i < commonEventColumns.length; i++ ) {
+                    String columnName = commonEventColumns[i];
+                    PolyType columnType = commonEventTypes[i];
+                    eventDataCols.add( new ExportedColumn(
+                            columnName,
+                            columnType,
+                            collectionsType,
+                            length,
+                            scale,
+                            dimension,
+                            cardinality,
+                            false,
+                            "public",
+                            eventName, // event name
+                            columnName,
+                            inputPosition,
+                            inputPosition == 0
+                    ) );
+                    inputPosition++;
+                }
+
+                map.put( eventName, eventDataCols );
+            }
+
+            // caching
+            if ( startCaching == Boolean.TRUE ) {
+                EventCacheManager eventCacheManager = new EventCacheManager( clientURL, 50, smartContractAddress, fromBlock, toBlock, events );
+                eventCacheManager.startCaching();
+            }
+
             return map;
         }
 
@@ -267,6 +399,108 @@ public class EthereumPlugin extends Plugin {
                 informationElements.add( table );
                 informationGroups.add( group );
             }
+        }
+
+
+        protected List<JSONObject> getEventsFromABI( String etherscanApiKey, String contractAddress ) {
+            List<JSONObject> eventList = new ArrayList<>();
+            try {
+                URL url = new URL( "https://api.etherscan.io/api?module=contract&action=getabi&address=" + contractAddress + "&apikey=" + etherscanApiKey );
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod( "GET" );
+                int responseCode = connection.getResponseCode();
+                if ( responseCode == HttpURLConnection.HTTP_OK ) {
+                    BufferedReader in = new BufferedReader( new InputStreamReader( connection.getInputStream() ) );
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ( (inputLine = in.readLine()) != null ) {
+                        response.append( inputLine );
+                    }
+                    in.close();
+
+                    JSONObject jsonObject = new JSONObject( response.toString() );
+                    String abi = jsonObject.getString( "result" );
+                    // Convert ABI string to JSON Array
+                    JSONArray abiArray = new JSONArray( abi );
+                    for ( int i = 0; i < abiArray.length(); i++ ) {
+                        JSONObject obj = abiArray.getJSONObject( i );
+
+                        // Check if the current object is an event
+                        if ( obj.getString( "type" ).equals( "event" ) ) {
+                            eventList.add( obj );
+                        }
+                    }
+                }
+
+            } catch ( MalformedURLException e ) {
+                throw new RuntimeException( e );
+            } catch ( ProtocolException e ) {
+                throw new RuntimeException( e );
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+
+            return eventList;
+        }
+
+
+        private PolyType convertToPolyType( String ethereumType ) {
+            if ( ethereumType.startsWith( "uint" ) || ethereumType.startsWith( "int" ) ) {
+                // Ethereum's uint and int types map to BIGINT in PolyType
+                return PolyType.BIGINT;
+            } else if ( ethereumType.startsWith( "bytes" ) || ethereumType.equals( "string" ) || ethereumType.equals( "address" ) ) {
+                // Ethereum's bytes, string and address types map to VARCHAR in PolyType
+                return PolyType.VARCHAR;
+            } else if ( ethereumType.equals( "bool" ) ) {
+                // Ethereum's bool type maps to BOOLEAN in PolyType
+                return PolyType.BOOLEAN;
+            } else {
+                // If the type is unknown, use VARCHAR as a general type
+                return PolyType.VARCHAR;
+            }
+        }
+
+
+        protected String getSmartContractAddress() {
+            return this.smartContractAddress;
+        }
+
+
+        protected BigInteger getFromBlock() {
+            return this.fromBlock;
+        }
+
+
+        protected BigInteger getToBlock() {
+            return this.toBlock;
+        }
+
+
+        protected Event getEventFromCatalogTable( String catalogTableName ) {
+            if ( catalogTableName.equals( "block" ) || catalogTableName.equals( "transaction" ) ) {
+                return null;
+            }
+            EventData eventData = eventInputsMap.get( catalogTableName );
+            List<JSONObject> jsonObjects = eventData.getData();
+            List<TypeReference<?>> parameterTypes = new ArrayList<>();
+            for ( JSONObject jsonObject : jsonObjects ) {
+                String type = jsonObject.getString( "type" );
+                boolean indexed = jsonObject.getBoolean( "indexed" );
+
+                if ( type.equals( "address" ) ) {
+                    parameterTypes.add( indexed ? new TypeReference<Address>( true ) {
+                    } : new TypeReference<Address>( false ) {
+                    } );
+                } else if ( type.equals( "uint256" ) ) {
+                    parameterTypes.add( indexed ? new TypeReference<Uint256>( true ) {
+                    } : new TypeReference<Uint256>( false ) {
+                    } );
+                }
+                // ...
+            }
+
+            return new Event( eventData.getOriginalKey(), parameterTypes );
         }
 
     }

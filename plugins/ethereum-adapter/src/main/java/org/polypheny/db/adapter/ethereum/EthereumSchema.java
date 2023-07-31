@@ -61,8 +61,21 @@ public class EthereumSchema extends AbstractSchema {
         }
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id );
+        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : catalogTable.name.equals( "transaction" ) ? EthereumMapper.TRANSACTION : EthereumMapper.EVENTDATA; // Event Data; add EVENTDATA
+        // each table will get one EthereumTable; send event metadata down here.
+        EthereumTable table = new EthereumTable(
+                clientUrl,
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
+                fieldTypes,
+                fields,
+                mapper,
+                ethereumDataSource,
+                catalogTable.id,
+                ethereumDataSource.getSmartContractAddress(),
+                ethereumDataSource.getFromBlock(),
+                ethereumDataSource.getToBlock(),
+                ethereumDataSource.getEventFromCatalogTable(catalogTable.name)
+        );
         tableMap.put( catalogTable.name, table );
         return table;
     }

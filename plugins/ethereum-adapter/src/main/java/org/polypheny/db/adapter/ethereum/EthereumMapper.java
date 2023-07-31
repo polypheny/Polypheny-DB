@@ -19,18 +19,22 @@ package org.polypheny.db.adapter.ethereum;
 import java.math.BigInteger;
 import java.util.function.Predicate;
 import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.abi.datatypes.Event;
 
 public enum EthereumMapper {
 
     BLOCK,
-    TRANSACTION;
+    TRANSACTION,
+    EVENTDATA;
 
 
     static EthereumMapper getMapper( String tableName ) {
         if ( tableName.equals( "block" ) ) {
             return BLOCK;
+        } else if ( tableName.equals( "transaction" ) ) {
+            return TRANSACTION;
         }
-        return TRANSACTION;
+        return EVENTDATA;
     }
 
 
@@ -95,10 +99,14 @@ public enum EthereumMapper {
     }
 
 
-    public BlockReader makeReader( String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate ) {
+    public BlockReader makeReader( String clientUrl, int blocks, Predicate<BigInteger> blockNumberPredicate, String contractAddress, BigInteger fromBlock, BigInteger toBlock, Event event ) {
         if ( this == BLOCK ) {
             return new BlockReader( clientUrl, blocks, blockNumberPredicate );
+        } else if ( this == TRANSACTION ) {
+            return new TransactionReader( clientUrl, blocks, blockNumberPredicate );
         }
-        return new TransactionReader( clientUrl, blocks, blockNumberPredicate );
+        return new EventDataReader( clientUrl, blocks, blockNumberPredicate, contractAddress, fromBlock, toBlock, event ); // Event Data;
     }
+
+    // maybe I will need a new "makeEventReader"
 }

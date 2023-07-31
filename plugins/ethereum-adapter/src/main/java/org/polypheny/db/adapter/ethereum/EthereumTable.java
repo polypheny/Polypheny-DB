@@ -34,6 +34,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Pair;
+import org.web3j.abi.datatypes.Event;
 
 public class EthereumTable extends AbstractTable implements FilterableTable {
 
@@ -43,6 +44,10 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
     protected final EthereumDataSource ethereumDataSource;
     protected final EthereumMapper mapper;
     protected List<EthereumFieldType> fieldTypes;
+    protected final String contractAddress;
+    protected final BigInteger fromBlock;
+    protected final BigInteger toBlock;
+    protected final Event event;
 
 
     public EthereumTable(
@@ -52,7 +57,12 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
             int[] fields,
             EthereumMapper mapper,
             EthereumDataSource ethereumDataSource,
-            Long tableId ) {
+            Long tableId,
+            String contractAddress,
+            BigInteger fromBlock,
+            BigInteger toBlock,
+            Event event ) {
+
         this.clientUrl = clientUrl;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
@@ -60,6 +70,10 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
         this.ethereumDataSource = ethereumDataSource;
         this.mapper = mapper;
         this.tableId = tableId;
+        this.contractAddress = contractAddress;
+        this.fromBlock = fromBlock;
+        this.toBlock = toBlock;
+        this.event = event;
     }
 
 
@@ -104,7 +118,11 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                             null,
                             mapper,
                             finalBlockNumberPredicate,
-                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ) );
+                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ) ,
+                            contractAddress,
+                            fromBlock,
+                            toBlock,
+                            event);
                 }
             };
         }
@@ -119,7 +137,11 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                         null,
                         mapper,
                         finalBlockNumberPredicate,
-                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ) );
+                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ),
+                        contractAddress,
+                        fromBlock,
+                        toBlock,
+                        event);
             }
         };
     }

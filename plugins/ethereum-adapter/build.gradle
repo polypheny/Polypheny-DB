@@ -10,6 +10,7 @@ dependencies {
     }  // Apache 2.0
     // Apache 2.0
 
+    implementation 'org.json:json:20210307'
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

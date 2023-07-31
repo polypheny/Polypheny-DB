@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
-
+import org.web3j.abi.datatypes.Event;
 
 /**
  * Enumerator that reads from a Blockchain.
@@ -58,12 +58,12 @@ class EthereumEnumerator<E> implements Enumerator<E> {
     private E current;
 
 
-    EthereumEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, EthereumMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter ) {
+    EthereumEnumerator( String clientUrl, int blocks, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, EthereumMapper mapper, Predicate<BigInteger> blockNumberPredicate, RowConverter<E> rowConverter, String contractAddress, BigInteger fromBlock, BigInteger toBlock, Event event ) {
         this.clientUrl = clientUrl;
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
-        this.reader = mapper.makeReader( clientUrl, blocks, blockNumberPredicate );
+        this.reader = mapper.makeReader( clientUrl, blocks, blockNumberPredicate, contractAddress, fromBlock, toBlock, event );
         this.blocks = blocks;
     }
 
