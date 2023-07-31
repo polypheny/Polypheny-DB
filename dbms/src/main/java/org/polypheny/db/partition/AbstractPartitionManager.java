@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -67,21 +68,24 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
         if ( allocs != null ) {
             for ( AllocationEntity allocation : allocs ) {
+                if ( excludedAdapters.contains( allocation.adapterId ) ) {
+                    continue;
+                }
+
                 //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
                 List<AllocationColumn> relevantCcps = new ArrayList<>();
-
-                for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
-                    List<AllocationColumn> ccps = catalog.getSnapshot().alloc().getColumnPlacementsByPartitionGroup( catalogTable.id, allocation.id, column.id );
-                    ccps.removeIf( ccp -> excludedAdapters.contains( ccp.adapterId ) );
-                    if ( !ccps.isEmpty() ) {
+                List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).getColumns();
+                /*for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
+                    List<AllocationPlacement> placements = new ArrayList<>( catalog.getSnapshot().alloc().getPlacementsOfColumn( column.id ) );
+                    if ( !placements.isEmpty() ) {
                         // Get first column placement which contains partition
-                        relevantCcps.add( ccps.get( 0 ) );
+                        relevantCcps.add( catalog.getSnapshot().alloc().getColumn( placements.get( 0 ).id, column.id ).orElseThrow() );
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "{} with part. {}", ccps.get( 0 ).getLogicalColumnName(), allocation.id );
+                            log.debug( "{} with part. {}", column.name, allocation.id );
                         }
                     }
-                }
-                placementDistribution.put( allocation.id, relevantCcps );
+                }*/
+                placementDistribution.put( allocation.partitionId, allocColumns );
             }
         }
 

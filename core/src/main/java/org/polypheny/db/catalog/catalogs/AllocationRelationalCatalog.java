@@ -69,11 +69,11 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * Adds a partition to the catalog
      *
      * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
+     * @param namespaceId The unique id of the table
      * @param partitionType partition Type of the added partition
      * @return The id of the created partitionGroup
      */
-    AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
+    AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
 
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.

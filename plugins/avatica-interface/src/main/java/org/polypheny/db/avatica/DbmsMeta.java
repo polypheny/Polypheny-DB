@@ -928,7 +928,7 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             try {
-                if ( values.size() == 0 ) {
+                if ( values.isEmpty() ) {
                     // Nothing to execute
                     return new ExecuteBatchResult( new long[0] );
                 }

@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptListener;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -195,7 +196,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 volcanoPlanner.listener.ruleAttempted( event );
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( "Error while applying rule " + getRule() + ", args " + Arrays.toString( algs ), e );
+            throw new GenericRuntimeException( "Error while applying rule %s, args %s", e, getRule(), Arrays.toString( algs ) );
         }
     }
 

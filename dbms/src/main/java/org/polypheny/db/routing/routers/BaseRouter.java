@@ -317,10 +317,10 @@ public abstract class BaseRouter implements Router {
 
                 Deque<String> queue = new ArrayDeque<>();
                 boolean first = true;
-                for ( List<AllocationColumn> ccps : columnsByPlacements.values() ) {
-                    List<AllocationColumn> ordered = ccps.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
-                    AllocationColumn ccp = ccps.get( 0 );
-                    AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( ccp.placementId, partitionId ).orElseThrow();
+                for ( List<AllocationColumn> columns : columnsByPlacements.values() ) {
+                    List<AllocationColumn> ordered = columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
+                    AllocationColumn column = columns.get( 0 );
+                    AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( column.placementId, partitionId ).orElseThrow();
 
                     handleRelScan(
                             builder,
@@ -332,7 +332,7 @@ public abstract class BaseRouter implements Router {
                         List<RexNode> rexNodes = new ArrayList<>();
                         for ( AllocationColumn p : ordered ) {
                             if ( pkColumnIds.contains( p.columnId ) ) {
-                                String alias = ccps.get( 0 ).placementId + "_" + p.columnId;
+                                String alias = columns.get( 0 ).placementId + "_" + p.columnId;
                                 rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
                                 queue.addFirst( alias );
                                 queue.addFirst( p.getLogicalColumnName() );

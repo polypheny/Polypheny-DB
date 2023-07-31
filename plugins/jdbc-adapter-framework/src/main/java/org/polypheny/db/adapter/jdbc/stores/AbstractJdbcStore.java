@@ -359,7 +359,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     public void dropColumn( Context context, long allocId, long columnId ) {
         //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getEntity( columnPlacement.tableId ) ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.getColumn( columnId );
+        PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )

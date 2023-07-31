@@ -168,7 +168,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
         for ( PhysicalColumn column : columns ) {
             SqlNode[] operands = new SqlNode[]{
                     new SqlIdentifier( Arrays.asList( namespaceName, name, column.name ), ParserPos.ZERO ),
-                    new SqlIdentifier( Collections.singletonList( List.copyOf( columns.stream().map( c -> c.name ).collect( Collectors.toList() ) ).get( i++ ) ), ParserPos.ZERO )
+                    new SqlIdentifier( Collections.singletonList( column.logicalName ), ParserPos.ZERO )
             };
             pcnl.add( new SqlBasicCall( (SqlOperator) OperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }

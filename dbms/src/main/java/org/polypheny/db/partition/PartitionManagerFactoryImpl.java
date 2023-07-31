@@ -36,6 +36,9 @@ public class PartitionManagerFactoryImpl extends PartitionManagerFactory {
             // Or create an internal mapping from PARTITIONTYPE to teh handling partition manager
             case TEMPERATURE:
                 return new TemperatureAwarePartitionManager();
+
+            case NONE:
+                return new NonePartitionManager();
         }
 
         throw new RuntimeException( "Unknown partition type: " + partitionType );
