@@ -84,7 +84,11 @@ public class ClientManager {
         Transaction transaction = transactionManager.startTransaction(user, null, false, "proto-interface");
         LogicalNamespace namespace;
         if (properties.haveNamespaceName()) {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace(properties.getNamespaceName());
+            try {
+                namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.getNamespaceName() );
+            } catch (Exception e) {
+                throw new PIServiceException("Getting namespace " + properties.getNamespaceName() + " failed.");
+            }
         } else {
             namespace = Catalog.getInstance().getSnapshot().getNamespace(Catalog.defaultNamespaceName);
         }
