@@ -487,7 +487,7 @@ public class PolyValueSerializer {
 
     public static ProtoValue serializeAsProtoTimeStamp(PolyTimeStamp polyTimeStamp) {
         ProtoTimeStamp protoTimeStamp = ProtoTimeStamp.newBuilder()
-                .setTimeStamp(polyTimeStamp.asLong().longValue())
+                .setTimeStamp(polyTimeStamp.getSinceEpoch())
                 .build();
         return ProtoValue.newBuilder()
                 .setTimeStamp(protoTimeStamp)
