@@ -715,7 +715,7 @@ public class TestHelper {
         private final static String dbHost = "localhost";
         private final static int port = 20590;
 
-        private final Connection connection;
+        private final Connection conn;
 
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
@@ -739,8 +739,10 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            connection.commit();
-            connection.close();
+            if(!conn.getAutoCommit()) {
+                conn.commit();
+            }
+            conn.close();
         }
 
     }
