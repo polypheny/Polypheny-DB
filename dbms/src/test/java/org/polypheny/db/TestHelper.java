@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -228,11 +227,29 @@ public class TestHelper {
                             } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
                                 assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
                             } else {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
-                                        expectedRow[j],
-                                        row[j]
-                                );
+                                switch ( columnType ) {
+                                    case Types.TINYINT:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                Integer.valueOf( (Byte) expectedRow[j] ),
+                                                row[j]
+                                        );
+                                        break;
+                                    case Types.SMALLINT:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                Integer.valueOf( (Short) expectedRow[j] ),
+                                                row[j]
+                                        );
+                                        break;
+                                    default:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                expectedRow[j],
+                                                row[j]
+                                        );
+                                        break;
+                                }
                             }
                         } else {
                             Assert.assertEquals(
@@ -553,7 +570,10 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            if(!conn.getAutoCommit()) {
+            if (conn.isClosed()) {
+                return;
+            }
+            if ( !conn.getAutoCommit() ) {
                 conn.commit();
             }
             conn.close();
