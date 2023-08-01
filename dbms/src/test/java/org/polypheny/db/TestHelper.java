@@ -69,7 +69,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
-import org.polypheny.db.webui.models.results.RelationalResult;
+import org.polypheny.db.webui.models.results.Result;
 
 
 @Slf4j
@@ -95,7 +95,7 @@ public class TestHelper {
 
         Runnable runnable = () -> {
             polyphenyDb.testMode = true;
-            String defaultStoreName = System.getProperty( "storeId.default" );
+            String defaultStoreName = System.getProperty( "store.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;
             }
@@ -215,7 +215,7 @@ public class TestHelper {
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
+                                BigDecimal expectedResult = (BigDecimal) expectedRow[j];
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     Assert.assertTrue(
@@ -224,16 +224,30 @@ public class TestHelper {
                                 } else {
                                     Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
-                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
-                                assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
                             } else {
-                                Assert.assertEquals(
-                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
-                                        expectedRow[j],
-                                        row[j]
-                                );
-                                break;
-
+                                switch ( columnType ) {
+                                    case Types.TINYINT:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                Integer.valueOf( (Byte) expectedRow[j] ),
+                                                row[j]
+                                        );
+                                        break;
+                                    case Types.SMALLINT:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                Integer.valueOf( (Short) expectedRow[j] ),
+                                                row[j]
+                                        );
+                                        break;
+                                    default:
+                                        Assert.assertEquals(
+                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                                expectedRow[j],
+                                                row[j]
+                                        );
+                                        break;
+                                }
                             }
                         } else {
                             Assert.assertEquals(
@@ -365,7 +379,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         private MongoConnection() {
@@ -491,7 +505,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
 
 
         public static GraphResult executeGetResponse( String query ) {
@@ -532,18 +546,6 @@ public class TestHelper {
 
         private final Connection conn;
 
-    public JdbcConnection (boolean autoCommit, boolean strictMode) throws SQLException {
-        try {
-            Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
-        } catch ( ClassNotFoundException e ) {
-            log.error( "Polypheny JDBC Driver not found", e );
-        }
-        final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=" + strictMode;
-        log.debug( "Connecting to database @ {}", url );
-
-        conn = DriverManager.getConnection( url, "pa", "" );
-        conn.setAutoCommit( autoCommit );
-    }
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
@@ -566,7 +568,10 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            if(!conn.getAutoCommit()) {
+            if (conn.isClosed()) {
+                return;
+            }
+            if ( !conn.getAutoCommit() ) {
                 conn.commit();
             }
             conn.close();
