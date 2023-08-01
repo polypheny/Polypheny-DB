@@ -108,8 +108,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void connect( ConnectionRequest connectionRequest, StreamObserver<ConnectionReply> responseObserver ) {
         ConnectionReply.Builder responseBuilder = ConnectionReply.newBuilder()
                 .setMajorApiVersion( majorApiVersion )
-                .setMinorApiVersion( minorApiVersion )
-                .setHeartbeatInterval( clientManager.getHeartbeatInterval() );
+                .setMinorApiVersion( minorApiVersion );
+        if (clientManager.getHeartbeatInterval() > 0) {
+            responseBuilder.setHeartbeatInterval( clientManager.getHeartbeatInterval() );
+        }
         boolean isCompatible = checkApiVersion( connectionRequest );
         responseBuilder.setIsCompatible( isCompatible );
         ConnectionReply connectionReply = responseBuilder.build();
