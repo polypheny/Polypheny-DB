@@ -120,7 +120,7 @@ public class JdbcConnectionTest {
     @Test
     public void networkTimeoutUrlTest() throws SQLException {
         int expectedTimeout = 250000;
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?nwtimeout=250000" + expectedTimeout;
+        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?nwtimeout=" + expectedTimeout;
         try ( Connection con = jdbcConnect( url ) ) {
             assertEquals( expectedTimeout, con.getNetworkTimeout() );
         }
