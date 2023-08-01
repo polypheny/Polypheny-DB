@@ -19,6 +19,7 @@ package org.polypheny.db.jdbc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -35,6 +36,7 @@ public class JdbcConnectionTest {
 
     private final static String dbHost = "localhost";
     private final static int port = 20590;
+
 
     @BeforeClass
     public static void start() {
@@ -79,20 +81,20 @@ public class JdbcConnectionTest {
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationSerializableUrlTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=SERIALIZABLE";
         try ( Connection con = jdbcConnect( url ) ) {
-            assertEquals( Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation() );
+            fail( "Isolation mode SERIALIZABLE is not jet supported" );
         }
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationDirtyUrlTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=DIRTY";
         try ( Connection con = jdbcConnect( url ) ) {
-            assertEquals( Connection.TRANSACTION_READ_UNCOMMITTED, con.getTransactionIsolation() );
+            fail( "Isolation mode DIRTY is not jet supported" );
         }
     }
 
@@ -106,30 +108,30 @@ public class JdbcConnectionTest {
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationRepeatableReadUrlTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?isolation=REPEATABLE_READ";
         try ( Connection con = jdbcConnect( url ) ) {
-            assertEquals( Connection.TRANSACTION_REPEATABLE_READ, con.getTransactionIsolation() );
+            fail( "Isolation mode REPEATABLE_READ is not jet supported" );
         }
     }
 
 
     @Test
     public void networkTimeoutUrlTest() throws SQLException {
-        int expectedTimeout = 250;
-        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?nwtimeout=250" + expectedTimeout;
+        int expectedTimeout = 250000;
+        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?nwtimeout=250000" + expectedTimeout;
         try ( Connection con = jdbcConnect( url ) ) {
             assertEquals( expectedTimeout, con.getNetworkTimeout() );
         }
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void resultHoldabilityHoldUrlTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/public?holdability=HOLD";
         try ( Connection con = jdbcConnect( url ) ) {
-            assertEquals( ResultSet.HOLD_CURSORS_OVER_COMMIT, con.getHoldability() );
+            fail( "Result holdability mode HOLD is not jet supported" );
         }
     }
 
@@ -165,24 +167,24 @@ public class JdbcConnectionTest {
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationSerializablePropertyTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "SERIALIZABLE" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
-            assertEquals( Connection.TRANSACTION_SERIALIZABLE, con.getTransactionIsolation() );
+            fail( "Isolation mode SERIALIZABLE is not jet supported" );
         }
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationDirtyPropertyTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "DIRTY" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
-            assertEquals( Connection.TRANSACTION_READ_UNCOMMITTED, con.getTransactionIsolation() );
+            fail( "Isolation mode DIRTY is not jet supported" );
         }
     }
 
@@ -198,13 +200,13 @@ public class JdbcConnectionTest {
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void isolationRepeatableReadPropertyTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "isolation", "REPEATABLE_READ" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
-            assertEquals( Connection.TRANSACTION_REPEATABLE_READ, con.getTransactionIsolation() );
+            fail( "Isolation mode EPEATABLE_READ is not jet supported" );
         }
     }
 
@@ -221,13 +223,13 @@ public class JdbcConnectionTest {
     }
 
 
-    @Test
+    @Test(expected = SQLException.class)
     public void resultHoldabilityHoldPropertyTest() throws SQLException {
         String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
         Properties properties = new Properties();
         properties.setProperty( "holdability", "HOLD" );
         try ( Connection con = jdbcConnect( url, properties ) ) {
-            assertEquals( ResultSet.HOLD_CURSORS_OVER_COMMIT, con.getHoldability() );
+            fail( "Result holdability mode HOLD is not jet supported" );
         }
     }
 
