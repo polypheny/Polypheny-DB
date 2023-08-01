@@ -566,10 +566,7 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            if ( conn.isClosed() ) {
-                return;
-            }
-            if ( !conn.getAutoCommit() ) {
+            if(!conn.getAutoCommit()) {
                 conn.commit();
             }
             conn.close();
