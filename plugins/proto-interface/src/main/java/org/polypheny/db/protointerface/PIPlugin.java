@@ -17,8 +17,12 @@
 package org.polypheny.db.protointerface;
 
 import com.google.common.collect.ImmutableList;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
-
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
@@ -30,15 +34,9 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class PIPlugin extends PolyPlugin {
 
-    public PIPlugin(PluginContext context ) {
+    public PIPlugin( PluginContext context ) {
         super( context );
     }
 
@@ -47,6 +45,8 @@ public class PIPlugin extends PolyPlugin {
     public void start() {
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20590" );
+        settings.put( "requires heartbeat", "false" );
+        settings.put( "heartbeat intervall", "0" );
         QueryInterfaceManager.addInterfaceType( "proto-interface", ProtoInterface.class, settings );
     }
 
@@ -64,8 +64,8 @@ public class PIPlugin extends PolyPlugin {
         public static final String INTERFACE_DESCRIPTION = "proto-interface query interface supporting the PolySQL dialect.";
         public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
                 new QueryInterfaceSettingInteger( "port", false, true, false, 20590 ),
-                new QueryInterfaceSettingBoolean("requires heartbeat", false, true, false, false),
-                new QueryInterfaceSettingInteger("heartbeat intervall", false, true, false,0)
+                new QueryInterfaceSettingBoolean( "requires heartbeat", false, true, false, false ),
+                new QueryInterfaceSettingLong( "heartbeat interval", false, true, false, 300000L )
         );
         @Getter
         private final int port;
@@ -146,5 +146,7 @@ public class PIPlugin extends PolyPlugin {
                 log.error( "Proto interface server could not be started: {}", e.getMessage() );
             }
         }
+
     }
+
 }
