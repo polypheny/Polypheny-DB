@@ -74,12 +74,32 @@ public class EventCacheManager {
     }
 
 
+
     public static EventCacheManager getInstance() {
         if ( INSTANCE == null ) {
             throw new RuntimeException( String.format( "The %s was not correctly initialized.", EventCacheManager.class.getSimpleName() ) );
         }
         return INSTANCE;
     }
+
+    /*
+    Mine
+    public void startCaching() {
+        // 1. similiar to getExportedColumn - it only creates a source, but we need one to write it to the store
+        // 2. fetch logs from range x to y (chunk defined by threshold) is reached - addToCache
+        // 3. write these logs into store - writeToStore
+        // 4. Keep going until all the logs are written into the stores
+        System.out.println( "start to cache" );
+        isCachingStarted = true;
+        BigInteger currentBlock = fromBlock;
+
+        while ( currentBlock.compareTo( toBlock ) <= 0 ) {
+            BigInteger endBlock = currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) );
+            if ( endBlock.compareTo( toBlock ) > 0 ) {
+                endBlock = toBlock;
+            }
+        }
+    }*/
 
 
     // Create one instance to handle caching (better for load balancing if we have multiple stores)
@@ -129,5 +149,10 @@ public class EventCacheManager {
         // return status of process
         return caches.values().stream().collect( Collectors.toMap( c -> c.adapterId, EventCache::getStatus ) );
     }
+
+
+    /*public boolean hasStartedCaching() {
+        return isCachingStarted;
+    }*/
 
 }

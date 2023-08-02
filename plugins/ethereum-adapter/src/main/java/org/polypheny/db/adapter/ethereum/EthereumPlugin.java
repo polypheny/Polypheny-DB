@@ -127,8 +127,11 @@ public class EthereumPlugin extends Plugin {
         private final BigInteger fromBlock;
         private final BigInteger toBlock;
         private final Map<String, EventData> eventInputsMap;
-        private Boolean startCaching;
+        private Boolean cashing;
         private String adpaterTargetName;
+        private Boolean isCachingStarted = false;
+        private EventCacheManager eventCacheManager;
+
         List<Event> events = new ArrayList<>(); // for caching
 
 
@@ -142,7 +145,7 @@ public class EthereumPlugin extends Plugin {
             this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
             this.toBlock = new BigInteger( settings.get( "toBlock" ) );
             this.eventInputsMap = new HashMap<>();
-            this.startCaching = Boolean.parseBoolean( settings.get( "Caching" ) );
+            this.cashing = Boolean.parseBoolean( settings.get( "Caching" ) );
             this.adpaterTargetName = settings.get( "AdapterTargetName" );
             createInformationPage();
             enableInformationPage();
@@ -332,12 +335,22 @@ public class EthereumPlugin extends Plugin {
             }
 
             // caching
+            // David
             if ( startCaching == Boolean.TRUE ) {
                 EventCacheManager.getInstance()
                         .register( getAdapterId(), clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
                         .startCaching();
-
             }
+
+            // mine
+            /*if ( cashing == Boolean.TRUE ) {
+                if ( eventCacheManager == null ) {
+                    eventCacheManager = new EventCacheManager( clientURL, 50, smartContractAddress, fromBlock, toBlock, events );
+                }
+                if ( !eventCacheManager.hasStartedCaching() ) {
+                    eventCacheManager.startCaching();
+                }
+            }*/
 
             return map;
         }
