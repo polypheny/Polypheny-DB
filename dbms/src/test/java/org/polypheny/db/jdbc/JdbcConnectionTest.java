@@ -22,11 +22,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.NClob;
 import java.sql.ResultSet;
@@ -34,7 +36,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Savepoint;
+import java.sql.Statement;
 import java.sql.Struct;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -76,6 +80,22 @@ public class JdbcConnectionTest {
     public Connection jdbcConnect( String url, Properties properties ) throws SQLException {
         log.debug( "Connecting to database @ {} with properties {}", url, properties );
         return DriverManager.getConnection( url, properties );
+    }
+
+    @Test
+    public void timeZoneTestNoTimezone() throws SQLException {
+        Time expected = Time.valueOf( "11:59:32" );
+        String url = "jdbc:polypheny://pa:pa@" + dbHost + ":" + port;
+        String tableDdl = "CREATE TABLE test(testtime TIME NOT NULL)";
+        String insert = "INSERT INTO test VALUES (time '11:59:32')";
+        String select = "SELECT * FROM test";
+        try ( Connection con = jdbcConnect( url );
+                Statement statemnet = con.createStatement() ) {
+            statemnet.execute( tableDdl );
+            statemnet.execute( insert );
+            ResultSet rs = statemnet.executeQuery( select );
+            TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{Time.valueOf( "11:59:32" )} ) );
+        }
     }
 
 
@@ -611,7 +631,7 @@ public class JdbcConnectionTest {
     @Test(expected = SQLException.class)
     public void setTransactionIsolationWithRepeatableReadTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
+            Connection connection = jdbcConnection.getConnection();
 
             connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ );
         }
@@ -621,7 +641,7 @@ public class JdbcConnectionTest {
     @Test(expected = SQLException.class)
     public void setTransactionIsolationWithSerializableTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
+            Connection connection = jdbcConnection.getConnection();
 
             connection.setTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
         }
@@ -631,7 +651,7 @@ public class JdbcConnectionTest {
     @Test(expected = SQLException.class)
     public void setTransactionIsolationWithReadUncommittedTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-                Connection connection = jdbcConnection.getConnection();
+            Connection connection = jdbcConnection.getConnection();
 
             connection.setTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
         }
@@ -640,8 +660,8 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void setTransactionOnClosedTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true )) {
-                Connection connection = jdbcConnection.getConnection();
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+            Connection connection = jdbcConnection.getConnection();
             connection.close();
             connection.setTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ );
         }
