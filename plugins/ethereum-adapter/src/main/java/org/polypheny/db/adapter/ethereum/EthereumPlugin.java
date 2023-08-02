@@ -115,6 +115,7 @@ public class EthereumPlugin extends Plugin {
     @AdapterSettingString(name = "AdapterTargetName", description = "Adapter Target Name", defaultValue = "ethereum", position = 6, modifiable = true)
     public static class EthereumDataSource extends DataSource {
 
+        public static final String SCHEMA_NAME = "public";
         private String clientURL;
         @Getter
         private int blocks;
@@ -247,7 +248,7 @@ public class EthereumPlugin extends Plugin {
                         dimension,
                         cardinality,
                         false,
-                        "public",
+                        SCHEMA_NAME,
                         "block",
                         blockCol,
                         position,
@@ -268,7 +269,7 @@ public class EthereumPlugin extends Plugin {
                         dimension,
                         cardinality,
                         false,
-                        "public",
+                        SCHEMA_NAME,
                         "transaction",
                         transactCol,
                         position,
@@ -296,7 +297,7 @@ public class EthereumPlugin extends Plugin {
                             dimension,
                             cardinality,
                             false,
-                            "public",
+                            SCHEMA_NAME,
                             eventName, // event name
                             inputName,
                             inputPosition,
@@ -318,7 +319,7 @@ public class EthereumPlugin extends Plugin {
                             dimension,
                             cardinality,
                             false,
-                            "public",
+                            SCHEMA_NAME,
                             eventName, // event name
                             columnName,
                             inputPosition,
@@ -332,8 +333,10 @@ public class EthereumPlugin extends Plugin {
 
             // caching
             if ( startCaching == Boolean.TRUE ) {
-                EventCacheManager eventCacheManager = new EventCacheManager( clientURL, 50, smartContractAddress, fromBlock, toBlock, events );
-                eventCacheManager.startCaching();
+                EventCacheManager.getInstance()
+                        .register( getAdapterId(), clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
+                        .startCaching();
+
             }
 
             return map;
@@ -433,10 +436,6 @@ public class EthereumPlugin extends Plugin {
                     }
                 }
 
-            } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
-            } catch ( ProtocolException e ) {
-                throw new RuntimeException( e );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }

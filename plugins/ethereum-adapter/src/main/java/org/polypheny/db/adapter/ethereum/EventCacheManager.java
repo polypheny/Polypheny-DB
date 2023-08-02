@@ -16,119 +16,118 @@
 
 package org.polypheny.db.adapter.ethereum;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.ddl.DdlManager.FieldInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.web3j.abi.datatypes.Event;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.request.EthFilter;
-import org.web3j.protocol.core.DefaultBlockParameter;
-import org.web3j.protocol.core.methods.response.EthLog;
-import org.web3j.abi.EventEncoder;
-import org.web3j.protocol.http.HttpService;
 
+@Slf4j
 public class EventCacheManager {
 
-    private final int batchSizeInBlocks;
-    private Map<Event, List<EthLog.LogResult>> cacheMap; // a cache for each event
-    private List<Event> events; // maintain a list of events
-    private String smartContractAddress;
-    private BigInteger fromBlock;
-    private BigInteger toBlock;
-    protected final Web3j web3j;
+    private static EventCacheManager INSTANCE = null;
 
-    private boolean isCachingStarted = false;
+    private final TransactionManager transactionManager;
+
+    // concurrent map, which maintains multiple caches, which correspond to the adapter which requested the caches
+    public Map<Integer, EventCache> caches = new ConcurrentHashMap<>();
+
+
+    /**
+     * This gets called only once at the start of Polypheny to create a single instance of the manager
+     * after that the method will throw and the {@link #getInstance()} method is used to retrieve the initially create instance.
+     *
+     * @param manager is used to create new transactions, which are required to create new queries.
+     */
+    public static synchronized EventCacheManager getAndSet( TransactionManager manager ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( String.format( "The %s was already set.", EventCacheManager.class.getSimpleName() ) );
+        }
+        INSTANCE = new EventCacheManager( manager );
+        return INSTANCE;
+    }
+
+
+    public static EventCacheManager getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( String.format( "The %s was not correctly initialized.", EventCacheManager.class.getSimpleName() ) );
+        }
+        return INSTANCE;
+    }
 
 
     // Create one instance to handle caching (better for load balancing if we have multiple stores)
     // EventCacheManager is addressed by the Adapter (with registry method)
     // get all the information: adapterId (adapter target name?), threshold, smart contract address, etherscan api key... all the necessary information
-    public EventCacheManager( String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events ) {
-        this.batchSizeInBlocks = batchSizeInBlocks;
-        this.smartContractAddress = smartContractAddress;
-        this.fromBlock = fromBlock;
-        this.toBlock = toBlock;
-        this.cacheMap = new HashMap<>();
-        this.events = events;
-        for ( Event event : events ) {
-            this.cacheMap.put( event, new ArrayList<>() );
-        }
-        ;
-        this.web3j = Web3j.build( new HttpService( clientUrl ) );
+    private EventCacheManager( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
     }
 
 
-    public void startCaching() {
-        // 1. similiar to getExportedColumn - it only creates a source, but we need one to write it to the store
-        // 2. fetch logs from range x to y (chunk defined by threshold) is reached - addToCache
-        // 3. write these logs into store - writeToStore
-        // 4. Keep going until all the logs are written into the stores
-        System.out.println( "start to cache" );
-        BigInteger currentBlock = fromBlock;
-
-        while ( currentBlock.compareTo( toBlock ) <= 0 ) {
-            BigInteger endBlock = currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) );
-            if ( endBlock.compareTo( toBlock ) > 0 ) {
-                endBlock = toBlock;
-            }
-
-            System.out.println( "from-to: " + currentBlock + " to " + endBlock );
-
-            // for each event fetch logs from block x to block y according to batchSizeInBlocks
-            for ( Event event : events ) {
-                addToCache( event, currentBlock, endBlock );
-            }
-
-            // just another loop for debugging reasons. I will put it in the first loop later on.
-            for ( Event event : events ) {
-                // if size == 0 skip
-                writeToStore( event, "targetStoreEth" ); // write the event into the store
-                cacheMap.get( event ).clear(); // clear cache batch
-            }
-
-            currentBlock = endBlock.add( BigInteger.ONE ); // avoid overlapping block numbers
-        }
+    public EventCache register( int adapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> map ) {
+        EventCache cache = new EventCache( adapterId, clientUrl, batchSizeInBlocks, smartContractAddress, fromBlock, toBlock, events, map );
+        this.caches.put( adapterId, cache );
+        return cache;
     }
 
 
-    public synchronized void addToCache( Event event, BigInteger startBlock, BigInteger endBlock ) {
-        // fetch logs from block x to block y
-        // write it into the cache, so it can be written into the store
-        EthFilter filter = new EthFilter(
-                DefaultBlockParameter.valueOf( startBlock ),
-                DefaultBlockParameter.valueOf( endBlock ),
-                smartContractAddress
-        );
+    @Nullable
+    public EventCache getCache( int adapterId ) {
+        return caches.get( adapterId );
+    }
 
-        filter.addSingleTopic( EventEncoder.encode( event ) );
 
+    void createTables( int sourceAdapterId, Map<String, List<FieldInformation>> tableInformations, int adapterId ){
         try {
-            List<EthLog.LogResult> logs = web3j.ethGetLogs( filter ).send().getLogs();
-            // Add fetched logs to cache
-            cacheMap.get( event ).addAll( logs );
-        } catch ( IOException e ) {
-            // Handle exception here. Maybe log an error and re-throw, or set `logs` to an empty list.
+            long namespaceId = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, "public" ).id;
+            Transaction transaction = transactionManager.startTransaction( Catalog.defaultDatabaseId, Catalog.defaultUserId, false, "Ethereum Plugin" );
+            DataStore store = AdapterManager.getInstance().getStore(adapterId);
+            for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
+                ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey()+"primary", ConstraintType.PRIMARY, List.of( table.getValue().get( 0 ).name ) ); // todo atm first column is primary, we should adjust that
+                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of(primaryConstraint), false, List.of(store), PlacementType.AUTOMATIC, transaction.createStatement() );
+            }
+
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( e );
+            }
+        } catch ( EntityAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException | UnknownSchemaException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
+            throw new RuntimeException( e );
         }
+
     }
 
 
-    private void writeToStore( Event event, String targetStore ) {
-        // write to targetStore
-        for ( Event e : events ) {
-            // write event into tables (see cacheMap > value)
-        }
-
-        // clear the cache (logs)
-        cacheMap.get( event ).clear();
-    }
-
-
-    private void getStreamStatus() {
+    private Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
+        return caches.values().stream().collect( Collectors.toMap( c -> c.adapterId, EventCache::getStatus ) );
     }
 
 }

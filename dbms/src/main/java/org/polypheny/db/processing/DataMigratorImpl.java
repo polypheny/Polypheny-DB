@@ -638,7 +638,7 @@ public class DataMigratorImpl implements DataMigrator {
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( sourceTable.primaryKey );
 
         // Check Lists
-        List<CatalogColumnPlacement> targetColumnPlacements = new LinkedList<>();
+        List<CatalogColumnPlacement> targetColumnPlacements = new ArrayList<>();
         for ( CatalogColumn catalogColumn : columns ) {
             targetColumnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
         }
