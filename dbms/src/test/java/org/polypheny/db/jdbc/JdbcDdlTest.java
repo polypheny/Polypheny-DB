@@ -82,10 +82,10 @@ public class JdbcDdlTest {
             1.999999,
             9876,
             0.3333f,
-            (short) 45,
+            45,
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
-            (byte) 22,
+            22,
             "hallo" };
 
 
