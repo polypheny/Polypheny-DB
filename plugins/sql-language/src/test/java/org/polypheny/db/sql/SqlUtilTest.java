@@ -312,8 +312,6 @@ public class SqlUtilTest {
     }
 
 
-
-
     @Rule
     public ExpectedException unterminatedComment = ExpectedException.none();
 
@@ -349,6 +347,14 @@ public class SqlUtilTest {
     @Test
     public void unbalancedBrackets2() {
         String statement = "SELECT ([)";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void unbalancedBrackets3() {
+        String statement = "SELECT (3 * 4;)";
         unterminatedComment.expect( RuntimeException.class );
         SqlUtil.splitStatements( statement );
     }

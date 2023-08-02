@@ -203,8 +203,6 @@ public class SqlLanguagePlugin extends Plugin {
                 c ) -> Crud.anySqlQuery( request, session, c ) ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().setSqlStatmentSplitter( SqlUtil::splitStatements ) );
-
         if ( !isInit() ) {
             registerOperators();
         }

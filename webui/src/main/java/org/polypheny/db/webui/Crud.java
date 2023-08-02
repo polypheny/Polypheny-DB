@@ -231,8 +231,6 @@ public class Crud implements InformationObserver {
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
     private final Catalog catalog = Catalog.getInstance();
-    @Setter
-    private Function<String, List<String>> sqlStatmentSplitter; // Set by SqlLanguagePlugin
 
 
     /**
@@ -743,14 +741,9 @@ public class Crud implements InformationObserver {
         }
 
         // TODO: make it possible to use pagination
-
-        if ( crud.sqlStatmentSplitter == null ) {
-            return List.of( new Result( "No function to split SQL statements registered" ) );
-        }
-
         String[] queries;
         try {
-            queries = crud.sqlStatmentSplitter.apply( request.query ).toArray( new String[0] );
+            queries = transaction.getProcessor( QueryLanguage.from( "sql" ) ).splitStatements( request.query ).toArray( new String[0] );
         } catch ( RuntimeException e ) {
             return List.of( new Result( "Syntax error: " + e.getMessage() ) );
         }

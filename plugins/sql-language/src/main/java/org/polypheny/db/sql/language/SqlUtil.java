@@ -782,6 +782,9 @@ public abstract class SqlUtil {
                         throw new RuntimeException( "Unbalanced brackets" );
                     }
                 } else if ( ch == ';' ) {
+                    if ( !brackets.isEmpty() ) {
+                        throw new RuntimeException( "Missing " + brackets.pop() );
+                    }
                     split.add( currentStatement.toString() );
                     currentStatement = new StringBuilder();
                     continue;
@@ -817,7 +820,7 @@ public abstract class SqlUtil {
         }
 
         if ( !brackets.empty() ) {
-            throw new RuntimeException( "Unclosed " + brackets.pop() );
+            throw new RuntimeException( "Missing " + brackets.pop() );
         }
 
         if ( !currentStatement.toString().isBlank() ) {
