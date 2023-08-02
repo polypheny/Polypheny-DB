@@ -63,7 +63,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE SCHEMA test" );
+                statement.executeUpdate( "CREATE NAMESPACE test" );
                 statement.executeUpdate( "CREATE TABLE foo( id INTEGER NOT NULL, name VARCHAR(20) NULL, bar VARCHAR(33) COLLATE CASE SENSITIVE, PRIMARY KEY (id) )" );
                 statement.executeUpdate( "CREATE TABLE test.foo2( id INTEGER NOT NULL, name VARCHAR(20) NOT NULL, foobar VARCHAR(33) NULL, PRIMARY KEY (id, name) )" );
                 statement.executeUpdate( "ALTER TABLE test.foo2 ADD CONSTRAINT u_foo1 UNIQUE (name, foobar)" );
@@ -103,7 +103,7 @@ public class JdbcMetaTest {
     @Test
     public void testNameWhatever() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection() ) {
+                Connection connection = polyphenyDbConnection.getConnection(); {
             DatabaseMetaData metadata = connection.getMetaData();
             //test goes here
         }
@@ -185,7 +185,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            assertEquals( "jdbc:polypheny://localhost:20590/", metadata.getURL() );
+            assertEquals( "jdbc:polypheny://localhost:20590", metadata.getURL() );
         }
     }
 
@@ -326,7 +326,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            String expected = "ABS,ACOS,ASIN,ATAN,ATAN2,CEILING,COS,COT,DEGREES,EXP,FLOOR,LOG,LOG10,MOD,PI,POWER,RADIANS,RAND,ROUND,SIGN,SIN,SQRT,TAN,TRUNCATE";
+            String expected = "ABS, ACOS, ASIN, ATAN, ATAN2, CEILING, COS, COT, DEGREES, EXP, FLOOR, LOG, LOG10, MOD, PI, POWER, RADIANS, RAND, ROUND, SIGN, SIN, SQRT, TAN, TRUNCATE";
             assertEquals( expected, metadata.getNumericFunctions() );
         }
     }
@@ -337,7 +337,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            String expected = "CONCAT,INSERT,LCASE,LENGTH,LOCATE,LTRIM,REPLACE,RTRIM,SUBSTRING,UCASE";
+            String expected = "ASCII, CHAR, CONCAT, DIFFERENCE, INSERT, LCASE, LEFT, LENGTH, LOCATE, LTRIM, REPEAT, REPLACE, RIGHT, RTRIM, SOUNDEX, SPACE, SUBSTRING, UCASE";
 
             assertEquals( expected, metadata.getStringFunctions() );
         }
@@ -349,7 +349,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            String expected = "CONVERT,DATABASE,IFNULL,USER";
+            String expected = "CONVERT, DATABASE, IFNULL, USER";
             assertEquals( expected, metadata.getSystemFunctions() );
         }
     }
@@ -360,7 +360,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            String expected = "CURDATE,CURTIME,DAYOFMONTH,DAYOFWEEK,DAYOFYEAR,HOUR,MINUTE,MONTH,NOW,QUARTER,SECOND,TIMESTAMPADD,TIMESTAMPDIFF,WEEK,YEAR";
+            String expected = "CURDATE, CURTIME, DAYNAME, DAYOFMONTH, DAYOFWEEK, DAYOFYEAR, HOUR, MINUTE, MONTH, MONTHNAME, NOW, QUARTER, SECOND, TIMESTAMPADD, TIMESTAMPDIFF, WEEK, YEAR";
             assertEquals( expected, metadata.getTimeDateFunctions() );
         }
     }
@@ -893,7 +893,7 @@ public class JdbcMetaTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            assertTrue( metadata.supportsCorrelatedSubqueries() );
+            assertTrue( metadata.supportsSubqueriesInQuantifieds() );
         }
     }
 
@@ -1280,7 +1280,7 @@ public class JdbcMetaTest {
 
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void testgetProceduresThrowsExceptionIfStrict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
             ResultSet rs = metadata.getProcedures( null, null, "pattern" );
@@ -1290,7 +1290,7 @@ public class JdbcMetaTest {
 
     @Test
     public void testGetProceduresReturnsEmpty() throws SQLException {
-        try ( Connection connection = jdbcConnect( "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/?strict=false" ) ) {
+        try ( Connection connection = jdbcConnect( "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/?strict=true" ) ) {
             DatabaseMetaData metadata = connection.getMetaData();
             ResultSet resultSet = metadata.getProcedures( null, null, "pattern" );
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -1312,14 +1312,14 @@ public class JdbcMetaTest {
 
             TestHelper.checkResultSet(
                     resultSet,
-                    ImmutableList.of() );
+                    ImmutableList.of( new Object[]{} ) );
         }
     }
 
 
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void testgetProcedureColumnsThrowsExceptionIfStrict() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false, true );
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection() ) {
             DatabaseMetaData metadata = connection.getMetaData();
             ResultSet rs = metadata.getProcedureColumns( null, null, null, null );
@@ -1329,14 +1329,14 @@ public class JdbcMetaTest {
 
     @Test
     public void testGetProcedureColumnsReturnsEmpty() throws SQLException {
-        try ( Connection connection = jdbcConnect( "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/?strict=false" ) ) {
+        try ( Connection connection = jdbcConnect( "jdbc:polypheny://pa:pa@" + dbHost + ":" + port + "/?strict=true" ) ) {
             DatabaseMetaData metadata = connection.getMetaData();
-            ResultSet resultSet = metadata.getProcedureColumns( null, null, null, null );
+            ResultSet resultSet = metadata.getProcedures( null, null, null );
             ResultSetMetaData rsmd = resultSet.getMetaData();
 
             // Check number of columns
             int totalColumns = rsmd.getColumnCount();
-            Assert.assertEquals( "Wrong number of columns", 20, totalColumns );
+            Assert.assertEquals( "Wrong number of columns", 9, totalColumns );
 
             // Check column names
             Assert.assertEquals( "Wrong column name", "PROCEDURE_CAT", rsmd.getColumnName( 1 ) );
@@ -1362,7 +1362,7 @@ public class JdbcMetaTest {
 
             TestHelper.checkResultSet(
                     resultSet,
-                    ImmutableList.of() );
+                    ImmutableList.of( new Object[]{} ) );
         }
     }
 
