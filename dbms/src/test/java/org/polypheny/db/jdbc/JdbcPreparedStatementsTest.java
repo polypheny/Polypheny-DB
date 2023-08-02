@@ -16,11 +16,15 @@
 
 package org.polypheny.db.jdbc;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
@@ -31,7 +35,6 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,6 +50,9 @@ import org.polypheny.db.excluded.FileExcluded;
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class JdbcPreparedStatementsTest {
 
+    private static final String SIMPLE_SCHEMA_SQL = "CREATE TABLE test_table (id INT, name VARCHAR(50))";
+    private static final String SIMPLE_INSERT_SQL = "INSERT INTO test_table (id, name) VALUES (?, ?)";
+    private static final String SIMPLE_SELECT_SQL = "SELECT * FROM test_table";
 
     private final static String SCHEMA_SQL = "CREATE TABLE pstest( "
             + "tbigint BIGINT NULL, "
@@ -71,10 +77,10 @@ public class JdbcPreparedStatementsTest {
             1.999999,
             9876,
             0.3333f,
-            (short) 45,
+            45,
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
-            (byte) 22,
+            22,
             "hallo" };
 
 
@@ -83,6 +89,264 @@ public class JdbcPreparedStatementsTest {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteQueryTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeQuery( "SELECT * FROM my_table" );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')" );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.execute( "SELECT * FROM my_table" );
+            }
+        }
+    }
+
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void illegalExecuteLargeUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')" );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteUpdateGeneratedKeysTest1() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", Statement.RETURN_GENERATED_KEYS );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteLargeUpdateGeneratedKeysTest1() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", Statement.RETURN_GENERATED_KEYS );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteUpdateGeneratedKeysTest2() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new int[]{ 1 } );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteLargeUpdateGeneratedKeysTest2() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new int[]{ 1 } );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteUpdateGeneratedKeysTest3() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new String[]{ "id" } );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteLargeUpdateGeneratedKeysTest3() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.executeLargeUpdate( "INSERT INTO my_table VALUES (2, 'B')", new String[]{ "id" } );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteGeneratedKeysTest1() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.execute( "SELECT * FROM my_table", Statement.RETURN_GENERATED_KEYS );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteGeneratedKeysTest2() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.execute( "SELECT * FROM my_table", new int[]{ 1 } );
+            }
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void illegalExecuteGeneratedKeysTest3() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
+                Connection connection = jdbcConnection.getConnection() ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.execute( SIMPLE_SCHEMA_SQL );
+            }
+            try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                preparedStatement.execute( "SELECT * FROM my_table", new String[]{ "id" } );
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setString( 2, "A" );
+                    assertEquals( 1, preparedStatement.executeUpdate() );
+                }
+                ResultSet rs = statement.executeQuery( SIMPLE_SELECT_SQL );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleLargeUpdateTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( SIMPLE_INSERT_SQL ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setString( 2, "A" );
+                    assertEquals( 1, preparedStatement.executeLargeUpdate() );
+                }
+                ResultSet rs = statement.executeQuery( SIMPLE_SELECT_SQL );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleQueryTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                statement.executeUpdate( "INSERT INTO test_table (id, name) VALUES (1, 'A')" );
+
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM test_table WHERE id = ?" ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    ResultSet rs = preparedStatement.executeQuery();
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "A" } ) );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void simpleExecuteTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true );
+                Connection connection = jdbcConnection.getConnection()
+        ) {
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SIMPLE_SCHEMA_SQL );
+                statement.executeUpdate( "INSERT INTO test_table (id, name) VALUES (1, 'A')" );
+
+                try ( PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM test_table WHERE id = ?" ) ) {
+                    preparedStatement.setInt( 1, 1 );
+                    assertTrue( preparedStatement.execute() );
+                    TestHelper.checkResultSet( preparedStatement.getResultSet(), ImmutableList.of( new Object[]{ 1, "A" } ) );
+                }
+            }
+        }
     }
 
 
@@ -161,7 +425,7 @@ public class JdbcPreparedStatementsTest {
                         exceptionThrown = true;
                     }
 
-                    Assert.assertTrue( "Excepted null value for a non-nullable column", exceptionThrown );
+                    assertTrue( "Excepted null value for a non-nullable column", exceptionThrown );
 
                     connection.commit();
                 } finally {

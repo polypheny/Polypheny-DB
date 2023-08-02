@@ -71,7 +71,9 @@ dependencies {
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
     testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
 
-    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
+    implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version
+    testImplementation project(path: ':plugins:sql-language')
+    testImplementation project(path: ':plugins:sql-language')  // Apache 2.0
 
 }
 
