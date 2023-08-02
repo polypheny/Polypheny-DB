@@ -1600,7 +1600,6 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
 
-
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }

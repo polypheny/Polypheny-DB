@@ -197,8 +197,8 @@ public class HorizontalPartitioningTest {
                     Assert.assertTrue( failed );
                 } finally {
                     // Drop tables and stores
-                    statement.executeUpdate( "DROP TABLE horizontalparttestextension" );
-                    statement.executeUpdate( "DROP TABLE horizontalparttest" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttestextension" );
+                    statement.executeUpdate( "DROP TABLE IF EXISTS horizontalparttest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store3\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );
                 }

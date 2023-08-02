@@ -282,6 +282,8 @@ public class DataMigratorImpl implements DataMigrator {
             // is partitioned
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
+            List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( source.id ).stream().filter( p -> p.adapterId != store.id ).collect( Collectors.toList() );
+            allocs = placements.stream().flatMap( p -> snapshot.alloc().getAllocsOfPlacement( p.id ).stream() ).collect( Collectors.toList() );
             placementDistribution = partitionManager.getRelevantPlacements( source, allocs, Collections.singletonList( store.id ) );
         } else {
             placementDistribution.put( allocs.get( 0 ).partitionId, selectSourcePlacements( source, selectedColumns, target.adapterId ) );
@@ -718,7 +720,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Execute Query
         try {
             PolyImplementation<PolyValue> result = source.sourceStatement.getQueryProcessor().prepareQuery( source.sourceAlg, source.sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<PolyValue> enumerable = result.enumerable( source.sourceStatement.getDataContext() );
+            //final Enumerable<PolyValue> enumerable = result.enumerable( source.sourceStatement.getDataContext() );
 
             /*Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {

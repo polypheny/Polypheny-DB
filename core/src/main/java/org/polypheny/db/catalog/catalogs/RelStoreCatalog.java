@@ -167,12 +167,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public void dropColum( long allocId, long columnId ) {
-        PhysicalColumn column = columns.get( columnId );
+        PhysicalColumn column = columns.get( Pair.of( allocId, columnId ) );
         PhysicalTable table = fromAllocation( allocId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( column );
-        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
-        columns.remove( columnId );
+        List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
+        pColumns.remove( column );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
+        columns.remove( Pair.of( allocId, columnId ) );
     }
 
 }

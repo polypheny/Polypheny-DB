@@ -357,6 +357,10 @@ public abstract class BaseRouter implements Router {
             }
         }
 
+        if ( placements.size() == 1 ) {
+            return builder.build();
+        }
+
         builder.union( true, placements.size() );
 
         AlgNode node = builder.build();
