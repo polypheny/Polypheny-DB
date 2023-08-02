@@ -149,7 +149,7 @@ public class MongoPlugin extends Plugin {
 
 
         public MongoStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, Boolean.parseBoolean( adapterSettings.get( "persistent" ) ) );
+            super( adapterId, uniqueName, adapterSettings, true );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {

@@ -167,7 +167,7 @@ public class Neo4jPlugin extends Plugin {
 
 
         public Neo4jStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, Boolean.parseBoolean( adapterSettings.get( "persistent" ) ) );
+            super( adapterId, uniqueName, adapterSettings, true );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
