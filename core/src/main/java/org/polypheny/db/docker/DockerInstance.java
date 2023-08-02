@@ -198,11 +198,13 @@ public final class DockerInstance {
 
     public Map<String, Object> getMap() {
         synchronized ( this ) {
-            int numberOfContainers;
+            int numberOfContainers = -1;
             try {
-                numberOfContainers = client.listContainers().size();
+                if ( client != null ) {
+                    numberOfContainers = client.listContainers().size();
+                }
             } catch ( IOException e ) {
-                numberOfContainers = -1;
+                // ignore
             }
             return Map.of(
                     "id", instanceId,
@@ -272,6 +274,9 @@ public final class DockerInstance {
 
     boolean hasContainers() throws IOException {
         synchronized ( this ) {
+            if ( client == null ) {
+                throw new IOException( "Client not connected" );
+            }
             return !client.listContainers().isEmpty();
         }
     }
