@@ -103,7 +103,7 @@ public class JdbcMetaTest {
     @Test
     public void testNameWhatever() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection(); {
+                Connection connection = polyphenyDbConnection.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             //test goes here
         }
