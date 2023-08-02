@@ -24,9 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -38,11 +44,15 @@ import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
+import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -90,9 +100,9 @@ public class EventCacheManager {
     }
 
 
-    public EventCache register( int adapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> map ) {
-        EventCache cache = new EventCache( adapterId, clientUrl, batchSizeInBlocks, smartContractAddress, fromBlock, toBlock, events, map );
-        this.caches.put( adapterId, cache );
+    public EventCache register( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> map ) {
+        EventCache cache = new EventCache( sourceAdapterId, targetAdapterId, clientUrl, batchSizeInBlocks, smartContractAddress, fromBlock, toBlock, events, map );
+        this.caches.put( sourceAdapterId, cache );
         return cache;
     }
 
@@ -103,14 +113,14 @@ public class EventCacheManager {
     }
 
 
-    void createTables( int sourceAdapterId, Map<String, List<FieldInformation>> tableInformations, int adapterId ){
+    void createTables( int sourceAdapterId, Map<String, List<FieldInformation>> tableInformations, int targetAdapterId ) {
         try {
             long namespaceId = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, "public" ).id;
-            Transaction transaction = transactionManager.startTransaction( Catalog.defaultDatabaseId, Catalog.defaultUserId, false, "Ethereum Plugin" );
-            DataStore store = AdapterManager.getInstance().getStore(adapterId);
+            Transaction transaction = getTransaction();
+            DataStore store = AdapterManager.getInstance().getStore( targetAdapterId );
             for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
-                ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey()+"primary", ConstraintType.PRIMARY, List.of( table.getValue().get( 0 ).name ) ); // todo atm first column is primary, we should adjust that
-                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of(primaryConstraint), false, List.of(store), PlacementType.AUTOMATIC, transaction.createStatement() );
+                ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( table.getValue().get( 0 ).name ) ); // todo atm first column is primary, we should adjust that
+                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, transaction.createStatement() );
             }
 
             try {
@@ -118,16 +128,62 @@ public class EventCacheManager {
             } catch ( TransactionException e ) {
                 throw new RuntimeException( e );
             }
-        } catch ( EntityAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException | UnknownSchemaException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
+        } catch ( EntityAlreadyExistsException | ColumnNotExistsException | UnknownPartitionTypeException | UnknownColumnException | PartitionGroupNamesNotUniqueException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
 
     }
 
 
+    private Transaction getTransaction() {
+        try {
+            Transaction transaction = transactionManager.startTransaction( Catalog.defaultDatabaseId, Catalog.defaultUserId, false, "Ethereum Plugin" );
+            return transaction;
+        } catch ( UnknownSchemaException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
+            throw new RuntimeException( e );
+        }
+
+    }
+
+
+    void writeToStore( Event event, String tableName ) {
+        // create fresh transaction
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+
+        // use an AlgBuilder to create an algebra representation of the insert query
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
+
+        AlgDataType rowType = table.getTable().getRowType( transaction.getTypeFactory() );
+        builder.values( rowType );
+
+        // we use a project with dynamic parameters, so we can re-use it
+        builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ) );
+
+        builder.insert( (AlgOptTable) table.getTable() );
+        // todo we should re-use this for all batches
+        AlgNode node = builder.build();
+        AlgRoot root = AlgRoot.of( node, Kind.INSERT );
+
+        // add dynamic parameters to context
+        int i = 0;
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            statement.getDataContext().addParameterValues( field.getIndex(), field.getType(), List.of( event.getIndexedParameters().get( i++ ).toString() ) ); // at the moment we only add one row at a time, could refactor to add the whole batch
+        }
+
+        // execute the transaction
+        PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, false );
+        implementation.getRows( statement, -1 );
+
+    }
+
+
+
     private Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
-        return caches.values().stream().collect( Collectors.toMap( c -> c.adapterId, EventCache::getStatus ) );
+        return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, EventCache::getStatus ) );
     }
 
 }

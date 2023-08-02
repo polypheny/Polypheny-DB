@@ -22,13 +22,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
-import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.datatypes.Event;
@@ -42,6 +40,7 @@ import org.web3j.protocol.http.HttpService;
 @Slf4j
 public class EventCache {
 
+
     private final int batchSizeInBlocks;
     private final Map<Event, List<LogResult<?>>> cache = new ConcurrentHashMap<>(); // a cache for each event
     private final List<Event> events; // maintain a list of events
@@ -50,17 +49,17 @@ public class EventCache {
     private final BigInteger toBlock;
     protected final Web3j web3j;
 
-    public final int adapterId;
+    public final int sourceAdapterId;
     private final Map<String, List<ExportedColumn>> columns;
-
-    private boolean isCachingStarted = false;
+    private final int targetAdapterId;
 
 
     // Create one instance to handle caching (better for load balancing if we have multiple stores)
     // EventCacheManager is addressed by the Adapter (with registry method)
     // get all the information: adapterId (adapter target name?), threshold, smart contract address, etherscan api key... all the necessary information
-    public EventCache( int adapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> columns ) {
-        this.adapterId = adapterId;
+    public EventCache( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> columns ) {
+        this.sourceAdapterId = sourceAdapterId;
+        this.targetAdapterId = targetAdapterId;
         this.columns = columns;
         this.batchSizeInBlocks = batchSizeInBlocks;
         this.smartContractAddress = smartContractAddress;
@@ -81,20 +80,18 @@ public class EventCache {
 
 
     private void createSchema() {
-
         Map<String, List<FieldInformation>> columnInformations = columns.entrySet()
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                Entry::getKey,
+                                table -> EthereumPlugin.HIDDEN_PREFIX + table.getKey(), // we prepend this to hide the table to the user
                                 table -> table.getValue()
                                         .stream()
                                         .map( ExportedColumn::toFieldInformation )
                                         .collect( Collectors.toList() ) ) );
 
-        EventCacheManager.getInstance().createTables( adapterId, columnInformations,  );
+        EventCacheManager.getInstance().createTables( sourceAdapterId, columnInformations, targetAdapterId );
     }
-
 
 
     public void startCaching() {
@@ -111,7 +108,7 @@ public class EventCache {
                 endBlock = toBlock;
             }
 
-            System.out.println( "from-to: " + currentBlock + " to " + endBlock );
+            log.warn( "from-to: " + currentBlock + " to " + endBlock );
 
             // for each event fetch logs from block x to block y according to batchSizeInBlocks
             for ( Event event : events ) {
@@ -121,7 +118,7 @@ public class EventCache {
             // just another loop for debugging reasons. I will put it in the first loop later on.
             for ( Event event : events ) {
                 // if size == 0 skip
-                writeToStore( event, "targetStoreEth" ); // write the event into the store
+                EventCacheManager.getInstance().writeToStore( event, null ); // write the event into the store // todo add table nam
                 cache.get( event ).clear(); // clear cache batch
             }
 
@@ -150,16 +147,6 @@ public class EventCache {
         }
     }
 
-
-    private void writeToStore( Event event, String targetStore ) {
-        // write to targetStore
-        for ( Event e : events ) {
-            // write event into tables (see cacheMap > value)
-        }
-
-        // clear the cache (logs)
-        cache.get( event ).clear();
-    }
 
 
     public CachingStatus getStatus() {

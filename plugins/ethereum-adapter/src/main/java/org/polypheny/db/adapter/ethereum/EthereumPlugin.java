@@ -23,15 +23,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -46,9 +43,12 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -69,6 +69,8 @@ public class EthereumPlugin extends Plugin {
 
 
     public static final String ADAPTER_NAME = "ETHEREUM";
+
+    public static final String HIDDEN_PREFIX = "$hidden$";
 
 
     /**
@@ -129,6 +131,7 @@ public class EthereumPlugin extends Plugin {
         private final Map<String, EventData> eventInputsMap;
         private Boolean startCaching;
         private String adpaterTargetName;
+        @Getter
         List<Event> events = new ArrayList<>(); // for caching
 
 
@@ -333,9 +336,15 @@ public class EthereumPlugin extends Plugin {
 
             // caching
             if ( startCaching == Boolean.TRUE ) {
-                EventCacheManager.getInstance()
-                        .register( getAdapterId(), clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
-                        .startCaching();
+                try {
+                    CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( "hsqldb" ); // todo atm we use just the default store to cache
+                    EventCacheManager.getInstance()
+                            .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
+                            .startCaching();
+                } catch ( UnknownAdapterException e ) {
+                    throw new RuntimeException( e );
+                }
+
 
             }
 
@@ -444,7 +453,7 @@ public class EthereumPlugin extends Plugin {
         }
 
 
-        private PolyType convertToPolyType( String ethereumType ) {
+        static PolyType convertToPolyType( String ethereumType ) {
             if ( ethereumType.startsWith( "uint" ) || ethereumType.startsWith( "int" ) ) {
                 // Ethereum's uint and int types map to BIGINT in PolyType
                 return PolyType.BIGINT;
