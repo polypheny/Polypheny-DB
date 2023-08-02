@@ -200,7 +200,6 @@ javadoc {
 test {
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
     useJUnit {
-        excludeCategories 'org.polypheny.db.docker.DockerManagerTest'
         excludeCategories 'org.polypheny.db.AdapterTestSuite'
     }
 }
