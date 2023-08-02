@@ -58,12 +58,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -74,7 +74,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
@@ -3639,8 +3638,16 @@ public class Crud implements InformationObserver {
     void testDockerInstance( final Context ctx ) {
         int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
 
-        DockerInstance di = DockerManager.getInstance().getInstanceById( dockerId ).get();
-        ctx.json( di.probeDockerStatus() );
+        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( dockerId );
+        if ( maybeDockerInstance.isPresent() ) {
+            ctx.json( maybeDockerInstance.get().probeDockerStatus() );
+        } else {
+            ctx.json( Map.of(
+                    "successful", false,
+                    "errorMessage", "No instance with that id"
+            ) );
+            ctx.status( 404 );
+        }
     }
 
 
