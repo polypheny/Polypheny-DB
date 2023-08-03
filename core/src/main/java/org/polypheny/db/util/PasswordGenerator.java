@@ -14,27 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker;
+package org.polypheny.db.util;
 
-import lombok.Getter;
+import java.security.SecureRandom;
+import java.util.Base64;
 
-@Getter
-public final class DockerStatus {
+public final class PasswordGenerator {
 
-    private final boolean successful;
-    private final String errorMessage;
-    private final int instanceId;
-
-
-    public DockerStatus( int instanceId, boolean successful ) {
-        this( instanceId, successful, "" );
-    }
-
-
-    public DockerStatus( int instanceId, boolean successful, String errorMessage ) {
-        this.instanceId = instanceId;
-        this.successful = successful;
-        this.errorMessage = errorMessage;
+    public static String generatePassword( int bits ) {
+        SecureRandom sr = new SecureRandom();
+        byte[] raw = new byte[1 + bits / 8];
+        sr.nextBytes( raw );
+        return Base64.getUrlEncoder().encodeToString( raw );
     }
 
 }

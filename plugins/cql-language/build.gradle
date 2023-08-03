@@ -31,6 +31,9 @@ dependencies {
     testImplementation project(path: ':dbms')
     testImplementation project(path: ':core')
 
+    // Workaround so org.polypheny.db.docker gets the right protobuf during testing
+    testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
+
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
@@ -117,12 +120,5 @@ java {
 
 licensee {
     allow('Apache-2.0')
-
     allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
-
-    allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
-
-    allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
-        because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
-    }
 }

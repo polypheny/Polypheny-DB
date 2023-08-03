@@ -40,7 +40,7 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
     ////// SLF4J
-    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4j_version // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
@@ -55,6 +55,9 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
+    // Workaround so org.polypheny.db.docker gets the right protobuf during testing
+    testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
+
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     testImplementation group: "junit", name: "junit", version: junit_version
@@ -62,6 +65,7 @@ dependencies {
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
 
+    // TODO MV: Remove these dependencies and reactivate the corresponding tests using docker deployed data stores
     testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
     testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
@@ -108,6 +112,7 @@ licensee {
     allowUrl('http://www.eclipse.org/org/documents/edl-v10.php') // EDL 1.0
     allowUrl('http://www.opensource.org/licenses/Apache-2.0') // Apache 2.0
     allowUrl('http://www.jcabi.com/LICENSE.txt') // Own license but conforms
+    allowUrl('https://www.bouncycastle.org/licence.html') //MIT
 
     allowDependency('com.j256.simplemagic', 'simplemagic', '1.16') { because 'ISC license' }
     allowDependency('com.adobe.xmp', 'xmpcore', '6.0.6') { because 'BSD 3-Clause' }

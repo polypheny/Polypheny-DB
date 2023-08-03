@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.iface.Authenticator;
@@ -39,11 +41,10 @@ import java.util.Arrays;
 @Slf4j
 public class JupyterPlugin extends Plugin {
 
-    private String host;
     private String token;
-    private final int port = 14141;
+    private final int port = 8888;
     public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";  // notebook storage location inside container
-    private DockerManager.Container container;
+    private DockerContainer container;
     private JupyterProxy proxy;
     private boolean pluginLoaded = false;
 
@@ -84,16 +85,17 @@ public class JupyterPlugin extends Plugin {
         PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
         File rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
         try {
-            int adapterId = -1;
-            DockerManager.Container container = new DockerManager.ContainerBuilder( adapterId, "polypheny/polypheny-jupyter-server", "jupyter-container", 0 )
-                    .withMappedPort( 8888, port )
-                    .withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
-                    .withInitCommands( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
-                    .withReadyTest( this::testConnection, 20000 )
-                    .build();
-            this.container = container;
-            DockerManager.getInstance().initialize( container ).start();
-            this.host = container.getIpAddress();
+            // Just take the first docker instance
+            DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().findFirst().get();
+            this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server", "jupyter-container" )
+                    //.withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
+                    .withCommand( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
+                    .createAndStart();
+
+            if ( !container.waitTillStarted( this::testConnection, 20000 ) ) {
+                container.destroy();
+                throw new RuntimeException( "Failed to start jupyter container" );
+            }
             log.info( "Jupyter container has been deployed." );
             return true;
 
@@ -106,7 +108,8 @@ public class JupyterPlugin extends Plugin {
 
 
     public void onContainerRunning() {
-        proxy = new JupyterProxy( new JupyterClient( token, host, port ) );
+        HostAndPort hostAndPort = container.connectToContainer( port );
+        proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
         registerEndpoints();
         pluginLoaded = true;
     }
@@ -114,7 +117,7 @@ public class JupyterPlugin extends Plugin {
 
     private void stopContainer() {
         if ( container != null ) {
-            DockerInstance.getInstance().destroy( container );
+            container.destroy();
         }
     }
 
@@ -124,7 +127,8 @@ public class JupyterPlugin extends Plugin {
         JupyterSessionManager.getInstance().reset();
         log.info( "Restarting Jupyter container..." );
         if ( startContainer() ) {
-            proxy.setClient( new JupyterClient( token, host, port ) );
+            HostAndPort hostAndPort = container.connectToContainer( port );
+            proxy.setClient( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
             container = null;
@@ -188,12 +192,8 @@ public class JupyterPlugin extends Plugin {
         if ( container == null ) {
             return false;
         }
-        container.updateIpAddress();
-        host = container.getIpAddress();
-        if ( host == null ) {
-            return false;
-        }
-        JupyterClient client = new JupyterClient( token, host, port );
+        HostAndPort hostAndPort = container.connectToContainer( port );
+        JupyterClient client = new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() );
         return client.testConnection();
     }
 

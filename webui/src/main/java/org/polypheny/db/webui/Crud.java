@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -130,10 +131,18 @@ import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.docker.AutoDocker;
+import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerSetupHelper;
+import org.polypheny.db.docker.DockerSetupHelper.DockerReconnectResult;
+import org.polypheny.db.docker.DockerSetupHelper.DockerSetupResult;
+import org.polypheny.db.docker.DockerSetupHelper.DockerUpdateResult;
+import org.polypheny.db.docker.HandshakeManager;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
@@ -713,7 +722,7 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    public static ArrayList<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+    public static List<Result> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
         Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
@@ -731,25 +740,24 @@ public class Crud implements InformationObserver {
         }
 
         // TODO: make it possible to use pagination
+        String[] queries;
+        try {
+            queries = transaction.getProcessor( QueryLanguage.from( "sql" ) ).splitStatements( request.query ).toArray( new String[0] );
+        } catch ( RuntimeException e ) {
+            return List.of( new Result( "Syntax error: " + e.getMessage() ) );
+        }
 
         // No autoCommit if the query has commits.
         // Ignore case: from: https://alvinalexander.com/blog/post/java/java-how-case-insensitive-search-string-matches-method
         Pattern p = Pattern.compile( ".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-        Matcher m = p.matcher( request.query );
-        if ( m.matches() ) {
-            autoCommit = false;
+        for ( String query : queries ) {
+            if ( p.matcher( query ).matches() ) {
+                autoCommit = false;
+                break;
+            }
         }
-
         long executionTime = 0;
         long temp = 0;
-        // remove all comments
-        String allQueries = request.query;
-        //remove comments
-        allQueries = allQueries.replaceAll( "(?s)(\\/\\*.*?\\*\\/)", "" );
-        allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
-        //remove whitespace at the end
-        allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-        String[] queries = allQueries.split( ";(?=(?:[^\']*\'[^\']*\')*[^\']*$)" );
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
@@ -781,7 +789,7 @@ public class Crud implements InformationObserver {
                 }
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
-                Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                Pattern p2 = Pattern.compile( "(?si:limit)[\\s]+[0-9]+[\\s]*$" );
                 if ( !p2.matcher( query ).find() && !request.noLimit ) {
                     noLimit = false;
                 }
@@ -2923,7 +2931,7 @@ public class Crud implements InformationObserver {
             Statement statement = transaction.createStatement();
             Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
-            String query = String.format( "CREATE DATABASE %s", schema.getName() );
+            String query = String.format( "CREATE DATABASE %s ON STORE %s", schema.getName(), schema.getStore() );
 
             List<? extends Node> nodes = processor.parse( query );
             ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
@@ -3609,23 +3617,151 @@ public class Crud implements InformationObserver {
     }
 
 
-    /**
-     * This method can be used to retrieve the status of a specific Docker instance and if
-     * it is running correctly when using the provided settings
-     */
-    public void testDockerInstance( final Context ctx ) {
-        String dockerIdAsString = ctx.pathParam( "dockerId" );
-        int dockerId = Integer.parseInt( dockerIdAsString );
+    void addDockerInstance( final Context ctx ) {
+        Map<String, Object> config = gson.fromJson( ctx.body(), Map.class );
+        DockerSetupResult res = DockerSetupHelper.newDockerInstance(
+                (String) config.getOrDefault( "host", "" ),
+                (String) config.getOrDefault( "alias", "" ),
+                (String) config.getOrDefault( "registry", "" ),
+                ((Double) config.getOrDefault( "communicationPort", (double) ConfigDocker.COMMUNICATION_PORT )).intValue(),
+                ((Double) config.getOrDefault( "handshakePort", (double) ConfigDocker.HANDSHAKE_PORT )).intValue(),
+                ((Double) config.getOrDefault( "proxyPort", (double) ConfigDocker.PROXY_PORT )).intValue(),
+                true
+        );
 
-        ctx.json( DockerManager.getInstance().probeDockerStatus( dockerId ) );
+        Map<String, Object> json = new HashMap<>( res.getMap() );
+        json.put( "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
+        ctx.json( json );
     }
 
 
-    /**
-     * Retrieve a collection which maps the dockerInstance ids to the corresponding used ports
-     */
-    public void getUsedDockerPorts( final Context ctx ) {
-        ctx.json( DockerManager.getInstance().getUsedPortsSorted() );
+    void testDockerInstance( final Context ctx ) {
+        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+
+        Optional<DockerInstance> maybeDockerInstance = DockerManager.getInstance().getInstanceById( dockerId );
+        if ( maybeDockerInstance.isPresent() ) {
+            ctx.json( maybeDockerInstance.get().probeDockerStatus() );
+        } else {
+            ctx.json( Map.of(
+                    "successful", false,
+                    "errorMessage", "No instance with that id"
+            ) );
+            ctx.status( 404 );
+        }
+    }
+
+
+    void getDockerInstances( final Context ctx ) {
+        ctx.json( DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ) );
+    }
+
+
+    void getDockerInstance( final Context ctx ) {
+        int dockerId = Integer.parseInt( ctx.pathParam( "dockerId" ) );
+
+        Map<String, Object> res = DockerManager.getInstance().getInstanceById( dockerId ).map( DockerInstance::getMap ).orElse( Map.of() );
+
+        ctx.json( res );
+    }
+
+
+    void updateDockerInstance( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+
+        DockerUpdateResult res = DockerSetupHelper.updateDockerInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ), config.getOrDefault( "hostname", "" ), config.getOrDefault( "alias", "" ), config.getOrDefault( "registry", "" ) );
+
+        ctx.json( res.getMap() );
+    }
+
+
+    void reconnectToDockerInstance( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+
+        DockerReconnectResult res = DockerSetupHelper.reconnectToInstance( Integer.parseInt( config.getOrDefault( "id", "-1" ) ) );
+
+        ctx.json( res.getMap() );
+    }
+
+
+    void removeDockerInstance( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
+        if ( id == -1 ) {
+            throw new RuntimeException( "Invalid id" );
+        }
+
+        String res = DockerSetupHelper.removeDockerInstance( id );
+
+        ctx.json( Map.of(
+                "error", res,
+                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() ),
+                "status", AutoDocker.getInstance().getStatus()
+        ) );
+    }
+
+
+    void getAutoDockerStatus( final Context ctx ) {
+        ctx.json( AutoDocker.getInstance().getStatus() );
+    }
+
+
+    void doAutoHandshake( final Context ctx ) {
+        boolean success = AutoDocker.getInstance().doAutoConnect();
+        ctx.json( Map.of(
+                "success", success,
+                "status", AutoDocker.getInstance().getStatus(),
+                "instances", DockerManager.getInstance().getDockerInstances().values().stream().map( DockerInstance::getMap ).collect( Collectors.toList() )
+        ) );
+    }
+
+
+    void startHandshake( final Context ctx ) {
+        String hostname = ctx.body();
+        ctx.json( HandshakeManager.getInstance().restartOrGetHandshake( hostname ) );
+    }
+
+
+    void getHandshake( final Context ctx ) {
+        String hostname = ctx.pathParam( "hostname" );
+        Map<String, Object> dockerInstance = DockerManager.getInstance().getDockerInstances()
+                .values()
+                .stream()
+                .filter( d -> d.getHost().equals( hostname ) )
+                .map( DockerInstance::getMap )
+                .findFirst()
+                .orElse( Map.of() );
+        ctx.json( Map.of(
+                        "handshake", HandshakeManager.getInstance().getHandshake( hostname ),
+                        "instance", dockerInstance
+                )
+        );
+    }
+
+
+    void cancelHandshake( final Context ctx ) {
+        String hostname = ctx.body();
+        if ( HandshakeManager.getInstance().cancelHandshake( hostname ) ) {
+            ctx.status( 200 );
+        } else {
+            ctx.status( 404 );
+        }
+    }
+
+
+    void getDockerSettings( final Context ctx ) {
+        ctx.json( Map.of(
+                "registry", RuntimeConfig.DOCKER_CONTAINER_REGISTRY.getString()
+        ) );
+    }
+
+
+    void changeDockerSettings( final Context ctx ) {
+        Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
+        String newRegistry = config.get( "registry" );
+        if ( newRegistry != null ) {
+            RuntimeConfig.DOCKER_CONTAINER_REGISTRY.setString( newRegistry );
+        }
+        getDockerSettings( ctx );
     }
 
 

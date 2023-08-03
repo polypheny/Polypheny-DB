@@ -56,9 +56,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigObject;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
@@ -76,6 +76,7 @@ public abstract class Adapter {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;
+    protected String deploymentId;
     private final List<NamespaceType> supportedNamespaceTypes;
     @Getter
     private final String adapterName;
@@ -308,7 +309,7 @@ public abstract class Adapter {
         this.adapterName = properties.name();
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
-        this.settings = settings;
+        this.settings = new HashMap<>( settings );
 
         informationPage = new InformationPage( uniqueName );
         informationGroups = new ArrayList<>();
@@ -373,9 +374,9 @@ public abstract class Adapter {
     public void shutdownAndRemoveListeners() {
         shutdown();
         if ( deployMode == DeployMode.DOCKER ) {
-            RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
+            DockerManager.getInstance().removeListener( this.listener );
+            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
         }
-        DockerManager.getInstance().destroyAll( getAdapterId() );
     }
 
 
@@ -419,12 +420,6 @@ public abstract class Adapter {
 
     public Map<String, String> getCurrentSettings() {
         // we unwrap the dockerInstance details here, for convenience
-        if ( deployMode == DeployMode.DOCKER ) {
-            Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
-                    .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();
-            settings.forEach( dockerSettings::put );
-            return dockerSettings;
-        }
         return settings;
     }
 
@@ -521,20 +516,16 @@ public abstract class Adapter {
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
-                List<ConfigDocker> configs = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
-                if ( !configs.stream().map( conf -> conf.id ).collect( Collectors.toList() ).contains( dockerInstanceId ) ) {
-                    throw new RuntimeException( "This DockerInstance has adapters on it, while this is the case it can not be deleted." );
-                }
-                resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ) );
+                resetDockerConnection();
             }
 
 
             @Override
             public void restart( Config c ) {
-                resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ) );
+                resetDockerConnection();
             }
         };
-        RuntimeConfig.DOCKER_INSTANCES.addObserver( listener );
+        DockerManager.getInstance().addListener( listener );
         return listener;
     }
 
@@ -542,10 +533,8 @@ public abstract class Adapter {
     /**
      * This function is called automatically if the configuration of connected Docker instance changes,
      * it is responsible for handling regenerating the connection if the Docker changes demand it
-     *
-     * @param c the new configuration of the corresponding Docker instance
      */
-    protected void resetDockerConnection( ConfigDocker c ) {
+    protected void resetDockerConnection() {
         throw new RuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 
