@@ -126,14 +126,8 @@ public class HostInformation {
 */
 
         //Memory Information
-        final int base;
-        if ( SystemUtils.IS_OS_MAC ) {
-            base = 1000;
-        } else {
-            base = 1024;
-        }
-        final double div = Math.pow( base, 3 );
-        InformationGroup memoryGroup = new InformationGroup( page, "Memory" ).setOrder( 5 );
+        final double div = Math.pow( 1024, 3 );
+        InformationGroup memoryGroup = new InformationGroup( page, "Memory in GiB" ).setOrder( 5 );
         im.addGroup( memoryGroup );
         GlobalMemory mem = hal.getMemory();
         final String[] labels = new String[]{ "used", "free" };
