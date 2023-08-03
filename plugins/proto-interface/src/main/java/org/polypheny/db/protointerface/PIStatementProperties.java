@@ -20,12 +20,15 @@ import lombok.Getter;
 import org.polypheny.db.protointerface.proto.StatementProperties;
 
 public class PIStatementProperties {
+
     private static final int UNLIMITED = -1;
     private static final int DEFAULT_FETCH_SIZE = 100;
 
-    public PIStatementProperties(StatementProperties statementProperties) {
-        update(statementProperties);
+
+    public PIStatementProperties( StatementProperties statementProperties ) {
+        update( statementProperties );
     }
+
 
     private PIStatementProperties() {
     }
@@ -42,6 +45,7 @@ public class PIStatementProperties {
         return defaults;
     }
 
+
     @Getter
     private StatementProperties.ResultOperations updateBehaviour; // currently not in use
     @Getter
@@ -55,12 +59,14 @@ public class PIStatementProperties {
     @Getter
     private boolean isPoolable; // currently not in use
 
-    public void update(StatementProperties statementProperties) {
+
+    public void update( StatementProperties statementProperties ) {
         this.updateBehaviour = statementProperties.getUpdateBehaviour();
-        this.fetchSize = statementProperties.getFetchSize();
+        this.fetchSize = statementProperties.getFetchSize() == 0 ? DEFAULT_FETCH_SIZE : statementProperties.getFetchSize();
         this.reverseFetch = statementProperties.getReverseFetch();
         this.maxTotalFetchSize = statementProperties.getMaxTotalFetchSize();
         this.doesEscapeProcessing = statementProperties.getDoesEscapeProcessing();
         this.isPoolable = statementProperties.getIsPoolable();
     }
+
 }

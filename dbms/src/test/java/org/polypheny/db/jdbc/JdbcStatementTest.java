@@ -34,6 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
@@ -407,6 +408,7 @@ public class JdbcStatementTest {
         }
     }
 
+
     @Test(expected = SQLException.class)
     public void setIllegalFetchDirectionTest1() throws SQLException {
         try (
@@ -418,6 +420,7 @@ public class JdbcStatementTest {
             assertEquals( ResultSet.FETCH_REVERSE, statement.getFetchDirection() );
         }
     }
+
 
     @Test(expected = SQLException.class)
     public void setIllegalFetchDirectionTest2() throws SQLException {
@@ -847,4 +850,29 @@ public class JdbcStatementTest {
             PolyphenyStatement polyphenyStatement = statement.unwrap( PolyphenyStatement.class );
         }
     }
+
+
+    @Test
+    public void isWrapperForFalseTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement();
+        ) {
+            assertFalse( statement.isWrapperFor( PolyphenyDb.class ) );
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void unwrapExceptionTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+                Statement statement = connection.createStatement();
+        ) {
+            PolyphenyDb polyDb = statement.unwrap( PolyphenyDb.class );
+        }
+    }
+
 }
