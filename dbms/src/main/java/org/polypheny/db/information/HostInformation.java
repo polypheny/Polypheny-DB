@@ -20,7 +20,6 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.lang3.SystemUtils;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import oshi.SystemInfo;
