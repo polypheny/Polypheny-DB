@@ -99,7 +99,6 @@ public final class DockerContainer {
 
 
     public void destroy() {
-        log.info( "Destroying container with ID " + this.getContainerId() );
         // TODO: When not connected, record these IDs in a list and remove them the next time they are encountered
         getDockerInstance().ifPresent( d -> d.destroyContainer( this ) );
         containers.remove( containerId );
@@ -249,9 +248,7 @@ public final class DockerContainer {
                         Socket local = s.accept();
                         startProxyForConnection( local, port );
                     } catch ( IOException e ) {
-                        if ( e instanceof SocketException && e.getMessage().equals( "Socket closed" ) ) {
-                            log.info( "Server Socket for port " + port + " closed" );
-                        } else {
+                        if ( !(e instanceof SocketException) || !e.getMessage().equals( "Socket closed" ) ) {
                             log.info( "Server Socket for port " + port + " closed", e );
                         }
                         synchronized ( this ) {

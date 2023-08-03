@@ -86,7 +86,6 @@ public final class DockerInstance {
         if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
             throw new RuntimeException( "Communication, handshake and proxy port must be different" );
         }
-        log.info( "New Docker instance with ID " + instanceId );
         this.host = host;
         this.alias = alias;
         this.registry = registry;
