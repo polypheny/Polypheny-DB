@@ -736,7 +736,7 @@ public class TestHelper {
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port;
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
             log.debug( "Connecting to database @ {}", url );
 
             conn = DriverManager.getConnection( url, "pa", "" );
@@ -751,7 +751,10 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            if(!conn.getAutoCommit()) {
+            if ( conn.isClosed() ) {
+                return;
+            }
+            if ( !conn.getAutoCommit() ) {
                 conn.commit();
             }
             conn.close();
