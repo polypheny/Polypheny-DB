@@ -17,10 +17,10 @@
 package org.polypheny.db.adapter.monetdb.stores;
 
 import com.google.common.collect.ImmutableList;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -41,9 +41,10 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
+import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.DockerManager.Container;
-import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -54,6 +55,7 @@ import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.PasswordGenerator;
 
 
 @Slf4j
@@ -62,17 +64,18 @@ import org.polypheny.db.type.PolyTypeFamily;
         description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
+@AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingString(name = "database", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 3, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.", position = 4, appliesTo = DeploySetting.REMOTE)
-@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Password to be used for authenticating at the remote instance.")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Password to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Maximum number of concurrent connections opened by Polypheny-DB to this data store.")
 public class MonetdbStore extends AbstractJdbcStore {
 
     private String host;
+    private int port;
     private String database;
     private String username;
-    private Container container;
+    private DockerContainer container;
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -82,17 +85,43 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
-                .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
-                .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
-                .withReadyTest( this::testDockerConnection, 15000 )
-                .build();
-
-        this.container = container;
         database = "monetdb";
         username = "monetdb";
 
-        DockerManager.getInstance().initialize( container ).start();
+        if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+            if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
+                settings.put( "password", PasswordGenerator.generatePassword( 256 ) );
+                updateSettings( settings );
+            }
+
+            DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId )
+                    .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
+            try {
+                this.container = instance.newBuilder( "polypheny/monet:latest", getUniqueName() )
+                        .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
+                        .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )
+                        .createAndStart();
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            }
+
+            if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
+                container.destroy();
+                throw new RuntimeException( "Failed to connect to monetdb container" );
+            }
+
+            deploymentId = container.getContainerId();
+            settings.put( "deploymentId", deploymentId );
+            updateSettings( settings );
+        } else {
+            deploymentId = settings.get( "deploymentId" );
+            DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
+            container = DockerContainer.getContainerByUUID( deploymentId )
+                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+            if ( !testDockerConnection() ) {
+                throw new RuntimeException( "Could not connect to container" );
+            }
+        }
 
         ConnectionFactory connectionFactory = createConnectionFactory();
         createDefaultSchema( connectionFactory );
@@ -103,6 +132,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     protected ConnectionFactory deployRemote() {
         host = settings.get( "host" );
+        port = Integer.parseInt( settings.get( "port" ) );
         database = settings.get( "database" );
         username = settings.get( "username" );
         if ( !testConnection() ) {
@@ -131,7 +161,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "nl.cwi.monetdb.jdbc.MonetDriver" );
 
-        final String connectionUrl = getConnectionUrl( host, Integer.parseInt( settings.get( "port" ) ), database );
+        final String connectionUrl = getConnectionUrl( host, port, database );
         dataSource.setUrl( connectionUrl );
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
@@ -335,11 +365,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             return false;
         }
 
-        container.updateIpAddress();
-        this.host = container.getIpAddress();
-        if ( this.host == null ) {
-            return false;
-        }
+        HostAndPort hp = container.connectToContainer( 50000 );
+        this.host = hp.getHost();
+        this.port = hp.getPort();
 
         return testConnection();
     }

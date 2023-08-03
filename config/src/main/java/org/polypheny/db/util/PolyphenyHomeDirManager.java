@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class PolyphenyHomeDirManager {
         if ( !tryCreatingFolder( root ) ) {
             root = new File( "." );
             if ( !tryCreatingFolder( root ) ) {
-                throw new RuntimeException( "Could not create root directory: .polypheny neither in:" + System.getProperty( "user.home" ) + " nor \".\"" );
+                throw new RuntimeException( "Could not create root directory: .polypheny neither in: " + pathVar + " nor \".\"" );
             }
         }
 
@@ -138,6 +138,27 @@ public class PolyphenyHomeDirManager {
     }
 
 
+    public boolean moveFile( String oldPath, String newPath ) {
+        if ( checkIfExists( newPath ) ) {
+            throw new RuntimeException( "Target file does already exist." );
+        }
+        File file = new File( this.root, oldPath );
+        return file.renameTo( new File( this.root, newPath ) );
+    }
+
+
+    public boolean deleteFile( String path ) {
+        File file = new File( this.root, path );
+        if ( file.exists() ) {
+            if ( !file.isFile() ) {
+                throw new RuntimeException( "Target is not a file." );
+            }
+            return file.delete();
+        }
+        return true;
+    }
+
+
     public boolean recursiveDeleteFolder( String path ) {
         File folder = new File( this.root, path );
         if ( folder.exists() ) {
@@ -201,7 +222,7 @@ public class PolyphenyHomeDirManager {
     }
 
 
-    public File getDefaultPath() {
+    public File getRootPath() {
         return root;
     }
 

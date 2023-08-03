@@ -11,7 +11,7 @@ dependencies {
     api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
 
     ////// SLF4J
-    implementation group: 'org.pf4j', name: 'pf4j', version: pf4jVersion // Apache 2.0
+    implementation group: 'org.pf4j', name: 'pf4j', version: pf4j_version // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

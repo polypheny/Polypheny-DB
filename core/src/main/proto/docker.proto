@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package proto_docker;
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.docker";
+option go_package = "proto/";
+option java_outer_classname = "DockerProtos";
+
+// Auxiliary structures
+
+// See https://pkg.go.dev/github.com/docker/go-connections/nat#PortMap
+message PortBinding {
+  string host_ip = 1;
+  uint32 host_port = 2; // When zero in the CreateContainerRequest, docker will use a random port
+}
+message PortMap {
+  uint32 container_port = 1;
+  string proto = 2;
+  repeated PortBinding bindings = 3;
+}
+message PortMaps {
+  repeated PortMap mappings = 1;
+}
+
+message StringList {
+  repeated string strings = 1;
+}
+
+// In general we do not keep the strict protobuf field numbering policies,
+// because we never store messages.  The exception is the message_id, version
+// and upgrade field numbers for both Request and Response are fixed, as are
+// the VersionRequest, VersionResponse, UpgradeRequest and UpgradeResponse
+// messages.  If they are ever changed in a backwards incompatible way, the
+// handshake protocol version number must be increased.  For everything else it
+// is sufficient to simply increment the negotiated version.
+message Request {
+  uint64 message_id = 1;
+  oneof inner_message {
+    VersionRequest version = 2047;
+    UpgradeRequest upgrade = 2046;
+    CreateContainerRequest create_container = 2;
+    StartContainerRequest start_container = 3;
+    InspectContainerRequest inspect_container = 4;
+    StopContainerRequest stop_container = 5;
+    DeleteContainerRequest delete_container = 6;
+    ListContainersRequest list_containers = 7;
+    GetPortsRequest get_ports = 8;
+    ExecuteCommandRequest execute_command = 9;
+    CreateVolumeRequest create_volume = 10;
+    DeleteVolumeRequest delete_volume = 11;
+    PingRequest ping = 12;
+  }
+}
+
+message Response {
+  uint64 message_id = 1;
+  oneof inner_message {
+    VersionResponse version = 2047;
+    UpgradeResponse upgrade = 2046;
+    CreateContainerResponse create_container = 2;
+    StartContainerResponse start_container = 3;
+    InspectContainerResponse inspect_container = 4;
+    StopContainerResponse stop_container = 5;
+    DeleteContainerResponse delete_container = 6;
+    ListContainersResponse list_containers = 7;
+    GetPortsResponse get_ports = 8;
+    ExecuteCommandResponse execute_command = 9;
+    CreateVolumeResponse create_volume = 10;
+    DeleteVolumeResponse delete_volume = 11;
+    PingResponse ping = 12;
+  }
+}
+
+message VersionRequest {
+  uint32 version = 1;
+}
+
+message VersionResponse {
+  uint32 version = 1;
+  string uuid = 2; // A identifier for that docker instance, see https://docs.docker.com/engine/api/v1.43/#tag/System/operation/SystemInfo
+}
+
+message UpgradeRequest {
+  string image_name = 1;
+}
+
+message UpgradeResponse {
+  string error = 1; // "" if no error
+}
+
+message CreateContainerRequest {
+  string container_name = 1;
+  string image_name = 2;
+  PortMaps ports = 3;
+  StringList init_command = 4;
+  map<string, string> environment_variables = 5;
+  StringList volumes = 6;
+}
+
+message CreateContainerResponse {
+  string uuid = 1; // The UUID of the created container
+  string error = 2;
+}
+
+message StartContainerRequest {
+  string uuid = 1;
+}
+
+message StartContainerResponse {
+  string error = 1;
+}
+
+message InspectContainerRequest {
+  string uuid = 1;
+}
+
+message InspectContainerResponse {
+  string error = 16; // Length > 0 when an error occurred
+  string name = 1;
+  string status = 2; // See https://docs.docker.com/engine/api/v1.43/#tag/Container/operation/ContainerInspect
+}
+
+message StopContainerRequest {
+  string uuid = 1;
+}
+
+message StopContainerResponse {
+  string error = 1;
+}
+
+message DeleteContainerRequest {
+  string uuid = 1;
+}
+
+message DeleteContainerResponse {
+  string error = 1;
+}
+
+// This only lists the containers belonging to the Polypheny instance issuing
+// the request.  Ownership is determined by enforcing a naming scheme which
+// includes the Polypheny UUID in the container name.
+message ListContainersRequest {
+}
+
+message ContainerInfo {
+  string uuid = 1;
+  string name = 2;
+  string status = 3;
+}
+
+message ListContainersResponse {
+  repeated ContainerInfo containers = 1;
+  string error = 2;
+}
+
+message GetPortsRequest {
+  repeated string uuid = 1;
+}
+
+message PortMapOrError {
+  oneof result {
+    PortMaps ok = 1;
+    string error = 2;
+  }
+}
+
+message GetPortsResponse {
+  map<string, PortMapOrError> ports = 1;
+}
+
+message ExecuteCommandRequest {
+  string uuid = 1;
+  StringList command = 2;
+}
+
+message ExecuteCommandResponse {
+  int32 exit_code = 1;
+  string error = 2; // Set when there was another error
+}
+
+message CreateVolumeRequest {
+  string driver = 1;
+  string name = 2; // Must start with polypheny_ followed by the Polypheny UUID and another underscore
+  map<string, string> options = 3;
+}
+
+message CreateVolumeResponse {
+  string error = 16; // Length > 0 when an error occurred
+}
+
+message DeleteVolumeRequest {
+  string name = 1;
+}
+
+message DeleteVolumeResponse {
+  string error = 1;
+}
+
+message PingRequest {
+}
+
+message PingResponse {
+  string error = 1;
+}

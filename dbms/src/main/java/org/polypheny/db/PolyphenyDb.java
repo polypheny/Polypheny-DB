@@ -21,10 +21,18 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.annotations.OptionType;
+import com.github.rvesse.airline.parser.errors.ParseException;
 import java.awt.SystemTray;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +54,7 @@ import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
+import org.polypheny.db.docker.AutoDocker;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
@@ -156,6 +165,8 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
+        } catch ( ParseException e ) {
+            log.error( "Error parsing command line parameters: " + e.getMessage() );
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
@@ -212,12 +223,30 @@ public class PolyphenyDb {
             System.exit( 0 );
         }
 
-        // Restore data folder
-        if ( PolyphenyHomeDirManager.getInstance().checkIfExists( "data.backup" ) ) {
-            PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" );
-            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data.backup", "data" ) ) {
-                throw new RuntimeException( "Unable to restore data folder." );
+        // Restore content of Polypheny folder
+        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.getInstance();
+        if ( phdm.checkIfExists( "_test_backup" ) && phdm.getFileIfExists( "_test_backup" ).isDirectory() ) {
+            File backupFolder = phdm.getFileIfExists( "_test_backup" );
+            // Cleanup Polypheny folder
+            for ( File item : phdm.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( phdm.getFileIfExists( item.getName() ).isFile() ) {
+                    phdm.deleteFile( item.getName() );
+                } else {
+                    phdm.recursiveDeleteFolder( item.getName() );
+                }
             }
+            // Restore contents from backup
+            for ( File item : backupFolder.listFiles() ) {
+                if ( phdm.checkIfExists( "_test_backup/" + item.getName() ) ) {
+                    if ( !item.renameTo( new File( phdm.getRootPath(), item.getName() ) ) ) {
+                        throw new RuntimeException( "Unable to restore the Polypheny folder." );
+                    }
+                }
+            }
+            backupFolder.delete();
             log.info( "Restoring the data folder." );
         }
 
@@ -226,14 +255,27 @@ public class PolyphenyDb {
             if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "data" ) ) {
                 log.error( "Unable to delete the data folder." );
             }
+            if ( !PolyphenyHomeDirManager.getInstance().recursiveDeleteFolder( "monitoring" ) ) {
+                log.error( "Unable to delete the monitoring folder." );
+            }
             ConfigManager.getInstance().resetDefaultConfiguration();
         }
 
-        // Backup data folder (running in test mode / memory mode)
-        if ( (testMode || memoryCatalog) && PolyphenyHomeDirManager.getInstance().checkIfExists( "data" ) ) {
-            if ( !PolyphenyHomeDirManager.getInstance().moveFolder( "data", "data.backup" ) ) {
-                throw new RuntimeException( "Unable to create the backup folder." );
+        // Backup content of Polypheny folder
+        if ( testMode || memoryCatalog ) {
+            if ( phdm.checkIfExists( "_test_backup" ) ) {
+                throw new RuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
+            File backupFolder = phdm.registerNewFolder( "_test_backup" );
+            for ( File item : phdm.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( !item.renameTo( new File( backupFolder, item.getName() ) ) ) {
+                    throw new RuntimeException( "Unable to backup the Polypheny folder." );
+                }
+            }
+            log.info( "Restoring the Polypheny folder." );
         }
 
         // Enables Polypheny to be started with a different config.
@@ -242,6 +284,36 @@ public class PolyphenyDb {
             ConfigManager.getInstance();
             ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
+
+        // Generate UUID for Polypheny (if there isn't one already)
+        String uuid;
+        if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
+            UUID id = UUID.randomUUID();
+            File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
+
+            try ( FileOutputStream out = new FileOutputStream( f ) ) {
+                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Failed to store UUID " + e );
+            }
+
+            uuid = id.toString();
+        } else {
+            Path path = PolyphenyHomeDirManager.getInstance().getFileIfExists( "uuid" ).toPath();
+
+            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
+                uuid = UUID.fromString( in.readLine() ).toString();
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Failed to load UUID " + e );
+            }
+        }
+
+        if ( testMode ) {
+            uuid = "polypheny-test";
+        }
+
+        log.info( "Polypheny UUID: " + uuid );
+        RuntimeConfig.INSTANCE_UUID.setString( uuid );
 
         class ShutdownHelper implements Runnable {
 
@@ -334,6 +406,7 @@ public class PolyphenyDb {
 
         // Startup and restore catalog
         Transaction trx = null;
+
         try {
             Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
@@ -344,6 +417,21 @@ public class PolyphenyDb {
             catalog = PolyPluginManager.getCATALOG_SUPPLIER().get();
             if ( catalog == null ) {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
+            }
+
+            if ( AutoDocker.getInstance().isAvailable() ) {
+                if ( testMode ) {
+                    resetDocker = true;
+                    Catalog.resetDocker = true;
+                }
+                boolean success = AutoDocker.getInstance().doAutoConnect();
+                if ( testMode && !success ) {
+                    // AutoDocker does not work in Windows containers
+                    if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                        log.error( "Failed to connect to docker instance" );
+                        return;
+                    }
+                }
             }
 
             trx = transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultDatabaseId, false, "Catalog Startup" );

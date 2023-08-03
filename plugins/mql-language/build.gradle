@@ -37,7 +37,7 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
-    testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion)
+    testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version)
 
     testImplementation group: "junit", name: "junit", version: junit_version
 }
@@ -143,4 +143,3 @@ licensee {
     allowUrl('https://www.eclipse.org/org/documents/epl-v10.php') // EPL 1.0
 
 }
-

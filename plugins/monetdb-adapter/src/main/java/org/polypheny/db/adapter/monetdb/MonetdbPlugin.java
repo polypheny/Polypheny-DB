@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,7 @@ public class MonetdbPlugin extends Plugin {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
                 "instanceId", "0",
-                "password", "polypheny",
-                "maxConnections", "25",
-                "port", "5000"
+                "maxConnections", "25"
         );
 
         Adapter.addAdapter( MonetdbStore.class, ADAPTER_NAME, settings );
