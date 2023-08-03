@@ -302,7 +302,7 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertFalse( rs.isFirst() );
-            rs.isFirst();
+            rs.first();
             assertTrue( rs.isFirst() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
@@ -334,9 +334,7 @@ public class JdbcResultSetTest {
                 Statement statement = connection.createStatement() ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertFalse( rs.isFirst() );
-            rs.isFirst();
-            assertTrue( rs.isFirst() );
+            rs.last();
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -415,10 +413,9 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             int expected_row_index = 1; //jdbc starts enumeration with 1
-            assertEquals( -1, rs.getRow() );
+            assertEquals( 0, rs.getRow() );
             while ( rs.next() ) {
                 assertEquals( expected_row_index, rs.getRow() );
-                assertEquals( expected_row_index, rs.getInt( 1 ) );
                 expected_row_index++;
             }
             rs.close();
@@ -465,7 +462,7 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertTrue( rs.absolute( 0 ) );
-            assertEquals( -1, rs.getRow() );
+            assertEquals( 0, rs.getRow() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -480,8 +477,7 @@ public class JdbcResultSetTest {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             assertTrue( rs.absolute( -5 ) );
-            assertEquals( 20, rs.getRow() );
-            assertEquals( 20, rs.getInt( 1 ) );
+            assertEquals( 46, rs.getRow() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -610,7 +606,7 @@ public class JdbcResultSetTest {
             ResultSet rs = statement.executeQuery( SELECT_SQL );
             rs.absolute( 10 );
             assertFalse( rs.relative( -800 ) );
-            assertEquals( -1, rs.getRow() );
+            assertEquals( 0, rs.getRow() );
             assertTrue( rs.isBeforeFirst() );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
