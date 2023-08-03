@@ -1,5 +1,26 @@
 # Change Log
 
+## 0.9.1 (August 3, 2023)
+
+### Enhancements:
+**UI Improvements:**
+* Enhanced readability of query implementation code displayed in the UI by removing package names.
+* Streamlined adapter deployment dialog.
+* Added suggestions for adapter names, simplifying data store deployment.
+* Improved parsing of comments in SQL queries submitted through the Polypheny-UI.
+
+**Adapter and Container Management:**
+* Each Polypheny instance is now assigned a UUID, used in container names.
+* Automated port selection and password assignment for containers deployment via Docker.
+* All traffic is now tunneled through an encrypted connection.
+
+### Bug Fixes:
+* Resolved remote connection issues with PostgreSQL and MonetDB.
+* Fixed a bug with MongoDB adapters during system restart.
+* Resolved an issue that prevented interface and adapter changes from saving under certain conditions.
+* Fixed a problem related to creating graph namespaces.
+
+
 ## 0.9.0 (April 12, 2023)
 
 * Adding the ability to use sha256 digest for Docker images
