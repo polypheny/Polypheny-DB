@@ -100,7 +100,7 @@ public class HostInformation {
 
         InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
         for ( NetworkIF networkIF : hal.getNetworkIFs() ) {
-            networkInformation.addRow( networkIF.getDisplayName(), String.join( ".", networkIF.getIPv4addr() ) );
+            networkInformation.addRow( networkIF.getDisplayName(), String.join( ", ", networkIF.getIPv4addr() ) );
         }
         im.registerInformation( networkInformation );
 
