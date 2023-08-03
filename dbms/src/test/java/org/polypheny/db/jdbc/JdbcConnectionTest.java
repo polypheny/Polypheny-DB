@@ -28,7 +28,6 @@ import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.NClob;
 import java.sql.ResultSet;
@@ -45,6 +44,7 @@ import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyphenyConnection;
@@ -82,6 +82,7 @@ public class JdbcConnectionTest {
         return DriverManager.getConnection( url, properties );
     }
 
+
     @Test
     public void timeZoneTestNoTimezone() throws SQLException {
         Time expected = Time.valueOf( "11:59:32" );
@@ -94,7 +95,7 @@ public class JdbcConnectionTest {
             statemnet.execute( tableDdl );
             statemnet.execute( insert );
             ResultSet rs = statemnet.executeQuery( select );
-            TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{Time.valueOf( "11:59:32" )} ) );
+            TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ Time.valueOf( "11:59:32" ) } ) );
         }
     }
 
@@ -293,6 +294,28 @@ public class JdbcConnectionTest {
     public void unwrapTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             PolyphenyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyphenyConnection.class );
+        }
+    }
+
+
+    @Test
+    public void isWrapperForFalseTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+        ) {
+            assertFalse( connection.isWrapperFor( PolyphenyDb.class ) );
+        }
+    }
+
+
+    @Test(expected = SQLException.class)
+    public void unwrapExceptionTest() throws SQLException {
+        try (
+                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
+                Connection connection = polyphenyDbConnection.getConnection();
+        ) {
+            PolyphenyDb polyDb = connection.unwrap( PolyphenyDb.class );
         }
     }
 
