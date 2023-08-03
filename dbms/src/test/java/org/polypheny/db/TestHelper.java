@@ -225,29 +225,13 @@ public class TestHelper {
                                     Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
                             } else {
-                                switch ( columnType ) {
-                                    case Types.TINYINT:
-                                        Assert.assertEquals(
-                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
-                                                Integer.valueOf( (Byte) expectedRow[j] ),
-                                                row[j]
-                                        );
-                                        break;
-                                    case Types.SMALLINT:
-                                        Assert.assertEquals(
-                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
-                                                Integer.valueOf( (Short) expectedRow[j] ),
-                                                row[j]
-                                        );
-                                        break;
-                                    default:
-                                        Assert.assertEquals(
-                                                "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
-                                                expectedRow[j],
-                                                row[j]
-                                        );
-                                        break;
-                                }
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
+                                        expectedRow[j],
+                                        row[j]
+                                );
+                                break;
+
                             }
                         } else {
                             Assert.assertEquals(
@@ -546,6 +530,18 @@ public class TestHelper {
 
         private final Connection conn;
 
+    public JdbcConnection (boolean autoCommit, boolean strictMode) throws SQLException {
+        try {
+            Class.forName( "org.polypheny.jdbc.PolyphenyDriver" );
+        } catch ( ClassNotFoundException e ) {
+            log.error( "Polypheny JDBC Driver not found", e );
+        }
+        final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=" + strictMode;
+        log.debug( "Connecting to database @ {}", url );
+
+        conn = DriverManager.getConnection( url, "pa", "" );
+        conn.setAutoCommit( autoCommit );
+    }
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
@@ -553,7 +549,7 @@ public class TestHelper {
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port;
+            final String url = "jdbc:polypheny://" + dbHost + ":" + port + "/?strict=false";
             log.debug( "Connecting to database @ {}", url );
 
             conn = DriverManager.getConnection( url, "pa", "" );
@@ -568,7 +564,7 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
-            if (conn.isClosed()) {
+            if ( conn.isClosed() ) {
                 return;
             }
             if ( !conn.getAutoCommit() ) {
