@@ -82,6 +82,8 @@ public class EventCache {
 
     // In this method, we create the appropriate schemas and tables in the catalog. (see also createTable)
     private void createSchema() {
+        columns.remove("block");
+        columns.remove("transaction");
         // todo: block and trx columns are also included. Remove?
         Map<String, List<FieldInformation>> columnInformations = columns.entrySet()
                 .stream()
