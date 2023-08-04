@@ -23,15 +23,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -46,12 +43,16 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -70,6 +71,8 @@ public class EthereumPlugin extends Plugin {
 
     public static final String ADAPTER_NAME = "ETHEREUM";
 
+    public static final String HIDDEN_PREFIX = "__hidden__"; // evtl motzt der - db kann evtl nicht mit dollar zeichen nehmen __hidden__
+
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
@@ -87,6 +90,8 @@ public class EthereumPlugin extends Plugin {
                 "Blocks", "10",
                 "ExperimentalFiltering", "false"
         );
+
+        TransactionExtension.REGISTER.add( new EthereumStarter() ); // add extension to transaction manager
 
         Adapter.addAdapter( EthereumDataSource.class, ADAPTER_NAME, settings );
     }
@@ -112,7 +117,7 @@ public class EthereumPlugin extends Plugin {
     @AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 6, modifiable = true)
     @AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 7, modifiable = true)
     @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 8, modifiable = true)
-    @AdapterSettingString(name = "AdapterTargetName", description = "Adapter Target Name", defaultValue = "ethereum", position = 6, modifiable = true)
+    @AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 9, modifiable = true)
     public static class EthereumDataSource extends DataSource {
 
         public static final String SCHEMA_NAME = "public";
@@ -122,17 +127,20 @@ public class EthereumPlugin extends Plugin {
         @Getter
         private boolean experimentalFiltering;
         private EthereumSchema currentSchema;
+        @Getter
         private final String smartContractAddress;
         private final String etherscanApiKey;
+        @Getter
         private final BigInteger fromBlock;
+        @Getter
         private final BigInteger toBlock;
         private final Map<String, EventData> eventInputsMap;
-        private Boolean cashing;
-        private String adpaterTargetName;
-        private Boolean isCachingStarted = false;
-        private EventCacheManager eventCacheManager;
+        private Boolean caching;
+        private String cachingAdapterTargetName;
 
+        @Getter
         List<Event> events = new ArrayList<>(); // for caching
+        private Map<String, List<ExportedColumn>> map;
 
 
         public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -145,8 +153,8 @@ public class EthereumPlugin extends Plugin {
             this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
             this.toBlock = new BigInteger( settings.get( "toBlock" ) );
             this.eventInputsMap = new HashMap<>();
-            this.cashing = Boolean.parseBoolean( settings.get( "Caching" ) );
-            this.adpaterTargetName = settings.get( "AdapterTargetName" );
+            this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
+            this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
             createInformationPage();
             enableInformationPage();
         }
@@ -187,22 +195,22 @@ public class EthereumPlugin extends Plugin {
             throw new RuntimeException( "Blockchain adapter does not support truncate" );
         }
 
-
+        // Because the EthereumAdapter is a source, Pp will ask (call this method) always what the structure of this is adapter is.
         @Override
         public Map<String, List<ExportedColumn>> getExportedColumns() {
+            // Ensure that this block of code is called only once by checking if 'map' is null before proceeding
+            if ( map != null ) {
+                return map;
+            }
+
             Map<String, List<ExportedColumn>> map = new HashMap<>();
+
             String[] blockColumns = { "number", "hash", "parent_hash", "nonce", "sha3uncles", "logs_bloom", "transactions_root", "state_root", "receipts_root", "author", "miner", "mix_hash", "difficulty", "total_difficulty", "extra_data", "size", "gas_limit", "gas_used", "timestamp" };
             PolyType[] blockTypes = { PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.TIMESTAMP };
             String[] transactionColumns = { "hash", "nonce", "block_hash", "block_number", "transaction_index", "from", "to", "value", "gas_price", "gas", "input", "creates", "public_key", "raw", "r", "s" };
             PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
-
             String[] commonEventColumns = { "removed", "log_index", "transaction_index", "transaction_hash", "block_hash", "block_number", "address" };
             PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
-
-            // Caching: Init own caching class. Start caching with "startCaching (idAdapter, smartContractAddress, wo gecached (in welchen Store))".
-            // In the background (another Thread) logs are fetched (also see restrictions eth_logs)
-            // As usual: Schema is still created here.
-            // Caching: We can define a threshold in which part of the data is inserted into the tables. (use flag for this)
 
             // Event Data Dynamic Scheme
             List<JSONObject> eventList = getEventsFromABI( etherscanApiKey, smartContractAddress );
@@ -334,23 +342,27 @@ public class EthereumPlugin extends Plugin {
                 map.put( eventName, eventDataCols );
             }
 
-            // caching
-            // David
-            if ( startCaching == Boolean.TRUE ) {
-                EventCacheManager.getInstance()
-                        .register( getAdapterId(), clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
-                        .startCaching();
-            }
+            if ( caching == Boolean.TRUE ) {
+                // Disable caching to prevent multiple unnecessary attempts to cache the same data.
+                caching = false;
+                this.map = map;
+                try {
+                    // Catalog: Centralized repository that contains metadata, such as information about tables, columns, schemas, adapters (source & stores), interfaces and other database objects (central meta unit; db structure)
+                    // Acts as a reference for the system to understand the structure and organization of the data and how to interact with various components
+                    // Databases like PostgreSQL have a schema that effectively defines the schema. This is often simply referred to as a catalog.
 
-            // mine
-            /*if ( cashing == Boolean.TRUE ) {
-                if ( eventCacheManager == null ) {
-                    eventCacheManager = new EventCacheManager( clientURL, 50, smartContractAddress, fromBlock, toBlock, events );
+                    // Get the default adapter for caching (currently "hsqldb"; see AdapterSettingString CachingAdapterTargetName); where we want to put our data (will be a Store, not a Source anymore)
+                    // cachingAdapterTargetName can only be a store, where we can insert data (you can't insert into a source)
+                    CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
+                    // Register and initialize caching the events using the specified information
+                    EventCacheManager.getInstance()
+                            .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
+                            .initializeCaching();
+                } catch ( UnknownAdapterException e ) {
+                    // If the specified adapter is not found, throw a RuntimeException
+                    throw new RuntimeException( e );
                 }
-                if ( !eventCacheManager.hasStartedCaching() ) {
-                    eventCacheManager.startCaching();
-                }
-            }*/
+            }
 
             return map;
         }
@@ -457,7 +469,7 @@ public class EthereumPlugin extends Plugin {
         }
 
 
-        private PolyType convertToPolyType( String ethereumType ) {
+        static PolyType convertToPolyType( String ethereumType ) {
             if ( ethereumType.startsWith( "uint" ) || ethereumType.startsWith( "int" ) ) {
                 // Ethereum's uint and int types map to BIGINT in PolyType
                 return PolyType.BIGINT;
@@ -471,21 +483,6 @@ public class EthereumPlugin extends Plugin {
                 // If the type is unknown, use VARCHAR as a general type
                 return PolyType.VARCHAR;
             }
-        }
-
-
-        protected String getSmartContractAddress() {
-            return this.smartContractAddress;
-        }
-
-
-        protected BigInteger getFromBlock() {
-            return this.fromBlock;
-        }
-
-
-        protected BigInteger getToBlock() {
-            return this.toBlock;
         }
 
 
@@ -514,6 +511,7 @@ public class EthereumPlugin extends Plugin {
 
             return new Event( eventData.getOriginalKey(), parameterTypes );
         }
+
 
     }
 
