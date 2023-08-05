@@ -51,11 +51,11 @@ public class PolyValueSerializer {
 
 
     public static List<ProtoEntry> serializeToProtoEntryList(PolyMap<PolyValue, PolyValue> polyMap) {
-        return polyMap.entrySet().stream().map(PolyValueSerializer::deserializeToProtoEntry).collect(Collectors.toList());
+        return polyMap.entrySet().stream().map(PolyValueSerializer::serializeToProtoEntry ).collect(Collectors.toList());
     }
 
 
-    public static ProtoEntry deserializeToProtoEntry(Map.Entry<PolyValue, PolyValue> polyMapEntry) {
+    public static ProtoEntry serializeToProtoEntry(Map.Entry<PolyValue, PolyValue> polyMapEntry) {
         return ProtoEntry.newBuilder()
                 .setKey(serialize(polyMapEntry.getKey()))
                 .setValue(serialize(polyMapEntry.getValue()))
