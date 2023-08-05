@@ -195,6 +195,7 @@ public class EthereumPlugin extends Plugin {
             throw new RuntimeException( "Blockchain adapter does not support truncate" );
         }
 
+
         // Because the EthereumAdapter is a source, Pp will ask (call this method) always what the structure of this is adapter is.
         @Override
         public Map<String, List<ExportedColumn>> getExportedColumns() {
@@ -268,6 +269,7 @@ public class EthereumPlugin extends Plugin {
 
             }
             map.put( "block", blockCols );
+
             List<ExportedColumn> transactCols = new ArrayList<>();
             position = 0;
             for ( String transactCol : transactionColumns ) {
@@ -303,7 +305,7 @@ public class EthereumPlugin extends Plugin {
                             inputName,
                             inputType,
                             collectionsType,
-                            length,
+                            getLengthForType(inputType),
                             scale,
                             dimension,
                             cardinality,
@@ -325,7 +327,7 @@ public class EthereumPlugin extends Plugin {
                             columnName,
                             columnType,
                             collectionsType,
-                            length,
+                            getLengthForType(columnType),
                             scale,
                             dimension,
                             cardinality,
@@ -365,6 +367,15 @@ public class EthereumPlugin extends Plugin {
             }
 
             return map;
+        }
+
+        private Integer getLengthForType(PolyType type) {
+            switch (type) {
+                case VARCHAR:
+                    return 300;
+                default:
+                    return null;
+            }
         }
 
 

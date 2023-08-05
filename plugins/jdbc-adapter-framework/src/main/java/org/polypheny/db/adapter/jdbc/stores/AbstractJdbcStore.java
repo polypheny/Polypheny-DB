@@ -228,11 +228,8 @@ public abstract class AbstractJdbcStore extends DataStore implements ExtensionPo
         } else if ( catalogColumn.collectionsType == PolyType.MAP ) {
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
-            String typeString = getTypeString( catalogColumn.type );
             builder.append( " " ).append( getTypeString( catalogColumn.type ) );
-            if ( catalogColumn.length != null &&
-                    !typeString.equalsIgnoreCase("BIGINT") &&
-                    !typeString.equalsIgnoreCase("BOOLEAN")) {
+            if ( catalogColumn.length != null ) {
                 builder.append( "(" ).append( catalogColumn.length );
                 if ( catalogColumn.scale != null ) {
                     builder.append( "," ).append( catalogColumn.scale );

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,6 +49,7 @@ import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.PartitionGroupNamesNotUniqueException;
+import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptTable;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.schema.PolyphenyDbSchema.TableEntry;
@@ -177,11 +179,14 @@ public class EventCacheManager {
         // It abstracts the complexity of building this tree, allowing for the creation of even complex expressions in a more manageable way.
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
+        // TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
+        AlgOptSchema algOptSchema = (AlgOptSchema) transaction.getSchema();
+        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList(EthereumPlugin.HIDDEN_PREFIX + tableName) );
+
 
         // In Polypheny, algebra operations are used to represent various SQL operations such as scans, projections, filters, etc.
         // Unlike typical handling of DML (Data Manipulation Language) operations, Polypheny can include these operations as well.
-        // An insert operation (normally not in alg operations), for example, may be represented as a tree structure with a values algebra operation at the bottom (containing one or more rows),
+        // An insert operation (normally not in alg operations, but in dml), for example, may be represented as a tree structure with a values algebra operation at the bottom (containing one or more rows),
         // followed by projections if needed, and finally topped with a table modifier operation to signify the insert.
         // This internal representation of modifiers for DML operations allows for a cohesive handling of queries within Polypheny.
 
@@ -193,7 +198,7 @@ public class EventCacheManager {
         // we use a project with dynamic parameters, so we can re-use it
         builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ) );
 
-        builder.insert( (AlgOptTable) table.getTable() ); // modifier
+        builder.insert( (AlgOptTable) table ); // modifier
         // todo we should re-use this for all batches (ignore right now); David will do this
         // In the current code, values are always newly built. Ideally, we would use dynamic/prepared parameters that can be cached and reused.
         // In Polypheny, we use a special structure: values (with only rowType) -> projection with dynamic parameters (see RegDynamicParam - map every rowType to a dynamic parameter)

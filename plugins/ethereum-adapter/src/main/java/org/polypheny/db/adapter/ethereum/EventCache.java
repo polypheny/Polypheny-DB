@@ -118,8 +118,11 @@ public class EventCache {
 
             // just another loop for debugging reasons. I will put it in the first loop later on.
             for ( Event event : events ) {
-                // if size == 0 skip
-                EventCacheManager.getInstance().writeToStore( event, null ); // write the event into the store // todo add table name // (T): Question -> e.g "delegateChanged"?
+                if (cache.get( event ).size() == 0) {
+                    continue;
+                }
+                String tableName = event.getName().toLowerCase();
+                EventCacheManager.getInstance().writeToStore( event, tableName ); // write the event into the store // todo add table name // (T): Question -> e.g "delegateChanged"?
                 cache.get( event ).clear(); // clear cache batch
             }
 
