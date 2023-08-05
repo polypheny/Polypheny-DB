@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
@@ -37,7 +38,6 @@ import java.util.stream.Collectors;
 public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
-    private Set<String> supportedLanguages;
     private final PIClient protoInterfaceClient;
     private ConcurrentHashMap<Integer, PIStatement> openStatments;
     private ConcurrentHashMap<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
@@ -48,12 +48,11 @@ public class StatementManager {
         statementIdGenerator = new AtomicInteger();
         openStatments = new ConcurrentHashMap<>();
         openUnparameterizedBatches = new ConcurrentHashMap<>();
-        supportedLanguages = new HashSet<>();
     }
 
 
     public Set<String> getSupportedLanguages() {
-        return supportedLanguages;
+        return LanguageManager.getLanguages().stream().map( QueryLanguage::getSerializedName ).collect( Collectors.toSet());
     }
 
 
@@ -70,6 +69,7 @@ public class StatementManager {
                     .setLanguage(QueryLanguage.from(languageName))
                     .setClient(protoInterfaceClient)
                     .setProperties(getPropertiesOrDefault(statement))
+                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(statement.getNamespaceName()) )
                     .build();
             openStatments.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
