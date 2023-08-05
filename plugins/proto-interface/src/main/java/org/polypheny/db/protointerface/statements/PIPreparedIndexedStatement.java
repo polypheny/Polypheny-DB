@@ -19,11 +19,10 @@ package org.polypheny.db.protointerface.statements;
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
@@ -42,7 +41,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 builder.id,
                 builder.client,
                 builder.properties,
-                builder.language
+                builder.language,
+                builder.namespace
         );
         this.query = builder.query;
     }
@@ -117,6 +117,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         QueryLanguage language;
         String query;
         PIStatementProperties properties;
+        LogicalNamespace namespace;
 
 
         public Builder setId( int id ) {
@@ -145,6 +146,12 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
         public Builder setProperties( PIStatementProperties properties ) {
             this.properties = properties;
+            return this;
+        }
+
+
+        public Builder setNamespace( LogicalNamespace logicalNamespace ) {
+            this.namespace = logicalNamespace;
             return this;
         }
 

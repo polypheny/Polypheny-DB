@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
@@ -47,14 +48,21 @@ public abstract class PIStatement {
     @Getter
     @Setter
     private Iterator<PolyValue> iterator;
+    @Getter
+    protected LogicalNamespace namespace;
 
 
-    protected PIStatement( int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language ) {
+    protected PIStatement(
+            int id, @NotNull PIClient client,
+            @NotNull PIStatementProperties properties,
+            @NotNull QueryLanguage language,
+            @NotNull LogicalNamespace namespace) {
         this.id = id;
         this.client = client;
         this.properties = properties;
         this.language = language;
         this.executionStopWatch = new StopWatch();
+        this.namespace = namespace;
     }
 
 
@@ -65,7 +73,6 @@ public abstract class PIStatement {
     public abstract Statement getStatement();
 
     public abstract String getQuery();
-
 
     public Transaction getTransaction() {
         return client.getCurrentTransaction();

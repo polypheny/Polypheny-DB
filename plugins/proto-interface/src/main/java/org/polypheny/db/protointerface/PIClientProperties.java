@@ -61,7 +61,6 @@ public class PIClientProperties {
 
     public void set(ConnectionProperties clientProperties) {
         this.isAutoCommit = clientProperties.getIsAutoCommit();
-        boolean fuckIt = clientProperties.getIsAutoCommit();
         this.isReadOnly = clientProperties.getIsReadOnly();
         this.isolation = clientProperties.getIsolation();
         this.networkTimeout = clientProperties.getNetworkTimeout();
