@@ -19,6 +19,7 @@ package org.polypheny.db.protointerface.statements;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.PIClient;
@@ -42,7 +43,8 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
                 builder.id,
                 builder.client,
                 builder.properties,
-                builder.language
+                builder.language,
+                builder.namespace
         );
         this.namedValueProcessor = new NamedValueProcessor( builder.query );
         this.query = namedValueProcessor.getProcessedQuery();
@@ -104,6 +106,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         QueryLanguage language;
         String query;
         PIStatementProperties properties;
+        LogicalNamespace namespace;
 
 
         public Builder setId( int id ) {
@@ -132,6 +135,12 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
         public Builder setProperties( PIStatementProperties properties ) {
             this.properties = properties;
+            return this;
+        }
+
+
+        public Builder setNamespace( LogicalNamespace namespace ) {
+            this.namespace = namespace;
             return this;
         }
 

@@ -183,6 +183,7 @@ message UnparameterizedStatement {
   string statement_language_name = 1;
   string statement = 2;
   optional StatementProperties properties = 3;
+  string namespaceName = 4;
 }
 
 message UnparameterizedStatementBatch {
