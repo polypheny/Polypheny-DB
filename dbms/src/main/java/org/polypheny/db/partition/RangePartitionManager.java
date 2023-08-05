@@ -254,12 +254,13 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     private boolean isValueInRange( String columnValue, AllocationPartition logicalPartition ) {
-        int lowerBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 0 ) );
-        int upperBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 1 ) );
+        //int lowerBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 0 ) );
+        //int upperBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 
-        return numericValue >= lowerBound && numericValue <= upperBound;
+        //return numericValue >= lowerBound && numericValue <= upperBound;
+        return false;// todo dl;
     }
 
 }

@@ -59,7 +59,9 @@ public interface DataMigrator {
     void copySelectiveData(
             Transaction transaction,
             CatalogAdapter store,
-            LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns,
+            LogicalTable sourceTable,
+            LogicalTable targetTable,
+            List<LogicalColumn> columns,
             Map<Long, List<AllocationColumn>> placementDistribution,
             List<Long> targetPartitionIds );
 

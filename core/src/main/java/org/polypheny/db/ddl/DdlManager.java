@@ -346,10 +346,10 @@ public abstract class DdlManager {
      *
      * @param table the table
      * @param partitionGroupIds the desired target state of partition groups which should remain on this store
-     * @param storeInstance the data store on which the partition placements should be altered
+     * @param store the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> store, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of

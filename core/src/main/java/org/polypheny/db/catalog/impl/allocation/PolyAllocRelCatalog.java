@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +177,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationPartition addPartition( long tableId, long namespaceId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound, PlacementType placementType, DataPlacementRole role ) {
+    public AllocationPartition addPartition( long tableId, long namespaceId, long partitionGroupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role ) {
         long id = idBuilder.getNewPartitionId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition with id '{}'", id );
@@ -187,7 +188,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 namespaceId,
                 tableId,
                 placementType,
-                effectivePartitionGroupQualifier,
+                name,
                 role,
                 isUnbound,
                 partitionGroupId );

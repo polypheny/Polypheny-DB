@@ -17,12 +17,10 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
-import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
@@ -49,7 +47,7 @@ public class AllocationPartition implements CatalogObject {
     @Getter
     @Serialize
     @SerializeNullable
-    public ImmutableList<String> partitionQualifiers;
+    public String name;
 
     @Serialize
     public long id;
@@ -82,7 +80,7 @@ public class AllocationPartition implements CatalogObject {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("partitionQualifiers") @Nullable final List<String> partitionQualifiers,
+            @Deserialize("name") @Nullable final String name,
             @Deserialize("role") DataPlacementRole role,
             @Deserialize("isUnbound") final boolean isUnbound,
             @Deserialize("partitionGroupId") final long partitionGroupId ) {
@@ -93,7 +91,7 @@ public class AllocationPartition implements CatalogObject {
         this.role = role;
         this.isUnbound = isUnbound;
         this.partitionGroupId = partitionGroupId;
-        this.partitionQualifiers = partitionQualifiers == null ? null : ImmutableList.copyOf( partitionQualifiers );
+        this.name = name;
     }
 
 

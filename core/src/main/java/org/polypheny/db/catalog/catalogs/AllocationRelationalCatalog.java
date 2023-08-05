@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.catalogs;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
@@ -89,11 +90,12 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
      * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @param name
      * @param placementType
      * @param role
      * @return The id of the created partition
      */
-    AllocationPartition addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound, PlacementType placementType, DataPlacementRole role );
+    AllocationPartition addPartition( long tableId, long schemaId, long partitionGroupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Deletes a single partition and all references.
