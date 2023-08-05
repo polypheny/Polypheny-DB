@@ -85,7 +85,7 @@ import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
-import org.polypheny.db.protointerface.statements.StatementUtils;
+import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
@@ -378,7 +378,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void fetchResult( FetchRequest fetchRequest, StreamObserver<Frame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( fetchRequest.getStatementId() );
-        Frame frame = StatementUtils.fetch( statement );
+        Frame frame = StatementProcessor.fetch( statement );
         responseObserver.onNext( frame );
         responseObserver.onCompleted();
     }

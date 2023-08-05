@@ -39,8 +39,8 @@ public abstract class ResultRetriever {
 
     abstract NamespaceType getNamespaceType();
 
-    abstract StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception;
+    abstract StatementResult getResult( PIStatement piStatement ) throws Exception;
 
-    abstract Frame fetch( PIStatement piStatement, int fetchSize );
+    abstract Frame fetch( PIStatement piStatement );
 
 }

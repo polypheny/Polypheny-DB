@@ -18,23 +18,23 @@ package org.polypheny.db.protointerface.statements;
 
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class PIUnparameterizedStatement extends PIStatement {
+
     String query;
     Statement statement;
     PolyImplementation<PolyValue> implementation;
 
 
-    private PIUnparameterizedStatement(Builder builder) {
+    private PIUnparameterizedStatement( Builder builder ) {
         super(
                 builder.id,
                 builder.client,
@@ -44,51 +44,38 @@ public class PIUnparameterizedStatement extends PIStatement {
         this.query = builder.query;
     }
 
+
     public StatementResult execute() throws Exception {
         statement = client.getCurrentOrCreateNewTransaction().createStatement();
-        synchronized (client) {
-
-            StatementUtils.execute(this);
-
-            StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-            if (Kind.DDL.contains(implementation.getKind())) {
-                resultBuilder.setScalar(1);
-                return resultBuilder.build();
-            }
-            if (Kind.DML.contains(implementation.getKind())) {
-                resultBuilder.setScalar(implementation.getRowsChanged(statement));
-                client.commitCurrentTransactionIfAuto();
-                return resultBuilder.build();
-            }
-
-            Frame frame = StatementUtils.fetchRelationalFrame(this);
-            resultBuilder.setFrame(frame);
-            if (frame.getIsLast()) {
-                //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
-                client.commitCurrentTransactionIfAuto();
-            }
-            return resultBuilder.build();
+        synchronized ( client ) {
+            StatementProcessor.execute( this );
+            return StatementProcessor.getResult( this );
         }
     }
+
 
     public static Builder newBuilder() {
         return new Builder();
     }
+
 
     @Override
     public PolyImplementation<PolyValue> getImplementation() {
         return implementation;
     }
 
+
     @Override
-    public void setImplementation(PolyImplementation<PolyValue> implementation) {
+    public void setImplementation( PolyImplementation<PolyValue> implementation ) {
         this.implementation = implementation;
     }
+
 
     @Override
     public Statement getStatement() {
         return statement;
     }
+
 
     @Override
     public String getQuery() {
@@ -97,41 +84,48 @@ public class PIUnparameterizedStatement extends PIStatement {
 
 
     static class Builder {
+
         int id;
         PIClient client;
         QueryLanguage language;
         String query;
         PIStatementProperties properties;
 
-        public Builder setId(int id) {
+
+        public Builder setId( int id ) {
             this.id = id;
             return this;
         }
 
 
-        public Builder setClient(PIClient client) {
+        public Builder setClient( PIClient client ) {
             this.client = client;
             return this;
         }
 
 
-        public Builder setLanguage(QueryLanguage language) {
+        public Builder setLanguage( QueryLanguage language ) {
             this.language = language;
             return this;
         }
 
-        public Builder setQuery(String query) {
+
+        public Builder setQuery( String query ) {
             this.query = query;
             return this;
         }
 
-        public Builder setProperties(PIStatementProperties properties) {
+
+        public Builder setProperties( PIStatementProperties properties ) {
             this.properties = properties;
             return this;
         }
 
+
         public PIUnparameterizedStatement build() {
-            return new PIUnparameterizedStatement(this);
+            return new PIUnparameterizedStatement( this );
         }
+
     }
+
 }
