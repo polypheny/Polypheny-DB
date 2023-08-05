@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface.statements;
 
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIStatementProperties;
@@ -40,8 +41,13 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
         return parameterMetas;
     }
 
-    protected PIPreparedStatement(int id, @NotNull PIClient client, @NotNull PIStatementProperties properties, @NotNull QueryLanguage language) {
-        super(id, client, properties, language);
+    protected PIPreparedStatement(
+            int id,
+            @NotNull PIClient client,
+            @NotNull PIStatementProperties properties,
+            @NotNull QueryLanguage language,
+            @NotNull LogicalNamespace namespace) {
+        super(id, client, properties, language, namespace);
     }
 
 
