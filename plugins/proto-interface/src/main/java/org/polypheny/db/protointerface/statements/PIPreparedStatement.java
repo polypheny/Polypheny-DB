@@ -23,6 +23,7 @@ import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 
 import java.util.List;
+import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 
 public abstract class PIPreparedStatement extends PIStatement implements Signaturizable {
 
@@ -34,7 +35,7 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
 
     public List<ParameterMeta> getParameterMetas() {
         if (parameterMetas == null) {
-            StatementUtils.prepare(this);
+            StatementProcessor.prepare(this);
         }
         return parameterMetas;
     }
