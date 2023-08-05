@@ -37,7 +37,7 @@ public class StatementProcessor {
     private static final Map<QueryLanguage, StatementExecutor> EXECUTORS =
             ImmutableMap.<QueryLanguage, StatementExecutor>builder()
                     .put( QueryLanguage.from( "sql" ), new SqlExecutor() )
-                    .put( QueryLanguage.from( "mql" ), new MqlExecutor() )
+                    .put( QueryLanguage.from( "mongo" ), new MongoExecutor() )
                     .build();
     private static final Map<NamespaceType, ResultRetriever> RESULT_RETRIEVERS =
             ImmutableMap.<NamespaceType, ResultRetriever>builder()
@@ -54,7 +54,7 @@ public class StatementProcessor {
                     9005
             );
         }
-
+        statementExecutor.execute( piStatement );
     }
 
 
