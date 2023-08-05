@@ -42,7 +42,7 @@ public class SqlExecutor extends StatementExecutor {
 
 
     @Override
-    public void execute( PIStatement piStatement ) {
+    public void execute( PIStatement piStatement ) throws PIServiceException{
         if ( hasInvalidLanguage( piStatement ) ) {
             throw new PIServiceException( "The statement in the language "
                     + piStatement.getLanguage()
