@@ -14,8 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.protointerface.statements;
+package org.polypheny.db.protointerface.statementProcessing;
 
-public interface StatementExecutor {
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.statements.PIStatement;
+
+public abstract class StatementExecutor {
+
+    protected boolean hasInvalidLanguage(PIStatement piStatement) {
+        return piStatement.getLanguage() != getLanguage();
+    }
+
+    abstract QueryLanguage getLanguage();
+
+    abstract void execute( PIStatement piStatement );
 
 }
