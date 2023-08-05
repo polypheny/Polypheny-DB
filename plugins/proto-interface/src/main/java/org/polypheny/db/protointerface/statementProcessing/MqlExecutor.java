@@ -32,8 +32,8 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
-public class SqlExecutor extends StatementExecutor {
-    private static QueryLanguage language = QueryLanguage.from( "sql" );
+public class MqlExecutor extends StatementExecutor {
+    private static QueryLanguage language = QueryLanguage.from( "mql" );
 
     @Override
     public QueryLanguage getLanguage() {
@@ -46,7 +46,7 @@ public class SqlExecutor extends StatementExecutor {
         if ( hasInvalidLanguage( piStatement ) ) {
             throw new PIServiceException( "The statement in the language "
                     + piStatement.getLanguage()
-                    + "can't be executed using a sql executor.",
+                    + "can't be executed using a mql executor.",
                     "I9003",
                     9003
             );
@@ -54,8 +54,8 @@ public class SqlExecutor extends StatementExecutor {
         Statement statement = piStatement.getStatement();
         if (statement == null) {
             throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9003",
-                    9003
+                    "I9001",
+                    9001
             );
         }
         String query = piStatement.getQuery();
@@ -74,4 +74,6 @@ public class SqlExecutor extends StatementExecutor {
         }
         piStatement.setImplementation( implementation );
     }
+
+
 }

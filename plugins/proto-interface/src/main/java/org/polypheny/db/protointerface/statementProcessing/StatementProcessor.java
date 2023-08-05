@@ -37,7 +37,7 @@ public class StatementProcessor {
     private static final Map<QueryLanguage, StatementExecutor> EXECUTORS =
             ImmutableMap.<QueryLanguage, StatementExecutor>builder()
                     .put( QueryLanguage.from( "sql" ), new SqlExecutor() )
-                    .put( QueryLanguage.from( "mongo" ), new MongoExecutor() )
+                    .put( QueryLanguage.from( "mql" ), new MqlExecutor() )
                     .build();
     private static final Map<NamespaceType, ResultRetriever> RESULT_RETRIEVERS =
             ImmutableMap.<NamespaceType, ResultRetriever>builder()
@@ -54,11 +54,11 @@ public class StatementProcessor {
                     9005
             );
         }
-        statementExecutor.execute( piStatement );
+
     }
 
 
-    public static StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    public static StatementResult getResult( PIStatement piStatement ) throws Exception {
         ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
         if ( resultRetriever == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -67,11 +67,11 @@ public class StatementProcessor {
                     9004
             );
         }
-        return resultRetriever.getResult( piStatement, fetchSize );
+        return resultRetriever.getResult( piStatement );
     }
 
 
-    public static Frame fetch( PIStatement piStatement, int fetchSize ) {
+    public static Frame fetch( PIStatement piStatement ) {
         ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
         if ( resultRetriever == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -80,8 +80,21 @@ public class StatementProcessor {
                     9004
             );
         }
-        return resultRetriever.fetch( piStatement, fetchSize );
+        return resultRetriever.fetch( piStatement );
     }
+
+
+    public static Frame fetchGraphFrame( PIStatement piStatement ) {
+        throw new RuntimeException( "Feature not implemented" );
+        /*
+        Statement statement = piStatement.getStatement();
+        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        //TODO TH:  Whats the actual type here?
+        List<PolyValue[]> data = implementation.getArrayRows( statement, true );
+        return ProtoUtils.buildGraphFrame();
+        */
+    }
+
 
     public static void prepare( PIPreparedStatement piStatement ) {
         Transaction transaction = piStatement.getClient().getCurrentOrCreateNewTransaction();

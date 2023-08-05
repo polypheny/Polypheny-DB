@@ -44,7 +44,7 @@ public class RelationalResultRetriever extends ResultRetriever {
     }
 
 
-    public StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    public StatementResult getResult( PIStatement piStatement ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -69,11 +69,16 @@ public class RelationalResultRetriever extends ResultRetriever {
         }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
-            resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
+        if ( Kind.DDL.contains( implementation.getKind() ) ) {
+            resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
-        Frame frame = fetch( piStatement, fetchSize);
+        if ( Kind.DML.contains( implementation.getKind() ) ) {
+            resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
+            client.commitCurrentTransactionIfAuto();
+            return resultBuilder.build();
+        }
+        Frame frame = fetch( piStatement );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
             //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
@@ -84,7 +89,7 @@ public class RelationalResultRetriever extends ResultRetriever {
 
 
     @Override
-    public Frame fetch( PIStatement piStatement, int fetchSize ) {
+    public Frame fetch( PIStatement piStatement ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -93,6 +98,7 @@ public class RelationalResultRetriever extends ResultRetriever {
                     9000
             );
         }
+        int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
         if (implementation == null) {
@@ -102,6 +108,7 @@ public class RelationalResultRetriever extends ResultRetriever {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
+        // TODO TH: implement continuous fetching
         List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
@@ -110,7 +117,8 @@ public class RelationalResultRetriever extends ResultRetriever {
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return ProtoUtils.buildRelationalFrame(!implementation.hasMoreRows(), rows, columnMetas );
+        return ProtoUtils.buildRelationalFrame( true, rows, columnMetas );
+        //return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
     }
 
 }
