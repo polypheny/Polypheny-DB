@@ -26,6 +26,7 @@ import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
+import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -68,25 +69,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                     statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
                 }
             }
-            StatementUtils.execute( this );
-            StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-            if ( Kind.DDL.contains( implementation.getKind() ) ) {
-                resultBuilder.setScalar( 1 );
-                return resultBuilder.build();
-            }
-            if ( Kind.DML.contains( implementation.getKind() ) ) {
-                resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
-                client.commitCurrentTransactionIfAuto();
-                return resultBuilder.build();
-            }
-
-            Frame frame = StatementUtils.fetch( this );
-            resultBuilder.setFrame( frame );
-            if ( frame.getIsLast() ) {
-                //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
-                client.commitCurrentTransactionIfAuto();
-            }
-            return resultBuilder.build();
+            StatementProcessor.execute( this );
+            return StatementProcessor.getResult( this );
         }
     }
 
