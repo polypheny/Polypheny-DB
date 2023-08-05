@@ -18,6 +18,8 @@ package org.polypheny.db.protointerface;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.C;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.protointerface.proto.ConnectionProperties;
@@ -64,6 +66,17 @@ public class PIClient {
             if (currentTransaction == null || !currentTransaction.isActive()) {
                 //TODO TH: can a single transaction contain changes to different namespaces
                 currentTransaction = transactionManager.startTransaction(catalogUser, logicalNamespace, false, "ProtoInterface");
+            }
+            return currentTransaction;
+        }
+    }
+
+    // TODO TH: remove this mess!!!
+    public Transaction getCurrentOrCreateNewTransaction(LogicalNamespace namespace) {
+        synchronized (this) {
+            if (currentTransaction == null || !currentTransaction.isActive()) {
+                //TODO TH: can a single transaction contain changes to different namespaces
+                currentTransaction = transactionManager.startTransaction(catalogUser, namespace, false, "ProtoInterface");
             }
             return currentTransaction;
         }
