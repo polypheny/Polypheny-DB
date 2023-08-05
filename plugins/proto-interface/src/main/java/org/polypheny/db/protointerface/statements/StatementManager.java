@@ -55,6 +55,18 @@ public class StatementManager {
         return LanguageManager.getLanguages().stream().map( QueryLanguage::getSerializedName ).collect( Collectors.toSet());
     }
 
+    public String getNamespaceNameOrDefault(UnparameterizedStatement unparameterizedStatement) {
+        return unparameterizedStatement.hasNamespaceName()
+                ? unparameterizedStatement.getNamespaceName()
+                : protoInterfaceClient.getProperties().getNamespaceName();
+    }
+
+    public String getNamespaceNameOrDefault(PreparedStatement preparedStatement) {
+        return preparedStatement.hasNamespaceName()
+                ? preparedStatement.getNamespaceName()
+                : protoInterfaceClient.getProperties().getNamespaceName();
+    }
+
 
     public PIUnparameterizedStatement createUnparameterizedStatement(UnparameterizedStatement statement) throws PIServiceException {
         synchronized(protoInterfaceClient) {
@@ -69,7 +81,7 @@ public class StatementManager {
                     .setLanguage(QueryLanguage.from(languageName))
                     .setClient(protoInterfaceClient)
                     .setProperties(getPropertiesOrDefault(statement))
-                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(statement.getNamespaceName()) )
+                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
                     .build();
             openStatments.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
@@ -123,6 +135,7 @@ public class StatementManager {
                     .setQuery(statement.getStatement())
                     .setLanguage(QueryLanguage.from(languageName))
                     .setProperties(getPropertiesOrDefault(statement))
+                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
                     .build();
             openStatments.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
