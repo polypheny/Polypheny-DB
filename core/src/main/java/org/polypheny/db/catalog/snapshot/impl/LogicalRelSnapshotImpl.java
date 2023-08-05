@@ -51,6 +51,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalNamespace> namespaces;
 
     ImmutableMap<String, LogicalNamespace> namespaceNames;
+    ImmutableMap<Long, Boolean> namespaceCaseSensitive;
 
     ImmutableMap<Long, LogicalTable> tables;
 
@@ -93,21 +94,23 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
         this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
         this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
+        this.namespaceCaseSensitive = buildNamespaceCasing();
 
         this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
         this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
         this.tablesNamespace = buildTablesNamespace();
 
         this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        this.columnNames = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( e -> namespaces.get( e.getValue().namespaceId ).caseSensitive ? Pair.of( e.getValue().tableId, e.getValue().name ) : Pair.of( e.getValue().tableId, e.getValue().name.toLowerCase() ), Entry::getValue ) ) );
+        this.columnNames = ImmutableMap.copyOf(
+                columns.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().tableId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
 
         //// TABLES
 
         this.tableColumns = buildTableColumns();
 
         this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue ) ) );
-        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().namespaceId, Pair.of( tables.get( c.getValue().tableId ).name, c.getValue().name ) ), Entry::getValue ) ) );
-        this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().name ), Entry::getValue ) ) );
+        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().namespaceId, Pair.of( tables.get( c.getValue().tableId ).name, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ) ), Entry::getValue ) ) );
+        this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ), Entry::getValue ) ) );
 
         //// KEYS
 
@@ -140,6 +143,11 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
         this.connectedViews = buildConnectedViews();
 
+    }
+
+
+    private ImmutableMap<Long, Boolean> buildNamespaceCasing() {
+        return ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.id, n -> n.caseSensitive ) ) );
     }
 
 

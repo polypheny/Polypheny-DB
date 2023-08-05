@@ -83,11 +83,11 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
         }
 
         if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.SOURCE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
         }
 
         if ( column.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + column );
+            throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
         DdlManager.getInstance().dropColumn( catalogTable, column.getSimple(), statement );

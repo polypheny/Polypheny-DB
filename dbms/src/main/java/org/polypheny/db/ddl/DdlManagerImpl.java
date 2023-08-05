@@ -2590,20 +2590,19 @@ public class DdlManagerImpl extends DdlManager {
                             false );
                 }
             }
-
             List<AllocationPartition> partitions = new ArrayList<>();
-            for ( int j = 0; j < numberOfPartitionsPerGroup; j++ ) {
-                partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
-                        partitionInfo.table.id,
-                        partitionInfo.table.namespaceId,
-                        group.id,
-                        null,
-                        group.isUnbound,
-                        PlacementType.AUTOMATIC,
-                        DataPlacementRole.REFRESHABLE ) );
-            }
-
             partitionGroups.put( group, partitions );
+        }
+
+        for ( AllocationPartitionGroup group : partitionGroups.keySet() ) {
+            partitionGroups.put( group, List.of( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                    partitionInfo.table.id,
+                    partitionInfo.table.namespaceId,
+                    group.id,
+                    group.name,
+                    group.isUnbound,
+                    PlacementType.AUTOMATIC,
+                    DataPlacementRole.REFRESHABLE ) ) );
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
