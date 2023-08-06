@@ -40,8 +40,6 @@ public abstract class PIStatement {
     @Getter
     protected final PIClient client;
     @Getter
-    protected final PIStatementProperties properties;
-    @Getter
     protected final StopWatch executionStopWatch;
     @Getter
     protected final QueryLanguage language;
@@ -54,12 +52,10 @@ public abstract class PIStatement {
 
     protected PIStatement(
             int id, @NotNull PIClient client,
-            @NotNull PIStatementProperties properties,
             @NotNull QueryLanguage language,
             @NotNull LogicalNamespace namespace) {
         this.id = id;
         this.client = client;
-        this.properties = properties;
         this.language = language;
         this.executionStopWatch = new StopWatch();
         this.namespace = namespace;
@@ -77,10 +73,4 @@ public abstract class PIStatement {
     public Transaction getTransaction() {
         return client.getCurrentTransaction();
     }
-
-
-    public void updateProperties( StatementProperties statementProperties ) {
-        properties.update( statementProperties );
-    }
-
 }
