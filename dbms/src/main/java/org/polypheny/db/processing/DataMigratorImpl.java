@@ -29,6 +29,8 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -746,13 +748,14 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
+
             do {
                 List<List<PolyValue>> rows = result.getRows( source.sourceStatement, batchSize );//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
                 Map<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> partitionValues = new HashMap<>();
 
                 for ( List<PolyValue> row : rows ) {
-                    long currentPartitionId = -1;
+
                     /*if ( partitionColumnIndex >= 0 ) {
                         parsedValue = PartitionManager.NULL_STRING;
                         if ( row.get( partitionColumnIndex ) != null ) {
@@ -764,21 +767,21 @@ public class DataMigratorImpl implements DataMigrator {
                         parsedValue = row.get( columIndex ).toString();
                     }
 
-                    currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
+                    long currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
 
                     //for ( Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         /*if ( entry.getKey() == partitionColumn.id && !columns.contains( partitionColumn ) ) {
                             continue;
                         }*/
-                    for ( AllocationColumn column : columns ) {
-
+                    int i = 0;
+                    for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position )).collect( Collectors.toList()) ) {
                         if ( !partitionValues.containsKey( currentPartitionId ) ) {
                             partitionValues.put( currentPartitionId, new HashMap<>() );
                         }
                         if ( !partitionValues.get( currentPartitionId ).containsKey( column.columnId ) ) {
                             partitionValues.get( currentPartitionId ).put( column.columnId, Pair.of( column.getAlgDataType(), new ArrayList<>() ) );
                         }
-                        partitionValues.get( currentPartitionId ).get( column.columnId ).right.add( row.get( column.position - 1 ) );
+                        partitionValues.get( currentPartitionId ).get( column.columnId ).right.add( row.get( i++ ) );
                     }
                 }
 

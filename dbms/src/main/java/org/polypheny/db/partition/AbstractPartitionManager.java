@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -62,7 +64,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     @Override
     public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationEntity> allocs, List<Long> excludedAdapters ) {
-        Catalog catalog = Catalog.getInstance();
 
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
 
@@ -71,10 +72,26 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 if ( excludedAdapters.contains( allocation.adapterId ) ) {
                     continue;
                 }
-
-                //AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( partitionId ).orElseThrow();
-                List<AllocationColumn> relevantCcps = new ArrayList<>();
                 List<AllocationColumn> allocColumns = allocation.unwrap( AllocationTable.class ).getColumns();
+                if( placementDistribution.containsKey( allocation.partitionId ) ){
+                    List<AllocationColumn> existingAllocColumns = placementDistribution.get( allocation.partitionId );
+                    List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).collect( Collectors.toList() );
+                    List<Long> allocColumnIds = allocColumns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
+                    // contains all already
+                    if( allocColumns.stream().map( c -> c.columnId ).allMatch( id -> existingColumnsIds.contains( id ) )){
+                        continue;
+                    }else if( existingAllocColumns.stream().map( c -> c.columnId ).allMatch( id -> allocColumnIds.contains( id ) )  ){
+                        // contains all & more -> replace
+                        if ( allocColumns.size() > existingAllocColumns.size() ) {
+                            allocColumns = existingAllocColumns;
+                        }
+                    }else {
+                        // contains additional -> add
+                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> existingColumnsIds.contains( c.columnId ) ) ).collect( Collectors.toList());
+                    }
+
+                }
+
                 /*for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( catalogTable.id ) ) {
                     List<AllocationPlacement> placements = new ArrayList<>( catalog.getSnapshot().alloc().getPlacementsOfColumn( column.id ) );
                     if ( !placements.isEmpty() ) {
