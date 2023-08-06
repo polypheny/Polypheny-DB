@@ -44,10 +44,9 @@ public abstract class PIPreparedStatement extends PIStatement implements Signatu
     protected PIPreparedStatement(
             int id,
             @NotNull PIClient client,
-            @NotNull PIStatementProperties properties,
             @NotNull QueryLanguage language,
             @NotNull LogicalNamespace namespace) {
-        super(id, client, properties, language, namespace);
+        super(id, client, language, namespace);
     }
 
 
