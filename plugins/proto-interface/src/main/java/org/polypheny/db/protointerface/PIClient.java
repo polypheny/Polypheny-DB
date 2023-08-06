@@ -42,17 +42,17 @@ public class PIClient {
     private PIClientProperties properties;
     @Getter
     private PIClientInfoProperties PIClientInfoProperties;
+    private boolean isAutoCommit;
     private boolean isActive;
 
 
-    private PIClient(Builder connectionBuilder) {
+    private PIClient(String clientUUID, CatalogUser catalogUser, TransactionManager transactionManager, boolean isAutoCommit) {
         this.statementManager = new StatementManager(this);
-        this.clientUUID = connectionBuilder.clientUUID;
-        this.catalogUser = connectionBuilder.catalogUser;
-        this.logicalNamespace = connectionBuilder.logicalNamespace;
-        this.transactionManager = connectionBuilder.transactionManager;
-        this.properties = connectionBuilder.clientProperties;
         this.PIClientInfoProperties = new PIClientInfoProperties();
+        this.clientUUID = clientUUID;
+        this.catalogUser = catalogUser;
+        this.transactionManager = transactionManager;
+        this.isAutoCommit = isAutoCommit;
         this.isActive = true;
     }
 
@@ -147,10 +147,6 @@ public class PIClient {
         }
     }
 
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
     public void setIsActive() {
         isActive = true;
     }
@@ -160,55 +156,4 @@ public class PIClient {
         isActive = false;
         return oldIsActive;
     }
-
-
-    static class Builder {
-
-        private String clientUUID;
-        private CatalogUser catalogUser;
-        private LogicalNamespace logicalNamespace;
-        private TransactionManager transactionManager;
-        private PIClientProperties clientProperties;
-
-
-        private Builder() {
-        }
-
-
-        public Builder setClientUUID(String clientUUID) {
-            this.clientUUID = clientUUID;
-            return this;
-        }
-
-
-        public Builder setCatalogUser(CatalogUser catalogUser) {
-            this.catalogUser = catalogUser;
-            return this;
-        }
-
-
-        public Builder setLogicalNamespace(LogicalNamespace logicalNamespace) {
-            this.logicalNamespace = logicalNamespace;
-            return this;
-        }
-
-
-        public Builder setTransactionManager(TransactionManager transactionManager) {
-            this.transactionManager = transactionManager;
-            return this;
-        }
-
-
-        public Builder setClientProperties(PIClientProperties clientProperties) {
-            this.clientProperties = clientProperties;
-            return this;
-        }
-
-
-        public PIClient build() {
-            return new PIClient(this);
-        }
-
-    }
-
 }
