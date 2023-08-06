@@ -18,35 +18,41 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PIPreparedNamedStatement extends PIPreparedStatement {
 
-    String query;
-    Statement statement;
-    PolyImplementation<PolyValue> implementation;
-    protected Statement currentStatement;
+    @Getter
+    protected String query;
+    @Getter
+    @Setter
+    protected PolyImplementation<PolyValue> implementation;
+    @Getter
+    protected Statement statement;
     private final NamedValueProcessor namedValueProcessor;
 
 
-    public PIPreparedNamedStatement( Builder builder ) {
+    public PIPreparedNamedStatement(
+            int id,
+            PIClient client,
+            QueryLanguage language,
+            LogicalNamespace namespace,
+            String query ) {
         super(
-                builder.id,
-                builder.client,
-                builder.properties,
-                builder.language,
-                builder.namespace
+                id, client, language, namespace
         );
-        this.namedValueProcessor = new NamedValueProcessor( builder.query );
+        this.namedValueProcessor = new NamedValueProcessor( query );
         this.query = namedValueProcessor.getProcessedQuery();
     }
 
@@ -54,14 +60,14 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     @SuppressWarnings("Duplicates")
     public StatementResult execute( Map<String, PolyValue> values ) throws Exception {
         synchronized ( client ) {
-            if ( currentStatement == null ) {
-                currentStatement = client.getCurrentOrCreateNewTransaction().createStatement();
+            if ( statement == null ) {
+                statement = client.getCurrentOrCreateNewTransaction().createStatement();
             }
             List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
             long index = 0;
             for ( PolyValue value : valueList ) {
                 if ( value != null ) {
-                    currentStatement.getDataContext().addParameterValues( index++, null, List.of( value ) );
+                    statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
                 }
             }
             StatementProcessor.execute( this );
@@ -70,85 +76,9 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     }
 
 
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-
     @Override
-    public PolyImplementation<PolyValue> getImplementation() {
-        return null;
-    }
-
-
-    @Override
-    public void setImplementation( PolyImplementation<PolyValue> implementation ) {
-
-    }
-
-
-    @Override
-    public Statement getStatement() {
-        return null;
-    }
-
-
-    @Override
-    public String getQuery() {
-        return null;
-    }
-
-
-    static class Builder {
-
-        int id;
-        PIClient client;
-        QueryLanguage language;
-        String query;
-        PIStatementProperties properties;
-        LogicalNamespace namespace;
-
-
-        public Builder setId( int id ) {
-            this.id = id;
-            return this;
-        }
-
-
-        public Builder setClient( PIClient client ) {
-            this.client = client;
-            return this;
-        }
-
-
-        public Builder setQuery( QueryLanguage language ) {
-            this.language = language;
-            return this;
-        }
-
-
-        public Builder setQuery( String query ) {
-            this.query = query;
-            return this;
-        }
-
-
-        public Builder setProperties( PIStatementProperties properties ) {
-            this.properties = properties;
-            return this;
-        }
-
-
-        public Builder setNamespace( LogicalNamespace namespace ) {
-            this.namespace = namespace;
-            return this;
-        }
-
-
-        public PIPreparedNamedStatement build() {
-            return new PIPreparedNamedStatement( this );
-        }
-
+    public Transaction getTransaction() {
+        return statement.getTransaction();
     }
 
 }
