@@ -26,8 +26,6 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.proto.StatementProperties;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -53,7 +51,7 @@ public abstract class PIStatement {
     protected PIStatement(
             int id, @NotNull PIClient client,
             @NotNull QueryLanguage language,
-            @NotNull LogicalNamespace namespace) {
+            @NotNull LogicalNamespace namespace ) {
         this.id = id;
         this.client = client;
         this.language = language;
@@ -69,8 +67,6 @@ public abstract class PIStatement {
     public abstract Statement getStatement();
 
     public abstract String getQuery();
+    public abstract Transaction getTransaction();
 
-    public Transaction getTransaction() {
-        return client.getCurrentTransaction();
-    }
 }
