@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "namespace_meta.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
