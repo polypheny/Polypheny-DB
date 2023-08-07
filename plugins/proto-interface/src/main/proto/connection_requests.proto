@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "protointerface.proto";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "ConnectionRequests";
+
+message ConnectionRequest {
+  int32 major_api_version = 1;
+  int32 minor_api_version = 2;
+  string client_uuid = 3;
+  optional string username = 5;
+  optional string password = 6;
+  optional ConnectionProperties connection_properties = 4;
+}
+
+message ConnectionProperties {
+  bool is_auto_commit = 1;
+}
+
+message DisconnectionRequest{}
+
+message ConnectionCheckRequest{}
