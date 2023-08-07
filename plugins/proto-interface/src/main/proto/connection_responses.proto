@@ -15,3 +15,5 @@ message ConnectionResponse {
 message DisconnectionResponse{}
 
 message ConnectionCheckResponse{}
+
+message ConnectionPropertiesUpdateResponse {}
