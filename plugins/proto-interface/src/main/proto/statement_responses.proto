@@ -2,10 +2,15 @@ syntax = "proto3";
 
 import "value.proto";
 import "protointerface.proto";
+import "relational_frame.proto";
+import "graph_frame.proto";
+import "document_frame.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "StatementResponses";
+
+package polypheny.protointerface;
 
 message StatementResponse {
   int32 statement_id = 1;
@@ -38,6 +43,11 @@ message ParameterMeta {
 message CloseStatementResponse {
 }
 
-
-
-
+message Frame {
+  bool isLast = 1;
+  oneof result {
+    RelationalFrame relational_frame = 2;
+    GraphFrame graph_frame = 3;
+    DocumentFrame document_frame = 4;
+  }
+}
