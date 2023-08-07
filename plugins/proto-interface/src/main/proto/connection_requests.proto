@@ -14,10 +14,14 @@ message ConnectionRequest {
   optional ConnectionProperties connection_properties = 4;
 }
 
+message ConnectionPropertiesUpdateRequest {
+  ConnectionProperties connection_properties = 4;
+}
+
 message ConnectionProperties {
   bool is_auto_commit = 1;
 }
 
-message DisconnectionRequest{}
+message DisconnectRequest{}
 
 message ConnectionCheckRequest{}
