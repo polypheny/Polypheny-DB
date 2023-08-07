@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -210,6 +211,14 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             catalogEntity.getNamespaceName(),
                             catalogEntity.name,
                             AlgDataTypeImpl.proto( fieldInfo.build() ) );
+
+                } else if ( catalogEntity.entityType == EntityType.STREAM ) {
+                    entity = new LogicalStreamCollection(
+                            catalogEntity.id,
+                            catalogEntity.getNamespaceName(),
+                            catalogEntity.name,
+                            AlgDataTypeImpl.proto( fieldInfo.build() ) );
+
                 } else {
                     throw new RuntimeException( "Unhandled table type: " + catalogEntity.entityType.name() );
                 }

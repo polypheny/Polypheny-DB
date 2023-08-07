@@ -2293,6 +2293,56 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    @Override
+    public void createStreamCollection( long schemaId, String name, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+        name = adjustNameIfNeeded( name, schemaId );
+
+        if ( assertEntityExists( schemaId, name, ifNotExists ) ) {
+            return;
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewTable();
+        }
+
+        long collectionId;
+        long partitionId;
+        try {
+            collectionId = catalog.addCollectionLogistics( schemaId, name, stores, false );
+            partitionId = catalog.getPartitionGroups( collectionId ).get( 0 ).id;
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+
+        catalog.addCollection(
+                collectionId,
+                name,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                EntityType.STREAM,
+                true );
+
+        // Initially create DataPlacement containers on every store the table should be placed.
+        CatalogCollection catalogCollection = catalog.getCollection( collectionId );
+
+        // Trigger rebuild of schema; triggers schema creation on adapters
+        PolySchemaBuilder.getInstance().getCurrent();
+
+        for ( DataStore store : stores ) {
+            catalog.addCollectionPlacement(
+                    store.getAdapterId(),
+                    catalogCollection.id,
+                    PlacementType.AUTOMATIC );
+
+            afterDocumentLogistics( store, collectionId );
+
+            store.createCollection( statement.getPrepareContext(), catalogCollection, store.getAdapterId() );
+        }
+
+    }
+
+
     private boolean assertEntityExists( long namespaceId, String name, boolean ifNotExists ) throws EntityAlreadyExistsException {
         // Check if there is already an entity with this name
         if ( catalog.checkIfExistsEntity( namespaceId, name ) ) {

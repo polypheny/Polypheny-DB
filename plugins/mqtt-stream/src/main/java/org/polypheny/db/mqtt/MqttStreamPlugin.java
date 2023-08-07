@@ -19,9 +19,19 @@ package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.MqttClientSslConfig;
+import com.hivemq.client.mqtt.MqttClientSslConfigBuilder;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,9 +40,10 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
@@ -69,6 +80,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 public class MqttStreamPlugin extends Plugin {
@@ -165,7 +177,7 @@ public class MqttStreamPlugin extends Plugin {
                 if ( (this.collectionName.equals( "null" ) | this.collectionName.equals( "" )) ) {
                     throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
                 } else if ( !collectionExists( this.collectionName ) ) {
-                    createNewCollection( this.collectionName );
+                    createStreamCollection( this.collectionName );
                 }
             }
         }
@@ -173,19 +185,61 @@ public class MqttStreamPlugin extends Plugin {
 
         @Override
         public void run() {
+/*
+            KeyStore keyStore = null;
+            try {
+                keyStore = KeyStore.getInstance("PKCS12");
+            } catch ( KeyStoreException e ) {
+                throw new RuntimeException( e );
+            }
+            //https://community.hivemq.com/t/sslwithdefaultconfig/946/4
+            // load default jvm keystore
+            //todo: this.getUniqueName()
+            String path = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "polyphenyClient.p12";
+            try {
+                keyStore.load(new FileInputStream( PolyphenyHomeDirManager.getInstance().getFileIfExists( path ) ), "Neha1512".toCharArray());
+            } catch ( IOException e ) {
+                throw new RuntimeException( e );
+            } catch ( NoSuchAlgorithmException e ) {
+                throw new RuntimeException( e );
+            } catch ( CertificateException e ) {
+                throw new RuntimeException( e );
+            }
 
-            // commented code used for SSL connection
+            TrustManagerFactory tmf = null;
+            try {
+                tmf = TrustManagerFactory.getInstance(
+                        TrustManagerFactory.getDefaultAlgorithm());
+            } catch ( NoSuchAlgorithmException e ) {
+                throw new RuntimeException( e );
+            }
+
+            try {
+                tmf.init(keyStore);
+            } catch ( KeyStoreException e ) {
+                throw new RuntimeException( e );
+            }
+
+ */
+
             this.client = MqttClient.builder()
                     .useMqttVersion3()
                     .identifier( getUniqueName() )
                     .serverHost( broker )
                     .serverPort( brokerPort )
-                    //.useSslWithDefaultConfig()
+                    /*
+                    .sslConfig()
+                        //.keyManagerFactory(kmf)
+                        .trustManagerFactory(tmf)
+                        .applySslConfig()
+
+                     */
+                    .useSslWithDefaultConfig()
                     .buildAsync();
 
             client.connectWith()
                     //.simpleAuth()
-                    //.username("my-user")
+                    //.username("")
                     //.password("my-password".getBytes())
                     //.applySimpleAuth()
                     .send()
@@ -403,7 +457,7 @@ public class MqttStreamPlugin extends Plugin {
                         if ( !mode ) {
                             if ( !(newCollectionName.equals( "null" ) | newCollectionName.equals( "" )) ) {
                                 if ( !collectionExists( newCollectionName ) ) {
-                                    createNewCollection( this.collectionName );
+                                    createStreamCollection( this.collectionName );
                                 }
                                 this.collectionName = newCollectionName;
                                 createAllCollections();
@@ -457,7 +511,7 @@ public class MqttStreamPlugin extends Plugin {
                 } else {
                     this.topicsMap.put( topic, new AtomicLong( 0 ) );
                     if ( this.collectionPerTopic.get() && !collectionExists( topic ) ) {
-                        createNewCollection( topic );
+                        createStreamCollection( topic );
                     }
                     //TODO: rmv, only for debugging needed
                     log.info( "Successful subscription to topic:{}.", topic );
@@ -524,7 +578,7 @@ public class MqttStreamPlugin extends Plugin {
             List<String> topicsList = new ArrayList<>( List.of( topics.split( "," ) ) );
             for ( int i = 0; i < topicsList.size(); i++ ) {
                 String topic = topicsList.get( i ).trim();
-                if ( !topic.isEmpty() ) {
+                if ( !topic.isBlank() ) {
                     topicsList.set( i, topic );
                 }
             }
@@ -546,7 +600,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private void createNewCollection( String collectionName ) {
+        private void createStreamCollection( String collectionName ) {
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
             //TODO: synch Block: is this correct woth universal lock?
@@ -556,6 +610,7 @@ public class MqttStreamPlugin extends Plugin {
             }
             try {
                 List<DataStore> dataStores = new ArrayList<>();
+                //TODO: StreamCollection einbinden
                 DdlManager.getInstance().createCollection(
                         namespaceID,
                         collectionName,
@@ -577,13 +632,13 @@ public class MqttStreamPlugin extends Plugin {
                 if ( this.collectionPerTopic.get() ) {
                     for ( String t : this.topicsMap.keySet() ) {
                         if ( !collectionExists( t ) ) {
-                            createNewCollection( t );
+                            createStreamCollection( t );
                         }
                     }
                 } else {
                     if ( !(this.collectionName.equals( "null" ) | this.collectionName.equals( "" )) ) {
                         if ( !collectionExists( this.collectionName ) ) {
-                            createNewCollection( this.collectionName );
+                            createStreamCollection( this.collectionName );
                         }
                     } else {
                         throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );

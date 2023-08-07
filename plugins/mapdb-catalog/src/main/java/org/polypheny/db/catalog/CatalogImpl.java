@@ -2420,7 +2420,7 @@ public class CatalogImpl extends Catalog {
                 collectionId,
                 name,
                 List.of(),
-                EntityType.ENTITY,
+                entity,
                 null );
 
         synchronized ( this ) {
