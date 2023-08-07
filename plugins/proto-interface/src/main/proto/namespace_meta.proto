@@ -5,6 +5,7 @@ option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "NamespaceMeta";
 
 package polypheny.protointerface;
+
 message NamespaceRequest {
   string namespace_name = 1;
 }
