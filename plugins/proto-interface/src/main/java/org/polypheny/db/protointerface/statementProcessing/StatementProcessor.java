@@ -58,7 +58,7 @@ public class StatementProcessor {
     }
 
 
-    public static StatementResult getResult( PIStatement piStatement ) throws Exception {
+    public static StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
         ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
         if ( resultRetriever == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -67,11 +67,11 @@ public class StatementProcessor {
                     9004
             );
         }
-        return resultRetriever.getResult( piStatement );
+        return resultRetriever.getResult( piStatement, fetchSize );
     }
 
 
-    public static Frame fetch( PIStatement piStatement ) {
+    public static Frame fetch( PIStatement piStatement, int fetchSize ) {
         ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
         if ( resultRetriever == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
@@ -80,7 +80,7 @@ public class StatementProcessor {
                     9004
             );
         }
-        return resultRetriever.fetch( piStatement );
+        return resultRetriever.fetch( piStatement, fetchSize );
     }
 
 

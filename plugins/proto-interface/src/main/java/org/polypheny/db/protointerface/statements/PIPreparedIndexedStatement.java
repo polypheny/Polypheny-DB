@@ -27,6 +27,7 @@ import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -55,17 +56,17 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     }
 
 
-    public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) throws Exception {
+    public List<Long> executeBatch( List<List<PolyValue>> valuesBatch) throws Exception {
         List<Long> updateCounts = new LinkedList<>();
         for ( List<PolyValue> values : valuesBatch ) {
-            updateCounts.add( execute( values ).getScalar() );
+            updateCounts.add( execute( values, PropertyUtils.DEFAULT_FETCH_SIZE ).getScalar() );
         }
         return updateCounts;
     }
 
 
     @SuppressWarnings("Duplicates")
-    public StatementResult execute( List<PolyValue> values ) throws Exception {
+    public StatementResult execute( List<PolyValue> values, int fetchSize ) throws Exception {
         synchronized ( client ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
@@ -77,7 +78,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 }
             }
             StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this );
+            return StatementProcessor.getResult( this, fetchSize );
         }
     }
 
