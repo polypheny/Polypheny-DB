@@ -1,8 +1,5 @@
 syntax = "proto3";
 import "value.proto";
-import "relational_frame.proto";
-import "graph_frame.proto";
-import "document_frame.proto";
 import "meta.proto";
 import "namespace_meta.proto";
 import "statement_requests.proto";
@@ -75,15 +72,4 @@ message ConnectionPropertiesUpdateResponse {
 }
 
 
-message FetchRequest {
-  int32 statement_id = 1;
-}
 
-message Frame {
-  bool isLast = 1;
-  oneof result {
-    RelationalFrame relational_frame = 2;
-    GraphFrame graph_frame = 3;
-    DocumentFrame document_frame = 4;
-  }
-}
