@@ -61,7 +61,7 @@ public class MongoExecutor extends StatementExecutor {
         String query = piStatement.getQuery();
         PolyImplementation<PolyValue> implementation;
         Processor queryProcessor = statement.getTransaction().getProcessor( language );
-        QueryParameters parameters = new MqlQueryParameters( query, database, NamespaceType.DOCUMENT );
+        QueryParameters parameters = new MqlQueryParameters( query, null, NamespaceType.DOCUMENT );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
             implementation = queryProcessor.prepareDdl( statement, parsedStatement, parameters );

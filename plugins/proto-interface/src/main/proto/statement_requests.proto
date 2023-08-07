@@ -39,6 +39,7 @@ message ExecuteIndexedStatementBatchRequest {
 message ExecuteNamedStatementRequest {
   int32 statementId = 1;
   NamedParameters parameters = 2;
+  optional int32 fetch_size = 3;
 }
 
 message IndexedParameters {
@@ -55,4 +56,5 @@ message CloseStatementRequest {
 
 message FetchRequest {
   int32 statement_id = 1;
+  optional int32 fetchSize = 2;
 }
