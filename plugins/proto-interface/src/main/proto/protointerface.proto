@@ -1,6 +1,9 @@
 syntax = "proto3";
 import "value.proto";
-import "meta.proto";
+import "meta_requests.proto";
+import "meta_responses.proto";
+import "connection_requests.proto";
+import "connection_responses.proto";
 import "namespace_meta.proto";
 import "statement_requests.proto";
 import "statement_responses.proto";
@@ -37,20 +40,20 @@ service ProtoInterface {
   rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
   // Connection related
-  rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
+  rpc Connect(ConnectionRequest) returns (ConnectionResponse) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
-  rpc Disconnect(DisconnectionRequest) returns (DisconnectionResponse) {}
+  rpc Disconnect(DisconnectRequest) returns (DisconnectionResponse) {}
   rpc GetClientInfoProperties(ClientInfoPropertiesRequest) returns (ClientInfoProperties) {}
   rpc SetClientInfoProperties(ClientInfoProperties) returns (ClientInfoPropertiesResponse) {}
   // Unparameterized statements
-  rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
-  rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
+  rpc ExecuteUnparameterizedStatement(ExecuteUnparameterizedStatementRequest) returns (stream StatementResponse) {}
+  rpc ExecuteUnparameterizedStatementBatch(ExecuteUnparameterizedStatementBatchRequest) returns (stream StatementBatchResponse) {}
   // Prepared Statements
-  rpc PrepareIndexedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
-  rpc ExecuteIndexedStatement(ParameterList) returns (StatementResult){}
-  rpc ExecuteIndexedStatementBatch(IndexedParameterBatch) returns (StatementBatchStatus){}
-  rpc PrepareNamedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
-  rpc ExecuteNamedStatement(ParameterSet) returns (StatementResult){}
+  rpc PrepareIndexedStatement(PreparedStatementRequest) returns (PreparedStatementSignature) {}
+  rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult){}
+  rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse){}
+  rpc PrepareNamedStatement(PreparedStatementRequest) returns (PreparedStatementSignature) {}
+  rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult){}
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
   // Transaction handling
@@ -58,18 +61,5 @@ service ProtoInterface {
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
   // Properties
-  rpc UpdateConnectionProperties(ConnectionProperties) returns (ConnectionPropertiesUpdateResponse){}
-  rpc UpdateStatementProperties(StatementProperties) returns (StatementPropertiesUpdateResponse) {}
+  rpc UpdateConnectionProperties(ConnectionPropertiesUpdateRequest) returns (ConnectionPropertiesUpdateResponse){}
 }
-
-
-
-
-
-
-
-message ConnectionPropertiesUpdateResponse {
-}
-
-
-
