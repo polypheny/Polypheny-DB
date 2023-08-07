@@ -329,87 +329,88 @@ public class MqttStreamPlugin extends Plugin {
 
         @Override
         protected void reloadSettings( List<String> updatedSettings ) {
-            //TODO: synch lock araound for schleife:
-            for ( String changedSetting : updatedSettings ) {
-                switch ( changedSetting ) {
-                    case "topics":
-                        List<String> newTopicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
-                        List<String> topicsToSub = new ArrayList<>();
-                        for ( String newTopic : newTopicsList ) {
-                            if ( !topicsMap.containsKey( newTopic ) ) {
-                                topicsToSub.add( newTopic );
+            synchronized ( settingsLock ) {
+
+                for ( String changedSetting : updatedSettings ) {
+                    switch ( changedSetting ) {
+                        case "topics":
+                            List<String> newTopicsList = topicsToList( this.getCurrentSettings().get( "topics" ) );
+                            List<String> topicsToSub = new ArrayList<>();
+                            for ( String newTopic : newTopicsList ) {
+                                if ( !topicsMap.containsKey( newTopic ) ) {
+                                    topicsToSub.add( newTopic );
+                                }
                             }
-                        }
-                        if ( !topicsToSub.isEmpty() ) {
-                            subscribe( topicsToSub );
-                        }
-                        List<String> topicsToUnsub = new ArrayList<>();
-                        for ( String oldTopic : topicsMap.keySet() ) {
-                            if ( !newTopicsList.contains( oldTopic ) ) {
-                                topicsToUnsub.add( oldTopic );
+                            if ( !topicsToSub.isEmpty() ) {
+                                subscribe( topicsToSub );
                             }
-                        }
-                        if ( !topicsToUnsub.isEmpty() ) {
-                            unsubscribe( topicsToUnsub );
-                        }
-                        break;
+                            List<String> topicsToUnsub = new ArrayList<>();
+                            for ( String oldTopic : topicsMap.keySet() ) {
+                                if ( !newTopicsList.contains( oldTopic ) ) {
+                                    topicsToUnsub.add( oldTopic );
+                                }
+                            }
+                            if ( !topicsToUnsub.isEmpty() ) {
+                                unsubscribe( topicsToUnsub );
+                            }
+                            break;
 
-                    case "namespace":
-                        /*
-                        try {
-                            this.wait(2000);
-                        } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
-                        }
-                        this.notify();
+                        case "namespace":
+                            /*
+                            try {
+                                this.wait(2000);
+                            } catch ( InterruptedException e ) {
+                                throw new RuntimeException( e );
+                            }
+                            this.notify();
 
-                         */
-//TODO current thread is not owner Exception! -> dann wird nichts mehr aus dem Block ausgeführt!
-                        /*
-                        try {
-                            client.wait();
-                        } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
-                        }
+                             */
+    //TODO current thread is not owner Exception! -> dann wird nichts mehr aus dem Block ausgeführt!
+                            /*
+                            try {
+                                client.wait();
+                            } catch ( InterruptedException e ) {
+                                throw new RuntimeException( e );
+                            }
 
 
-                         */
-                        synchronized ( this.namespaceName ) {
-                            String newNamespaceName = this.getCurrentSettings().get( "namespace" ).trim();
-                            if ( updatedSettings.contains( "namespace type" ) ) {
-                                if ( updatedSettings.indexOf( "namespace type" ) < updatedSettings.indexOf( "namespace" ) ) {
-                                    NamespaceType type = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
+                             */
+                            synchronized ( this.namespaceName ) {
+                                String newNamespaceName = this.getCurrentSettings().get( "namespace" ).trim();
+                                if ( updatedSettings.contains( "namespace type" ) ) {
+                                    if ( updatedSettings.indexOf( "namespace type" ) < updatedSettings.indexOf( "namespace" ) ) {
+                                        NamespaceType type = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
+                                        try {
+                                            if ( !namespaceExists( newNamespaceName, type ) ) {
+                                                createNamespace( newNamespaceName, type );
+                                            }
+                                            this.namespaceName = newNamespaceName;
+                                            this.namespaceType = type;
+                                            createAllCollections();
+                                        } catch ( RuntimeException e ) {
+                                            this.settings.put( "namespace", this.namespaceName );
+                                            this.settings.put( "namespace type", String.valueOf( this.namespaceType ) );
+                                            throw new RuntimeException( e );
+                                        }
+                                    } // else checking for namespace happens in case "namespace type"
+                                } else {
                                     try {
-                                        if ( !namespaceExists( newNamespaceName, type ) ) {
-                                            createNamespace( newNamespaceName, type );
+                                        if ( !namespaceExists( newNamespaceName, this.namespaceType ) ) {
+                                            createNamespace( newNamespaceName, this.namespaceType );
                                         }
                                         this.namespaceName = newNamespaceName;
-                                        this.namespaceType = type;
                                         createAllCollections();
                                     } catch ( RuntimeException e ) {
                                         this.settings.put( "namespace", this.namespaceName );
-                                        this.settings.put( "namespace type", String.valueOf( this.namespaceType ) );
                                         throw new RuntimeException( e );
                                     }
-                                } // else checking for namespace happens in case "namespace type"
-                            } else {
-                                try {
-                                    if ( !namespaceExists( newNamespaceName, this.namespaceType ) ) {
-                                        createNamespace( newNamespaceName, this.namespaceType );
-                                    }
-                                    this.namespaceName = newNamespaceName;
-                                    createAllCollections();
-                                } catch ( RuntimeException e ) {
-                                    this.settings.put( "namespace", this.namespaceName );
-                                    throw new RuntimeException( e );
                                 }
                             }
-                        }
-                    break;
+                            break;
 
-                    case "namespace type":
-                        NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
-                        //synchronized ( this.namespaceType ) {
+                        case "namespace type":
+                            NamespaceType newNamespaceType = NamespaceType.valueOf( this.getCurrentSettings().get( "namespace type" ) );
+                            //synchronized ( this.namespaceType ) {
                             if ( updatedSettings.contains( "namespace" ) ) {
                                 if ( updatedSettings.indexOf( "namespace" ) < updatedSettings.indexOf( "namespace type" ) ) {
                                     String newName = this.getCurrentSettings().get( "namespace" );
@@ -439,37 +440,38 @@ public class MqttStreamPlugin extends Plugin {
                                 }
                             }
 
-                       // }
+                            // }
 
-                        break;
-                    case "collection per topic":
-                        this.collectionPerTopic.set( Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) ) );
-                        createAllCollections();
-                        break;
-                    case "collection name":
-                        String newCollectionName = this.getCurrentSettings().get( "collection name" ).trim();
-                        boolean mode;
-                        if ( updatedSettings.contains( "collection per topic" ) ) {
-                            mode = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
-                        } else {
-                            mode = this.collectionPerTopic.get();
-                        }
-                        if ( !mode ) {
-                            if ( !(newCollectionName.equals( "null" ) | newCollectionName.equals( "" )) ) {
-                                if ( !collectionExists( newCollectionName ) ) {
-                                    createStreamCollection( this.collectionName );
-                                }
-                                this.collectionName = newCollectionName;
-                                createAllCollections();
+                            break;
+                        case "collection per topic":
+                            this.collectionPerTopic.set( Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) ) );
+                            createAllCollections();
+                            break;
+                        case "collection name":
+                            String newCollectionName = this.getCurrentSettings().get( "collection name" ).trim();
+                            boolean mode;
+                            if ( updatedSettings.contains( "collection per topic" ) ) {
+                                mode = Boolean.parseBoolean( this.getCurrentSettings().get( "collection per topic" ) );
                             } else {
-                                this.settings.put( "collection name", this.collectionName );
-                                throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
+                                mode = this.collectionPerTopic.get();
                             }
+                            if ( !mode ) {
+                                if ( !(newCollectionName.equals( "null" ) | newCollectionName.equals( "" )) ) {
+                                    if ( !collectionExists( newCollectionName ) ) {
+                                        createStreamCollection( this.collectionName );
+                                    }
+                                    this.collectionName = newCollectionName;
+                                    createAllCollections();
+                                } else {
+                                    this.settings.put( "collection name", this.collectionName );
+                                    throw new NullPointerException( "Collection per topic is set to FALSE but no valid collection name was given! Please enter a collection name." );
+                                }
 
-                        } else {
-                            this.collectionName = newCollectionName;
-                        }
-                        break;
+                            } else {
+                                this.collectionName = newCollectionName;
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -504,8 +506,9 @@ public class MqttStreamPlugin extends Plugin {
                     if ( !topicsString.isEmpty() ) {
                         topicsString = topicsString.substring( 0, topicsString.lastIndexOf( ',' ) );
                     }
-                    //TODO: synch over settings?
-                    this.settings.put( "topics", topicsString );
+                    synchronized ( settingsLock ) {
+                        this.settings.put( "topics", topicsString );
+                    }
                     log.info( "not successful: {}", topic );
                     throw new RuntimeException( "Subscription was not successful. Please try again.", throwable );
                 } else {
@@ -513,8 +516,6 @@ public class MqttStreamPlugin extends Plugin {
                     if ( this.collectionPerTopic.get() && !collectionExists( topic ) ) {
                         createStreamCollection( topic );
                     }
-                    //TODO: rmv, only for debugging needed
-                    log.info( "Successful subscription to topic:{}.", topic );
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
@@ -532,8 +533,9 @@ public class MqttStreamPlugin extends Plugin {
         public void unsubscribe( String topic ) {
             client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
                 if ( throwable != null ) {
-                    //TODO: synch over settings?
-                    this.settings.put( "topics", this.settings.get( "topics" ) + "," + topic );
+                    synchronized ( settingsLock ) {
+                        this.settings.put( "topics", this.settings.get( "topics" ) + "," + topic );
+                    }
                     throw new RuntimeException( "Topic " + topic + " could not be unsubscribed.", throwable );
                 } else {
                     this.topicsMap.remove( topic );
@@ -552,13 +554,13 @@ public class MqttStreamPlugin extends Plugin {
             Long incrementedMsgCount = topicsMap.get( topic ).incrementAndGet();
             topicsMap.replace( topic, new AtomicLong( incrementedMsgCount ) );
             addMessageToQueue( topic, message );
-            //TODO: sync block
-            if ( this.collectionPerTopic.get() ) {
-                receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
-            } else {
-                receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+            synchronized ( settingsLock ) {
+                if ( this.collectionPerTopic.get() ) {
+                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, topic );
+                } else {
+                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+                }
             }
-            //TODO: end block
             MqttStreamProcessor streamProcessor = new MqttStreamProcessor( receivedMqttMessage, statement );
             String content = streamProcessor.processStream();
             //TODO: what is returned from processStream if this Stream is not valid/ not result of filter...?
@@ -594,8 +596,9 @@ public class MqttStreamPlugin extends Plugin {
             Catalog catalog = Catalog.getInstance();
             Pattern pattern = new Pattern( collectionName );
             List<CatalogCollection> collectionList = null;
-            //TODO: synch Block
-            collectionList = catalog.getCollections( getNamespaceId( this.namespaceName, this.namespaceType), pattern );
+            synchronized ( settingsLock ) {
+                collectionList = catalog.getCollections( getNamespaceId( this.namespaceName, this.namespaceType ), pattern );
+            }
             return !collectionList.isEmpty();
         }
 
@@ -603,7 +606,6 @@ public class MqttStreamPlugin extends Plugin {
         private void createStreamCollection( String collectionName ) {
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
-            //TODO: synch Block: is this correct woth universal lock?
             long namespaceID;
             synchronized ( settingsLock ) {
                 namespaceID = getNamespaceId( this.namespaceName, this.namespaceType );
