@@ -1,10 +1,9 @@
 syntax = "proto3";
+import "protointerface.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "ConnectionRequests";
-
-package polypheny.protointerface;
 
 message ConnectionRequest {
   int32 major_api_version = 1;
@@ -15,15 +14,10 @@ message ConnectionRequest {
   optional ConnectionProperties connection_properties = 4;
 }
 
-message ConnectionPropertiesUpdateRequest {
-  ConnectionProperties connection_properties = 4;
-}
-
 message ConnectionProperties {
-  optional bool is_auto_commit = 1;
-  optional string namespace_name = 2;
+  bool is_auto_commit = 1;
 }
 
-message DisconnectRequest{}
+message DisconnectionRequest{}
 
 message ConnectionCheckRequest{}
