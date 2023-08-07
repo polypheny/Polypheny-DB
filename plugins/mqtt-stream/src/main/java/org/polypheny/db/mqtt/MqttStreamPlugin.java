@@ -232,9 +232,9 @@ public class MqttStreamPlugin extends Plugin {
                         //.keyManagerFactory(kmf)
                         .trustManagerFactory(tmf)
                         .applySslConfig()
+                    .useSslWithDefaultConfig()
 
                      */
-                    .useSslWithDefaultConfig()
                     .buildAsync();
 
             client.connectWith()
