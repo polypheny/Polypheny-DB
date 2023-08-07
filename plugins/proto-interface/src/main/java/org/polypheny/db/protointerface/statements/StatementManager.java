@@ -16,176 +16,164 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.languages.LanguageManager;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.PIStatementProperties;
-import org.polypheny.db.protointerface.PIServiceException;
-import org.polypheny.db.protointerface.proto.PreparedStatement;
-import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
-
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.protointerface.PIClient;
+import org.polypheny.db.protointerface.PIServiceException;
+import org.polypheny.db.protointerface.proto.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.db.protointerface.proto.PrepareStatementRequest;
 
 @Slf4j
 public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
-    private final PIClient protoInterfaceClient;
+    private final PIClient client;
     private ConcurrentHashMap<Integer, PIStatement> openStatements;
     private ConcurrentHashMap<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
 
 
-    public StatementManager(PIClient protoInterfaceClient) {
-        this.protoInterfaceClient = protoInterfaceClient;
+    public StatementManager( PIClient client ) {
+        this.client = client;
         statementIdGenerator = new AtomicInteger();
         openStatements = new ConcurrentHashMap<>();
         openUnparameterizedBatches = new ConcurrentHashMap<>();
     }
 
-
-    public Set<String> getSupportedLanguages() {
-        return LanguageManager.getLanguages().stream().map( QueryLanguage::getSerializedName ).collect( Collectors.toSet());
-    }
-
-    public String getNamespaceNameOrDefault(UnparameterizedStatement unparameterizedStatement) {
-        return unparameterizedStatement.hasNamespaceName()
-                ? unparameterizedStatement.getNamespaceName()
-                : protoInterfaceClient.getProperties().getNamespaceName();
-    }
-
-    public String getNamespaceNameOrDefault(PreparedStatement preparedStatement) {
-        return preparedStatement.hasNamespaceName()
-                ? preparedStatement.getNamespaceName()
-                : protoInterfaceClient.getProperties().getNamespaceName();
+    private LogicalNamespace getNamespace(String namespaceName) {
+        try {
+            return Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        } catch ( Exception e ) {
+            throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
+        }
     }
 
 
-    public PIUnparameterizedStatement createUnparameterizedStatement(UnparameterizedStatement statement) throws PIServiceException {
-        synchronized(protoInterfaceClient) {
-            String languageName = statement.getStatementLanguageName();
-            if (!isSupportedLanguage(languageName)) {
-                throw new PIServiceException("Language " + languageName + " not supported.");
+    public PIUnparameterizedStatement createUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request ) throws PIServiceException {
+        synchronized ( client ) {
+            String languageName = request.getStatementLanguageName();
+            if ( !isSupportedLanguage( languageName ) ) {
+                throw new PIServiceException( "Language " + languageName + " not supported." );
             }
-            final int statementId = statementIdGenerator.getAndIncrement();
-            final PIUnparameterizedStatement interfaceStatement = PIUnparameterizedStatement.newBuilder()
-                    .setId(statementId)
-                    .setQuery(statement.getStatement())
-                    .setLanguage(QueryLanguage.from(languageName))
-                    .setClient(protoInterfaceClient)
-                    .setProperties(getPropertiesOrDefault(statement))
-                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
-                    .build();
-            openStatements.put(statementId, interfaceStatement);
-            if (log.isTraceEnabled()) {
-                log.trace("created statement {}", interfaceStatement);
+            int statementId = statementIdGenerator.getAndIncrement();
+            LogicalNamespace namespace = client.getNamespace();
+            if ( request.hasNamespace() ) {
+                namespace = getNamespace( request.getNamespace() );
             }
-            return interfaceStatement;
+            assert namespace != null;
+            PIUnparameterizedStatement statement = new PIUnparameterizedStatement(
+                    statementId,
+                    client,
+                    QueryLanguage.from( languageName ),
+                    namespace,
+                    request.getStatement()
+            );
+            openStatements.put( statementId, statement );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "created request {}", statement );
+            }
+            return statement;
         }
     }
 
-    private PIStatementProperties getPropertiesOrDefault(UnparameterizedStatement unparameterizedStatement) {
-        if (unparameterizedStatement.hasProperties()) {
-            return new PIStatementProperties(unparameterizedStatement.getProperties());
-        }
-        return PIStatementProperties.getDefaultInstance();
-    }
 
-    private PIStatementProperties getPropertiesOrDefault(PreparedStatement preparedStatement) {
-        if (preparedStatement.hasProperties()) {
-            return new PIStatementProperties(preparedStatement.getProperties());
-        }
-        return PIStatementProperties.getDefaultInstance();
-    }
-
-
-    public PIUnparameterizedStatementBatch createUnparameterizedStatementBatch(List<UnparameterizedStatement> statements) {
-        synchronized(protoInterfaceClient) {
+    public PIUnparameterizedStatementBatch createUnparameterizedStatementBatch( List<ExecuteUnparameterizedStatementRequest> statements ) {
+        synchronized ( client ) {
             List<PIUnparameterizedStatement> PIUnparameterizedStatements = statements.stream()
-                    .map(this::createUnparameterizedStatement)
-                    .collect(Collectors.toList());
+                    .map( this::createUnparameterizedStatement )
+                    .collect( Collectors.toList() );
             final int batchId = statementIdGenerator.getAndIncrement();
-            final PIUnparameterizedStatementBatch batch = new PIUnparameterizedStatementBatch(batchId, protoInterfaceClient, PIUnparameterizedStatements);
-            openUnparameterizedBatches.put(batchId, batch);
-            if (log.isTraceEnabled()) {
-                log.trace("created batch {}", batch);
+            final PIUnparameterizedStatementBatch batch = new PIUnparameterizedStatementBatch( batchId, client, PIUnparameterizedStatements );
+            openUnparameterizedBatches.put( batchId, batch );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "created batch {}", batch );
             }
             return batch;
         }
     }
 
 
-    public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement(PreparedStatement statement) throws PIServiceException {
-        synchronized(protoInterfaceClient) {
-            String languageName = statement.getStatementLanguageName();
-            if (!isSupportedLanguage(languageName)) {
-                throw new PIServiceException("Language " + languageName + " not supported.");
+    public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
+        synchronized ( client ) {
+            String languageName = request.getStatementLanguageName();
+            if ( !isSupportedLanguage( languageName ) ) {
+                throw new PIServiceException( "Language " + languageName + " not supported." );
             }
-            final int statementId = statementIdGenerator.getAndIncrement();
-            final PIPreparedIndexedStatement interfaceStatement = PIPreparedIndexedStatement.newBuilder()
-                    .setId(statementId)
-                    .setClient(protoInterfaceClient)
-                    .setQuery(statement.getStatement())
-                    .setLanguage(QueryLanguage.from(languageName))
-                    .setProperties(getPropertiesOrDefault(statement))
-                    .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
-                    .build();
-            openStatements.put(statementId, interfaceStatement);
-            if (log.isTraceEnabled()) {
-                log.trace("created named prepared statement {}", interfaceStatement);
+            int statementId = statementIdGenerator.getAndIncrement();
+            LogicalNamespace namespace = client.getNamespace();
+            if ( request.hasNamespace() ) {
+                namespace = getNamespace( request.getNamespace() );
             }
-            return interfaceStatement;
+            assert namespace != null;
+            PIPreparedIndexedStatement statement = new PIPreparedIndexedStatement(
+                    statementId,
+                    client,
+                    QueryLanguage.from( languageName ),
+                    namespace,
+                    request.getStatement()
+            );
+            openStatements.put( statementId, statement );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "created named prepared statement {}", statement );
+            }
+            return statement;
         }
     }
 
 
-    public PIPreparedNamedStatement createNamedPreparedInterfaceStatement(PreparedStatement statement) throws PIServiceException {
-        synchronized(protoInterfaceClient) {
-            String languageName = statement.getStatementLanguageName();
-            if (!isSupportedLanguage(languageName)) {
-                throw new PIServiceException("Language " + languageName + " not supported.");
+    public PIPreparedNamedStatement createNamedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
+        synchronized ( client ) {
+            String languageName = request.getStatementLanguageName();
+            if ( !isSupportedLanguage( languageName ) ) {
+                throw new PIServiceException( "Language " + languageName + " not supported." );
             }
             final int statementId = statementIdGenerator.getAndIncrement();
-            final PIPreparedNamedStatement interfaceStatement = PIPreparedNamedStatement.newBuilder()
-                    .setId(statementId)
-                    .setQuery(statement.getStatement())
-                    .setQuery(QueryLanguage.from(statement.getStatementLanguageName()))
-                    .setProperties(getPropertiesOrDefault(statement))
-                    .setClient(protoInterfaceClient)
-                    .build();
-            openStatements.put(statementId, interfaceStatement);
-            if (log.isTraceEnabled()) {
-                log.trace("created named prepared statement {}", interfaceStatement);
+            LogicalNamespace namespace = client.getNamespace();
+            if ( request.hasNamespace() ) {
+                namespace = getNamespace( request.getNamespace() );
             }
-            return interfaceStatement;
+            assert namespace != null;
+            PIPreparedNamedStatement statement = new PIPreparedNamedStatement(
+                    statementId,
+                    client,
+                    QueryLanguage.from( languageName ),
+                    namespace,
+                    request.getStatement()
+            );
+            openStatements.put( statementId, statement );
+            if ( log.isTraceEnabled() ) {
+                log.trace( "created named prepared statement {}", statement );
+            }
+            return statement;
         }
     }
+
 
     public void closeAll() {
-        synchronized(protoInterfaceClient) {
-            openUnparameterizedBatches.values().forEach(this::closeBatch);
-            openStatements.values().forEach(s -> closeStatement(s.getId()));
+        synchronized ( client ) {
+            openUnparameterizedBatches.values().forEach( this::closeBatch );
+            openStatements.values().forEach( s -> closeStatement( s.getId() ) );
         }
     }
 
 
-    public void closeBatch(PIUnparameterizedStatementBatch toClose) {
-        synchronized(protoInterfaceClient) {
-            toClose.getStatements().forEach(s -> closeStatementOrBatch(s.getId()));
+    public void closeBatch( PIUnparameterizedStatementBatch toClose ) {
+        synchronized ( client ) {
+            toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getId() ) );
         }
     }
 
 
-
-    private void closeStatement(int statementId) {
-        synchronized(protoInterfaceClient) {
-            PIStatement statementToClose = openStatements.remove(statementId);
-            if (statementToClose == null) {
+    private void closeStatement( int statementId ) {
+        synchronized ( client ) {
+            PIStatement statementToClose = openStatements.remove( statementId );
+            if ( statementToClose == null ) {
                 return;
             }
             // TODO: implement closing of statements
@@ -193,57 +181,57 @@ public class StatementManager {
     }
 
 
-    public void closeStatementOrBatch(int statementId) {
-        synchronized(protoInterfaceClient) {
-            PIUnparameterizedStatementBatch batchToClose = openUnparameterizedBatches.remove(statementId);
-            if (batchToClose != null) {
-                closeBatch(batchToClose);
+    public void closeStatementOrBatch( int statementId ) {
+        synchronized ( client ) {
+            PIUnparameterizedStatementBatch batchToClose = openUnparameterizedBatches.remove( statementId );
+            if ( batchToClose != null ) {
+                closeBatch( batchToClose );
                 return;
             }
-            closeStatement(statementId);
+            closeStatement( statementId );
         }
     }
 
 
-    public PIStatement getStatement(int statementId) {
-        PIStatement statement = openStatements.get(statementId);
-        if (statement == null) {
-            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
+    public PIStatement getStatement( int statementId ) {
+        PIStatement statement = openStatements.get( statementId );
+        if ( statement == null ) {
+            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
         return statement;
     }
 
 
-    public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) throws PIServiceException {
-        PIStatement statement = openStatements.get(statementId);
-        if (statement == null) {
-            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
+    public PIPreparedNamedStatement getNamedPreparedStatement( int statementId ) throws PIServiceException {
+        PIStatement statement = openStatements.get( statementId );
+        if ( statement == null ) {
+            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
-        if (!(statement instanceof PIPreparedNamedStatement)) {
-            throw new PIServiceException("A prepared statement with id " + statementId + " does not exist for that client");
+        if ( !(statement instanceof PIPreparedNamedStatement) ) {
+            throw new PIServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
         }
         return (PIPreparedNamedStatement) statement;
     }
 
 
-    public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) throws PIServiceException {
-        PIStatement statement = openStatements.get(statementId);
-        if (statement == null) {
-            throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
+    public PIPreparedIndexedStatement getIndexedPreparedStatement( int statementId ) throws PIServiceException {
+        PIStatement statement = openStatements.get( statementId );
+        if ( statement == null ) {
+            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
-        if (!(statement instanceof PIPreparedIndexedStatement)) {
-            throw new PIServiceException("A prepared statement with id " + statementId + " does not exist for that client");
+        if ( !(statement instanceof PIPreparedIndexedStatement) ) {
+            throw new PIServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
         }
         return (PIPreparedIndexedStatement) statement;
     }
 
 
-    public boolean isSupportedLanguage(String statementLanguageName) {
+    public boolean isSupportedLanguage( String statementLanguageName ) {
         return LanguageManager.getLanguages()
                 .stream()
-                .map(QueryLanguage::getSerializedName)
-                .collect(Collectors.toSet())
-                .contains(statementLanguageName);
+                .map( QueryLanguage::getSerializedName )
+                .collect( Collectors.toSet() )
+                .contains( statementLanguageName );
     }
 
 }

@@ -49,10 +49,10 @@ service ProtoInterface {
   rpc ExecuteUnparameterizedStatement(ExecuteUnparameterizedStatementRequest) returns (stream StatementResponse) {}
   rpc ExecuteUnparameterizedStatementBatch(ExecuteUnparameterizedStatementBatchRequest) returns (stream StatementBatchResponse) {}
   // Prepared Statements
-  rpc PrepareIndexedStatement(PreparedStatementRequest) returns (PreparedStatementSignature) {}
+  rpc PrepareIndexedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
   rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult){}
   rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse){}
-  rpc PrepareNamedStatement(PreparedStatementRequest) returns (PreparedStatementSignature) {}
+  rpc PrepareNamedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
   rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult){}
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
