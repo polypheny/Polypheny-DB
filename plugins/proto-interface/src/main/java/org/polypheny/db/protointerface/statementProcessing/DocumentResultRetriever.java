@@ -41,7 +41,7 @@ public class DocumentResultRetriever extends ResultRetriever {
 
 
     @Override
-    StatementResult getResult( PIStatement piStatement ) throws Exception {
+    StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -63,7 +63,7 @@ public class DocumentResultRetriever extends ResultRetriever {
             resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
-        Frame frame = fetch( piStatement );
+        Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
             //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
@@ -74,7 +74,7 @@ public class DocumentResultRetriever extends ResultRetriever {
 
 
     @Override
-    Frame fetch( PIStatement piStatement ) {
+    Frame fetch( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -83,7 +83,6 @@ public class DocumentResultRetriever extends ResultRetriever {
                     9000
             );
         }
-        int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
