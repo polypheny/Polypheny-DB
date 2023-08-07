@@ -3,12 +3,9 @@ import "namespace_meta.proto";
 
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
-option java_outer_classname = "Meta";
+option java_outer_classname = "MetaResponses";
 
 package polypheny.protointerface;
-
-message DbmsVersionRequest{
-}
 
 message DbmsVersionResponse{
   string dbms_name = 1;
@@ -17,14 +14,8 @@ message DbmsVersionResponse{
   int32 minor_version = 4;
 }
 
-message LanguageRequest {}
-
 message LanguageResponse {
   repeated string language_names = 1;
-}
-
-
-message DatabasesRequest {
 }
 
 message DatabasesResponse {
@@ -37,20 +28,12 @@ message Database {
   string default_namespace_name = 3;
 }
 
-message TableTypesRequest {
-
-}
-
 message TableTypesResponse {
   repeated TableType table_types = 1;
 }
 
 message TableType {
   string table_type = 1;
-}
-
-message TypesRequest {
-
 }
 
 message TypesResponse {
@@ -70,10 +53,6 @@ message Type {
   int32 radix = 10;
 }
 
-message UserDefinedTypesRequest {
-
-}
-
 message UserDefinedTypesResponse {
   repeated UserDefinedType user_defined_types = 1;
 }
@@ -81,36 +60,14 @@ message UserDefinedTypesResponse {
 message UserDefinedType {
   string type_name = 1;
   repeated ValueMeta value_metas= 2;
-  // more parameters describing a user defined type
 }
 
 message ValueMeta {
   string value_name = 1;
-  // more parameters describing a value in the template
-}
-
-message SqlStringFunctionsRequest {
-}
-
-message SqlSystemFunctionsRequest {
-}
-
-message SqlTimeDateFunctionsRequest {
-}
-
-message SqlNumericFunctionsRequest {
-}
-
-message SqlKeywordsRequest {
 }
 
 message MetaStringResponse{
   string string = 1;
-}
-
-message ProceduresRequest {
-  string language = 1;
-  optional string procedure_name_pattern = 3;
 }
 
 message ProceduresResponse {
@@ -132,20 +89,12 @@ message Procedure {
   }
 }
 
-message ClientInfoPropertiesRequest {
-
-}
-
 message ClientInfoProperties {
   map<string, string> properties = 1;
 }
 
 message ClientInfoPropertiesResponse {
-// ?! WTD
-}
-
-
-message ClientInfoPropertyMetaRequest {
+//WTF?!
 }
 
 message ClientInfoPropertyMetaResponse {
@@ -158,13 +107,6 @@ message ClientInfoPropertyMeta {
   int32 maxlength = 3;
   string description = 4;
 }
-
-
-message FunctionsRequest {
-  string queryLanguage = 1;
-  string functionCategory = 2;
-}
-
 
 message FunctionsResponse {
   repeated Function functions = 1;
