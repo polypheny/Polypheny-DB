@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "protointerface.proto";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "ConnectionResponses";
+
+message ConnectionResponse {
+  bool is_compatible = 1;
+  int32 major_api_version = 2;
+  int32 minor_api_version = 3;
+  optional int64 heartbeat_interval = 4;
+}
+
+message DisconnectionResponse{}
+
+message ConnectionCheckResponse{}
