@@ -57,14 +57,14 @@ public class StatementManager {
 
     public PIUnparameterizedStatement createUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request ) throws PIServiceException {
         synchronized ( client ) {
-            String languageName = request.getStatementLanguageName();
+            String languageName = request.getLanguageName();
             if ( !isSupportedLanguage( languageName ) ) {
                 throw new PIServiceException( "Language " + languageName + " not supported." );
             }
             int statementId = statementIdGenerator.getAndIncrement();
             LogicalNamespace namespace = client.getNamespace();
-            if ( request.hasNamespace() ) {
-                namespace = getNamespace( request.getNamespace() );
+            if ( request.hasNamespaceName() ) {
+                namespace = getNamespace( request.getNamespaceName() );
             }
             assert namespace != null;
             PIUnparameterizedStatement statement = new PIUnparameterizedStatement(
@@ -101,14 +101,14 @@ public class StatementManager {
 
     public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
         synchronized ( client ) {
-            String languageName = request.getStatementLanguageName();
+            String languageName = request.getLanguageName();
             if ( !isSupportedLanguage( languageName ) ) {
                 throw new PIServiceException( "Language " + languageName + " not supported." );
             }
             int statementId = statementIdGenerator.getAndIncrement();
             LogicalNamespace namespace = client.getNamespace();
-            if ( request.hasNamespace() ) {
-                namespace = getNamespace( request.getNamespace() );
+            if ( request.hasNamespaceName() ) {
+                namespace = getNamespace( request.getNamespaceName() );
             }
             assert namespace != null;
             PIPreparedIndexedStatement statement = new PIPreparedIndexedStatement(
@@ -129,14 +129,14 @@ public class StatementManager {
 
     public PIPreparedNamedStatement createNamedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
         synchronized ( client ) {
-            String languageName = request.getStatementLanguageName();
+            String languageName = request.getLanguageName();
             if ( !isSupportedLanguage( languageName ) ) {
                 throw new PIServiceException( "Language " + languageName + " not supported." );
             }
             final int statementId = statementIdGenerator.getAndIncrement();
             LogicalNamespace namespace = client.getNamespace();
-            if ( request.hasNamespace() ) {
-                namespace = getNamespace( request.getNamespace() );
+            if ( request.hasNamespaceName() ) {
+                namespace = getNamespace( request.getNamespaceName() );
             }
             assert namespace != null;
             PIPreparedNamedStatement statement = new PIPreparedNamedStatement(
