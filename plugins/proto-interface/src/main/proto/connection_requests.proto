@@ -18,7 +18,8 @@ message ConnectionPropertiesUpdateRequest {
 }
 
 message ConnectionProperties {
-  bool is_auto_commit = 1;
+  optional bool is_auto_commit = 1;
+  optional string namespace_name = 2;
 }
 
 message DisconnectRequest{}

@@ -19,7 +19,7 @@ message ExecuteUnparameterizedStatementBatchRequest {
   repeated ExecuteUnparameterizedStatementRequest statements = 1;
 }
 
-message PreparedStatementRequest {
+message PrepareStatementRequest {
   string statement_language_name = 1;
   string statement = 2;
   optional string namespace = 3;
@@ -38,7 +38,7 @@ message ExecuteIndexedStatementBatchRequest {
 
 message ExecuteNamedStatementRequest {
   int32 statementId = 1;
-  repeated NamedParameters parameters = 2;
+  NamedParameters parameters = 2;
 }
 
 message IndexedParameters {
