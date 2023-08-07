@@ -21,10 +21,10 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
@@ -35,29 +35,23 @@ public class PIUnparameterizedStatement extends PIStatement {
     PolyImplementation<PolyValue> implementation;
 
 
-    private PIUnparameterizedStatement( Builder builder ) {
+    public PIUnparameterizedStatement( int id, PIClient client, QueryLanguage language, LogicalNamespace namespace, String query ) {
         super(
-                builder.id,
-                builder.client,
-                builder.properties,
-                builder.language,
-                builder.namespace
+                id,
+                client,
+                language,
+                namespace
         );
-        this.query = builder.query;
+        this.query = query;
     }
 
 
     public StatementResult execute() throws Exception {
-        statement = client.getCurrentOrCreateNewTransaction(namespace).createStatement();
+        statement = client.getCurrentOrCreateNewTransaction().createStatement();
         synchronized ( client ) {
             StatementProcessor.execute( this );
             return StatementProcessor.getResult( this );
         }
-    }
-
-
-    public static Builder newBuilder() {
-        return new Builder();
     }
 
 
@@ -85,55 +79,9 @@ public class PIUnparameterizedStatement extends PIStatement {
     }
 
 
-    static class Builder {
-
-        int id;
-        PIClient client;
-        QueryLanguage language;
-        String query;
-        PIStatementProperties properties;
-        LogicalNamespace namespace;
-
-
-        public Builder setId( int id ) {
-            this.id = id;
-            return this;
-        }
-
-
-        public Builder setClient( PIClient client ) {
-            this.client = client;
-            return this;
-        }
-
-
-        public Builder setLanguage( QueryLanguage language ) {
-            this.language = language;
-            return this;
-        }
-
-
-        public Builder setQuery( String query ) {
-            this.query = query;
-            return this;
-        }
-
-
-        public Builder setProperties( PIStatementProperties properties ) {
-            this.properties = properties;
-            return this;
-        }
-
-        public Builder setNamespace( LogicalNamespace logicalNamespace) {
-            this.namespace = logicalNamespace;
-            return this;
-        }
-
-
-        public PIUnparameterizedStatement build() {
-            return new PIUnparameterizedStatement( this );
-        }
-
+    @Override
+    public Transaction getTransaction() {
+        return statement.getTransaction();
     }
 
 }
