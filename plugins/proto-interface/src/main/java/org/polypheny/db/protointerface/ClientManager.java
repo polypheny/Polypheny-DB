@@ -16,6 +16,11 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -24,18 +29,14 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.protointerface.proto.ConnectionRequest;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
 @Slf4j
 public class ClientManager {
+
     private static final long HEARTBEAT_TOLERANCE = 2000;
     @Getter
     private long heartbeatInterval;
@@ -45,88 +46,86 @@ public class ClientManager {
     private final TransactionManager transactionManager;
     private Timer cleanupTimer;
 
-    public ClientManager(PIPlugin.ProtoInterface protoInterface) {
+
+    public ClientManager( PIPlugin.ProtoInterface protoInterface ) {
         this.openConnections = new ConcurrentHashMap<>();
         this.authenticator = protoInterface.getAuthenticator();
         this.transactionManager = protoInterface.getTransactionManager();
-        if (protoInterface.isRequiresHeartbeat()) {
+        if ( protoInterface.isRequiresHeartbeat() ) {
             this.heartbeatInterval = protoInterface.getHeartbeatIntervall();
             this.cleanupTimer = new Timer();
-            cleanupTimer.schedule(createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE);
+            cleanupTimer.schedule( createNewCleanupTask(), 0, heartbeatInterval + HEARTBEAT_TOLERANCE );
         }
         this.heartbeatInterval = 0;
     }
 
 
-    public void unregisterConnection(PIClient client) {
-        synchronized (client) {
+    public void unregisterConnection( PIClient client ) {
+        synchronized ( client ) {
             client.prepareForDisposal();
-            openConnections.remove(client.getClientUUID());
+            openConnections.remove( client.getClientUUID() );
         }
     }
 
 
-    public void registerConnection(ConnectionRequest connectionRequest) throws AuthenticationException, TransactionException, PIServiceException {
-        if (log.isTraceEnabled()) {
-            log.trace("User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid());
+    public void registerConnection( ConnectionRequest connectionRequest ) throws AuthenticationException, TransactionException, PIServiceException {
+        if ( log.isTraceEnabled() ) {
+            log.trace( "User {} tries to establish connection via proto interface.", connectionRequest.getClientUuid() );
         }
         // reject already connected user
-        if (isConnected(connectionRequest.getClientUuid())) {
-            throw new PIServiceException("A user with uid " + connectionRequest.getClientUuid() + "is already connected.");
+        if ( isConnected( connectionRequest.getClientUuid() ) ) {
+            throw new PIServiceException( "A user with uid " + connectionRequest.getClientUuid() + "is already connected." );
         }
-        String username;
-        if (!connectionRequest.hasUsername()) {
-            username = Catalog.USER_NAME;
-        }
-        PIClientProperties properties = getPropertiesOrDefault(connectionRequest);
+        String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
         String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
-        final CatalogUser user = authenticateUser(connectionRequest.getUsername(), password);
-        Transaction transaction = transactionManager.startTransaction(user, null, false, "proto-interface");
-        LogicalNamespace namespace;
-        if (properties.haveNamespaceName()) {
-            try {
-                namespace = Catalog.getInstance().getSnapshot().getNamespace( properties.getNamespaceName() );
-            } catch (Exception e) {
-                throw new PIServiceException("Getting namespace " + properties.getNamespaceName() + " failed.");
-            }
-        } else {
-            namespace = Catalog.getInstance().getSnapshot().getNamespace(Catalog.defaultNamespaceName);
-        }
-        assert namespace != null;
+        CatalogUser user = authenticator.authenticate( username, password );
+        Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
         transaction.commit();
-        properties.updateNamespaceName(namespace.getName());
-        PIClient client = PIClient.newBuilder()
-                .setClientUUID(connectionRequest.getClientUuid())
-                .setTransactionManager(transactionManager)
-                .setCatalogUser(user)
-                .setLogicalNamespace(namespace)
-                .setClientProperties(properties)
-                .build();
-        openConnections.put(connectionRequest.getClientUuid(), client);
-        if (log.isTraceEnabled()) {
-            log.trace("proto-interface established connection to user {}.", connectionRequest.getClientUuid());
+        LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
+        assert namespace != null;
+        boolean isAutocommit = getAutocommitOrDefault( connectionRequest );
+        PIClient client = new PIClient(
+                connectionRequest.getClientUuid(),
+                user,
+                transactionManager,
+                namespace,
+                isAutocommit
+        );
+        openConnections.put( connectionRequest.getClientUuid(), client );
+        if ( log.isTraceEnabled() ) {
+            log.trace( "proto-interface established connection to user {}.", connectionRequest.getClientUuid() );
         }
     }
 
-    private PIClientProperties getPropertiesOrDefault(ConnectionRequest connectionRequest) {
-        if (connectionRequest.hasConnectionProperties()) {
-            return new PIClientProperties(connectionRequest.getConnectionProperties());
+
+    private LogicalNamespace getNamespaceOrDefault( ConnectionRequest connectionRequest ) {
+        String namespaceName = PropertyUtils.DEFAULT_NAMESPACE_NAME;
+        if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
+            namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
         }
-        return PIClientProperties.getDefaultInstance();
-    }
-
-
-    public PIClient getClient(String clientUUID) throws PIServiceException {
-        if (!openConnections.containsKey(clientUUID)) {
-            throw new PIServiceException("Client not registered! Has the server been restarted in the meantime?");
+        try {
+            return Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        } catch ( Exception e ) {
+            throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
         }
-        return openConnections.get(clientUUID);
     }
 
 
-    private CatalogUser authenticateUser(String username, String password) throws AuthenticationException {
-        return authenticator.authenticate(username, password);
+    private boolean getAutocommitOrDefault( ConnectionRequest connectionRequest ) {
+        if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasIsAutoCommit() ) {
+            return connectionRequest.getConnectionProperties().getIsAutoCommit();
+        }
+        return PropertyUtils.AUTOCOMMIT_DEFAULT;
     }
+
+
+    public PIClient getClient( String clientUUID ) throws PIServiceException {
+        if ( !openConnections.containsKey( clientUUID ) ) {
+            throw new PIServiceException( "Client not registered! Has the server been restarted in the meantime?" );
+        }
+        return openConnections.get( clientUUID );
+    }
+
 
     private TimerTask createNewCleanupTask() {
         Runnable runnable = this::unregisterInactiveClients;
@@ -138,15 +137,16 @@ public class ClientManager {
         };
     }
 
+
     private void unregisterInactiveClients() {
         List<PIClient> inactiveClients = openConnections.values().stream()
-                .filter(c -> !c.returnAndResetIsActive()).collect(Collectors.toList());
-        inactiveClients.forEach(this::unregisterConnection);
+                .filter( c -> !c.returnAndResetIsActive() ).collect( Collectors.toList() );
+        inactiveClients.forEach( this::unregisterConnection );
     }
 
 
-    private boolean isConnected(String clientUUID) {
-        return openConnections.containsKey(clientUUID);
+    private boolean isConnected( String clientUUID ) {
+        return openConnections.containsKey( clientUUID );
     }
 
 }

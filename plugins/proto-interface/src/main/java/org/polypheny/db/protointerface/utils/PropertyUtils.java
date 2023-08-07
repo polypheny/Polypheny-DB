@@ -16,29 +16,11 @@
 
 package org.polypheny.db.protointerface.utils;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
+import org.polypheny.db.catalog.Catalog;
 
 public class PropertyUtils {
 
-    public static final String USERNAME_KEY = "user";
-    public static final String PASSWORD_KEY = "password";
-    public static final String AUTOCOMMIT_KEY = "autocommit";
-    public static final String FETCH_SIZE_KEY = "fetchSize";
-
-    private static final Map<String, String> DEFAULT_VALUES =
-            ImmutableMap.<String, String>builder()
-                    .put( AUTOCOMMIT_KEY, "true")
-                    .put( FETCH_SIZE_KEY, "100")
-                    .build();
-
-
-    public static String getDefaultOf( String propertyKey ) throws IllegalArgumentException{
-        String defaultValue = DEFAULT_VALUES.get( propertyKey );
-        if ( defaultValue == null ) {
-            throw new IllegalArgumentException( "Unknown key" );
-        }
-        return defaultValue;
-    }
+    public static final boolean AUTOCOMMIT_DEFAULT = true;
+    public static final String DEFAULT_NAMESPACE_NAME = Catalog.defaultNamespaceName;
 
 }

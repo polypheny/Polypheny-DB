@@ -25,9 +25,9 @@ import org.polypheny.db.protointerface.proto.PreparedStatementSignature;
 import org.polypheny.db.protointerface.proto.ProtoDocument;
 import org.polypheny.db.protointerface.proto.RelationalFrame;
 import org.polypheny.db.protointerface.proto.Row;
-import org.polypheny.db.protointerface.proto.StatementBatchStatus;
+import org.polypheny.db.protointerface.proto.StatementBatchResponse;
+import org.polypheny.db.protointerface.proto.StatementResponse;
 import org.polypheny.db.protointerface.proto.StatementResult;
-import org.polypheny.db.protointerface.proto.StatementStatus;
 import org.polypheny.db.protointerface.statements.PIPreparedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.type.entity.PolyValue;
@@ -35,30 +35,30 @@ import org.polypheny.db.type.entity.PolyValue;
 public class ProtoUtils {
 
 
-    public static StatementStatus createStatus( PIStatement protoInterfaceStatement ) {
-        return StatementStatus.newBuilder()
+    public static StatementResponse createResult( PIStatement protoInterfaceStatement ) {
+        return StatementResponse.newBuilder()
                 .setStatementId( protoInterfaceStatement.getId() )
                 .build();
     }
 
 
-    public static StatementStatus createStatus( PIStatement protoInterfaceStatement, StatementResult result ) {
-        return StatementStatus.newBuilder()
+    public static StatementResponse createResult( PIStatement protoInterfaceStatement, StatementResult result ) {
+        return StatementResponse.newBuilder()
                 .setStatementId( protoInterfaceStatement.getId() )
                 .setResult( result )
                 .build();
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus( int batchId ) {
-        return StatementBatchStatus.newBuilder()
+    public static StatementBatchResponse createStatementBatchStatus( int batchId ) {
+        return StatementBatchResponse.newBuilder()
                 .setBatchId( batchId )
                 .build();
     }
 
 
-    public static StatementBatchStatus createStatementBatchStatus( int batchId, List<Long> updateCounts ) {
-        return StatementBatchStatus.newBuilder()
+    public static StatementBatchResponse createStatementBatchStatus( int batchId, List<Long> updateCounts ) {
+        return StatementBatchResponse.newBuilder()
                 .setBatchId( batchId )
                 .addAllScalars( updateCounts )
                 .build();
