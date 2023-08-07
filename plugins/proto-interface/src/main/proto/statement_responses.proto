@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "value.proto";
+import "protointerface.proto";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "StatementResponses";
+
+message StatementResponse {
+  int32 statement_id = 1;
+  optional StatementResult result = 2;
+}
+
+message StatementResult {
+  int64 scalar = 1;
+  optional Frame frame = 2;
+}
+
+message StatementBatchResponse {
+  int32 batch_id = 1;
+  repeated int64 scalars = 2;
+}
+
+message PreparedStatementSignature {
+  int32 statement_id = 1;
+  repeated ParameterMeta parameter_metas = 2;
+}
+
+message ParameterMeta {
+  int32 precision = 1;
+  int32 scale = 2;
+  string type_name = 3;
+  optional string parameter_name = 4;
+  string name = 5;
+}
+
+message CloseStatementResponse {
+}
+
+
+
+

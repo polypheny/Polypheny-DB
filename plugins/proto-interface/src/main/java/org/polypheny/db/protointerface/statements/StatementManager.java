@@ -25,9 +25,7 @@ import org.polypheny.db.protointerface.PIStatementProperties;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.PreparedStatement;
 import org.polypheny.db.protointerface.proto.UnparameterizedStatement;
-import org.polypheny.db.protointerface.proto.UnparameterizedStatementBatch;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,14 +37,14 @@ public class StatementManager {
 
     private final AtomicInteger statementIdGenerator;
     private final PIClient protoInterfaceClient;
-    private ConcurrentHashMap<Integer, PIStatement> openStatments;
+    private ConcurrentHashMap<Integer, PIStatement> openStatements;
     private ConcurrentHashMap<Integer, PIUnparameterizedStatementBatch> openUnparameterizedBatches;
 
 
     public StatementManager(PIClient protoInterfaceClient) {
         this.protoInterfaceClient = protoInterfaceClient;
         statementIdGenerator = new AtomicInteger();
-        openStatments = new ConcurrentHashMap<>();
+        openStatements = new ConcurrentHashMap<>();
         openUnparameterizedBatches = new ConcurrentHashMap<>();
     }
 
@@ -83,7 +81,7 @@ public class StatementManager {
                     .setProperties(getPropertiesOrDefault(statement))
                     .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
                     .build();
-            openStatments.put(statementId, interfaceStatement);
+            openStatements.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
                 log.trace("created statement {}", interfaceStatement);
             }
@@ -137,7 +135,7 @@ public class StatementManager {
                     .setProperties(getPropertiesOrDefault(statement))
                     .setNamespace( Catalog.getInstance().getSnapshot().getNamespace(getNamespaceNameOrDefault( statement )) )
                     .build();
-            openStatments.put(statementId, interfaceStatement);
+            openStatements.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
                 log.trace("created named prepared statement {}", interfaceStatement);
             }
@@ -160,7 +158,7 @@ public class StatementManager {
                     .setProperties(getPropertiesOrDefault(statement))
                     .setClient(protoInterfaceClient)
                     .build();
-            openStatments.put(statementId, interfaceStatement);
+            openStatements.put(statementId, interfaceStatement);
             if (log.isTraceEnabled()) {
                 log.trace("created named prepared statement {}", interfaceStatement);
             }
@@ -171,7 +169,7 @@ public class StatementManager {
     public void closeAll() {
         synchronized(protoInterfaceClient) {
             openUnparameterizedBatches.values().forEach(this::closeBatch);
-            openStatments.values().forEach(s -> closeStatement(s.getId()));
+            openStatements.values().forEach(s -> closeStatement(s.getId()));
         }
     }
 
@@ -186,7 +184,7 @@ public class StatementManager {
 
     private void closeStatement(int statementId) {
         synchronized(protoInterfaceClient) {
-            PIStatement statementToClose = openStatments.remove(statementId);
+            PIStatement statementToClose = openStatements.remove(statementId);
             if (statementToClose == null) {
                 return;
             }
@@ -208,7 +206,7 @@ public class StatementManager {
 
 
     public PIStatement getStatement(int statementId) {
-        PIStatement statement = openStatments.get(statementId);
+        PIStatement statement = openStatements.get(statementId);
         if (statement == null) {
             throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
@@ -217,7 +215,7 @@ public class StatementManager {
 
 
     public PIPreparedNamedStatement getNamedPreparedStatement(int statementId) throws PIServiceException {
-        PIStatement statement = openStatments.get(statementId);
+        PIStatement statement = openStatements.get(statementId);
         if (statement == null) {
             throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
@@ -229,7 +227,7 @@ public class StatementManager {
 
 
     public PIPreparedIndexedStatement getIndexedPreparedStatement(int statementId) throws PIServiceException {
-        PIStatement statement = openStatments.get(statementId);
+        PIStatement statement = openStatements.get(statementId);
         if (statement == null) {
             throw new PIServiceException("A statement with id " + statementId + " does not exist for that client");
         }
