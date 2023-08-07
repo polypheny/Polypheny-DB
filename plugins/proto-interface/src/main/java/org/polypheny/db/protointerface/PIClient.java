@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.units.qual.C;
 import org.polypheny.db.catalog.Catalog;
@@ -42,6 +43,8 @@ public class PIClient {
     private PIClientProperties properties;
     @Getter
     private PIClientInfoProperties PIClientInfoProperties;
+    @Getter
+    @Setter
     private boolean isAutoCommit;
     private boolean isActive;
 
