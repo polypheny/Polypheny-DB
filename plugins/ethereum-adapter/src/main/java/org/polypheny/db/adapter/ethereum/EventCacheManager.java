@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,15 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
+import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.protocol.core.methods.response.EthLog;
+import org.web3j.protocol.core.methods.response.Log;
+import org.web3j.tx.Contract.EventValuesWithLog;
+import org.web3j.abi.EventEncoder;
+
 
 @Slf4j
 public class EventCacheManager {
@@ -168,7 +177,7 @@ public class EventCacheManager {
      * @param event The event to be written to the store.
      * @param tableName The name of the table where the event should be stored.
      */
-    void writeToStore( Event event, String tableName ) {
+    void writeToStore( String tableName, List<List<Object>> logResults ) {
         // Create a fresh transaction. A transaction can consist of multiple statements,
         // each representing a single SQL command to be executed as part of the transaction.
         Transaction transaction = getTransaction();
@@ -180,9 +189,8 @@ public class EventCacheManager {
         AlgBuilder builder = AlgBuilder.create( statement );
 
         // TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
-        AlgOptSchema algOptSchema = (AlgOptSchema) transaction.getSchema();
-        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList(EthereumPlugin.HIDDEN_PREFIX + tableName) );
-
+        AlgOptSchema algOptSchema = transaction.getCatalogReader();
+        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( EthereumPlugin.HIDDEN_PREFIX + tableName ) );
 
         // In Polypheny, algebra operations are used to represent various SQL operations such as scans, projections, filters, etc.
         // Unlike typical handling of DML (Data Manipulation Language) operations, Polypheny can include these operations as well.
@@ -213,7 +221,30 @@ public class EventCacheManager {
         // TODO: Correctly fill in the dynamic parameters with the correct information from the event (event.getIndexedParameters().get( i++ ).toString())
         int i = 0;
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
-            statement.getDataContext().addParameterValues( field.getIndex(), field.getType(), List.of( event.getIndexedParameters().get( i++ ).toString() ) ); // take the correct indexedParameters - at the moment we only add one row at a time, could refactor to add the whole batch
+            long idx = field.getIndex();
+            AlgDataType type = field.getType();
+
+            // Extracting the values for the current field from the log results
+            List<Object> fieldValues = new ArrayList<>();
+            for ( List<Object> logResult : logResults ) {
+                Object value = logResult.get( i );
+                Object processedValue;
+                // temporarily
+                if ( value instanceof Address ) {
+                    processedValue = ((Address) value).toString();
+                } else if ( value instanceof Uint256 ) {
+                    processedValue = ((Uint256) value).getValue();
+                } else if (value instanceof BigInteger) {
+                    processedValue = value; // Already a BigInteger
+                } else if (value instanceof Boolean) {
+                    processedValue = value; // No need to convert boolean
+                } else {
+                    processedValue = value.toString(); // handle other types as needed
+                }
+                fieldValues.add( processedValue );
+            }
+            i++;
+            statement.getDataContext().addParameterValues( idx, type, fieldValues ); // take the correct indexedParameters - at the moment we only add one row at a time, could refactor to add the whole batch
         }
 
         // execute the transaction (query will be executed)
