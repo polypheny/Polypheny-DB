@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "value.proto";
-import "protointerface.proto";
 import "relational_frame.proto";
 import "graph_frame.proto";
 import "document_frame.proto";
