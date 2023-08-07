@@ -33,6 +33,7 @@ message ProtoValue {
     ProtoPath path = 22;
     ProtoGraph graph = 23;
     ProtoArray array = 24;
+    ProtoRowId row_id= 25;
   }
   enum ProtoValueType {
     UNSPECIFIED = 0;
@@ -92,6 +93,7 @@ message ProtoValue {
     MULTISET = 54;
     ANY = 55;
     USER_DEFINED_TYPE = 56;
+    ROW_ID = 57;
   }
 }
 
@@ -257,4 +259,8 @@ message ProtoGraphPropertyHolder {
   ProtoString variable_name = 2;
   ProtoMap properties = 3; //Dictionary = ProtoMap<ProtoString, ProtoValue>
   ProtoList labels = 4; //ProtoList<ProtoString>
+}
+
+message ProtoRowId {
+  string row_id = 1;
 }
