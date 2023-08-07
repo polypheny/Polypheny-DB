@@ -1,0 +1,56 @@
+syntax = "proto3";
+import "namespace_meta.proto";
+
+option java_multiple_files = true;
+option java_package = "org.polypheny.db.protointerface.proto";
+option java_outer_classname = "MetaRequests";
+
+package polypheny.protointerface;
+
+message DbmsVersionRequest{
+}
+
+message LanguageRequest {}
+
+message DatabasesRequest {
+}
+
+message TableTypesRequest {
+}
+
+message TypesRequest {
+}
+
+message UserDefinedTypesRequest {
+}
+
+message SqlStringFunctionsRequest {
+}
+
+message SqlSystemFunctionsRequest {
+}
+
+message SqlTimeDateFunctionsRequest {
+}
+
+message SqlNumericFunctionsRequest {
+}
+
+message SqlKeywordsRequest {
+}
+
+message ProceduresRequest {
+  string language = 1;
+  optional string procedure_name_pattern = 3;
+}
+
+message ClientInfoPropertiesRequest {
+}
+
+message ClientInfoPropertyMetaRequest {
+}
+
+message FunctionsRequest {
+  string queryLanguage = 1;
+  string functionCategory = 2;
+}
