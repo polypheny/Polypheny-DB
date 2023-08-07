@@ -86,6 +86,7 @@ import org.polypheny.db.protointerface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.protointerface.statements.PIUnparameterizedStatementBatch;
+import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.protointerface.utils.ProtoValueDeserializer;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
@@ -303,7 +304,9 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         PIClient client = getClient();
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         responseObserver.onNext( ProtoUtils.createResult( statement ) );
-        StatementResult result = statement.execute();
+        StatementResult result = request.hasFetchSize()
+                ? statement.execute( request.getFetchSize() )
+                : statement.execute( PropertyUtils.DEFAULT_FETCH_SIZE );
         responseObserver.onNext( ProtoUtils.createResult( statement, result ) );
         responseObserver.onCompleted();
     }
@@ -336,7 +339,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void executeIndexedStatement( ExecuteIndexedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ) ) );
+        int fetchSize = request.hasFetchSize()
+                ? request.getFetchSize()
+                : PropertyUtils.DEFAULT_FETCH_SIZE;
+        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserializeParameterList( request.getParameters().getParametersList() ), fetchSize ) );
         responseObserver.onCompleted();
     }
 
@@ -368,7 +374,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void executeNamedStatement( ExecuteNamedStatementRequest request, StreamObserver<StatementResult> responseObserver ) {
         PIClient client = getClient();
         PIPreparedNamedStatement statement = client.getStatementManager().getNamedPreparedStatement( request.getStatementId() );
-        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ) ) );
+        int fetchSize = request.hasFetchSize()
+                ? request.getFetchSize()
+                : PropertyUtils.DEFAULT_FETCH_SIZE;
+        responseObserver.onNext( statement.execute( ProtoValueDeserializer.deserilaizeParameterMap( request.getParameters().getParametersMap() ), fetchSize ) );
         responseObserver.onCompleted();
     }
 
@@ -378,7 +387,10 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void fetchResult( FetchRequest request, StreamObserver<Frame> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        Frame frame = StatementProcessor.fetch( statement );
+        int fetchSize = request.hasFetchSize()
+                ? request.getFetchSize()
+                : PropertyUtils.DEFAULT_FETCH_SIZE;
+        Frame frame = StatementProcessor.fetch( statement, fetchSize );
         responseObserver.onNext( frame );
         responseObserver.onCompleted();
     }
@@ -415,13 +427,13 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void updateConnectionProperties( ConnectionPropertiesUpdateRequest request, StreamObserver<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
-        if (properties.hasIsAutoCommit()) {
+        if ( properties.hasIsAutoCommit() ) {
             client.setAutoCommit( properties.getIsAutoCommit() );
         }
-        if (properties.hasNamespaceName()) {
+        if ( properties.hasNamespaceName() ) {
             String namespaceName = properties.getNamespaceName();
             try {
-                client.setNamespace(Catalog.getInstance().getSnapshot().getNamespace( namespaceName ));
+                client.setNamespace( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ) );
             } catch ( Exception e ) {
                 throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
             }
