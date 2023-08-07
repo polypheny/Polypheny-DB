@@ -6,6 +6,9 @@ import "document_frame.proto";
 import "meta.proto";
 import "namespace_meta.proto";
 import "statement_requests.proto";
+import "statement_responses.proto";
+import "transaction_requests.proto";
+import "transactions_responses.proto";
 
 
 option java_multiple_files = true;
@@ -62,51 +65,15 @@ service ProtoInterface {
   rpc UpdateStatementProperties(StatementProperties) returns (StatementPropertiesUpdateResponse) {}
 }
 
-message ConnectionCheckRequest{}
 
-message ConnectionCheckResponse{}
 
-message DisconnectionRequest{}
-message DisconnectionResponse{}
 
-message Property {
-  oneof value {
-    string string_value = 1;
-    int32 int_value = 2;
-    int64 long_value = 3;
-    bool boolean_value = 4;
-  }
-}
 
-message ConnectionRequest {
-  int32 major_api_version = 1;
-  int32 minor_api_version = 2;
-  string client_uuid = 3;
-  optional string username = 5;
-  optional string password = 6;
-  optional ConnectionProperties connection_properties = 4;
-}
-
-message ConnectionReply {
-  bool is_compatible = 1;
-  int32 major_api_version = 2;
-  int32 minor_api_version = 3;
-  optional int64 heartbeat_interval = 4;
-}
-
-message ConnectionProperties {
-  bool is_auto_commit = 1;
-}
 
 
 message ConnectionPropertiesUpdateResponse {
 }
 
-message CommitRequest {}
-message CommitResponse{}
-
-message RollbackRequest {}
-message RollbackResponse{}
 
 message FetchRequest {
   int32 statement_id = 1;
