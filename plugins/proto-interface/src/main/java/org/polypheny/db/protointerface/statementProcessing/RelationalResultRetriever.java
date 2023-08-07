@@ -44,7 +44,7 @@ public class RelationalResultRetriever extends ResultRetriever {
     }
 
 
-    public StatementResult getResult( PIStatement piStatement ) throws Exception {
+    public StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -78,7 +78,7 @@ public class RelationalResultRetriever extends ResultRetriever {
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
-        Frame frame = fetch( piStatement );
+        Frame frame = fetch( piStatement, fetchSize);
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
             //TODO TH: special handling for result set updates. Do we need to wait with committing until all changes have been done?
@@ -89,7 +89,7 @@ public class RelationalResultRetriever extends ResultRetriever {
 
 
     @Override
-    public Frame fetch( PIStatement piStatement ) {
+    public Frame fetch( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -98,7 +98,6 @@ public class RelationalResultRetriever extends ResultRetriever {
                     9000
             );
         }
-        int fetchSize = piStatement.getProperties().getFetchSize();
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
         if (implementation == null) {
