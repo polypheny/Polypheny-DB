@@ -5,6 +5,7 @@ import "graph_frame.proto";
 import "document_frame.proto";
 import "meta.proto";
 import "namespace_meta.proto";
+import "statement_requests.proto";
 
 
 option java_multiple_files = true;
@@ -27,47 +28,35 @@ service ProtoInterface {
   rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse){}
   rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
   rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
-
   rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
   rpc getNamespace(NamespaceRequest) returns (Namespace) {}
   rpc SearchEntities(EntitiesRequest) returns (EntitiesResponse) {}
-
-
   rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
   rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
-
-
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionReply) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}
   rpc Disconnect(DisconnectionRequest) returns (DisconnectionResponse) {}
-
   rpc GetClientInfoProperties(ClientInfoPropertiesRequest) returns (ClientInfoProperties) {}
   rpc SetClientInfoProperties(ClientInfoProperties) returns (ClientInfoPropertiesResponse) {}
-
   // Unparameterized statements
   rpc ExecuteUnparameterizedStatement(UnparameterizedStatement) returns (stream StatementStatus) {}
   rpc ExecuteUnparameterizedStatementBatch(UnparameterizedStatementBatch) returns (stream StatementBatchStatus) {}
-
-
   // Prepared Statements
   rpc PrepareIndexedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
   rpc ExecuteIndexedStatement(ParameterList) returns (StatementResult){}
   rpc ExecuteIndexedStatementBatch(IndexedParameterBatch) returns (StatementBatchStatus){}
   rpc PrepareNamedStatement(PreparedStatement) returns (PreparedStatementSignature) {}
   rpc ExecuteNamedStatement(ParameterSet) returns (StatementResult){}
-
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
-
   // Transaction handling
   rpc CloseStatement(CloseStatementRequest) returns (CloseStatementResponse) {}
   rpc CommitTransaction(CommitRequest) returns (CommitResponse) {}
   rpc RollbackTransaction(RollbackRequest) returns (RollbackResponse) {}
-
   // Properties
   rpc UpdateConnectionProperties(ConnectionProperties) returns (ConnectionPropertiesUpdateResponse){}
   rpc UpdateStatementProperties(StatementProperties) returns (StatementPropertiesUpdateResponse) {}
@@ -107,44 +96,11 @@ message ConnectionReply {
 
 message ConnectionProperties {
   bool is_auto_commit = 1;
-  bool is_read_only = 2;
-  Isolation isolation = 3;
-  int32 network_timeout = 4;
-  optional string namespace_name = 5;
-
-  enum Isolation {
-    ISOLATION_UNSPECIFIED = 0;
-    COMMITTED = 1;
-    DIRTY = 2;
-    SERIALIZABLE = 3;
-    REPEATABLE_READ = 4;
-  }
 }
 
 
 message ConnectionPropertiesUpdateResponse {
 }
-
-message StatementProperties{
-  int32 statement_id = 1;
-  ResultOperations update_behaviour = 2;
-  int32 fetch_size = 3;
-  bool reverse_fetch = 4;
-  int64 max_total_fetch_size = 5;
-  bool does_escape_processing = 6;
-  bool is_poolable = 7;
-
-
-  enum ResultOperations {
-    RESULT_OPERATIONS_UNSPECIFIED = 0;
-    READ_ONLY = 1;
-    READ_WRITE = 2;
-  }
-}
-
-message StatementPropertiesUpdateResponse {
-}
-
 
 message CommitRequest {}
 message CommitResponse{}
@@ -152,78 +108,8 @@ message CommitResponse{}
 message RollbackRequest {}
 message RollbackResponse{}
 
-message StatementBatchStatus {
-  int32 batch_id = 1;
-  repeated int64 scalars = 2;
-}
-
-message StatementStatus {
-  int32 statement_id = 1;
-  optional StatementResult result = 2;
-}
-
-message PreparedStatementSignature{
-  int32 statement_id = 1;
-  repeated ParameterMeta parameter_metas = 2;
-}
-
-message ParameterMeta {
-  int32 precision = 1;
-  int32 scale = 2;
-  string type_name = 3;
-  optional string parameter_name = 4;
-  string name = 5;
-}
-
 message FetchRequest {
   int32 statement_id = 1;
-}
-
-message UnparameterizedStatement {
-  string statement_language_name = 1;
-  string statement = 2;
-  optional StatementProperties properties = 3;
-  optional string namespaceName = 4;
-}
-
-message UnparameterizedStatementBatch {
-  repeated UnparameterizedStatement statements = 1;
-}
-
-message CloseStatementRequest {
-  int32 statement_id = 1;
-}
-
-message CloseStatementResponse {
-}
-
-
-
-message PreparedStatement {
-  string statement_language_name = 1;
-  string statement = 2;
-  optional StatementProperties properties = 3;
-  optional string namespaceName = 4;
-}
-
-message ParameterList {
-  int32 statementId = 1;
-  repeated ProtoValue parameters = 2;
-}
-
-message ParameterSet {
-  int32 statementId = 1;
-  map<string, ProtoValue> parameters = 2;
-}
-
-message IndexedParameterBatch {
-  int32 statement_id = 1;
-  repeated ParameterList parameter_lists = 2;
-}
-
-message StatementResult {
-  int64 scalar = 1;
-  optional Frame frame = 2;
 }
 
 message Frame {
