@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.protointerface.proto.IndexedParameters;
 import org.polypheny.db.protointerface.proto.ParameterList;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
-import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -45,7 +45,7 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class ProtoValueDeserializer {
 
-    public static List<List<PolyValue>> deserializeParameterLists( List<ParameterList> parameterListsList ) {
+    public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList ) {
         return parameterListsList.stream()
                 .map( parameterList -> deserializeParameterList( parameterList.getParametersList() ) )
                 .collect( Collectors.toList() );
@@ -57,7 +57,7 @@ public class ProtoValueDeserializer {
     }
 
 
-    public static Map<String, PolyValue> deserilaizeValueMap( Map<String, ProtoValue> valueMap ) {
+    public static Map<String, PolyValue> deserilaizeParameterMap( Map<String, ProtoValue> valueMap ) {
         Map<String, PolyValue> deserializedValues = new HashMap<>();
         valueMap.forEach( ( name, value ) -> deserializedValues.put( name, deserializeProtoValue( value ) ) );
         return deserializedValues;
