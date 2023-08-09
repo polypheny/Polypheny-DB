@@ -17,10 +17,14 @@
 package org.polypheny.db.jupyter;
 
 import io.javalin.http.Context;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.config.ConfigString;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -29,20 +33,20 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.HttpServer.HandlerType;
 
-import java.io.File;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
 @Slf4j
 public class JupyterPlugin extends Plugin {
 
+    private final static String CONFIG_CONTAINER_KEY = "jupyter/container_id";
+    private final static String CONFIG_TOKEN_KEY = "jupyter/token";
+    private static final int JUPYTER_PORT = 8888;
     private String token;
-    private final int port = 8888;
     public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";  // notebook storage location inside container
     private DockerContainer container;
     private JupyterProxy proxy;
@@ -55,6 +59,10 @@ public class JupyterPlugin extends Plugin {
      */
     public JupyterPlugin( PluginWrapper wrapper ) {
         super( wrapper );
+        Config tokenConfig = new ConfigString( CONFIG_TOKEN_KEY, "" );
+        ConfigManager.getInstance().registerConfig( tokenConfig );
+        Config containerIdConfig = new ConfigString( CONFIG_CONTAINER_KEY, "" );
+        ConfigManager.getInstance().registerConfig( containerIdConfig );
     }
 
 
@@ -80,25 +88,31 @@ public class JupyterPlugin extends Plugin {
      * @return true if the jupyter server was successfully deployed, false otherwise
      */
     private boolean startContainer() {
-        token = generateToken();
+        token = ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).getString();
+        if ( token.isEmpty() ) {
+            token = generateToken();
+            ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).setString( token );
+        }
         log.trace( "Token: {}", token );
-        PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-        File rootPath = fileSystemManager.registerNewFolder( "data/jupyter" );
         try {
-            // Just take the first docker instance
-            DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().findFirst().get();
-            this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server", "jupyter-container" )
-                    //.withBindMount( rootPath.getAbsolutePath(), SERVER_TARGET_PATH )
-                    .withCommand( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
-                    .createAndStart();
+            Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
+            if ( maybeContainer.isEmpty() ) {
+                // Just take the first docker instance
+                DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().findFirst().get();
+                this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server", "jupyter-container" )
+                        .withCommand( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
+                        .createAndStart();
 
-            if ( !container.waitTillStarted( this::testConnection, 20000 ) ) {
-                container.destroy();
-                throw new RuntimeException( "Failed to start jupyter container" );
+                if ( !this.container.waitTillStarted( this::testConnection, 20000 ) ) {
+                    this.container.destroy();
+                    throw new RuntimeException( "Failed to start jupyter container" );
+                }
+                ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( this.container.getContainerId() );
+                log.info( "Jupyter container has been deployed." );
+            } else {
+                this.container = maybeContainer.get();
             }
-            log.info( "Jupyter container has been deployed." );
             return true;
-
         } catch ( Exception e ) {
             e.printStackTrace();
             log.warn( "Unable to deploy Jupyter container." );
@@ -108,7 +122,7 @@ public class JupyterPlugin extends Plugin {
 
 
     public void onContainerRunning() {
-        HostAndPort hostAndPort = container.connectToContainer( port );
+        HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
         proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
         registerEndpoints();
         pluginLoaded = true;
@@ -117,6 +131,8 @@ public class JupyterPlugin extends Plugin {
 
     private void stopContainer() {
         if ( container != null ) {
+            ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( "" );
+            ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).setString( "" );
             container.destroy();
         }
     }
@@ -127,7 +143,7 @@ public class JupyterPlugin extends Plugin {
         JupyterSessionManager.getInstance().reset();
         log.info( "Restarting Jupyter container..." );
         if ( startContainer() ) {
-            HostAndPort hostAndPort = container.connectToContainer( port );
+            HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
             proxy.setClient( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
@@ -192,7 +208,7 @@ public class JupyterPlugin extends Plugin {
         if ( container == null ) {
             return false;
         }
-        HostAndPort hostAndPort = container.connectToContainer( port );
+        HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
         JupyterClient client = new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() );
         return client.testConnection();
     }

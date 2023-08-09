@@ -17,16 +17,26 @@
 package org.polypheny.db.jupyter;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Optional;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
+import org.polypheny.db.jupyter.JupyterMapFS.JupyterMapFSException;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
 import org.polypheny.db.jupyter.model.language.JupyterLanguageFactory;
+import org.polypheny.db.jupyter.model.request.ContentsCreateRequest;
+import org.polypheny.db.jupyter.model.request.ContentsRenameRequest;
+import org.polypheny.db.jupyter.model.request.ContentsSaveRequest;
 import org.polypheny.db.jupyter.model.response.NotebookContentModel;
 import org.polypheny.db.jupyter.model.response.NotebookModel;
 import org.polypheny.db.webui.Crud;
@@ -38,6 +48,7 @@ public class JupyterProxy {
     @Setter
     private JupyterClient client;
     private final Gson gson = new Gson();
+    private final JupyterMapFS fs = new JupyterMapFS();
 
 
     public JupyterProxy( JupyterClient client ) {
@@ -67,7 +78,15 @@ public class JupyterProxy {
         String content = ctx.queryParam( "content" );
         String format = ctx.queryParam( "format" );
         String path = ctx.pathParam( "path" );
-        forward( ctx, () -> client.getContents( path, content == null ? "1" : content, format ) );
+
+        try {
+            String response = fs.getContents( path, content == null || content.equals( "1" ), format );
+            ctx.contentType( "application/json" );
+            ctx.status( 200 );
+            ctx.result( response );
+        } catch ( JupyterMapFSException e ) {
+            error( ctx, e );
+        }
     }
 
 
@@ -78,20 +97,14 @@ public class JupyterProxy {
     public void file( final Context ctx, Crud crud ) {
         String path = ctx.pathParam( "path" );
         try {
-            HttpResponse<String> response = client.getFileBase64( path );
-            JsonObject body = gson.fromJson( response.body(), JsonObject.class );
-            String base64 = body.get( "content" ).getAsString().replace( "\n", "" );
-            byte[] data = Base64.getDecoder().decode( base64.getBytes( StandardCharsets.UTF_8 ) );
-            String mimetype = body.get( "mimetype" ).getAsString();
-            ctx.contentType( mimetype );
-            ctx.result( data );
+            byte[] content = fs.getContent( path.replaceFirst( "/file", "" ) );
 
-        } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).result( e.getMsg() );
-        } catch ( IllegalArgumentException e ) {
-            ctx.status( 404 ).result( "Invalid file" );
+            ctx.status( 200 );
+            ctx.contentType( MimetypeFromExtension.guessMimetype( path ) );
+            ctx.result( content );
+        } catch ( JupyterMapFSException e ) {
+            error( ctx, e );
         }
-
     }
 
 
@@ -122,8 +135,8 @@ public class JupyterProxy {
             return;
         }
         try {
-            HttpResponse<String> response = client.getContents( path, "1", null );
-            NotebookContentModel content = gson.fromJson( response.body(), NotebookContentModel.class );
+            String response = fs.getContents( path, true, null );
+            NotebookContentModel content = gson.fromJson( response, NotebookContentModel.class );
             NotebookModel nb = content.getContent();
             if ( nb == null ) {
                 ctx.status( 404 ).result( "Target must be a notebook" );
@@ -131,8 +144,46 @@ public class JupyterProxy {
             }
             nb.exportCells( exporter );
             ctx.json( content );
-        } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).result( e.getMsg() );
+        } catch ( JupyterMapFSException e ) {
+            error( ctx, e );
+        }
+    }
+
+
+    private void duplicateFile( final Context ctx, String parentPath, String copyFrom ) {
+        if ( !fs.hasFile( copyFrom ) ) {
+            error( ctx, 404, "No such file or directory" );
+            return;
+        }
+
+        ByteBuffer contents;
+        try {
+            contents = ByteBuffer.wrap( fs.getContent( copyFrom ) );
+        } catch ( JupyterMapFSException e ) {
+            error( ctx, e );
+            return;
+        }
+
+        String[] parts = copyFrom.split( "/" );
+        String origName = parts[parts.length - 1];
+
+        Optional<String> file;
+        String[] nameParts = origName.split( "\\." );
+        String origFirstPart = nameParts[0];
+        for ( int i = 1; i < 100; i++ ) {
+            nameParts[0] = origFirstPart + "-Copy" + i;
+            String newFilename = String.join( ".", nameParts );
+            try {
+                file = fs.createFile( parentPath, newFilename, contents );
+                if ( file.isPresent() ) {
+                    ctx.status( 201 );
+                    ctx.result( file.get() );
+                    break;
+                }
+            } catch ( JupyterMapFSException e ) {
+                error( ctx, e );
+                return;
+            }
         }
     }
 
@@ -141,7 +192,53 @@ public class JupyterProxy {
     public void createFile( final Context ctx, Crud crud ) {
         String parentPath = ctx.pathParam( "parentPath" );
         String body = ctx.body();
-        forward( ctx, () -> client.createFile( parentPath, body ) );
+        ContentsCreateRequest request = gson.fromJson( body, ContentsCreateRequest.class );
+
+        if ( request.getCopyFrom() == null ) {
+            String content = null;
+            // New file
+            for ( int i = 0; i < 100; i++ ) {
+                String name;
+                Optional<String> file;
+                try {
+                    switch ( request.getType() ) {
+                        case "notebook":
+                            name = i == 0 ? "Untitled.ipynb" : String.format( "Untitled%d.ipynb", i );
+                            String defaultContent = "{\"cells\": [], \"metadata\": {}, \"nbformat\": 4, \"nbformat_minor\": 5}";
+                            file = fs.createFile( parentPath, name, defaultContent );
+                            break;
+                        case "file":
+                            name = (i == 0 ? "untitled" : String.format( "untitled%d", i )) + (request.getExt() == null ? "" : request.getExt());
+                            file = fs.createFile( parentPath, name, "" );
+                            break;
+                        case "directory":
+                            name = i == 0 ? "Untitled Folder" : String.format( "Untitled Folder %d", i );
+                            file = fs.createDirectory( parentPath, name );
+                            break;
+                        default:
+                            error( ctx, 400, "Type " + request.getType() + " is invalid" );
+                            return;
+                    }
+                    if ( file.isPresent() ) {
+                        content = file.get();
+                        break;
+                    }
+                } catch ( JupyterMapFSException e ) {
+                    error( ctx, e );
+                    return;
+                }
+            }
+
+            if ( content == null ) {
+                error( ctx, 500, "Internal server error" );
+                return;
+            }
+
+            ctx.status( 201 );
+            ctx.result( content );
+        } else {
+            duplicateFile( ctx, parentPath, request.getCopyFrom() );
+        }
     }
 
 
@@ -174,7 +271,20 @@ public class JupyterProxy {
     public void moveFile( final Context ctx, Crud crud ) {
         String filePath = ctx.pathParam( "filePath" );
         String body = ctx.body();
-        forward( ctx, () -> client.moveFile( filePath, body ) );
+
+        ContentsRenameRequest request = gson.fromJson( body, ContentsRenameRequest.class );
+
+        if ( !fs.hasFile( filePath ) ) {
+            error( ctx, 404, "No such file or directory" );
+        } else {
+            try {
+                String content = fs.moveFile( filePath, request.getPath() );
+                ctx.status( 200 );
+                ctx.result( content );
+            } catch ( JupyterMapFSException e ) {
+                error( ctx, e );
+            }
+        }
     }
 
 
@@ -182,7 +292,82 @@ public class JupyterProxy {
     public void uploadFile( final Context ctx, Crud crud ) {
         String filePath = ctx.pathParam( "filePath" );
         String body = ctx.body();
-        forward( ctx, () -> client.putFile( filePath, body ) );
+
+        String type;
+        try {
+            JsonObject o = gson.fromJson( body, JsonObject.class );
+            JsonElement el = o.get( "type" );
+            type = el.getAsString();
+        } catch ( ClassCastException | IllegalStateException ignore ) {
+            error( ctx, 400, "Bad request" );
+            return;
+        }
+
+        final byte[] content;
+        if ( type.equals( "notebook" ) ) {
+            Type contentType = new TypeToken<ContentsSaveRequest<NotebookModel>>() {
+            }.getType();
+            ContentsSaveRequest<NotebookModel> request = gson.fromJson( body, contentType );
+            content = gson.toJson( request.getContent() ).getBytes();
+        } else {
+            Type contentType = new TypeToken<ContentsSaveRequest<String>>() {
+            }.getType();
+            ContentsSaveRequest<String> request = gson.fromJson( body, contentType );
+            String format = request.getFormat();
+            if ( request.getContent() == null ) {
+                content = null;
+            } else {
+                if ( format.equals( "base64" ) ) {
+                    content = Base64.getDecoder().decode( request.getContent() );
+                } else if ( format.equals( "text" ) ) {
+                    content = request.getContent().getBytes();
+                } else {
+                    error( ctx, 400, "Unknown format " + format );
+                    return;
+                }
+            }
+        }
+
+        if ( !fs.hasFile( filePath ) ) {
+            String[] parts = filePath.split( "/" );
+            String name = parts[parts.length - 1];
+            String path = String.join( "/", Arrays.asList( parts ).subList( 0, parts.length - 1 ) );
+
+            ByteBuffer defaultContent = ByteBuffer.wrap( new byte[]{} );
+            try {
+                Optional<String> result;
+                switch ( type ) {
+                    case "notebook":
+                        defaultContent = StandardCharsets.UTF_8.encode( "{\"cells\": [], \"metadata\": {}, \"nbformat\": 4, \"nbformat_minor\": 5}" );
+                        // fallthrough
+                    case "file":
+                        result = fs.createFile( path, name, content == null ? defaultContent : ByteBuffer.wrap( content ) );
+                        break;
+                    case "directory":
+                        result = fs.createDirectory( path, name );
+                        break;
+                    default:
+                        error( ctx, 400, "Unknown type " + type );
+                        return;
+                }
+                if ( result.isPresent() ) {
+                    ctx.status( 201 );
+                    ctx.result( result.get() );
+                } else {
+                    error( ctx, 500, "Failed to create file" );
+                }
+            } catch ( JupyterMapFSException e ) {
+                error( ctx, e );
+            }
+        } else {
+            try {
+                String result = fs.putFile( filePath, content );
+                ctx.status( 200 );
+                ctx.result( result );
+            } catch ( JupyterMapFSException e ) {
+                error( ctx, e );
+            }
+        }
     }
 
 
@@ -195,7 +380,16 @@ public class JupyterProxy {
 
     public void deleteFile( final Context ctx, Crud crud ) {
         String filePath = ctx.pathParam( "filePath" );
-        forward( ctx, () -> client.deleteFile( filePath ) );
+
+        try {
+            fs.deleteFile( filePath );
+        } catch ( JupyterMapFSException e ) {
+            log.info( e.getMessage() );
+        }
+
+        // 204 is the only documented return code for this endpoint, so we return it even when there was an error.
+        ctx.status( 204 );
+        ctx.result( "" );
     }
 
 
@@ -216,6 +410,17 @@ public class JupyterProxy {
         } catch ( JupyterServerException e ) {
             ctx.status( e.getStatus() ).result( e.getMsg() );
         }
+    }
+
+
+    private void error( Context ctx, JupyterMapFSException e ) {
+        error( ctx, e.getCode(), e.getMessage() );
+    }
+
+
+    private void error( Context ctx, int code, String message ) {
+        ctx.status( code );
+        ctx.result( String.format( "{\"message\": %s, \"reason\": null}", gson.toJson( message ) ) );
     }
 
 
