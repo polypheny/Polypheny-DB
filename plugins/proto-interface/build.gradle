@@ -25,6 +25,7 @@ dependencies {
     implementation project(path: ':plugins:mql-language')
     implementation project(path: ':plugins:mql-language')
     implementation project(path: ':plugins:mql-language')
+    implementation project(path: ':plugins:mql-language')
     testImplementation project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")
