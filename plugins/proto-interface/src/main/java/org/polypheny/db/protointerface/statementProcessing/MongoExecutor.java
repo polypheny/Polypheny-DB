@@ -22,7 +22,6 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIServiceException;
@@ -61,12 +60,12 @@ public class MongoExecutor extends StatementExecutor {
         String query = piStatement.getQuery();
         PolyImplementation<PolyValue> implementation;
         Processor queryProcessor = statement.getTransaction().getProcessor( language );
-        QueryParameters parameters = new MqlQueryParameters( query, null, NamespaceType.DOCUMENT );
+        //QueryParameters parameters = new MqlQueryParameters( query, null, NamespaceType.DOCUMENT );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
-            implementation = queryProcessor.prepareDdl( statement, parsedStatement, parameters );
+            implementation = queryProcessor.prepareDdl( statement, parsedStatement, null );
         } else {
-            AlgRoot logicalRoot = queryProcessor.translate( statement, parsedStatement, parameters );
+            AlgRoot logicalRoot = queryProcessor.translate( statement, parsedStatement, null );
             implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
         }
         piStatement.setImplementation( implementation );
