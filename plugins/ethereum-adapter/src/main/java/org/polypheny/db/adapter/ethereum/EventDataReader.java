@@ -102,8 +102,8 @@ public class EventDataReader extends BlockReader {
         // Add additional columns
         String[] extendedResult = Arrays.copyOf( result, result.length + 7 );
         extendedResult[result.length] = Boolean.toString( log.isRemoved() );
-        extendedResult[result.length + 1] = log.getLogIndexRaw();
-        extendedResult[result.length + 2] = log.getTransactionIndexRaw();
+        extendedResult[result.length + 1] = log.getLogIndex().toString();
+        extendedResult[result.length + 2] = log.getTransactionIndex().toString();
         extendedResult[result.length + 3] = log.getTransactionHash();
         extendedResult[result.length + 4] = log.getBlockHash();
         extendedResult[result.length + 5] = log.getBlockNumber().toString();

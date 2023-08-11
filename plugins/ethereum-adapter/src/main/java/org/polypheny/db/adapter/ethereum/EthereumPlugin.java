@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -61,6 +62,7 @@ import org.polypheny.db.type.PolyType;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
@@ -116,7 +118,7 @@ public class EthereumPlugin extends Plugin {
     @AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 5, modifiable = true) // Event Data: Add annotation
     @AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 6, modifiable = true)
     @AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 7, modifiable = true)
-    @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 8, modifiable = true)
+    @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = false, position = 8, modifiable = true)
     @AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 9, modifiable = true)
     public static class EthereumDataSource extends DataSource {
 
@@ -134,12 +136,10 @@ public class EthereumPlugin extends Plugin {
         private final BigInteger fromBlock;
         @Getter
         private final BigInteger toBlock;
-        private final Map<String, EventData> eventInputsMap;
+        private final Map<String, EventData> eventDataMap;
         private Boolean caching;
         private String cachingAdapterTargetName;
 
-        @Getter
-        List<Event> events = new ArrayList<>(); // for caching
         private Map<String, List<ExportedColumn>> map;
 
 
@@ -152,7 +152,7 @@ public class EthereumPlugin extends Plugin {
             this.etherscanApiKey = settings.get( "EtherscanApiKey" );
             this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
             this.toBlock = new BigInteger( settings.get( "toBlock" ) );
-            this.eventInputsMap = new HashMap<>();
+            this.eventDataMap = new HashMap<>();
             this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
             this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
             createInformationPage();
@@ -199,6 +199,7 @@ public class EthereumPlugin extends Plugin {
         // Because the EthereumAdapter is a source, Pp will ask (call this method) always what the structure of this is adapter is.
         @Override
         public Map<String, List<ExportedColumn>> getExportedColumns() {
+            log.warn( "getExportedColumn" );
             // Ensure that this block of code is called only once by checking if 'map' is null before proceeding
             if ( map != null ) {
                 return map;
@@ -208,156 +209,25 @@ public class EthereumPlugin extends Plugin {
 
             String[] blockColumns = { "number", "hash", "parent_hash", "nonce", "sha3uncles", "logs_bloom", "transactions_root", "state_root", "receipts_root", "author", "miner", "mix_hash", "difficulty", "total_difficulty", "extra_data", "size", "gas_limit", "gas_used", "timestamp" };
             PolyType[] blockTypes = { PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.TIMESTAMP };
+            createExportedColumns( "block", map, blockColumns, blockTypes );
+
             String[] transactionColumns = { "hash", "nonce", "block_hash", "block_number", "transaction_index", "from", "to", "value", "gas_price", "gas", "input", "creates", "public_key", "raw", "r", "s" };
             PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
+            createExportedColumns( "transaction", map, transactionColumns, transactionTypes );
+
             String[] commonEventColumns = { "removed", "log_index", "transaction_index", "transaction_hash", "block_hash", "block_number", "address" };
             PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
-            // PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
-
-            // Event Data Dynamic Scheme
-            List<JSONObject> eventList = getEventsFromABI( etherscanApiKey, smartContractAddress );
-            eventInputsMap.clear(); // clear the map
-            events.clear(); // clear the map
-            for ( JSONObject event : eventList ) {
-                String eventName = event.getString( "name" ); // to match it later with catalogTable.name
-                JSONArray inputsArray = event.getJSONArray( "inputs" );
-                List<JSONObject> inputsList = new ArrayList<>();
-                List<TypeReference<?>> eventParameters = new ArrayList<>();
-                for ( int i = 0; i < inputsArray.length(); i++ ) {
-                    JSONObject inputObject = inputsArray.getJSONObject( i );
-                    inputsList.add( inputObject );
-                    // put this into a method (modular)
-                    String type = inputObject.getString( "type" );
-                    boolean indexed = inputObject.getBoolean( "indexed" );
-                    if ( type.equals( "address" ) ) {
-                        eventParameters.add( indexed ? new TypeReference<Address>( true ) {
-                        } : new TypeReference<Address>( false ) {
-                        } );
-                    } else if ( type.equals( "uint256" ) ) {
-                        eventParameters.add( indexed ? new TypeReference<Uint256>( true ) {
-                        } : new TypeReference<Uint256>( false ) {
-                        } );
-                    }
-                }
-                eventInputsMap.put( eventName.toLowerCase(), new EventData( eventName, inputsList ) );
-                events.add( new Event( eventName, eventParameters ) );
-            }
-
-            PolyType type = PolyType.VARCHAR;
-            PolyType collectionsType = null;
-            Integer length = 300;
-            Integer scale = null;
-            Integer dimension = null;
-            Integer cardinality = null;
-            int position = 0;
-            List<ExportedColumn> blockCols = new ArrayList<>();
-            for ( String blockCol : blockColumns ) {
-                blockCols.add( new ExportedColumn(
-                        blockCol,
-                        blockTypes[position],
-                        collectionsType,
-                        length,
-                        scale,
-                        dimension,
-                        cardinality,
-                        false,
-                        SCHEMA_NAME,
-                        "block",
-                        blockCol,
-                        position,
-                        position == 0 ) );
-                position++;
-
-            }
-            map.put( "block", blockCols );
-
-            List<ExportedColumn> transactCols = new ArrayList<>();
-            position = 0;
-            for ( String transactCol : transactionColumns ) {
-                transactCols.add( new ExportedColumn(
-                        transactCol,
-                        transactionTypes[position],
-                        collectionsType,
-                        length,
-                        scale,
-                        dimension,
-                        cardinality,
-                        false,
-                        SCHEMA_NAME,
-                        "transaction",
-                        transactCol,
-                        position,
-                        position == 0 ) );
-                position++;
-            }
-            map.put( "transaction", transactCols );
-
-            // Event Data: Creating columns for each event for specified smart contract based on ABI
-            for ( Map.Entry<String, EventData> eventEntry : eventInputsMap.entrySet() ) {
-                String eventName = eventEntry.getValue().getOriginalKey(); // Get the original event name
-                List<JSONObject> inputsList = eventEntry.getValue().getData(); // Get the data
-                List<ExportedColumn> eventDataCols = new ArrayList<>();
-                int inputPosition = 0;
-
-                for ( JSONObject input : inputsList ) {
-                    String inputName = input.getString( "name" );
-                    PolyType inputType = convertToPolyType( input.getString( "type" ) ); // convert event types to polytype
-                    eventDataCols.add( new ExportedColumn(
-                            inputName,
-                            inputType,
-                            collectionsType,
-                            getLengthForType(inputType),
-                            scale,
-                            dimension,
-                            cardinality,
-                            false,
-                            SCHEMA_NAME,
-                            eventName, // event name
-                            inputName,
-                            inputPosition,
-                            inputPosition == 0
-                    ) );
-                    inputPosition++;
-                }
-
-                // Adding common columns
-                for ( int i = 0; i < commonEventColumns.length; i++ ) {
-                    String columnName = commonEventColumns[i];
-                    PolyType columnType = commonEventTypes[i];
-                    eventDataCols.add( new ExportedColumn(
-                            columnName,
-                            columnType,
-                            collectionsType,
-                            getLengthForType(columnType),
-                            scale,
-                            dimension,
-                            cardinality,
-                            false,
-                            SCHEMA_NAME,
-                            eventName, // event name
-                            columnName,
-                            inputPosition,
-                            inputPosition == 0
-                    ) );
-                    inputPosition++;
-                }
-
-                map.put( eventName, eventDataCols );
-            }
+            createExportedColumnsForEvents( map, commonEventColumns, commonEventTypes );
 
             if ( caching == Boolean.TRUE ) {
                 // Disable caching to prevent multiple unnecessary attempts to cache the same data.
                 caching = false;
                 this.map = map;
                 try {
-                    // Catalog: Centralized repository that contains metadata, such as information about tables, columns, schemas, adapters (source & stores), interfaces and other database objects (central meta unit; db structure)
-                    // Acts as a reference for the system to understand the structure and organization of the data and how to interact with various components
-                    // Databases like PostgreSQL have a schema that effectively defines the schema. This is often simply referred to as a catalog.
-
-                    // Get the default adapter for caching (currently "hsqldb"; see AdapterSettingString CachingAdapterTargetName); where we want to put our data (will be a Store, not a Source anymore)
-                    // cachingAdapterTargetName can only be a store, where we can insert data (you can't insert into a source)
+                    List<Event> events = eventDataMap.values().stream()
+                            .map( EventData::getEvent )
+                            .collect( Collectors.toList() );
                     CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
-                    // Register and initialize caching the events using the specified information
                     EventCacheManager.getInstance()
                             .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
                             .initializeCaching();
@@ -368,15 +238,6 @@ public class EthereumPlugin extends Plugin {
             }
 
             return map;
-        }
-
-        private Integer getLengthForType(PolyType type) {
-            switch (type) {
-                case VARCHAR:
-                    return 300;
-                default:
-                    return null;
-            }
         }
 
 
@@ -443,7 +304,7 @@ public class EthereumPlugin extends Plugin {
 
 
         protected List<JSONObject> getEventsFromABI( String etherscanApiKey, String contractAddress ) {
-            List<JSONObject> eventList = new ArrayList<>();
+            List<JSONObject> events = new ArrayList<>();
             try {
                 URL url = new URL( "https://api.etherscan.io/api?module=contract&action=getabi&address=" + contractAddress + "&apikey=" + etherscanApiKey );
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -461,40 +322,22 @@ public class EthereumPlugin extends Plugin {
 
                     JSONObject jsonObject = new JSONObject( response.toString() );
                     String abi = jsonObject.getString( "result" );
-                    // Convert ABI string to JSON Array
-                    JSONArray abiArray = new JSONArray( abi );
+                    JSONArray abiArray = new JSONArray( abi ); // Convert ABI string to JSON Array
                     for ( int i = 0; i < abiArray.length(); i++ ) {
                         JSONObject obj = abiArray.getJSONObject( i );
-
                         // Check if the current object is an event
                         if ( obj.getString( "type" ).equals( "event" ) ) {
-                            eventList.add( obj );
+                            events.add( obj );
                         }
                     }
                 }
 
             } catch ( IOException e ) {
+                // todo: handle errors; for example no abi or internet connection etc.
                 throw new RuntimeException( e );
             }
 
-            return eventList;
-        }
-
-
-        static PolyType convertToPolyType( String ethereumType ) {
-            if ( ethereumType.startsWith( "uint" ) || ethereumType.startsWith( "int" ) ) {
-                // Ethereum's uint and int types map to BIGINT in PolyType
-                return PolyType.BIGINT;
-            } else if ( ethereumType.startsWith( "bytes" ) || ethereumType.equals( "string" ) || ethereumType.equals( "address" ) ) {
-                // Ethereum's bytes, string and address types map to VARCHAR in PolyType
-                return PolyType.VARCHAR;
-            } else if ( ethereumType.equals( "bool" ) ) {
-                // Ethereum's bool type maps to BOOLEAN in PolyType
-                return PolyType.BOOLEAN;
-            } else {
-                // If the type is unknown, use VARCHAR as a general type
-                return PolyType.VARCHAR;
-            }
+            return events;
         }
 
 
@@ -502,26 +345,132 @@ public class EthereumPlugin extends Plugin {
             if ( catalogTableName.equals( "block" ) || catalogTableName.equals( "transaction" ) ) {
                 return null;
             }
-            EventData eventData = eventInputsMap.get( catalogTableName );
-            List<JSONObject> jsonObjects = eventData.getData();
-            List<TypeReference<?>> parameterTypes = new ArrayList<>();
-            for ( JSONObject jsonObject : jsonObjects ) {
-                String type = jsonObject.getString( "type" );
-                boolean indexed = jsonObject.getBoolean( "indexed" );
+            return eventDataMap.get( catalogTableName ).getEvent();
+        }
 
-                if ( type.equals( "address" ) ) {
-                    parameterTypes.add( indexed ? new TypeReference<Address>( true ) {
-                    } : new TypeReference<Address>( false ) {
-                    } );
-                } else if ( type.equals( "uint256" ) ) {
-                    parameterTypes.add( indexed ? new TypeReference<Uint256>( true ) {
-                    } : new TypeReference<Uint256>( false ) {
-                    } );
-                }
-                // ...
+
+        private void createExportedColumns( String physicalTableName, Map<String, List<ExportedColumn>> map, String[] columns, PolyType[] types ) {
+            PolyType collectionsType = null;
+            Integer length = 300;
+            Integer scale = null;
+            Integer dimension = null;
+            Integer cardinality = null;
+            int position = 0;
+            List<ExportedColumn> cols = new ArrayList<>();
+            for ( String col : columns ) {
+                cols.add( new ExportedColumn(
+                        col,
+                        types[position],
+                        collectionsType,
+                        length,
+                        scale,
+                        dimension,
+                        cardinality,
+                        false,
+                        SCHEMA_NAME,
+                        physicalTableName,
+                        col,
+                        position,
+                        position == 0 ) );
+                position++;
+
+            }
+            map.put( physicalTableName, cols );
+        }
+
+
+        private void createExportedColumnsForEvents( Map<String, List<ExportedColumn>> map, String[] commonEventColumns, PolyType[] commonEventTypes ) {
+            // Event Data Dynamic Scheme
+            List<JSONObject> contractEvents = getEventsFromABI( etherscanApiKey, smartContractAddress );
+
+            for ( JSONObject event : contractEvents ) {
+                String eventName = event.getString( "name" ); // to match it later with catalogTable.name
+                JSONArray abiInputs = event.getJSONArray( "inputs" ); // indexed and non-indexed values (topics + data)
+                eventDataMap.put( eventName.toLowerCase(), new EventData( eventName, abiInputs ) );
             }
 
-            return new Event( eventData.getOriginalKey(), parameterTypes );
+            PolyType collectionsType = null;
+            Integer scale = null;
+            Integer dimension = null;
+            Integer cardinality = null;
+
+            // Event Data: Creating columns for each event for specified smart contract based on ABI
+            for ( Map.Entry<String, EventData> eventEntry : eventDataMap.entrySet() ) {
+                String eventName = eventEntry.getValue().getOriginalKey(); // Get the original event name
+                JSONArray abiInputs = eventEntry.getValue().getAbiInputs(); // Get the data
+                List<ExportedColumn> eventDataCols = new ArrayList<>();
+                int inputPosition = 0;
+
+                for ( int i = 0; i < abiInputs.length(); i++ ) {
+                    JSONObject inputObject = abiInputs.getJSONObject( i );
+                    String col = inputObject.getString( "name" );
+                    PolyType type = convertToPolyType( inputObject.getString( "type" ) ); // convert event types to polytype
+                    eventDataCols.add( new ExportedColumn(
+                            col,
+                            type,
+                            collectionsType,
+                            getLengthForType( type ),
+                            scale,
+                            dimension,
+                            cardinality,
+                            false,
+                            SCHEMA_NAME,
+                            eventName, // event name
+                            col,
+                            inputPosition,
+                            inputPosition == 0
+                    ) );
+                    inputPosition++;
+                }
+
+                // Adding common columns
+                for ( int i = 0; i < commonEventColumns.length; i++ ) {
+                    String columnName = commonEventColumns[i];
+                    PolyType columnType = commonEventTypes[i];
+                    eventDataCols.add( new ExportedColumn(
+                            columnName,
+                            columnType,
+                            collectionsType,
+                            getLengthForType( columnType ),
+                            scale,
+                            dimension,
+                            cardinality,
+                            false,
+                            SCHEMA_NAME,
+                            eventName, // event name
+                            columnName,
+                            inputPosition,
+                            inputPosition == 0
+                    ) );
+                    inputPosition++;
+                }
+
+                map.put( eventName, eventDataCols );
+            }
+        }
+
+
+        private Integer getLengthForType( PolyType type ) {
+            switch ( type ) {
+                case VARCHAR:
+                    return 300;
+                default:
+                    return null;
+            }
+        }
+
+
+        static PolyType convertToPolyType( String type ) {
+            // todo: convert all types in evm to polytype
+            switch ( type ) {
+                case "address":
+                    return PolyType.VARCHAR;
+                case "uint256":
+                    return PolyType.BIGINT;
+                default:
+                    return null;
+            }
+
         }
 
 
