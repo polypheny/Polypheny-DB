@@ -118,7 +118,7 @@ public class EthereumPlugin extends Plugin {
     @AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 5, modifiable = true) // Event Data: Add annotation
     @AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 6, modifiable = true)
     @AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 7, modifiable = true)
-    @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = false, position = 8, modifiable = true)
+    @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 8, modifiable = true)
     @AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 9, modifiable = true)
     public static class EthereumDataSource extends DataSource {
 
@@ -155,8 +155,13 @@ public class EthereumPlugin extends Plugin {
             this.eventDataMap = new HashMap<>();
             this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
             this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
-            createInformationPage();
-            enableInformationPage();
+            new Thread( () -> {
+                createInformationPage();
+                enableInformationPage();
+            } ).start();
+
+            //createInformationPage();
+            //enableInformationPage();
         }
 
 
@@ -223,18 +228,28 @@ public class EthereumPlugin extends Plugin {
                 // Disable caching to prevent multiple unnecessary attempts to cache the same data.
                 caching = false;
                 this.map = map;
-                try {
-                    List<Event> events = eventDataMap.values().stream()
-                            .map( EventData::getEvent )
-                            .collect( Collectors.toList() );
-                    CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
-                    EventCacheManager.getInstance()
-                            .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
-                            .initializeCaching();
-                } catch ( UnknownAdapterException e ) {
-                    // If the specified adapter is not found, throw a RuntimeException
-                    throw new RuntimeException( e );
-                }
+                new Thread( () -> {
+                    try {
+                        Thread.sleep( 1200 );
+                    } catch ( InterruptedException e ) {
+                        throw new RuntimeException( e );
+                    }
+                    try {
+
+                        List<Event> events = eventDataMap.values().stream()
+                                .map( EventData::getEvent )
+                                .collect( Collectors.toList() );
+                        CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
+                        EventCacheManager.getInstance()
+                                .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
+                                .initializeCaching();
+
+
+                    } catch ( UnknownAdapterException e ) {
+                        // If the specified adapter is not found, throw a RuntimeException
+                        throw new RuntimeException( e );
+                    }
+                } ).start();
             }
 
             return map;

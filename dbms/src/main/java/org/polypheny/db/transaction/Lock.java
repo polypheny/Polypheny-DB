@@ -21,10 +21,12 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.Transaction.AccessMode;
 
 
 // Based on code taken from https://github.com/dstibrany/LockManager
+@Slf4j
 public class Lock {
 
     private final Set<TransactionImpl> owners = new HashSet<>();
@@ -134,6 +136,7 @@ public class Lock {
 
     private void acquireXLock( TransactionImpl txn ) throws InterruptedException {
         lock.lock();
+        log.warn("Acquire x lock; before: " + xLockCount);
         try {
             while ( isXLocked() || isSLocked() ) {
                 waitForGraph.add( txn, owners );
@@ -144,6 +147,7 @@ public class Lock {
             owners.add( txn );
         } finally {
             lock.unlock();
+            log.warn("Acquire x lock; after: " + xLockCount);
         }
     }
 

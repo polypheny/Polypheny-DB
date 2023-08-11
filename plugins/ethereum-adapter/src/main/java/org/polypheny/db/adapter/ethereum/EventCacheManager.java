@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -64,7 +65,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 
 
 @Slf4j
-public class EventCacheManager {
+public class EventCacheManager implements Runnable {
 
     // Singleton instance of EventCacheManager (T)
     private static EventCacheManager INSTANCE = null;
@@ -152,6 +153,9 @@ public class EventCacheManager {
 
 
     void writeToStore( String tableName, List<List<Object>> logResults ) {
+        if (logResults.isEmpty()) {
+            return;
+        }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
 
@@ -162,8 +166,8 @@ public class EventCacheManager {
         AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( EthereumPlugin.HIDDEN_PREFIX + tableName ) );
 
         AlgDataType rowType = table.getTable().getRowType( transaction.getTypeFactory() );
-        builder.values( rowType );
-        builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ) );
+        builder.push( LogicalValues.createOneRow( builder.getCluster() ) );
+        builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), rowType.getFieldNames() );
         builder.insert( (AlgOptTable) table );
         // TODO: we should re-use this for all batches (ignore right now); David will do this
 
@@ -171,6 +175,7 @@ public class EventCacheManager {
         AlgRoot root = AlgRoot.of( node, Kind.INSERT ); // Wrap the node into an AlgRoot as required by Polypheny
 
         // Add the dynamic parameters to the context
+        // don't add if value = 0
         // TODO: Correctly fill in the dynamic parameters with the correct information from the event (event.getIndexedParameters().get( i++ ).toString())
         int i = 0;
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
@@ -184,11 +189,11 @@ public class EventCacheManager {
                 Object processedValue;
                 // temporarily
                 if ( value instanceof Address ) {
-                    processedValue = ((Address) value).toString();
+                    processedValue = value.toString();
                 } else if ( value instanceof Uint256 ) {
-                    processedValue = ((Uint256) value).getValue();
+                    processedValue = ((Uint256) value).getValue() ==  null ? null : ((Uint256) value).getValue().longValue() ;
                 } else if ( value instanceof BigInteger ) {
-                    processedValue = value; // Already a BigInteger
+                    processedValue = value == null ? null : ((BigInteger) value).longValue(); // Already a BigInteger
                 } else if ( value instanceof Boolean ) {
                     processedValue = value; // No need to convert boolean
                 } else {
@@ -206,12 +211,23 @@ public class EventCacheManager {
         log.warn( "write to store after; table name: " + tableName );
         implementation.getRows( statement, -1 ); // Executes the query, with -1 meaning to fill in the whole batch
         log.warn( "finish write to store for table: " + tableName );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
     private Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
         return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, EventCache::getStatus ) );
+    }
+
+
+    @Override
+    public void run() {
+
     }
 
 }

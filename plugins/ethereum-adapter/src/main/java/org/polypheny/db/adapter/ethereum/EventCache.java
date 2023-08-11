@@ -137,7 +137,7 @@ public class EventCache {
     }
 
 
-    public synchronized void addToCache( Event event, BigInteger startBlock, BigInteger endBlock ) {
+    public void addToCache( Event event, BigInteger startBlock, BigInteger endBlock ) {
         EthFilter filter = new EthFilter(
                 DefaultBlockParameter.valueOf( startBlock ),
                 DefaultBlockParameter.valueOf( endBlock ),
