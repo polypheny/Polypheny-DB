@@ -93,7 +93,6 @@ message ClientInfoProperties {
 }
 
 message ClientInfoPropertiesResponse {
-//WTF?!
 }
 
 message ClientInfoPropertyMetaResponse {
