@@ -66,8 +66,10 @@ public class ExceptionHandler implements ServerInterceptor {
                 throw e;
             } catch ( AvaticaRuntimeException e ) {
                 handleAvaticaRuntimeException( e, serverCall, metadata );
+                throw e;
             } catch ( Exception e ) {
                 handleGenericExceptions( e, serverCall, metadata );
+                throw e;
             }
         }
 
