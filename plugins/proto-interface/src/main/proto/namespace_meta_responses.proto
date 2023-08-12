@@ -96,9 +96,7 @@ message Index {
 }
 
 message Graph {
-
 }
 
 message Document {
-
 }

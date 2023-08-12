@@ -60,7 +60,7 @@ public class PIServer {
         if ( log.isTraceEnabled() ) {
             log.trace( "proto-interface server shutdown requested" );
         }
-        server.shutdown().awaitTermination( 30, TimeUnit.SECONDS );
+        server.shutdown().awaitTermination( 60, TimeUnit.SECONDS );
     }
 
 
