@@ -23,6 +23,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import io.grpc.protobuf.ProtoUtils;
+import java.util.Arrays;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
@@ -74,7 +75,11 @@ public class ExceptionHandler implements ServerInterceptor {
         private void handleGenericExceptions( Exception exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata ) {
             //serverCall.close(Status.fromThrowable(exception), metadata);
             ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-            Optional.ofNullable( exception.getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
+            if (exception.getMessage() == null) {
+                errorDetailsBuilder.setMessage( "No information provided. Returning stacktrace instead: " + Arrays.toString( exception.getStackTrace() ) );
+            } else {
+                errorDetailsBuilder.setMessage(exception.getMessage());
+            }
             metadata.put( ERROR_DETAILS_KEY, errorDetailsBuilder.build() );
             serverCall.close( Status.INTERNAL.withDescription( exception.getMessage() ), metadata );
         }
