@@ -35,6 +35,7 @@ import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
@@ -89,8 +90,18 @@ public class ProtoValueDeserializer {
                 return deserializeToPolyNull( protoValue );
             case BIG_DECIMAL:
                 return deserializeToPolyBigDecimal( protoValue );
+            case LIST:
+                return deserializeToPolyList(protoValue);
         }
         throw new RuntimeException( "Should never be thrown" );
+    }
+
+
+    private static PolyValue deserializeToPolyList( ProtoValue protoValue ) {
+        List<PolyValue> values = protoValue.getList().getValuesList().stream()
+                .map( ProtoValueDeserializer::deserializeProtoValue )
+                .collect( Collectors.toList());
+        return new PolyList<>( values );
     }
 
 
