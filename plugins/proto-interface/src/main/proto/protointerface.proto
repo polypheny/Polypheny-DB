@@ -19,9 +19,6 @@ option java_outer_classname = "ProtoInterfaceProto";
 package polypheny.protointerface;
 
 service ProtoInterface {
-  // NewMetaFunctions
-  rpc GetNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
-
   // Meta functions
   rpc GetDbmsVersion(DbmsVersionRequest) returns (DbmsVersionResponse) {}
   rpc GetSupportedLanguages(LanguageRequest) returns (LanguageResponse) {}
@@ -33,13 +30,13 @@ service ProtoInterface {
   rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
   rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
   rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
-  rpc getNamespace(NamespaceRequest) returns (Namespace) {}
+  rpc GetNamespace(NamespaceRequest) returns (Namespace) {}
   rpc SearchEntities(EntitiesRequest) returns (EntitiesResponse) {}
-  rpc getSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
-  rpc getSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
-  rpc getSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
-  rpc getSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
-  rpc getSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
+  rpc GetSqlStringFunctions(SqlStringFunctionsRequest) returns (MetaStringResponse) {}
+  rpc GetSqlSystemFunctions(SqlSystemFunctionsRequest) returns (MetaStringResponse) {}
+  rpc GetSqlTimeDateFunctions(SqlTimeDateFunctionsRequest) returns (MetaStringResponse) {}
+  rpc GetSqlNumericFunctions(SqlNumericFunctionsRequest) returns (MetaStringResponse) {}
+  rpc GetSqlKeywords(SqlKeywordsRequest) returns (MetaStringResponse) {}
   // Connection related
   rpc Connect(ConnectionRequest) returns (ConnectionResponse) {}
   rpc CheckConnection(ConnectionCheckRequest) returns (ConnectionCheckResponse) {}

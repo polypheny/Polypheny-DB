@@ -32,7 +32,6 @@ message ProtoValue {
     ProtoEdge edge = 21;
     ProtoPath path = 22;
     ProtoGraph graph = 23;
-    ProtoArray array = 24;
     ProtoRowId row_id= 25;
   }
   enum ProtoValueType {
@@ -171,10 +170,6 @@ message ProtoBigDecimal {
 
 message ProtoStructured {
   repeated ProtoValue fields = 1;
-}
-
-message ProtoArray {
-  repeated ProtoValue elements = 1;
 }
 
 message ProtoInterval {

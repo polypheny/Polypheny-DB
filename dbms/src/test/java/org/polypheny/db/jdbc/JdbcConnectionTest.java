@@ -788,7 +788,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.commit();
         }
@@ -806,7 +806,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackTransactionOnAutocommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.rollback();
         }
@@ -815,7 +815,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true );
+        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.commit();
@@ -824,7 +824,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWhenClosedTest() throws SQLException {
-        JdbcConnection jdbcConnection = new JdbcConnection( true );
+        JdbcConnection jdbcConnection = new JdbcConnection( true, true );
         Connection connection = jdbcConnection.getConnection();
         connection.close();
         connection.rollback();
@@ -833,7 +833,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void commitWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.commit();
@@ -843,7 +843,7 @@ public class JdbcConnectionTest {
 
     @Test(expected = SQLException.class)
     public void rollbackWithAutoCommitTest() throws SQLException {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( true, true ) ) {
             Connection connection = jdbcConnection.getConnection();
             connection.setAutoCommit( true );
             connection.rollback();
