@@ -153,7 +153,7 @@ public class EventCacheManager implements Runnable {
 
 
     void writeToStore( String tableName, List<List<Object>> logResults ) {
-        if (logResults.isEmpty()) {
+        if ( logResults.isEmpty() ) {
             return;
         }
         Transaction transaction = getTransaction();
@@ -175,8 +175,6 @@ public class EventCacheManager implements Runnable {
         AlgRoot root = AlgRoot.of( node, Kind.INSERT ); // Wrap the node into an AlgRoot as required by Polypheny
 
         // Add the dynamic parameters to the context
-        // don't add if value = 0
-        // TODO: Correctly fill in the dynamic parameters with the correct information from the event (event.getIndexedParameters().get( i++ ).toString())
         int i = 0;
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
             long idx = field.getIndex();
@@ -186,20 +184,15 @@ public class EventCacheManager implements Runnable {
             List<Object> fieldValues = new ArrayList<>();
             for ( List<Object> logResult : logResults ) {
                 Object value = logResult.get( i );
-                Object processedValue;
-                // temporarily
+                // todo: converting to long (-2^63-1 till 2^63-1) from uint256 (2^256-1) if data is greater than 2^63-1
+                // how to convert it to bigint? Is there a Poltype that can handle unit256? Double?
+                // is Bigint 64-bit signed integer?
                 if ( value instanceof Address ) {
-                    processedValue = value.toString();
+                    value = value.toString();
                 } else if ( value instanceof Uint256 ) {
-                    processedValue = ((Uint256) value).getValue() ==  null ? null : ((Uint256) value).getValue().longValue() ;
-                } else if ( value instanceof BigInteger ) {
-                    processedValue = value == null ? null : ((BigInteger) value).longValue(); // Already a BigInteger
-                } else if ( value instanceof Boolean ) {
-                    processedValue = value; // No need to convert boolean
-                } else {
-                    processedValue = value.toString(); // handle other types as needed
+                    value = ((Uint256) value).getValue() == null ? null : ((Uint256) value).getValue().longValue();
                 }
-                fieldValues.add( processedValue );
+                fieldValues.add( value );
             }
             i++;
             statement.getDataContext().addParameterValues( idx, type, fieldValues ); // take the correct indexedParameters - at the moment we only add one row at a time, could refactor to add the whole batch

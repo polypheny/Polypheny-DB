@@ -53,6 +53,7 @@ public class EventCache {
     private final String smartContractAddress;
     private final BigInteger fromBlock;
     private final BigInteger toBlock;
+    private BigInteger currentBlock;
     protected final Web3j web3j;
 
     public final int sourceAdapterId;
@@ -67,6 +68,7 @@ public class EventCache {
         this.batchSizeInBlocks = batchSizeInBlocks;
         this.smartContractAddress = smartContractAddress;
         this.fromBlock = fromBlock;
+        this.currentBlock = fromBlock;
         this.toBlock = toBlock;
         this.events = events;
         events.forEach( event -> this.cache.put( event, new ArrayList<>() ) );
@@ -106,7 +108,7 @@ public class EventCache {
 
     public void startCaching() {
         log.warn( "start to cache" );
-        BigInteger currentBlock = fromBlock;
+        currentBlock = fromBlock;
 
         while ( currentBlock.compareTo( toBlock ) <= 0 ) {
             BigInteger endBlock = currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) );
@@ -128,7 +130,7 @@ public class EventCache {
                 }
 
                 String tableName = event.getName().toLowerCase();
-                EventCacheManager.getInstance().writeToStore( tableName, cache.get( event ) ); // write the event into the store // todo add table name // (T): Question -> e.g "delegateChanged"?
+                EventCacheManager.getInstance().writeToStore( tableName, cache.get( event ) ); // write the event into the store
                 cache.get( event ).clear(); // clear cache batch
             }
 
@@ -155,7 +157,7 @@ public class EventCache {
                 Log rawLog = (Log) rawLogResult.get();
                 List<Object> structuredLog = new ArrayList<>();
 
-                // Add all indexed values first
+                // Add all indexed values first (topics)
                 for ( int i = 0; i < event.getParameters().size(); i++ ) {
                     TypeReference<?> paramType = event.getParameters().get( i );
                     if ( paramType.isIndexed() ) {
@@ -163,7 +165,7 @@ public class EventCache {
                     }
                 }
 
-                // Then add all non-indexed values
+                // Then add all non-indexed values (data)
                 int nonIndexedPosition = 0; // Separate index for non-indexed parameters
                 for ( int i = 0; i < event.getParameters().size(); i++ ) {
                     TypeReference<?> paramType = event.getParameters().get( i );
@@ -182,8 +184,6 @@ public class EventCache {
                 structuredLog.add( rawLog.getBlockNumber() );
                 structuredLog.add( rawLog.getAddress() );
 
-                // Add other log information as needed
-
                 structuredLogs.add( structuredLog );
             }
 
@@ -197,7 +197,7 @@ public class EventCache {
             // Directly write to store. How?
             // 1. call getLogs method which returns logs
             // 2. write it directly to the store: writeToStore( getLogs() )
-            // This can be done synchronously. David thinks this method is good for my project. This means we don't need the cash Hashmap anymore.
+            // This can be done synchronously. David thinks this method is good for my project. This means we don't need the cache Hashmap anymore.
 
             // or (again using a little bit of memory)
             // use also a hashmap like above, write them into the map (like right now) but this time use multithreading
@@ -222,25 +222,25 @@ public class EventCache {
     }
 
 
-    static PolyType convertToPolyType( String ethereumType ) {
-        if ( ethereumType.startsWith( "uint" ) || ethereumType.startsWith( "int" ) ) {
-            // Ethereum's uint and int types map to BIGINT in PolyType
-            return PolyType.BIGINT;
-        } else if ( ethereumType.startsWith( "bytes" ) || ethereumType.equals( "string" ) || ethereumType.equals( "address" ) ) {
-            // Ethereum's bytes, string and address types map to VARCHAR in PolyType
-            return PolyType.VARCHAR;
-        } else if ( ethereumType.equals( "bool" ) ) {
-            // Ethereum's bool type maps to BOOLEAN in PolyType
-            return PolyType.BOOLEAN;
-        } else {
-            // If the type is unknown, use VARCHAR as a general type
-            return PolyType.VARCHAR;
-        }
-    }
-
-
     public CachingStatus getStatus() {
-        throw new NotImplementedException();
+        CachingStatus status = new CachingStatus();
+        BigInteger totalBlocks = toBlock.subtract(fromBlock).add(BigInteger.ONE);
+
+        if (currentBlock.add(BigInteger.valueOf(batchSizeInBlocks)).compareTo(toBlock) > 0) {
+            status.percent = 100;
+            status.state = CachingStatus.ProcessingState.DONE;
+        } else {
+            BigInteger processedBlocks = currentBlock.subtract(fromBlock);
+            status.percent = processedBlocks.floatValue() / totalBlocks.floatValue() * 100;
+
+            if (status.percent == 0) {
+                status.state = CachingStatus.ProcessingState.INITIALIZED;
+            } else {
+                status.state = CachingStatus.ProcessingState.PROCESSING;
+            }
+        }
+
+        return status;
     }
 
 }

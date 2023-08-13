@@ -73,7 +73,7 @@ public class EthereumPlugin extends Plugin {
 
     public static final String ADAPTER_NAME = "ETHEREUM";
 
-    public static final String HIDDEN_PREFIX = "__hidden__"; // evtl motzt der - db kann evtl nicht mit dollar zeichen nehmen __hidden__
+    public static final String HIDDEN_PREFIX = "__hidden__";
 
 
     /**
@@ -228,6 +228,7 @@ public class EthereumPlugin extends Plugin {
                 // Disable caching to prevent multiple unnecessary attempts to cache the same data.
                 caching = false;
                 this.map = map;
+                // todo: fix concurrency issues (dirty solution right now)
                 new Thread( () -> {
                     try {
                         Thread.sleep( 1200 );
@@ -235,7 +236,6 @@ public class EthereumPlugin extends Plugin {
                         throw new RuntimeException( e );
                     }
                     try {
-
                         List<Event> events = eventDataMap.values().stream()
                                 .map( EventData::getEvent )
                                 .collect( Collectors.toList() );
@@ -243,8 +243,6 @@ public class EthereumPlugin extends Plugin {
                         EventCacheManager.getInstance()
                                 .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
                                 .initializeCaching();
-
-
                     } catch ( UnknownAdapterException e ) {
                         // If the specified adapter is not found, throw a RuntimeException
                         throw new RuntimeException( e );
