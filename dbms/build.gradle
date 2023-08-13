@@ -73,7 +73,9 @@ dependencies {
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version
     testImplementation project(path: ':plugins:sql-language')
-    testImplementation project(path: ':plugins:sql-language')  // Apache 2.0
+    testImplementation project(path: ':plugins:sql-language')
+    testImplementation project(path: ':plugins:proto-interface')
+    testImplementation project(path: ':plugins:proto-interface')  // Apache 2.0
 
 }
 
