@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
  */
 @SuperBuilder(toBuilder = true)
 @Value
+@Deprecated
 public class CatalogDataPlacement implements CatalogObject {
 
     private static final long serialVersionUID = 5192378654968316873L;

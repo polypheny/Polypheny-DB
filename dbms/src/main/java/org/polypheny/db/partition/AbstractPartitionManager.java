@@ -16,7 +16,6 @@
 
 package org.polypheny.db.partition;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,16 +77,16 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                     List<Long> existingColumnsIds = existingAllocColumns.stream().map( e -> e.columnId ).collect( Collectors.toList() );
                     List<Long> allocColumnIds = allocColumns.stream().map( c -> c.columnId ).collect( Collectors.toList() );
                     // contains all already
-                    if( allocColumns.stream().map( c -> c.columnId ).allMatch( id -> existingColumnsIds.contains( id ) )){
+                    if ( allocColumns.stream().map( c -> c.columnId ).allMatch( existingColumnsIds::contains ) ) {
                         continue;
-                    }else if( existingAllocColumns.stream().map( c -> c.columnId ).allMatch( id -> allocColumnIds.contains( id ) )  ){
+                    } else if ( existingAllocColumns.stream().map( c -> c.columnId ).allMatch( allocColumnIds::contains ) ) {
                         // contains all & more -> replace
                         if ( allocColumns.size() > existingAllocColumns.size() ) {
                             allocColumns = existingAllocColumns;
                         }
-                    }else {
+                    } else {
                         // contains additional -> add
-                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> existingColumnsIds.contains( c.columnId ) ) ).collect( Collectors.toList());
+                        allocColumns = Stream.concat( existingAllocColumns.stream(), allocColumns.stream().filter( c -> !existingColumnsIds.contains( c.columnId ) ) ).collect( Collectors.toList() );
                     }
 
                 }

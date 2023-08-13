@@ -27,10 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -63,6 +62,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -279,19 +279,19 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
         PartitionProperty property = snapshot.alloc().getPartitionProperty( source.id ).orElseThrow();
 
-        List<AllocationEntity> allocs = snapshot.alloc().getAllocsOfPlacement( target.id );
-        if ( allocs.size() > 1 ) {
+        List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( source.id );
+        if ( partitions.size() > 1 ) {
             // is partitioned
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
             List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( source.id ).stream().filter( p -> p.adapterId != store.id ).collect( Collectors.toList() );
-            allocs = placements.stream().flatMap( p -> snapshot.alloc().getAllocsOfPlacement( p.id ).stream() ).collect( Collectors.toList() );
+            List<AllocationEntity> allocs = placements.stream().flatMap( p -> snapshot.alloc().getAllocsOfPlacement( p.id ).stream() ).collect( Collectors.toList() );
             placementDistribution = partitionManager.getRelevantPlacements( source, allocs, Collections.singletonList( store.id ) );
         } else {
-            placementDistribution.put( allocs.get( 0 ).partitionId, selectSourcePlacements( source, selectedColumns, target.adapterId ) );
+            placementDistribution.put( partitions.get( 0 ).id, selectSourcePlacements( source, selectedColumns, target.adapterId ) );
         }
 
-        for ( Long id : property.partitionIds ) {
+        for ( long id : property.partitionIds ) {
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
@@ -544,7 +544,7 @@ public class DataMigratorImpl implements DataMigrator {
         Snapshot snapshot = Catalog.snapshot();
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, List<Long>> entry : snapshot.alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, List<Long>> entry : snapshot.alloc().getColumnPlacementsByAdapters( table.id ).entrySet() ) {
             if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) { // todo these are potentially not the most relevant ones
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -554,16 +554,17 @@ public class DataMigratorImpl implements DataMigrator {
         List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
 
         // Take the adapter with most placements as base and add missing column placements
-        List<AllocationColumn> placementList = new ArrayList<>();
+        List<AllocationColumn> placements = new ArrayList<>();
         for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
                 AllocationPlacement placement = snapshot.alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
-                if ( snapshot.alloc().getColumn( placement.id, column.id ).isPresent() ) {
-                    placementList.add( snapshot.alloc().getColumn( placement.id, column.id ).orElseThrow() );
+                Optional<AllocationColumn> optionalColumn = snapshot.alloc().getColumn( placement.id, column.id );
+                if ( optionalColumn.isPresent() && optionalColumn.get().adapterId != excludingAdapterId ) {
+                    placements.add( snapshot.alloc().getColumn( placement.id, column.id ).orElseThrow() );
                 } else {
                     for ( AllocationColumn allocationColumn : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
                         if ( allocationColumn.adapterId != excludingAdapterId ) {
-                            placementList.add( allocationColumn );
+                            placements.add( allocationColumn );
                             break;
                         }
                     }
@@ -571,12 +572,12 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        return placementList;
+        return placements;
     }
 
 
     /**
-     * Currently used to to transfer data if partitioned table is about to be merged.
+     * Currently used to transfer data if partitioned table is about to be merged.
      * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
@@ -748,7 +749,6 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
-
             do {
                 List<List<PolyValue>> rows = result.getRows( source.sourceStatement, batchSize );//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
@@ -774,7 +774,7 @@ public class DataMigratorImpl implements DataMigrator {
                             continue;
                         }*/
                     int i = 0;
-                    for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position )).collect( Collectors.toList()) ) {
+                    for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position ) ).collect( Collectors.toList() ) ) {
                         if ( !partitionValues.containsKey( currentPartitionId ) ) {
                             partitionValues.put( currentPartitionId, new HashMap<>() );
                         }
@@ -816,17 +816,18 @@ public class DataMigratorImpl implements DataMigrator {
     @NotNull
     private Source getSource( Transaction transaction, List<AllocationTable> sourceTables, LogicalTable table, LogicalColumn partitionColumn, List<AllocationTable> excludedTables ) {
         Set<Long> excludedPartitions = excludedTables.stream().map( t -> t.partitionId ).collect( Collectors.toSet() );
-        List<LogicalColumn> selectColumnList = Catalog.snapshot().alloc().getColumns( sourceTables.get( 0 ).placementId ).stream().map( a -> Catalog.snapshot().rel().getColumn( a.columnId ).orElseThrow() ).collect( Collectors.toCollection( ArrayList::new ) );
+        List<LogicalColumn> selectColumns = Catalog.snapshot().alloc().getColumns( sourceTables.get( 0 ).placementId ).stream().map( a -> Catalog.snapshot().rel().getColumn( a.columnId ).orElseThrow() ).collect( Collectors.toCollection( ArrayList::new ) );
 
-        if ( !selectColumnList.contains( partitionColumn ) ) {
-            selectColumnList.add( partitionColumn );
+        if ( !selectColumns.contains( partitionColumn ) ) {
+            selectColumns.add( partitionColumn );
         }
 
         //We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        PartitionProperty sourceProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+        //PartitionProperty sourceProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
-        List<AllocationColumn> columns = selectSourcePlacements( table, selectColumnList, -1 );
+        List<AllocationColumn> columns = sourceTables.get( 0 ).getColumns();// same length as it is only copy ...
+        // selectSourcePlacements( table, selectColumns, -1 );
         for ( AllocationTable sourceTable : sourceTables ) {
             placementDistribution.put( sourceTable.partitionId, columns );
         }

@@ -130,13 +130,13 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         long storeId = storeInstance.getAdapterId();
         // Check whether this placement already exists
         Optional<AllocationPlacement> optionalPlacement = statement.getTransaction().getSnapshot().alloc().getPlacement( storeId, table.id );
-        if ( !optionalPlacement.isPresent() ) {
+        if ( optionalPlacement.isEmpty() ) {
             throw CoreUtil.newContextException(
                     storeName.getPos(),
                     RESOURCE.placementDoesNotExist( storeName.getSimple(), table.name ) );
         }
 
-        List<Long> tempPartitionList = new ArrayList<>();
+        List<Long> partitionList = new ArrayList<>();
 
         // If index partitions are specified
         if ( !partitionGroups.isEmpty() && partitionGroupNames.isEmpty() ) {
@@ -144,15 +144,14 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             for ( int partitionId : partitionGroups ) {
                 // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                 try {
-                    tempPartitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
+                    partitionList.add( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionGroupIds.get( partitionId ) );
                 } catch ( IndexOutOfBoundsException e ) {
                     throw new GenericRuntimeException( "Specified Partition-Index: '%s' is not part of table '%s', has only %s partitions",
                             partitionId, table.name, statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().numPartitionGroups );
                 }
             }
-        }
-        // If name partitions are specified
-        else if ( !partitionGroupNames.isEmpty() && partitionGroups.isEmpty() ) {
+        } else if ( !partitionGroupNames.isEmpty() && partitionGroups.isEmpty() ) {
+            // If name partitions are specified
             // List<AllocationEntity> entities = catalog.getSnapshot().alloc().getAllocsOfPlacement( optionalPlacement.get().id );
             List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( tableId );
             for ( String partitionName : partitionGroupNames.stream().map( Object::toString ).collect( Collectors.toList() ) ) {
@@ -161,6 +160,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 if ( optionalPartition.isEmpty() ) {
                     throw new GenericRuntimeException( "There exists no partition with the identifier '%s'.", partitionName );
                 }
+                partitionList.add( optionalPartition.get().id );
             }
         }
 
@@ -174,7 +174,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         // Update
         DdlManager.getInstance().modifyPartitionPlacement(
                 table,
-                tempPartitionList,
+                partitionList,
                 storeInstance,
                 statement
         );

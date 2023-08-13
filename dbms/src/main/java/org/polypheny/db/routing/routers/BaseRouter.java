@@ -106,7 +106,7 @@ public abstract class BaseRouter implements Router {
         // Find the adapter with the most column placements
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, List<Long>> entry : Catalog.snapshot().alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
+        for ( Entry<Long, List<Long>> entry : Catalog.snapshot().alloc().getColumnPlacementsByAdapters( table.id ).entrySet() ) {
             if ( !excludedAdapterIds.contains( entry.getKey() ) && entry.getValue().size() > numOfPlacements ) {
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
@@ -319,7 +319,7 @@ public abstract class BaseRouter implements Router {
                 boolean first = true;
                 for ( List<AllocationColumn> columns : columnsByPlacements.values() ) {
                     List<AllocationColumn> ordered = columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
-                    AllocationColumn column = columns.get( 0 );
+                    AllocationColumn column = ordered.get( 0 );
                     AllocationEntity cpp = catalog.getSnapshot().alloc().getAlloc( column.placementId, partitionId ).orElseThrow();
 
                     handleRelScan(
@@ -341,7 +341,7 @@ public abstract class BaseRouter implements Router {
                             }
                         }
                         builder.project( rexNodes );
-                        List<RexNode> joinConditions = new LinkedList<>();
+                        List<RexNode> joinConditions = new ArrayList<>();
                         for ( int i = 0; i < pkColumnIds.size(); i++ ) {
                             joinConditions.add( builder.equals(
                                     builder.field( 2, queue.removeFirst() ),

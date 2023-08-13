@@ -2378,7 +2378,7 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void addPartitioning( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-        PartitionProperty prepartitionedProperty = snapshot.alloc().getPartitionProperty( partitionInfo.table.id ).orElseThrow();
+        PartitionProperty initialProperty = snapshot.alloc().getPartitionProperty( partitionInfo.table.id ).orElseThrow();
         Pair<List<AllocationPartition>, PartitionProperty> result = addGroupsAndPartitions( partitionInfo, snapshot );
 
         LogicalTable unPartitionedTable = partitionInfo.table;
@@ -2490,7 +2490,7 @@ public class DdlManagerImpl extends DdlManager {
         sources.forEach( s -> deleteAllocation( statement, s ) );
         //stores.forEach( store -> store.deleteTable( statement.getPrepareContext(), -1 ) );
         catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartitionGroup( snapshot.alloc().getPartitionProperty( unPartitionedTable.id ).orElseThrow().partitionIds.get( 0 ) );
-        prepartitionedProperty.partitionIds.forEach( id -> catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartition( id ) );
+        initialProperty.partitionIds.forEach( id -> catalog.getAllocRel( partitionInfo.table.namespaceId ).deletePartition( id ) );
 
         catalog.updateSnapshot();
         // Reset plan cache implementation cache & routing cache
@@ -3101,6 +3101,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( long partitionGroupId : property.partitionGroupIds ) {
             catalog.getAllocRel( table.namespaceId ).deletePartitionGroup( partitionGroupId );
         }
+
         catalog.updateSnapshot();
         // Reset query plan cache, implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();

@@ -1573,7 +1573,7 @@ public class AlgBuilder {
      */
     public AlgBuilder project( Iterable<? extends RexNode> nodes, Iterable<String> fieldNames, boolean force ) {
         final Frame frame = stack.peek();
-        final AlgDataType inputRowType = frame.alg.getRowType();
+        final AlgDataType inputRowType = Objects.requireNonNull( frame ).alg.getRowType();
         final List<RexNode> nodeList = Lists.newArrayList( nodes );
 
         // Perform a quick check for identity. We'll do a deeper check later when we've derived column names.
@@ -1623,9 +1623,7 @@ public class AlgBuilder {
 
         // Simplify expressions.
         if ( simplify ) {
-            for ( int i = 0; i < nodeList.size(); i++ ) {
-                nodeList.set( i, simplifier.simplifyPreservingType( nodeList.get( i ) ) );
-            }
+            nodeList.replaceAll( simplifier::simplifyPreservingType );
         }
 
         // Replace null names with generated aliases.

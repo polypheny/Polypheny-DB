@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
@@ -110,7 +111,8 @@ public class SimpleRouter extends AbstractDqlRouter {
         List<AllocationEntity> entities = new ArrayList<>();
         for ( AllocationPlacement placement : placements ) {
             for ( long partitionId : partitionIds ) {
-                entities.add( catalog.getSnapshot().alloc().getAlloc( placement.id, partitionId ).orElseThrow() );
+                Optional<AllocationEntity> optionalAlloc = catalog.getSnapshot().alloc().getAlloc( placement.id, partitionId );
+                optionalAlloc.ifPresent( entities::add );
             }
         }
         return entities;

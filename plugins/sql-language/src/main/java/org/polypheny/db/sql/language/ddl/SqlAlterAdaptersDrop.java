@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -78,7 +79,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
         try {
             DdlManager.getInstance().dropAdapter( uniqueName.toString(), statement );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove the adapter with the unique name '" + uniqueName.toString() + "' for the following reason: " + e.getMessage(), e );
+            throw new GenericRuntimeException( "Could not remove the adapter with the unique name '%s' for the following reason: %s", e, uniqueName.toString(), e.getMessage() );
         }
 
     }

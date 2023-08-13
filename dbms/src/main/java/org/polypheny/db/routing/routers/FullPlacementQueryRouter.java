@@ -158,7 +158,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
                 .filter( a -> new HashSet<>( a.getColumnIds() ).containsAll( usedColumns ) )
                 .collect( Collectors.toList() );
 
-        /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapters( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> new HashSet<>( elem.getValue() ).containsAll( usedColumns ) )
                 .map( Entry::getKey )

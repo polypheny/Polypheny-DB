@@ -75,7 +75,7 @@ public interface AllocSnapshot {
      * @return The requested collection
      */
     @NotNull
-    Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId );
+    Map<Long, List<Long>> getColumnPlacementsByAdapters( long tableId );
 
 
     /**
@@ -212,5 +212,7 @@ public interface AllocSnapshot {
     @NotNull
     Optional<AllocationPartition> getPartition( long partitionId );
 
+
+    Optional<AllocationPartition> getPartitionFromName( long logicalId, String name );
 
 }

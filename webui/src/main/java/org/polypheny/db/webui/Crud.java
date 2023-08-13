@@ -1179,7 +1179,7 @@ public class Crud implements InformationObserver {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         LogicalTable table = catalog.getSnapshot().rel().getTable( request.getSchemaName(), request.getTableName() ).orElseThrow();
-        Map<Long, List<Long>> placements = catalog.getSnapshot().alloc().getColumnPlacementsByAdapter( table.id );
+        Map<Long, List<Long>> placements = catalog.getSnapshot().alloc().getColumnPlacementsByAdapters( table.id );
         Set<Long> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
             log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
