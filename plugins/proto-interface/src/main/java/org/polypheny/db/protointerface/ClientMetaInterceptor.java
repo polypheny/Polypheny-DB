@@ -20,10 +20,6 @@ import io.grpc.*;
 
 public class ClientMetaInterceptor implements ServerInterceptor {
     public static final Context.Key<String> CLIENT = Context.key("protoInterfaceClient");
-    private ClientManager clientManager;
-    public ClientMetaInterceptor(ClientManager clientManager) {
-        this.clientManager = clientManager;
-    }
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {

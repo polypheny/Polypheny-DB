@@ -37,7 +37,7 @@ public class PIServer {
         ServerBuilder<?> serverBuilder = Grpc.newServerBuilderForPort( port, InsecureServerCredentials.create() );
         server = serverBuilder
                 .addService( new PIService( protoInterface.getClientManager() ) )
-                .intercept( new ClientMetaInterceptor( protoInterface.getClientManager() ) )
+                .intercept( new ClientMetaInterceptor( ) )
                 .intercept( new ExceptionHandler() )
                 .build();
     }
