@@ -300,6 +300,7 @@ public class DataMigratorImpl implements DataMigrator {
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, source, subDistribution );
             AlgRoot targetAlg;
             AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+            Catalog.getInstance().updateSnapshot();
             if ( allocation.getColumns().size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
                 targetAlg = buildInsertStatement( targetStatement, allocation.getColumns(), allocation );
@@ -491,8 +492,8 @@ public class DataMigratorImpl implements DataMigrator {
         }
         builder = builder.filter( condition );
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : to ) {
             LogicalColumn logicalColumn = snapshot.getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );

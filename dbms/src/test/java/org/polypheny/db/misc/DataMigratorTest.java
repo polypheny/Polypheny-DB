@@ -20,12 +20,15 @@ import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -91,6 +94,8 @@ public class DataMigratorTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
 
+                LogicalTable table = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, "datamigratortest" ).orElseThrow();
+
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
@@ -98,19 +103,26 @@ public class DataMigratorTest {
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
-                    // Add placement
+                    // Add placement tprimary/tvarchar
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Remove tvarchar column placement on initial store
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+
+                    // Remove tvarchar column placement on initial store tprimary/tinteger
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
+
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
+
+                    Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     // Add tinteger column placement on store 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );

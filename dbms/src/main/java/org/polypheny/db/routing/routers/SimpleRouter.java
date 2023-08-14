@@ -18,18 +18,15 @@ package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
@@ -55,13 +52,13 @@ public class SimpleRouter extends AbstractDqlRouter {
     protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
         // placementId -> List<AllocColumn>
-        Map<Long, List<AllocationColumn>> placements = selectPlacement( table, catalog.getSnapshot().rel().getColumns( table.id ), List.of() );
+        Map<Long, List<AllocationColumn>> partitionToColumns = selectPlacement( table, catalog.getSnapshot().rel().getColumns( table.id ), List.of() );
 
-        List<AllocationPartition> partitionIds = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
+        //List<AllocationPartition> partitionIds = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
 
-        List<AllocationColumn> singlePartition = placements.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+        //List<AllocationColumn> singlePartition = placements.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
 
-        Map<Long, List<AllocationColumn>> partitionToColumns = partitionIds.stream().collect( Collectors.toMap( id -> id.id, id -> singlePartition ) );
+        //Map<Long, List<AllocationColumn>> partitionToColumns = partitionIds.stream().collect( Collectors.toMap( id -> id.id, id -> singlePartition ) );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( partitionToColumns );

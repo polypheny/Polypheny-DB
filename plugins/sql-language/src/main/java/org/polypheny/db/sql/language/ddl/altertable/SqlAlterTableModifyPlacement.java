@@ -151,7 +151,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 store,
                 statement );
 
-        if ( partitionGroups.isEmpty() || !partitionGroupNames.isEmpty() ) {
+        if ( !partitionGroups.isEmpty() || !partitionGroupNames.isEmpty() ) {
             List<Long> ids = partitionGroups.stream().map( id -> (long) id ).collect( Collectors.toList() );
 
             ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).collect( Collectors.toList() ) );

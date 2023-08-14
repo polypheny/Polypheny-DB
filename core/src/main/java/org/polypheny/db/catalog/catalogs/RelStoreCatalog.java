@@ -84,7 +84,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public void addColumn( PhysicalColumn column ) {
-        columns.put( Pair.of( column.tableId, column.id ), column );
+        columns.put( Pair.of( column.allocId, column.id ), column );
     }
 
 
