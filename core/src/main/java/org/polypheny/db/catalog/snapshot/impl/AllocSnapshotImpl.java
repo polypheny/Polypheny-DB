@@ -18,13 +18,13 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Value;
@@ -313,12 +313,18 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         Map<Long, TreeSet<AllocationColumn>> map = new HashMap<>();
         for ( AllocationColumn value : columns.values() ) {
             if ( !map.containsKey( value.placementId ) ) {
-                map.put( value.placementId, new TreeSet<>( Comparator.comparingLong( c -> c.position ) ) );
+                map.put( value.placementId, new TreeSet<>( ( a, b ) -> AllocSnapshotImpl.comparatorOrId( () -> a.position - b.position, a, b ) ) );
             }
             map.get( value.placementId ).add( value );
         }
 
         return ImmutableMap.copyOf( map.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> new ArrayList<>( e.getValue() ) ) ) );
+    }
+
+
+    private static int comparatorOrId( Supplier<Integer> comparator, AllocationColumn a, AllocationColumn b ) {
+        int diff = comparator.get();
+        return diff != 0 ? diff : (int) (a.columnId - b.columnId);
     }
 
 

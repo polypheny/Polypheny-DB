@@ -63,7 +63,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Serialize
     @Getter
-    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns;
+    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
 
     @Serialize
     @Getter

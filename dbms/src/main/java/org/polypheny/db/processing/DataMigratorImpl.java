@@ -306,7 +306,7 @@ public class DataMigratorImpl implements DataMigrator {
                 targetAlg = buildInsertStatement( targetStatement, allocation.getColumns(), allocation );
             } else {
                 // Build update statement
-                targetAlg = buildUpdateStatement( targetStatement, allocation.getColumns(), allocation );
+                targetAlg = buildUpdateStatement( targetStatement, columns.stream().map( c -> Catalog.snapshot().alloc().getColumn( target.id, c.id ).orElseThrow() ).collect( Collectors.toList() ), allocation );
             }
 
             // Execute Query
