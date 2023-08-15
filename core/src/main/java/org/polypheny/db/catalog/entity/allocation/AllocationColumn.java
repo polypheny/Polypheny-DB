@@ -59,7 +59,7 @@ public class AllocationColumn implements CatalogObject {
             @Deserialize("logicalTableId") final long logicalTableId,
             @Deserialize("columnId") final long columnId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("position") final int position,
+            @Deserialize("position") final int position, // same as logical
             @Deserialize("adapterId") final long adapterId ) {
         this.namespaceId = namespaceId;
         this.placementId = placementId;

@@ -324,7 +324,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
     private static int comparatorOrId( Supplier<Integer> comparator, AllocationColumn a, AllocationColumn b ) {
         int diff = comparator.get();
-        return diff != 0 ? diff : (int) (a.columnId - b.columnId);
+        return diff != 0 ? diff : (int) (b.columnId - a.columnId);
     }
 
 

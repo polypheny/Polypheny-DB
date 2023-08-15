@@ -409,7 +409,8 @@ public class DdlManagerImpl extends DdlManager {
                 table.id,
                 addedColumn.id,
                 dataSource.adapterId,
-                PlacementType.STATIC, catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
+                PlacementType.STATIC,
+                catalog.getSnapshot().alloc().getColumns( allocation.id ).size() );//Not a valid partitionID --> placeholder
 
         // Set column position
         // catalog.getAllocRel( catalogTable.namespaceId ).updateColumnPlacementPhysicalPosition( adapterId, addedColumn.id, exportedColumn.physicalPosition );
@@ -729,6 +730,7 @@ public class DdlManagerImpl extends DdlManager {
                 adjustedColumns.add( catalog.getSnapshot().rel().getColumn( cId ).orElseThrow() );
             }
         }
+        adjustedColumns = adjustedColumns.stream().sorted( Comparator.comparingLong( c -> c.position ) ).collect( Collectors.toList() );
 
         AllocationPlacement placement = catalog.getAllocRel( table.namespaceId ).addPlacement( table.id, table.namespaceId, dataStore.adapterId );
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
@@ -760,7 +762,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // Check whether the list is empty (this is a shorthand for a full placement)
-        if ( columnIds.size() == 0 ) {
+        if ( columnIds.isEmpty() ) {
             columnIds = ImmutableList.copyOf( catalog.getSnapshot().rel().getColumns( table.id ) ).stream().map( c -> c.id ).collect( Collectors.toList() );
         }
 
@@ -830,7 +832,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
         // Simply Place all partitions on placement since nothing has been specified
-        else if ( partitionGroupIds.isEmpty() && partitionGroupNames.isEmpty() ) {
+        else if ( partitionGroupIds.isEmpty() ) {
             log.debug( "Table is partitioned and concrete partitionList has NOT been specified " );
 
             if ( isDataPlacementPartitioned ) {
@@ -1561,7 +1563,7 @@ public class DdlManagerImpl extends DdlManager {
                     logicalColumn.id,
                     store.adapterId,
                     PlacementType.MANUAL,
-                    catalog.getSnapshot().alloc().getColumns( placement.id ).size() + 1 );
+                    logicalColumn.position );
 
             for ( AllocationEntity allocation : catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ) ) {
                 // Add column on store
@@ -1634,18 +1636,18 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameTable( LogicalTable tble, String newTableName, Statement statement ) {
-        if ( catalog.getSnapshot().rel().getTable( tble.namespaceId, newTableName ).isPresent() ) {
+    public void renameTable( LogicalTable table, String newTableName, Statement statement ) {
+        if ( catalog.getSnapshot().rel().getTable( table.namespaceId, newTableName ).isPresent() ) {
             throw new GenericRuntimeException( "An entity with name %s already exists", newTableName );
         }
         // Check if views are dependent from this view
-        checkViewDependencies( tble );
+        checkViewDependencies( table );
 
-        if ( catalog.getSnapshot().getNamespace( tble.namespaceId ).caseSensitive ) {
+        if ( catalog.getSnapshot().getNamespace( table.namespaceId ).caseSensitive ) {
             newTableName = newTableName.toLowerCase();
         }
 
-        catalog.getLogicalRel( tble.namespaceId ).renameTable( tble.id, newTableName );
+        catalog.getLogicalRel( table.namespaceId ).renameTable( table.id, newTableName );
 
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
@@ -2142,10 +2144,12 @@ public class DdlManagerImpl extends DdlManager {
         // addATable
         AllocationPartition partition = createSinglePartition( namespaceId, logical ).left;
 
+        List<LogicalColumn> columns = ids.values().stream().sorted( Comparator.comparingInt( c -> c.position ) ).collect( Collectors.toList() );
+
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( logical.id, namespaceId, store.adapterId );
 
-            addAllocationsForPlacement( namespaceId, statement, logical, placement.id, List.copyOf( ids.values() ), List.of( partition.id ), store );
+            addAllocationsForPlacement( namespaceId, statement, logical, placement.id, columns, List.of( partition.id ), store );
         }
 
         catalog.updateSnapshot();
