@@ -39,16 +39,23 @@ public class EventData {
     @Getter
     private Event event;
     @Getter
+    private String smartContractAddress;
+    @Getter
+    private String compositeName;
+    @Getter
     private JSONArray abiInputs;
 
 
-    public EventData( String originalKey, JSONArray abiInputs ) {
+    public EventData( String originalKey, String contractName, String smartContractAddress, JSONArray abiInputs ) {
         this.originalKey = originalKey;
         this.lowercaseKey = originalKey.toLowerCase();
+        this.compositeName = contractName.toLowerCase() + "_" + originalKey.toLowerCase();
         this.abiInputs = abiInputs;
         List<TypeReference<?>> typeReferences = createTypeReferences( abiInputs );
         this.event = new Event( originalKey, typeReferences ); // create event based on event name (original key and inputs)
+        this.smartContractAddress = smartContractAddress;
     }
+
 
     private static List<TypeReference<?>> createTypeReferences( JSONArray abiInputs ) {
         List<TypeReference<?>> typeReferences = new ArrayList<>();

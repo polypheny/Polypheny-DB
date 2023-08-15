@@ -71,7 +71,7 @@ public class EthereumSchema extends AbstractSchema {
                 mapper,
                 ethereumDataSource,
                 catalogTable.id,
-                ethereumDataSource.getSmartContractAddress(),
+                ethereumDataSource.getSmartContractAddressFromCatalogTable(catalogTable.name),
                 ethereumDataSource.getFromBlock(),
                 ethereumDataSource.getToBlock(),
                 ethereumDataSource.getEventFromCatalogTable(catalogTable.name)

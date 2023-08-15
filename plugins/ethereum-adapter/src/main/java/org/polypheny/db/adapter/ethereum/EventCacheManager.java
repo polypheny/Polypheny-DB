@@ -74,7 +74,7 @@ public class EventCacheManager implements Runnable {
 
     // concurrent map, which maintains multiple caches, which correspond to the adapter which requested the caches
     // to allow multiple threads to read and modify; keys: adapterId, value: EventCache (T)
-    public Map<Integer, EventCache> caches = new ConcurrentHashMap<>();
+    public Map<Integer, ContractCache> caches = new ConcurrentHashMap<>();
 
 
     /**
@@ -105,15 +105,15 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    public EventCache register( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> map ) {
-        EventCache cache = new EventCache( sourceAdapterId, targetAdapterId, clientUrl, batchSizeInBlocks, smartContractAddress, fromBlock, toBlock, events, map );
+    public ContractCache register( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, BigInteger fromBlock, BigInteger toBlock, Map<String, List<EventData>> eventsPerContract, Map<String, List<ExportedColumn>> map ) {
+        ContractCache cache = new ContractCache( sourceAdapterId, targetAdapterId, clientUrl, batchSizeInBlocks, fromBlock, toBlock, eventsPerContract, map );
         this.caches.put( sourceAdapterId, cache );
         return cache;
     }
 
 
     @Nullable
-    public EventCache getCache( int adapterId ) {
+    public ContractCache getCache( int adapterId ) {
         return caches.get( adapterId );
     }
 
@@ -214,7 +214,7 @@ public class EventCacheManager implements Runnable {
 
     private Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
-        return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, EventCache::getStatus ) );
+        return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, ContractCache::getStatus ) );
     }
 
 

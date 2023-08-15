@@ -47,105 +47,38 @@ import org.web3j.protocol.http.HttpService;
 @Slf4j // library to use logging annotations
 public class EventCache {
 
-    private final int batchSizeInBlocks;
-    private final Map<Event, List<List<Object>>> cache = new ConcurrentHashMap<>(); // a cache for each event
-    private final List<Event> events; // maintain a list of events
-    private final String smartContractAddress;
-    private final BigInteger fromBlock;
-    private final BigInteger toBlock;
-    private BigInteger currentBlock;
+    private final Map<EventData, List<List<Object>>> cache = new ConcurrentHashMap<>(); // a cache for each event
+    private final List<EventData> events;
     protected final Web3j web3j;
 
-    public final int sourceAdapterId;
-    private final Map<String, List<ExportedColumn>> columns;
-    private final int targetAdapterId;
 
-
-    public EventCache( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, String smartContractAddress, BigInteger fromBlock, BigInteger toBlock, List<Event> events, Map<String, List<ExportedColumn>> columns ) {
-        this.sourceAdapterId = sourceAdapterId;
-        this.targetAdapterId = targetAdapterId;
-        this.columns = columns;
-        this.batchSizeInBlocks = batchSizeInBlocks;
-        this.smartContractAddress = smartContractAddress;
-        this.fromBlock = fromBlock;
-        this.currentBlock = fromBlock;
-        this.toBlock = toBlock;
+    public EventCache( List<EventData> events, Web3j web3j ) {
+        this.web3j = web3j;
         this.events = events;
         events.forEach( event -> this.cache.put( event, new ArrayList<>() ) );
-        this.web3j = Web3j.build( new HttpService( clientUrl ) );
-    }
-
-    // jede event hat ein cache evtl -> evtl einfacher für logik
-
-
-    public void initializeCaching() {
-        // register table in schema
-        this.createSchema();
-        // start caching
-        this.startCaching();
     }
 
 
-    // In this method, we create the appropriate schemas and tables in the catalog. (see also createTable)
-    private void createSchema() {
-        log.warn( "start to create schema" );
-        columns.remove( "block" );
-        columns.remove( "transaction" );
-        // TODO: block and trx columns are also included. Remove?
-        Map<String, List<FieldInformation>> columnInformations = columns.entrySet()
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                table -> EthereumPlugin.HIDDEN_PREFIX + table.getKey(), // we prepend this to hide the table to the user
-                                table -> table.getValue()
-                                        .stream()
-                                        .map( ExportedColumn::toFieldInformation )
-                                        .collect( Collectors.toList() ) ) );
-
-        EventCacheManager.getInstance().createTables( sourceAdapterId, columnInformations, targetAdapterId );
-    }
-
-
-    public void startCaching() {
-        log.warn( "start to cache" );
-        currentBlock = fromBlock;
-
-        while ( currentBlock.compareTo( toBlock ) <= 0 ) {
-            BigInteger endBlock = currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) );
-            if ( endBlock.compareTo( toBlock ) > 0 ) {
-                endBlock = toBlock;
+    public void addToCache( String address, BigInteger startBlock, BigInteger endBlock ) {
+        for ( EventData event : events ) {
+            addLogsToCache( address, event, startBlock, endBlock );
+            if ( cache.get( event ).size() == 0 ) {
+                continue;
             }
-
-            log.warn( "from-to: " + currentBlock + " to " + endBlock ); // in production: instead of .warn take .debug
-
-            // for each event fetch logs from block x to block y according to batchSizeInBlocks
-            for ( Event event : events ) {
-                addToCache( event, currentBlock, endBlock );
-            }
-
-            // just another loop for debugging reasons. I will put it in the first loop later on.
-            for ( Event event : events ) {
-                if ( cache.get( event ).size() == 0 ) {
-                    continue;
-                }
-
-                String tableName = event.getName().toLowerCase();
-                EventCacheManager.getInstance().writeToStore( tableName, cache.get( event ) ); // write the event into the store
-                cache.get( event ).clear(); // clear cache batch
-            }
-
-            currentBlock = endBlock.add( BigInteger.ONE ); // avoid overlapping block numbers
+            EventCacheManager.getInstance().writeToStore( event.getCompositeName(), cache.get( event ) ); // write the event into the store
+            cache.get( event ).clear(); // clear cache batch
         }
     }
 
 
-    public void addToCache( Event event, BigInteger startBlock, BigInteger endBlock ) {
+    private void addLogsToCache( String address, EventData eventData, BigInteger startBlock, BigInteger endBlock ) {
         EthFilter filter = new EthFilter(
                 DefaultBlockParameter.valueOf( startBlock ),
                 DefaultBlockParameter.valueOf( endBlock ),
-                smartContractAddress
+                address
         );
 
+        Event event = eventData.getEvent();
         filter.addSingleTopic( EventEncoder.encode( event ) );
 
         try {
@@ -188,7 +121,7 @@ public class EventCache {
             }
 
             // If cache is a Map<Event, List<List<Object>>>, you can store structuredLogs as follows
-            cache.put( event, structuredLogs );
+            cache.put( eventData, structuredLogs );
 
             // We are still writing to memory with logs & .addAll. Right now we will use the memory space.
             //cache.get( event ).addAll( rawLogs );
@@ -221,27 +154,6 @@ public class EventCache {
         return decodedValue.get( position );
     }
 
-
-    public CachingStatus getStatus() {
-        CachingStatus status = new CachingStatus();
-        BigInteger totalBlocks = toBlock.subtract(fromBlock).add(BigInteger.ONE);
-
-        if (currentBlock.add(BigInteger.valueOf(batchSizeInBlocks)).compareTo(toBlock) > 0) {
-            status.percent = 100;
-            status.state = CachingStatus.ProcessingState.DONE;
-        } else {
-            BigInteger processedBlocks = currentBlock.subtract(fromBlock);
-            status.percent = processedBlocks.floatValue() / totalBlocks.floatValue() * 100;
-
-            if (status.percent == 0) {
-                status.state = CachingStatus.ProcessingState.INITIALIZED;
-            } else {
-                status.state = CachingStatus.ProcessingState.PROCESSING;
-            }
-        }
-
-        return status;
-    }
 
 }
 

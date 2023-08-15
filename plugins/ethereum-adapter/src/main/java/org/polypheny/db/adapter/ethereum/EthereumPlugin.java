@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -131,6 +132,8 @@ public class EthereumPlugin extends Plugin {
         private EthereumSchema currentSchema;
         @Getter
         private final String smartContractAddress;
+        @Getter
+        final List<String> smartContractAddresses;
         private final String etherscanApiKey;
         @Getter
         private final BigInteger fromBlock;
@@ -149,6 +152,7 @@ public class EthereumPlugin extends Plugin {
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
             this.smartContractAddress = settings.get( "SmartContractAddress" ); // Event Data; Add smartContractAddress to EDataSource
+            this.smartContractAddresses = Arrays.asList( "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", "0x6b175474e89094c44da98b954eedeac495271d0f" ); // todo: get from adapter settings
             this.etherscanApiKey = settings.get( "EtherscanApiKey" );
             this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
             this.toBlock = new BigInteger( settings.get( "toBlock" ) );
@@ -236,12 +240,14 @@ public class EthereumPlugin extends Plugin {
                         throw new RuntimeException( e );
                     }
                     try {
-                        List<Event> events = eventDataMap.values().stream()
-                                .map( EventData::getEvent )
-                                .collect( Collectors.toList() );
+                        Map<String, List<EventData>> eventsPerContract = eventDataMap.values().stream()
+                                .collect(Collectors.groupingBy(
+                                        EventData::getSmartContractAddress,
+                                        Collectors.toList()
+                                ));
                         CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
                         EventCacheManager.getInstance()
-                                .register( getAdapterId(), cachingAdapter.id, clientURL, 50, smartContractAddress, fromBlock, toBlock, events, map )
+                                .register( getAdapterId(), cachingAdapter.id, clientURL, 50, fromBlock, toBlock, eventsPerContract, map )
                                 .initializeCaching();
                     } catch ( UnknownAdapterException e ) {
                         // If the specified adapter is not found, throw a RuntimeException
@@ -347,6 +353,7 @@ public class EthereumPlugin extends Plugin {
 
             } catch ( IOException e ) {
                 // todo: handle errors; for example no abi or internet connection etc.
+                log.warn( "GET EVENTS ERROR" );
                 throw new RuntimeException( e );
             }
 
@@ -359,6 +366,15 @@ public class EthereumPlugin extends Plugin {
                 return null;
             }
             return eventDataMap.get( catalogTableName ).getEvent();
+        }
+
+
+        protected String getSmartContractAddressFromCatalogTable( String catalogTableName ) {
+            if ( catalogTableName.equals( "block" ) || catalogTableName.equals( "transaction" ) ) {
+                return null;
+            }
+            return eventDataMap.get( catalogTableName ).getSmartContractAddress();
+
         }
 
 
@@ -393,13 +409,29 @@ public class EthereumPlugin extends Plugin {
 
 
         private void createExportedColumnsForEvents( Map<String, List<ExportedColumn>> map, String[] commonEventColumns, PolyType[] commonEventTypes ) {
-            // Event Data Dynamic Scheme
-            List<JSONObject> contractEvents = getEventsFromABI( etherscanApiKey, smartContractAddress );
+            for ( String address : smartContractAddresses ) {
+                // todo: API Rate Limits Etherscan. If called inside for loop it can cause error
+                String contractName = null;
+                List<JSONObject> contractEvents = null;
+                try {
+                    contractName = callWithExponentialBackoff(() -> getContractName(address));
+                    contractEvents = callWithExponentialBackoff(() -> getEventsFromABI(etherscanApiKey, address));
+                } catch ( Exception e ) {
+                    throw new RuntimeException( e );
+                }
 
-            for ( JSONObject event : contractEvents ) {
-                String eventName = event.getString( "name" ); // to match it later with catalogTable.name
-                JSONArray abiInputs = event.getJSONArray( "inputs" ); // indexed and non-indexed values (topics + data)
-                eventDataMap.put( eventName.toLowerCase(), new EventData( eventName, abiInputs ) );
+                // String contractName = getContractName( address );
+                // List<JSONObject> contractEvents = getEventsFromABI( etherscanApiKey, address );
+
+                for ( JSONObject event : contractEvents ) {
+                    if ( event.getBoolean( "anonymous" ) ) {
+                        continue;
+                    }
+                    String eventName = event.getString( "name" ); // to match it later with catalogTable.name
+                    String compositeKey = contractName + "_" + eventName; // e.g. Uni_Transfer & Dai_Transfer
+                    JSONArray abiInputs = event.getJSONArray( "inputs" ); // indexed and non-indexed values (topics + data)
+                    eventDataMap.put( compositeKey.toLowerCase(), new EventData( eventName, contractName, address, abiInputs ) );
+                }
             }
 
             PolyType collectionsType = null;
@@ -409,7 +441,8 @@ public class EthereumPlugin extends Plugin {
 
             // Event Data: Creating columns for each event for specified smart contract based on ABI
             for ( Map.Entry<String, EventData> eventEntry : eventDataMap.entrySet() ) {
-                String eventName = eventEntry.getValue().getOriginalKey(); // Get the original event name
+                // String eventName = eventEntry.getValue().getOriginalKey(); // Get the original event name
+                String compositeEventName = eventEntry.getValue().getCompositeName();
                 JSONArray abiInputs = eventEntry.getValue().getAbiInputs(); // Get the data
                 List<ExportedColumn> eventDataCols = new ArrayList<>();
                 int inputPosition = 0;
@@ -428,7 +461,7 @@ public class EthereumPlugin extends Plugin {
                             cardinality,
                             false,
                             SCHEMA_NAME,
-                            eventName, // event name
+                            compositeEventName, // event name
                             col,
                             inputPosition,
                             inputPosition == 0
@@ -450,7 +483,7 @@ public class EthereumPlugin extends Plugin {
                             cardinality,
                             false,
                             SCHEMA_NAME,
-                            eventName, // event name
+                            compositeEventName, // event name
                             columnName,
                             inputPosition,
                             inputPosition == 0
@@ -458,8 +491,42 @@ public class EthereumPlugin extends Plugin {
                     inputPosition++;
                 }
 
-                map.put( eventName, eventDataCols );
+                map.put( compositeEventName, eventDataCols );
             }
+
+        }
+
+
+        private String getContractName( String contractAddress ) {
+            try {
+                URL url = new URL( "https://api.etherscan.io/api?module=contract&action=getsourcecode&address=" + contractAddress + "&apikey=" + etherscanApiKey );
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod( "GET" );
+                int responseCode = connection.getResponseCode();
+                if ( responseCode == HttpURLConnection.HTTP_OK ) {
+                    BufferedReader in = new BufferedReader( new InputStreamReader( connection.getInputStream() ) );
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ( (inputLine = in.readLine()) != null ) {
+                        response.append( inputLine );
+                    }
+                    in.close();
+
+                    JSONObject jsonObject = new JSONObject( response.toString() );
+                    JSONArray resultArray = jsonObject.getJSONArray( "result" ); // Get result array
+                    if ( resultArray.length() > 0 ) {
+                        JSONObject contractObject = resultArray.getJSONObject( 0 ); // Get the first object in result array
+                        return contractObject.getString( "ContractName" ); // Return ContractName field
+                    }
+
+                }
+
+            } catch ( IOException e ) {
+                // todo: handle errors; for example no abi or internet connection etc.
+                throw new RuntimeException( e );
+            }
+            return null;
         }
 
 
@@ -483,8 +550,30 @@ public class EthereumPlugin extends Plugin {
                 default:
                     return null;
             }
-
         }
+
+        public <T> T callWithExponentialBackoff( Callable<T> callable) throws Exception {
+            int maxRetries = 5;
+            long waitTime = 1000; // 1 second
+
+            for (int retry = 0; retry < maxRetries; retry++) {
+                try {
+                    return callable.call();
+                } catch (Exception e) {
+                    if (retry == maxRetries - 1) {
+                        throw e; // If this was our last retry, rethrow the exception
+                    }
+                    try {
+                        Thread.sleep(waitTime);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt(); // Restore the interrupted status
+                    }
+                    waitTime *= 2; // Double the delay for the next retry
+                }
+            }
+            throw new Exception("Exponential backoff failed after " + maxRetries + " attempts.");
+        }
+
 
 
     }
