@@ -18,6 +18,9 @@ package org.polypheny.db.catalog.catalogs;
 
 import java.util.Map;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 
 public interface AllocationGraphCatalog extends AllocationCatalog {
 
@@ -25,11 +28,13 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
     /**
      * Adds a new placement on a given adapter for an existing graph.
      *
+     * @param graph
+     * @param placementId
+     * @param partitionId
      * @param adapterId The id of the adapter on which the graph is added
-     * @param graphId The id of the graph for which a new placement is added
      * @return The id of the new placement
      */
-    AllocationGraph addAllocation( long adapterId, long graphId );
+    AllocationGraph addAllocation( LogicalGraph graph, long placementId, long partitionId, long adapterId );
 
     /**
      * Deletes a specific graph placement for a given graph and adapter.
@@ -37,6 +42,15 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
      * @param id
      */
     void deleteAllocation( long id );
+
+
+    AllocationPlacement addPlacement( LogicalGraph graph, long adapterId );
+
+    void removePlacement( long id );
+
+    AllocationPartition addPartition( LogicalGraph graph, String name );
+
+    void removePartition( long id );
 
 
     Map<Long, ? extends AllocationGraph> getGraphs();

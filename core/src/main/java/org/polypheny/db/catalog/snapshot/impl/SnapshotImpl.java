@@ -104,7 +104,7 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public LogicalNamespace getNamespace( String name ) {
-        return namespaceNames.get( name );
+        return namespaceNames.get( name.toLowerCase() );
     }
 
 

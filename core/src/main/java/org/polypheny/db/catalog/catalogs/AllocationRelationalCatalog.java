@@ -140,7 +140,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param placementType The type of placement
      * @return
      */
-    AllocationPartition addPartitionPlacement( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role );
+    AllocationPartition addPartition( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role );
 
     /**
      * Adds a new DataPlacement for a given table on a specific store
@@ -179,16 +179,12 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
     Map<Pair<Long, Long>, AllocationColumn> getColumns();
 
-
     Map<Long, PartitionProperty> getProperties();
+
 
     ConcurrentHashMap<Long, AllocationPartitionGroup> getPartitionGroups();
 
-    ConcurrentHashMap<Long, AllocationPartition> getPartitions();
-
     AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId );
-
-    ConcurrentHashMap<Long, AllocationPlacement> getPlacements();
 
     void deletePlacement( long id );
 

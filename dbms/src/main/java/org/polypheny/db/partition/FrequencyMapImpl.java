@@ -338,7 +338,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                 Catalog.getInstance().getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
                 for ( long partitionId : hotPartitionsToCreate ) {
-                    catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
+                    catalog.getAllocRel( table.namespaceId ).addPartition(
                             table.namespaceId,
                             store.getAdapterId(),
                             table.id,

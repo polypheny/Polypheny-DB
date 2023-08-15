@@ -74,7 +74,7 @@ public class MqlCreateCollection extends MqlNode implements ExecutableStatement 
                 namespaceId,
                 name,
                 true,
-                dataStores.size() == 0 ? null : dataStores,
+                dataStores.isEmpty() ? null : dataStores,
                 placementType,
                 statement );
     }

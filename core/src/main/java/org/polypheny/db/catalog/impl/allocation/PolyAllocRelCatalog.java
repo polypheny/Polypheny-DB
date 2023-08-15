@@ -233,7 +233,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationPartition addPartitionPlacement( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role ) {
+    public AllocationPartition addPartition( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role ) {
         /*long id = idBuilder.getNewPartitionId();
         AllocationPartitionOld partition = new AllocationPartitionOld(
                 id,

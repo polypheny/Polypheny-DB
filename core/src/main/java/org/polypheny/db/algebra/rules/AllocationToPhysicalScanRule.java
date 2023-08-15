@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.tools.AlgBuilder;
@@ -50,9 +50,20 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
             return;
         }
 
-        AlgNode newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getScan( alloc.id, call.builder() );
-        if ( scan.entity.namespaceType == NamespaceType.RELATIONAL ) {
-            newAlg = attachReorder( newAlg, scan, call.builder() );
+        AlgNode newAlg;
+        switch ( scan.getModel() ) {
+            case RELATIONAL:
+                newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getRelScan( alloc.id, call.builder() );
+                newAlg = attachReorder( newAlg, scan, call.builder() );
+                break;
+            case DOCUMENT:
+                newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getDocumentScan( alloc.id, call.builder() );
+                break;
+            case GRAPH:
+                newAlg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getGraphScan( alloc.id, call.builder() );
+                break;
+            default:
+                throw new GenericRuntimeException( "Could not transform allocation to physical" );
         }
         call.transformTo( newAlg );
     }

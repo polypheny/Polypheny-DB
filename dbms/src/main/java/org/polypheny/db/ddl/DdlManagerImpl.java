@@ -878,7 +878,7 @@ public class DdlManagerImpl extends DdlManager {
 
         // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
         for ( long partitionId : partitionIds ) {
-            catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
+            catalog.getAllocRel( table.namespaceId ).addPartition(
                     table.namespaceId, dataStore.getAdapterId(),
                     table.id,
                     PlacementType.AUTOMATIC,
@@ -1846,8 +1846,11 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
 
+        AllocationPartition partition = catalog.getAllocGraph( graphId ).addPartition( logical, "undefined" );
+
         for ( DataStore<?> store : stores ) {
-            AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( store.getAdapterId(), logical.id );
+            AllocationPlacement placement = catalog.getAllocGraph( graphId ).addPlacement( logical, store.adapterId );
+            AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( logical, placement.id, partition.id, store.getAdapterId() );
 
             store.createGraph( statement.getPrepareContext(), logical, alloc );
         }
@@ -1872,8 +1875,11 @@ public class DdlManagerImpl extends DdlManager {
                 .map( p -> p.adapterId )
                 .collect( Collectors.toList() );
 
+        List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( graphId );
+
         for ( DataStore<?> store : stores ) {
-            AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( store.getAdapterId(), graphId );
+            AllocationPlacement placement = catalog.getAllocGraph( graphId ).addPlacement( graph, store.adapterId );
+            AllocationGraph alloc = catalog.getAllocGraph( graphId ).addAllocation( graph, placement.id, partitions.get( 0 ).id, store.getAdapterId() );
 
             store.createGraph( statement.getPrepareContext(), graph, alloc );
 
@@ -1900,6 +1906,8 @@ public class DdlManagerImpl extends DdlManager {
         store.dropGraph( statement.getPrepareContext(), alloc );
 
         catalog.getAllocGraph( graphId ).deleteAllocation( alloc.id );
+
+        catalog.getAllocGraph( graphId ).removePlacement( alloc.placementId );
     }
 
 
@@ -1939,8 +1947,10 @@ public class DdlManagerImpl extends DdlManager {
         for ( AllocationEntity alloc : allocSnapshot.getFromLogical( graphId ) ) {
             AdapterManager.getInstance().getStore( alloc.adapterId ).dropGraph( statement.getPrepareContext(), alloc.unwrap( AllocationGraph.class ) );
             catalog.getAllocGraph( alloc.namespaceId ).deleteAllocation( alloc.id );
+            catalog.getAllocGraph( alloc.namespaceId ).removePlacement( alloc.placementId );
         }
 
+        catalog.getAllocGraph( graphId ).removePartition( catalog.getSnapshot().alloc().getPartitionsFromLogical( graphId ).get( 0 ).id );
         catalog.getLogicalGraph( graphId ).deleteGraph( graphId );
 
         catalog.deleteNamespace( graphId );
@@ -2097,7 +2107,7 @@ public class DdlManagerImpl extends DdlManager {
         PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
 
         for ( DataStore<?> store : stores ) {
-            catalog.getAllocRel( catalogTable.namespaceId ).addPartitionPlacement(
+            catalog.getAllocRel( catalogTable.namespaceId ).addPartition(
                     catalogTable.namespaceId,
                     store.getAdapterId(),
                     catalogTable.id,
@@ -2241,8 +2251,11 @@ public class DdlManagerImpl extends DdlManager {
                 EntityType.ENTITY,
                 true );
 
+        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, "undefined" );
+
         for ( DataStore<?> store : stores ) {
-            AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( store.getAdapterId(), logical.id );
+            AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement( logical, store.adapterId );
+            AllocationCollection alloc = catalog.getAllocDoc( namespaceId ).addAllocation( logical, placement.id, partition.id, store.getAdapterId() );
 
             store.createCollection( statement.getPrepareContext(), logical, alloc );
         }
@@ -2271,19 +2284,20 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropCollection( LogicalCollection catalogCollection, Statement statement ) {
+    public void dropCollection( LogicalCollection collection, Statement statement ) {
         Snapshot snapshot = catalog.getSnapshot();
 
         AdapterManager manager = AdapterManager.getInstance();
 
-        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( catalogCollection.id );
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( collection.id );
         for ( AllocationEntity allocation : allocations ) {
             manager.getStore( allocation.adapterId ).dropCollection( statement.getPrepareContext(), allocation.unwrap( AllocationCollection.class ) );
 
             catalog.getAllocDoc( allocation.namespaceId ).removeAllocation( allocation.id );
+            catalog.getAllocDoc( allocation.namespaceId ).removePlacement( allocation.placementId );
         }
-
-        catalog.getLogicalDoc( catalogCollection.namespaceId ).deleteCollection( catalogCollection.id );
+        catalog.getAllocDoc( collection.namespaceId ).removePartition( snapshot.alloc().getPartitionsFromLogical( collection.id ).get( 0 ).id );
+        catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
 
         catalog.updateSnapshot();
     }
@@ -2303,10 +2317,15 @@ public class DdlManagerImpl extends DdlManager {
                 .map( p -> p.adapterId )
                 .collect( Collectors.toList() );
 
+        List<AllocationPartition> partitions = catalog.getSnapshot().alloc().getPartitionsFromLogical( collection.id );
+
         for ( DataStore<?> store : stores ) {
+            AllocationPlacement placement = catalog.getAllocDoc( collection.namespaceId ).addPlacement( collection, store.adapterId );
             AllocationCollection alloc = catalog.getAllocDoc( collection.namespaceId ).addAllocation(
-                    store.getAdapterId(),
-                    collection.id );
+                    collection,
+                    placement.id,
+                    partitions.get( 0 ).id,
+                    store.getAdapterId() );
 
             store.createCollection( statement.getPrepareContext(), collection, alloc );
 
@@ -2922,7 +2941,7 @@ public class DdlManagerImpl extends DdlManager {
         DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
         for ( DataStore<?> store : stores ) {
             for ( long partitionId : partitionIds ) {
-                catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionPlacement(
+                catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                         partitionedTable.namespaceId,
                         store.getAdapterId(),
                         partitionedTable.id,
@@ -3027,7 +3046,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( AllocationPlacement placement : catalog.getSnapshot().alloc().getPlacementsFromLogical( tableId ) ) {
             //PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
-            /*catalog.getAllocRel( table.namespaceId ).addPartitionPlacement(
+            /*catalog.getAllocRel( table.namespaceId ).addPartition(
                     table.namespaceId,
                     store.getAdapterId(),
                     table.id,

@@ -474,7 +474,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
     @Override
     public @NonNull Optional<LogicalTable> getTable( String namespaceName, String tableName ) {
-        LogicalNamespace namespace = namespaceNames.get( namespaceName );
+        LogicalNamespace namespace = namespaceNames.get( namespaceName.toLowerCase() );
         return Optional.ofNullable( tableNames.get( Pair.of( namespace.id, namespace.caseSensitive ? tableName : tableName.toLowerCase() ) ) );
     }
 

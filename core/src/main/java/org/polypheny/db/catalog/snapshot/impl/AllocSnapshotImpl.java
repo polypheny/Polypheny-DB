@@ -220,9 +220,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, AllocationPlacement> buildPlacements( Map<Long, AllocationCatalog> allocationCatalogs ) {
         return ImmutableMap.copyOf( allocationCatalogs.values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
-                .map( c -> (AllocationRelationalCatalog) c )
-                .map( AllocationRelationalCatalog::getPlacements )
+                .map( AllocationCatalog::getPlacements )
                 .flatMap( c -> c.values().stream() )
                 .collect( Collectors.toMap( c -> c.id, c -> c ) ) );
     }
@@ -231,9 +229,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, AllocationPartition> buildPartitions( Map<Long, AllocationCatalog> allocationCatalogs ) {
         return ImmutableMap.copyOf( allocationCatalogs.values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
-                .map( c -> (AllocationRelationalCatalog) c )
-                .map( AllocationRelationalCatalog::getPartitions )
+                .map( AllocationCatalog::getPartitions )
                 .flatMap( c -> c.values().stream() )
                 .collect( Collectors.toMap( c -> c.id, c -> c ) ) );
     }

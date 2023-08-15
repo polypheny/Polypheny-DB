@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -63,7 +64,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -307,7 +311,20 @@ public class MqlToAlgConverter {
 
     private CatalogEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         LogicalNamespace namespace = snapshot.getNamespace( dbSchemaName );
-        return snapshot.doc().getCollection( namespace.id, query.getCollection() ).orElseThrow();
+
+        Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
+        if ( optionalDoc.isPresent() ) {
+            return optionalDoc.get();
+        }
+
+        Optional<LogicalTable> optionalRel = snapshot.rel().getTable( namespace.id, query.getCollection() );
+        if ( optionalRel.isPresent() ) {
+            return optionalRel.get();
+        }
+
+        Optional<LogicalGraph> optionalGraph = snapshot.graph().getGraph( namespace.id );
+
+        return optionalGraph.orElseThrow();
     }
 
 

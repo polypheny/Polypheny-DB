@@ -17,6 +17,9 @@
 package org.polypheny.db.catalog.catalogs;
 
 import io.activej.serializer.annotations.SerializeClass;
+import java.util.concurrent.ConcurrentHashMap;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
@@ -27,5 +30,9 @@ public interface AllocationCatalog {
 
     LogicalNamespace getNamespace();
 
+
+    ConcurrentHashMap<Long, AllocationPartition> getPartitions();
+
+    ConcurrentHashMap<Long, AllocationPlacement> getPlacements();
 
 }

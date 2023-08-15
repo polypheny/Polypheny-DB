@@ -271,12 +271,14 @@ public abstract class BaseRouter implements Router {
             // return handleGraphOnDocument( alg, namespace, statement, allocId );
         }
 
-        LogicalCollection collection = scan.entity.unwrap( LogicalCollection.class );
+        //LogicalCollection collection = scan.entity.unwrap( LogicalCollection.class );
 
-        List<Long> placements = snapshot.alloc().getFromLogical( collection.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).collect( Collectors.toList() );
 
-        for ( long adapterId : placements ) {
-            AllocationEntity allocation = snapshot.alloc().getEntity( adapterId, collection.id ).orElseThrow();
+        List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( scan.entity.id );
+
+        for ( AllocationPlacement placement : placements ) {
+            AllocationEntity allocation = snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow();
 
             // a native placement was used, we go with that
             return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation );
