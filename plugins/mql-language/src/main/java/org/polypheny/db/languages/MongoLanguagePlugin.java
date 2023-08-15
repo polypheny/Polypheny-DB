@@ -240,6 +240,10 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.REMOVE_NAMES, new LangFunctionOperator( "REMOVE_NAMES", Kind.EXTRACT ) );
 
+        register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS ) );
+
+        register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS ) );
+
         isInit = true;
     }
 

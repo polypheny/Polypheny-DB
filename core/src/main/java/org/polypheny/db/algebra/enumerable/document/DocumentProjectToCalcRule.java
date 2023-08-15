@@ -25,7 +25,10 @@ import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexFieldAccess;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexVisitorImpl;
 
 public class DocumentProjectToCalcRule extends ConverterRule {
 
@@ -41,9 +44,30 @@ public class DocumentProjectToCalcRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
-        final RexProgram program = RexProgram.create( input.getRowType(), List.of( project.asSingleProject() ), null, project.getRowType(), project.getCluster().getRexBuilder() );
+        final RexProgram program = RexProgram.create( input.getRowType(), List.of( replaceAccess( project.asSingleProject() ) ), null, project.getRowType(), project.getCluster().getRexBuilder() );
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
 
+
+    private RexNode replaceAccess( RexNode project ) {
+        AccessReplacer replacer = new AccessReplacer();
+        project.accept( replacer );
+        return project;
+    }
+
+
+    private static class AccessReplacer extends RexVisitorImpl<Void> {
+
+        protected AccessReplacer() {
+            super( true );
+        }
+
+
+        @Override
+        public Void visitFieldAccess( RexFieldAccess fieldAccess ) {
+            return super.visitFieldAccess( fieldAccess );
+        }
+
+    }
 
 }

@@ -18,12 +18,12 @@ package org.polypheny.db.languages;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.util.Pair;
 
 /**
  * OperatorRegistry is used to provide access to all available functions/operators, which Polypheny is able to handle.
@@ -163,12 +163,12 @@ public class OperatorRegistry {
     /**
      * Retrieves all available operators sorted in a {@link Map}.
      */
-    public static Map<OperatorName, Operator> getAllOperators() {
+    public static Map<Pair<QueryLanguage, OperatorName>, Operator> getAllOperators() {
         return registry
                 .entrySet()
                 .stream()
-                .flatMap( e -> e.getValue().entrySet().stream() )
-                .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
+                .flatMap( e -> e.getValue().entrySet().stream().map( c -> Pair.of( e.getKey(), c ) ) )
+                .collect( Collectors.toMap( t -> Pair.of( t.left, t.right.getKey() ), t -> t.right.getValue() ) );
     }
 
 

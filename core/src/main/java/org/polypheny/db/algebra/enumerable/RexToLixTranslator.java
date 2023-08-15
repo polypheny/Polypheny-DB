@@ -24,12 +24,14 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +55,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
@@ -65,10 +68,12 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -160,7 +165,6 @@ public class RexToLixTranslator {
         this.replace = replace;
         this.doSubstitute = !replace.isEmpty();
     }
-
 
 
     /**
@@ -655,6 +659,13 @@ public class RexToLixTranslator {
                     if ( correlates == null ) {
                         throw new RuntimeException( "Cannot translate " + expr + " since correlate variables resolver is not defined" );
                     }
+
+                    if ( target.getType().getPolyType() == PolyType.DOCUMENT ) {
+                        return translate( builder.makeCall( target.getType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ), RexIndexRef.of( 0, target.getType() ),
+                                builder.makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
+                                        PolyList.copyOf( Arrays.stream( fieldName.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ) ) );
+                    }
+
                     InputGetter getter = correlates.apply( ((RexCorrelVariable) target).getName() );
                     Expression y = getter.field( list, fieldIndex, storageType );
                     Expression input = list.append( "corInp" + fieldIndex + "_", y ); // safe to share

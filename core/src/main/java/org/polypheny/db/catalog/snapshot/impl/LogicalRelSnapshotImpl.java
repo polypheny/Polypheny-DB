@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Value;
@@ -41,6 +42,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.util.Pair;
@@ -92,52 +94,52 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     public LogicalRelSnapshotImpl( Map<Long, LogicalRelationalCatalog> catalogs ) {
-        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n ) ) );
-        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n ) ) );
+        this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().map( LogicalRelationalCatalog::getLogicalNamespace ).collect( Collectors.toMap( n -> n.id, n -> n, getDuplicateError() ) ) );
+        this.namespaceNames = ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.name, n -> n, getDuplicateError() ) ) );
         this.namespaceCaseSensitive = buildNamespaceCasing();
 
-        this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
-        this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
+        this.tables = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getTables().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
+        this.tableNames = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().namespaceId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
         this.tablesNamespace = buildTablesNamespace();
 
-        this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.columns = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getColumns().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
         this.columnNames = ImmutableMap.copyOf(
-                columns.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().tableId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue ) ) );
+                columns.entrySet().stream().collect( Collectors.toMap( e -> Pair.of( e.getValue().tableId, getAdjustedName( e.getValue().namespaceId, e.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
 
         //// TABLES
 
         this.tableColumns = buildTableColumns();
 
-        this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue ) ) );
-        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().namespaceId, Pair.of( tables.get( c.getValue().tableId ).name, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ) ), Entry::getValue ) ) );
-        this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ), Entry::getValue ) ) );
+        this.tableColumnIdColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, c.getValue().id ), Entry::getValue, getDuplicateError() ) ) );
+        this.tableColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().namespaceId, Pair.of( tables.get( c.getValue().tableId ).name, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ) ), Entry::getValue, getDuplicateError() ) ) );
+        this.tableIdColumnNameColumn = ImmutableMap.copyOf( columns.entrySet().stream().collect( Collectors.toMap( c -> Pair.of( c.getValue().tableId, getAdjustedName( c.getValue().namespaceId, c.getValue().name ) ), Entry::getValue, getDuplicateError() ) ) );
 
         //// KEYS
 
-        this.keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.keys = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getKeys().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.tableKeys = buildTableKeys();
 
         this.columnsKey = buildColumnsKey();
 
-        this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.index = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getIndexes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.keyToIndexes = buildKeyToIndexes();
 
-        this.foreignKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalForeignKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalForeignKey) e.getValue() ) ) );
+        this.foreignKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalForeignKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalForeignKey) e.getValue(), getDuplicateError() ) ) );
 
         this.tableForeignKeys = buildTableForeignKeys();
 
-        this.primaryKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalPrimaryKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalPrimaryKey) e.getValue() ) ) );
+        this.primaryKeys = ImmutableMap.copyOf( keys.entrySet().stream().filter( f -> f.getValue() instanceof LogicalPrimaryKey ).collect( Collectors.toMap( Entry::getKey, e -> (LogicalPrimaryKey) e.getValue(), getDuplicateError() ) ) );
 
         //// CONSTRAINTS
 
-        this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.constraints = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getConstraints().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.tableConstraints = buildTableConstraints();
 
         /// ALGNODES e.g. views and materializedViews
-        this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+        this.nodes = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getNodes().entrySet().stream() ).collect( Collectors.toMap( Entry::getKey, Entry::getValue, getDuplicateError() ) ) );
 
         this.views = buildViews();
 
@@ -146,8 +148,16 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     }
 
 
+    @NotNull
+    private static <D> BinaryOperator<D> getDuplicateError() {
+        return ( a, b ) -> {
+            throw new GenericRuntimeException( "Duplicates merging snapshot" );
+        };
+    }
+
+
     private ImmutableMap<Long, Boolean> buildNamespaceCasing() {
-        return ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.id, n -> n.caseSensitive ) ) );
+        return ImmutableMap.copyOf( namespaces.values().stream().collect( Collectors.toMap( n -> n.id, n -> n.caseSensitive, getDuplicateError() ) ) );
     }
 
 
@@ -166,7 +176,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
                 .stream()
                 .filter( t -> t.unwrap( LogicalView.class ) != null )
                 .map( t -> t.unwrap( LogicalView.class ) )
-                .collect( Collectors.toMap( e -> e.id, e -> e ) ) );
+                .collect( Collectors.toMap( e -> e.id, e -> e, getDuplicateError() ) ) );
     }
 
 
@@ -207,7 +217,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     private ImmutableMap<long[], LogicalKey> buildColumnsKey() {
-        Map<long[], LogicalKey> map = keys.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().columnIds.stream().mapToLong( c -> c ).toArray(), Entry::getValue ) );
+        Map<long[], LogicalKey> map = keys.entrySet().stream().collect( Collectors.toMap( e -> e.getValue().columnIds.stream().mapToLong( c -> c ).toArray(), Entry::getValue, getDuplicateError() ) );
 
         return ImmutableMap.copyOf( map );
     }

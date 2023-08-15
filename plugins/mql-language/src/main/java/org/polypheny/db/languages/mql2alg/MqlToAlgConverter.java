@@ -133,13 +133,13 @@ public class MqlToAlgConverter {
         put( "$not", Collections.singletonList( OperatorRegistry.get( OperatorName.NOT ) ) );
     }};
     private final static Map<String, Operator> mathOperators = new HashMap<>() {{
-        put( "$subtract", OperatorRegistry.get( OperatorName.MINUS ) );
-        put( "$add", OperatorRegistry.get( OperatorName.PLUS ) );
-        put( "$multiply", OperatorRegistry.get( OperatorName.MULTIPLY ) );
-        put( "$divide", OperatorRegistry.get( OperatorName.DIVIDE ) );
-        put( "$mod", OperatorRegistry.get( OperatorName.MOD ) );
-        put( "$pow", OperatorRegistry.get( OperatorName.POWER ) );
-        put( "$sum", OperatorRegistry.get( OperatorName.SUM ) );
+        put( "$subtract", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MINUS ) );
+        put( "$add", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ) );
+        put( "$multiply", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MULTIPLY ) );
+        put( "$divide", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.DIVIDE ) );
+        put( "$mod", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MOD ) );
+        put( "$pow", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.POWER ) );
+        put( "$sum", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.SUM ) );
         put( "$literal", null );
     }};
     private static final Map<String, AggFunction> accumulators = new HashMap<>() {{
@@ -589,7 +589,7 @@ public class MqlToAlgConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
             RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
-            updates.put( entry.getKey(), builder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), id, literal ) );
+            updates.put( entry.getKey(), builder.makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ), id, literal ) );
         }
         return updates;
     }
