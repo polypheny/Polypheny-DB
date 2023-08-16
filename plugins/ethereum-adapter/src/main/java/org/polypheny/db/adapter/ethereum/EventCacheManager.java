@@ -105,8 +105,8 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    public ContractCache register( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, BigInteger fromBlock, BigInteger toBlock, Map<String, List<EventData>> eventsPerContract, Map<String, List<ExportedColumn>> map ) {
-        ContractCache cache = new ContractCache( sourceAdapterId, targetAdapterId, clientUrl, batchSizeInBlocks, fromBlock, toBlock, eventsPerContract, map );
+    public ContractCache register( int sourceAdapterId, int targetAdapterId, String clientUrl, int batchSizeInBlocks, BigInteger fromBlock, BigInteger toBlock, Map<String, List<EventData>> eventsPerContract, Map<String, List<ExportedColumn>> columns ) {
+        ContractCache cache = new ContractCache( sourceAdapterId, targetAdapterId, clientUrl, batchSizeInBlocks, fromBlock, toBlock, eventsPerContract, columns );
         this.caches.put( sourceAdapterId, cache );
         return cache;
     }
@@ -127,7 +127,7 @@ public class EventCacheManager implements Runnable {
 
             // For each table, a new table is created with their constraint (e.g., a primary key).
             for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
-                ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( table.getValue().get( 0 ).name ) ); // todo atm first column is primary, we should adjust that
+                ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( "log_index", "transaction_index", "block_number" ) );
                 DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, transaction.createStatement() );
             }
 
@@ -169,7 +169,7 @@ public class EventCacheManager implements Runnable {
         builder.push( LogicalValues.createOneRow( builder.getCluster() ) );
         builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), rowType.getFieldNames() );
         builder.insert( (AlgOptTable) table );
-        // TODO: we should re-use this for all batches (ignore right now); David will do this
+        // todo: we should re-use this for all batches (ignore right now); David will do this
 
         AlgNode node = builder.build(); // Construct the algebraic node
         AlgRoot root = AlgRoot.of( node, Kind.INSERT ); // Wrap the node into an AlgRoot as required by Polypheny
@@ -185,7 +185,7 @@ public class EventCacheManager implements Runnable {
             for ( List<Object> logResult : logResults ) {
                 Object value = logResult.get( i );
                 // todo: converting to long (-2^63-1 till 2^63-1) from uint256 (2^256-1) if data is greater than 2^63-1
-                // how to convert it to bigint? Is there a Poltype that can handle unit256? Double?
+                // how to convert it to bigint? Is there a Poltype that can handle unit256? Double? Evtl. Decimal?
                 // is Bigint 64-bit signed integer?
                 if ( value instanceof Address ) {
                     value = value.toString();

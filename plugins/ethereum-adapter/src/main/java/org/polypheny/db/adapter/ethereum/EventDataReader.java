@@ -73,7 +73,7 @@ public class EventDataReader extends BlockReader {
             this.blockReads--; // Decrement blockReads when all logs for the current block have been processed
         }
 
-        // Decode the data field of the log
+        // Decode the data field of the log(non-indexed parameters)
         String data = log.getData();
         List<Type> decodedData = FunctionReturnDecoder.decode( data, event.getNonIndexedParameters() );
 

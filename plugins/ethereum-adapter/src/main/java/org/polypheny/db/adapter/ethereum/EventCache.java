@@ -42,8 +42,6 @@ import org.web3j.protocol.core.methods.response.EthLog.LogResult;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.http.HttpService;
 
-// TODO evtl.: Man könnte es noch weiter abtrennen. Jedes Event hat einen Cache. Bzw. jedes Event macht sein eigenes caching (hat seine eigen URL)
-// könnte evtl. logistisch für Java einfacher sein.
 @Slf4j // library to use logging annotations
 public class EventCache {
 
@@ -83,59 +81,8 @@ public class EventCache {
 
         try {
             List<EthLog.LogResult> rawLogs = web3j.ethGetLogs( filter ).send().getLogs();
-
-            List<List<Object>> structuredLogs = new ArrayList<>();
-
-            for ( EthLog.LogResult rawLogResult : rawLogs ) {
-                Log rawLog = (Log) rawLogResult.get();
-                List<Object> structuredLog = new ArrayList<>();
-
-                // Add all indexed values first (topics)
-                for ( int i = 0; i < event.getParameters().size(); i++ ) {
-                    TypeReference<?> paramType = event.getParameters().get( i );
-                    if ( paramType.isIndexed() ) {
-                        structuredLog.add( extractIndexedValue( rawLog, paramType, i ) );
-                    }
-                }
-
-                // Then add all non-indexed values (data)
-                int nonIndexedPosition = 0; // Separate index for non-indexed parameters
-                for ( int i = 0; i < event.getParameters().size(); i++ ) {
-                    TypeReference<?> paramType = event.getParameters().get( i );
-                    if ( !paramType.isIndexed() ) {
-                        structuredLog.add( extractNonIndexedValue( rawLog, paramType, nonIndexedPosition, event ) );
-                        nonIndexedPosition++;
-                    }
-                }
-
-                // Add other log information as needed
-                structuredLog.add( rawLog.isRemoved() );
-                structuredLog.add( rawLog.getLogIndex() );
-                structuredLog.add( rawLog.getTransactionIndex() );
-                structuredLog.add( rawLog.getTransactionHash() );
-                structuredLog.add( rawLog.getBlockHash() );
-                structuredLog.add( rawLog.getBlockNumber() );
-                structuredLog.add( rawLog.getAddress() );
-
-                structuredLogs.add( structuredLog );
-            }
-
-            // If cache is a Map<Event, List<List<Object>>>, you can store structuredLogs as follows
+            List<List<Object>> structuredLogs = normalizeLogs( event, rawLogs );
             cache.put( eventData, structuredLogs );
-
-            // We are still writing to memory with logs & .addAll. Right now we will use the memory space.
-            //cache.get( event ).addAll( rawLogs );
-
-            // Without using the memory:
-            // Directly write to store. How?
-            // 1. call getLogs method which returns logs
-            // 2. write it directly to the store: writeToStore( getLogs() )
-            // This can be done synchronously. David thinks this method is good for my project. This means we don't need the cache Hashmap anymore.
-
-            // or (again using a little bit of memory)
-            // use also a hashmap like above, write them into the map (like right now) but this time use multithreading
-            // so when one value is put into the map another is written to the store asynchronously
-
         } catch ( IOException e ) {
             // Handle exception here. Maybe log an error and re-throw, or set `logs` to an empty list.
         }
@@ -152,6 +99,53 @@ public class EventCache {
     private Object extractNonIndexedValue( Log rawLog, TypeReference<?> paramType, int position, Event event ) {
         List<Type> decodedValue = FunctionReturnDecoder.decode( rawLog.getData(), event.getNonIndexedParameters() );
         return decodedValue.get( position );
+    }
+
+
+    private List<List<Object>> normalizeLogs( Event event, List<EthLog.LogResult> rawLogs ) {
+        List<List<Object>> structuredLogs = new ArrayList<>();
+        for ( EthLog.LogResult rawLogResult : rawLogs ) {
+            Log rawLog = (Log) rawLogResult.get();
+
+            if ( rawLog.getLogIndex() == null ||
+                    rawLog.getTransactionIndex() == null ||
+                    rawLog.getBlockNumber() == null ) {
+                continue; // don't add pending logs because of primary key
+            }
+
+            List<Object> structuredLog = new ArrayList<>();
+
+            // Add all indexed values first (topics)
+            for ( int i = 0; i < event.getParameters().size(); i++ ) {
+                TypeReference<?> paramType = event.getParameters().get( i );
+                if ( paramType.isIndexed() ) {
+                    structuredLog.add( extractIndexedValue( rawLog, paramType, i ) );
+                }
+            }
+
+            // Then add all non-indexed values (data)
+            int nonIndexedPosition = 0; // Separate index for non-indexed parameters
+            for ( int i = 0; i < event.getParameters().size(); i++ ) {
+                TypeReference<?> paramType = event.getParameters().get( i );
+                if ( !paramType.isIndexed() ) {
+                    structuredLog.add( extractNonIndexedValue( rawLog, paramType, nonIndexedPosition, event ) );
+                    nonIndexedPosition++;
+                }
+            }
+
+            // Add other log information as needed
+            structuredLog.add( rawLog.isRemoved() );
+            structuredLog.add( rawLog.getLogIndex() );
+            structuredLog.add( rawLog.getTransactionIndex() );
+            structuredLog.add( rawLog.getTransactionHash() );
+            structuredLog.add( rawLog.getBlockHash() );
+            structuredLog.add( rawLog.getBlockNumber() );
+            structuredLog.add( rawLog.getAddress() );
+
+            structuredLogs.add( structuredLog );
+        }
+
+        return structuredLogs;
     }
 
 

@@ -78,9 +78,6 @@ public class ContractCache {
 
     private void createSchema() {
         log.warn( "start to create schema" );
-        columns.remove( "block" );
-        columns.remove( "transaction" );
-        // TODO: block and trx columns are also included. Remove?
         Map<String, List<FieldInformation>> columnInformations = columns.entrySet()
                 .stream()
                 .collect(
