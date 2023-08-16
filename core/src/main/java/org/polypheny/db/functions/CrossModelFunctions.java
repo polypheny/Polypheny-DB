@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -43,6 +44,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 
 public class CrossModelFunctions {
@@ -154,8 +156,19 @@ public class CrossModelFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static Enumerable<PolyDocument> nodesToCollection( Enumerable<PolyNode> enumerable ) {
-        return new AbstractEnumerable<>() {
+    public static Enumerable<PolyDocument> nodesToCollection( Enumerable<PolyGraph> enumerable ) {
+        PolyGraph graph = null;
+        for ( PolyGraph g : enumerable ) {
+            graph = g;
+        }
+        return Linq4j.asEnumerable( Stream.concat( graph.getNodes().values().stream(), graph.getEdges().values().stream() ).map( n -> {
+            PolyDocument doc = new PolyDocument( n.properties.entrySet().stream().collect( Collectors.toMap( Entry::getKey, Entry::getValue ) ) );
+            doc.put( PolyString.of( "_id" ), PolyString.of( n.id.value.substring( 0, 23 ) ) );
+            return doc;
+        } ).collect( Collectors.toList() ) );
+
+
+        /*return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyDocument> enumerator() {
                 return Linq4j.transform(
@@ -166,7 +179,7 @@ public class CrossModelFunctions {
                             return doc;
                         } );
             }
-        };
+        };*/
     }
 
 

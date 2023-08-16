@@ -70,7 +70,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleProjectTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( "3" ), false, true );
+                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
     }
 
 

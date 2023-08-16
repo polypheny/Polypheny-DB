@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -49,7 +51,9 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -110,22 +114,38 @@ public class CypherToAlgConverter {
             databaseId = parameters.getDatabaseId();
         }
 
-        LogicalGraph graph = this.snapshot.graph().getGraph( databaseId ).orElseThrow();
+        LogicalEntity entity = getEntity( databaseId, parameters );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
-            return AlgRoot.of( buildFullScan( graph ), Kind.SELECT );
+            return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT );
         }
 
         if ( !CypherFamily.QUERY.contains( query.getCypherKind() ) ) {
             throw new RuntimeException( "Used a unsupported query." );
         }
 
-        CypherContext context = new CypherContext( query, graph, cluster, algBuilder, rexBuilder, snapshot );
+        CypherContext context = new CypherContext( query, entity, cluster, algBuilder, rexBuilder, snapshot );
 
         convertQuery( query, context );
 
         return AlgRoot.of( context.build(), context.kind != null ? context.kind : Kind.SELECT );
+    }
+
+
+    @NotNull
+    private LogicalEntity getEntity( long databaseId, ExtendedQueryParameters parameters ) {
+        Optional<LogicalGraph> optionalGraph = this.snapshot.graph().getGraph( databaseId );
+        if ( optionalGraph.isPresent() ) {
+            return optionalGraph.get();
+        }
+
+        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( databaseId, parameters.getDatabaseName() );
+        if ( optionalTable.isPresent() ) {
+            return optionalTable.get();
+        }
+
+        return this.snapshot.doc().getCollection( databaseId, parameters.getDatabaseName() ).orElseThrow();
     }
 
 
@@ -400,7 +420,7 @@ public class CypherToAlgConverter {
         private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
         private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
-        public final LogicalGraph graph;
+        public final LogicalEntity graph;
 
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
@@ -418,7 +438,7 @@ public class CypherToAlgConverter {
 
         private CypherContext(
                 CypherNode original,
-                LogicalGraph graph,
+                LogicalEntity graph,
                 AlgOptCluster cluster,
                 AlgBuilder algBuilder,
                 RexBuilder rexBuilder,
