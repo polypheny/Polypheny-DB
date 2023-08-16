@@ -18,6 +18,7 @@ package org.polypheny.db.crossmodel;
 
 import static java.lang.String.format;
 import static org.polypheny.db.mql.MqlTestTemplate.execute;
+import static org.polypheny.db.mql.MqlTestTemplate.string;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
         for ( Object[] row : DATA ) {
             List<String> doc = new ArrayList<>();
             for ( int index : indexes ) {
-                doc.add( ROW_IDS[index] + ":" + row[index] );
+                doc.add( ROW_IDS[index] + ":" + (row[index] instanceof String ? string( (String) row[index] ) : row[index]) );
             }
             docs.add( "{" + String.join( ",", doc ) + "}" );
         }
@@ -104,8 +105,8 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({})", TABLE_NAME ), NAMESPACE_NAME ),
-                asDocument( 1, 2, 3 ),
-                true,
+                asDocument( 0, 1, 2 ),
+                false,
                 true );
     }
 
@@ -114,8 +115,8 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     public void simpleProjectTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({},{id: 1})", TABLE_NAME ), NAMESPACE_NAME ),
-                asDocument( 1 ),
-                true,
+                asDocument( 0 ),
+                false,
                 true );
     }
 
@@ -124,8 +125,8 @@ public class DocumentOnRelationalTest extends CrossModelTestTemplate {
     public void simpleFilterTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( String.format( "db.%s.find({id: 1},{})", TABLE_NAME ), NAMESPACE_NAME ),
-                List.of( asDocument( 1, 2, 3 ).get( 0 ) ),
-                true,
+                List.of( asDocument( 0, 1, 2 ).get( 0 ) ),
+                false,
                 true );
     }
 

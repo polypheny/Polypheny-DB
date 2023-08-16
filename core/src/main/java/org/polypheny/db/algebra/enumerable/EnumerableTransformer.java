@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.IndexExpression;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
@@ -324,15 +325,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         ParameterExpression target = Expressions.parameter( Object[].class );
 
-        for ( AlgDataTypeField field : getInput( 0 ).getRowType().getFieldList() ) {
-            UnaryExpression element = Expressions.convert_( Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) ), PolyBinary.class );
-            Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
-            if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                expressions.add( 0, el );
-            } else {
-                expressions.add( Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), el ) );
-            }
-        }
+        attachDocOnRelational( impl, expressions, target );
 
         MethodCallExpression res = Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions );
 
@@ -340,6 +333,32 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
 
         return toAbstractEnumerable( implementor, builder, physType, old, target, res, enumeratorType );
+    }
+
+
+    private static void attachDocOnRelational( Result impl, List<Expression> expressions, ParameterExpression target ) {
+        boolean hasData = false;
+        for ( AlgDataTypeField field : impl.physType.getRowType().getFieldList() ) {
+            IndexExpression indexField = Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) );
+            UnaryExpression element = Expressions.convert_( indexField, PolyBinary.class );
+            Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
+            if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
+                // target field
+                expressions.add( 0, el );
+                hasData = true;
+            } else if ( !field.getName().equals( DocumentType.DOCUMENT_ID ) && impl.physType.getRowType().getFieldNames().contains( field.getName() ) ) {
+                // crossmodel
+                expressions.add( Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), indexField ) );
+            } else {
+                // name and value of field
+                expressions.add( Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( field.getName() ), el ) );
+            }
+        }
+
+        if ( !hasData ) {
+            // crossmodel
+            expressions.add( 0, PolyDocument.ofDocument( Map.of() ).asExpression() );
+        }
     }
 
 
