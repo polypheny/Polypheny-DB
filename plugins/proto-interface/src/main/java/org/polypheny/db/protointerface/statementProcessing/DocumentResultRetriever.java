@@ -100,7 +100,7 @@ public class DocumentResultRetriever extends ResultRetriever {
         }
         startOrResumeStopwatch( executionStopWatch );
         // TODO implement continuous fetching
-        // are those actually poly documents
+        // are those actually poly documents - yep
         List<PolyValue> data = implementation.getSingleRows( statement, true );
         executionStopWatch.stop();
         return ProtoUtils.buildDocumentFrame( true, data );

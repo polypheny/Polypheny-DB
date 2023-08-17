@@ -108,6 +108,7 @@ public class RelationalResultRetriever extends ResultRetriever {
         }
         startOrResumeStopwatch( executionStopWatch );
         // TODO TH: implement continuous fetching
+        //implementation.hasMoreRows() call get rows before
         List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
