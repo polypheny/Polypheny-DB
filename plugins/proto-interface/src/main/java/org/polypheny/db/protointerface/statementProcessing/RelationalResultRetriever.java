@@ -107,8 +107,7 @@ public class RelationalResultRetriever extends ResultRetriever {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        // TODO TH: implement continuous fetching
-        //implementation.hasMoreRows() call get rows before
+        implementation.hasMoreRows();
         List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
@@ -117,8 +116,7 @@ public class RelationalResultRetriever extends ResultRetriever {
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return ProtoUtils.buildRelationalFrame( true, rows, columnMetas );
-        //return ProtoUtils.buildRelationalFrame(offset, isDone, rows, columnMetas);
+        return ProtoUtils.buildRelationalFrame( implementation.hasMoreRows(), rows, columnMetas );
     }
 
 }
