@@ -162,7 +162,7 @@ public class DbMetaRetriever {
         columnBuilder.setColumnIndex(logicalColumn.getPosition());
         Optional.ofNullable(CatalogObject.getEnumNameOrNull(logicalColumn.getCollation())).ifPresent(columnBuilder::setCollation);
         columnBuilder.setIsHidden(false); //TODO: get from flag in catalog
-        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: get from catalog
+        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: remove this?
         return columnBuilder.build();
     }
 

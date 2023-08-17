@@ -67,7 +67,7 @@ public class PIClient {
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized ( this ) {
             if ( currentTransaction == null || !currentTransaction.isActive() ) {
-                //TODO TH: can a single transaction contain changes to different namespaces
+                //TODO TH: can a single transaction contain changes to different namespaces -> use null
                 currentTransaction = transactionManager.startTransaction( catalogUser, namespace, false, "ProtoInterface" );
             }
             return currentTransaction;
