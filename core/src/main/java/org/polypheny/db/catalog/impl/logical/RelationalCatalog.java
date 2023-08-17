@@ -71,7 +71,7 @@ import org.polypheny.db.type.PolyType;
 public class RelationalCatalog implements PolySerializable, LogicalRelationalCatalog {
 
     @Getter
-    public BinarySerializer<RelationalCatalog> serializer = PolySerializable.builder.get().build( RelationalCatalog.class );
+    public BinarySerializer<RelationalCatalog> serializer = PolySerializable.buildSerializer( RelationalCatalog.class );
 
     public IdBuilder idBuilder = IdBuilder.getInstance();
 

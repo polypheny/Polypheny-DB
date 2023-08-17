@@ -74,7 +74,7 @@ public class SqlAlterTableDropPrimaryKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable catalogTable = getEntityFromCatalog( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );

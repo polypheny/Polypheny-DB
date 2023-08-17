@@ -36,6 +36,7 @@ package org.polypheny.db.runtime;
 
 import java.util.Iterator;
 import java.util.List;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -170,6 +171,11 @@ public class Utilities {
 
     public static int compare( Comparable v0, Comparable v1 ) {
         //noinspection unchecked
+        return v0.compareTo( v1 );
+    }
+
+
+    public static int compare( PolyValue v0, PolyValue v1 ) {
         return v0.compareTo( v1 );
     }
 

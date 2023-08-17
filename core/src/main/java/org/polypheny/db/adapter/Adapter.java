@@ -55,7 +55,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends StoreCatalog> implements Scannable, Modifiable, Expressible {
+public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;

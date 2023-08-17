@@ -27,7 +27,12 @@ import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.type.PolySerializable;
 
 @Value
@@ -43,22 +48,34 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Serialize
     public ConcurrentHashMap<Long, AllocationCollection> collections;
 
+    @Getter
+    @Serialize
+    public ConcurrentHashMap<Long, AllocationPlacement> placements;
+
+    @Getter
+    @Serialize
+    public ConcurrentHashMap<Long, AllocationPartition> partitions;
+
 
     public PolyAllocDocCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
     public PolyAllocDocCatalog(
             @Deserialize("namespace") LogicalNamespace namespace,
-            @Deserialize("collections") Map<Long, AllocationCollection> collections ) {
+            @Deserialize("collections") Map<Long, AllocationCollection> collections,
+            @Deserialize("placements") Map<Long, AllocationPlacement> placements,
+            @Deserialize("partitions") Map<Long, AllocationPartition> partitions ) {
         this.namespace = namespace;
         this.collections = new ConcurrentHashMap<>( collections );
+        this.placements = new ConcurrentHashMap<>( placements );
+        this.partitions = new ConcurrentHashMap<>( partitions );
     }
 
 
     @Getter
-    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.builder.get().build( PolyAllocDocCatalog.class );
+    public BinarySerializer<PolyAllocDocCatalog> serializer = PolySerializable.buildSerializer( PolyAllocDocCatalog.class );
 
 
     @Override
@@ -68,17 +85,47 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
 
 
     @Override
-    public AllocationCollection addAllocation( long adapterId, long logicalId ) {
+    public AllocationCollection addAllocation( LogicalCollection collection, long placementId, long partitionId, long adapterId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationCollection collection = new AllocationCollection( id, logicalId, namespace.id, adapterId );
-        collections.put( id, collection );
-        return collection;
+        AllocationCollection allocation = new AllocationCollection( id, placementId, partitionId, collection.id, namespace.id, adapterId );
+        collections.put( id, allocation );
+        return allocation;
     }
 
 
     @Override
     public void removeAllocation( long id ) {
         collections.remove( id );
+    }
+
+
+    @Override
+    public AllocationPlacement addPlacement( LogicalCollection collection, long adapterId ) {
+        long id = idBuilder.getNewPlacementId();
+        AllocationPlacement placement = new AllocationPlacement( id, collection.id, namespace.id, adapterId );
+        placements.put( placement.id, placement );
+        return placement;
+    }
+
+
+    @Override
+    public void removePlacement( long placementId ) {
+        placements.remove( placementId );
+    }
+
+
+    @Override
+    public AllocationPartition addPartition( LogicalCollection collection, String name ) {
+        long id = idBuilder.getNewPartitionId();
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, -1 );
+        partitions.put( id, partition );
+        return partition;
+    }
+
+
+    @Override
+    public void removePartition( long partitionId ) {
+        partitions.remove( partitionId );
     }
 
 

@@ -29,14 +29,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Blob;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -48,7 +50,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -123,34 +124,72 @@ public class RestResult {
         List<Map<String, Object>> result = new ArrayList<>();
         while ( iterator.hasNext() ) {
             Object next = iterator.next();
-            Object[] row;
+            PolyValue[] row;
             if ( next.getClass().isArray() ) {
-                row = (Object[]) next;
+                row = (PolyValue[]) next;
             } else {
-                row = new Object[]{ next };
+                row = new PolyValue[]{ (PolyValue) next };
             }
             HashMap<String, Object> temp = new HashMap<>();
             int i = 0;
             for ( AlgDataTypeField type : dataType.getFieldList() ) {
-                Object o = row[i];
+                PolyValue o = row[i];
+
+                String columnName = columns.get( i ).columnName;
+                if ( o == null ) {
+                    temp.put( columnName, null );
+                    continue;
+                }
+
                 if ( type.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    if ( o instanceof File ) {
+                    /*
+                    if ( o.isBlob() ) {//file
                         o = addZipEntry( o );
                     } else if ( o instanceof InputStream || o instanceof Blob ) {
                         o = addZipEntry( o );
                     } else if ( o instanceof byte[] ) {
                         o = addZipEntry( o );
-                    }
-                    temp.put( columns.get( i ).columnName, o );
+                    }*///todo dl rest
+                    temp.put( columnName, o );
                 } else {
-                    if ( type.getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
-                        Long nanoSeconds = (Long) o;
-                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
-                        temp.put( columns.get( i ).columnName, localDateTime.toString() );
-                    } else if ( type.getType().getPolyType().equals( PolyType.TIME ) ) {
-                        temp.put( columns.get( i ).columnName, o.toString() );
-                    } else {
-                        temp.put( columns.get( i ).columnName, o );
+                    switch ( type.getType().getPolyType() ) {
+                        case TIMESTAMP:
+                            LocalDateTime localDateTime = o.asTimeStamp().asSqlTimestamp().toInstant().atOffset( ZoneOffset.UTC ).toLocalDateTime();//.toLocalDateTime(); //LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
+                            temp.put( columnName, localDateTime.toString() );
+                            break;
+                        case TIME:
+                            temp.put( columnName, o.asTime().asSqlTime().toLocalTime().toSecondOfDay() * 1000 - TimeZone.getDefault().getRawOffset() );
+                            break;
+                        case VARCHAR:
+                            temp.put( columnName, o.asString().value );
+                            break;
+                        case DOUBLE:
+                            temp.put( columnName, o.asNumber().DoubleValue() );
+                            break;
+                        case REAL:
+                        case FLOAT:
+                            temp.put( columnName, o.asNumber().FloatValue() );
+                            break;
+                        case DECIMAL:
+                            temp.put( columnName, o.asNumber().bigDecimalValue() );
+                            break;
+                        case BOOLEAN:
+                            temp.put( columnName, o.asBoolean().value );
+                            break;
+                        case BIGINT:
+                            temp.put( columnName, o.asNumber().LongValue() );
+                            break;
+                        case TINYINT:
+                        case SMALLINT:
+                        case INTEGER:
+                            temp.put( columnName, o.asNumber().IntValue() );
+                            break;
+                        case DATE:
+                            temp.put( columnName, o.asDate().getDaysSinceEpoch() );
+                            break;
+                        default:
+                            temp.put( columnName, o );
+                            break;
                     }
                 }
                 i++;
@@ -238,7 +277,7 @@ public class RestResult {
         finalResult.put( "result", result );
         finalResult.put( "size", result.size() );
         if ( !containsFiles ) {
-            return new Pair( gson.toJson( finalResult ), finalResult.size() );
+            return new Pair<>( gson.toJson( finalResult ), finalResult.size() );
         } else {
             OutputStream os;
             ZipEntry zipEntry = new ZipEntry( "data.json" );

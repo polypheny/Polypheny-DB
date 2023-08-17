@@ -294,16 +294,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 break;
             case ARRAY:
                 if ( connectionHandler.getDialect().supportsNestedArrays() ) {
-                    SqlType componentType;
-                    AlgDataType t = type;
-                    while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
-                        t = t.getComponentType();
-                    }
-                    componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
-                    Array array = connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), ((List<?>) value).toArray() );
+                    Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
+                    array.free(); // according to documentation this is advised to not hog the memory
                 } else {
-                    preparedStatement.setString( i, value.serialize() );
+                    preparedStatement.setString( i, PolyValue.GSON.toJson( value.asList() ) );
                 }
                 break;
             default:
@@ -459,6 +454,18 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } else {
             preparedStatement.setObject( i, value );
         }*/
+    }
+
+
+    private static Array getArray( PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
+        SqlType componentType;
+        AlgDataType t = type;
+        while ( t.getComponentType().getPolyType() == PolyType.ARRAY ) {
+            t = t.getComponentType();
+        }
+        componentType = SqlType.valueOf( t.getComponentType().getPolyType().getJdbcOrdinal() );
+        Object[] array = (Object[]) PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( type, false ), type.isNullable() ).apply( value );
+        return connectionHandler.createArrayOf( connectionHandler.getDialect().getArrayComponentTypeString( componentType ), array );
     }
 
 
@@ -648,8 +655,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private static Function1<ResultSet, Function0<Object>>
-    primitiveRowBuilderFactory( final Primitive[] primitives ) {
+    private static Function1<ResultSet, Function0<Object>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
         return resultSet -> {
             final ResultSetMetaData metaData;
             final int columnCount;

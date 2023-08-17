@@ -37,16 +37,17 @@ package org.polypheny.db.algebra;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgWriterImpl;
-import org.polypheny.db.algebra.logical.relational.LogicalRelViewScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.plan.AlgImplementor;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptNode;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -344,36 +345,30 @@ public interface AlgNode extends AlgOptNode, Cloneable {
     }
 
     /**
-     * To check if a RelNode includes a ViewScan
-     */
-    default boolean hasView() {
-        return false;
-    }
-
-    /**
      * Expands node
-     * If a part of RelNode is a LogicalViewScan it is replaced
+     * If a part of AlgNode is a LogicalViewScan it is replaced
      * Else recursively hands call down if view in deeper level
+     *
+     * @return
      */
-    default void tryExpandView( AlgNode input ) {
-        if ( input instanceof LogicalRelViewScan ) {
-            input = ((LogicalRelViewScan) input).expandViewNode();
-        } else {
-            input.tryExpandView( input );
+    default AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
+        int i = 0;
+        for ( AlgNode node : getInputs() ) {
+            node.unfoldView( this, i++, cluster );
         }
-    }
-
-    default AlgNode tryParentExpandView( AlgNode input ) {
-        if ( input instanceof LogicalRelViewScan ) {
-            return ((LogicalRelViewScan) input).expandViewNode();
-        } else {
-            input.tryExpandView( input );
-            return input;
-        }
+        return this;
     }
 
     default NamespaceType getModel() {
         return Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel();
+    }
+
+    default boolean containsView() {
+        return getInputs().stream().anyMatch( AlgNode::containsView );
+    }
+
+    default void replaceCluster( AlgOptCluster cluster ) {
+        // empty on purpose
     }
 
     /**

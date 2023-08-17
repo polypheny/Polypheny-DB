@@ -21,7 +21,6 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -36,10 +35,12 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 public class PartitionProperty implements Serializable {
 
     @Serialize
+    public long entityId;
+
+    @Serialize
     public PartitionType partitionType;
     @Serialize
     public boolean isPartitioned;
-
     @Serialize
     public ImmutableList<Long> partitionGroupIds;
     @Serialize
@@ -56,7 +57,9 @@ public class PartitionProperty implements Serializable {
     public boolean reliesOnPeriodicChecks;
 
 
+
     public PartitionProperty(
+            @Deserialize("entityId") long entityId,
             @Deserialize("partitionType") PartitionType partitionType,
             @Deserialize("isPartitioned") boolean isPartitioned,
             @Deserialize("partitionGroupIds") List<Long> partitionGroupIds,
@@ -65,6 +68,7 @@ public class PartitionProperty implements Serializable {
             @Deserialize("numPartitionGroups") long numPartitionGroups,
             @Deserialize("numPartitions") long numPartitions,
             @Deserialize("reliesOnPeriodicChecks") boolean reliesOnPeriodicChecks ) {
+        this.entityId = entityId;
         this.partitionType = partitionType;
         this.isPartitioned = isPartitioned;
         this.partitionGroupIds = ImmutableList.copyOf( partitionGroupIds );

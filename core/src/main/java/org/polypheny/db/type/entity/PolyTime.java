@@ -31,6 +31,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -61,13 +62,18 @@ public class PolyTime extends PolyTemporal {
     }
 
 
+    public static PolyTime ofNullable( Time value ) {
+        return value == null ? PolyTime.of( (Integer) null ) : of( value );
+    }
+
+
     public static PolyTime of( Integer value ) {
         return new PolyTime( value, TimeUnit.MILLISECOND );
     }
 
 
     public static PolyTime of( Time value ) {
-        return new PolyTime( (int) value.getTime(), TimeUnit.MILLISECOND );
+        return new PolyTime( (int) Functions.timeToLong( value ), TimeUnit.MILLISECOND );
     }
 
 
@@ -100,7 +106,7 @@ public class PolyTime extends PolyTemporal {
 
 
     @Override
-    public Long getSinceEpoch() {
+    public Long getMilliSinceEpoch() {
         return Long.valueOf( ofDay );
     }
 

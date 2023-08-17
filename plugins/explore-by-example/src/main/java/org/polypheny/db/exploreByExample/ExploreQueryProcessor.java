@@ -34,7 +34,6 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
@@ -62,7 +61,7 @@ public class ExploreQueryProcessor {
 
 
     private Transaction getTransaction() {
-        return transactionManager.startTransaction( userId, false, "Explore-by-Example", MultimediaFlavor.FILE );
+        return transactionManager.startTransaction( userId, false, "Explore-by-Example" );
     }
 
 

@@ -28,10 +28,10 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -77,6 +77,9 @@ public class PolyBoolean extends PolyValue {
 
 
     public static PolyBoolean convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( value instanceof PolyValue ) {
             if ( ((PolyValue) value).isBoolean() ) {
                 return ((PolyValue) value).asBoolean();

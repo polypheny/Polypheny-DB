@@ -17,7 +17,7 @@
 package org.polypheny.db.sql.language.ddl.altertable;
 
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -113,27 +114,36 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getFromCatalog( context, this.table );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
         DataStore<?> storeInstance = getDataStoreInstance( storeName );
 
+        if ( table == null ) {
+            throw new GenericRuntimeException( "No entity with name %s was found.", String.join( ".", this.table.getNames() ) );
+        }
+
         if ( table.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because '%s' is not a table.", table.name );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + table.name + "'" );
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroupsList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
+            throw new GenericRuntimeException( "Partition Placement is not allowed for unpartitioned table '%s'", table.name );
         }
 
-        List<Long> columnIds = new LinkedList<>();
+        List<LogicalColumn> columns = new ArrayList<>();
         for ( SqlNode node : columnList.getSqlList() ) {
-            LogicalColumn logicalColumn = getCatalogColumn( context, table.id, (SqlIdentifier) node );
-            columnIds.add( logicalColumn.id );
+            LogicalColumn logicalColumn = getColumn( context, table.id, (SqlIdentifier) node );
+            columns.add( logicalColumn );
+        }
+
+        if ( columns.isEmpty() ) {
+            // full placement
+            columns.addAll( statement.getTransaction().getSnapshot().rel().getColumns( table.id ) );
         }
 
         DdlManager.getInstance().addDataPlacement(
                 table,
-                columnIds,
+                columns,
                 partitionGroupsList,
                 partitionGroupNamesList.stream().map( SqlIdentifier::toString ).collect( Collectors.toList() ),
                 storeInstance,

@@ -25,30 +25,27 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
@@ -76,7 +73,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private Container container;
 
 
-    public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
+    public MonetdbStore( long storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
 
@@ -84,7 +81,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected ConnectionFactory deployDocker( int dockerInstanceId ) {
-        DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
+        DockerManager.Container container = new ContainerBuilder( (int) getAdapterId(), "polypheny/monet", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
                 .withReadyTest( this::testConnection, 15000 )
@@ -145,110 +142,100 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
-        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+    public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
+        if ( !this.dialect.supportsNestedArrays() && newCol.collectionsType != null ) {
             return;
         }
+        PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+
+        PhysicalTable table = storeCatalog.getTable( allocId );
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        LogicalTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
-        String tmpColName = columnPlacement.physicalColumnName + "tmp";
+        //LogicalTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+        String tmpColName = column.name + "tmp";
         StringBuilder builder;
 
-        for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
+        //for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
 
-            // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
-            builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " ADD COLUMN " )
-                    .append( dialect.quoteIdentifier( tmpColName ) )
-                    .append( " " )
-                    .append( getTypeString( catalogColumn.type ) );
-            executeUpdate( builder, context );
+        // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " ADD COLUMN " )
+                .append( dialect.quoteIdentifier( tmpColName ) )
+                .append( " " )
+                .append( getTypeString( column.type ) );
+        executeUpdate( builder, context );
 
             // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
-            builder = new StringBuilder();
-            builder.append( "UPDATE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " SET " )
-                    .append( dialect.quoteIdentifier( tmpColName ) )
-                    .append( "=" )
-                    .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-            executeUpdate( builder, context );
+        builder = new StringBuilder();
+        builder.append( "UPDATE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " SET " )
+                .append( dialect.quoteIdentifier( tmpColName ) )
+                .append( "=" )
+                .append( dialect.quoteIdentifier( column.name ) );
+        executeUpdate( builder, context );
 
             // (3) Remove the original column `alter table tabX drop column colX;`
-            builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " DROP COLUMN " )
-                    .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-            executeUpdate( builder, context );
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " DROP COLUMN " )
+                .append( dialect.quoteIdentifier( column.name ) );
+        executeUpdate( builder, context );
 
             // (4) Re-create the original column with the new type `alter table tabX add column colX NEW_TYPE;
-            builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " ADD COLUMN " )
-                    .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
-                    .append( " " )
-                    .append( getTypeString( catalogColumn.type ) );
-            executeUpdate( builder, context );
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " ADD COLUMN " )
+                .append( dialect.quoteIdentifier( column.name ) )
+                .append( " " )
+                .append( getTypeString( column.type ) );
+        executeUpdate( builder, context );
 
             // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;
-            builder = new StringBuilder();
-            builder.append( "UPDATE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " SET " )
-                    .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
-                    .append( "=" )
-                    .append( dialect.quoteIdentifier( tmpColName ) );
+        builder = new StringBuilder();
+        builder.append( "UPDATE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " SET " )
+                .append( dialect.quoteIdentifier( column.name ) )
+                .append( "=" )
+                .append( dialect.quoteIdentifier( tmpColName ) );
             executeUpdate( builder, context );
 
-            // (6) Drop the temporary column `alter table tabX drop column colXtemp;`
-            builder = new StringBuilder();
-            builder.append( "ALTER TABLE " )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalSchemaName ) )
-                    .append( "." )
-                    .append( dialect.quoteIdentifier( partitionPlacement.physicalTableName ) );
-            builder.append( " DROP COLUMN " )
-                    .append( dialect.quoteIdentifier( tmpColName ) );
-            executeUpdate( builder, context );
-        }
-        Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
-
+        // (6) Drop the temporary column `alter table tabX drop column colXtemp;`
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( table.namespaceName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( table.name ) );
+        builder.append( " DROP COLUMN " )
+                .append( dialect.quoteIdentifier( tmpColName ) );
+        executeUpdate( builder, context );
+        //}
+        //Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
     }
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore, partitionPlacement );
-    }
-
-
-    @Override
-    public Namespace getCurrentSchema() {
-        return currentJdbcSchema;
-    }
-
-
-    @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+    public String addIndex( Context context, LogicalIndex catalogIndex, AllocationTable allocation ) {
         throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+    public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
         throw new RuntimeException( "MonetDB adapter does not support dropping indexes" );
     }
 
@@ -322,7 +309,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    protected String getDefaultPhysicalSchemaName() {
+    public String getDefaultPhysicalSchemaName() {
         return "public";
     }
 

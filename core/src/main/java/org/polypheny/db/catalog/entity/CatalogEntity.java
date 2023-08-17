@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -45,7 +46,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible, Typed {
+public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<CatalogEntity> {
 
     @Serialize
     public long id;
@@ -144,6 +145,15 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
     public String getNamespaceName() {
         return null;
+    }
+
+
+    @Override
+    public int compareTo( @NotNull CatalogEntity o ) {
+        if ( !this.getClass().getSimpleName().equals( o.getClass().getSimpleName() ) ) {
+            return -1;
+        }
+        return (int) (this.id - o.id);
     }
 
 }

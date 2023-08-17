@@ -16,9 +16,12 @@
 
 package org.polypheny.db.sql.language;
 
+import java.util.stream.Collectors;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlWriter.Frame;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -30,9 +33,30 @@ public class SqlArrayLiteral extends SqlLiteral {
     /**
      * Creates a <code>SqlLiteral</code>.
      */
-    protected SqlArrayLiteral( PolyList<?> value, AlgDataType type, ParserPos pos ) {
+    protected SqlArrayLiteral( PolyList<PolyValue> value, AlgDataType type, ParserPos pos ) {
         super( value, type.getPolyType(), pos );
-        this.nodes = value;
+        this.nodes = getPolyValue().asList();
+    }
+
+
+    public static PolyValue adjust( PolyList<PolyValue> list, AlgDataType type ) {
+        AlgDataType component = type.getComponentType();
+        while ( component.getPolyType() == PolyType.ARRAY ) {
+            component = component.getComponentType();
+        }
+        if ( PolyTypeFamily.NUMERIC == component.getPolyType().getFamily() ) {
+            AlgDataType finalComponent = component;
+            return PolyList.copyOf( list.stream().map( a -> adjustGeneric( a, finalComponent ) ).collect( Collectors.toList() ) );
+        }
+        return list;
+    }
+
+
+    private static PolyValue adjustGeneric( PolyValue value, AlgDataType component ) {
+        if ( value.isList() ) {
+            return PolyList.copyOf( value.asList().stream().map( e -> adjustGeneric( e, component ) ).collect( Collectors.toList() ) );
+        }
+        return PolyValue.convert( value, component.getPolyType() );
     }
 
 

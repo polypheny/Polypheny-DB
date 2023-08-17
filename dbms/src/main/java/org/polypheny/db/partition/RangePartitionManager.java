@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -41,7 +42,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         long unboundPartitionId = -1;
         long selectedPartitionId = -1;
 
@@ -252,13 +253,14 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    private boolean isValueInRange( String columnValue, CatalogPartition catalogPartition ) {
-        int lowerBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 0 ) );
-        int upperBound = Integer.parseInt( catalogPartition.partitionQualifiers.get( 1 ) );
+    private boolean isValueInRange( String columnValue, AllocationPartition logicalPartition ) {
+        //int lowerBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 0 ) );
+        //int upperBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 
-        return numericValue >= lowerBound && numericValue <= upperBound;
+        //return numericValue >= lowerBound && numericValue <= upperBound;
+        return false;// todo dl;
     }
 
 }

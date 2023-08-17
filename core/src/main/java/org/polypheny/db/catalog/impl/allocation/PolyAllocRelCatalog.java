@@ -19,15 +19,21 @@ package org.polypheny.db.catalog.impl.allocation;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
@@ -49,13 +55,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     public LogicalNamespace namespace;
 
     @Getter
-    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.builder.get().build( PolyAllocRelCatalog.class );
-
-
-    @Serialize
-    @Getter
-    public ConcurrentHashMap<Long, List<Long>> groups;
-
+    public BinarySerializer<PolyAllocRelCatalog> serializer = PolySerializable.buildSerializer( PolyAllocRelCatalog.class );
 
     @Serialize
     @Getter
@@ -63,11 +63,34 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
     @Serialize
     @Getter
-    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns;
+    public ConcurrentHashMap<Pair<Long, Long>, AllocationColumn> columns; //placementId, columnId
+
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, PartitionProperty> properties;
+
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, AllocationPartitionGroup> partitionGroups;
+
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, AllocationPartition> partitions;
+
+    @Serialize
+    @Getter
+    public ConcurrentHashMap<Long, AllocationPlacement> placements;
 
 
     public PolyAllocRelCatalog( LogicalNamespace namespace ) {
-        this( namespace, new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>() );
+        this(
+                namespace,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() );
     }
 
 
@@ -75,11 +98,17 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
             @Deserialize("namespace") LogicalNamespace namespace,
             @Deserialize("tables") Map<Long, AllocationTable> tables,
             @Deserialize("columns") Map<Pair<Long, Long>, AllocationColumn> columns,
-            @Deserialize("groups") Map<Long, List<Long>> groups ) {
+            @Deserialize("partitionGroups") Map<Long, AllocationPartitionGroup> partitionGroups,
+            @Deserialize("partitions") Map<Long, AllocationPartition> partitions,
+            @Deserialize("properties") Map<Long, PartitionProperty> properties,
+            @Deserialize("placements") Map<Long, AllocationPlacement> placements ) {
         this.namespace = namespace;
         this.tables = new ConcurrentHashMap<>( tables );
         this.columns = new ConcurrentHashMap<>( columns );
-        this.groups = new ConcurrentHashMap<>( groups );
+        this.partitionGroups = new ConcurrentHashMap<>( partitionGroups );
+        this.partitions = new ConcurrentHashMap<>( partitions );
+        this.properties = new ConcurrentHashMap<>( properties );
+        this.placements = new ConcurrentHashMap<>( placements );
     }
 
 
@@ -92,63 +121,107 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationColumn addColumn( long allocationId, long columnId, PlacementType placementType, int position ) {
-        AllocationColumn column = new AllocationColumn( namespace.id, allocationId, columnId, placementType, position, tables.get( allocationId ).adapterId );
-        columns.put( Pair.of( allocationId, columnId ), column );
+    public AllocationColumn addColumn( long placementId, long logicalTableId, long columnId, long adapterId, PlacementType placementType, int position ) {
+        AllocationColumn column = new AllocationColumn(
+                namespace.id,
+                placementId,
+                logicalTableId,
+                columnId,
+                placementType,
+                position,
+                adapterId );
+
+        columns.put( Pair.of( placementId, columnId ), column );
         return column;
     }
 
 
     @Override
-    public void deleteColumn( long allocationId, long columnId ) {
-        columns.remove( Pair.of( allocationId, columnId ) );
+    public void deleteColumn( long placementId, long columnId ) {
+        columns.remove( Pair.of( placementId, columnId ) );
     }
 
 
     @Override
-    public void updateColumnPlacementType( long adapterId, long columnId, PlacementType placementType ) {
-
+    public void updateColumnPlacementType( long placementId, long columnId, PlacementType placementType ) {
+        AllocationColumn column = columns.get( Pair.of( placementId, columnId ) ).toBuilder().placementType( placementType ).build();
+        columns.put( Pair.of( placementId, columnId ), column );
     }
 
 
     @Override
-    public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
-        return 0;
+    public AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
+        long id = idBuilder.getNewGroupId();
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Creating partitionGroup of type '{}' with id '{}'", partitionType, id );
+        }
+
+        AllocationPartitionGroup partitionGroup = new AllocationPartitionGroup(
+                id,
+                partitionGroupName,
+                tableId,
+                namespaceId,
+                0,
+                null,
+                isUnbound );
+
+        partitionGroups.put( id, partitionGroup );
+        return partitionGroup;
     }
 
 
     @Override
-    public void deletePartitionGroup( long tableId, long schemaId, long partitionGroupId ) {
-
+    public void deletePartitionGroup( long groupId ) {
+        partitionGroups.remove( groupId );
     }
 
 
     @Override
-    public long addPartition( long tableId, long schemaId, long partitionGroupId, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
-        return 0;
+    public AllocationPartition addPartition( long tableId, long namespaceId, long partitionGroupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role ) {
+        long id = idBuilder.getNewPartitionId();
+        if ( log.isDebugEnabled() ) {
+            log.debug( "Creating partition with id '{}'", id );
+        }
+
+        AllocationPartition partition = new AllocationPartition(
+                id,
+                namespaceId,
+                tableId,
+                placementType,
+                name,
+                role,
+                isUnbound,
+                partitionGroupId );
+
+        partitions.put( id, partition );
+        return partition;
     }
 
 
     @Override
-    public void deletePartition( long tableId, long schemaId, long partitionId ) {
-
+    public void deletePartition( long partitionId ) {
+        partitions.remove( partitionId );
     }
 
 
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitionGroups, List<Long> partitionGroupIds, PartitionProperty partitionProperty ) {
+    public void addPartitionProperty( long tableId, PartitionProperty partitionProperty ) {
+        properties.put( tableId, partitionProperty );
+    }
 
+
+    @Override
+    public void partitionTable( long tableId, PartitionProperty partitionProperty ) {
+        properties.put( partitionProperty.entityId, partitionProperty );
+
+        /*if ( partitionProperty.reliesOnPeriodicChecks ) {
+            addTableToPeriodicProcessing( tableId );
+        }*/
     }
 
 
     @Override
     public void mergeTable( long tableId ) {
-
-    }
-
-
-    @Override
-    public void updatePartitionGroup( long partitionGroupId, List<Long> partitionIds ) {
 
     }
 
@@ -160,21 +233,27 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public boolean validateDataPlacementsConstraints( long tableId, long adapterId, List<Long> columnIdsToBeRemoved, List<Long> partitionsIdsToBeRemoved ) {
-        return false;
+    public AllocationPartition addPartition( long namespaceId, long adapterId, long tableId, PlacementType placementType, DataPlacementRole role ) {
+        /*long id = idBuilder.getNewPartitionId();
+        AllocationPartitionOld partition = new AllocationPartitionOld(
+                id,
+                namespaceId,
+                tableId,
+                adapterId,
+                placementType,
+                role );
+
+        allocationPartitions.put( Pair.of( adapterId, id ), partition );
+        return partition;*
+         */
+        throw new NotImplementedException();
     }
 
 
     @Override
-    public void addPartitionPlacement( long namespaceId, long adapterId, long tableId, long partitionId, PlacementType placementType, DataPlacementRole role ) {
-
-    }
-
-
-    @Override
-    public AllocationTable addAllocation( long adapterId, long tableId ) {
+    public AllocationTable addAllocation( long adapterId, long placementId, long partitionId, long logicalId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationTable table = new AllocationTable( id, tableId, namespace.id, adapterId );
+        AllocationTable table = new AllocationTable( id, placementId, partitionId, logicalId, namespace.id, adapterId );
         tables.put( id, table );
         return table;
     }
@@ -197,5 +276,28 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     public void deletePartitionPlacement( long adapterId, long partitionId ) {
 
     }
+
+
+    @Override
+    public AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId ) {
+        long id = idBuilder.getNewPlacementId();
+        AllocationPlacement placement = new AllocationPlacement( id, logicalEntityId, namespaceId, adapterId );
+
+        placements.put( id, placement );
+        return placement;
+    }
+
+
+    @Override
+    public void deletePlacement( long id ) {
+        placements.remove( id );
+    }
+
+
+    @Override
+    public void deleteProperty( long id ) {
+        properties.remove( id );
+    }
+
 
 }

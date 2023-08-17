@@ -68,8 +68,8 @@ public class CatalogTransactionTest {
         LogicalTable table = catalog.getLogicalRel( namespaceId ).addTable( "testTable", EntityType.ENTITY, true );
 
         catalog.getLogicalRel( namespaceId ).addColumn( "testCol1", table.id, 1, PolyType.BIGINT, null, null, null, null, null, false, null );
-        catalog.getLogicalRel( namespaceId ).addColumn( "testCol2", table.id, 2, PolyType.VARCHAR, null, 255, null, null, null, true, Collation.CASE_INSENSITIVE );
-        // catalog.getLogicalRel( namespaceId ).addColumn( "testCol3", table.id, 3, PolyType.BIGINT, null,null, null, null, null, true, null );
+        catalog.getLogicalRel( namespaceId ).addColumn( "testCol2", table.id, 2, PolyType.VARCHAR, null, 2646, 5, 2, 2, true, Collation.CASE_INSENSITIVE );
+        // catalog.getLogicalRel( namespaceId ).addColumn( "testCol3", table.id, 3, PolyType.BIGINT, null,null, null, null, null, true, null ); 127
 
         catalog.commit();
 

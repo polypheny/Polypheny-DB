@@ -48,7 +48,7 @@ public class SqlDropMaterializedView extends SqlDropObject {
         final LogicalTable catalogTable;
 
         try {
-            catalogTable = getFromCatalog( context, name );
+            catalogTable = getEntityFromCatalog( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified

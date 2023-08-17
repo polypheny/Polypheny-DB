@@ -53,7 +53,7 @@ public class RelStoreCatalog extends StoreCatalog {
     @Serialize
     ConcurrentMap<Long, PhysicalTable> tables;
     @Serialize
-    ConcurrentMap<Long, PhysicalColumn> columns;
+    ConcurrentMap<Pair<Long, Long>, PhysicalColumn> columns; // allocId, columnId
 
     ConcurrentMap<Long, Pair<AllocationEntity, List<Long>>> allocRelations;
 
@@ -67,7 +67,7 @@ public class RelStoreCatalog extends StoreCatalog {
             @Deserialize("adapterId") long adapterId,
             @Deserialize("namespaces") Map<Long, Namespace> namespaces,
             @Deserialize("tables") Map<Long, PhysicalTable> tables,
-            @Deserialize("columns") Map<Long, PhysicalColumn> columns,
+            @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
             @Deserialize("allocRelations") Map<Long, Pair<AllocationEntity, List<Long>>> allocRelations ) {
         super( adapterId );
         this.namespaces = new ConcurrentHashMap<>( namespaces );
@@ -84,7 +84,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public void addColumn( PhysicalColumn column ) {
-        columns.put( column.id, column );
+        columns.put( Pair.of( column.allocId, column.id ), column );
     }
 
 
@@ -93,8 +93,8 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalColumn getColumn( long id ) {
-        return columns.get( id );
+    public PhysicalColumn getColumn( long id, long allocId ) {
+        return columns.get( Pair.of( allocId, id ) );
     }
 
 
@@ -111,7 +111,7 @@ public class RelStoreCatalog extends StoreCatalog {
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         addTable( table );
         pColumns.forEach( this::addColumn );
@@ -120,28 +120,27 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalColumn addColumn( String name, long tableId, long adapterId, int position, LogicalColumn lColumn ) {
-        PhysicalColumn column = new PhysicalColumn( name, tableId, adapterId, position, lColumn );
-        PhysicalTable table = getTable( tableId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.add( column );
+    public PhysicalColumn addColumn( String name, long allocId, long adapterId, int position, LogicalColumn lColumn ) {
+        PhysicalColumn column = new PhysicalColumn( name, lColumn.tableId, allocId, adapterId, position, lColumn );
+        PhysicalTable table = fromAllocation( allocId );
+        List<PhysicalColumn> columns = new ArrayList<>( table.columns );
+        columns.add( position - 1, column );
         addColumn( column );
-        tables.put( tableId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 
 
     public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
-        PhysicalColumn old = getColumn( newCol.id );
-        PhysicalColumn column = new PhysicalColumn( old.name, allocId, adapterId, old.position, newCol );
-        PhysicalTable table = getTable( allocId );
+        PhysicalColumn old = getColumn( newCol.id, allocId );
+        PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
+        PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
         pColumn.remove( old );
         pColumn.add( column );
-        tables.put( allocId, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
         return column;
     }
-
 
 
     public PhysicalTable fromAllocation( long id ) {
@@ -168,12 +167,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public void dropColum( long allocId, long columnId ) {
-        PhysicalColumn column = columns.get( columnId );
+        PhysicalColumn column = columns.get( Pair.of( allocId, columnId ) );
         PhysicalTable table = fromAllocation( allocId );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( column );
-        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
-        columns.remove( columnId );
+        List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
+        pColumns.remove( column );
+        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
+        columns.remove( Pair.of( allocId, columnId ) );
     }
 
 }

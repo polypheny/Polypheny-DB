@@ -24,6 +24,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
@@ -33,6 +34,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -42,12 +44,12 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyTimeStamp extends PolyTemporal {
 
     @Getter
-    public Long sinceEpoch;
+    public Long milliSinceEpoch; // normalized to utz
 
 
-    public PolyTimeStamp( Long sinceEpoch ) {
+    public PolyTimeStamp( Long milliSinceEpoch ) {
         super( PolyType.TIMESTAMP );
-        this.sinceEpoch = sinceEpoch;
+        this.milliSinceEpoch = milliSinceEpoch;
     }
 
 
@@ -58,6 +60,11 @@ public class PolyTimeStamp extends PolyTemporal {
 
     public static PolyTimeStamp ofNullable( Number number ) {
         return number == null ? null : of( number );
+    }
+
+
+    public static PolyTimeStamp ofNullable( Time value ) {
+        return value == null ? null : PolyTimeStamp.of( value );
     }
 
 
@@ -72,7 +79,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public static PolyTimeStamp of( Timestamp value ) {
-        return new PolyTimeStamp( value.getTime() );
+        return new PolyTimeStamp( Functions.toLongOptional( value ) );
     }
 
 
@@ -82,7 +89,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
 
     public Timestamp asSqlTimestamp() {
-        return new Timestamp( sinceEpoch );
+        return new Timestamp( milliSinceEpoch );
     }
 
 
@@ -92,13 +99,13 @@ public class PolyTimeStamp extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( sinceEpoch, o.asTimeStamp().sinceEpoch );
+        return Long.compare( milliSinceEpoch, o.asTimeStamp().milliSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( sinceEpoch ) );
+        return Expressions.new_( PolyTimeStamp.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 
@@ -112,7 +119,7 @@ public class PolyTimeStamp extends PolyTemporal {
         if ( value.isNumber() ) {
             return PolyTimeStamp.of( value.asNumber().longValue() );
         } else if ( value.isTemporal() ) {
-            return PolyTimeStamp.of( value.asTemporal().getSinceEpoch() );
+            return PolyTimeStamp.of( value.asTemporal().getMilliSinceEpoch() );
         }
         throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
     }
@@ -134,7 +141,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyTimeStamp src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.sinceEpoch );
+            return new JsonPrimitive( src.milliSinceEpoch );
         }
 
     }

@@ -59,7 +59,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
                     .filter( t -> t.name.equals( newName ) )
                     .findAny();
 
-            newTable.ifPresent( logicalTable -> DdlManager.getInstance().dropTable( logicalTable, statement ) );
+            newTable.ifPresent( logicalTable -> DdlManager.getInstance().deleteTable( logicalTable, statement ) );
         }
 
         Optional<LogicalTable> table = tables.stream()

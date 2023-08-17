@@ -181,7 +181,7 @@ public class RestTest {
     // --------------- Tests ---------------
 
 
-    @Test
+    @Test // this needs to be rewritten
     @Category({ CassandraExcluded.class })
     public void testOperations() {
         // Insert
@@ -210,11 +210,10 @@ public class RestTest {
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/restschema.resttest" )
                 .queryString( "restschema.resttest.ttinyint", "=" + 22 );
 
-        String expected = "{\"result\":[{\"restschema.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"restschema.resttest.ttinyint\":22,\"restschema.resttest.treal\":0.3333,\"restschema.resttest.tinteger\":9876,\"restschema.resttest.ttime\":\"43505000\",\"restschema.resttest.tbigint\":1234,\"restschema.resttest.tboolean\":true,\"restschema.resttest.tdate\":18466,\"restschema.resttest.tdouble\":1.999999,\"restschema.resttest.tvarchar\":\"hallo\",\"restschema.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}";
+        String expected = "{\"result\":[{\"restschema.resttest.tsmallint\":45,\"restschema.resttest.tdecimal\":123.45,\"restschema.resttest.ttinyint\":22,\"restschema.resttest.treal\":0.3333,\"restschema.resttest.tinteger\":9876,\"restschema.resttest.ttime\":43505000,\"restschema.resttest.tbigint\":1234,\"restschema.resttest.tboolean\":true,\"restschema.resttest.tdate\":18466,\"restschema.resttest.tdouble\":1.999999,\"restschema.resttest.tvarchar\":\"hallo\",\"restschema.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}";
         JsonElement jsonExpected = JsonParser.parseString( expected );
         JsonElement jsonResult = JsonParser.parseString( executeRest( request ).getBody() );
-        Assert.assertEquals(
-                jsonExpected, jsonResult );
+        Assert.assertEquals( jsonExpected, jsonResult );
 
         // Delete
         where = new LinkedHashMap<>();

@@ -19,33 +19,34 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 public interface AllocSnapshot {
 
-    @NonNull
+    @NotNull
     Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id );
 
-    @NonNull
+    @NotNull
     Optional<AllocationEntity> getEntity( long id );
 
     /**
      * Gets a collective list of column placements per column on an adapter.
      * Effectively used to retrieve all relevant placements including partitions.
      *
-     * @param adapterId The id of the adapter
+     * @param placementId The id of the adapter
      * @param columnId The id of the column
      * @return The specific column placement
      */
-    @NonNull
-    Optional<AllocationColumn> getColumn( long adapterId, long columnId );
+    @NotNull
+    Optional<AllocationColumn> getColumn( long placementId, long columnId );
 
     /**
      * Get all column placements of a column
@@ -53,7 +54,7 @@ public interface AllocSnapshot {
      * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
-    @NonNull
+    @NotNull
     Optional<List<AllocationColumn>> getColumnFromLogical( long columnId );
 
     /**
@@ -63,7 +64,7 @@ public interface AllocSnapshot {
      * @param adapterId The id of the adapter
      * @return List of column placements of the table on the specified adapter
      */
-    @NonNull
+    @NotNull
     List<AllocationColumn> getColumnPlacementsOnAdapterPerTable( long adapterId, long tableId );
 
 
@@ -73,8 +74,8 @@ public interface AllocSnapshot {
      * @param tableId The id of the table for the requested column placements
      * @return The requested collection
      */
-    @NonNull
-    Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId );
+    @NotNull
+    Map<Long, List<Long>> getColumnPlacementsByAdapters( long tableId );
 
 
     /**
@@ -83,7 +84,7 @@ public interface AllocSnapshot {
      * @param partitionGroupId Table to be queried
      * @return list of all partitions on this table
      */
-    List<CatalogPartition> getPartitions( long partitionGroupId );
+    List<AllocationPartition> getPartitions( long partitionGroupId );
 
     /**
      * Get a list of all partition name belonging to a specific table
@@ -145,10 +146,11 @@ public interface AllocSnapshot {
      * Returns a specific DataPlacement of a given table.
      *
      * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
+     * @param logicalTableId table to retrieve the placement from
      * @return DataPlacement of a table placed on a specific store
      */
-    CatalogDataPlacement getDataPlacement( long adapterId, long tableId );
+    @NotNull
+    Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId );
 
     /**
      * Returns all DataPlacements of a given table.
@@ -165,7 +167,7 @@ public interface AllocSnapshot {
      * @param tableId The table for which all partition placements on an adapter should be considered
      * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
      */
-    List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
+    List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
 
     /**
      * Returns a list of all Partition Placements which are currently associated with a table.
@@ -173,20 +175,44 @@ public interface AllocSnapshot {
      * @param tableId The table on which the requested partition placements are currently associated with.
      * @return A list of all Partition Placements, that belong to the desired table
      */
-    List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId );
+    List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId );
 
 
-    @NonNull
+    @NotNull
     List<AllocationEntity> getFromLogical( long logicalId );
 
+    @NotNull
+    Optional<PartitionProperty> getPartitionProperty( long id );
 
-    PartitionProperty getPartitionProperty( long id );
-
-    @NonNull
+    @NotNull
+    @Deprecated
     Optional<AllocationEntity> getEntity( long adapterId, long entityId );
 
-    @NonNull
-    List<AllocationColumn> getColumns( long allocId );
+    @NotNull
+    List<AllocationColumn> getColumns( long placementId );
 
+    @NotNull
+    List<AllocationPartitionGroup> getPartitionGroupsFromLogical( long logicalId );
+
+    @NotNull
+    List<AllocationPartition> getPartitionsFromLogical( long logicalId );
+
+    @NotNull
+    List<AllocationPlacement> getPlacementsFromLogical( long logicalId );
+
+    @NotNull
+    Optional<AllocationEntity> getAlloc( long placementId, long partitionId );
+
+    @NotNull
+    List<AllocationEntity> getAllocsOfPlacement( long placementId );
+
+    @NotNull
+    List<AllocationPlacement> getPlacementsOfColumn( long logicalId );
+
+    @NotNull
+    Optional<AllocationPartition> getPartition( long partitionId );
+
+
+    Optional<AllocationPartition> getPartitionFromName( long logicalId, String name );
 
 }

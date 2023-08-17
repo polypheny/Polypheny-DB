@@ -17,10 +17,8 @@
 package org.polypheny.db.partition;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
@@ -37,7 +35,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public long getTargetPartitionId( LogicalTable catalogTable, String columnValue ) {
+    public long getTargetPartitionId( LogicalTable table, PartitionProperty property, String columnValue ) {
         long hashValue = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
@@ -45,7 +43,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
             hashValue *= -1;
         }
 
-        PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( catalogTable.id );
+        //PartitionProperty property = Catalog.getInstance().getSnapshot().alloc().getPartitionProperty( targetEntities.id ).orElseThrow();
 
         // Get designated HASH partition based on number of internal partitions
         int partitionIndex = (int) (hashValue % property.partitionIds.size());
@@ -84,17 +82,15 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .defaultValue( "" )
                 .build() );
 
-        PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
+        return PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
                 .description( "Partitions data based on a hash function which is automatically applied to the values of the partition column." )
                 .sqlPrefix( "WITH (" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
-                .headings( new ArrayList<>( Arrays.asList( "Partition Name" ) ) )
+                .headings( new ArrayList<>( List.of( "Partition Name" ) ) )
                 .build();
-
-        return uiObject;
     }
 
 

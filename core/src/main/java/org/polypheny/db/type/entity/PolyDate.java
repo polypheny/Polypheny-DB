@@ -28,11 +28,11 @@ import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -42,12 +42,12 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 public class PolyDate extends PolyTemporal {
 
     @Getter
-    public Long sinceEpoch;
+    public Long milliSinceEpoch;
 
 
-    public PolyDate( long sinceEpoch ) {
+    public PolyDate( long milliSinceEpoch ) {
         super( PolyType.DATE );
-        this.sinceEpoch = sinceEpoch;
+        this.milliSinceEpoch = milliSinceEpoch;
     }
 
 
@@ -61,18 +61,23 @@ public class PolyDate extends PolyTemporal {
     }
 
 
+    public static PolyDate ofNullable( java.sql.Date date ) {
+        return PolyDate.of( date );
+    }
+
+
     public Date asDefaultDate() {
-        return new Date( sinceEpoch );
+        return new Date( milliSinceEpoch );
     }
 
 
     public java.sql.Date asSqlDate() {
-        return new java.sql.Date( sinceEpoch );
+        return new java.sql.Date( milliSinceEpoch );
     }
 
 
     public static PolyDate of( Date date ) {
-        return new PolyDate( (int) (date.getTime() / DateTimeUtils.MILLIS_PER_DAY) );
+        return new PolyDate( Functions.dateToLong( date ) );
     }
 
 
@@ -82,13 +87,13 @@ public class PolyDate extends PolyTemporal {
             return -1;
         }
 
-        return Long.compare( sinceEpoch, o.asDate().sinceEpoch );
+        return Long.compare( milliSinceEpoch, o.asDate().milliSinceEpoch );
     }
 
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyLong.class, Expressions.constant( sinceEpoch ) );
+        return Expressions.new_( PolyLong.class, Expressions.constant( milliSinceEpoch ) );
     }
 
 
@@ -102,7 +107,7 @@ public class PolyDate extends PolyTemporal {
 
         @Override
         public JsonElement serialize( PolyDate src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.sinceEpoch );
+            return new JsonPrimitive( src.milliSinceEpoch );
         }
 
 

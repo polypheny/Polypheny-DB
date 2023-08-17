@@ -16,18 +16,16 @@
 
 package org.polypheny.db.util;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
-@Value
-@AllArgsConstructor
+@Value(staticConstructor = "of")
 @EqualsAndHashCode
 public class Triple<A, B, C> implements Comparable<Triple<A, B, C>> {
 
-    A left;
-    B middle;
-    C right;
+    public A left;
+    public B middle;
+    public C right;
 
 
     @Override

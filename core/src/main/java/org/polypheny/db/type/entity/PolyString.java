@@ -30,9 +30,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -80,7 +80,7 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString ofNullable( String value ) {
-        return value == null ? null : of( value );
+        return of( value );
     }
 
 
@@ -160,6 +160,19 @@ public class PolyString extends PolyValue {
     @Override
     public PolySerializable copy() {
         return null;
+    }
+
+
+    public String asCharset( String charset ) {
+        return asCharset( Charset.forName( charset ) );
+    }
+
+
+    public String asCharset( Charset charset ) {
+        if ( this.charset.equals( charset ) ) {
+            return value;
+        }
+        return new String( value.getBytes( this.charset ), charset );
     }
 
 

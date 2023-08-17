@@ -54,6 +54,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -83,6 +84,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDefaults;
@@ -324,19 +326,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             // TODO js(knn): Make sure this is more than just a hotfix.
             //  add nullability stuff as well
             case ARRAY:
-                if ( dialect.supportsNestedArrays() ) {
-                    source = Expressions.call(
-                            BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method,
-                            Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) )
-                    );
-                } else {
-                    source = Expressions.call(
-                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
-                            Expressions.constant( ((ArrayType) fieldType).getDimension() ),
-                            Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-                    );
-                }
+                source = getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
                 break;
 
             case DATE:
@@ -378,6 +368,55 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
                 //}
         }
+        final Expression poly = getOfPolyExpression( fieldType, source );
+
+        //source is null if an expression was already added to the builder.
+        if ( poly != null ) {
+            builder.add( Expressions.statement( Expressions.assign( target, poly ) ) );
+        }
+
+        // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
+        if ( primitive != null ) {
+            builder.add(
+                    Expressions.ifThen(
+                            Expressions.call( resultSet_, "wasNull" ),
+                            Expressions.statement( Expressions.assign( target, PolyDefaults.NULLS.get( PolyValue.classFrom( polyType ) ).asExpression() ) ) ) );
+        }
+
+
+    }
+
+
+    @NotNull
+    private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
+        if ( dialect.supportsNestedArrays() ) {
+            ParameterExpression argument = Expressions.parameter( Object.class );
+
+            AlgDataType componentType = fieldType.getComponentType();
+            int depth = 1;
+            while ( componentType.getComponentType() != null ) {
+                componentType = componentType.getComponentType();
+                depth++;
+            }
+
+            return Expressions.call(
+                    BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
+                    Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument ), argument ),
+                    Expressions.constant( depth )
+            );
+        }
+        return Expressions.call(
+                BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                Expressions.constant( fieldType.getComponentType().getPolyType() ),
+                Expressions.constant( ((ArrayType) fieldType).getDimension() ),
+                Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
+        );
+
+    }
+
+
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source ) {
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
@@ -403,19 +442,22 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyDouble.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ) );
                 break;
             case TIME:
-                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyTime.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case TIMESTAMP:
                 poly = Expressions.call( PolyTimeStamp.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DATE:
-                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Integer.class ) );
+                poly = Expressions.call( PolyDate.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Long.class ) );
                 break;
             case DECIMAL:
                 poly = Expressions.call( PolyBigDecimal.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
                 break;
             case ARRAY:
                 poly = Expressions.call( PolyList.class, fieldType.isNullable() ? "ofNullable" : "of", source ); // todo might change
+                break;
+            case VARBINARY:
+                poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             case FILE:
                 poly = Expressions.call( PolyFile.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
@@ -424,21 +466,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 log.warn( "potentially unhandled polyValue" );
                 poly = source;
         }
-
-        //source is null if an expression was already added to the builder.
-        if ( poly != null ) {
-            builder.add( Expressions.statement( Expressions.assign( target, poly ) ) );
-        }
-
-        // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
-        if ( primitive != null ) {
-            builder.add(
-                    Expressions.ifThen(
-                            Expressions.call( resultSet_, "wasNull" ),
-                            Expressions.statement( Expressions.assign( target, PolyDefaults.NULLS.get( PolyValue.classFrom( polyType ) ).asExpression() ) ) ) );
-        }
-
-
+        return poly;
     }
 
 
@@ -448,20 +476,20 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 return BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
             case DATE:
                 return (nullable
-                        ? BuiltInMethod.DATE_TO_INT_OPTIONAL
-                        : BuiltInMethod.DATE_TO_INT).method;
+                        ? BuiltInMethod.DATE_TO_LONG_OPTIONAL
+                        : BuiltInMethod.DATE_TO_LONG).method;
             case TIME:
                 return (nullable
-                        ? BuiltInMethod.TIME_TO_INT_OPTIONAL
-                        : BuiltInMethod.TIME_TO_INT).method;
+                        ? BuiltInMethod.TIME_TO_LONG_OPTIONAL
+                        : BuiltInMethod.TIME_TO_LONG).method;
             case TIMESTAMP:
                 return (nullable
                         ? (offset
                         ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
-                        : BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL)
+                        : BuiltInMethod.DATE_TO_LONG_OPTIONAL)
                         : (offset
                                 ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
-                                : BuiltInMethod.TIMESTAMP_TO_LONG)).method;
+                                : BuiltInMethod.DATE_TO_LONG)).method;
             default:
                 throw new AssertionError( polyType + ":" + nullable );
         }

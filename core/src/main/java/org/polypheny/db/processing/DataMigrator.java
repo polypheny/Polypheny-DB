@@ -24,10 +24,13 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 
@@ -37,25 +40,28 @@ public interface DataMigrator {
     void copyData(
             Transaction transaction,
             CatalogAdapter store,
+            LogicalTable source,
             List<LogicalColumn> columns,
-            List<Long> partitionIds );
+            AllocationPlacement target );
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, List, List)}  } instead
+     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
      * @param sourceTable Source Table from where data is queried
      * @param targetTable Source Table from where data is queried
      * @param columns Necessary columns on target
-     * @param placementDistribution Pre computed mapping of partitions and the necessary column placements
+     * @param placementDistribution Pre-computed mapping of partitions and the necessary column placements
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     void copySelectiveData(
             Transaction transaction,
             CatalogAdapter store,
-            LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns,
+            LogicalTable sourceTable,
+            LogicalTable targetTable,
+            List<LogicalColumn> columns,
             Map<Long, List<AllocationColumn>> placementDistribution,
             List<Long> targetPartitionIds );
 
@@ -65,29 +71,34 @@ public interface DataMigrator {
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
-     * @param targetTable Target Table where data is to be inserted
-     * @param columns Necessary columns on target
-     * @param sourcePartitionIds Source Partitions which need to be considered for querying
-     * @param targetPartitionIds Target Partitions where data should be inserted
+     * @param sourceTables Source Table from where data is queried
+     * @param targetProperty
+     * @param targetTables
+     * @param table
      */
-    void copyPartitionData(
+    void copyAllocationData(
             Transaction transaction,
             CatalogAdapter store,
-            LogicalTable sourceTable,
-            LogicalTable targetTable,
-            List<LogicalColumn> columns,
-            List<Long> sourcePartitionIds,
-            List<Long> targetPartitionIds );
+            List<AllocationTable> sourceTables,
+            PartitionProperty targetProperty,
+            List<AllocationTable> targetTables,
+            LogicalTable table );
 
     AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
     //is used within copyData
-    void executeQuery( List<AllocationColumn> columns, AlgRoot sourceRel, Statement sourceStatement, Statement targetStatement, AlgRoot targetRel, boolean isMaterializedView, boolean doesSubstituteOrderBy );
+    void executeQuery(
+            List<AllocationColumn> columns,
+            AlgRoot sourceRel,
+            Statement sourceStatement,
+            Statement targetStatement,
+            AlgRoot targetRel,
+            boolean isMaterializedView,
+            boolean doesSubstituteOrderBy );
 
     AlgRoot buildDeleteStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 
-    AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution );
+    AlgRoot getSourceIterator( Statement statement, LogicalTable table, Map<Long, List<AllocationColumn>> placementDistribution );
 
 
     void copyGraphData( AllocationGraph to, LogicalGraph from, Transaction transaction );

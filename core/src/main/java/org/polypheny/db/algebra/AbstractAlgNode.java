@@ -394,6 +394,15 @@ public abstract class AbstractAlgNode implements AlgNode {
     }
 
 
+    @Override
+    public void replaceCluster( AlgOptCluster cluster ) {
+        for ( AlgNode input : getInputs() ) {
+            input.replaceCluster( cluster );
+        }
+        setCluster( cluster );
+    }
+
+
     /**
      * Computes the digest. Does not modify this object.
      *

@@ -40,7 +40,6 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
@@ -98,11 +97,6 @@ public class HsqldbStore extends AbstractJdbcStore {
         }
     }
 
-
-    @Override
-    public Namespace getCurrentNamespace() {
-        return currentJdbcSchema;
-    }
 
 
     @Override

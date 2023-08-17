@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.information.InformationGroup;
@@ -95,19 +96,13 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( long userId, boolean analyze, String origin, MultimediaFlavor flavor ) {
-        /*Catalog catalog = Catalog.getInstance();
-        CatalogUser catalogUser = catalog.getUser( (int) userId );
-        LogicalNamespace logicalNamespace = catalog.getNamespace( catalogDatabase.defaultNamespaceName );
-        return startTransaction( catalogUser, logicalNamespace, catalogDatabase, analyze, origin, flavor );*/
-        throw new RuntimeException();
-    }
-
-
-    @Override
     public Transaction startTransaction( long userId, boolean analyze, String origin ) {
-        throw new RuntimeException();
-        // return startTransaction( userId, databaseId, analyze, origin, MultimediaFlavor.DEFAULT );
+        return startTransaction(
+                Catalog.snapshot().getUser( userId ),
+                Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ),
+                analyze,
+                origin,
+                MultimediaFlavor.DEFAULT );
     }
 
 

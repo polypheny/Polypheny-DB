@@ -35,7 +35,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RelationalAdapterDelegate;
+import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
@@ -72,7 +72,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     @Delegate(excludes = Excludes.class)
-    private final RelationalAdapterDelegate delegate;
+    private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
 
     private URL csvDir;
@@ -100,7 +100,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
         addInformationExportedColumns();
         enableInformationPage();
 
-        this.delegate = new RelationalAdapterDelegate( this, storeCatalog );
+        this.delegate = new RelationalScanDelegate( this, storeCatalog );
     }
 
 
@@ -123,7 +123,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void updateTable( long allocId ) {
+    public void refreshTable( long allocId ) {
         PhysicalTable table = storeCatalog.getTable( allocId );
         if ( table == null ) {
             log.warn( "todo" );
@@ -355,7 +355,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
     @SuppressWarnings("unused")
     private interface Excludes {
 
-        void updateTable( long allocId );
+        void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 

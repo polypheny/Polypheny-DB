@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 @Slf4j
-public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> implements ExtensionPoint {
+public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
 
     @Getter
     private final boolean persistent;

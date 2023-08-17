@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.ddl;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -52,13 +53,21 @@ public class SqlDropView extends SqlDropObject {
         final LogicalTable table;
 
         try {
-            table = getFromCatalog( context, name );
+            table = getEntityFromCatalog( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
             } else {
                 throw e;
+            }
+        }
+        if ( table == null ) {
+            if ( ifExists ) {
+                // It is ok that there is no view with this name because "IF EXISTS" was specified
+                return;
+            } else {
+                throw new GenericRuntimeException( "Could not find the specified view: %s", name );
             }
         }
 

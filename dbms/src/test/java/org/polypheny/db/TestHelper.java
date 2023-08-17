@@ -215,7 +215,7 @@ public class TestHelper {
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = (BigDecimal) expectedRow[j];
+                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     Assert.assertTrue(
@@ -224,6 +224,8 @@ public class TestHelper {
                                 } else {
                                     Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
+                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
+                                assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
                             } else {
                                 Assert.assertEquals(
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",

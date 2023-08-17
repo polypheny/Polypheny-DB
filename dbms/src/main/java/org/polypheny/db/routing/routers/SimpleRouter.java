@@ -17,15 +17,17 @@
 package org.polypheny.db.routing.routers;
 
 import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -47,17 +49,30 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Do same as without any partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+        // placementId -> List<AllocColumn>
+        Map<Long, List<AllocationColumn>> partitionToColumns = selectPlacement( table, catalog.getSnapshot().rel().getColumns( table.id ), List.of() );
+
+        //List<AllocationPartition> partitionIds = catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id );
+
+        //List<AllocationColumn> singlePartition = placements.values().stream().flatMap( Collection::stream ).collect( Collectors.toList() );
+
+        //Map<Long, List<AllocationColumn>> partitionToColumns = partitionIds.stream().collect( Collectors.toMap( id -> id.id, id -> singlePartition ) );
+
+        // Only one builder available
+        builders.get( 0 ).addPhysicalInfo( partitionToColumns );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, table, partitionToColumns ) );
+
+        return builders;
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         // Get placements and convert into placement distribution
         // final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
-        List<AllocationEntity> entities = Catalog.snapshot().alloc().getFromLogical( catalogTable.id );
+        List<AllocationEntity> entities = Catalog.snapshot().alloc().getFromLogical( table.id );
 
         // Only one builder available
         // builders.get( 0 ).addPhysicalInfo( placements );
@@ -68,23 +83,36 @@ public class SimpleRouter extends AbstractDqlRouter {
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
         List<Long> partitionIds = queryInformation.getAccessedPartitions().get( node.getId() );
 
         Map<Long, List<AllocationColumn>> placementDistribution = partitionIds != null
-                ? partitionManager.getRelevantPlacements( catalogTable, partitionIds, Collections.emptyList() )
-                : partitionManager.getRelevantPlacements( catalogTable, property.partitionIds, Collections.emptyList() );
+                ? partitionManager.getRelevantPlacements( table, getAllocOfPartitions( partitionIds, table ), Collections.emptyList() )
+                : partitionManager.getRelevantPlacements( table, getAllocOfPartitions( property.partitionIds, table ), Collections.emptyList() );
 
         // Only one builder available
         builders.get( 0 ).addPhysicalInfo( placementDistribution );
-        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, null ) );
+        builders.get( 0 ).push( super.buildJoinedScan( statement, cluster, table, placementDistribution ) );
 
         return builders;
+    }
+
+
+    private List<AllocationEntity> getAllocOfPartitions( List<Long> partitionIds, LogicalTable table ) {
+        List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id );
+        List<AllocationEntity> entities = new ArrayList<>();
+        for ( AllocationPlacement placement : placements ) {
+            for ( long partitionId : partitionIds ) {
+                Optional<AllocationEntity> optionalAlloc = catalog.getSnapshot().alloc().getAlloc( placement.id, partitionId );
+                optionalAlloc.ifPresent( entities::add );
+            }
+        }
+        return entities;
     }
 
 

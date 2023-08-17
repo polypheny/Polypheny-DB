@@ -28,9 +28,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
@@ -171,13 +171,13 @@ public class PolyFloat extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyFloat item ) {
-                    out.writeFloat( item.value );
+                    out.writeUTF8( item.value.toString() );
                 }
 
 
                 @Override
                 public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyFloat( in.readFloat() );
+                    return new PolyFloat( Float.valueOf( in.readUTF8() ) );
                 }
             };
         }

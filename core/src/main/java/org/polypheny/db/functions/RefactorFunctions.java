@@ -19,6 +19,7 @@ package org.polypheny.db.functions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
@@ -49,14 +50,14 @@ public class RefactorFunctions {
 
 
     @SuppressWarnings("unused")
-    public static PolyString fromDocument( PolyValue doc ) {
-        return PolyString.of( doc.serialize() );
+    public static PolyBinary fromDocument( PolyValue doc ) {
+        return PolyBinary.of( doc.serialize().getBytes() );
     }
 
 
     @SuppressWarnings("unused")
-    public static PolyValue toDocument( PolyString json ) {
-        return PolyValue.deserialize( json.value );
+    public static PolyValue toDocument( PolyBinary json ) {
+        return PolyValue.deserialize( new String( json.value.getBytes() ) );
     }
 
 

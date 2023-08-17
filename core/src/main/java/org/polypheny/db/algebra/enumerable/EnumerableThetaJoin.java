@@ -19,17 +19,16 @@ package org.polypheny.db.algebra.enumerable;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Set;
-import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -37,8 +36,8 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexProgramBuilder;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -130,54 +129,33 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
     @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-        /*final BlockBuilder builder = new BlockBuilder();
+        final BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableAlg) left, pref );
         Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
         Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
-        final BlockBuilder builder2 = new BlockBuilder();
+        final JoinInfo info = JoinInfo.of( left, right, condition );
+        final PhysType keyPhysType = leftResult.physType.project( info.leftKeys, JavaRowFormat.LIST );
+
         return implementor.result(
                 physType,
                 builder.append(
                         Expressions.call(
-                                BuiltInMethod.THETA_JOIN.method,
                                 leftExpression,
-                                rightExpression,
-                                predicate( implementor, builder2, leftResult.physType, rightResult.physType, condition ),
-                                EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
-                                Expressions.constant( joinType.generatesNullsOnLeft() ),
-                                Expressions.constant( joinType.generatesNullsOnRight() ) )
-                ).toBlock() );*/
-        // todo fix
-        return null;
+                                BuiltInMethod.JOIN.method,
+                                Expressions.list(
+                                        rightExpression,
+                                        leftResult.physType.generateAccessor( info.leftKeys ),
+                                        rightResult.physType.generateAccessor( info.rightKeys ),
+                                        EnumUtils.joinSelector( joinType, physType, ImmutableList.of( leftResult.physType, rightResult.physType ) ),
+                                        Util.first( keyPhysType.comparer(), Expressions.constant( null ) ),
+                                        Expressions.constant( joinType.generatesNullsOnLeft() ),
+                                        Expressions.constant( joinType.generatesNullsOnRight() ),
+                                        EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftResult.physType, rightResult.physType, condition ) ) )
+                ).toBlock() );
     }
 
-
-    Expression predicate( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType leftPhysType, PhysType rightPhysType, RexNode condition ) {
-        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaRowType(), "left" );
-        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
-        final RexProgramBuilder program =
-                new RexProgramBuilder(
-                        implementor.getTypeFactory()
-                                .builder()
-                                .addAll( left.getRowType().getFieldList() )
-                                .addAll( right.getRowType().getFieldList() )
-                                .build(),
-                        getCluster().getRexBuilder() );
-        program.addCondition( condition );
-        builder.add(
-                Expressions.return_(
-                        null,
-                        RexToLixTranslator.translateCondition(
-                                program.getProgram(),
-                                implementor.getTypeFactory(),
-                                builder,
-                                new RexToLixTranslator.InputGetterImpl( ImmutableList.of( Pair.of( (Expression) left_, leftPhysType ), Pair.of( (Expression) right_, rightPhysType ) ) ),
-                                implementor.allCorrelateVariables,
-                                implementor.getConformance() ) ) );
-        return Expressions.lambda( Predicate2.class, builder.toBlock(), left_, right_ );
-    }
 
 }
 

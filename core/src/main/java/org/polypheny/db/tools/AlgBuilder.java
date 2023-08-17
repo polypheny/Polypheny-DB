@@ -294,7 +294,7 @@ public class AlgBuilder {
                         return null;
                     }
                 } );
-        return new AlgBuilder( config.getContext(), cluster[0], snapshot[0] );
+        return new AlgBuilder( config.getContext(), cluster[0], config.getSnapshot() );
     }
 
 
@@ -374,7 +374,7 @@ public class AlgBuilder {
      */
     public void replaceTop( AlgNode node ) {
         final Frame frame = stack.pop();
-        stack.push( new Frame( node, frame.structured, null ) );
+        stack.push( new Frame( node, toFields( node ), null ) );
     }
 
 
@@ -382,11 +382,17 @@ public class AlgBuilder {
      * Adds an alg node to the top of the stack while preserving the field names and aliases.
      */
     public void replaceTop( AlgNode node, int amount ) {
-        final Frame frame = stack.pop();
-        for ( int i = 0; i < amount - 1; i++ ) {
+        //final Frame frame = stack.pop();
+        for ( int i = 0; i < amount; i++ ) {
             stack.pop();
         }
-        stack.push( new Frame( node, frame.structured, null ) );
+
+        stack.push( new Frame( node, toFields( node ), null ) );
+    }
+
+
+    private static ImmutableList<RelField> toFields( AlgNode node ) {
+        return ImmutableList.copyOf( node.getRowType().getFieldList().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -611,6 +617,23 @@ public class AlgBuilder {
             for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
                 // If alias and field name match, reference that field.
                 if ( p.e.left.contains( alias ) && p.e.right.getName().equals( fieldName ) ) {
+                    return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
+                }
+                fields.add( String.format( Locale.ROOT, "{aliases=%s,fieldName=%s}", p.e.left, p.e.right.getName() ) );
+            }
+        }
+        throw new IllegalArgumentException( "no aliased field found; fields are: " + fields );
+    }
+
+
+    public RexNode field( int inputCount, String fieldName ) {
+        Objects.requireNonNull( fieldName );
+        final List<String> fields = new ArrayList<>();
+        for ( int inputOrdinal = 0; inputOrdinal < inputCount; ++inputOrdinal ) {
+            final Frame frame = peek_( inputOrdinal );
+            for ( Ord<RelField> p : Ord.zip( frame.structured ) ) {
+                // If alias and field name match, reference that field.
+                if ( p.e.right.getName().equals( fieldName ) ) {
                     return field( inputCount, inputCount - 1 - inputOrdinal, p.i );
                 }
                 fields.add( String.format( Locale.ROOT, "{aliases=%s,fieldName=%s}", p.e.left, p.e.right.getName() ) );
@@ -1357,13 +1380,16 @@ public class AlgBuilder {
     }
 
 
-    private void reorder( List<Long> order, Map<String, Long> namesIdMapping ) {
+    public AlgBuilder reorder( AlgDataType target ) {
         List<String> names = peek().getRowType().getFieldNames();
+        List<String> targetNames = target.getFieldNames();
         List<Integer> mapping = new ArrayList<>();
         for ( String name : names ) {
-            mapping.add( order.indexOf( namesIdMapping.get( name ) ) );
+            mapping.add( targetNames.indexOf( name ) );
         }
         permute( new Permutation( mapping ) );
+
+        return this;
     }
 
 
@@ -1547,7 +1573,7 @@ public class AlgBuilder {
      */
     public AlgBuilder project( Iterable<? extends RexNode> nodes, Iterable<String> fieldNames, boolean force ) {
         final Frame frame = stack.peek();
-        final AlgDataType inputRowType = frame.alg.getRowType();
+        final AlgDataType inputRowType = Objects.requireNonNull( frame ).alg.getRowType();
         final List<RexNode> nodeList = Lists.newArrayList( nodes );
 
         // Perform a quick check for identity. We'll do a deeper check later when we've derived column names.
@@ -1597,9 +1623,7 @@ public class AlgBuilder {
 
         // Simplify expressions.
         if ( simplify ) {
-            for ( int i = 0; i < nodeList.size(); i++ ) {
-                nodeList.set( i, simplifier.simplifyPreservingType( nodeList.get( i ) ) );
-            }
+            nodeList.replaceAll( simplifier::simplifyPreservingType );
         }
 
         // Replace null names with generated aliases.
@@ -3037,8 +3061,8 @@ public class AlgBuilder {
      */
     private static class RelField extends Pair<ImmutableSet<String>, AlgDataTypeField> implements Field {
 
-        RelField( ImmutableSet<String> left, AlgDataTypeField right ) {
-            super( left, right );
+        RelField( ImmutableSet<String> aliases, AlgDataTypeField right ) {
+            super( aliases, right );
         }
 
 

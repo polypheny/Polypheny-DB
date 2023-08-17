@@ -21,28 +21,32 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.transaction.Statement;
 
-
+@Value
 public class ContextImpl implements Context {
 
     @Getter
-    private final Snapshot snapshot;
+    @NonFinal
+    Snapshot snapshot;
     @Getter
-    private final JavaTypeFactory typeFactory;
+    public JavaTypeFactory typeFactory;
     @Getter
-    private final DataContext dataContext;
+    public DataContext dataContext;
     @Getter
-    private final Statement statement;
+    public Statement statement;
     @Getter
-    private final String defaultNamespaceName;
+    public String defaultNamespaceName;
     @Getter
-    private final long currentUserId;
+    public long currentUserId;
 
 
     public ContextImpl( Snapshot snapshot, DataContext dataContext, String defaultNamespaceName, long currentUserId, Statement statement ) {
@@ -66,6 +70,12 @@ public class ContextImpl implements Context {
     @Override
     public List<String> getObjectPath() {
         return null;
+    }
+
+
+    @Override
+    public void updateSnapshot() {
+        this.snapshot = Catalog.snapshot();
     }
 
 

@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -43,26 +42,39 @@ import org.polypheny.db.util.Pair;
 public class IcarusRouter extends FullPlacementQueryRouter {
 
     @Override
-    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleHorizontalPartitioning( AlgNode node, LogicalTable table, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
         this.cancelQuery = true;
         return Collections.emptyList();
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication( AlgNode node, LogicalTable catalogTable, Statement statement, LogicalEntity logicalTable, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
-        // same as no partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+    protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
+            AlgNode node,
+            LogicalTable table,
+            Statement statement,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
+        cancelQuery = true;
+        // Same as no partitioning
+        return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
-    protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable catalogTable, Statement statement, List<RoutedAlgBuilder> builders, AlgOptCluster cluster, LogicalQueryInformation queryInformation ) {
+    protected List<RoutedAlgBuilder> handleNonePartitioning(
+            AlgNode node,
+            LogicalTable table,
+            Statement statement,
+            List<RoutedAlgBuilder> builders,
+            AlgOptCluster cluster,
+            LogicalQueryInformation queryInformation ) {
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+            log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
 
-        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
+        final Set<List<AllocationColumn>> placements = selectPlacement( table, queryInformation );
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         if ( placements.isEmpty() ) {
             this.cancelQuery = true;
@@ -73,12 +85,12 @@ public class IcarusRouter extends FullPlacementQueryRouter {
         if ( builders.size() == 1 && builders.get( 0 ).getPhysicalPlacementsOfPartitions().isEmpty() ) {
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builders.get( 0 ) );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, null ) );
                 newBuilders.add( newBuilder );
             }
         } else {
@@ -91,11 +103,11 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
             for ( List<AllocationColumn> currentPlacement : placements ) {
                 final Map<Long, List<AllocationColumn>> currentPlacementDistribution = new HashMap<>();
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 currentPlacementDistribution.put( property.partitionIds.get( 0 ), currentPlacement );
 
                 // AdapterId for all col placements same
-                final long adapterId = currentPlacement.get( 0 ).adapterId;
+                final long placementId = currentPlacement.get( 0 ).placementId;
 
                 // Find corresponding builder:
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
@@ -104,7 +116,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
                             .collect( Collectors.toList() );
                     final Optional<Long> found = listPairs.stream()
                             .map( elem -> elem.left )
-                            .filter( elem -> elem == adapterId )
+                            .filter( elem -> elem == placementId )
                             .findFirst();
                             return found.isPresent();
                         }
@@ -117,7 +129,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 final RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( currentPlacementDistribution );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, null ) );
                 newBuilders.add( newBuilder );
             }
             if ( newBuilders.isEmpty() ) {

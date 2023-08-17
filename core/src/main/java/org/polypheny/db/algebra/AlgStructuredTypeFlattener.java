@@ -281,13 +281,13 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     }
 
 
-    protected void setNewForOldRel( AlgNode oldRel, AlgNode newAlg ) {
-        oldTonewAlgMap.put( oldRel, newAlg );
+    protected void setNewForOldAlg( AlgNode oldAlg, AlgNode newAlg ) {
+        oldTonewAlgMap.put( oldAlg, newAlg );
     }
 
 
-    protected AlgNode getNewForOldRel( AlgNode oldRel ) {
-        return oldTonewAlgMap.get( oldRel );
+    protected AlgNode getNewForOldRel( AlgNode oldAlg ) {
+        return oldTonewAlgMap.get( oldAlg );
     }
 
 
@@ -382,7 +382,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalConditionalExecute alg ) {
         LogicalConditionalExecute newAlg = LogicalConditionalExecute.create( alg.getLeft(), alg.getRight(), alg );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -458,7 +458,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         if ( scan.entity.isPhysical() ) {
             alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
         }
-        setNewForOldRel( scan, alg );
+        setNewForOldAlg( scan, alg );
     }
 
 
@@ -469,7 +469,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 alg.getRight(),
                 alg.getExceptionClasses(),
                 alg.getExceptionMessages() );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -491,7 +491,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         if ( scan.entity.isPhysical() ) {
             alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
         }
-        setNewForOldRel( scan, alg );
+        setNewForOldAlg( scan, alg );
     }
 
 
@@ -541,7 +541,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getUpdateColumnList(),
                         alg.getSourceExpressionList(),
                         true );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -577,7 +577,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         }
         AlgCollation newCollation = RexUtil.apply( mapping, oldCollation );
         Sort newAlg = LogicalSort.create( newChild, newCollation, alg.offset, alg.fetch );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -588,7 +588,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getTraitSet(),
                         getNewForOldRel( alg.getInput() ),
                         alg.getCondition().accept( new RewriteRexShuttle() ) );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -601,7 +601,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getCondition().accept( new RewriteRexShuttle() ),
                         alg.getVariablesSet(),
                         alg.getJoinType() );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -622,7 +622,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                         alg.getCorrelationId(),
                         newPos.build(),
                         alg.getJoinType() );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -696,7 +696,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                 Pair.left( flattenedExpList ),
                 Pair.right( flattenedExpList ),
                 true );
-        setNewForOldRel( alg, algBuilder.build() );
+        setNewForOldAlg( alg, algBuilder.build() );
     }
 
 
@@ -744,12 +744,12 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
         // Create a new calc relational expression.
         LogicalCalc newAlg = LogicalCalc.create( newInput, newProgram );
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
     @SuppressWarnings("unused")
-    public void rewriteAlg( SelfFlatteningRel alg ) {
+    public void rewriteAlg( SelfFlatteningAlg alg ) {
         alg.flattenRel( this );
     }
 
@@ -760,7 +760,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         for ( int i = 0; i < oldInputs.size(); ++i ) {
             newAlg.replaceInput( i, getNewForOldRel( oldInputs.get( i ) ) );
         }
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -885,7 +885,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
                     .projectNamed( Pair.left( flattenedExpList ), Pair.right( flattenedExpList ), true )
                     .build();
         }
-        setNewForOldRel( alg, newAlg );
+        setNewForOldAlg( alg, newAlg );
     }
 
 
@@ -925,7 +925,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     /**
      * Mix-in interface for relational expressions that know how to flatten themselves.
      */
-    public interface SelfFlatteningRel extends AlgNode {
+    public interface SelfFlatteningAlg extends AlgNode {
 
         void flattenRel( AlgStructuredTypeFlattener flattener );
 

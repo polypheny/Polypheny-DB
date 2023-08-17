@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.BatchIterator;
 import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
-import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelModify;
@@ -63,10 +63,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.partition.PartitionManager;
@@ -83,7 +85,6 @@ import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -95,81 +96,48 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
-        if ( modify.getEntity() == null ) {
-            throw new RuntimeException( "Unexpected operator!" );
-        }
-
-        LogicalTable catalogTable = modify.getEntity().unwrap( LogicalTable.class );
-        Snapshot snapshot = statement.getTransaction().getSnapshot();
-
-        // Get placements of this table
-
-        // Make sure that this table can be modified
-        if ( !catalogTable.modifiable ) {
-            if ( catalogTable.entityType == EntityType.ENTITY ) {
-                throw new RuntimeException( "Unable to modify a table marked as read-only!" );
-            } else if ( catalogTable.entityType == EntityType.SOURCE ) {
-                throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
-            } else if ( catalogTable.entityType == EntityType.VIEW ) {
-                throw new RuntimeException( "Polypheny-DB does not support modifying views." );
-            }
-            throw new RuntimeException( "Unknown table type: " + catalogTable.entityType.name() );
-        }
-
-        log.warn( "add more complex parts" );
-
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );
-
-        AllocationEntity allocation = allocs.get( 0 );
-
-        AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
-        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
-
-    }
-
-
-    /**
-     * Default implementation: Execute DML on all placements
-     */
-    public AlgNode routeDmlOld( LogicalRelModify modify, Statement statement ) {
         AlgOptCluster cluster = modify.getCluster();
 
-        if ( modify.getEntity() == null ) {
+        if ( modify.entity == null ) {
             throw new RuntimeException( "Unexpected operator!" );
         }
+        LogicalTable table = modify.entity.unwrap( LogicalTable.class );
 
-        LogicalTable catalogTable = modify.getEntity().unwrap( LogicalTable.class );
-        Snapshot snapshot = statement.getTransaction().getSnapshot();
-
-        // Get placements of this table
-
-        // Make sure that this table can be modified
-        if ( !catalogTable.modifiable ) {
-            if ( catalogTable.entityType == EntityType.ENTITY ) {
-                throw new RuntimeException( "Unable to modify a table marked as read-only!" );
-            } else if ( catalogTable.entityType == EntityType.SOURCE ) {
-                throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
-            } else if ( catalogTable.entityType == EntityType.VIEW ) {
-                throw new RuntimeException( "Polypheny-DB does not support modifying views." );
-            }
-            throw new RuntimeException( "Unknown table type: " + catalogTable.entityType.name() );
+        if ( table == null ) {
+            throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
         }
 
-        long pkid = catalogTable.primaryKey;
-        List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
-        LogicalColumn pkColumn = snapshot.rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
+        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
+        List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+
+        // Make sure that this table can be modified
+        if ( !table.modifiable ) {
+            if ( table.entityType == EntityType.ENTITY ) {
+                throw new GenericRuntimeException( "Unable to modify a table marked as read-only!" );
+            } else if ( table.entityType == EntityType.SOURCE ) {
+                throw new GenericRuntimeException( "The table '%s' is provided by a data source which does not support data modification.", table.name );
+            } else if ( table.entityType == EntityType.VIEW ) {
+                throw new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
+            }
+            throw new GenericRuntimeException( "Unknown table type: %s", table.entityType.name() );
+        }
+
+        long pkid = table.primaryKey;
+        List<Long> pkColumnIds = catalog.getSnapshot().rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
+        LogicalColumn pkColumn = catalog.getSnapshot().rel().getColumn( pkColumnIds.get( 0 ) ).orElseThrow();
 
         // Essentially gets a list of all stores where this table resides
-        List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( catalogTable.id );//.getPartitionProperty( catalogTable.id );
-        if ( !allocs.isEmpty() && log.isDebugEnabled() ) {
-            log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, -1 );//property.partitionGroupIds );
-            for ( AllocationColumn dataPlacement : pkPlacements ) {
+        List<AllocationPlacement> pkPlacements = catalog.getSnapshot().alloc().getPlacementsOfColumn( pkColumn.id );
+        PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+
+        if ( property.isPartitioned && log.isDebugEnabled() ) {
+            log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", table.name, property.partitionGroupIds );
+            for ( AllocationPlacement placement : pkPlacements ) {
                 log.debug(
                         "\t\t -> '{}' {}\t{}",
-                        dataPlacement.adapterId,
-                        snapshot.alloc().getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
-                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
+                        catalog.getSnapshot().getAdapter( placement.adapterId ),
+                        null,//catalog.getPartitionGroupsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
+                        null );//catalog.getPartitionGroupsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
             }
         }
 
@@ -185,18 +153,17 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<Map<Long, PolyValue>> allValues = statement.getDataContext().getParameterValues();
 
         Map<Long, PolyValue> newParameterValues = new HashMap<>();
-        for ( AllocationColumn pkPlacement : pkPlacements ) {
+        for ( AllocationPlacement pkPlacement : pkPlacements ) {
 
             // Get placements on store
-            List<AllocationColumn> placementsOnAdapter = snapshot.alloc().getColumnPlacementsOnAdapterPerTable( pkPlacement.adapterId, catalogTable.id );
+            List<AllocationColumn> placementsOnAdapter = catalog.getSnapshot().alloc().getColumns( pkPlacement.id );
 
             // If this is an update, check whether we need to execute on this store at all
             List<String> updateColumnList = modify.getUpdateColumnList();
             List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
-            List<LogicalColumn> columns = snapshot.rel().getColumns( catalogTable.id );
-            if ( placementsOnAdapter.size() != columns.size() ) {
+            if ( placementsOnAdapter.size() != table.getColumnIds().size() ) {
 
-                if ( modify.getOperation() == Modify.Operation.UPDATE ) {
+                if ( modify.getOperation() == Operation.UPDATE ) {
                     updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
                     sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
                     Iterator<String> updateColumnListIterator = updateColumnList.iterator();
@@ -204,8 +171,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     while ( updateColumnListIterator.hasNext() ) {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
-                        LogicalColumn logicalColumn = snapshot.rel().getColumn( catalogTable.id, columnName ).orElseThrow();
-                        if ( snapshot.alloc().getEntity( pkPlacement.adapterId, logicalColumn.id ).isEmpty() ) {
+
+                        Optional<LogicalColumn> optionalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName );
+                        if ( optionalColumn.isEmpty() ) {
+                            throw new GenericRuntimeException( "Could not find the column with the name %s", columnName );
+                        }
+                        if ( catalog.getSnapshot().alloc().getColumn( pkPlacement.id, optionalColumn.get().id ).isEmpty() ) {
                             updateColumnListIterator.remove();
                             sourceExpressionListIterator.remove();
                         }
@@ -220,14 +191,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             long identifiedPartitionForSetValue = -1;
             Set<Long> accessedPartitionList = new HashSet<>();
             // Identify where clause of UPDATE
-            if ( allocs.size() > 1 ) {
+            if ( property.isPartitioned ) {
                 boolean worstCaseRouting = false;
                 Set<Long> identifiedPartitionsInFilter = new HashSet<>();
 
                 PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-                PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( allocs.get( 0 ).getPartitionType() );
+                PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
-                WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, columns.indexOf( -1 ) );//property.partitionColumnId ) );
+                WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, columnIds.indexOf( property.partitionColumnId ) );
                 modify.accept( new AlgShuttleImpl() {
                     @Override
                     public AlgNode visit( LogicalFilter filter ) {
@@ -252,7 +223,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( whereClauseValues != null ) {
                     for ( String value : whereClauseValues ) {
                         worstCaseRouting = false;
-                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, value );
+                        identPart = (int) partitionManager.getTargetPartitionId( table, property, value );
                         accessedPartitionList.add( identPart );
                         identifiedPartitionsInFilter.add( identPart );
                     }
@@ -261,15 +232,16 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 String partitionValue = "";
                 // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
 
-                if ( modify.getOperation() == Modify.Operation.UPDATE ) {
+                if ( modify.getOperation() == Operation.UPDATE ) {
                     // In case of update always use worst case routing for now.
                     // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
                     int index = 0;
 
                     for ( String cn : updateColumnList ) {
-                        if ( snapshot.rel().getColumn( catalogTable.id, cn ).orElseThrow().id == -1 ) {//property.partitionColumnId ) {
+
+                        if ( catalog.getSnapshot().rel().getColumn( table.id, cn ).orElseThrow().id == property.partitionColumnId ) {
                             if ( log.isDebugEnabled() ) {
-                                log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", -1, index );//property.partitionColumnId, index );
+                                log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", property.partitionColumnId, index );
                             }
                             // Routing/Locking can now be executed on certain partitions
                             partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
@@ -277,9 +249,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 log.debug(
                                         "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
                                         partitionValue,
-                                        partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                                        partitionManager.getTargetPartitionId( table, property, partitionValue ) );
                             }
-                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                             // Needed to verify if UPDATE shall be executed on two partitions or not
                             identifiedPartitionForSetValue = identPart;
                             accessedPartitionList.add( identPart );
@@ -325,14 +297,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     //Partition functionality cannot be used --> worstCase --> send query to every partition
                     else {
                         worstCaseRouting = true;
-                        accessedPartitionList = allocs.stream().map( a -> a.id ).collect( Collectors.toSet() );
+                        accessedPartitionList = new HashSet<>( property.partitionIds );
                     }
 
-                } else if ( modify.getOperation() == Modify.Operation.INSERT ) {
+                } else if ( modify.getOperation() == Operation.INSERT ) {
                     int i;
-
                     if ( modify.getInput() instanceof LogicalValues ) {
-
                         // Get fieldList and map columns to index since they could be in arbitrary order
                         int partitionColumnIndex = -1;
                         Map<Long, Integer> resultColMapping = new HashMap<>();
@@ -341,13 +311,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                             int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
-                            resultColMapping.put( columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( columnIndex ), j );
+                            resultColMapping.put( columnIds.get( columnIndex ), j );
 
                             // Determine location of partitionColumn in fieldList
-                            if ( columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( columnIndex ) == -1 ) {//property.partitionColumnId ) {
+                            if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
                                 partitionColumnIndex = columnIndex;
                                 if ( log.isDebugEnabled() ) {
-                                    log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", -1, j );//property.partitionColumnId, j );
+                                    log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", property.partitionColumnId, j );
                                     worstCaseRouting = false;
 
                                 }
@@ -360,11 +330,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             worstCaseRouting = false;
                             if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
-                                partitionValue = partitionManager.getUnifiedNullValue();
+                                partitionValue = PartitionManager.NULL_STRING;
                             } else {
                                 partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
                             }
-                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                            identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                             accessedPartitionList.add( identPart );
 
                             if ( !tuplesOnPartition.containsKey( identPart ) ) {
@@ -377,22 +347,23 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                             Long currentPartitionId = partitionMapping.getKey();
 
-                            if ( !snapshot.alloc().getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( currentPartitionId ) ) {
+                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == currentPartitionId ) ) {
                                 continue;
                             }
 
                             for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
-                                AllocationEntity allocation = snapshot.alloc().getEntity( currentPartitionId ).orElseThrow();
                                 LogicalValues newLogicalValues = new LogicalValues(
                                         cluster,
                                         cluster.traitSet(),
                                         (modify.getInput()).getRowType(),
                                         ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
+                                AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
+
                                 AlgNode input = buildDml(
                                         newLogicalValues,
                                         RoutedAlgBuilder.create( statement, cluster ),
-                                        catalogTable,
+                                        table,
                                         placementsOnAdapter,
                                         allocation,
                                         statement,
@@ -400,18 +371,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         true,
                                         statement.getDataContext().getParameterValues() ).build();
 
-                                AlgNode node = AdapterManager.getInstance().getAdapter( allocation.adapterId ).getScan( allocation.id, AlgBuilder.create( statement ) );
-                                ModifiableEntity modifiableTable = node.getEntity().unwrap( ModifiableEntity.class );
-
                                 // Build DML
-                                Modify<?> adjustedModify = modifiableTable.toModificationAlg(
-                                        cluster,
-                                        cluster.traitSet(),
+                                RelModify<?> adjustedModify = LogicalRelModify.create(
                                         allocation,
                                         input,
                                         modify.getOperation(),
                                         updateColumnList,
-                                        sourceExpressionList );
+                                        sourceExpressionList,
+                                        modify.isFlattened() );
 
                                 modifies.add( adjustedModify );
 
@@ -422,7 +389,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     } else if ( modify.getInput() instanceof LogicalProject
                             && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
 
-                        String partitionColumnName = "empty";//snapshot.rel().getColumn( property.partitionColumnId ).name;
+                        String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
                         List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
 
                         LogicalRelModify ltm = modify;
@@ -449,9 +416,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     for ( Map<Long, PolyValue> currentRow : allValues ) {
                                         // first we sort the values to insert according to the partitionManager and their partitionId
 
-                                        tempPartitionId = partitionManager.getTargetPartitionId( catalogTable, currentRow.get( partitionValueIndex ).toString() );
+                                        tempPartitionId = partitionManager.getTargetPartitionId( table, property, currentRow.get( partitionValueIndex ).toString() );
 
-                                        if ( !snapshot.alloc().getPartitionsOnDataPlacement( pkPlacement.adapterId, catalogTable.id ).contains( tempPartitionId ) ) {
+                                        long finalTempPartitionId = tempPartitionId;
+                                        if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == finalTempPartitionId ) ) {
                                             continue;
                                         }
 
@@ -472,12 +440,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         // then we add a modification for each partition
                                         statement.getDataContext().setParameterValues( entry.getValue() );
 
-                                        AllocationEntity allocation = snapshot.alloc().getEntity( pkPlacement.adapterId, entry.getKey() ).orElseThrow();
+                                        AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, entry.getKey() ).orElseThrow();
 
                                         AlgNode input = buildDml(
                                                 super.recursiveCopy( modify.getInput( 0 ) ),
                                                 RoutedAlgBuilder.create( statement, cluster ),
-                                                catalogTable,
+                                                table,
                                                 placementsOnAdapter,
                                                 allocation,
                                                 statement,
@@ -486,7 +454,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                                 entry.getValue() ).build();
 
                                         // Build DML
-                                        Modify<?> adjustedModify = LogicalRelModify.create( allocation, input, modify.getOperation(), updateColumnList, sourceExpressionList, false );
+                                        LogicalRelModify adjustedModify = LogicalRelModify.create(
+                                                allocation,
+                                                input,
+                                                modify.getOperation(),
+                                                updateColumnList,
+                                                sourceExpressionList,
+                                                modify.isFlattened() );
 
                                         statement.getDataContext().addContext();
                                         modifies.add( new LogicalContextSwitcher( adjustedModify ) );
@@ -496,7 +470,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     worstCaseRouting = false;
                                 } else {
                                     partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
-                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                    identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                                     accessedPartitionList.add( identPart );
                                     worstCaseRouting = false;
                                 }
@@ -515,14 +489,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
 
                     if ( log.isDebugEnabled() ) {
-                        String partitionColumnName = "empty";//snapshot.rel().getColumn( property.partitionColumnId ).name;
-                        // String partitionName = snapshot.alloc().getPartitionGroup( identPart ).partitionGroupName;
-                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {}, which is partitioned with column {}",
-                                partitionValue, identPart, partitionColumnName );
+                        String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
+                        String partitionName = null; //.getPartitionGroup( identPart ).partitionGroupName;
+                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
+                                partitionValue, identPart, partitionName, partitionColumnName );
                     }
 
 
-                } else if ( modify.getOperation() == Modify.Operation.DELETE ) {
+                } else if ( modify.getOperation() == Operation.DELETE ) {
                     if ( whereClauseValues == null ) {
                         worstCaseRouting = true;
                     } else {
@@ -533,38 +507,34 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 if ( worstCaseRouting ) {
                     log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
-                    accessedPartitionList = allocs.stream().map( a -> a.id ).collect( Collectors.toSet() );//property.partitionIds );
+                    accessedPartitionList = new HashSet<>( property.partitionIds );
                 }
             } else {
                 // un-partitioned tables only have one partition anyway
-                identPart = allocs.get( 0 ).id;//property.partitionIds.get( 0 );
+                identPart = property.partitionIds.get( 0 );
                 accessedPartitionList.add( identPart );
             }
 
             if ( statement.getMonitoringEvent() != null ) {
                 statement.getMonitoringEvent()
                         .updateAccessedPartitions(
-                                Collections.singletonMap( catalogTable.id, accessedPartitionList )
-                        );
+                                Collections.singletonMap( table.id, accessedPartitionList ) );
             }
 
             if ( !operationWasRewritten ) {
-
                 for ( long partitionId : accessedPartitionList ) {
 
-                    Optional<AllocationEntity> optionalAlloc = snapshot.alloc().getEntity( partitionId );
-                    if ( optionalAlloc.isEmpty() ) {
+                    if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == partitionId ) ) {
                         continue;
                     }
 
-                    AllocationEntity allocation = optionalAlloc.get();
-
                     // Build DML
-
+                    LogicalRelModify adjustedModify;
+                    AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, partitionId ).orElseThrow();
                     AlgNode input = buildDml(
                             super.recursiveCopy( modify.getInput( 0 ) ),
                             RoutedAlgBuilder.create( statement, cluster ),
-                            catalogTable,
+                            table,
                             placementsOnAdapter,
                             allocation,
                             statement,
@@ -572,7 +542,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             false,
                             statement.getDataContext().getParameterValues() ).build();
 
-                    Modify<?> adjustedModify = LogicalRelModify.create(
+                    adjustedModify = LogicalRelModify.create(
                             allocation,
                             input,
                             modify.getOperation(),
@@ -603,6 +573,15 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
         }
+
+
+    }
+
+
+    @NotNull
+    private LogicalRelModify handleSingleModify( LogicalRelModify modify, Statement statement, AllocationEntity allocation ) {
+        AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
+        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
     }
 
 
@@ -788,7 +767,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private AlgBuilder buildDml(
             AlgNode node,
             RoutedAlgBuilder builder,
-            LogicalTable catalogTable,
+            LogicalTable table,
             List<AllocationColumn> placements,
             AllocationEntity allocationTable,
             Statement statement,
@@ -796,7 +775,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
+            buildDml( node.getInput( i ), builder, table, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -807,95 +786,117 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         if ( node instanceof LogicalDocumentScan ) {
-            builder = super.handleRelScan(
-                    builder,
-                    statement,
-                    null );
-            LogicalRelScan scan = (LogicalRelScan) builder.build();
-            builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
-            return builder;
+            return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-
-            // Special handling for INSERT INTO foo SELECT * FROM foo2
-            if ( false ) {
-                return handleSelectFromOtherTable( builder, catalogTable, statement );
-            }
-
-            builder = super.handleRelScan(
-                    builder,
-                    statement,
-                    null
-            );
-
-            return builder;
-
+            return handleLogicalRelScan( builder, table, allocationTable, statement );
         } else if ( node instanceof LogicalDocumentValues ) {
-
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
+            return handleValues( node, builder, table, placements );
+        } else if ( node instanceof LogicalProject ) {
+            return handleLogicalProject( node, builder, table, placements, statement, remapParameterValues, parameterValues );
+        } else if ( node instanceof LogicalFilter ) {
+            return handleLogicalFilter( node, builder, table, placements, statement );
+        } else {
+            return super.handleGeneric( node, builder );
+        }
+    }
 
-            LogicalValues values = (LogicalValues) node;
 
-            builder = super.handleValues( values, builder );
+    private RoutedAlgBuilder handleLogicalFilter( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements, Statement statement ) {
+        List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
+        if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
+            RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
 
-            List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( catalogTable.id );
-            if ( columns.size() == placements.size() ) { // full placement, no additional checks required
-                return builder;
-            } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                // This is a prepared statement. Actual values are in the project. Do nothing
-                return builder;
-            } else { // partitioned, add additional project
+            for ( RexNode operand : call.operands ) {
+                dmlConditionCheck( (LogicalFilter) node, table, placements, operand );
+            }
+        }
+        return super.handleGeneric( node, builder );
+    }
+
+
+    private AlgBuilder handleLogicalRelScan( RoutedAlgBuilder builder, LogicalTable table, AllocationEntity allocationTable, Statement statement ) {
+        // Special handling for INSERT INTO foo SELECT * FROM foo2
+        if ( false ) {
+            return handleSelectFromOtherTable( builder, table, statement );
+        }
+
+        builder = super.handleRelScan(
+                builder,
+                statement,
+                allocationTable
+        );
+
+        return builder;
+    }
+
+
+    @NotNull
+    private RoutedAlgBuilder handleLogicalDocumentScan( RoutedAlgBuilder builder, Statement statement ) {
+        builder = super.handleRelScan(
+                builder,
+                statement,
+                null );
+        LogicalRelScan scan = (LogicalRelScan) builder.build();
+        builder.push( scan.copy( scan.getTraitSet().replace( ModelTrait.DOCUMENT ), scan.getInputs() ) );
+        return builder;
+    }
+
+
+    private AlgBuilder handleLogicalProject( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements, Statement statement, boolean remapParameterValues, List<Map<Long, PolyValue>> parameterValues ) {
+        List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( table.id );
+        PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+        if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
+            if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
+                return remapParameterizedDml( node, builder, statement, parameterValues );
+            } else {
+                return super.handleGeneric( node, builder );
+            }
+        } else { // vertically partitioned, adjust project
+            if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                if ( property.isPartitioned && remapParameterValues ) {
+                    builder = remapParameterizedDml( node, builder, statement, parameterValues );
+                }
+                builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
                 return builder.project( rexNodes );
-            }
-        } else if ( node instanceof LogicalProject ) {
-            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
-            PartitionProperty property = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id );
-            if ( columns.size() == placements.size() ) { // full placement, generic handling is sufficient
-                if ( property.isPartitioned && remapParameterValues ) {  //  && ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" )
-                    return remapParameterizedDml( node, builder, statement, parameterValues );
-                } else {
-                    return super.handleGeneric( node, builder );
+            } else {
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                for ( AllocationColumn ccp : placements ) {
+                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
-            } else { // vertically partitioned, adjust project
-                if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
-                    if ( property.isPartitioned && remapParameterValues ) {
-                        builder = remapParameterizedDml( node, builder, statement, parameterValues );
+                for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                    if ( !(rexNode instanceof RexIndexRef) ) {
+                        rexNodes.add( rexNode );
                     }
-                    builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
-                    ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( AllocationColumn ccp : placements ) {
-                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-                    }
-                    return builder.project( rexNodes );
-                } else {
-                    ArrayList<RexNode> rexNodes = new ArrayList<>();
-                    for ( AllocationColumn ccp : placements ) {
-                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-                    }
-                    for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
-                        if ( !(rexNode instanceof RexIndexRef) ) {
-                            rexNodes.add( rexNode );
-                        }
-                    }
-                    return builder.project( rexNodes );
                 }
+                return builder.project( rexNodes );
             }
-        } else if ( node instanceof LogicalFilter ) {
-            List<LogicalColumn> columns = statement.getTransaction().getSnapshot().rel().getColumns( catalogTable.id );
-            if ( columns.size() != placements.size() ) { // partitioned, check if there is a illegal condition
-                RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
+        }
+    }
 
-                for ( RexNode operand : call.operands ) {
-                    dmlConditionCheck( (LogicalFilter) node, catalogTable, placements, operand );
-                }
+
+    private AlgBuilder handleValues( AlgNode node, RoutedAlgBuilder builder, LogicalTable table, List<AllocationColumn> placements ) {
+        LogicalValues values = (LogicalValues) node;
+
+        builder = super.handleValues( values, builder );
+
+        List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
+        if ( columns.size() == placements.size() ) { // full placement, no additional checks required
+            return builder;
+        } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+            // This is a prepared statement. Actual values are in the project. Do nothing
+            return builder;
+        } else { // partitioned, add additional project
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            for ( AllocationColumn ccp : placements ) {
+                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
-            return super.handleGeneric( node, builder );
-        } else {
-            return super.handleGeneric( node, builder );
+            return builder.project( rexNodes );
         }
     }
 
@@ -942,23 +943,23 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 columnName = columnNames[0];
             } else if ( columnNames.length == 2 ) { // tableName.columnName
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
-                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    throw new GenericRuntimeException( "Table name does not match expected table name: " + field.getName() );
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
                 if ( !Catalog.snapshot().getNamespace( catalogTable.id ).name.equalsIgnoreCase( columnNames[0] ) ) {
-                    throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
+                    throw new GenericRuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
-                    throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    throw new GenericRuntimeException( "Table name does not match expected table name: " + field.getName() );
                 }
                 columnName = columnNames[2];
             } else {
-                throw new RuntimeException( "Invalid column name: " + field.getName() );
+                throw new GenericRuntimeException( "Invalid column name: " + field.getName() );
             }
             column = Catalog.snapshot().rel().getColumn( catalogTable.id, columnName ).orElseThrow();
-            if ( Catalog.snapshot().alloc().getEntity( placements.get( 0 ).adapterId, column.id ).isEmpty() ) {
-                throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
+            if ( Catalog.snapshot().alloc().getColumn( placements.get( 0 ).placementId, column.id ).isEmpty() ) {
+                throw new GenericRuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes
             }
@@ -973,7 +974,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private RoutedAlgBuilder remapParameterizedDml( AlgNode node, RoutedAlgBuilder builder, Statement statement, List<Map<Long, PolyValue>> parameterValues ) {
         if ( parameterValues.size() <= 1 ) {
             // changed for now, this should not be a problem
-            throw new RuntimeException( "The parameter values is expected to have a size of one in this case!" );
+            throw new GenericRuntimeException( "The parameter values is expected to have a size of one in this case!" );
         }
 
         List<RexNode> projects = new ArrayList<>();

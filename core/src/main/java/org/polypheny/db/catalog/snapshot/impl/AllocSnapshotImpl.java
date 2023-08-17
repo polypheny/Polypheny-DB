@@ -18,12 +18,13 @@ package org.polypheny.db.catalog.snapshot.impl;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.Value;
@@ -35,15 +36,15 @@ import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
@@ -57,17 +58,29 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Long, AllocationCollection> collections;
     ImmutableMap<Long, AllocationGraph> graphs;
 
-    ImmutableMap<Pair<Long, Long>, AllocationColumn> adapterColumnPlacement;
-
     ImmutableMap<Long, AllocationEntity> allocs;
+    ImmutableMap<Long, AllocationPartition> partitions;
+    ImmutableMap<Long, AllocationPartitionGroup> groups;
+    ImmutableMap<Long, AllocationPlacement> placements;
     ImmutableMap<Long, List<AllocationEntity>> allocsOnAdapters;
     ImmutableMap<Long, List<AllocationColumn>> logicalColumnToAlloc;
 
-    ImmutableMap<Long, TreeSet<AllocationColumn>> allocColumns;
+    ImmutableMap<Long, List<AllocationColumn>> placementColumns;
     ImmutableMap<Pair<Long, Long>, List<AllocationColumn>> adapterLogicalTablePlacements;
     ImmutableMap<Pair<Long, Long>, AllocationEntity> adapterLogicalTableAlloc;
     ImmutableMap<Long, List<AllocationEntity>> logicalAllocs;
-    ImmutableMap<Long, Map<Long, List<Long>>> logicalTableAdapterColumns;
+    ImmutableMap<Long, Map<Long, List<Long>>> logicalTablePlacementColumns;
+
+    ImmutableMap<Long, PartitionProperty> properties;
+    ImmutableMap<Long, List<AllocationPartition>> logicalToPartitions;
+    ImmutableMap<Long, List<AllocationPartitionGroup>> logicalToGroups;
+    ImmutableMap<Long, List<AllocationPlacement>> logicalToPlacements;
+    ImmutableMap<Pair<Long, Long>, AllocationEntity> placementPartitionToAlloc;
+    ImmutableMap<Pair<Long, Long>, AllocationPlacement> adapterLogicalToPlacement;
+    ImmutableMap<Long, List<AllocationEntity>> placementToPartitions;
+    ImmutableMap<Long, List<AllocationPlacement>> placementsOfColumn;
+
+    ImmutableMap<Pair<Long, String>, AllocationPartition> entityPartitionNameToPartition;
 
 
     public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
@@ -77,19 +90,22 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
                 .collect( Collectors.toList() ) );
+
         this.collections = buildCollections( allocationCatalogs
                 .values()
                 .stream()
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.DOCUMENT )
                 .map( c -> (AllocationDocumentCatalog) c )
                 .collect( Collectors.toList() ) );
+
         this.graphs = buildGraphs( allocationCatalogs
                 .values()
                 .stream()
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.GRAPH )
                 .map( c -> (AllocationGraphCatalog) c )
                 .collect( Collectors.toList() ) );
-        this.columns = buildColumns( allocationCatalogs.values()
+
+        this.columns = buildPlacementColumns( allocationCatalogs.values()
                 .stream()
                 .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
@@ -97,21 +113,166 @@ public class AllocSnapshotImpl implements AllocSnapshot {
                 .flatMap( c -> c.values().stream() )
                 .collect( Collectors.toList() ) );
 
+        this.groups = buildPartitionGroups( allocationCatalogs );
+        this.partitions = buildPartitions( allocationCatalogs );
+        this.placements = buildPlacements( allocationCatalogs );
+
         this.allocs = mergeAllocs();
         this.allocsOnAdapters = buildAllocsOnAdapters( adapters );
-        this.adapterColumnPlacement = buildAdapterColumnPlacement();
         this.logicalColumnToAlloc = buildColumnPlacements();
         this.adapterLogicalTablePlacements = buildAdapterLogicalTablePlacements();
         this.adapterLogicalTableAlloc = buildAdapterLogicalTableAlloc();
-        this.allocColumns = buildAllocColumns();
+        this.placementColumns = buildPlacementColumns();
         this.logicalAllocs = buildLogicalAllocs();
 
-        this.logicalTableAdapterColumns = buildTableAdapterColumns();
+        this.logicalTablePlacementColumns = buildTableAdapterColumns();
+
+        this.properties = ImmutableMap.copyOf( allocationCatalogs.values()
+                .stream()
+                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .map( c -> (AllocationRelationalCatalog) c )
+                .map( AllocationRelationalCatalog::getProperties )
+                .flatMap( c -> c.values().stream() )
+                .collect( Collectors.toMap( c -> c.entityId, c -> c ) ) );
+
+        this.logicalToPartitions = buildLogicalToPartitions();
+        this.logicalToGroups = buildLogicalGroups();
+        this.logicalToPlacements = buildLogicalToPlacements();
+
+        this.placementPartitionToAlloc = buildPlacementPartitionToAlloc();
+        this.adapterLogicalToPlacement = buildAdapterLogicalToPlacement();
+        this.placementToPartitions = buildPlacementToPartitions();
+        this.placementsOfColumn = buildPlacementsOfColumn();
+
+        this.entityPartitionNameToPartition = buildEntityPartitionNameToPartition();
     }
 
 
-    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildColumns( List<AllocationColumn> columns ) {
-        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.columnId, c.adapterId ), c -> c ) ) );
+    private ImmutableMap<Pair<Long, String>, AllocationPartition> buildEntityPartitionNameToPartition() {
+        Map<Pair<Long, String>, AllocationPartition> map = new HashMap<>();
+        for ( Entry<Long, AllocationPartition> entry : partitions.entrySet() ) {
+            Pair<Long, String> key = Pair.of( entry.getValue().logicalEntityId, entry.getValue().name );
+            if ( !map.containsKey( key ) ) {
+                map.put( key, entry.getValue() );
+            }
+        }
+
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<AllocationPlacement>> buildPlacementsOfColumn() {
+        Map<Long, List<AllocationPlacement>> map = new HashMap<>();
+        for ( AllocationColumn value : this.columns.values() ) {
+            if ( !map.containsKey( value.columnId ) ) {
+                map.put( value.columnId, new ArrayList<>() );
+            }
+            map.get( value.columnId ).add( placements.get( value.placementId ) );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<AllocationEntity>> buildPlacementToPartitions() {
+        Map<Long, List<AllocationEntity>> map = new HashMap<>();
+        for ( AllocationEntity value : this.allocs.values() ) {
+            if ( !map.containsKey( value.placementId ) ) {
+                map.put( value.placementId, new ArrayList<>() );
+            }
+            map.get( value.placementId ).add( value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, AllocationPlacement> buildAdapterLogicalToPlacement() {
+        Map<Pair<Long, Long>, AllocationPlacement> map = new HashMap<>();
+        for ( AllocationPlacement value : this.placements.values() ) {
+            Pair<Long, Long> key = Pair.of( value.adapterId, value.logicalEntityId );
+            map.put( key, value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, AllocationEntity> buildPlacementPartitionToAlloc() {
+        Map<Pair<Long, Long>, AllocationEntity> map = new HashMap<>();
+        for ( AllocationEntity value : this.allocs.values() ) {
+            Pair<Long, Long> key = Pair.of( value.placementId, value.partitionId );
+            map.put( key, value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<AllocationPlacement>> buildLogicalToPlacements() {
+        Map<Long, List<AllocationPlacement>> map = new HashMap<>();
+        for ( AllocationPlacement value : this.placements.values() ) {
+            if ( !map.containsKey( value.logicalEntityId ) ) {
+                map.put( value.logicalEntityId, new ArrayList<>() );
+            }
+            map.get( value.logicalEntityId ).add( value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, AllocationPlacement> buildPlacements( Map<Long, AllocationCatalog> allocationCatalogs ) {
+        return ImmutableMap.copyOf( allocationCatalogs.values()
+                .stream()
+                .map( AllocationCatalog::getPlacements )
+                .flatMap( c -> c.values().stream() )
+                .collect( Collectors.toMap( c -> c.id, c -> c ) ) );
+    }
+
+
+    private ImmutableMap<Long, AllocationPartition> buildPartitions( Map<Long, AllocationCatalog> allocationCatalogs ) {
+        return ImmutableMap.copyOf( allocationCatalogs.values()
+                .stream()
+                .map( AllocationCatalog::getPartitions )
+                .flatMap( c -> c.values().stream() )
+                .collect( Collectors.toMap( c -> c.id, c -> c ) ) );
+    }
+
+
+    private ImmutableMap<Long, AllocationPartitionGroup> buildPartitionGroups( Map<Long, AllocationCatalog> allocationCatalogs ) {
+        return ImmutableMap.copyOf( allocationCatalogs.values()
+                .stream()
+                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .map( c -> (AllocationRelationalCatalog) c )
+                .map( AllocationRelationalCatalog::getPartitionGroups )
+                .flatMap( c -> c.values().stream() )
+                .collect( Collectors.toMap( c -> c.id, c -> c ) ) );
+
+    }
+
+
+    private ImmutableMap<Long, List<AllocationPartitionGroup>> buildLogicalGroups() {
+        Map<Long, List<AllocationPartitionGroup>> map = new HashMap<>();
+        for ( AllocationPartitionGroup value : this.groups.values() ) {
+            if ( !map.containsKey( value.logicalEntityId ) ) {
+                map.put( value.logicalEntityId, new ArrayList<>() );
+            }
+            map.get( value.logicalEntityId ).add( value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Long, List<AllocationPartition>> buildLogicalToPartitions() {
+        Map<Long, List<AllocationPartition>> map = new HashMap<>();
+        for ( AllocationPartition value : this.partitions.values() ) {
+            if ( !map.containsKey( value.logicalEntityId ) ) {
+                map.put( value.logicalEntityId, new ArrayList<>() );
+            }
+            map.get( value.logicalEntityId ).add( value );
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildPlacementColumns( List<AllocationColumn> columns ) {
+        return ImmutableMap.copyOf( columns.stream().collect( Collectors.toMap( c -> Pair.of( c.placementId, c.columnId ), c -> c ) ) );
 
     }
 
@@ -119,14 +280,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, Map<Long, List<Long>>> buildTableAdapterColumns() {
         Map<Long, Map<Long, List<Long>>> map = new HashMap<>();
         for ( AllocationColumn column : this.columns.values() ) {
-            AllocationTable table = tables.get( column.tableId );
-            if ( !map.containsKey( table.logicalId ) ) {
-                map.put( table.logicalId, new HashMap<>() );
+            if ( !map.containsKey( column.logicalTableId ) ) {
+                map.put( column.logicalTableId, new HashMap<>() );
             }
-            if ( !map.get( table.logicalId ).containsKey( column.adapterId ) ) {
-                map.get( table.logicalId ).put( column.adapterId, new ArrayList<>() );
+            if ( !map.get( column.logicalTableId ).containsKey( column.adapterId ) ) {
+                map.get( column.logicalTableId ).put( column.adapterId, new ArrayList<>() );
             }
-            map.get( table.logicalId ).get( column.adapterId ).add( column.columnId );
+            map.get( column.logicalTableId ).get( column.adapterId ).add( column.columnId );
         }
 
         return ImmutableMap.copyOf( map );
@@ -145,16 +305,22 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, TreeSet<AllocationColumn>> buildAllocColumns() {
+    private ImmutableMap<Long, List<AllocationColumn>> buildPlacementColumns() {
         Map<Long, TreeSet<AllocationColumn>> map = new HashMap<>();
         for ( AllocationColumn value : columns.values() ) {
-            if ( !map.containsKey( value.tableId ) ) {
-                map.put( value.tableId, new TreeSet<>( Comparator.comparingLong( c -> c.position ) ) );
+            if ( !map.containsKey( value.placementId ) ) {
+                map.put( value.placementId, new TreeSet<>( ( a, b ) -> AllocSnapshotImpl.comparatorOrId( () -> a.position - b.position, a, b ) ) );
             }
-            map.get( value.tableId ).add( value );
+            map.get( value.placementId ).add( value );
         }
 
-        return ImmutableMap.copyOf( map );
+        return ImmutableMap.copyOf( map.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> new ArrayList<>( e.getValue() ) ) ) );
+    }
+
+
+    private static int comparatorOrId( Supplier<Integer> comparator, AllocationColumn a, AllocationColumn b ) {
+        int diff = comparator.get();
+        return diff != 0 ? diff : (int) (b.columnId - a.columnId);
     }
 
 
@@ -181,13 +347,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
             map.get( column.columnId ).add( column );
         }
 
-        return ImmutableMap.copyOf( map );
-    }
-
-
-    private ImmutableMap<Pair<Long, Long>, AllocationColumn> buildAdapterColumnPlacement() {
-        Map<Pair<Long, Long>, AllocationColumn> map = new HashMap<>();
-        //this.tables.forEach( ( k, v ) -> v.placements.forEach( p -> map.put( Pair.of( v.adapterId, p.columnId ), p ) ) );
         return ImmutableMap.copyOf( map );
     }
 
@@ -251,8 +410,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull Optional<AllocationColumn> getColumn( long adapterId, long columnId ) {
-        return Optional.ofNullable( adapterColumnPlacement.get( Pair.of( adapterId, columnId ) ) );
+    public @NonNull Optional<AllocationColumn> getColumn( long placementId, long columnId ) {
+        return Optional.ofNullable( columns.get( Pair.of( placementId, columnId ) ) );
     }
 
 
@@ -269,13 +428,13 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull Map<Long, List<Long>> getColumnPlacementsByAdapter( long tableId ) {
-        return Optional.ofNullable( logicalTableAdapterColumns.get( tableId ) ).orElse( Map.of() );
+    public @NonNull Map<Long, List<Long>> getColumnPlacementsByAdapters( long tableId ) {
+        return Optional.ofNullable( logicalTablePlacementColumns.get( tableId ) ).orElse( Map.of() );
     }
 
 
     @Override
-    public List<CatalogPartition> getPartitions( long partitionGroupId ) {
+    public List<AllocationPartition> getPartitions( long partitionGroupId ) {
         return null;
     }
 
@@ -317,25 +476,26 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public CatalogDataPlacement getDataPlacement( long adapterId, long tableId ) {
-        return null;
+    public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId ) {
+        return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalTableId ) ) );
     }
 
 
     @Override
+    @Deprecated
     public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
         return null;
     }
 
 
     @Override
-    public List<CatalogPartitionPlacement> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
+    public List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
         return null;
     }
 
 
     @Override
-    public List<CatalogPartitionPlacement> getAllPartitionPlacementsByTable( long tableId ) {
+    public List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId ) {
         return null;
     }
 
@@ -347,9 +507,8 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public PartitionProperty getPartitionProperty( long id ) {
-        log.warn( "replace me" );
-        return new PartitionProperty( PartitionType.NONE, false, List.of(), List.of(), -1, -1, -1, false );
+    public @NotNull Optional<PartitionProperty> getPartitionProperty( long id ) {
+        return Optional.ofNullable( properties.get( id ) );
     }
 
 
@@ -360,8 +519,57 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public @NonNull List<AllocationColumn> getColumns( long allocId ) {
-        return Optional.ofNullable( List.copyOf( allocColumns.get( allocId ) ) ).orElse( List.of() );
+    public @NonNull List<AllocationColumn> getColumns( long placementId ) {
+        return Optional.ofNullable( placementColumns.get( placementId ) ).orElse( List.of() );
     }
+
+
+    @Override
+    public @NotNull List<AllocationPartitionGroup> getPartitionGroupsFromLogical( long logicalId ) {
+        return Optional.ofNullable( logicalToGroups.get( logicalId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPartition> getPartitionsFromLogical( long logicalId ) {
+        return Optional.ofNullable( logicalToPartitions.get( logicalId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPlacement> getPlacementsFromLogical( long logicalId ) {
+        return Optional.ofNullable( logicalToPlacements.get( logicalId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull Optional<AllocationEntity> getAlloc( long placementId, long partitionId ) {
+        return Optional.ofNullable( placementPartitionToAlloc.get( Pair.of( placementId, partitionId ) ) );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationEntity> getAllocsOfPlacement( long placementId ) {
+        return Optional.ofNullable( placementToPartitions.get( placementId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPlacement> getPlacementsOfColumn( long logicalId ) {
+        return Optional.ofNullable( placementsOfColumn.get( logicalId ) ).orElse( List.of() );
+    }
+
+
+    @Override
+    public @NotNull Optional<AllocationPartition> getPartition( long partitionId ) {
+        return Optional.ofNullable( partitions.get( partitionId ) );
+    }
+
+
+    @Override
+    public Optional<AllocationPartition> getPartitionFromName( long logicalId, String name ) {
+        return Optional.ofNullable( entityPartitionNameToPartition.get( Pair.of( logicalId, name ) ) );
+    }
+
 
 }

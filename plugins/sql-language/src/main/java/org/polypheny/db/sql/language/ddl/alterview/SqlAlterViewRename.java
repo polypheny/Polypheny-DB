@@ -77,7 +77,7 @@ public class SqlAlterViewRename extends SqlAlterView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, oldName );
+        LogicalTable catalogTable = getEntityFromCatalog( context, oldName );
 
         if ( catalogTable.entityType != EntityType.VIEW ) {
             throw new GenericRuntimeException( "Not Possible to use ALTER VIEW because %s is not a View.", catalogTable.name );

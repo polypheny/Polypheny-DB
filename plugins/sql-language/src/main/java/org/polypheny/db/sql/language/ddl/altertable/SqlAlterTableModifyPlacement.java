@@ -20,9 +20,14 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -41,29 +46,31 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name MODIFY PLACEMENT (columnList) ON STORE storeName} statement.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
+@Value
 public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
-    private final SqlIdentifier table;
-    private final SqlNodeList columnList;
-    private final SqlIdentifier storeName;
-    private final List<Integer> partitionGroupList;
-    private final List<SqlIdentifier> partitionGroupNamesList;
+    SqlIdentifier table;
+    SqlNodeList columnList;
+    SqlIdentifier storeName;
+    List<Integer> partitionGroups;
+    List<SqlIdentifier> partitionGroupNames;
 
 
     public SqlAlterTableModifyPlacement(
             ParserPos pos,
-            SqlIdentifier table,
-            SqlNodeList columnList,
-            SqlIdentifier storeName,
-            List<Integer> partitionGroupList,
-            List<SqlIdentifier> partitionGroupNamesList ) {
+            @NonNull SqlIdentifier table,
+            @NonNull SqlNodeList columnList,
+            @NonNull SqlIdentifier storeName,
+            List<Integer> partitionGroups,
+            List<SqlIdentifier> partitionGroupNames ) {
         super( pos );
-        this.table = Objects.requireNonNull( table );
-        this.columnList = Objects.requireNonNull( columnList );
+        this.table = table;
+        this.columnList = columnList;
         this.storeName = Objects.requireNonNull( storeName );
-        this.partitionGroupList = partitionGroupList;
-        this.partitionGroupNamesList = partitionGroupNamesList;
+        this.partitionGroups = partitionGroups;
+        this.partitionGroupNames = partitionGroupNames;
     }
 
 
@@ -91,14 +98,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
 
-        if ( partitionGroupList != null || partitionGroupNamesList != null ) {
+        if ( partitionGroups != null || partitionGroupNames != null ) {
             writer.keyword( " WITH " );
             writer.keyword( " PARTITIONS" );
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            if ( partitionGroupNamesList != null ) {
-                for ( int i = 0; i < partitionGroupNamesList.size(); i++ ) {
-                    partitionGroupNamesList.get( i ).unparse( writer, leftPrec, rightPrec );
-                    if ( i + 1 < partitionGroupNamesList.size() ) {
+            if ( partitionGroupNames != null ) {
+                for ( int i = 0; i < partitionGroupNames.size(); i++ ) {
+                    partitionGroupNames.get( i ).unparse( writer, leftPrec, rightPrec );
+                    if ( i + 1 < partitionGroupNames.size() ) {
                         writer.sep( "," );
                     }
                 }
@@ -110,34 +117,52 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getFromCatalog( context, this.table );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
+
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Could not find the entity with name %s.", String.join( ".", this.table.names ) );
+        }
 
         if ( table.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
         // You can't partition placements if the table is not partitioned
-        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).isPartitioned && (!partitionGroupList.isEmpty() || !partitionGroupNamesList.isEmpty()) ) {
-            throw new RuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
+        if ( !statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned && (!partitionGroups.isEmpty() || !partitionGroupNames.isEmpty()) ) {
+            throw new GenericRuntimeException( "Partition Placement is not allowed for un-partitioned table '" + table.name + "'" );
         }
 
         // Check if all columns exist
         for ( SqlNode node : columnList.getSqlList() ) {
-            getCatalogColumn( context, table.id, (SqlIdentifier) node );
+            if ( getColumn( context, table.id, (SqlIdentifier) node ) == null ) {
+                throw new GenericRuntimeException( "Could not find column with name %s", String.join( ".", ((SqlIdentifier) node).names ) );
+            }
         }
 
-        DataStore<?> storeInstance = getDataStoreInstance( storeName );
-        DdlManager.getInstance().modifyDataPlacement(
+        DataStore<?> store = getDataStoreInstance( storeName );
+
+        DdlManager.getInstance().modifyPlacement(
                 table,
-                columnList.getList().stream()
-                        .map( c -> getCatalogColumn( context, table.id, (SqlIdentifier) c ).id )
-                        .collect( Collectors.toList() ),
-                partitionGroupList,
-                partitionGroupNamesList.stream()
+                getColumns( context, table.id, columnList ).stream().map( c -> c.id ).collect( Collectors.toList() ),
+                partitionGroups,
+                partitionGroupNames.stream()
                         .map( SqlIdentifier::toString )
                         .collect( Collectors.toList() ),
-                storeInstance,
+                store,
                 statement );
+
+        if ( !partitionGroups.isEmpty() || !partitionGroupNames.isEmpty() ) {
+            List<Long> ids = partitionGroups.stream().map( id -> (long) id ).collect( Collectors.toList() );
+
+            ids.addAll( partitionGroupNames.stream().map( SqlIdentifier::toString ).map( name -> Catalog.snapshot().alloc().getPartitionFromName( table.id, name ).orElseThrow().id ).collect( Collectors.toList() ) );
+
+            DdlManager.getInstance().modifyPartitionPlacement(
+                    table,
+                    ids,
+                    store,
+                    statement
+            );
+        }
 
     }
 

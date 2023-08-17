@@ -32,7 +32,7 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyString unixDateToString( PolyDate date ) {
-        return PolyString.of( DateTimeUtils.unixDateToString( date.sinceEpoch.intValue() ) );
+        return PolyString.of( DateTimeUtils.unixDateToString( date.milliSinceEpoch.intValue() ) );
     }
 
 
@@ -44,7 +44,7 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyString unixTimestampToString( PolyTimeStamp timeStamp ) {
-        return PolyString.of( DateTimeUtils.unixTimestampToString( timeStamp.sinceEpoch ) );
+        return PolyString.of( DateTimeUtils.unixTimestampToString( timeStamp.milliSinceEpoch ) );
     }
 
 
@@ -62,31 +62,31 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyLong unixDateExtract( TimeUnitRange unitRange, PolyTemporal date ) {
-        return PolyLong.of( DateTimeUtils.unixDateExtract( unitRange, date.getSinceEpoch() ) );
+        return PolyLong.of( DateTimeUtils.unixDateExtract( unitRange, date.getMilliSinceEpoch() ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyLong unixDateFloor( TimeUnitRange unitRange, PolyDate date ) {
-        return PolyLong.of( DateTimeUtils.unixDateFloor( unitRange, date.sinceEpoch ) );
+        return PolyLong.of( DateTimeUtils.unixDateFloor( unitRange, date.milliSinceEpoch ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyLong unixDateCeil( TimeUnitRange unitRange, PolyDate date ) {
-        return PolyLong.of( DateTimeUtils.unixDateCeil( unitRange, date.sinceEpoch ) );
+        return PolyLong.of( DateTimeUtils.unixDateCeil( unitRange, date.milliSinceEpoch ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyTimeStamp unixTimestampFloor( TimeUnitRange unitRange, PolyTimeStamp timeStamp ) {
-        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.sinceEpoch ) );
+        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyTimeStamp unixTimestampCeil( TimeUnitRange unitRange, PolyTimeStamp timeStamp ) {
-        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.sinceEpoch ) );
+        return PolyTimeStamp.of( DateTimeUtils.unixTimestampFloor( unitRange, timeStamp.milliSinceEpoch ) );
     }
 
 
@@ -95,9 +95,9 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyTimeStamp addMonths( PolyTimeStamp timestamp, PolyNumber m ) {
-        final long millis = DateTimeUtils.floorMod( timestamp.sinceEpoch, DateTimeUtils.MILLIS_PER_DAY );
-        final PolyDate x = addMonths( PolyDate.of( timestamp.sinceEpoch - millis / DateTimeUtils.MILLIS_PER_DAY ), m );
-        return PolyTimeStamp.of( x.sinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
+        final long millis = DateTimeUtils.floorMod( timestamp.milliSinceEpoch, DateTimeUtils.MILLIS_PER_DAY );
+        final PolyDate x = addMonths( PolyDate.of( timestamp.milliSinceEpoch - millis / DateTimeUtils.MILLIS_PER_DAY ), m );
+        return PolyTimeStamp.of( x.milliSinceEpoch * DateTimeUtils.MILLIS_PER_DAY + millis );
     }
 
 
@@ -106,9 +106,9 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyDate addMonths( PolyDate date, PolyNumber m ) {
-        int y0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.YEAR, date.sinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
-        int m0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.MONTH, date.sinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
-        int d0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.DAY, date.sinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int y0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.YEAR, date.milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int m0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.MONTH, date.milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
+        int d0 = (int) DateTimeUtils.unixDateExtract( TimeUnitRange.DAY, date.milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY );
         int y = m.intValue() / 12;
         y0 += y;
         m0 += m.intValue() - y * 12;
@@ -152,19 +152,19 @@ public class TemporalFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyNumber subtractMonths( PolyDate date0, PolyDate date1 ) {
-        if ( date0.sinceEpoch < date1.sinceEpoch ) {
+        if ( date0.milliSinceEpoch < date1.milliSinceEpoch ) {
             return subtractMonths( date1, date0 ).negate();
         }
         // Start with an estimate.
         // Since no month has more than 31 days, the estimate is <= the true value.
-        long m = (date0.sinceEpoch - date1.sinceEpoch) / 31;
+        long m = (date0.milliSinceEpoch - date1.milliSinceEpoch) / 31;
         for ( ; ; ) {
-            long date2 = addMonths( date1, PolyLong.of( m ) ).sinceEpoch;
-            if ( date2 >= date0.sinceEpoch ) {
+            long date2 = addMonths( date1, PolyLong.of( m ) ).milliSinceEpoch;
+            if ( date2 >= date0.milliSinceEpoch ) {
                 return PolyLong.of( m );
             }
-            long date3 = addMonths( date1, PolyLong.of( m + 1 ) ).sinceEpoch;
-            if ( date3 > date0.sinceEpoch ) {
+            long date3 = addMonths( date1, PolyLong.of( m + 1 ) ).milliSinceEpoch;
+            if ( date3 > date0.milliSinceEpoch ) {
                 return PolyLong.of( m );
             }
             ++m;
@@ -174,12 +174,12 @@ public class TemporalFunctions {
 
     @SuppressWarnings("unused")
     public static PolyNumber subtractMonths( PolyTimeStamp t0, PolyTimeStamp t1 ) {
-        final long millis0 = floorMod( PolyLong.of( t0.sinceEpoch ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();
-        final int d0 = floorDiv( PolyLong.of( t0.sinceEpoch - millis0 ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).intValue();
-        final long millis1 = floorMod( PolyLong.of( t1.sinceEpoch ), PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();
-        final int d1 = floorDiv( PolyLong.of( t1.sinceEpoch - millis1 ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).intValue();
+        final long millis0 = floorMod( PolyLong.of( t0.milliSinceEpoch ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();
+        final int d0 = floorDiv( PolyLong.of( t0.milliSinceEpoch - millis0 ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).intValue();
+        final long millis1 = floorMod( PolyLong.of( t1.milliSinceEpoch ), PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ) ).longValue();
+        final int d1 = floorDiv( PolyLong.of( t1.milliSinceEpoch - millis1 ), PolyInteger.of( DateTimeUtils.MILLIS_PER_DAY ) ).intValue();
         PolyNumber x = subtractMonths( PolyDate.of( d0 ), PolyDate.of( d1 ) );
-        final long d2 = addMonths( PolyDate.of( d1 ), x ).sinceEpoch;
+        final long d2 = addMonths( PolyDate.of( d1 ), x ).milliSinceEpoch;
         if ( d2 == d0 && millis0 < millis1 ) {
             x = x.subtract( PolyInteger.of( 1 ) );
         }

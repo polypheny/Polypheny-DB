@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.NotSupportedException;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
@@ -50,7 +49,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -75,7 +73,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -93,14 +90,18 @@ import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
-@AllArgsConstructor
-public class RelationalAdapterDelegate implements Modifiable {
+public class RelationalModifyDelegate extends RelationalScanDelegate implements Modifiable {
 
 
-    public final Adapter<RelStoreCatalog> callee;
+    private final Modifiable modifiable;
 
-    public final RelStoreCatalog catalog;
+
+    public RelationalModifyDelegate( Modifiable modifiable, RelStoreCatalog catalog ) {
+        super( modifiable, catalog );
+        this.modifiable = modifiable;
+    }
 
 
     @Override
@@ -309,7 +310,7 @@ public class RelationalAdapterDelegate implements Modifiable {
 
 
     @Override
-    public void updateTable( long allocId ) {
+    public void refreshTable( long allocId ) {
         throw new NotSupportedException();
     }
 
@@ -324,61 +325,51 @@ public class RelationalAdapterDelegate implements Modifiable {
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
 
         PhysicalTable node = createSubstitution( context, logical, allocation, "_node_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "label", GraphType.LABEL_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable nProperties = createSubstitution( context, logical, allocation, "_nProperties_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "key", GraphType.KEY_SIZE ),
-                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
+                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable edge = createSubstitution( context, logical, allocation, "_edge_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "label", GraphType.LABEL_SIZE ),
-                Pair.of( "_l_id_", GraphType.ID_SIZE ),
-                Pair.of( "_r_id_", GraphType.ID_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ),
+                Triple.of( "_l_id_", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "_r_id_", GraphType.ID_SIZE, PolyType.VARCHAR ) ) );
 
         PhysicalTable eProperties = createSubstitution( context, logical, allocation, "_eProperties_", List.of(
-                Pair.of( "id", GraphType.ID_SIZE ),
-                Pair.of( "key", GraphType.KEY_SIZE ),
-                Pair.of( "value", GraphType.VALUE_SIZE ) ) );
+                Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
+                Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
+                Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
     }
 
 
-    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Pair<String, Integer>> nameLength ) {
+    private PhysicalTable createSubstitution( Context context, LogicalEntity logical, AllocationEntity allocation, String name, List<Triple<String, Integer, PolyType>> nameLength ) {
         IdBuilder builder = IdBuilder.getInstance();
         LogicalTable table = new LogicalTable( builder.getNewLogicalId(), name + logical.id, logical.namespaceId, logical.entityType, null, logical.modifiable );
         List<LogicalColumn> columns = new ArrayList<>();
 
         int i = 0;
-        for ( Pair<String, Integer> col : nameLength ) {
-            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, PolyType.VARCHAR, null, col.right, null, null, null, false, Collation.getDefaultCollation(), null );
+        for ( Triple<String, Integer, PolyType> col : nameLength ) {
+            LogicalColumn column = new LogicalColumn( builder.getNewFieldId(), col.getLeft(), table.id, table.namespaceId, i, col.getRight(), null, col.getMiddle(), null, null, null, false, Collation.getDefaultCollation(), null );
             columns.add( column );
             i++;
         }
-        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), table.id, table.namespaceId, allocation.adapterId );
+        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
 
         List<AllocationColumn> allocColumns = new ArrayList<>();
-        i = 0;
+        i = 1;
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, table.id, column.id, PlacementType.AUTOMATIC, i, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.placementId, allocTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
             allocColumns.add( alloc );
-            i++;
         }
 
-        callee.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
+        modifiable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
         return catalog.getTable( catalog.getAllocRelations().get( allocTable.id ).right.get( 0 ) );
-    }
-
-
-    @Override
-    public void updateGraph( long allocId ) {
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
     }
 
 
@@ -391,14 +382,8 @@ public class RelationalAdapterDelegate implements Modifiable {
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Pair.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE ), Pair.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE ) ) );
+        PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
         catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( physical.id ) ) );
-    }
-
-
-    @Override
-    public void updateCollection( long allocId ) {
-        callee.updateTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
     }
 
 
@@ -406,58 +391,6 @@ public class RelationalAdapterDelegate implements Modifiable {
     public void dropCollection( Context context, AllocationCollection allocation ) {
         catalog.dropTable( allocation.id );
         catalog.getAllocRelations().remove( allocation.id );
-    }
-
-
-    @Override
-    public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
-        return builder.scan( catalog.getTable( relations.right.get( 0 ) ) ).build();
-    }
-
-
-    @Override
-    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
-        builder.clear();
-        PhysicalTable node = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        PhysicalTable nProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        PhysicalTable edge = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        PhysicalTable eProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
-
-        builder.scan( node );
-        builder.scan( nProps );
-        builder.scan( edge );
-        builder.scan( eProps );
-
-        builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
-
-        return builder.build();
-    }
-
-
-    @Override
-    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
-        builder.clear();
-        PhysicalTable table = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        builder.scan( table );
-        AlgDataType rowType = DocumentType.ofId();
-        builder.transform( ModelTrait.DOCUMENT, rowType, false );
-        return builder.build();
-    }
-
-
-    @Override
-    public AlgNode getScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> alloc = catalog.getAllocRelations().get( allocId );
-        if ( alloc.left.unwrap( AllocationTable.class ) != null ) {
-            return getRelScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationCollection.class ) != null ) {
-            return getDocumentScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationGraph.class ) != null ) {
-            return getGraphScan( allocId, builder );
-        } else {
-            throw new GenericRuntimeException( "This should not happen" );
-        }
     }
 
 

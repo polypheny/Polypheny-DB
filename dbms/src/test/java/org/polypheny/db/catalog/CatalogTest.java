@@ -30,6 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -136,7 +137,7 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
-            final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
+            final Object[] schemaPublic = new Object[]{ "public", "APP", "pa", "RELATIONAL" };
             final Object[] schemaPrivate = new Object[]{ "private", "APP", "pa", "DOCUMENT" };
 
             TestHelper.checkResultSet(
@@ -195,8 +196,9 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
+            CatalogAdapter adapter = Catalog.snapshot().getAdapter( "hsqldb" );
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, 1, 1 };
+            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),

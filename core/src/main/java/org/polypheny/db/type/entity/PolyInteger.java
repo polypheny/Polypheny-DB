@@ -28,9 +28,9 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -55,6 +55,11 @@ public class PolyInteger extends PolyNumber {
     public PolyInteger( @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER );
         this.value = value;
+    }
+
+
+    public static PolyInteger of( byte value ) {
+        return new PolyInteger( (int) value );
     }
 
 
@@ -179,7 +184,7 @@ public class PolyInteger extends PolyNumber {
 
     @Override
     public BigDecimal bigDecimalValue() {
-        return new BigDecimal( value );
+        return value == null ? null : new BigDecimal( value );
     }
 
 

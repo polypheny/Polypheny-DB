@@ -18,13 +18,13 @@ package org.polypheny.db.adapter.monetdb;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.monetdb.sources.MonetdbSource;
 import org.polypheny.db.adapter.monetdb.stores.MonetdbStore;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
-public class MonetdbPlugin extends Plugin {
+public class MonetdbPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "MONETDB";
@@ -34,11 +34,9 @@ public class MonetdbPlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
      * be successfully loaded by manager.
-     *
-     * @param wrapper
      */
-    public MonetdbPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MonetdbPlugin( PluginContext context ) {
+        super( context );
     }
 
 
@@ -52,15 +50,15 @@ public class MonetdbPlugin extends Plugin {
                 "port", "5000"
         );
 
-        Adapter.addAdapter( MonetdbStore.class, ADAPTER_NAME, settings );
-        Adapter.addAdapter( MonetdbSource.class, ADAPTER_NAME, settings );
+        AdapterManager.addAdapterDeploy( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
+        AdapterManager.addAdapterDeploy( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( MonetdbStore.class, ADAPTER_NAME );
-        Adapter.removeAdapter( MonetdbSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( MonetdbStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( MonetdbSource.class, ADAPTER_NAME );
     }
 
 }

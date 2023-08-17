@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -494,7 +495,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> Functions.gtAny( b0, b1 ).value );
+                () -> Functions.gt( b0, b1 ).value );
     }
 
 
@@ -511,7 +512,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (Functions.gtAny( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+                () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
 
@@ -528,7 +529,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> Functions.ltAny( b0, b1 ).value );
+                () -> Functions.lt( b0, b1 ).value );
     }
 
 
@@ -545,7 +546,7 @@ public class MqlFunctions {
         return compNullExecute(
                 b0,
                 b1,
-                () -> (Functions.ltAny( b0, b1 ).value || Functions.eqAny( b0, b1 ).value) );
+                () -> (Functions.lt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
 
@@ -692,6 +693,24 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyList<?> getAsList( PolyValue value ) {
         return value != null && value.isList() ? value.asList() : PolyList.of( value );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber plus( PolyValue a, PolyValue b ) {
+        if ( a.isNumber() && b.isNumber() ) {
+            return Functions.plus( a.asNumber(), b.asNumber() );
+        }
+        throw new NotImplementedException();
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber minus( PolyValue a, PolyValue b ) {
+        if ( a.isNumber() && b.isNumber() ) {
+            return Functions.minus( a.asNumber(), b.asNumber() );
+        }
+        throw new NotImplementedException();
     }
 
 

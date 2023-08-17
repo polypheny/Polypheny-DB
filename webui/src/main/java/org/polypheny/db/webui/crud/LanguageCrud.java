@@ -182,7 +182,7 @@ public class LanguageCrud {
     public static GenericResult<?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
-        if ( language == QueryLanguage.from( "mql" ) ) {
+        if ( language == QueryLanguage.from( "mongo" ) ) {
             return getDocResult( statement, request, query, implementation, transaction, noLimit );
         } else if ( language == QueryLanguage.from( "cypher" ) ) {
             return getGraphResult( statement, request, query, implementation, transaction, noLimit );

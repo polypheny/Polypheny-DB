@@ -53,9 +53,6 @@ public class LogicalTable extends LogicalEntity {
     @SerializeNullable
     public Long primaryKey;
 
-
-
-
     public LogicalTable(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,

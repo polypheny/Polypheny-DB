@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -63,7 +64,10 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -133,13 +137,13 @@ public class MqlToAlgConverter {
         put( "$not", Collections.singletonList( OperatorRegistry.get( OperatorName.NOT ) ) );
     }};
     private final static Map<String, Operator> mathOperators = new HashMap<>() {{
-        put( "$subtract", OperatorRegistry.get( OperatorName.MINUS ) );
-        put( "$add", OperatorRegistry.get( OperatorName.PLUS ) );
-        put( "$multiply", OperatorRegistry.get( OperatorName.MULTIPLY ) );
-        put( "$divide", OperatorRegistry.get( OperatorName.DIVIDE ) );
-        put( "$mod", OperatorRegistry.get( OperatorName.MOD ) );
-        put( "$pow", OperatorRegistry.get( OperatorName.POWER ) );
-        put( "$sum", OperatorRegistry.get( OperatorName.SUM ) );
+        put( "$subtract", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MINUS ) );
+        put( "$add", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ) );
+        put( "$multiply", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MULTIPLY ) );
+        put( "$divide", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.DIVIDE ) );
+        put( "$mod", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MOD ) );
+        put( "$pow", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.POWER ) );
+        put( "$sum", OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.SUM ) );
         put( "$literal", null );
     }};
     private static final Map<String, AggFunction> accumulators = new HashMap<>() {{
@@ -307,7 +311,20 @@ public class MqlToAlgConverter {
 
     private CatalogEntity getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         LogicalNamespace namespace = snapshot.getNamespace( dbSchemaName );
-        return snapshot.doc().getCollection( namespace.id, query.getCollection() ).orElseThrow();
+
+        Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
+        if ( optionalDoc.isPresent() ) {
+            return optionalDoc.get();
+        }
+
+        Optional<LogicalTable> optionalRel = snapshot.rel().getTable( namespace.id, query.getCollection() );
+        if ( optionalRel.isPresent() ) {
+            return optionalRel.get();
+        }
+
+        Optional<LogicalGraph> optionalGraph = snapshot.graph().getGraph( namespace.id );
+
+        return optionalGraph.orElseThrow();
     }
 
 
@@ -589,7 +606,7 @@ public class MqlToAlgConverter {
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
             RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
-            updates.put( entry.getKey(), builder.makeCall( OperatorRegistry.get( OperatorName.PLUS ), id, literal ) );
+            updates.put( entry.getKey(), builder.makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ), id, literal ) );
         }
         return updates;
     }

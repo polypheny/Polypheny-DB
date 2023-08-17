@@ -57,6 +57,11 @@ public class PolyBinary extends PolyValue {
     }
 
 
+    public static PolyBinary ofNullable( byte[] value ) {
+        return value == null ? null : PolyBinary.of( value );
+    }
+
+
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         return 0;

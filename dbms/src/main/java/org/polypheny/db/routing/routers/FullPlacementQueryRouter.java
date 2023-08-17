@@ -18,6 +18,7 @@ package org.polypheny.db.routing.routers;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +29,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -48,25 +49,24 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleHorizontalPartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is horizontally partitioned", catalogTable.name );
+            log.debug( "{} is horizontally partitioned", table.name );
         }
 
-        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, catalogTable, queryInformation );
+        Collection<Map<Long, List<AllocationColumn>>> placements = selectPlacementHorizontalPartitioning( node, table, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         for ( Map<Long, List<AllocationColumn>> placementCombination : placements ) {
             for ( RoutedAlgBuilder builder : builders ) {
                 RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
                 newBuilder.addPhysicalInfo( placementCombination );
-                newBuilder.push( super.buildJoinedScan( statement, cluster, null ) );
+                newBuilder.push( super.buildJoinedScan( statement, cluster, table, placementCombination ) );
                 newBuilders.add( newBuilder );
             }
         }
@@ -81,31 +81,34 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
     @Override
     protected List<RoutedAlgBuilder> handleVerticalPartitioningOrReplication(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
-            LogicalEntity logicalTable,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
+        cancelQuery = true;
+
+        return Collections.emptyList();
+
         // Same as no partitioning
-        return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+        //return handleNonePartitioning( node, table, statement, builders, cluster, queryInformation );
     }
 
 
     @Override
     protected List<RoutedAlgBuilder> handleNonePartitioning(
             AlgNode node,
-            LogicalTable catalogTable,
+            LogicalTable table,
             Statement statement,
             List<RoutedAlgBuilder> builders,
             AlgOptCluster cluster,
             LogicalQueryInformation queryInformation ) {
 
         if ( log.isDebugEnabled() ) {
-            log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+            log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
 
-        final Set<List<AllocationColumn>> placements = selectPlacement( catalogTable, queryInformation );
+        //final Set<List<AllocationColumn>> placements = selectPlacement( table, queryInformation );
 
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
         /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
@@ -113,12 +116,13 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
         //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationEntity> allocationEntities = Catalog.snapshot().alloc().getFromLogical( catalogTable.id );
+        List<AllocationPlacement> allocationEntities = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
+        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocsOfPlacement( allocationEntities.get( 0 ).id );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
             //newBuilder.addPhysicalInfo( currentPlacementDistribution );
-            newBuilder.push( super.buildJoinedScan( statement, cluster, allocationEntities ) );
+            newBuilder.push( super.buildJoinedScan( statement, cluster, table, Map.of( allocs.get( 0 ).placementId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
             newBuilders.add( newBuilder );
         }
         //}
@@ -132,7 +136,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
 
     protected Collection<Map<Long, List<AllocationColumn>>> selectPlacementHorizontalPartitioning( AlgNode node, LogicalTable catalogTable, LogicalQueryInformation queryInformation ) {
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
-        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id );
+        PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
 
         // Utilize scanId to retrieve Partitions being accessed
@@ -154,7 +158,7 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
                 .filter( a -> new HashSet<>( a.getColumnIds() ).containsAll( usedColumns ) )
                 .collect( Collectors.toList() );
 
-        /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapter( catalogTable.id ).entrySet()
+        /*List<Long> adapters = Catalog.snapshot().alloc().getColumnPlacementsByAdapters( catalogTable.id ).entrySet()
                 .stream()
                 .filter( elem -> new HashSet<>( elem.getValue() ).containsAll( usedColumns ) )
                 .map( Entry::getKey )

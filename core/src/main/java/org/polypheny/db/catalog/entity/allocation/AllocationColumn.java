@@ -22,7 +22,7 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.With;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 
 @EqualsAndHashCode
 @Value
-@With
+@SuperBuilder(toBuilder = true)
 public class AllocationColumn implements CatalogObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
@@ -40,7 +40,9 @@ public class AllocationColumn implements CatalogObject {
     @Serialize
     public long namespaceId;
     @Serialize
-    public long tableId;
+    public long placementId;
+    @Serialize
+    public long logicalTableId;
     @Serialize
     public long columnId;
     @Serialize
@@ -53,13 +55,15 @@ public class AllocationColumn implements CatalogObject {
 
     public AllocationColumn(
             @Deserialize("namespaceId") final long namespaceId,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("placementId") final long placementId,
+            @Deserialize("logicalTableId") final long logicalTableId,
             @Deserialize("columnId") final long columnId,
             @Deserialize("placementType") @NonNull final PlacementType placementType,
-            @Deserialize("position") final int position,
+            @Deserialize("position") final int position, // same as logical
             @Deserialize("adapterId") final long adapterId ) {
         this.namespaceId = namespaceId;
-        this.tableId = tableId;
+        this.placementId = placementId;
+        this.logicalTableId = logicalTableId;
         this.columnId = columnId;
         this.placementType = placementType;
         this.position = position;
@@ -67,16 +71,15 @@ public class AllocationColumn implements CatalogObject {
     }
 
 
-
     public String getLogicalTableName() {
-        return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
+        //return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
+        return null;
     }
 
 
     public String getLogicalColumnName() {
         return Catalog.snapshot().rel().getColumn( columnId ).orElseThrow().name;
     }
-
 
 
     // Used for creating ResultSets

@@ -48,7 +48,7 @@ public class SqlDropTable extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final LogicalTable table = getFromCatalog( context, name );
+        final LogicalTable table = getEntityFromCatalog( context, name );
 
         if ( table == null ) {
             if ( ifExists ) {
@@ -59,7 +59,7 @@ public class SqlDropTable extends SqlDropObject {
             }
         }
 
-        DdlManager.getInstance().dropTable( table, statement );
+        DdlManager.getInstance().deleteTable( table, statement );
     }
 
 }

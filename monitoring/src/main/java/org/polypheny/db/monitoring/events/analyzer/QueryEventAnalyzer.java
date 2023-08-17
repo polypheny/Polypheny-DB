@@ -33,7 +33,7 @@ public class QueryEventAnalyzer {
         return QueryDataPointImpl
                 .builder()
                 .Id( queryEvent.getId() )
-                .tables( queryEvent.getLogicalQueryInformation().getTablesIds() )
+                .tables( queryEvent.getLogicalQueryInformation().getAllScannedEntities() )
                 .fieldNames( queryEvent.getFieldNames() )
                 .executionTime( queryEvent.getExecutionTime() )
                 .rowCount( queryEvent.getRowCount() )
@@ -41,7 +41,7 @@ public class QueryEventAnalyzer {
                 .isCommitted( queryEvent.isCommitted() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
                 .algCompareString( queryEvent.getAlgCompareString() )
-                .queryClass( queryEvent.getLogicalQueryInformation().getQueryClass() )
+                .queryClass( queryEvent.getLogicalQueryInformation().getQueryHash() )
                 .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )
                 .availableColumnsWithTable( queryEvent.getLogicalQueryInformation().getAvailableColumnsWithTable() )

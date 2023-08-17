@@ -85,11 +85,11 @@ public class LogicalIndex implements Serializable {
 
 
     // Used for creating ResultSets
-    public List<CatalogIndexColumn> getCatalogIndexColumns() {
+    public List<LogicalIndexColumn> getCatalogIndexColumns() {
         int i = 1;
-        List<CatalogIndexColumn> list = new LinkedList<>();
+        List<LogicalIndexColumn> list = new LinkedList<>();
         for ( String columnName : key.getColumnNames() ) {
-            list.add( new CatalogIndexColumn( id, i++, columnName, this ) );
+            list.add( new LogicalIndexColumn( id, i++, columnName, this ) );
         }
         return list;
     }
@@ -122,7 +122,7 @@ public class LogicalIndex implements Serializable {
     // Used for creating ResultSets
     @RequiredArgsConstructor
     @Value
-    public static class CatalogIndexColumn implements CatalogObject {
+    public static class LogicalIndexColumn implements CatalogObject {
 
         private static final long serialVersionUID = -5596459769680478780L;
 

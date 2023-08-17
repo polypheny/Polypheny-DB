@@ -19,10 +19,11 @@ package org.polypheny.db.monitoring.events.metrics;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -44,7 +45,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private static final long serialVersionUID = 8159995420459385039L;
 
     @Builder.Default
-    private final List<Long> tables = new ArrayList<>();
+    private final Set<Long> tables = new HashSet<>();
     private final Map<String, Object> dataElements = new HashMap<>();
     private UUID Id;
     private Timestamp recordedTimestamp;
@@ -59,7 +60,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private String queryClass;
     private String physicalQueryClass;
     @Builder.Default
-    private final HashMap<Long, List<?>> changedValues = new HashMap<>();
+    private final Map<Long, List<?>> changedValues = new HashMap<>();
     @Builder.Default
     private final Map<Long, Long> availableColumnsWithTable = new HashMap<>();
 

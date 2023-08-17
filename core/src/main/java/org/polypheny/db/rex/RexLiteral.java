@@ -58,7 +58,6 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
-import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -1247,12 +1246,6 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
         return this.digest.equals( o.digest )
                 ? 0 : this.digest.length() > o.digest.length()
                 ? 1 : -1;
-    }
-
-
-    public List<RexLiteral> getRexList() {
-        assert value instanceof PolyList;
-        return (List<RexLiteral>) value;
     }
 
 }

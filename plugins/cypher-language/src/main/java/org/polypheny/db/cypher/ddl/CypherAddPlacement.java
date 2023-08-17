@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -71,15 +72,15 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
                 .collect( Collectors.toList() );
 
         if ( !adapterManager.getAdapters().containsKey( store ) ) {
-            throw new RuntimeException( "The targeted store does not exist." );
+            throw new GenericRuntimeException( "The targeted store does not exist." );
         }
 
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while adding graph placement." );
+            throw new GenericRuntimeException( "Error while adding graph placement." );
         }
 
         if ( Catalog.snapshot().alloc().getFromLogical( graphs.get( 0 ).id ).stream().anyMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
-            throw new RuntimeException( "Could not create placement of graph as it already exists." );
+            throw new GenericRuntimeException( "Could not create placement of graph as it already exists." );
         }
 
         DdlManager.getInstance().addGraphAllocation( graphs.get( 0 ).id, dataStores, statement );

@@ -27,8 +27,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -75,12 +73,6 @@ public class LogicalMaterializedView extends LogicalView {
         }
         this.materializedCriteria = materializedCriteria;
         this.ordered = ordered;
-    }
-
-
-    @Override
-    public AlgNode getDefinition() {
-        return Catalog.snapshot().rel().getNodeInfo( id );
     }
 
 

@@ -66,7 +66,7 @@ import org.polypheny.db.type.PolySerializable;
 public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
-    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.builder.get().build( PolyCatalog.class );
+    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
     @Serialize
     public final Map<Long, LogicalCatalog> logicalCatalogs;
@@ -143,17 +143,17 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
                 ((AllocationRelationalCatalog) v).getTables().forEach( ( id, table ) -> {
                     addNamespaceIfNecessary( table );
-                    AdapterManager.getInstance().getAdapter( table.adapterId ).updateTable( table.id );
+                    AdapterManager.getInstance().getAdapter( table.adapterId ).refreshTable( table.id );
                 } );
             } else if ( v.getNamespace().namespaceType == NamespaceType.DOCUMENT ) {
                 ((AllocationDocumentCatalog) v).getCollections().forEach( ( id, collection ) -> {
                     addNamespaceIfNecessary( collection );
-                    AdapterManager.getInstance().getAdapter( collection.adapterId ).updateCollection( collection.id );
+                    AdapterManager.getInstance().getAdapter( collection.adapterId ).refreshCollection( collection.id );
                 } );
             } else if ( v.getNamespace().namespaceType == NamespaceType.GRAPH ) {
                 ((AllocationGraphCatalog) v).getGraphs().forEach( ( id, graph ) -> {
                     addNamespaceIfNecessary( graph );
-                    AdapterManager.getInstance().getAdapter( graph.adapterId ).updateGraph( graph.id );
+                    AdapterManager.getInstance().getAdapter( graph.adapterId ).refreshGraph( graph.id );
                 } );
             }
         } );

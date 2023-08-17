@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
@@ -104,7 +105,18 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public LogicalNamespace getNamespace( String name ) {
-        return namespaceNames.get( name );
+        LogicalNamespace namespace = namespaceNames.get( name );
+
+        if ( namespace != null ) {
+            return namespace;
+        }
+        namespace = namespaceNames.get( name.toLowerCase() );
+
+        if ( namespace != null && !namespace.caseSensitive ) {
+            return namespace;
+        }
+
+        throw new GenericRuntimeException( "Could not retrieve a namespace with name %s", name );
     }
 
 

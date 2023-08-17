@@ -55,7 +55,7 @@ import org.polypheny.db.rex.RexNode;
 
 public class ViewManager {
 
-    private static LogicalSort orderMaterialized( AlgNode other ) {
+    public static LogicalSort orderMaterialized( AlgNode other ) {
         int positionPrimary = other.getRowType().getFieldList().size() - 1;
         AlgFieldCollation algFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
         AlgCollations.of( algFieldCollation );
@@ -248,9 +248,10 @@ public class ViewManager {
 
 
         public AlgNode checkNode( AlgNode other ) {
-            if ( other instanceof LogicalRelViewScan ) {
+            /*if ( other instanceof LogicalRelViewScan ) {
                 return expandViewNode( other );
-            } else if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
+            } else */
+            if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
                 LogicalTable catalogTable = other.getEntity().unwrap( LogicalTable.class );
                 if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
                     return orderMaterialized( other );

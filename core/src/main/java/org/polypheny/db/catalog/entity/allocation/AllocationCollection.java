@@ -33,10 +33,12 @@ public class AllocationCollection extends AllocationEntity {
 
     public AllocationCollection(
             @Deserialize("id") long id,
+            @Deserialize("placementId") long placementId,
+            @Deserialize("partitionId") long partitionId,
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, logicalId, namespaceId, adapterId, NamespaceType.DOCUMENT );
+        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, NamespaceType.DOCUMENT );
     }
 
 

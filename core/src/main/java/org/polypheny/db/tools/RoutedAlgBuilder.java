@@ -43,7 +43,7 @@ import org.polypheny.db.util.Pair;
 public class RoutedAlgBuilder extends AlgBuilder {
 
     @Getter
-    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<PlacementId, ColumnId>
 
 
     public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
@@ -61,8 +61,10 @@ public class RoutedAlgBuilder extends AlgBuilder {
         newBuilder.getPhysicalPlacementsOfPartitions().putAll( ImmutableMap.copyOf( builder.getPhysicalPlacementsOfPartitions() ) );
 
         if ( builder.stackSize() > 0 ) {
-            final AlgNode node = builder.peek().accept( new DeepCopyShuttle() );
-            newBuilder.push( node );
+            for ( int i = 0; i < builder.stackSize(); i++ ) {
+                final AlgNode node = builder.peek( i ).accept( new DeepCopyShuttle() );
+                newBuilder.push( node );
+            }
         }
 
         return newBuilder;
@@ -104,8 +106,8 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    private List<Pair<Long, Long>> map( List<AllocationColumn> catalogCols ) {
-        return catalogCols.stream().map( col -> new Pair<>( col.adapterId, col.columnId ) ).collect( Collectors.toList() );
+    private List<Pair<Long, Long>> map( List<AllocationColumn> columns ) {
+        return columns.stream().map( col -> new Pair<>( col.placementId, col.columnId ) ).collect( Collectors.toList() );
     }
 
 

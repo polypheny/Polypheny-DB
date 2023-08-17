@@ -1179,7 +1179,7 @@ public class Crud implements InformationObserver {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
         LogicalTable table = catalog.getSnapshot().rel().getTable( request.getSchemaName(), request.getTableName() ).orElseThrow();
-        Map<Long, List<Long>> placements = catalog.getSnapshot().alloc().getColumnPlacementsByAdapter( table.id );
+        Map<Long, List<Long>> placements = catalog.getSnapshot().alloc().getColumnPlacementsByAdapters( table.id );
         Set<Long> adapterIds = placements.keySet();
         if ( adapterIds.size() > 1 ) {
             log.warn( String.format( "The number of sources of an entity should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
@@ -1874,12 +1874,12 @@ public class Crud implements InformationObserver {
             List<AllocationColumn> pkPlacements = snapshot.alloc().getColumnFromLogical( pkColumn.id ).orElseThrow();
             for ( AllocationColumn placement : pkPlacements ) {
                 Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
+                PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
                 p.addAdapter( new RelationalStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
                         snapshot.alloc().getColumnPlacementsOnAdapterPerTable( adapter.getAdapterId(), table.id ),
-                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                        snapshot.alloc().getPartitionGroupsIndexOnDataPlacement( placement.adapterId, placement.logicalTableId ),
                         property.numPartitionGroups,
                         property.partitionType ) );
             }
@@ -3049,6 +3049,7 @@ public class Crud implements InformationObserver {
 
         return f;
     }
+
 
     void getDirectory( File dir, Context ctx ) {
         ctx.header( "Content-ExpressionType", "application/zip" );

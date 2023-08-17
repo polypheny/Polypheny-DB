@@ -28,24 +28,31 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.types.Expressible;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializer;
@@ -115,7 +122,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     // used internally to serialize into binary format
-    public static BinarySerializer<PolyValue> serializer = PolySerializable.builder.get()
+    public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
@@ -128,8 +135,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
-            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
-            .build( PolyValue.class );
+            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() ).build()
+            .create( PolySerializable.CLASS_LOADER, PolyValue.class );
 
     // used to serialize to Json
     public static final GsonBuilder GSON_BUILDER = new GsonBuilder()
@@ -170,6 +177,67 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public PolyValue(
             @Deserialize("type") PolyType type ) {
         this.type = type;
+    }
+
+
+    public static Function1<PolyValue, Object> getPolyToJava( AlgDataType type, boolean arrayAsList ) {
+        switch ( type.getPolyType() ) {
+            case VARCHAR:
+            case CHAR:
+                return o -> o.asString().value;
+            case INTEGER:
+            case TINYINT:
+            case SMALLINT:
+                return o -> o.asNumber().IntValue();
+            case FLOAT:
+            case REAL:
+                return o -> o.asNumber().FloatValue();
+            case DOUBLE:
+                return o -> o.asNumber().DoubleValue();
+            case BIGINT:
+                return o -> o.asNumber().LongValue();
+            case DECIMAL:
+                return o -> o.asNumber().BigDecimalValue();
+            case DATE:
+                return o -> o.asDate().milliSinceEpoch / DateTimeUtils.MILLIS_PER_DAY;
+            case TIME:
+                return o -> o.asTime().ofDay % DateTimeUtils.MILLIS_PER_DAY;
+            case TIMESTAMP:
+                return o -> o.asTimeStamp().milliSinceEpoch;
+            case BOOLEAN:
+                return o -> o.asBoolean().value;
+            case ARRAY:
+                Function1<PolyValue, Object> elTrans = getPolyToJava( getAndDecreaseArrayDimensionIfNecessary( (ArrayType) type ), arrayAsList );
+                return o -> o == null
+                        ? null
+                        : arrayAsList
+                                ? (o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ))
+                                : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ).toArray();
+            case FILE:
+                return o -> o;
+            default:
+                throw new org.apache.commons.lang3.NotImplementedException( "meta" );
+        }
+    }
+
+
+    private static AlgDataType getAndDecreaseArrayDimensionIfNecessary( ArrayType type ) {
+        // depending on where the algtype is coming from it can be "ARRAY ARRAY ARRAY INTEGER" or "INTEGER ARRAY(2, 3)" todo dl find cause
+        AlgDataType component = type.getComponentType();
+        while ( component.getPolyType() == PolyType.ARRAY ) {
+            component = component.getComponentType();
+        }
+
+        if ( type.getDimension() > 1 ) {
+            // we make the component the parent for the next step
+            return AlgDataTypeFactory.DEFAULT.createArrayType( component, type.getMaxCardinality(), type.getDimension() - 1 );
+        }
+        return type.getComponentType();
+    }
+
+
+    public static Function1<PolyValue, Object> wrapNullableIfNecessary( Function1<PolyValue, Object> polyToExternalizer, boolean nullable ) {
+        return nullable ? o -> o == null ? null : polyToExternalizer.apply( o ) : polyToExternalizer;
     }
 
 
@@ -376,7 +444,13 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isBoolean() ) {
             return (PolyBoolean) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyBoolean.class );
+    }
+
+
+    @NotNull
+    private GenericRuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
+        return new GenericRuntimeException( "Cannot parse %s to type %s", value, clazz.getSimpleName() );
     }
 
 
@@ -391,7 +465,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyInteger) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyInteger.class );
     }
 
 
@@ -405,7 +479,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isDocument() ) {
             return (PolyDocument) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyDocument.class );
     }
 
 
@@ -419,7 +493,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isList() ) {
             return (PolyList<T>) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyList.class );
     }
 
 
@@ -433,7 +507,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isString() ) {
             return (PolyString) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyString.class );
     }
 
 
@@ -447,7 +521,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isBinary() ) {
             return (PolyBinary) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyBinary.class );
     }
 
 
@@ -462,7 +536,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyBigDecimal) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyBigDecimal.class );
     }
 
 
@@ -477,7 +551,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyFloat) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyFloat.class );
     }
 
 
@@ -492,7 +566,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyDouble) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyDouble.class );
     }
 
 
@@ -507,7 +581,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyLong) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyLong.class );
     }
 
 
@@ -520,7 +594,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isTemporal() ) {
             return (PolyTemporal) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyTemporal.class );
     }
 
 
@@ -534,7 +608,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isDate() ) {
             return (PolyDate) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyDate.class );
     }
 
 
@@ -549,7 +623,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyTime) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyTime.class );
     }
 
 
@@ -564,7 +638,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyTimeStamp) this;
         }
 
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyTimeStamp.class );
     }
 
 
@@ -578,7 +652,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isMap() || isDocument() ) {
             return (PolyMap<PolyValue, PolyValue>) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyMap.class );
     }
 
 
@@ -592,7 +666,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isEdge() ) {
             return (PolyEdge) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyEdge.class );
     }
 
 
@@ -606,7 +680,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isNode() ) {
             return (PolyNode) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyNode.class );
     }
 
 
@@ -620,7 +694,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isPath() ) {
             return (PolyPath) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyPath.class );
     }
 
 
@@ -634,7 +708,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isGraph() ) {
             return (PolyGraph) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyGraph.class );
     }
 
 
@@ -647,7 +721,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isNumber() ) {
             return (PolyNumber) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyNumber.class );
     }
 
 
@@ -660,7 +734,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isInterval() ) {
             return (PolyInterval) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyInterval.class );
     }
 
 
@@ -673,7 +747,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isSymbol() ) {
             return (PolySymbol) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolySymbol.class );
     }
 
 
@@ -687,7 +761,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isBlob() ) {
             return (PolyBlob) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyBlob.class );
     }
 
 
@@ -700,7 +774,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         if ( isUserDefinedValue() ) {
             return (PolyUserDefinedValue) this;
         }
-        throw new GenericRuntimeException( "Cannot parse " + this );
+        throw cannotParse( this, PolyUserDefinedValue.class );
     }
 
 
@@ -712,6 +786,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DOCUMENT:
                 // docs accept all
                 return value;
+            case BIGINT:
+                return PolyLong.from( value );
         }
         if ( type.getFamily() == value.getType().getFamily() ) {
             return value;
@@ -741,7 +817,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                 @Override
                 public PolyValue decode( BinaryInput in ) throws CorruptedDataException {
                     PolyType type = PolyType.valueOf( in.readUTF8() );
-                    return PolySerializable.deserialize( in.readUTF16(), PolySerializable.builder.get().build( PolyValue.classFrom( type ) ) );
+                    return PolySerializable.deserialize( in.readUTF16(), PolySerializable.buildSerializer( PolyValue.classFrom( type ) ) );
                 }
             };
         }

@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RelationalAdapterDelegate;
+import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -43,6 +43,7 @@ import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
@@ -53,7 +54,7 @@ import org.polypheny.db.type.PolyType;
 public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> implements ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
-    private final RelationalAdapterDelegate delegate;
+    private final RelationalModifyDelegate delegate;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -89,7 +90,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // Create udfs
         createUdfs();
 
-        this.delegate = new RelationalAdapterDelegate( this, storeCatalog );
+        this.delegate = new RelationalModifyDelegate( this, storeCatalog );
     }
 
 
@@ -127,6 +128,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     }
 
 
+    @Override
+    public Namespace getCurrentNamespace() {
+        return currentJdbcSchema;
+    }
+
+
     protected abstract String getTypeString( PolyType polyType );
 
 
@@ -149,11 +156,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
                 allocationWrapper );
 
-        executeCreatTable( context, table );
+        executeCreateTable( context, table );
     }
 
 
-    private void executeCreatTable( Context context, PhysicalTable table ) {
+    private void executeCreateTable( Context context, PhysicalTable table ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), table.namespaceName, table.name );
         }
@@ -166,8 +173,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void updateTable( long allocId ) {
-        PhysicalTable template = storeCatalog.getTable( allocId );
+    public void refreshTable( long allocId ) {
+        PhysicalTable template = storeCatalog.fromAllocation( allocId );
         storeCatalog.addTable( this.currentJdbcSchema.createJdbcTable( storeCatalog, template ) );
     }
 
@@ -197,8 +204,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
-        PhysicalTable table = storeCatalog.getTable( allocId );
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, table.columns.size(), logicalColumn );
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, logicalColumn.position - 1, logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -232,7 +239,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             builder.append( getTypeString( PolyType.ARRAY ) );
         } else {
             builder.append( " " ).append( getTypeString( column.type ) );
-            if ( column.length != null ) {
+            if ( column.length != null && doesTypeUseLength( column.type ) ) {
                 builder.append( "(" ).append( column.length );
                 if ( column.scale != null ) {
                     builder.append( "," ).append( column.scale );
@@ -291,7 +298,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         if ( !this.dialect.supportsNestedArrays() && column.collectionsType != null ) {
             return;
         }
-        PhysicalTable physicalTable = storeCatalog.getTable( allocId );
+        PhysicalTable physicalTable = storeCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
@@ -300,7 +307,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 .append( dialect.quoteIdentifier( physicalTable.name ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( column.name ) );
         builder.append( " " ).append( getTypeString( column.type ) );
-        if ( column.length != null ) {
+        if ( column.length != null && doesTypeUseLength( column.type ) ) {
             builder.append( "(" );
             builder.append( column.length );
             if ( column.scale != null ) {
@@ -310,6 +317,11 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         }
         executeUpdate( builder, context );
 
+    }
+
+
+    public boolean doesTypeUseLength( PolyType type ) {
+        return true;
     }
 
 
@@ -326,7 +338,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
         // physicalSchemaName = partitionPlacement.physicalSchemaName;
         // physicalTableName = partitionPlacement.physicalTableName;
-        PhysicalTable table = storeCatalog.getTable( storeCatalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
         builder.append( "DROP TABLE " )
@@ -338,7 +350,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.dropTable( table.id );
+        storeCatalog.dropTable( allocId );
         // }
     }
 
@@ -346,8 +358,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
         //for ( CatalogPartitionPlacement partitionPlacement : context.getSnapshot().alloc().getEntity( columnPlacement.tableId ) ) {
-        PhysicalTable table = storeCatalog.getTable( allocId );
-        PhysicalColumn column = storeCatalog.getColumn( columnId );
+        PhysicalTable table = storeCatalog.fromAllocation( allocId );
+        PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -365,7 +377,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        PhysicalTable physical = storeCatalog.getTable( allocId );
+        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
@@ -465,8 +477,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
         void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
 
-        void updateTable( long allocId );
-
+        void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 

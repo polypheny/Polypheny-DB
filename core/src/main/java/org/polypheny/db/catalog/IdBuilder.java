@@ -23,7 +23,6 @@ import lombok.Value;
 public class IdBuilder {
 
     AtomicLong snapshotId;
-    AtomicLong databaseId;
     AtomicLong namespaceId;
     AtomicLong entityId;
 
@@ -43,6 +42,11 @@ public class IdBuilder {
     AtomicLong interfaceId;
 
     AtomicLong constraintId;
+
+    AtomicLong groupId;
+
+    AtomicLong partitionId;
+    AtomicLong placementId;
 
     private static IdBuilder INSTANCE;
 
@@ -69,13 +73,14 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
 
     public IdBuilder(
             AtomicLong snapshotId,
-            AtomicLong databaseId,
             AtomicLong namespaceId,
             AtomicLong entityId,
             AtomicLong fieldId,
@@ -86,10 +91,11 @@ public class IdBuilder {
             AtomicLong keyId,
             AtomicLong adapterId,
             AtomicLong interfaceId,
-            AtomicLong constraintId ) {
+            AtomicLong constraintId,
+            AtomicLong groupId,
+            AtomicLong partitionId,
+            AtomicLong placementId ) {
         this.snapshotId = snapshotId;
-
-        this.databaseId = databaseId;
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.fieldId = fieldId;
@@ -103,6 +109,9 @@ public class IdBuilder {
 
         this.adapterId = adapterId;
         this.interfaceId = interfaceId;
+        this.groupId = groupId;
+        this.partitionId = partitionId;
+        this.placementId = placementId;
     }
 
 
@@ -118,11 +127,6 @@ public class IdBuilder {
 
     public long getNewFieldId() {
         return fieldId.getAndIncrement();
-    }
-
-
-    public long getNewDatabaseId() {
-        return databaseId.getAndIncrement();
     }
 
 
@@ -168,6 +172,21 @@ public class IdBuilder {
 
     public long getNewPhysicalId() {
         return physicalId.getAndIncrement();
+    }
+
+
+    public long getNewGroupId() {
+        return groupId.getAndIncrement();
+    }
+
+
+    public long getNewPartitionId() {
+        return partitionId.getAndIncrement();
+    }
+
+
+    public long getNewPlacementId() {
+        return placementId.getAndIncrement();
     }
 
 }

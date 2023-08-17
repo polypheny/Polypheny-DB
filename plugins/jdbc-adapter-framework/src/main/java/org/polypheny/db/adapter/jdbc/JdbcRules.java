@@ -423,22 +423,21 @@ public class JdbcRules {
          * Creates a JdbcProjectRule.
          */
         public JdbcProjectRule( final JdbcConvention out, AlgBuilderFactory algBuilderFactory ) {
-            super( Project.class, project ->
-                            (out.dialect.supportsWindowFunctions()
-                                    || !RexOver.containsOver( project.getProjects(), null ))
-                                    && !userDefinedFunctionInProject( project )
-                                    && !knnFunctionInProject( project )
-                                    && !multimediaFunctionInProject( project )
-                                    && !DocumentRules.containsJson( project )
-                                    && !DocumentRules.containsDocument( project )
-                                    && supports( project )
-                                    && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
+            super( Project.class, project -> supports( out, project ),
                     Convention.NONE, out, algBuilderFactory, "JdbcProjectRule." + out );
         }
 
 
-        private static boolean supports( Project project ) {
-            return !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() );
+        private static boolean supports( JdbcConvention out, Project project ) {
+            return (out.dialect.supportsWindowFunctions()
+                    || !RexOver.containsOver( project.getProjects(), null ))
+                    && !userDefinedFunctionInProject( project )
+                    && !knnFunctionInProject( project )
+                    && !multimediaFunctionInProject( project )
+                    && !DocumentRules.containsJson( project )
+                    && !DocumentRules.containsDocument( project )
+                    && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
+                    && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ));
 
         }
 

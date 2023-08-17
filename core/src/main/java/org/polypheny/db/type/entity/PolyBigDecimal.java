@@ -28,12 +28,13 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
@@ -43,6 +44,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
 @Value
+@Slf4j
 public class PolyBigDecimal extends PolyNumber {
 
     public BigDecimal value;
@@ -88,6 +90,7 @@ public class PolyBigDecimal extends PolyNumber {
         if ( value instanceof PolyNumber ) {
             return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
         } else if ( value instanceof PolyValue ) {
+            log.warn( "error in Decimal convert" );
             return null;
         }
         return null;
@@ -95,10 +98,13 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal convert( PolyValue value ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( value.isNumber() ) {
             return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
         } else if ( value.isTemporal() ) {
-            return PolyBigDecimal.of( value.asTemporal().getSinceEpoch() );
+            return PolyBigDecimal.of( value.asTemporal().getMilliSinceEpoch() );
         } else if ( value.isString() ) {
             return PolyBigDecimal.of( value.asString().value );
         }

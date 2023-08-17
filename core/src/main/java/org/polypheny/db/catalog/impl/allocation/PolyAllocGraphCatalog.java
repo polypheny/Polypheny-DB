@@ -27,7 +27,12 @@ import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.type.PolySerializable;
 
 @Value
@@ -39,38 +44,80 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Serialize
     public LogicalNamespace namespace;
     @Getter
-    public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.builder.get().build( PolyAllocGraphCatalog.class );
+    public BinarySerializer<PolyAllocGraphCatalog> serializer = PolySerializable.buildSerializer( PolyAllocGraphCatalog.class );
 
     @Getter
     @Serialize
     public ConcurrentHashMap<Long, AllocationGraph> graphs;
 
+    @Getter
+    @Serialize
+    public ConcurrentHashMap<Long, AllocationPlacement> placements;
+
+    @Getter
+    @Serialize
+    public ConcurrentHashMap<Long, AllocationPartition> partitions;
+
 
     public PolyAllocGraphCatalog( LogicalNamespace namespace ) {
-        this( namespace, new HashMap<>() );
+        this( namespace, new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
     public PolyAllocGraphCatalog(
             @Deserialize("namespace") LogicalNamespace namespace,
-            @Deserialize("graphs") Map<Long, AllocationGraph> graphs ) {
+            @Deserialize("graphs") Map<Long, AllocationGraph> graphs,
+            @Deserialize("placements") Map<Long, AllocationPlacement> placements,
+            @Deserialize("partitions") Map<Long, AllocationPartition> partitions ) {
         this.namespace = namespace;
         this.graphs = new ConcurrentHashMap<>( graphs );
+        this.placements = new ConcurrentHashMap<>( placements );
+        this.partitions = new ConcurrentHashMap<>( partitions );
     }
 
 
     @Override
-    public AllocationGraph addAllocation( long adapterId, long graphId ) {
+    public AllocationGraph addAllocation( LogicalGraph graph, long placementId, long partitionId, long adapterId ) {
         long id = idBuilder.getNewAllocId();
-        AllocationGraph graph = new AllocationGraph( id, graphId, namespace.id, adapterId );
-        graphs.put( id, graph );
-        return graph;
+        AllocationGraph allocation = new AllocationGraph( id, placementId, partitionId, graph.id, namespace.id, adapterId );
+        graphs.put( id, allocation );
+        return allocation;
     }
 
 
     @Override
     public void deleteAllocation( long id ) {
         graphs.remove( id );
+    }
+
+
+    @Override
+    public AllocationPlacement addPlacement( LogicalGraph graph, long adapterId ) {
+        long id = idBuilder.getNewPlacementId();
+        AllocationPlacement placement = new AllocationPlacement( id, graph.id, namespace.id, adapterId );
+        placements.put( id, placement );
+        return placement;
+    }
+
+
+    @Override
+    public void removePlacement( long id ) {
+        placements.remove( id );
+    }
+
+
+    @Override
+    public AllocationPartition addPartition( LogicalGraph graph, String name ) {
+        long id = idBuilder.getNewPartitionId();
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, -1 );
+        partitions.put( id, partition );
+        return partition;
+    }
+
+
+    @Override
+    public void removePartition( long id ) {
+        partitions.remove( id );
     }
 
 

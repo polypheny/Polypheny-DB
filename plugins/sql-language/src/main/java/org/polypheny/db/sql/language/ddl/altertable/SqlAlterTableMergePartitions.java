@@ -77,30 +77,34 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getFromCatalog( context, table );
+        LogicalTable table = getEntityFromCatalog( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Entity %s not found.", String.join( ".", this.table.names ) );
+        }
+
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
         // Check if table is even partitioned
-        if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( catalogTable.id ).partitionType != PartitionType.NONE ) {
+        if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType != PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on namespace: {}", catalogTable.name, catalogTable.id, statement.getTransaction().getSnapshot().getNamespace( catalogTable.namespaceId ).name );
+                log.debug( "Merging partitions for table: {} with id {} on namespace: {}", table.name, table.id, statement.getTransaction().getSnapshot().getNamespace( table.namespaceId ).name );
             }
 
             try {
-                DdlManager.getInstance().removePartitioning( catalogTable, statement );
+                DdlManager.getInstance().removePartitioning( table, statement );
             } catch ( TransactionException e ) {
                 throw new GenericRuntimeException( "Error while merging partitions", e );
             }
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Table: '{}' has been merged", catalogTable.name );
+                log.debug( "Table: '{}' has been merged", table.name );
             }
         } else {
-            throw new GenericRuntimeException( "Table '%s' is not partitioned!", catalogTable.name );
+            throw new GenericRuntimeException( "Table '%s' is not partitioned!", table.name );
         }
     }
 

@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -50,6 +51,7 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.results.GenericResult;
 import org.polypheny.db.webui.models.results.Result;
 
+@Slf4j
 public class MongoLanguagePlugin extends PolyPlugin {
 
     @Getter
@@ -168,6 +170,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 }
             } catch ( Throwable t ) {
                 LanguageCrud.attachError( transaction, results, query, t );
+                log.warn( "Error on mql query: " + t.getMessage() );
             }
         }
 
@@ -236,6 +239,10 @@ public class MongoLanguagePlugin extends PolyPlugin {
         register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT ) );
 
         register( OperatorName.REMOVE_NAMES, new LangFunctionOperator( "REMOVE_NAMES", Kind.EXTRACT ) );
+
+        register( OperatorName.PLUS, new LangFunctionOperator( OperatorName.PLUS.name(), Kind.PLUS ) );
+
+        register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS ) );
 
         isInit = true;
     }

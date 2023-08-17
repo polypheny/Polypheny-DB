@@ -21,6 +21,7 @@ import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@SuperBuilder(toBuilder = true)
 public class PhysicalColumn extends CatalogEntity {
 
     public long adapterId;
@@ -42,7 +44,7 @@ public class PhysicalColumn extends CatalogEntity {
     public long tableId;
 
     @Serialize
-    public int position;
+    public int position; // normalized to start with 0
 
     @Serialize
     public PolyType type;
@@ -74,12 +76,15 @@ public class PhysicalColumn extends CatalogEntity {
     @Serialize
     public String logicalName;
 
+    @Serialize
+    public long allocId;
 
 
     public PhysicalColumn(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
             @Deserialize("logicalName") final String logicalName,
+            @Deserialize("allocId") final long allocId,
             @Deserialize("tableId") final long tableId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
@@ -94,6 +99,7 @@ public class PhysicalColumn extends CatalogEntity {
             @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
         super( id, name, tableId, EntityType.ENTITY, NamespaceType.RELATIONAL, true );
         this.adapterId = adapterId;
+        this.allocId = allocId;
         this.tableId = tableId;
         this.position = position;
         this.type = type;
@@ -113,6 +119,7 @@ public class PhysicalColumn extends CatalogEntity {
     public PhysicalColumn(
             final String name,
             final long tableId,
+            long allocTableId,
             final long adapterId,
             final int position,
             LogicalColumn column ) {
@@ -120,6 +127,7 @@ public class PhysicalColumn extends CatalogEntity {
                 column.id,
                 name,
                 column.name,
+                allocTableId,
                 tableId,
                 adapterId,
                 position,

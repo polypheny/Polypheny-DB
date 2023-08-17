@@ -1701,8 +1701,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
             }
 
-            // REVIEW:  should dynamic parameter types always be nullable?
-            AlgDataType newInferredType = typeFactory.createTypeWithNullability( inferredType, true );
+            // REVIEW:  should dynamic parameter types always be nullable? no?
+            AlgDataType newInferredType = inferredType;//typeFactory.createTypeWithNullability( inferredType, true );
             if ( PolyTypeUtil.inCharFamily( inferredType ) ) {
                 newInferredType = typeFactory.createTypeWithCharsetAndCollation( newInferredType, inferredType.getCharset(), inferredType.getCollation() );
             }

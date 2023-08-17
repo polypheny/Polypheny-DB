@@ -109,6 +109,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
                 // Postgres has a double type but it is named differently
                 castSpec = "_double precision";
                 break;
+            case VARBINARY:
             case FILE:
             case IMAGE:
             case VIDEO:

@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
@@ -192,7 +193,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
+    public abstract void addDataPlacement( LogicalTable table, List<LogicalColumn> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table
@@ -250,10 +251,10 @@ public abstract class DdlManager {
      * Drop the data placement of a table on a specified data store
      *
      * @param table the table for which to drop a placement
-     * @param storeInstance the data store from which to drop the placement
+     * @param store the data store from which to drop the placement
      * @param statement the query statement
      */
-    public abstract void dropTableAllocation( LogicalTable table, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropPlacement( LogicalTable table, DataStore<?> store, Statement statement );
 
     /**
      * Drop the primary key of a table
@@ -331,13 +332,13 @@ public abstract class DdlManager {
      * changed to manual.
      *
      * @param table the table
-     * @param columnIds which columns should be placed on the specified data store
+     * @param columns which columns should be placed on the specified data store
      * @param partitionGroupIds the ids of the partitions of this column
      * @param partitionGroupNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyDataPlacement( LogicalTable table, List<Long> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPlacement( LogicalTable table, List<Long> columns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> storeInstance, Statement statement );
 
     /**
      * Modified the partition distribution on the selected store. Can be used to add or remove partitions on a store.
@@ -345,32 +346,32 @@ public abstract class DdlManager {
      *
      * @param table the table
      * @param partitionGroupIds the desired target state of partition groups which should remain on this store
-     * @param storeInstance the data store on which the partition placements should be altered
+     * @param store the data store on which the partition placements should be altered
      * @param statement the used statement
      */
-    public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> storeInstance, Statement statement );
+    public abstract void modifyPartitionPlacement( LogicalTable table, List<Long> partitionGroupIds, DataStore<?> store, Statement statement );
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
      * the column with type automatic, the placement type is changed to manual.
      *
      * @param table the table
-     * @param columnName the column name for which to add a placement
-     * @param storeInstance the data store on which the column should be placed
+     * @param column the column name for which to add a placement
+     * @param store the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void addColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
      * is changed to automatic.
      *
      * @param table the table
-     * @param columnName the name of the column for which to drop a placement
-     * @param storeInstance the data store from which to remove the placement
+     * @param column the name of the column for which to drop a placement
+     * @param store the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( LogicalTable table, String columnName, DataStore<?> storeInstance, Statement statement );
+    public abstract void dropColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
      * Change the owner of a table
@@ -481,7 +482,7 @@ public abstract class DdlManager {
      * @param table the table to be dropped
      * @param statement the used statement
      */
-    public abstract void dropTable( LogicalTable table, Statement statement );
+    public abstract void deleteTable( LogicalTable table, Statement statement );
 
     /**
      * Drop View

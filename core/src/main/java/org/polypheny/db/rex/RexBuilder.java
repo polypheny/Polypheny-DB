@@ -1080,7 +1080,7 @@ public class RexBuilder {
 
     public RexLiteral makeTimeLiteral( PolyTime time, int precision ) {
         return makeLiteral(
-                PolyTime.of( time.getSinceEpoch() ),
+                PolyTime.of( time.getMilliSinceEpoch() ),
                 typeFactory.createPolyType( PolyType.TIME, precision ),
                 PolyType.TIME );
     }
@@ -1110,7 +1110,7 @@ public class RexBuilder {
 
     public RexLiteral makeTimestampLiteral( PolyTimeStamp timestamp, int precision ) {
         return makeLiteral(
-                PolyTimeStamp.of( timestamp.sinceEpoch ),
+                PolyTimeStamp.of( timestamp.milliSinceEpoch ),
                 typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
                 PolyType.TIMESTAMP );
     }

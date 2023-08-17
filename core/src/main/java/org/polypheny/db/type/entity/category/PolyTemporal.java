@@ -21,6 +21,7 @@ import java.util.GregorianCalendar;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -29,7 +30,7 @@ import org.polypheny.db.type.entity.PolyValue;
 @NonFinal
 public abstract class PolyTemporal extends PolyValue {
 
-    public abstract Long getSinceEpoch();
+    public abstract Long getMilliSinceEpoch();
 
 
     public PolyTemporal( PolyType type ) {
@@ -37,9 +38,14 @@ public abstract class PolyTemporal extends PolyValue {
     }
 
 
+    public long getDaysSinceEpoch() {
+        return getMilliSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
+    }
+
+
     public Calendar toCalendar() {
         GregorianCalendar cal = new GregorianCalendar();
-        cal.setTimeInMillis( getSinceEpoch() );
+        cal.setTimeInMillis( getMilliSinceEpoch() );
         return cal;
     }
 

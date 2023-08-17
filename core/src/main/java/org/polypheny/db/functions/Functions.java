@@ -23,6 +23,7 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -80,7 +81,9 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.NonDeterministic;
+import org.apache.calcite.linq4j.function.Predicate2;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
@@ -105,6 +108,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -134,7 +138,7 @@ public class Functions {
 
     private static final DecimalFormat DOUBLE_FORMAT = NumberUtil.decimalFormat( "0.0E0" );
 
-    private static final TimeZone LOCAL_TZ = TimeZone.getDefault();
+    public static final TimeZone LOCAL_TZ = TimeZone.getDefault();
 
     private static final Function1<List<?>, Enumerable<?>> LIST_AS_ENUMERABLE = Linq4j::asEnumerable;
 
@@ -352,27 +356,79 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static Enumerable<?> enforceConstraint( Function0<Enumerable<Object>> modify, Enumerable<Object[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
-        List<Object> results = new ArrayList<>();
+    public static Enumerable<?> enforceConstraint( Function0<Enumerable<PolyValue>> modify, Enumerable<PolyValue[]> control, List<Class<? extends Exception>> exceptions, List<String> msgs ) {
+        List<PolyValue> results = new ArrayList<>();
         try {
-            for ( Object object : modify.apply() ) {
+            for ( PolyValue object : modify.apply() ) {
                 results.add( object );
             }
         } catch ( Exception e ) {
             throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
         }
 
-        List<Integer> validationIndexes = new ArrayList<>();
-        for ( Object object : control ) {
-            validationIndexes.add( (Integer) ((Object[]) object)[1] );
+        List<PolyNumber> validationIndexes = new ArrayList<>();
+        for ( PolyValue[] object : control ) {
+            validationIndexes.add( object[1].asNumber() );
         }
         if ( validationIndexes.size() == 0 ) {
             return Linq4j.asEnumerable( results );
         } else {
             // force rollback
             throw new ConstraintViolationException( Joiner.on( "\n" )
-                    .join( validationIndexes.stream().map( msgs::get ).collect( Collectors.toList() ) ) );
+                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).collect( Collectors.toList() ) ) );
         }
+    }
+
+
+    /**
+     * Correlates the elements of two sequences based on a predicate. // todo dl use EnumerablesDefault
+     */
+    @SuppressWarnings("unused")
+    public static <TSource, TInner, TResult> Enumerable<TResult> thetaJoin(
+            final Enumerable<TSource> outer,
+            final Enumerable<TInner> inner,
+            final Predicate2<TSource, TInner> predicate,
+            Function2<TSource, TInner, TResult> resultSelector,
+            final boolean generateNullsOnLeft,
+            final boolean generateNullsOnRight ) {
+        // Building the result as a list is easy but hogs memory. We should iterate.
+        final List<TResult> result = new ArrayList<>();
+        final Enumerator<TSource> lefts = outer.enumerator();
+        final List<TInner> rightList = inner.toList();
+        final Set<TInner> rightUnmatched;
+        if ( generateNullsOnLeft ) {
+            rightUnmatched = Sets.newIdentityHashSet();
+            rightUnmatched.addAll( rightList );
+        } else {
+            rightUnmatched = null;
+        }
+        while ( lefts.moveNext() ) {
+            int leftMatchCount = 0;
+            final TSource left = lefts.current();
+            final Enumerator<TInner> rights = Linq4j.iterableEnumerator( rightList );
+            while ( rights.moveNext() ) {
+                TInner right = rights.current();
+                if ( predicate.apply( left, right ) ) {
+                    ++leftMatchCount;
+                    if ( rightUnmatched != null ) {
+                        rightUnmatched.remove( right );
+                    }
+                    result.add( resultSelector.apply( left, right ) );
+                }
+            }
+            if ( generateNullsOnRight && leftMatchCount == 0 ) {
+                result.add( resultSelector.apply( left, null ) );
+            }
+        }
+        if ( rightUnmatched != null ) {
+            final Enumerator<TInner> rights =
+                    Linq4j.iterableEnumerator( rightUnmatched );
+            while ( rights.moveNext() ) {
+                TInner right = rights.current();
+                result.add( resultSelector.apply( null, right ) );
+            }
+        }
+        return Linq4j.asEnumerable( result );
     }
 
 
@@ -812,12 +868,6 @@ public class Functions {
         }
         return b0.equals( b1 );
     }*/
-    public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
-        if ( b0 == null || b1 == null ) {
-            return PolyBoolean.FALSE;
-        }
-        return eqAny( b0, b1 );
-    }
 
 
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
@@ -831,7 +881,7 @@ public class Functions {
     /**
      * SQL <code>=</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    public static PolyBoolean eqAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean eq( PolyValue b0, PolyValue b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) ) {
             // The result of SqlFunctions.eq(BigDecimal, BigDecimal) makes more sense than BigDecimal.equals(BigDecimal). So if both of types are BigDecimal, we just use SqlFunctions.eq(BigDecimal, BigDecimal).
             return PolyBoolean.of( b0.equals( b1 ) );
@@ -879,9 +929,6 @@ public class Functions {
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (at least one operand has ANY type, including String; neither may be null).
      */
-    public static PolyBoolean neAny( PolyValue b0, PolyValue b1 ) {
-        return PolyBoolean.of( !eqAny( b0, b1 ).value );
-    }
 
     // <
 
@@ -915,14 +962,14 @@ public class Functions {
 
 
     /*public static boolean lt( Object b0, Object b1 ) {
-        return ltAny( b0, b1 );
+        return lt( b0, b1 );
     }*/
 
 
     /**
      * SQL <code>&lt;</code> operator applied to Object values.
      */
-    public static PolyBoolean ltAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean lt( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -945,7 +992,17 @@ public class Functions {
 
 
     public static PolyBoolean lt( PolyTemporal b0, PolyTemporal b1 ) {
-        return lt( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
+        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
+    }
+
+
+    public static PolyBoolean lt( PolyTemporal b0, PolyNumber b1 ) {
+        return lt( PolyLong.of( b0.getMilliSinceEpoch() ), b1 );
+    }
+
+
+    public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
+        return lt( b0, PolyLong.of( b1.getMilliSinceEpoch() ) );
     }
     // <=
 
@@ -985,7 +1042,7 @@ public class Functions {
     /**
      * SQL <code>&le;</code> operator applied to Object values (at least one operand has ANY type; neither may be null).
      */
-    public static PolyBoolean leAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean le( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -1049,7 +1106,7 @@ public class Functions {
      * SQL <code>&gt;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    /*public static boolean gtAny( Object b0, Object b1 ) {
+    /*public static boolean gt( Object b0, Object b1 ) {
         if ( b0.getClass().equals( b1.getClass() ) && b0 instanceof Comparable ) {
             //noinspection unchecked
             return ((Comparable) b0).compareTo( b1 ) > 0;
@@ -1059,7 +1116,7 @@ public class Functions {
 
         throw notComparable( ">", b0, b1 );
     }*/
-    public static PolyBoolean gtAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean gt( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -1111,7 +1168,7 @@ public class Functions {
 
 
     public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
-        return ge( PolyLong.of( b0.getSinceEpoch() ), PolyLong.of( b1.getSinceEpoch() ) );
+        return ge( PolyLong.of( b0.getMilliSinceEpoch() ), PolyLong.of( b1.getMilliSinceEpoch() ) );
     }
 
 
@@ -1119,7 +1176,7 @@ public class Functions {
      * SQL <code>&ge;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).
      */
-    public static PolyBoolean geAny( PolyValue b0, PolyValue b1 ) {
+    public static PolyBoolean ge( PolyValue b0, PolyValue b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
         }
@@ -2045,7 +2102,6 @@ public class Functions {
         return PolyDouble.of( Math.toRadians( b0.doubleValue() ) );
     }
 
-
     /**
      * SQL <code>RADIANS</code> operator applied to double values.
      */
@@ -2438,7 +2494,7 @@ public class Functions {
 
 
     @NonDeterministic
-    private static Object cannotConvert( Object o, Class toType ) {
+    private static Object cannotConvert( Object o, Class<?> toType ) {
         throw Static.RESOURCE.cannotConvert( o.toString(), toType.toString() ).ex();
     }
 
@@ -2524,7 +2580,7 @@ public class Functions {
 
 
     public static int toInt( java.util.Date v, TimeZone timeZone ) {
-        return (int) (toLong( v, timeZone ) / DateTimeUtils.MILLIS_PER_DAY);
+        return (int) (toLong( v, timeZone )); // DateTimeUtils.MILLIS_PER_DAY);
     }
 
 
@@ -2540,7 +2596,7 @@ public class Functions {
     }
 
 
-    public static long toLong( Date v ) {
+    public static long dateToLong( Date v ) {
         return toLong( v, LOCAL_TZ );
     }
 
@@ -2550,13 +2606,13 @@ public class Functions {
      *
      * Converse of {@link #internalToTime(int)}.
      */
-    public static int toInt( java.sql.Time v ) {
-        return (int) (toLong( v ) % DateTimeUtils.MILLIS_PER_DAY);
+    public static long timeToLong( java.sql.Time v ) {
+        return toLong( v, LOCAL_TZ );//% DateTimeUtils.MILLIS_PER_DAY);
     }
 
 
-    public static Integer toIntOptional( java.sql.Time v ) {
-        return v == null ? null : toInt( v );
+    public static Long timeToLongOptional( java.sql.Time v ) {
+        return v == null ? null : timeToLong( v );
     }
 
 
@@ -2600,12 +2656,12 @@ public class Functions {
 
 
     // mainly intended for java.sql.Timestamp but works for other dates also
-    public static Long toLongOptional( java.util.Date v ) {
+    public static Long dateToLongOptional( java.util.Date v ) {
         return v == null ? null : toLong( v, LOCAL_TZ );
     }
 
 
-    public static Long toLongOptional( Timestamp v, TimeZone timeZone ) {
+    public static Long toLongOptional( Timestamp v ) {
         if ( v == null ) {
             return null;
         }
@@ -3142,7 +3198,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.deserialize( stringValue ).asList();
+        return PolyValue.GSON.fromJson( stringValue, PolyList.class );
     }
 
 
@@ -3216,6 +3272,23 @@ public class Functions {
 
     public static PolyBoolean not( Boolean b ) {
         return PolyBoolean.of( !b );
+    }
+
+
+    public static List<PolyValue> arrayToPolyList( final java.sql.Array a, Function1<Object, PolyValue> transformer, int depth ) {
+        if ( a == null ) {
+            return null;
+        }
+        Object[] array = arrayToList( a ).toArray();
+        return applyToLowest( array, transformer ).asList();
+    }
+
+
+    private static PolyValue applyToLowest( Object o, Function1<Object, PolyValue> transformer ) {
+        if ( o instanceof Object[] ) {
+            return PolyList.of( Arrays.stream( ((Object[]) o) ).map( a -> applyToLowest( a, transformer ) ).collect( Collectors.toList() ) );
+        }
+        return transformer.apply( o );
     }
 
 

@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
@@ -46,7 +48,9 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -58,12 +62,15 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -87,6 +94,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.util.LimitIterator;
+import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -241,19 +249,23 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void copyData( Transaction transaction, CatalogAdapter store, List<LogicalColumn> columns, List<Long> partitionIds ) {
-        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+    public void copyData(
+            Transaction transaction,
+            CatalogAdapter store,
+            LogicalTable source,
+            List<LogicalColumn> columns,
+            AllocationPlacement target ) {
+        Snapshot snapshot = Catalog.snapshot();
         LogicalRelSnapshot relSnapshot = snapshot.rel();
-        LogicalTable table = relSnapshot.getTable( columns.get( 0 ).tableId ).orElseThrow();
-        LogicalPrimaryKey primaryKey = relSnapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
+        LogicalPrimaryKey primaryKey = relSnapshot.getPrimaryKey( source.primaryKey ).orElseThrow();
 
         // Check Lists
-        List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
+        /*List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
             targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ).orElseThrow() );
-        }
+        }*/
 
-        List<LogicalColumn> selectedColumns = new LinkedList<>( columns );
+        List<LogicalColumn> selectedColumns = new ArrayList<>( columns );
 
         // Add primary keys to select column list
         for ( long cid : primaryKey.columnIds ) {
@@ -265,36 +277,40 @@ public class DataMigratorImpl implements DataMigrator {
 
         // We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id );
-        if ( property.isPartitioned ) {
+        PartitionProperty property = snapshot.alloc().getPartitionProperty( source.id ).orElseThrow();
+
+        List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( source.id );
+        if ( partitions.size() > 1 ) {
+            // is partitioned
             PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
             PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( property.partitionType );
-            placementDistribution = partitionManager.getRelevantPlacements( table, partitionIds, Collections.singletonList( store.id ) );
+            List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( source.id ).stream().filter( p -> p.adapterId != store.id ).collect( Collectors.toList() );
+            List<AllocationEntity> allocs = placements.stream().flatMap( p -> snapshot.alloc().getAllocsOfPlacement( p.id ).stream() ).collect( Collectors.toList() );
+            placementDistribution = partitionManager.getRelevantPlacements( source, allocs, Collections.singletonList( store.id ) );
         } else {
-            placementDistribution.put(
-                    property.partitionIds.get( 0 ),
-                    selectSourcePlacements( table, selectedColumns, targetColumnPlacements.get( 0 ).adapterId ) );
+            placementDistribution.put( partitions.get( 0 ).id, selectSourcePlacements( source, selectedColumns, target.adapterId ) );
         }
 
-        for ( long partitionId : partitionIds ) {
+        for ( long id : property.partitionIds ) {
             Statement sourceStatement = transaction.createStatement();
             Statement targetStatement = transaction.createStatement();
 
             Map<Long, List<AllocationColumn>> subDistribution = new HashMap<>( placementDistribution );
-            subDistribution.keySet().retainAll( List.of( partitionId ) );
-            AlgRoot sourceAlg = getSourceIterator( sourceStatement, subDistribution );
+            subDistribution.keySet().retainAll( List.of( id ) );
+            AlgRoot sourceAlg = getSourceIterator( sourceStatement, source, subDistribution );
             AlgRoot targetAlg;
-            AllocationTable allocation = snapshot.alloc().getEntity( store.id, table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+            AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+            Catalog.getInstance().updateSnapshot();
             if ( allocation.getColumns().size() == columns.size() ) {
                 // There have been no placements for this table on this store before. Build insert statement
-                targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
+                targetAlg = buildInsertStatement( targetStatement, allocation.getColumns(), allocation );
             } else {
                 // Build update statement
-                targetAlg = buildUpdateStatement( targetStatement, targetColumnPlacements, allocation );
+                targetAlg = buildUpdateStatement( targetStatement, columns.stream().map( c -> Catalog.snapshot().alloc().getColumn( target.id, c.id ).orElseThrow() ).collect( Collectors.toList() ), allocation );
             }
 
             // Execute Query
-            executeQuery( targetColumnPlacements, sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
+            executeQuery( allocation.getColumns(), sourceAlg, sourceStatement, targetStatement, targetAlg, false, false );
         }
     }
 
@@ -302,7 +318,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<AllocationColumn> selectedColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyImplementation<Object> result;
+            PolyImplementation<PolyValue> result;
             if ( isMaterializedView ) {
                 result = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
@@ -318,8 +334,8 @@ public class DataMigratorImpl implements DataMigrator {
                         false,
                         false );
             }
-            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            final Enumerable<PolyValue> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            Iterator<PolyValue> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
@@ -342,8 +358,11 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
-            while ( sourceIterator.hasNext() ) {
-                List<List<PolyValue>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( o -> o.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+            do {
+                List<List<PolyValue>> rows = result.getRows( sourceStatement, batchSize );
+                if ( rows.isEmpty() ) {
+                    continue;
+                }
                 Map<Long, List<PolyValue>> values = new HashMap<>();
 
                 for ( List<PolyValue> list : rows ) {
@@ -386,7 +405,7 @@ public class DataMigratorImpl implements DataMigrator {
                     iterator.next();
                 }
                 targetStatement.getDataContext().resetParameterValues();
-            }
+            } while ( result.hasMoreRows() );
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
@@ -459,10 +478,10 @@ public class DataMigratorImpl implements DataMigrator {
         // build condition
         RexNode condition = null;
         LogicalRelSnapshot snapshot = Catalog.getInstance().getSnapshot().rel();
-        LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).tableId ).orElseThrow();
+        LogicalTable catalogTable = snapshot.getTable( to.get( 0 ).logicalTableId ).orElseThrow();
         LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
         for ( long cid : primaryKey.columnIds ) {
-            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).adapterId, cid ).orElseThrow();
+            AllocationColumn ccp = Catalog.getInstance().getSnapshot().alloc().getColumn( to.get( 0 ).placementId, cid ).orElseThrow();
             LogicalColumn logicalColumn = snapshot.getColumn( cid ).orElseThrow();
             RexNode c = builder.equals(
                     builder.field( ccp.getLogicalColumnName() ),
@@ -476,8 +495,8 @@ public class DataMigratorImpl implements DataMigrator {
         }
         builder = builder.filter( condition );
 
-        List<String> columnNames = new LinkedList<>();
-        List<RexNode> values = new LinkedList<>();
+        List<String> columnNames = new ArrayList<>();
+        List<RexNode> values = new ArrayList<>();
         for ( AllocationColumn ccp : to ) {
             LogicalColumn logicalColumn = snapshot.getColumn( ccp.columnId ).orElseThrow();
             columnNames.add( ccp.getLogicalColumnName() );
@@ -500,46 +519,56 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placementDistribution ) {
+    public AlgRoot getSourceIterator( Statement statement, LogicalTable table, Map<Long, List<AllocationColumn>> placementDistribution ) {
 
         // Build Query
         AlgOptCluster cluster = AlgOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
 
-        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, null );
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, table, placementDistribution );
         return AlgRoot.of( node, Kind.SELECT );
     }
 
 
+    /*public AlgRoot getSourceIterator( Statement statement, Map<Long, List<AllocationColumn>> placement ) {
+
+        // Build Query
+        AlgOptCluster cluster = AlgOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
+
+        AlgNode node = RoutingManager.getInstance().getFallbackRouter().buildJoinedScan( statement, cluster, placement );
+        return AlgRoot.of( node, Kind.SELECT );
+    }*/
+
+
     public static List<AllocationColumn> selectSourcePlacements( LogicalTable table, List<LogicalColumn> columns, long excludingAdapterId ) {
         // Find the adapter with the most column placements
-        Catalog catalog = Catalog.getInstance();
-        Snapshot snapshot = catalog.getSnapshot();
+        Snapshot snapshot = Catalog.snapshot();
         long adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Long, List<Long>> entry : snapshot.alloc().getColumnPlacementsByAdapter( table.id ).entrySet() ) {
-            if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
+        for ( Entry<Long, List<Long>> entry : snapshot.alloc().getColumnPlacementsByAdapters( table.id ).entrySet() ) {
+            if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) { // todo these are potentially not the most relevant ones
                 adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
 
-        List<Long> columnIds = new LinkedList<>();
-        for ( LogicalColumn logicalColumn : columns ) {
-            columnIds.add( logicalColumn.id );
-        }
+        List<Long> columnIds = columns.stream().map( c -> c.id ).collect( Collectors.toList() );
 
         // Take the adapter with most placements as base and add missing column placements
-        List<AllocationColumn> placementList = new LinkedList<>();
+        List<AllocationColumn> placements = new ArrayList<>();
         for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
             if ( columnIds.contains( column.id ) ) {
-                if ( snapshot.alloc().getDataPlacement( adapterIdWithMostPlacements, table.id ).columnPlacementsOnAdapter.contains( column.id ) ) {
-                    placementList.add( snapshot.alloc().getColumn( adapterIdWithMostPlacements, column.id ).orElseThrow() );
+                AllocationPlacement placement = snapshot.alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
+                Optional<AllocationColumn> optionalColumn = snapshot.alloc().getColumn( placement.id, column.id );
+                if ( optionalColumn.isPresent() && optionalColumn.get().adapterId != excludingAdapterId ) {
+                    placements.add( snapshot.alloc().getColumn( placement.id, column.id ).orElseThrow() );
                 } else {
-                    for ( AllocationColumn placement : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
-                        if ( placement.adapterId != excludingAdapterId ) {
-                            placementList.add( placement );
+                    for ( AllocationColumn allocationColumn : snapshot.alloc().getColumnFromLogical( column.id ).orElseThrow() ) {
+                        if ( allocationColumn.adapterId != excludingAdapterId ) {
+                            placements.add( allocationColumn );
                             break;
                         }
                     }
@@ -547,13 +576,13 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        return placementList;
+        return placements;
     }
 
 
     /**
-     * Currently used to to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyPartitionData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, List, List)}  } instead
+     * Currently used to transfer data if partitioned table is about to be merged.
+     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -587,7 +616,7 @@ public class DataMigratorImpl implements DataMigrator {
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AlgRoot targetAlg;
         AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
@@ -656,14 +685,195 @@ public class DataMigratorImpl implements DataMigrator {
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
-     * @param sourceTable Source Table from where data is queried
-     * @param targetTable Target Table where data is to be inserted
-     * @param columns Necessary columns on target
-     * @param sourcePartitionIds Source Partitions which need to be considered for querying
-     * @param targetPartitionIds Target Partitions where data should be inserted
+     * @param sourceTables Source Table from where data is queried
+     * @param targetProperty
+     * @param targetTables
+     * @param table
      */
     @Override
-    public void copyPartitionData( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
+    public void copyAllocationData( Transaction transaction, CatalogAdapter store, List<AllocationTable> sourceTables, PartitionProperty targetProperty, List<AllocationTable> targetTables, LogicalTable table ) {
+        if ( targetTables.stream().anyMatch( t -> t.logicalId != sourceTables.get( 0 ).logicalId ) ) {
+            throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
+        }
+        Snapshot snapshot = Catalog.getInstance().getSnapshot();
+
+        // Add partition columns to select column list
+        long partitionColumnId = targetProperty.partitionColumnId;
+        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
+
+        PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
+        PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetProperty.partitionType );
+
+        Source source = getSource( transaction, sourceTables, table, partitionColumn, targetTables );
+
+        Map<Long, Statement> targetStatements = new HashMap<>();
+        //Creates queue of target Statements depending
+        targetTables.forEach( t -> targetStatements.put( t.partitionId, transaction.createStatement() ) );
+        //Map PartitionId to TargetStatementQueue
+        Map<Long, AlgRoot> targetAlgs = new HashMap<>();
+
+        //AllocationTable allocation = snapshot.alloc().getAlloc( sourcePlacement.id, table.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+        List<AllocationColumn> columns = snapshot.alloc().getColumns( sourceTables.get( 0 ).placementId );
+        for ( AllocationTable targetTable : targetTables ) {
+            if ( targetTable.getColumns().size() == columns.size() ) {
+                // There have been no placements for this table on this store before. Build insert statement
+                targetAlgs.put( targetTable.partitionId, buildInsertStatement( targetStatements.get( targetTable.partitionId ), columns, targetTable ) );
+            } else {
+                // Build update statement
+                targetAlgs.put( targetTable.partitionId, buildUpdateStatement( targetStatements.get( targetTable.partitionId ), columns, targetTable ) );
+            }
+        }
+
+        // Execute Query
+        try {
+            PolyImplementation<PolyValue> result = source.sourceStatement.getQueryProcessor().prepareQuery( source.sourceAlg, source.sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            //final Enumerable<PolyValue> enumerable = result.enumerable( source.sourceStatement.getDataContext() );
+
+            /*Map<Long, Integer> resultColMapping = new HashMap<>();
+            for ( LogicalColumn logicalColumn : selectColumnList ) {
+                int i = 0;
+                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                    if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
+                        resultColMapping.put( logicalColumn.id, i );
+                    }
+                    i++;
+                }
+            }*/
+            int columIndex = 0; // todo dl //snapshot.alloc().getC sourcePlacement.indexOf( targetProperty.partitionColumnId );
+
+            //int partitionColumnIndex = -1;
+            String parsedValue = null;
+            /*if ( targetTables.size() > 1 ) {
+                if ( resultColMapping.containsKey( targetProperty.partitionColumnId ) ) {
+                    partitionColumnIndex = resultColMapping.get( targetProperty.partitionColumnId );
+                } else {
+                    parsedValue = PartitionManager.NULL_STRING;
+                }
+            }*/
+
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+
+            do {
+                List<List<PolyValue>> rows = result.getRows( source.sourceStatement, batchSize );//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+
+                if ( rows.isEmpty() ) {
+                    continue;
+                }
+
+                Map<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> partitionValues = new HashMap<>();
+
+                for ( List<PolyValue> row : rows ) {
+
+                    /*if ( partitionColumnIndex >= 0 ) {
+                        parsedValue = PartitionManager.NULL_STRING;
+                        if ( row.get( partitionColumnIndex ) != null ) {
+                            parsedValue = row.get( partitionColumnIndex ).toString();
+                        }
+                    }*/
+
+                    if ( row.get( columIndex ) != null ) {
+                        parsedValue = row.get( columIndex ).toString();
+                    }
+
+                    long currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
+
+                    //for ( Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
+                        /*if ( entry.getKey() == partitionColumn.id && !columns.contains( partitionColumn ) ) {
+                            continue;
+                        }*/
+                    int i = 0;
+                    for ( AllocationColumn column : columns.stream().sorted( Comparator.comparingInt( c -> c.position ) ).collect( Collectors.toList() ) ) {
+                        if ( !partitionValues.containsKey( currentPartitionId ) ) {
+                            partitionValues.put( currentPartitionId, new HashMap<>() );
+                        }
+                        if ( !partitionValues.get( currentPartitionId ).containsKey( column.columnId ) ) {
+                            partitionValues.get( currentPartitionId ).put( column.columnId, Pair.of( column.getAlgDataType(), new ArrayList<>() ) );
+                        }
+                        partitionValues.get( currentPartitionId ).get( column.columnId ).right.add( row.get( i++ ) );
+                    }
+                }
+
+                // Iterate over partitionValues in that way we don't even execute a statement which has no rows
+                for ( Entry<Long, Map<Long, Pair<AlgDataType, List<PolyValue>>>> dataOnPartition : partitionValues.entrySet() ) {
+                    long partitionId = dataOnPartition.getKey();
+                    Map<Long, Pair<AlgDataType, List<PolyValue>>> values = dataOnPartition.getValue();
+                    Statement currentTargetStatement = targetStatements.get( partitionId );
+
+                    for ( Entry<Long, Pair<AlgDataType, List<PolyValue>>> columnDataOnPartition : values.entrySet() ) {
+                        // Check partitionValue
+                        currentTargetStatement.getDataContext().addParameterValues( columnDataOnPartition.getKey(), columnDataOnPartition.getValue().left, columnDataOnPartition.getValue().right );
+                    }
+
+                    Iterator<?> iterator = currentTargetStatement.getQueryProcessor()
+                            .prepareQuery( targetAlgs.get( partitionId ), source.sourceAlg.validatedRowType, true, false, false )
+                            .enumerable( currentTargetStatement.getDataContext() )
+                            .iterator();
+                    //noinspection WhileLoopReplaceableByForEach
+                    while ( iterator.hasNext() ) {
+                        iterator.next();
+                    }
+                    currentTargetStatement.getDataContext().resetParameterValues();
+                }
+            } while ( result.hasMoreRows() );
+        } catch ( Throwable t ) {
+            throw new GenericRuntimeException( t );
+        }
+    }
+
+
+    @NotNull
+    private Source getSource( Transaction transaction, List<AllocationTable> sourceTables, LogicalTable table, LogicalColumn partitionColumn, List<AllocationTable> excludedTables ) {
+        Set<Long> excludedPartitions = excludedTables.stream().map( t -> t.partitionId ).collect( Collectors.toSet() );
+        List<LogicalColumn> selectColumns = Catalog.snapshot().alloc().getColumns( sourceTables.get( 0 ).placementId ).stream().map( a -> Catalog.snapshot().rel().getColumn( a.columnId ).orElseThrow() ).collect( Collectors.toCollection( ArrayList::new ) );
+
+        if ( !selectColumns.contains( partitionColumn ) ) {
+            selectColumns.add( partitionColumn );
+        }
+
+        //We need a columnPlacement for every partition
+        Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
+        //PartitionProperty sourceProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+
+        List<AllocationColumn> columns = sourceTables.get( 0 ).getColumns();// same length as it is only copy ...
+        // selectSourcePlacements( table, selectColumns, -1 );
+        for ( AllocationTable sourceTable : sourceTables ) {
+            placementDistribution.put( sourceTable.partitionId, columns );
+        }
+
+        Statement sourceStatement = transaction.createStatement();
+
+        // targetPartitionIds.forEach( id -> targetStatements.put( id, transaction.createStatement() ) );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, table, placementDistribution );
+        return new Source( sourceStatement, sourceAlg );
+    }
+
+
+    private static class Source {
+
+        public final Statement sourceStatement;
+        public final AlgRoot sourceAlg;
+
+
+        public Source( Statement sourceStatement, AlgRoot sourceAlg ) {
+            this.sourceStatement = sourceStatement;
+            this.sourceAlg = sourceAlg;
+        }
+
+    }
+
+
+    private AlgRoot getScan( Statement statement, LogicalTable table, AllocationTable sourceTable ) {
+        // Build Query
+        AlgOptCluster cluster = AlgOptCluster.create(
+                statement.getQueryProcessor().getPlanner(),
+                new RexBuilder( statement.getTransaction().getTypeFactory() ), null, statement.getDataContext().getSnapshot() );
+
+        AlgNode node = LogicalRelScan.create( cluster, table );
+        return AlgRoot.of( node, Kind.SELECT );
+    }
+
+
+    public void copyPartitionDataOld( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
         if ( sourceTable.id != targetTable.id ) {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
@@ -686,7 +896,7 @@ public class DataMigratorImpl implements DataMigrator {
             }
         }
 
-        PartitionProperty targetProperty = snapshot.alloc().getPartitionProperty( targetTable.id );
+        PartitionProperty targetProperty = snapshot.alloc().getPartitionProperty( targetTable.id ).orElseThrow();
         // Add partition columns to select column list
         long partitionColumnId = targetProperty.partitionColumnId;
         LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
@@ -699,7 +909,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         //We need a columnPlacement for every partition
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
-        PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( sourceTable.id );
+        PartitionProperty sourceProperty = snapshot.alloc().getPartitionProperty( sourceTable.id ).orElseThrow();
         placementDistribution.put( sourceProperty.partitionIds.get( 0 ), selectSourcePlacements( sourceTable, selectColumnList, -1 ) );
 
         Statement sourceStatement = transaction.createStatement();
@@ -712,9 +922,9 @@ public class DataMigratorImpl implements DataMigrator {
 
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
-        AlgRoot sourceAlg = getSourceIterator( sourceStatement, placementDistribution );
+        AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
-        if ( allocation.getColumns().size() == columns.size() ) {
+        if ( true ) {//allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );
         } else {
@@ -741,12 +951,11 @@ public class DataMigratorImpl implements DataMigrator {
 
             int partitionColumnIndex = -1;
             String parsedValue = null;
-            String nullifiedPartitionValue = partitionManager.getUnifiedNullValue();
             if ( targetProperty.isPartitioned ) {
                 if ( resultColMapping.containsKey( targetProperty.partitionColumnId ) ) {
                     partitionColumnIndex = resultColMapping.get( targetProperty.partitionColumnId );
                 } else {
-                    parsedValue = nullifiedPartitionValue;
+                    parsedValue = PartitionManager.NULL_STRING;
                 }
             }
 
@@ -759,13 +968,13 @@ public class DataMigratorImpl implements DataMigrator {
                 for ( List<PolyValue> row : rows ) {
                     long currentPartitionId = -1;
                     if ( partitionColumnIndex >= 0 ) {
-                        parsedValue = nullifiedPartitionValue;
+                        parsedValue = PartitionManager.NULL_STRING;
                         if ( row.get( partitionColumnIndex ) != null ) {
                             parsedValue = row.get( partitionColumnIndex ).toString();
                         }
                     }
 
-                    currentPartitionId = partitionManager.getTargetPartitionId( targetTable, parsedValue );
+                    currentPartitionId = partitionManager.getTargetPartitionId( null, null/*targetTable*/, parsedValue );
 
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
                         if ( entry.getKey() == partitionColumn.id && !columns.contains( partitionColumn ) ) {

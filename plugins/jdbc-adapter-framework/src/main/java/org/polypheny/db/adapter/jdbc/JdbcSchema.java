@@ -156,7 +156,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             SqlDialect dialect,
             Adapter<?> adapter ) {
         final Expression expression = adapter.getNamespaceAsExpression( id );
-        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
+        final JdbcConvention convention = JdbcConvention.of( dialect, expression, name + adapter.adapterId ); // fixes multiple placement errors
         return new JdbcSchema( id, connectionFactory, dialect, convention, adapter );
     }
 
