@@ -27,7 +27,9 @@ import java.sql.Time;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.protointerface.proto.ProtoValue;
 import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 import org.polypheny.db.protointerface.proto.ProtoValue.ValueCase;
@@ -53,6 +55,12 @@ import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class PolyValueSerializationTest {
+
+    @BeforeClass
+    public static void init() {
+        TestHelper.getInstance();
+
+    }
 
     private enum TestEnum {
         UNTESTED
