@@ -18,16 +18,17 @@ repositories {
 }
 
 dependencies {
-    implementation project(path: ':core')
-    implementation project(path: ':dbms')
-    implementation project(path: ':dbms')
-    implementation project(path: ':plugins:sql-language')
-    implementation project(path: ':plugins:mql-language')
-    implementation project(path: ':plugins:mql-language')
-    implementation project(path: ':plugins:mql-language')
-    implementation project(path: ':plugins:mql-language')
+
+    compileOnly project(path: ':core')
+    compileOnly project(path: ':dbms')
+    compileOnly project(path: ':plugins:sql-language')
+    compileOnly project(path: ':plugins:mql-language')
+    testImplementation project(path: ':plugins:mql-language')
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ':dbms')
+    testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ':core')
-    compileOnly project(":core")
+
     compileOnly project(":monitoring")
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.21.12'
@@ -83,7 +84,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
-            srcDirs = ["src/test/resources"]
+            srcDirs = ["src/test/resources", "src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
