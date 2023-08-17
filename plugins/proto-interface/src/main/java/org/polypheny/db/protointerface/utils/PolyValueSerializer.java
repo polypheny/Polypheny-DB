@@ -226,8 +226,8 @@ public class PolyValueSerializer {
             case COLUMN_LIST:
             case DYNAMIC_STAR:
             case GEOMETRY:
-            case SYMBOL:
-            case JSON:
+            case SYMBOL: // used
+            case JSON: // used
             case MULTISET:
             case ANY:
                 throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
