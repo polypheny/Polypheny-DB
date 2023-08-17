@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
@@ -68,13 +69,17 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, int fetchSize ) throws Exception {
         synchronized ( client ) {
+            Transaction transaction;
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
+            } else {
+                statement.getDataContext().resetParameterValues();
             }
             long index = 0;
             for ( PolyValue value : values ) {
                 if ( value != null ) {
-                    statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
+                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(value.getType());
+                    statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
                 }
             }
             StatementProcessor.execute( this );
