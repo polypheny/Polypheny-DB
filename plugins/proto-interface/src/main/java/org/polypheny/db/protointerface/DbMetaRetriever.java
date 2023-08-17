@@ -16,10 +16,12 @@
 
 package org.polypheny.db.protointerface;
 
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.CatalogObject.Visibility;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -161,8 +163,8 @@ public class DbMetaRetriever {
         Optional.ofNullable(logicalColumn.getDefaultValue()).ifPresent(p -> columnBuilder.setDefaultValueAsString(p.getValue()));
         columnBuilder.setColumnIndex(logicalColumn.getPosition());
         Optional.ofNullable(CatalogObject.getEnumNameOrNull(logicalColumn.getCollation())).ifPresent(columnBuilder::setCollation);
-        columnBuilder.setIsHidden(false); //TODO: get from flag in catalog
-        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: remove this?
+        columnBuilder.setIsHidden( logicalColumn.getVisibility() == Visibility.INTERNAL );
+        columnBuilder.setColumnType(Column.ColumnType.UNSPECIFIED); //TODO: reserved for future use
         return columnBuilder.build();
     }
 
@@ -324,39 +326,39 @@ public class DbMetaRetriever {
     }
 
     public static DbmsVersionResponse getDbmsVersion() {
-        /*
-        String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
-        if (versionName == null) {
-            throw new PIServiceException("Could not retrieve database version info");
-        }
-        int nextSeparatorIndex = versionName.indexOf('.');
-        if (nextSeparatorIndex <= 0) {
-            throw new PIServiceException("Could not parse database version info");
-        }
-        int majorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
+        try {
+            String versionName = PolyphenyDb.class.getPackage().getImplementationVersion();
+            if ( versionName == null ) {
+                throw new PIServiceException( "Could not retrieve database version info" );
+            }
+            int nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new PIServiceException( "Could not parse database version info" );
+            }
+            int majorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
 
-        versionName = versionName.substring(nextSeparatorIndex + 1);
-        nextSeparatorIndex = versionName.indexOf('.');
-        if (nextSeparatorIndex <= 0) {
-            throw new PIServiceException("Could not parse database version info");
+            versionName = versionName.substring( nextSeparatorIndex + 1 );
+            nextSeparatorIndex = versionName.indexOf( '.' );
+            if ( nextSeparatorIndex <= 0 ) {
+                throw new PIServiceException( "Could not parse database version info" );
+            }
+            int minorVersion = Integer.parseInt( versionName.substring( 0, nextSeparatorIndex ) );
+
+            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                    .setDbmsName( "Polypheny-DB" )
+                    .setVersionName( PolyphenyDb.class.getPackage().getImplementationVersion() )
+                    .setMajorVersion( majorVersion )
+                    .setMinorVersion( minorVersion )
+                    .build();
+            return dbmsVersionResponse;
+        } catch (Exception e) {
+            DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
+                    .setDbmsName("Polypheny-DB")
+                    .setVersionName("DEVELOPMENT VERSION")
+                    .setMajorVersion(-1)
+                    .setMinorVersion(-1)
+                    .build();
+            return dbmsVersionResponse;
         }
-        int minorVersion = Integer.parseInt(versionName.substring(0, nextSeparatorIndex));
-
-        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                .setDbmsName("Polypheny-DB")
-                .setVersionName(PolyphenyDb.class.getPackage().getImplementationVersion())
-                .setMajorVersion(majorVersion)
-                .setMinorVersion(minorVersion)
-                .build();
-        return dbmsVersionResponse;
-        */
-        DbmsVersionResponse dbmsVersionResponse = DbmsVersionResponse.newBuilder()
-                .setDbmsName("Polypheny-DB")
-                .setVersionName("DUMMY VERSION NAME")
-                .setMajorVersion(-1)
-                .setMinorVersion(-1)
-                .build();
-        return dbmsVersionResponse;
-
     }
 }
