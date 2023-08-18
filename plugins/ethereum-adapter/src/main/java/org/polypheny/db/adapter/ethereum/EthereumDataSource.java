@@ -67,15 +67,18 @@ import org.web3j.protocol.http.HttpService;
 @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
 @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
 @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-@AdapterSettingString(name = "SmartContractAddresses", description = "Comma sepretaed addresses of the smart contracts", defaultValue = "0x6b175474e89094c44da98b954eedeac495271d0f, 0x6b175474e89094c44da98b954eedeac495271d0f", position = 4, modifiable = true) // Event Data: Add annotation
-@AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 5, modifiable = true) // Event Data: Add annotation
-@AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 6, modifiable = true)
-@AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 7, modifiable = true)
-@AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 8, modifiable = true)
-@AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 9, modifiable = true) // todo DL: list
+@AdapterSettingBoolean(name = "EventDataRetrieval", description = "Enables or disables the retrieval of event data. When set to true, all subsequent adapter settings will be taken into account.", defaultValue = true, position = 4, modifiable = true)
+@AdapterSettingString(name = "SmartContractAddresses", description = "Comma sepretaed addresses of the smart contracts", defaultValue = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984, 0x6b175474e89094c44da98b954eedeac495271d0f", position = 5, modifiable = true) // Event Data: Add annotation
+@AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 6, modifiable = true) // Event Data: Add annotation
+@AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 7, modifiable = true)
+@AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 8, modifiable = true)
+@AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 9, modifiable = true)
+@AdapterSettingInteger(name = "batchSizeInBlocks", description = "Batch size for caching in blocks", defaultValue = 50, position = 10, modifiable = true)
+@AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 11, modifiable = true) // todo DL: list
 public class EthereumDataSource extends DataSource {
 
     public static final String SCHEMA_NAME = "public";
+    private final boolean eventDataRetrieval;
     private String clientURL;
     @Getter
     private int blocks;
@@ -89,6 +92,8 @@ public class EthereumDataSource extends DataSource {
     private final BigInteger fromBlock;
     @Getter
     private final BigInteger toBlock;
+    private final int batchSizeInBlocks;
+
     private final Map<String, EventData> eventDataMap;
     private Boolean caching;
     private String cachingAdapterTargetName;
@@ -96,24 +101,25 @@ public class EthereumDataSource extends DataSource {
     private Map<String, List<ExportedColumn>> map;
 
 
-    // todo: take it out
     public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
         this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
+        this.eventDataRetrieval = Boolean.parseBoolean( settings.get( "EventDataRetrieval" ) );
         String smartContractAddressesStr = settings.get( "SmartContractAddresses" );
         List<String> smartContractAddresses = Arrays.stream( smartContractAddressesStr.split( "," ) )
                 .map( String::trim )
                 .collect( Collectors.toList() );
-        this.smartContractAddresses = smartContractAddresses; // Event Data; Add smartContractAddress to EDataSource
-        // this.smartContractAddresses = Arrays.asList( "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", "0x6b175474e89094c44da98b954eedeac495271d0f" ); // todo: get from adapter settings
+        this.smartContractAddresses = smartContractAddresses;
         this.etherscanApiKey = settings.get( "EtherscanApiKey" );
         this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
         this.toBlock = new BigInteger( settings.get( "toBlock" ) );
+        this.batchSizeInBlocks = Integer.parseInt( settings.get( "batchSizeInBlocks" ) );
         this.eventDataMap = new HashMap<>();
         this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
         this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
+        // todo DL
         new Thread( () -> {
             createInformationPage();
             enableInformationPage();
@@ -178,6 +184,11 @@ public class EthereumDataSource extends DataSource {
         PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
         createExportedColumns( "transaction", map, transactionColumns, transactionTypes );
 
+        if ( eventDataRetrieval == false ) {
+            this.map = map;
+            return map;
+        }
+
         String[] commonEventColumns = { "removed", "log_index", "transaction_index", "transaction_hash", "block_hash", "block_number", "address" };
         PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
         createExportedColumnsForEvents( map, commonEventColumns, commonEventTypes );
@@ -205,7 +216,7 @@ public class EthereumDataSource extends DataSource {
                             ) );
                     CatalogAdapter cachingAdapter = Catalog.getInstance().getAdapter( cachingAdapterTargetName );
                     EventCacheManager.getInstance()
-                            .register( getAdapterId(), cachingAdapter.id, clientURL, 50, fromBlock, toBlock, eventsPerContract, columns )
+                            .register( getAdapterId(), cachingAdapter.id, clientURL, batchSizeInBlocks, fromBlock, toBlock, eventsPerContract, columns )
                             .initializeCaching();
                 } catch ( UnknownAdapterException e ) {
                     // If the specified adapter is not found, throw a RuntimeException
@@ -312,7 +323,6 @@ public class EthereumDataSource extends DataSource {
 
     private void createExportedColumnsForEvents( Map<String, List<ExportedColumn>> map, String[] commonEventColumns, PolyType[] commonEventTypes ) {
         for ( String address : smartContractAddresses ) {
-            // todo: API Rate Limits Etherscan. If called inside for loop it can cause error
             String contractName = null;
             List<JSONObject> contractEvents = null;
             try {
@@ -321,9 +331,6 @@ public class EthereumDataSource extends DataSource {
             } catch ( Exception e ) {
                 throw new RuntimeException( e );
             }
-
-            // String contractName = getContractName( address );
-            // List<JSONObject> contractEvents = getEventsFromABI( etherscanApiKey, address );
 
             for ( JSONObject event : contractEvents ) {
                 if ( event.getBoolean( "anonymous" ) ) {
@@ -417,6 +424,13 @@ public class EthereumDataSource extends DataSource {
                 in.close();
 
                 JSONObject jsonObject = new JSONObject( response.toString() );
+                String apiStatus = jsonObject.getString( "status" );
+
+                if ( "0".equals( apiStatus ) ) {
+                    String errorMessage = jsonObject.getString( "message" );
+                    throw new RuntimeException( "Etherscan API error getting abi from contract: " + errorMessage );
+                }
+
                 String abi = jsonObject.getString( "result" );
                 JSONArray abiArray = new JSONArray( abi ); // Convert ABI string to JSON Array
                 for ( int i = 0; i < abiArray.length(); i++ ) {
@@ -429,9 +443,7 @@ public class EthereumDataSource extends DataSource {
             }
 
         } catch ( IOException e ) {
-            // todo: handle errors; for example no abi or internet connection etc.
-            log.warn( "GET EVENTS ERROR" );
-            throw new RuntimeException( e );
+            throw new RuntimeException( "Network or IO error occurred", e );
         }
 
         return events;
@@ -455,17 +467,22 @@ public class EthereumDataSource extends DataSource {
                 in.close();
 
                 JSONObject jsonObject = new JSONObject( response.toString() );
+                String apiStatus = jsonObject.getString( "status" );
+
+                if ( "0".equals( apiStatus ) ) {
+                    String errorMessage = jsonObject.getString( "message" );
+                    throw new RuntimeException( "Etherscan API error getting contract name: " + errorMessage );
+                }
+
                 JSONArray resultArray = jsonObject.getJSONArray( "result" ); // Get result array
                 if ( resultArray.length() > 0 ) {
                     JSONObject contractObject = resultArray.getJSONObject( 0 ); // Get the first object in result array
                     return contractObject.getString( "ContractName" ); // Return ContractName field
                 }
-
             }
 
         } catch ( IOException e ) {
-            // todo: handle errors; for example no abi or internet connection etc.
-            throw new RuntimeException( e );
+            throw new RuntimeException( "Network or IO error occurred", e );
         }
         return null;
     }

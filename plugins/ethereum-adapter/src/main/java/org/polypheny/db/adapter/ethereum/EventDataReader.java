@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.function.Predicate;
+import lombok.extern.slf4j.Slf4j;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Type;
+import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.request.EthFilter;
@@ -32,6 +34,7 @@ import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.EventEncoder;
 
+@Slf4j
 public class EventDataReader extends BlockReader {
 
     private List<EthLog.LogResult> logs;
@@ -52,9 +55,18 @@ public class EventDataReader extends BlockReader {
         filter.addSingleTopic( EventEncoder.encode( event ) );
 
         try {
-            logs = web3j.ethGetLogs( filter ).send().getLogs(); // get logs
+            EthLog ethLog = web3j.ethGetLogs( filter ).send(); // Get the EthLog response
+
+            if ( ethLog.hasError() ) {
+                Response.Error error = ethLog.getError();
+                log.error( "Error fetching logs: " + error.getMessage() );
+                throw new RuntimeException( "Error fetching logs: " + error.getMessage() );
+            }
+
+            logs = ethLog.getLogs();
+
         } catch ( IOException e ) {
-            // Handle exception here. Maybe log an error and re-throw, or set `logs` to an empty list.
+            throw new RuntimeException( "IO Error fetching logs", e );
         }
     }
 

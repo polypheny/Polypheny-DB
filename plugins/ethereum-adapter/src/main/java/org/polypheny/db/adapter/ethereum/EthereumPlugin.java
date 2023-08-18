@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.ethereum;
 
 
 import com.google.common.collect.ImmutableMap;
+import org.polypheny.db.webui.HttpServer;
 import java.util.Map;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -53,13 +54,11 @@ public class EthereumPlugin extends Plugin {
         TransactionExtension.REGISTER.add( new EthereumStarter() ); // add extension to transaction manager
 
         Adapter.addAdapter( EthereumDataSource.class, ADAPTER_NAME, settings );
+
     }
 
 
-    @Override
-    public void stop() {
-        Adapter.removeAdapter( EthereumDataSource.class, ADAPTER_NAME );
-    }
+
 
 
 }

@@ -36,6 +36,7 @@ import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthLog.LogResult;
@@ -80,25 +81,26 @@ public class EventCache {
         filter.addSingleTopic( EventEncoder.encode( event ) );
 
         try {
-            List<EthLog.LogResult> rawLogs = web3j.ethGetLogs( filter ).send().getLogs();
+            EthLog ethLog = web3j.ethGetLogs( filter ).send(); // Get the EthLog response
+
+            // todo: show on screen and update
+            /**if ( startBlock.equals( BigInteger.valueOf( 17669096 ) ) ) {
+             throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock ); // just start new caching from startBlock
+             }
+             **/
+
+            if ( ethLog.hasError() ) {
+                Response.Error error = ethLog.getError();
+                log.error( "Error fetching logs: " + error.getMessage() );
+                throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock + ". Message: " + error.getMessage() ); // just start new caching from startBlock
+            }
+            List<EthLog.LogResult> rawLogs = ethLog.getLogs();
             List<List<Object>> structuredLogs = normalizeLogs( event, rawLogs );
             cache.put( eventData, structuredLogs );
+
         } catch ( IOException e ) {
-            // Handle exception here. Maybe log an error and re-throw, or set `logs` to an empty list.
+            throw new RuntimeException( "IO Error fetching logs", e );
         }
-    }
-
-
-    private Object extractIndexedValue( Log rawLog, TypeReference<?> paramType, int position ) {
-        // Get the indexed parameter from the log based on its position
-        String topics = rawLog.getTopics().get( position + 1 ); // The first topic is usually the event signature
-        return FunctionReturnDecoder.decodeIndexedValue( topics, paramType );
-    }
-
-
-    private Object extractNonIndexedValue( Log rawLog, TypeReference<?> paramType, int position, Event event ) {
-        List<Type> decodedValue = FunctionReturnDecoder.decode( rawLog.getData(), event.getNonIndexedParameters() );
-        return decodedValue.get( position );
     }
 
 
@@ -148,6 +150,18 @@ public class EventCache {
         return structuredLogs;
     }
 
+
+    private Object extractIndexedValue( Log rawLog, TypeReference<?> paramType, int position ) {
+        // Get the indexed parameter from the log based on its position
+        String topics = rawLog.getTopics().get( position + 1 ); // The first topic is usually the event signature
+        return FunctionReturnDecoder.decodeIndexedValue( topics, paramType );
+    }
+
+
+    private Object extractNonIndexedValue( Log rawLog, TypeReference<?> paramType, int position, Event event ) {
+        List<Type> decodedValue = FunctionReturnDecoder.decode( rawLog.getData(), event.getNonIndexedParameters() );
+        return decodedValue.get( position );
+    }
 
 }
 

@@ -60,7 +60,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.generated.Uint256;
 
 
@@ -212,7 +211,7 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    private Map<Integer, CachingStatus> getAllStreamStatus() {
+    protected Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
         return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, ContractCache::getStatus ) );
     }

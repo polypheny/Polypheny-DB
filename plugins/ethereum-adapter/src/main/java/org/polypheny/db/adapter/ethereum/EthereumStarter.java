@@ -20,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.HttpServer;
+import org.polypheny.db.webui.HttpServer.HandlerType;
 
 // helper method, because Polypheny will create the TransactionManager (TM) relatively late
 // Polypheny will startup and then get all the plugins
@@ -31,6 +33,9 @@ public class EthereumStarter implements TransactionExtension {
     @Override
     public void initExtension( TransactionManager manager, Authenticator authenticator ) {
         EventCacheManager.getAndSet( manager );
+        EventCacheManager eventCacheManager = EventCacheManager.getInstance();
+        HttpServer server = HttpServer.getInstance();
+        server.addRoute( "getEventCacheStatus", ( request, crud ) -> eventCacheManager.getAllStreamStatus(), Void.class, HandlerType.GET );
     }
 
 }
