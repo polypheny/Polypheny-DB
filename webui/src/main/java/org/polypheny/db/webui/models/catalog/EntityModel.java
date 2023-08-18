@@ -16,28 +16,30 @@
 
 package org.polypheny.db.webui.models.catalog;
 
-import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-@AllArgsConstructor
-public class EntityModel {
+public class EntityModel extends IdEntity {
+
 
     public final NamespaceType namespaceType;
 
-    @Nullable
-    public final Long id;
 
-    @Nullable
-    public final String name;
+    public final EntityType entityType;
 
-    public final EntityType type;
+
+    public EntityModel( @Nullable Long id, @Nullable String name, NamespaceType namespaceType, EntityType entityType ) {
+        super( id, name );
+        this.namespaceType = namespaceType;
+        this.entityType = entityType;
+    }
 
 
     public static EntityModel from( LogicalEntity entity ) {
-        return new EntityModel( entity.namespaceType, entity.id, entity.name, entity.entityType );
+        return new EntityModel( entity.id, entity.name, entity.namespaceType, entity.entityType );
     }
 
 

@@ -18,24 +18,15 @@ package org.polypheny.db.webui.models.catalog;
 
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.Catalog;
 
-public class NamespaceModel extends IdEntity {
+@AllArgsConstructor
+public class IdEntity {
+    public final long snapshotId = Catalog.snapshot().id();
 
+    @Nullable
+    public final Long id;
 
-
-    public final NamespaceType namespaceType;
-
-
-    public NamespaceModel( long id, String name, NamespaceType type ) {
-        super( id, name );
-        this.namespaceType = type;
-    }
-
-
-    public static NamespaceModel from( LogicalNamespace namespace ) {
-        return new NamespaceModel( namespace.id, namespace.name, namespace.namespaceType );
-    }
-
+    @Nullable
+    public final String name;
 }

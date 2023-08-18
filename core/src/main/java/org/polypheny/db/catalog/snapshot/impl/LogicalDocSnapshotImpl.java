@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -54,7 +55,7 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
 
     @Override
-    public @NonNull List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern ) {
+    public @NonNull List<LogicalCollection> getCollections( long namespaceId, @Nullable Pattern namePattern ) {
         List<LogicalCollection> collections = Optional.ofNullable( namespaceCollections.get( namespaceId ) ).orElse( List.of() );
 
         if ( namePattern == null ) {
@@ -64,6 +65,20 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
         return collections.stream().filter( c -> namespaces.get( c.namespaceId ).caseSensitive
                 ? c.name.matches( namePattern.toRegex() )
                 : c.name.toLowerCase().matches( namePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public @NonNull List<LogicalCollection> getCollections( @Nullable Pattern namespacePattern, @Nullable Pattern namePattern ) {
+        List<LogicalNamespace> namespaces = this.namespaces.values().asList();
+
+        if ( namespacePattern != null ) {
+            namespaces = namespaces.stream().filter( n -> n.caseSensitive
+                    ? n.name.matches( namespacePattern.toRegex() )
+                    : n.name.toLowerCase().matches( namespacePattern.toLowerCase().toRegex() ) ).collect( Collectors.toList() );
+        }
+
+        return namespaces.stream().flatMap( n -> getCollections( n.id, namePattern ).stream() ).collect( Collectors.toList() );
     }
 
 

@@ -34,6 +34,7 @@ import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.catalog.NamespaceModel;
 import org.polypheny.db.webui.models.catalog.requests.NamespaceRequest;
+import org.polypheny.db.webui.models.catalog.requests.SnapshotModel;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 
 @Slf4j
@@ -70,7 +71,7 @@ public class CatalogCrud {
 
     public void getSchemaTree( final Context ctx ) {
         SchemaTreeRequest request = ctx.bodyAsClass( SchemaTreeRequest.class );
-        ArrayList<SidebarElement> result = new ArrayList<>();
+        List<SidebarElement> result = new ArrayList<>();
 
         if ( request.depth < 1 ) {
             log.error( "Trying to fetch a schemaTree with depth < 1" );
@@ -198,6 +199,11 @@ public class CatalogCrud {
                 return "cui-graph";
         }
         throw new UnsupportedOperationException( "Namespace type is not supported." );
+    }
+
+
+    public void getSnapshot( Context context ) {
+        context.json( SnapshotModel.from( Catalog.snapshot() ) );
     }
 
 }
