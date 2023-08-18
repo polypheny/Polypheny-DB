@@ -196,7 +196,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( "sql", (
                 session,
                 request,
                 transactionManager,

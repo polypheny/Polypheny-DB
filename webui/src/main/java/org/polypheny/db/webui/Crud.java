@@ -103,6 +103,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
@@ -159,6 +160,7 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.webui.crud.CatalogCrud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
@@ -189,18 +191,17 @@ import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
-import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 import org.polypheny.db.webui.models.results.ResultType;
 
 
+@Getter
 @Slf4j
 public class Crud implements InformationObserver {
 
     private static final Gson gson = new Gson();
-    @Getter
     private final TransactionManager transactionManager;
     @Getter
     private final long databaseId;
@@ -209,7 +210,10 @@ public class Crud implements InformationObserver {
 
     public final LanguageCrud languageCrud;
     public final StatisticCrud statisticCrud;
+
+    public final CatalogCrud catalogCrud;
     private final Catalog catalog = Catalog.getInstance();
+
 
 
     /**
@@ -223,6 +227,7 @@ public class Crud implements InformationObserver {
         this.userId = userId;
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
+        this.catalogCrud = new CatalogCrud( this );
     }
 
 
@@ -348,98 +353,30 @@ public class Crud implements InformationObserver {
     }
 
 
-    void getSchemaTree( final Context ctx ) {
-        SchemaTreeRequest request = ctx.bodyAsClass( SchemaTreeRequest.class );
-        ArrayList<SidebarElement> result = new ArrayList<>();
-
-        if ( request.depth < 1 ) {
-            log.error( "Trying to fetch a schemaTree with depth < 1" );
-            ctx.json( new ArrayList<>() );
-        }
-
-        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( null );
-        // remove unwanted namespaces
-        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
-        for ( LogicalNamespace namespace : namespaces ) {
-            SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.namespaceType, "", getIconName( namespace.namespaceType ) );
-
-            if ( request.depth > 1 && namespace.namespaceType != NamespaceType.GRAPH ) {
-                ArrayList<SidebarElement> collectionTree = new ArrayList<>();
-                List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( namespace.id, null );
-                for ( LogicalTable table : tables ) {
-                    String icon = "fa fa-table";
-                    if ( table.entityType == EntityType.SOURCE ) {
-                        icon = "fa fa-plug";
-                    } else if ( table.entityType == EntityType.VIEW ) {
-                        icon = "icon-eye";
-                    }
-                    if ( table.entityType != EntityType.VIEW && namespace.namespaceType == NamespaceType.DOCUMENT ) {
-                        icon = "cui-description";
-                    }
-
-                    SidebarElement tableElement = new SidebarElement( namespace.name + "." + table.name, table.name, namespace.namespaceType, request.routerLinkRoot, icon );
-                    if ( request.depth > 2 ) {
-                        List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
-                        for ( LogicalColumn column : columns ) {
-                            tableElement.addChild( new SidebarElement( namespace.name + "." + table.name + "." + column.name, column.name, namespace.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
-                        }
-                    }
-
-                    if ( request.views ) {
-                        if ( table.entityType == EntityType.ENTITY || table.entityType == EntityType.SOURCE ) {
-                            tableElement.setTableType( "TABLE" );
-                        } else if ( table.entityType == EntityType.VIEW ) {
-                            tableElement.setTableType( "VIEW" );
-                        } else if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
-                            tableElement.setTableType( "MATERIALIZED" );
-                        }
-                    }
-
-                    collectionTree.add( tableElement );
-                }
-
-                if ( request.showTable ) {
-                    schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
-                } else {
-                    schemaTree.addChildren( collectionTree ).setRouterLink( "" );
-                }
-            }
-            if ( namespace.namespaceType == NamespaceType.GRAPH ) {
-                schemaTree.setRouterLink( request.routerLinkRoot + "/" + namespace.name );
-            }
-
-            result.add( schemaTree );
-        }
-
-        ctx.json( result );
-    }
-
-
-    private String getIconName( NamespaceType namespaceType ) {
-        switch ( namespaceType ) {
-            case RELATIONAL:
-                return "cui-layers";
-            case DOCUMENT:
-                return "cui-folder";
-            case GRAPH:
-                return "cui-graph";
-        }
-        throw new UnsupportedOperationException( "Namespace type is not supported." );
-    }
-
-
     /**
      * Get all tables of a namespace
      */
-    void getTables( final Context ctx ) {
+    void getEntities( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         String namespaceName = request.schema != null ? request.schema : Catalog.defaultNamespaceName;
-        long namespaceId = catalog.getSnapshot().getNamespace( namespaceName ).id;
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceName );
 
-        List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( namespaceId, null );
+        List<? extends LogicalEntity> entities = List.of();
+        switch ( namespace.namespaceType ) {
+            case RELATIONAL:
+                entities = catalog.getSnapshot().rel().getTables( namespace.id, null );
+                break;
+            case DOCUMENT:
+                entities = catalog.getSnapshot().doc().getCollections( namespace.id, null );
+                break;
+            case GRAPH:
+                entities = catalog.getSnapshot().graph().getGraphs( null );
+                break;
+        }
+
         ArrayList<DbTable> result = new ArrayList<>();
-        for ( LogicalTable t : tables ) {
-            result.add( new DbTable( t.name, namespaceName, t.modifiable, t.entityType ) );
+        for ( LogicalEntity e : entities ) {
+            result.add( new DbTable( e.name, namespaceName, e.modifiable, e.entityType ) );
         }
         ctx.json( result );
     }
@@ -3440,7 +3377,7 @@ public class Crud implements InformationObserver {
                 counter++;
             }
             //default
-            else if ( !entry.getValue().equals( "" ) ) {
+            else if ( !entry.getValue().isEmpty() ) {
                 joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR(8000)) LIKE '" + entry.getValue() + "%'" );
                 counter++;
             }
@@ -3513,15 +3450,6 @@ public class Crud implements InformationObserver {
         }
 
         return dataTypes;
-    }
-
-
-    void getTypeNamespaces( final Context ctx ) {
-        ctx.json( catalog
-                .getSnapshot().
-                getNamespaces( null )
-                .stream()
-                .collect( Collectors.toMap( LogicalNamespace::getName, LogicalNamespace::getNamespaceType ) ) );
     }
 
 

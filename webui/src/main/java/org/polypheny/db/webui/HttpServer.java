@@ -211,9 +211,7 @@ public class HttpServer implements Runnable {
      * Defines the routes for this Server
      */
     private void crudRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/getSchemaTree", crud::getSchemaTree );
-
-        webuiServer.get( "/getTypeSchemas", crud::getTypeNamespaces );
+        attachCatalogMetaRoutes( webuiServer, crud );
 
         webuiServer.post( "/insertRow", crud::insertRow );
 
@@ -247,7 +245,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/dropColumn", crud::dropColumn );
 
-        webuiServer.post( "/getTables", crud::getTables );
+        webuiServer.post( "/getEntities", crud::getEntities );
 
         webuiServer.post( "/renameTable", crud::renameTable );
 
@@ -351,6 +349,15 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
+    }
+
+
+    private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
+
+        webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
+
+        webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
     }
 
 

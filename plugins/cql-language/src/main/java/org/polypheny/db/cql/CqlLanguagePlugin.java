@@ -64,14 +64,14 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, CqlLanguagePlugin::processCqlRequest ) );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, CqlLanguagePlugin::processCqlRequest ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME ), null, null, null );
     }
 
 
     @Override
     public void stop() {
-        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageCrud.crud.languageCrud.removeLanguage( NAME );
         LanguageManager.removeQueryLanguage( NAME );
     }
 

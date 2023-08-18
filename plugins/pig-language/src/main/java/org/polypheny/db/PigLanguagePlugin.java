@@ -61,14 +61,14 @@ public class PigLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessorImpl::new, null );
     }
 
 
     @Override
     public void stop() {
-        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageCrud.crud.languageCrud.removeLanguage( NAME );
         LanguageManager.removeQueryLanguage( NAME );
     }
 

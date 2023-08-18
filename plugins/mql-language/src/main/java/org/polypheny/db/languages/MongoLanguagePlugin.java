@@ -83,7 +83,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery ) );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( "mongo", MongoLanguagePlugin::anyMongoQuery ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.DOCUMENT, "mongo", List.of( "mongo", "mql" ), MqlParserImpl.FACTORY, MqlProcessorImpl::new, null );
 
         if ( !isInit() ) {

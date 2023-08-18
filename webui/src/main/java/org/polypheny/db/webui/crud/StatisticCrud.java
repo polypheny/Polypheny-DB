@@ -119,20 +119,22 @@ public class StatisticCrud {
         String selectInterval = request.selectInterval;
         List<QueryDataPointImpl> queryData = MonitoringServiceProvider.getInstance().getAllDataPoints( QueryDataPointImpl.class );
         List<DmlDataPoint> dmlData = MonitoringServiceProvider.getInstance().getAllDataPoints( DmlDataPoint.class );
-        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo = new TreeMap<>();
+        TreeMap<Timestamp, Pair<Integer, Integer>> eachInfo;
 
         Timestamp endTime = new Timestamp( System.currentTimeMillis() );
         Timestamp startTimeAll;
         long interval60min = convertIntervalMinuteToLong( 60 );
 
-        if ( queryData.size() > 0 && dmlData.size() > 0 ) {
+        if ( !queryData.isEmpty() && !dmlData.isEmpty() ) {
             startTimeAll = (queryData.get( queryData.size() - 1 ).getRecordedTimestamp().getTime() < dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp().getTime()) ? queryData.get( queryData.size() - 1 ).getRecordedTimestamp() : dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
-        } else if ( dmlData.size() > 0 ) {
+        } else if ( !dmlData.isEmpty() ) {
             startTimeAll = dmlData.get( dmlData.size() - 1 ).getRecordedTimestamp();
-        } else if ( queryData.size() > 0 ) {
+        } else if ( !queryData.isEmpty() ) {
             startTimeAll = queryData.get( queryData.size() - 1 ).getRecordedTimestamp();
         } else {
-            throw new RuntimeException( "No Data available for Dashboard Diagram" );
+            //throw new RuntimeException( "No Data available for Dashboard Diagram" ); // we should not fail loudly here
+            ctx.json( new TreeMap<>() );
+            return;
         }
 
         if ( NumberUtils.isCreatable( selectInterval ) ) {

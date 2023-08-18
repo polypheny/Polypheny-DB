@@ -72,11 +72,12 @@ import org.polypheny.db.webui.models.results.GenericResult;
 import org.polypheny.db.webui.models.results.GraphResult;
 import org.polypheny.db.webui.models.results.Result;
 
+@Getter
 @Slf4j
 public class LanguageCrud {
 
-    @Getter
-    private static Crud crud;
+
+    public static Crud crud;
 
     public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<GenericResult<?>>>> REGISTER = new HashMap<>();
 

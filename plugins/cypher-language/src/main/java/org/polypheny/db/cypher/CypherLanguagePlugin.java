@@ -59,7 +59,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, CypherLanguagePlugin::anyCypherQuery ) );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, CypherLanguagePlugin::anyCypherQuery ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.GRAPH, NAME, List.of( NAME, "opencypher" ), CypherParserImpl.FACTORY, CypherProcessorImpl::new, null );
 
         if ( !CypherRegisterer.isInit() ) {
@@ -70,7 +70,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
     @Override
     public void stop() {
-        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageCrud.crud.languageCrud.removeLanguage( NAME );
         LanguageManager.removeQueryLanguage( NAME );
 
         if ( CypherRegisterer.isInit() ) {
