@@ -69,11 +69,7 @@ public class RelationalResultRetriever extends ResultRetriever {
         }
         PIClient client = piStatement.getClient();
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
-        if ( Kind.DDL.contains( implementation.getKind() ) ) {
-            resultBuilder.setScalar( 1 );
-            return resultBuilder.build();
-        }
-        if ( Kind.DML.contains( implementation.getKind() ) ) {
+        if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
             resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
@@ -107,7 +103,6 @@ public class RelationalResultRetriever extends ResultRetriever {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        implementation.hasMoreRows();
         List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
