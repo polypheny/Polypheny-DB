@@ -111,7 +111,7 @@ public class RelationalResultRetriever extends ResultRetriever {
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return ProtoUtils.buildRelationalFrame( implementation.hasMoreRows(), rows, columnMetas );
+        return ProtoUtils.buildRelationalFrame(!implementation.hasMoreRows(), rows, columnMetas );
     }
 
 }
