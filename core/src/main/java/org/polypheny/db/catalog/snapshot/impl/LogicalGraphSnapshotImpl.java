@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -58,7 +59,13 @@ public class LogicalGraphSnapshotImpl implements LogicalGraphSnapshot {
 
 
     @Override
-    public @NonNull List<LogicalGraph> getGraphs( Pattern graphName ) {
+    public @NonNull List<LogicalGraph> getGraphs( @Nullable Pattern graphName ) {
+        List<LogicalGraph> graphs = List.copyOf( this.graphs.values() );
+
+        if ( graphName == null ) {
+            return graphs;
+        }
+
         return graphNames.values().stream().filter( g -> g.caseSensitive ? g.name.matches( graphName.toRegex() ) : g.name.toLowerCase().matches( graphName.toRegex().toLowerCase() ) ).collect( Collectors.toList() );
     }
 

@@ -360,6 +360,10 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
 
         webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
+
+        webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
+
+        webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
     }
 
 

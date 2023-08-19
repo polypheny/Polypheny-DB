@@ -215,4 +215,13 @@ public interface AllocSnapshot {
 
     Optional<AllocationPartition> getPartitionFromName( long logicalId, String name );
 
+    @NotNull
+    List<AllocationEntity> getAllocations();
+
+    @NotNull
+    List<AllocationPlacement> getPlacements();
+
+    @NotNull
+    List<AllocationPartition> getPartitions();
+
 }

@@ -80,6 +80,7 @@ public class PolyImplementation<T> {
     private boolean hasMoreRows;
     @Accessors(fluent = true)
     private final boolean isDDL;
+    private Iterator<T> iterator;
 
 
     /**
@@ -215,7 +216,6 @@ public class PolyImplementation<T> {
 
 
     public List<List<T>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
-        Iterator<T> iterator = null;
         StopWatch stopWatch = null;
         try {
             iterator = createIterator( getBindable(), statement, isAnalyzed );
@@ -267,7 +267,11 @@ public class PolyImplementation<T> {
     }
 
 
-    private static <T> Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
+    private Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
+        if ( iterator != null ) {
+            return this.iterator;
+        }
+
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }
@@ -276,7 +280,9 @@ public class PolyImplementation<T> {
             statement.getOverviewDuration().stop( "Execution" );
         }
 
-        return enumerable.iterator();
+        this.iterator = enumerable.iterator();
+
+        return this.iterator;
     }
 
 

@@ -31,10 +31,11 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.models.AssetsModel;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.catalog.NamespaceModel;
+import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.requests.NamespaceRequest;
-import org.polypheny.db.webui.models.catalog.requests.SnapshotModel;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 
 @Slf4j
@@ -204,6 +205,16 @@ public class CatalogCrud {
 
     public void getSnapshot( Context context ) {
         context.json( SnapshotModel.from( Catalog.snapshot() ) );
+    }
+
+
+    public void getCurrentSnapshot( Context context ) {
+        context.json( catalog.getSnapshot().id() );
+    }
+
+
+    public void getAssetsDefinition( Context context ) {
+        context.json( new AssetsModel() );
     }
 
 }

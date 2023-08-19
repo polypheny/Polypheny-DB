@@ -17,34 +17,20 @@
 package org.polypheny.db.webui.models.catalog;
 
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-public class EntityModel extends IdEntity {
+public class CollectionModel extends EntityModel {
 
 
-    public final NamespaceType namespaceType;
-
-    public final EntityType entityType;
-
-    public final Long namespaceId;
-
-    public final boolean modifiable;
-
-
-    public EntityModel( @Nullable Long id, @Nullable String name, @Nullable Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
-        super( id, name );
-        this.namespaceId = namespaceId;
-        this.namespaceType = namespaceType;
-        this.entityType = entityType;
-        this.modifiable = modifiable;
+    public CollectionModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
+        super( id, name, namespaceId, modifiable, namespaceType, entityType );
     }
 
 
-    public static EntityModel from( LogicalEntity entity ) {
-        return new EntityModel( entity.id, entity.name, entity.namespaceId, entity.modifiable, entity.namespaceType, entity.entityType );
+    public static CollectionModel from( LogicalCollection collection ) {
+        return new CollectionModel( collection.id, collection.name, collection.namespaceId, collection.modifiable, collection.namespaceType, collection.entityType );
     }
-
 
 }

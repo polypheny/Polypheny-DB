@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.snapshot;
 
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -39,7 +40,7 @@ public interface LogicalGraphSnapshot {
      * @param graphName The pattern to which the name has to match, null if every name is matched
      * @return A collection of all graphs matching
      */
-    @NonNull List<LogicalGraph> getGraphs( Pattern graphName );
+    @NonNull List<LogicalGraph> getGraphs( @Nullable Pattern graphName );
 
 
 }
