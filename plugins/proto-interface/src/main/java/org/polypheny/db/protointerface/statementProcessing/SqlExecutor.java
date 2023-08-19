@@ -70,7 +70,7 @@ public class SqlExecutor extends StatementExecutor {
                     parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
             AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
-            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
+            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false );
         }
         piStatement.setImplementation( implementation );
     }
