@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -86,7 +87,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = Objects.requireNonNull( query );
-        this.store = store; // ON STORE [store name]; may be null
+        this.store = store; // ON STORE [storeId name]; may be null
         this.freshnessType = freshnessType; // may be null, then standard values are used
         this.freshnessTime = freshnessTime;
         this.freshnessId = freshnessId;
@@ -113,17 +114,17 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         MaterializedViewManager.getInstance().isCreatingMaterialized = true;
 
         if ( name.names.size() == 2 ) { // NamespaceName.ViewName
-            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).id;
+            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).orElseThrow().id;
             viewName = name.names.get( 1 );
         } else if ( name.names.size() == 1 ) { // ViewName
-            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).id;
+            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             viewName = name.names.get( 0 );
         } else {
-            throw new RuntimeException( "Invalid view name: " + name );
+            throw new GenericRuntimeException( "Invalid view name: " + name );
         }
 
         List<DataStore<?>> stores;
-        if ( store.size() > 0 ) {
+        if ( !store.isEmpty() ) {
             List<DataStore<?>> storeList = new ArrayList<>();
             store.forEach( s -> storeList.add( getDataStoreInstance( s ) ) );
             stores = storeList;
@@ -131,7 +132,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
             stores = null;
         }
 
-        PlacementType placementType = store.size() > 0 ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+        PlacementType placementType = !store.isEmpty() ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
         AlgRoot algRoot = sqlProcessor.translate(
@@ -254,7 +255,7 @@ public class SqlCreateMaterializedView extends SqlCreate implements ExecutableSt
         writer.newlineAndIndent();
         query.unparse( writer, 0, 0 );
 
-        if ( store.size() > 0 ) {
+        if ( !store.isEmpty() ) {
             writer.keyword( "ON STORE" );
             for ( SqlIdentifier s : store ) {
                 s.unparse( writer, 0, 0 );

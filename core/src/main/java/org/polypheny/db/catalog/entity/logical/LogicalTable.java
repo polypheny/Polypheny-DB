@@ -131,7 +131,7 @@ public class LogicalTable extends LogicalEntity {
 
     @Override
     public String getNamespaceName() {
-        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).name;
+        return Catalog.getInstance().getSnapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 

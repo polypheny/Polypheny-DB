@@ -148,7 +148,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
 
     public String getNamespaceName() {
-        return Catalog.snapshot().getNamespace( namespaceId ).name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 

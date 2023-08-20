@@ -55,7 +55,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new RuntimeException( "Unknown database name." );
         }
         if ( this.store == null ) {
-            throw new RuntimeException( "Unknown store name." );
+            throw new RuntimeException( "Unknown storeId name." );
         }
     }
 
@@ -72,7 +72,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
                 .collect( Collectors.toList() );
 
         if ( !adapterManager.getAdapters().containsKey( store ) ) {
-            throw new GenericRuntimeException( "The targeted store does not exist." );
+            throw new GenericRuntimeException( "The targeted storeId does not exist." );
         }
 
         if ( graphs.size() != 1 ) {

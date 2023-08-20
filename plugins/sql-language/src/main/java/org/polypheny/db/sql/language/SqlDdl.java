@@ -66,19 +66,19 @@ public abstract class SqlDdl extends SqlCall {
 
     @Nullable
     protected LogicalTable getEntityFromCatalog( Context context, SqlIdentifier tableName ) {
-        long schemaId;
+        long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.NamespaceName.TableName
-            schemaId = context.getSnapshot().getNamespace( tableName.names.get( 1 ) ).id;
+            namespaceId = context.getSnapshot().getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // NamespaceName.TableName
-            schemaId = context.getSnapshot().getNamespace( tableName.names.get( 0 ) ).id;
+            namespaceId = context.getSnapshot().getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            schemaId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).id;
+            namespaceId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             tableOldName = tableName.names.get( 0 );
         }
-        return context.getSnapshot().rel().getTable( schemaId, tableOldName ).orElse( null );
+        return context.getSnapshot().rel().getTable( namespaceId, tableOldName ).orElse( null );
     }
 
 
@@ -100,7 +100,7 @@ public abstract class SqlDdl extends SqlCall {
         if ( adapterInstance == null ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
-        // Make sure it is a data store instance
+        // Make sure it is a data storeId instance
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore<?>) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {
@@ -114,9 +114,9 @@ public abstract class SqlDdl extends SqlCall {
     protected DataStore<?> getDataStoreInstance( long storeId ) {
         Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
-            throw new RuntimeException( "Unknown store id: " + storeId );
+            throw new RuntimeException( "Unknown storeId id: " + storeId );
         }
-        // Make sure it is a data store instance
+        // Make sure it is a data storeId instance
         if ( adapterInstance instanceof DataStore ) {
             return (DataStore<?>) adapterInstance;
         } else if ( adapterInstance instanceof DataSource ) {

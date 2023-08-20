@@ -109,7 +109,7 @@ public class PolyphenyDb {
     @Option(name = { "-daemon" }, description = "Disable splash screen")
     public boolean daemonMode = false;
 
-    @Option(name = { "-defaultStore" }, description = "Type of default store")
+    @Option(name = { "-defaultStore" }, description = "Type of default storeId")
     public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
@@ -443,7 +443,11 @@ public class PolyphenyDb {
 
         Transaction trx = null;
         try {
-            trx = transactionManager.startTransaction( Catalog.getInstance().getSnapshot().getUser( Catalog.defaultUserId ), Catalog.getInstance().getSnapshot().getNamespace( 0 ), false, "Catalog Startup" );
+            trx = transactionManager.startTransaction(
+                    Catalog.defaultUserId,
+                    Catalog.defaultNamespaceId,
+                    false,
+                    "Catalog Startup" );
             Catalog.getInstance().restoreColumnAllocations( trx );
             Catalog.getInstance().restoreViews( trx );
             trx.commit();

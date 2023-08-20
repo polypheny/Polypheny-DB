@@ -30,7 +30,7 @@ public class AuthenticatorImpl implements Authenticator {
 
     @Override
     public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
-        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username ).orElseThrow();
         if ( catalogUser.password.equals( password ) ) {
             return catalogUser;
         } else {

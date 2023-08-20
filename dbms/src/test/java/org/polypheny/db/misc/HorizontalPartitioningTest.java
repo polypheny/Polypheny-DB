@@ -129,7 +129,7 @@ public class HorizontalPartitioningTest {
                         + "PARTITIONS 3" );
 
                 try {
-                    // Deploy additional store
+                    // Deploy additional storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -158,7 +158,7 @@ public class HorizontalPartitioningTest {
                             + "PARTITION BY HASH (tvarchar) "
                             + "PARTITIONS 3" );
 
-                    // Deploy additional store
+                    // Deploy additional storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -410,7 +410,7 @@ public class HorizontalPartitioningTest {
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" ADD PLACEMENT ON STORE \"storehash\"" );
 
-                    // Change placement on second store
+                    // Change placement on second storeId
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (0,1) ON STORE \"storehash\"" );
 
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MERGE PARTITIONS" );
@@ -666,7 +666,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
                     debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
-                    // Modify partitions on second store
+                    // Modify partitions on second storeId
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
                     debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
@@ -1194,7 +1194,7 @@ public class HorizontalPartitioningTest {
                     // Check if sufficient PartitionPlacements have been created
 
                     // Check if initially as many DataPlacements are created as requested
-                    // One for each store
+                    // One for each storeId
 
                     Assert.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
@@ -1219,7 +1219,7 @@ public class HorizontalPartitioningTest {
                     table = Catalog.snapshot().rel().getTable( table.id ).orElseThrow();
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
-                    // Modify partitions on second store
+                    // Modify partitions on second storeId
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
                     List<AllocationPlacement> placements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
 
@@ -1233,7 +1233,7 @@ public class HorizontalPartitioningTest {
                         }
                     }
 
-                    // Modify columns on second store
+                    // Modify columns on second storeId
                     statement.executeUpdate( "ALTER TABLE \"horizontalDataPlacementTest\" MODIFY PLACEMENT (tinteger) "
                             + "ON STORE anotherstore WITH partitions (\"bar\", \"barfoo\", \"foo\") " );
 

@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -100,13 +101,13 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
         long namespaceId;
 
         if ( name.names.size() == 2 ) { // NamespaceName.ViewName
-            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).id;
+            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).orElseThrow().id;
             viewName = name.names.get( 1 );
         } else if ( name.names.size() == 1 ) { // ViewName
-            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).id;
+            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             viewName = name.names.get( 0 );
         } else {
-            throw new RuntimeException( "Invalid view name: " + name );
+            throw new GenericRuntimeException( "Invalid view name: %s", name );
         }
 
         PlacementType placementType = PlacementType.AUTOMATIC;

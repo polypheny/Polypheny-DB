@@ -262,17 +262,6 @@ public abstract class BaseRouter implements Router {
             @Nullable List<Long> forbidden ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalNamespace namespace = snapshot.getNamespace( scan.entity.namespaceId );
-        if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
-            // cross model queries on relational
-            // return handleGraphOnRelational( alg, namespace, statement, allocId );
-        } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
-            // cross model queries on document
-            // return handleGraphOnDocument( alg, namespace, statement, allocId );
-        }
-
-        //LogicalCollection collection = scan.entity.unwrap( LogicalCollection.class );
-
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).collect( Collectors.toList() );
 
         List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( scan.entity.id );
@@ -447,7 +436,7 @@ public abstract class BaseRouter implements Router {
 
         AllocationColumn placement = new ArrayList<>( partitionsColumnsPlacements.values() ).get( 0 ).get( 0 );
         // todo dl: remove after RowType refactor
-        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().namespaceType == NamespaceType.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),
@@ -494,7 +483,7 @@ public abstract class BaseRouter implements Router {
     public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long allocId, @Nullable List<Long> forbidden ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId );
+        LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
         if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
             // cross model queries on relational
             return handleGraphOnRelational( alg, namespace, statement, allocId );
@@ -518,8 +507,8 @@ public abstract class BaseRouter implements Router {
             // a native placement was used, we go with that
             return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
         }
-        if ( scans.size() < 1 ) {
-            throw new RuntimeException( "Error while routing graph query." );
+        if ( scans.isEmpty() ) {
+            throw new GenericRuntimeException( "Error while routing graph query." );
         }
 
         // rather naive selection strategy

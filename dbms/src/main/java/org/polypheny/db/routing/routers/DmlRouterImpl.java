@@ -155,10 +155,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Map<Long, PolyValue> newParameterValues = new HashMap<>();
         for ( AllocationPlacement pkPlacement : pkPlacements ) {
 
-            // Get placements on store
+            // Get placements on storeId
             List<AllocationColumn> placementsOnAdapter = catalog.getSnapshot().alloc().getColumns( pkPlacement.id );
 
-            // If this is an update, check whether we need to execute on this store at all
+            // If this is an update, check whether we need to execute on this storeId at all
             List<String> updateColumnList = modify.getUpdateColumnList();
             List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
             if ( placementsOnAdapter.size() != table.getColumnIds().size() ) {
@@ -947,7 +947,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 }
                 columnName = columnNames[1];
             } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                if ( !Catalog.snapshot().getNamespace( catalogTable.id ).name.equalsIgnoreCase( columnNames[0] ) ) {
+                if ( !Catalog.snapshot().getNamespace( catalogTable.id ).orElseThrow().name.equalsIgnoreCase( columnNames[0] ) ) {
                     throw new GenericRuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                 }
                 if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {

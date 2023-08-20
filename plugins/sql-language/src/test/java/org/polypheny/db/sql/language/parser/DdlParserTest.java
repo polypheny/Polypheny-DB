@@ -30,7 +30,7 @@ import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
  * <ul>
  * <li>"create table x (a int) as values 1, 2" should fail validation; data type not allowed in "create table ... as".<li>
  * <li>"create table x (a int, b int as (a + 1)) stored" should not allow b to be specified in insert; should generate check constraint on b; should populate b in insert as if it had a default<li>
- * <li>"create table as select" should store constraints deduced by planner<li>
+ * <li>"create table as select" should storeId constraints deduced by planner<li>
  * </ul>
  */
 public class DdlParserTest extends SqlParserTest {
@@ -118,7 +118,7 @@ public class DdlParserTest extends SqlParserTest {
 
     @Test
     public void testCreateTableOnStore() {
-        sql( "create table x (i int not null, j varchar(5) null) on store hsqldb1" )
+        sql( "create table x (i int not null, j varchar(5) null) on storeId hsqldb1" )
                 .ok( "CREATE TABLE `X` (`I` INTEGER NOT NULL, `J` VARCHAR(5)) ON STORE `HSQLDB1`" );
     }
 

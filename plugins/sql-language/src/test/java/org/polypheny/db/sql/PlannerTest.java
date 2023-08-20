@@ -913,7 +913,7 @@ public class PlannerTest extends SqlLanguageDependent {
 
     /**
      * Plans a 5-table join query on the FoodMart schema. The ideal plan is
-     * bushy: store x (customer x (product_class x product x sales)).
+     * bushy: storeId x (customer x (product_class x product x sales)).
      */
     @Test
     public void testBushy5() throws Exception {
@@ -925,7 +925,7 @@ public class PlannerTest extends SqlLanguageDependent {
                 + "  on s.\"product_id\" = p.\"product_id\"\n"
                 + "join \"product_class\" as pc\n"
                 + "  on p.\"product_class_id\" = pc.\"product_class_id\"\n"
-                + "join \"store\" as st\n"
+                + "join \"storeId\" as st\n"
                 + "  on s.\"store_id\" = st.\"store_id\"\n"
                 + "where c.\"city\" = 'San Francisco'\n";
         final String expected = ""
@@ -937,7 +937,7 @@ public class PlannerTest extends SqlLanguageDependent {
                 + "      EnumerableJoin(model=[RELATIONAL], condition=[=($0, $33)], joinType=[inner])\n"
                 + "        EnumerableJoin(model=[RELATIONAL], condition=[=($4, $8)], joinType=[inner])\n"
                 + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, sales_fact_1997]])\n"
-                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, store]])\n"
+                + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, storeId]])\n"
                 + "        EnumerableJoin(model=[RELATIONAL], condition=[=($0, $15)], joinType=[inner])\n"
                 + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product]])\n"
                 + "          EnumerableScan(model=[RELATIONAL], table=[[foodmart, product_class]])\n";

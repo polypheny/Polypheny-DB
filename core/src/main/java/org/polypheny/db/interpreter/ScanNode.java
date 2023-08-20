@@ -130,7 +130,7 @@ public class ScanNode implements Node {
         final Enumerable<Row> rowEnumerable;
         if ( elementType instanceof Class ) {
             //noinspection unchecked
-            final Queryable<Object> queryable = (Queryable<Object>) Schemas.queryable( root, (Class<?>) elementType, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).name, alg.entity.name ) );
+            final Queryable<Object> queryable = (Queryable<Object>) Schemas.queryable( root, (Class<?>) elementType, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class<?> type = (Class<?>) elementType;
             for ( Field field : type.getFields() ) {
@@ -152,7 +152,7 @@ public class ScanNode implements Node {
                 return new Row( values );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).name, alg.getEntity().name ) );
+            rowEnumerable = Schemas.queryable( root, Row.class, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.getEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }

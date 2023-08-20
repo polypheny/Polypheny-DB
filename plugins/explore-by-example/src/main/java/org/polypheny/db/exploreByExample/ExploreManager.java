@@ -298,7 +298,7 @@ public class ExploreManager {
             return;
         }
 
-        Transaction transaction = Crud.getTransaction( queryExplorationRequest.analyze, true, crud.getTransactionManager(), crud.getUserId(), crud.getDatabaseId(), "Explore-by-Example" );
+        Transaction transaction = Crud.getTransaction( queryExplorationRequest.analyze, true, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), "Explore-by-Example" );
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();

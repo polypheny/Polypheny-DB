@@ -16,26 +16,25 @@
 
 package org.polypheny.db.webui.models.catalog;
 
-import javax.annotation.Nullable;
-import lombok.AllArgsConstructor;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public class NamespaceModel extends IdEntity {
 
-
+    public final boolean caseSensitive;
 
     public final NamespaceType namespaceType;
 
 
-    public NamespaceModel( long id, String name, NamespaceType type ) {
+    public NamespaceModel( long id, String name, NamespaceType type, boolean caseSensitive ) {
         super( id, name );
         this.namespaceType = type;
+        this.caseSensitive = caseSensitive;
     }
 
 
     public static NamespaceModel from( LogicalNamespace namespace ) {
-        return new NamespaceModel( namespace.id, namespace.name, namespace.namespaceType );
+        return new NamespaceModel( namespace.id, namespace.name, namespace.namespaceType, namespace.caseSensitive );
     }
 
 }

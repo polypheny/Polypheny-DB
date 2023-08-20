@@ -50,9 +50,8 @@ public class ColumnIndex {
 
     public static ColumnIndex createIndex( String schemaName, String tableName, String columnName ) {
         log.debug( "Creating ColumnIndex." );
-        Catalog catalog = Catalog.getInstance();
-        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( schemaName );
-        LogicalColumn column = catalog.getSnapshot().rel().getColumn( namespace.id, tableName, columnName ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( schemaName ).orElseThrow();
+        LogicalColumn column = Catalog.snapshot().rel().getColumn( namespace.id, tableName, columnName ).orElseThrow();
         return new ColumnIndex( column, schemaName, tableName, columnName );
     }
 

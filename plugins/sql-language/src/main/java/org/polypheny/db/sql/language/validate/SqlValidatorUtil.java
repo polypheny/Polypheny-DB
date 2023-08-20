@@ -624,7 +624,7 @@ public class SqlValidatorUtil {
             namespace = Catalog.defaultNamespaceName;
         }
 
-        return validator.snapshot.getNamespace( namespace ).namespaceType != NamespaceType.RELATIONAL;
+        return validator.snapshot.getNamespace( namespace ).orElseThrow().namespaceType != NamespaceType.RELATIONAL;
     }
 
 

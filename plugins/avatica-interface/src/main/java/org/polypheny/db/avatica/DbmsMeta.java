@@ -1539,15 +1539,14 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, false, "AVATICA Interface" );
+        Transaction transaction = transactionManager.startTransaction( user.id, false, "AVATICA Interface" );
 
-//            Authorizer.hasAccess( user, database );
+        //Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final LogicalNamespace schema = catalog.getSnapshot().getNamespace( defaultSchemaName );
-        assert schema != null;
+        final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( defaultSchemaName ).orElseThrow();
 
-//            Authorizer.hasAccess( user, schema );
+        //Authorizer.hasAccess( user, schema );
 
         // commit transaction
         try {
@@ -1556,7 +1555,7 @@ public class DbmsMeta implements ProtobufMeta {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
-        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, schema, transactionManager ) );
+        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, namespace, transactionManager ) );
     }
 
 

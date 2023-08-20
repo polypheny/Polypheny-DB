@@ -305,7 +305,7 @@ public class LanguageCrud {
 
         Result result;
         try {
-            anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getDatabaseId(), null );
+            anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), null );
 
             result = Result.builder().affectedRows( 1 ).generatedQuery( query ).build();
             transaction.commit();
@@ -397,8 +397,7 @@ public class LanguageCrud {
         String namespace = index.getSchema();
         String collectionName = index.getTable();
         Catalog catalog = Catalog.getInstance();
-        long namespaceId;
-        namespaceId = catalog.getSnapshot().getNamespace( namespace ).id;
+        long namespaceId = catalog.getSnapshot().getNamespace( namespace ).orElseThrow().id;
         List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( namespaceId, new Pattern( collectionName ) );
 
         if ( collections.size() != 1 ) {

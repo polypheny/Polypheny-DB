@@ -99,7 +99,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // May be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
-        this.store = store; // ON STORE [store name]; may be null
+        this.store = store; // ON STORE [storeId name]; may be null
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
         this.partitionColumn = partitionColumn; // May be null
         this.numPartitionGroups = numPartitionGroups; // May be null and can only be used in association with PARTITION BY
@@ -198,10 +198,10 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
         // Cannot use getTable() here since table does not yet exist
         if ( name.names.size() == 2 ) { // NamespaceName.TableName
-            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).id;
+            namespaceId = snapshot.getNamespace( name.names.get( 0 ) ).orElseThrow().id;
             tableName = name.names.get( 1 );
         } else if ( name.names.size() == 1 ) { // TableName
-            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).id;
+            namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             tableName = name.names.get( 0 );
         } else {
             throw new RuntimeException( "Invalid table name: " + name );

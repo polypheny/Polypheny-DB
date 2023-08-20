@@ -43,8 +43,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long namespaceId;
-        namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
+        long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).orElseThrow().id;
 
         List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespaceId, new Pattern( getCollection() ) );
 

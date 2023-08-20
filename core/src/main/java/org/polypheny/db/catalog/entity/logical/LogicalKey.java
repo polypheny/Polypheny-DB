@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
@@ -65,19 +64,16 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
     }
 
 
-    @SneakyThrows
     public String getSchemaName() {
-        return Catalog.snapshot().getNamespace( namespaceId ).name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public String getTableName() {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public List<String> getColumnNames() {
         Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();

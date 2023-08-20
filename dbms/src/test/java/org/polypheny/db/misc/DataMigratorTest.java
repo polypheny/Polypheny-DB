@@ -58,14 +58,14 @@ public class DataMigratorTest {
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
-                    // Add data store
+                    // Add data storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
                     connection.commit();
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT ON STORE \"store1\"" );
 
-                    // Remove placement on initial store
+                    // Remove placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
 
                     // Checks
@@ -74,7 +74,7 @@ public class DataMigratorTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
@@ -99,7 +99,7 @@ public class DataMigratorTest {
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
-                    // Add data store
+                    // Add data storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -112,7 +112,7 @@ public class DataMigratorTest {
 
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
-                    // Remove tvarchar column placement on initial store tprimary/tinteger
+                    // Remove tvarchar column placement on initial storeId tprimary/tinteger
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
@@ -124,18 +124,18 @@ public class DataMigratorTest {
 
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
-                    // Add tinteger column placement on store 1
+                    // Add tinteger column placement on storeId 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Remove placement on initial store
+                    // Remove placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
 
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
@@ -158,7 +158,7 @@ public class DataMigratorTest {
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
-                    // Add data store
+                    // Add data storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -169,25 +169,25 @@ public class DataMigratorTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Remove tvarchar column placement on initial store
+                    // Remove tvarchar column placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE \"hsqldb\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Add tinteger column placement on store 1
+                    // Add tinteger column placement on storeId 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE \"store1\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo" } ) );
 
-                    // Remove placement on initial store
+                    // Remove placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
 
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
@@ -211,7 +211,7 @@ public class DataMigratorTest {
                 try {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo',true)" );
 
-                    // Add data store 1
+                    // Add data storeId 1
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
                     // Add placement
@@ -221,7 +221,7 @@ public class DataMigratorTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo", true } ) );
 
-                    // Add data store 2
+                    // Add data storeId 2
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
                     // Add placement
@@ -231,7 +231,7 @@ public class DataMigratorTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 5, "foo", true } ) );
 
-                    // Remove tvarchar and tboolean column placement on initial store
+                    // Remove tvarchar and tboolean column placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
@@ -241,34 +241,34 @@ public class DataMigratorTest {
                     // Update
                     statement.executeUpdate( "UPDATE datamigratortest SET tinteger = 12 where tprimary = 1" );
 
-                    // Add tinteger column placement on store 1
+                    // Add tinteger column placement on storeId 1
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 12, "foo", true } ) );
 
-                    // Remove placement on initial store
+                    // Remove placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
 
-                    // Add tinteger and tvarchar column placement on store 2
+                    // Add tinteger and tvarchar column placement on storeId 2
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar,tboolean) ON STORE \"store2\"" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 12, "foo", true } ) );
 
-                    // Remove placement on initial store
+                    // Remove placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"store1\"" );
 
-                    // Check if we still have everything on store 2
+                    // Check if we still have everything on storeId 2
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM datamigratortest" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 12, "foo", true } ) );
 
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );

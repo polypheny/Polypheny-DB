@@ -159,7 +159,7 @@ public class CypherToAlgConverter {
 
 
     private long getDatabaseId( ExtendedQueryParameters parameters ) {
-        return snapshot.getNamespace( parameters.getDatabaseName() ).id;
+        return snapshot.getNamespace( parameters.getDatabaseName() ).orElseThrow().id;
     }
 
 

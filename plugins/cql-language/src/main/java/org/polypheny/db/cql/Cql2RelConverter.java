@@ -145,9 +145,9 @@ public class Cql2RelConverter {
             if ( nodeType == NodeType.DESTINATION_NODE ) {
                 try {
                     if ( treeNode.isLeaf() ) {
-                        LogicalTable catalogTable = treeNode.getExternalNode().catalogTable;
+                        LogicalTable table = treeNode.getExternalNode().catalogTable;
                         algBuilderAtomicReference.set(
-                                algBuilderAtomicReference.get().scan( Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).name, catalogTable.name )
+                                algBuilderAtomicReference.get().scan( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name )
                         );
                     } else {
                         Combiner combiner = treeNode.getInternalNode();

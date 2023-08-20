@@ -262,7 +262,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         /*List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ).orElseThrow() );
+            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( storeId.id, logicalColumn.id ).orElseThrow() );
         }*/
 
         List<LogicalColumn> selectedColumns = new ArrayList<>( columns );
@@ -302,7 +302,7 @@ public class DataMigratorImpl implements DataMigrator {
             AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
             Catalog.getInstance().updateSnapshot();
             if ( allocation.getColumns().size() == columns.size() ) {
-                // There have been no placements for this table on this store before. Build insert statement
+                // There have been no placements for this table on this storeId before. Build insert statement
                 targetAlg = buildInsertStatement( targetStatement, allocation.getColumns(), allocation );
             } else {
                 // Build update statement
@@ -620,7 +620,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot targetAlg;
         AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
-            // There have been no placements for this table on this store before. Build insert statement
+            // There have been no placements for this table on this storeId before. Build insert statement
             targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
         } else {
             // Build update statement
@@ -716,7 +716,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<AllocationColumn> columns = snapshot.alloc().getColumns( sourceTables.get( 0 ).placementId );
         for ( AllocationTable targetTable : targetTables ) {
             if ( targetTable.getColumns().size() == columns.size() ) {
-                // There have been no placements for this table on this store before. Build insert statement
+                // There have been no placements for this table on this storeId before. Build insert statement
                 targetAlgs.put( targetTable.partitionId, buildInsertStatement( targetStatements.get( targetTable.partitionId ), columns, targetTable ) );
             } else {
                 // Build update statement
@@ -925,7 +925,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( true ) {//allocation.getColumns().size() == columns.size() ) {
-            // There have been no placements for this table on this store before. Build insert statement
+            // There have been no placements for this table on this storeId before. Build insert statement
             targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );
         } else {
             // Build update statement

@@ -62,14 +62,14 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    // Deploy additional store
+                    // Deploy additional storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                    // Change placement on initial store
+                    // Change placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
                     // Insert data
@@ -105,7 +105,7 @@ public class VerticalPartitioningTest {
                                     new Object[]{ 1, 33, "foo" },
                                     new Object[]{ 4, 22, "bar" } ) );
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
@@ -126,14 +126,14 @@ public class VerticalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    // Deploy additional store
+                    // Deploy additional storeId
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                    // Change placement on initial store
+                    // Change placement on initial storeId
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
                     // Insert Data
@@ -160,7 +160,7 @@ public class VerticalPartitioningTest {
                                     new Object[]{ 2, 22, "bar" },
                                     new Object[]{ 3, 69, "foobar" } ) );
                 } finally {
-                    // Drop table and store
+                    // Drop table and storeId
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
                     statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
@@ -184,7 +184,7 @@ public class VerticalPartitioningTest {
                 try {
                     LogicalTable table = Catalog.snapshot().rel().getTables( null, new Pattern( "verticaldataplacementtest" ) ).get( 0 );
 
-                    // Check if initially as many DataPlacements are created as requested (one for each store)
+                    // Check if initially as many DataPlacements are created as requested (one for each storeId)
                     Assert.assertEquals( 1, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
                     AllocationPlacement dataPlacement = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).get( 0 );
@@ -206,7 +206,7 @@ public class VerticalPartitioningTest {
                     table = Catalog.snapshot().rel().getTable( table.id ).orElseThrow();
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getPlacementsFromLogical( table.id ).size() );
 
-                    // Modify columns on second store
+                    // Modify columns on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary) ON STORE anotherstore" );
                     List<AllocationPlacement> dataPlacements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
 
@@ -221,7 +221,7 @@ public class VerticalPartitioningTest {
                         }
                     }
 
-                    // MODIFY by adding single column on second store
+                    // MODIFY by adding single column on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary, tvarchar) ON STORE anotherstore" );
                     dataPlacements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
                     for ( AllocationPlacement dp : dataPlacements ) {
@@ -234,7 +234,7 @@ public class VerticalPartitioningTest {
                         }
                     }
 
-                    // MODIFY by adding single column on first store
+                    // MODIFY by adding single column on first storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tinteger) ON STORE hsqldb" );
                     dataPlacements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
                     for ( AllocationPlacement dp : dataPlacements ) {
@@ -261,7 +261,7 @@ public class VerticalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    // ADD single column on second store
+                    // ADD single column on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE anotherstore" );
                     dataPlacements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
                     for ( AllocationPlacement dp : dataPlacements ) {
@@ -276,10 +276,10 @@ public class VerticalPartitioningTest {
                         }
                     }
 
-                    // MODIFY first store and adding a full placement again
+                    // MODIFY first storeId and adding a full placement again
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT (tprimary, tinteger, tvarchar) ON STORE hsqldb" );
 
-                    // REMOVE single column on second store
+                    // REMOVE single column on second storeId
                     statement.executeUpdate( "ALTER TABLE \"verticalDataPlacementTest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE anotherstore" );
                     dataPlacements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
                     for ( AllocationPlacement dp : dataPlacements ) {

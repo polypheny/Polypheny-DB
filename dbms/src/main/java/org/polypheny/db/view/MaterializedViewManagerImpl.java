@@ -282,8 +282,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
-                catalog.getSnapshot().getUser( Catalog.defaultUserId ),
-                catalog.getSnapshot().getNamespace( Catalog.defaultNamespaceId ),
+                Catalog.defaultUserId,
                 false,
                 "Materialized View" );
 

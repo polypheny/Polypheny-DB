@@ -122,7 +122,7 @@ public class WebSocket implements Consumer<WsConfig> {
                         queryRequest,
                         crud.getTransactionManager(),
                         crud.getUserId(),
-                        crud.getDatabaseId(),
+                        crud.getNamespaceId(),
                         crud );
 
                 for ( GenericResult<?> result : results ) {
@@ -150,7 +150,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.getSchemaName() );
+                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.getSchemaName() ).orElseThrow();
                         switch ( namespace.namespaceType ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );

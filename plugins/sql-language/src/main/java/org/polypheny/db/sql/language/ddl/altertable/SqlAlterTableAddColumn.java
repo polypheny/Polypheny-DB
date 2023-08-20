@@ -126,7 +126,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
-        // Make sure that all adapters are of type store (and not source)
+        // Make sure that all adapters are of type storeId (and not source)
         for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }
