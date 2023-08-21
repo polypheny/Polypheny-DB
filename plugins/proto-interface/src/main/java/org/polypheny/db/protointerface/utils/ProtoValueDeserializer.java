@@ -19,15 +19,16 @@ package org.polypheny.db.protointerface.utils;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.protointerface.proto.IndexedParameters;
 import org.polypheny.db.protointerface.proto.ProtoBigDecimal;
 import org.polypheny.db.protointerface.proto.ProtoTime;
 import org.polypheny.db.protointerface.proto.ProtoValue;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -42,13 +43,25 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 public class ProtoValueDeserializer {
 
-    public static List<List<PolyValue>> deserializeParameterLists( List<IndexedParameters> parameterListsList ) {
-        return parameterListsList.stream()
+    public static List<List<PolyValue>> deserializeParameterLists(List<IndexedParameters> parameterListsList ) {
+        List<List<PolyValue>> valueListsList = parameterListsList.stream()
                 .map( parameterList -> deserializeParameterList( parameterList.getParametersList() ) )
                 .collect( Collectors.toList() );
+
+        List<List<PolyValue>> valuesList = new ArrayList<List<PolyValue>>();
+        final int N = valueListsList.get(0).size();
+        for (int i = 0; i < N; i++) {
+            List<PolyValue> values = new LinkedList<>();
+            for (List<PolyValue> list : valueListsList) {
+                values.add(list.get(i));
+            }
+            valuesList.add(values);
+        }
+        return valuesList;
     }
 
 
