@@ -18,6 +18,9 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
@@ -59,8 +62,23 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch) throws Exception {
         List<Long> updateCounts = new LinkedList<>();
-        for ( List<PolyValue> values : valuesBatch ) {
-            updateCounts.add( execute( values, PropertyUtils.DEFAULT_FETCH_SIZE ).getScalar() );
+        synchronized ( client ) {
+            Transaction transaction;
+            if ( statement == null ) {
+                statement = client.getCurrentOrCreateNewTransaction().createStatement();
+            } else {
+                statement.getDataContext().resetParameterValues();
+            }
+            List<AlgDataType> types = valuesBatch.stream()
+                    .map(v -> v.get(0).getType())
+                    .map( v -> statement.getTransaction().getTypeFactory().createPolyType(v))
+                    .collect(Collectors.toList());
+            int i = 0;
+            for ( List<PolyValue> column : valuesBatch ) {
+                statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
+            }
+            StatementProcessor.execute( this);
+            updateCounts.add(0L);
         }
         return updateCounts;
     }
