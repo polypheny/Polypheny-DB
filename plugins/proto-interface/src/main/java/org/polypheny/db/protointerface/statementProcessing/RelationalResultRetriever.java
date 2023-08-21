@@ -71,6 +71,7 @@ public class RelationalResultRetriever extends ResultRetriever {
         StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
             resultBuilder.setScalar( implementation.getRowsChanged( statement ) );
+            client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
         Frame frame = fetch( piStatement, fetchSize);
