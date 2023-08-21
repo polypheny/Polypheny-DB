@@ -36,7 +36,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
@@ -159,7 +158,8 @@ public class StatisticQueryProcessor {
 
         try {
             result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
-            rows = result.getRows( statement, getPageSize() );
+            result.open( statement, getPageSize(), false );
+            rows = result.getRows();
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }

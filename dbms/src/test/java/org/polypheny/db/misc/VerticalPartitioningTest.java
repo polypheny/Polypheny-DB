@@ -213,7 +213,7 @@ public class VerticalPartitioningTest {
                     long adapterId = -1;
                     long initialAdapterId = -1;
                     for ( AllocationPlacement dp : dataPlacements ) {
-                        if ( Catalog.snapshot().getAdapter( dp.adapterId ).uniqueName.equals( "anotherstore" ) ) {
+                        if ( Catalog.snapshot().getAdapter( dp.adapterId ).orElseThrow().uniqueName.equals( "anotherstore" ) ) {
                             adapterId = dp.adapterId;
                             Assert.assertEquals( 1, Catalog.snapshot().alloc().getColumns( dp.id ).size() );
                         } else {

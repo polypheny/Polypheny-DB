@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public abstract class GenericResult<E> {
 
     /**
-     * schema type of result DOCUMENT/RELATIONAL
+     * namespace type of result DOCUMENT/RELATIONAL
      */
     public NamespaceType namespaceType;
 

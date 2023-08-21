@@ -653,11 +653,11 @@ public class ConstraintEnforceAttacher {
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
                             .collect( Collectors.toList() );
                     List<List<?>> rows = results.stream()
-                            .map( r -> r.getRows( statement, -1 ) )
-                            .filter( r -> r.size() != 0 )
+                            .map( r -> r.open( statement, -1, false ).getRows() )
+                            .filter( r -> !r.isEmpty() )
                             .collect( Collectors.toList() );
 
-                    if ( rows.size() != 0 ) {
+                    if ( !rows.isEmpty() ) {
                         Integer index = ((List<Integer>) rows.get( 0 ).get( 0 )).get( 1 );
                         throw new TransactionException( infos.get( 0 ).getErrorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
                     }

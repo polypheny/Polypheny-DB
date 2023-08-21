@@ -172,7 +172,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             List<PolyImplementation<?>> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), s.getControl().getCluster().getTypeFactory().builder().build(), false, true, false ) ).collect( Collectors.toList() );
-            List<List<?>> rows = results.stream().map( r -> r.getRows( statement, -1 ) ).filter( r -> r.size() != 0 ).collect( Collectors.toList() );
+            List<List<?>> rows = results.stream().map( r -> r.open( statement, -1, false ).getRows() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
             if ( rows.size() != 0 ) {
                 int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
                 rollback();

@@ -34,7 +34,6 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
-import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -45,6 +44,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.MonitoringType;
@@ -59,7 +59,6 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
-import org.polypheny.db.util.LimitIterator;
 
 
 @Getter
@@ -76,11 +75,13 @@ public class PolyImplementation<T> {
     private List<ColumnMetaData> columns;
     private final PreparedResult<T> preparedResult;
     private final Statement statement;
-    @Accessors(fluent = true)
-    private boolean hasMoreRows;
+
     @Accessors(fluent = true)
     private final boolean isDDL;
     private Iterator<T> iterator;
+    private boolean isOpen;
+    private StatementEvent statementEvent;
+    private int batch;
 
 
     /**
@@ -176,6 +177,13 @@ public class PolyImplementation<T> {
     }
 
 
+    public boolean hasMoreRows() {
+        if ( iterator == null ) {
+            throw new GenericRuntimeException( "Implementation was not opened" );
+        }
+        return iterator.hasNext();
+    }
+
     public List<ColumnMetaData> getColumns() {
         if ( columns != null ) {
             return columns;
@@ -205,32 +213,49 @@ public class PolyImplementation<T> {
     }
 
 
-    public List<List<T>> getRows( Statement statement, int size ) {
-        return getRows( statement, size, false, false );
+    public List<List<T>> getRows() {
+        return getRows( false );
     }
 
 
-    public List<List<T>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed ) {
-        return getRows( statement, size, isTimed, isAnalyzed, null, false );
+    public List<List<T>> getRows( boolean isTimed ) {
+        return getRows( isTimed, false );
     }
 
 
-    public List<List<T>> getRows( Statement statement, int size, boolean isTimed, boolean isAnalyzed, StatementEvent statementEvent, boolean isIndex ) {
+    public PolyImplementation<T> open( Statement statement, int batch, boolean isAnalyzed ) {
+        if ( this.isOpen ) {
+            return this;
+        }
+        this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
+        this.batch = batch;
+        iterator = createIterator( getBindable(), statement, isAnalyzed );
+
+        this.isOpen = true;
+        return this;
+    }
+
+
+    public List<List<T>> getRows( boolean isTimed, boolean isIndex ) {
+        if ( !this.isOpen ) {
+            throw new GenericRuntimeException( String.format( "%s was not opened correctly.", this.getClass().getSimpleName() ) );
+        }
+
         StopWatch stopWatch = null;
         try {
-            iterator = createIterator( getBindable(), statement, isAnalyzed );
-            List<List<T>> res;
-
             if ( isTimed ) {
                 stopWatch = new StopWatch();
                 stopWatch.start();
             }
-            if ( size != -1 ) {
-                res = MetaImpl.collect( cursorFactory, (Iterator<Object>) LimitIterator.of( iterator, size ), new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-            } else {
-                res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator, new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
+            List<List<T>> res = new ArrayList<>();
+            int i = 0;
+            while ( i++ < batch && iterator.hasNext() ) {
+                res.add( List.of( (T[]) iterator.next() ) );
             }
-            this.hasMoreRows = iterator.hasNext();
+            ;
+
+            //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
+
             if ( isTimed ) {
                 stopWatch.stop();
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
@@ -252,9 +277,9 @@ public class PolyImplementation<T> {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            throw new RuntimeException( t );
+            throw new GenericRuntimeException( t );
         } finally {
-            if ( iterator != null ) {
+            if ( iterator != null && !hasMoreRows() ) {
                 try {
                     if ( iterator instanceof AutoCloseable ) {
                         ((AutoCloseable) iterator).close();
@@ -276,6 +301,7 @@ public class PolyImplementation<T> {
             statement.getOverviewDuration().start( "Execution" );
         }
         final Enumerable<T> enumerable = enumerable( bindable, statement.getDataContext() );
+
         if ( isAnalyzed ) {
             statement.getOverviewDuration().stop( "Execution" );
         }

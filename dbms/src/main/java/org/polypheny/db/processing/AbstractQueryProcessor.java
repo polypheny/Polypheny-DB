@@ -733,7 +733,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
                             final PolyImplementation<PolyValue> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
-                            final List<List<PolyValue>> rows = scanSig.getRows( statement, -1 );
+                            final List<List<PolyValue>> rows = scanSig.open( statement, -1, false ).getRows();
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
                             for ( final List<PolyValue> row : rows ) {

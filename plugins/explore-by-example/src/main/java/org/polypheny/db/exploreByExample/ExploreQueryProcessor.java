@@ -36,6 +36,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -106,13 +107,13 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyImplementation result;
+        PolyImplementation<PolyValue> result;
         try {
             result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
             throw new ExploreQueryProcessor.QueryExecutionException( t );
         }
-        List<List<Object>> rows = result.getRows( statement, DEFAULT_SIZE );
+        List<List<PolyValue>> rows = result.open( statement, DEFAULT_SIZE, false ).getRows();
 
         List<String> typeInfo = new ArrayList<>();
         List<String> name = new ArrayList<>();
@@ -122,7 +123,7 @@ public class ExploreQueryProcessor {
         }
 
         if ( rows.size() == 1 ) {
-            for ( List<Object> row : rows ) {
+            for ( List<PolyValue> row : rows ) {
                 if ( row.size() == 1 ) {
                     for ( Object o : row ) {
                         return new ExploreQueryResult( o.toString(), rows.size(), typeInfo, name );
@@ -132,7 +133,7 @@ public class ExploreQueryProcessor {
         }
 
         List<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
+        for ( List<PolyValue> row : rows ) {
             String[] temp = new String[row.size()];
             int counter = 0;
             for ( Object o : row ) {
@@ -153,8 +154,8 @@ public class ExploreQueryProcessor {
     }
 
 
-    private PolyImplementation processQuery( Statement statement, String sql ) {
-        PolyImplementation result;
+    private PolyImplementation<PolyValue> processQuery( Statement statement, String sql ) {
+        PolyImplementation<PolyValue> result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );

@@ -215,7 +215,6 @@ public class Crud implements InformationObserver {
     private final Catalog catalog = Catalog.getInstance();
 
 
-
     /**
      * Constructor
      *
@@ -2544,7 +2543,7 @@ public class Crud implements InformationObserver {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    Result executeRelAlg( final RelAlgRequest request, Session session ) {
+    Result executeAlg( final RelAlgRequest request, Session session ) {
         Transaction transaction = getTransaction( request.analyze, request.useCache, this );
         transaction.getQueryAnalyzer().setSession( session );
 
@@ -2671,7 +2670,8 @@ public class Crud implements InformationObserver {
 
         List<List<PolyValue>> rows;
         try {
-            rows = polyImplementation.getRows( statement, getPageSize(), true, false );
+            polyImplementation.open( statement, getPageSize(), false );
+            rows = polyImplementation.getRows();
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return Result.builder().error( e.getMessage() ).build();
@@ -3052,7 +3052,8 @@ public class Crud implements InformationObserver {
 
         try {
             result = crud.processQuery( statement, sqlSelect, isAnalyze );
-            rows = result.getRows( statement, noLimit ? -1 : crud.getPageSize(), true, isAnalyze );
+            result.open( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze );
+            rows = result.getRows( true );
             hasMoreRows = result.hasMoreRows();
 
         } catch ( Throwable t ) {

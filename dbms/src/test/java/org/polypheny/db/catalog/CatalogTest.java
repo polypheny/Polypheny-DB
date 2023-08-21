@@ -196,7 +196,7 @@ public class CatalogTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
-            CatalogAdapter adapter = Catalog.snapshot().getAdapter( "hsqldb" );
+            CatalogAdapter adapter = Catalog.snapshot().getAdapter( "hsqldb" ).orElseThrow();
             // Check data
             final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, adapter.id, 1 };
 

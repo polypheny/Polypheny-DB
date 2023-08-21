@@ -27,11 +27,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
+import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -71,6 +78,7 @@ public class SelectTest {
                 connection.commit();
             }
         }
+
     }
 
 
@@ -191,6 +199,27 @@ public class SelectTest {
                         expectedResult
                 );
             }
+        }
+    }
+
+
+    @Test // todo dl move
+    public void getRowsTest() {
+        Transaction trx = TestHelper.getInstance().getTransaction();
+        org.polypheny.db.transaction.Statement statement = trx.createStatement();
+
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        AlgNode scan = builder.scan( "public", "TableC" ).build();
+        PolyImplementation<Object> impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+
+        impl.open( statement, 2, false );
+        List<List<Object>> first = impl.getRows();
+        List<List<Object>> others = impl.getRows();
+        try {
+            trx.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
         }
     }
 

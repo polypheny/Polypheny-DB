@@ -142,7 +142,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
-                        result = crud.executeRelAlg( relAlgRequest, ctx.session );
+                        result = crud.executeAlg( relAlgRequest, ctx.session );
                     } catch ( Throwable t ) {
                         ctx.send( Result.builder().error( t.getMessage() ).build() );
                         return;
