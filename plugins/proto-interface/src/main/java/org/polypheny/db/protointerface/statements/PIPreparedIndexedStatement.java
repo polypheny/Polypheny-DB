@@ -78,7 +78,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                 statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
             }
             StatementProcessor.execute( this);
-            updateCounts.add(0L);
+            updateCounts.add(StatementProcessor.getResult(this, 0).getScalar());
         }
         return updateCounts;
     }
