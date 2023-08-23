@@ -77,7 +77,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "Entity %s not found.", String.join( ".", this.table.names ) );

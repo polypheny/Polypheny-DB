@@ -113,7 +113,7 @@ public class ExploreQueryProcessor {
         } catch ( Throwable t ) {
             throw new ExploreQueryProcessor.QueryExecutionException( t );
         }
-        List<List<PolyValue>> rows = result.execute( statement, DEFAULT_SIZE, false ).getRows();
+        List<List<PolyValue>> rows = result.execute( statement, DEFAULT_SIZE ).getAllRowsAndClose();
 
         List<String> typeInfo = new ArrayList<>();
         List<String> name = new ArrayList<>();

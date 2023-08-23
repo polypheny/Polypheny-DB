@@ -76,6 +76,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter;
@@ -2670,8 +2671,9 @@ public class Crud implements InformationObserver {
 
         List<List<PolyValue>> rows;
         try {
-            polyImplementation.execute( statement, getPageSize(), false );
-            rows = polyImplementation.getRows();
+            ResultIterator<PolyValue> iterator = polyImplementation.execute( statement, getPageSize() );
+            rows = iterator.getRows();
+            iterator.close();
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return Result.builder().error( e.getMessage() ).build();
@@ -3052,8 +3054,9 @@ public class Crud implements InformationObserver {
 
         try {
             result = crud.processQuery( statement, sqlSelect, isAnalyze );
-            result.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze );
-            rows = result.getRows( true );
+            ResultIterator<PolyValue> iterator = result.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
+            rows = iterator.getRows();
+            iterator.close();
             hasMoreRows = result.hasMoreRows();
 
         } catch ( Throwable t ) {

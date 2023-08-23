@@ -35,6 +35,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -359,7 +360,9 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             do {
-                List<List<PolyValue>> rows = result.execute( sourceStatement, batchSize, false ).getRows();
+                ResultIterator<PolyValue> iter = result.execute( sourceStatement, batchSize );
+                List<List<PolyValue>> rows = iter.getRows();
+                iter.close();
                 if ( rows.isEmpty() ) {
                     continue;
                 }
@@ -754,8 +757,9 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
             do {
-                List<List<PolyValue>> rows = result.execute( source.sourceStatement, batchSize, false ).getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
-
+                ResultIterator<PolyValue> iter = result.execute( source.sourceStatement, batchSize );
+                List<List<PolyValue>> rows = iter.getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                iter.close();
                 if ( rows.isEmpty() ) {
                     continue;
                 }

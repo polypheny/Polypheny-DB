@@ -117,7 +117,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "Could not find the entity with name %s.", String.join( ".", this.table.names ) );

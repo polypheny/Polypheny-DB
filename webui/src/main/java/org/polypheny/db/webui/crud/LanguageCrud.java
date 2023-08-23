@@ -31,6 +31,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
@@ -43,6 +44,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
@@ -146,13 +148,14 @@ public class LanguageCrud {
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
         PolyImplementation<PolyGraph> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
-        polyImplementation.execute( statement, 1, false );
-        List<List<PolyGraph>> res = polyImplementation.getRows();
+        ResultIterator<PolyGraph> iterator = polyImplementation.execute( statement, 1 );
+        List<List<PolyGraph>> res = iterator.getRows();
 
         try {
+            iterator.close();
             statement.getTransaction().commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( "Error while committing graph retrieval query." );
+        } catch ( Exception | TransactionException e ) {
+            throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
         return res.get( 0 ).get( 0 );
@@ -190,8 +193,8 @@ public class LanguageCrud {
             return getGraphResult( statement, request, query, implementation, transaction, noLimit );
         }
 
-        implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger(), false );
-        List<List<PolyValue>> rows = implementation.getRows();
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<List<PolyValue>> rows = iterator.getRows();
 
         boolean hasMoreRows = implementation.hasMoreRows();
 
@@ -248,7 +251,13 @@ public class LanguageCrud {
 
     private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<PolyValue[]> data = implementation.getArrayRows( statement, noLimit );
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<PolyValue[]> data = iterator.getArrayRows();
+        try {
+            iterator.close();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
 
         return GraphResult.builder()
                 .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
@@ -262,7 +271,13 @@ public class LanguageCrud {
 
     private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
-        List<PolyValue> data = implementation.getSingleRows( statement, noLimit );
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        List<PolyValue> data = iterator.getSingleRows();
+        try {
+            iterator.close();
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
 
         return DocResult.builder()
                 .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )

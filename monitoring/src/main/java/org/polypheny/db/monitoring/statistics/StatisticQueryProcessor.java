@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -153,13 +154,14 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
-        PolyImplementation<PolyValue> result;
+        PolyImplementation<PolyValue> implementation;
         List<List<PolyValue>> rows;
 
         try {
-            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
-            result.execute( statement, getPageSize(), false );
-            rows = result.getRows();
+            implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
+            ResultIterator<PolyValue> iterator = implementation.execute( statement, getPageSize() );
+            rows = iterator.getRows();
+            iterator.close();
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }

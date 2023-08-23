@@ -213,83 +213,30 @@ public class PolyImplementation<T> {
     }
 
 
-    public List<List<T>> getRows() {
-        return getRows( false );
+    public ResultIterator<T> execute( Statement statement ) {
+        return execute( statement, -1, false, false, false );
     }
 
 
-    public List<List<T>> getRows( boolean isTimed ) {
-        return getRows( isTimed, false );
+    public ResultIterator<T> execute( Statement statement, int batch ) {
+        return execute( statement, batch, false, false, false );
     }
 
 
-    public PolyImplementation<T> execute( Statement statement, int batch, boolean isAnalyzed ) {
-        if ( this.isOpen ) {
-            return this;
-        }
-        this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
-        this.batch = batch;
-        iterator = createIterator( getBindable(), statement, isAnalyzed );
-
-        this.isOpen = true;
-        return this;
+    public ResultIterator<T> execute( Statement statement, int batch, boolean isAnalyzed, boolean isTimed, boolean isIndex ) {
+        return new ResultIterator<>(
+                createIterator( getBindable(), statement, isAnalyzed ),
+                statement,
+                batch,
+                isTimed,
+                isIndex,
+                isAnalyzed,
+                rowType,
+                executionTimeMonitor );
     }
 
 
-    public List<List<T>> getRows( boolean isTimed, boolean isIndex ) {
-        if ( !this.isOpen ) {
-            throw new GenericRuntimeException( String.format( "%s was not opened correctly.", this.getClass().getSimpleName() ) );
-        }
 
-        StopWatch stopWatch = null;
-        try {
-            if ( isTimed ) {
-                stopWatch = new StopWatch();
-                stopWatch.start();
-            }
-            List<List<T>> res = new ArrayList<>();
-            int i = 0;
-            while ( i++ < batch && iterator.hasNext() ) {
-                res.add( List.of( (T[]) iterator.next() ) );
-            }
-            ;
-
-            //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-
-            if ( isTimed ) {
-                stopWatch.stop();
-                executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
-            }
-
-            // Only if it is an index
-            if ( statementEvent != null && isIndex ) {
-                statementEvent.setIndexSize( res.size() );
-            }
-
-            return res;
-        } catch ( Throwable t ) {
-            if ( iterator != null ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
-            throw new GenericRuntimeException( t );
-        } finally {
-            if ( iterator != null && !hasMoreRows() ) {
-                try {
-                    if ( iterator instanceof AutoCloseable ) {
-                        ((AutoCloseable) iterator).close();
-                    }
-                } catch ( Exception e ) {
-                    log.error( "Exception while closing result iterator", e );
-                }
-            }
-        }
-    }
 
 
     private Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
@@ -394,7 +341,7 @@ public class PolyImplementation<T> {
             Map<Long, List<PolyValue>> ordered = new HashMap<>();
 
             List<Map<Long, PolyValue>> values = statement.getDataContext().getParameterValues();
-            if ( values.size() > 0 ) {
+            if ( !values.isEmpty() ) {
                 for ( long i = 0; i < statement.getDataContext().getParameterValues().get( 0 ).size(); i++ ) {
                     ordered.put( i, new ArrayList<>() );
                 }
@@ -416,40 +363,122 @@ public class PolyImplementation<T> {
     }
 
 
-    public List<T> getSingleRows( Statement statement, boolean noLimit ) {
-
-        cursorFactory = CursorFactory.OBJECT;
-
-        return getRows( statement, null );
-
-    }
+    public static class ResultIterator<T> implements AutoCloseable {
 
 
-    @NotNull
-    private <D> List<D> getRows( Statement statement, @Nullable Function<T, D> transformer ) {
-        bindable = preparedResult.getBindable( cursorFactory );
+        private final Iterator<T> iterator;
+        private final int batch;
+        private final ExecutionTimeMonitor executionTimeMonitor;
+        private final boolean isIndex;
+        private final boolean isTimed;
+        private final AlgDataType rowType;
 
-        Iterator<T> iterator = createIterator( bindable, statement, true );
+        private final StatementEvent statementEvent;
 
-        final Iterable<T> iterable = () -> iterator;
 
-        if ( transformer == null ) {
-            return (List<D>) StreamSupport
+        private ResultIterator( Iterator<T> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
+            this.iterator = iterator;
+            this.batch = batch;
+            this.isIndex = isIndex;
+            this.isTimed = isTimed;
+            this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
+            this.executionTimeMonitor = executionTimeMonitor;
+            this.rowType = rowType;
+        }
+
+
+        public List<List<T>> getRows() {
+
+            StopWatch stopWatch = null;
+            try {
+                if ( isTimed ) {
+                    stopWatch = new StopWatch();
+                    stopWatch.start();
+                }
+                List<List<T>> res = new ArrayList<>();
+                int i = 0;
+                while ( i++ < batch && iterator.hasNext() ) {
+                    res.add( List.of( (T[]) iterator.next() ) );
+                }
+
+                //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
+
+                if ( isTimed ) {
+                    stopWatch.stop();
+                    executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
+                }
+
+                // Only if it is an index
+                if ( statementEvent != null && isIndex ) {
+                    statementEvent.setIndexSize( res.size() );
+                }
+
+                return res;
+            } catch ( Throwable t ) {
+                try {
+                    close();
+                    throw new GenericRuntimeException( t );
+                } catch ( Exception e ) {
+                    throw new GenericRuntimeException( t );
+                }
+
+            }
+        }
+
+
+        public List<List<T>> getAllRowsAndClose() {
+            List<List<T>> result = getRows();
+            try {
+                close();
+            } catch ( Exception e ) {
+                throw new RuntimeException( e );
+            }
+            return result;
+        }
+
+
+        public List<T> getSingleRows() {
+
+            return getRows( null );
+
+        }
+
+
+        @NotNull
+        private <D> List<D> getRows( @Nullable Function<T, D> transformer ) {
+            final Iterable<T> iterable = () -> iterator;
+
+            if ( transformer == null ) {
+                return (List<D>) StreamSupport
+                        .stream( iterable.spliterator(), false )
+                        .collect( Collectors.toList() );
+            }
+            return StreamSupport
                     .stream( iterable.spliterator(), false )
+                    .map( transformer )
                     .collect( Collectors.toList() );
         }
-        return StreamSupport
-                .stream( iterable.spliterator(), false )
-                .map( transformer )
-                .collect( Collectors.toList() );
+
+
+        public List<PolyValue[]> getArrayRows() {
+
+            return getRows( rowType.getFieldCount() == 1 ? e -> new PolyValue[]{ (PolyValue) e } : null );
+
+        }
+
+
+        @Override
+        public void close() throws Exception {
+            try {
+                if ( iterator instanceof AutoCloseable ) {
+                    ((AutoCloseable) iterator).close();
+                }
+            } catch ( Exception e ) {
+                log.error( "Exception while closing result iterator", e );
+            }
+        }
+
     }
 
-
-    public List<PolyValue[]> getArrayRows( Statement statement, boolean noLimit ) {
-        cursorFactory = CursorFactory.ARRAY;
-
-        return getRows( statement, rowType.getFieldCount() == 1 ? e -> new PolyValue[]{ (PolyValue) e } : null );
-
-    }
 
 }

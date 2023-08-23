@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.index.Index;
@@ -733,7 +734,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
                             final PolyImplementation<PolyValue> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
-                            final List<List<PolyValue>> rows = scanSig.execute( statement, -1, false ).getRows();
+                            final ResultIterator<PolyValue> iter = scanSig.execute( statement, -1 );
+                            final List<List<PolyValue>> rows = iter.getAllRowsAndClose();
+
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
                             for ( final List<PolyValue> row : rows ) {

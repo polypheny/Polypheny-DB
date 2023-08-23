@@ -653,7 +653,7 @@ public class ConstraintEnforceAttacher {
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
                             .collect( Collectors.toList() );
                     List<List<?>> rows = results.stream()
-                            .map( r -> r.execute( statement, -1, false ).getRows() )
+                            .map( r -> r.execute( statement, -1 ).getAllRowsAndClose() )
                             .filter( r -> !r.isEmpty() )
                             .collect( Collectors.toList() );
 

@@ -136,7 +136,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "The entity %s was not found.", String.join( ".", this.table.getNames() ) );

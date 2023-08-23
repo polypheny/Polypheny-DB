@@ -101,7 +101,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "Could not find entity with name %s", String.join( ".", this.table.getNames() ) );
