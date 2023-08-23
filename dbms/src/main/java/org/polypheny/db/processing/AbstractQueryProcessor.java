@@ -424,7 +424,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
                 AlgRoot parameterizedRoot = parameterizedRootList.get( i );
-                PreparedResult<?> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
+                PreparedResult<T> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
                 if ( preparedResult != null ) {
                     PolyImplementation<T> result = createPolyImplementation(
@@ -522,7 +522,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
             AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, algCollation( parameterizedRoot.alg ) );
 
-            PreparedResult<?> preparedResult = implement( optimalRoot, parameterRowType );
+            PreparedResult<T> preparedResult = implement( optimalRoot, parameterRowType );
 
             // Cache implementation
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
@@ -733,7 +733,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 //                            }
                             AlgRoot scanRoot = AlgRoot.of( originalProject, Kind.SELECT );
                             final PolyImplementation<PolyValue> scanSig = prepareQuery( scanRoot, parameterRowType, false, false, true );
-                            final List<List<PolyValue>> rows = scanSig.open( statement, -1, false ).getRows();
+                            final List<List<PolyValue>> rows = scanSig.execute( statement, -1, false ).getRows();
                             // Build new query tree
                             final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
                             for ( final List<PolyValue> row : rows ) {
@@ -1137,7 +1137,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PreparedResult<PolyValue> implement( AlgRoot root, AlgDataType parameterRowType ) {
+    private <T> PreparedResult<T> implement( AlgRoot root, AlgDataType parameterRowType ) {
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Physical Plan", root.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -1151,10 +1151,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        final Bindable<?> bindable;
+        final Bindable<T> bindable;
         final String generatedCode;
         if ( resultConvention == BindableConvention.INSTANCE ) {
-            bindable = Interpreters.bindable( root.alg );
+            bindable = (Bindable<T>) Interpreters.bindable( root.alg );
             generatedCode = null;
         } else {
             EnumerableAlg enumerable = (EnumerableAlg) root.alg;
@@ -1175,7 +1175,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );
 
-                Pair<Bindable<PolyValue>, String> implementationPair = EnumerableInterpretable.toBindable(
+                Pair<Bindable<T>, String> implementationPair = EnumerableInterpretable.toBindable(
                         internalParameters,
                         enumerable,
                         prefer,
@@ -1191,7 +1191,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgDataType resultType = root.alg.getRowType();
         boolean isDml = root.kind.belongsTo( Kind.DML );
 
-        return new PreparedResultImpl(
+        return new PreparedResultImpl<>(
                 resultType,
                 parameterRowType,
                 fieldOrigins,
@@ -1208,7 +1208,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
             @Override
-            public Bindable<?> getBindable( CursorFactory cursorFactory ) {
+            public Bindable<T> getBindable( CursorFactory cursorFactory ) {
                 return bindable;
             }
 
@@ -1228,7 +1228,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private <T> PolyImplementation<T> createPolyImplementation( PreparedResult preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, NamespaceType namespaceType ) {
+    private <T> PolyImplementation<T> createPolyImplementation( PreparedResult<T> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, NamespaceType namespaceType ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation<>(
                 jdbcType,
@@ -1245,14 +1245,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private boolean isQueryPlanCachingActive( Statement statement, AlgRoot algRoot ) {
         return RuntimeConfig.QUERY_PLAN_CACHING.getBoolean()
                 && statement.getTransaction().getUseCache()
-                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
+                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || !statement.getDataContext().getParameterValues().isEmpty());
     }
 
 
     private boolean isImplementationCachingActive( Statement statement, AlgRoot algRoot ) {
         return RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean()
                 && statement.getTransaction().getUseCache()
-                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0);
+                && (!algRoot.kind.belongsTo( Kind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || !statement.getDataContext().getParameterValues().isEmpty());
     }
 
 

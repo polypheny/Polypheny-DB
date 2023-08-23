@@ -64,6 +64,10 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -83,7 +87,7 @@ public final class JdbcUtils {
     static class DialectPool {
 
         final Map<DataSource, Map<SqlDialectFactory, SqlDialect>> map0 = new IdentityHashMap<>();
-        final Map<List, SqlDialect> map = new HashMap<>();
+        final Map<List<?>, SqlDialect> map = new HashMap<>();
 
         public static final DialectPool INSTANCE = new DialectPool();
 
@@ -103,7 +107,7 @@ public final class JdbcUtils {
                 DatabaseMetaData metaData = connection.getMetaData();
                 String productName = metaData.getDatabaseProductName();
                 String productVersion = metaData.getDatabaseProductVersion();
-                List key = ImmutableList.of( productName, productVersion, dialectFactory );
+                List<?> key = ImmutableList.of( productName, productVersion, dialectFactory );
                 SqlDialect dialect = map.get( key );
                 if ( dialect == null ) {
                     dialect = dialectFactory.create( metaData );
@@ -137,7 +141,7 @@ public final class JdbcUtils {
      * Builder that calls {@link ResultSet#getObject(int)} for every column, or {@code getXxx} if the result type
      * is a primitive {@code xxx}, and returns an array of objects for each row.
      */
-    static class ObjectArrayRowBuilder implements Function0<Object[]> {
+    static class ObjectArrayRowBuilder implements Function0<PolyValue[]> {
 
         private final ResultSet resultSet;
         private final int columnCount;
@@ -153,7 +157,7 @@ public final class JdbcUtils {
         }
 
 
-        public static Function1<ResultSet, Function0<Object[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
+        public static Function1<ResultSet, Function0<PolyValue[]>> factory( final List<Pair<ColumnMetaData.Rep, Integer>> list ) {
             return resultSet -> {
                 try {
                     return new ObjectArrayRowBuilder(
@@ -168,9 +172,9 @@ public final class JdbcUtils {
 
 
         @Override
-        public Object[] apply() {
+        public PolyValue[] apply() {
             try {
-                final Object[] values = new Object[columnCount];
+                final PolyValue[] values = new PolyValue[columnCount];
                 for ( int i = 0; i < columnCount; i++ ) {
                     values[i] = value( i );
                 }
@@ -186,18 +190,18 @@ public final class JdbcUtils {
          *
          * @param i Ordinal of column (1-based, per JDBC)
          */
-        private Object value( int i ) throws SQLException {
+        private PolyValue value( int i ) throws SQLException {
             // MySQL returns timestamps shifted into local time. Using getTimestamp(int, Calendar) with a UTC calendar
             // should prevent this, but does not. So we shift explicitly.
             switch ( types[i] ) {
                 case Types.TIMESTAMP:
-                    return shift( resultSet.getTimestamp( i + 1 ) );
+                    return PolyTimeStamp.of( shift( resultSet.getTimestamp( i + 1 ) ) );
                 case Types.TIME:
-                    return shift( resultSet.getTime( i + 1 ) );
+                    return PolyTime.of( shift( resultSet.getTime( i + 1 ) ) );
                 case Types.DATE:
-                    return shift( resultSet.getDate( i + 1 ) );
+                    return PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
             }
-            return reps[i].jdbcGet( resultSet, i + 1 );
+            return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
         }
 
 

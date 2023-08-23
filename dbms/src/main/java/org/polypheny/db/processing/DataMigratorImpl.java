@@ -359,7 +359,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             do {
-                List<List<PolyValue>> rows = result.open( sourceStatement, batchSize, false ).getRows();
+                List<List<PolyValue>> rows = result.execute( sourceStatement, batchSize, false ).getRows();
                 if ( rows.isEmpty() ) {
                     continue;
                 }
@@ -754,7 +754,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
             do {
-                List<List<PolyValue>> rows = result.open( source.sourceStatement, batchSize, false ).getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                List<List<PolyValue>> rows = result.execute( source.sourceStatement, batchSize, false ).getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
                 if ( rows.isEmpty() ) {
                     continue;

@@ -1319,7 +1319,7 @@ public class ConcurrentTestCommandScript
 
         /**
          * Manages state transitions.
-         * Converts a state name into a map. Map keys are the names of available commands (e.g. @sync), and map values are the state to switch to open seeing the command.
+         * Converts a state name into a map. Map keys are the names of available commands (e.g. @sync), and map values are the state to switch to execute seeing the command.
          */
         private Map<String, String> lookupState( String state ) {
             assert state != null;

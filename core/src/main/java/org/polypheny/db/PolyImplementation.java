@@ -223,7 +223,7 @@ public class PolyImplementation<T> {
     }
 
 
-    public PolyImplementation<T> open( Statement statement, int batch, boolean isAnalyzed ) {
+    public PolyImplementation<T> execute( Statement statement, int batch, boolean isAnalyzed ) {
         if ( this.isOpen ) {
             return this;
         }

@@ -146,7 +146,7 @@ public class LanguageCrud {
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
         PolyImplementation<PolyGraph> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
-        polyImplementation.open( statement, 1, false );
+        polyImplementation.execute( statement, 1, false );
         List<List<PolyGraph>> res = polyImplementation.getRows();
 
         try {
@@ -190,7 +190,7 @@ public class LanguageCrud {
             return getGraphResult( statement, request, query, implementation, transaction, noLimit );
         }
 
-        implementation.open( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger(), false );
+        implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger(), false );
         List<List<PolyValue>> rows = implementation.getRows();
 
         boolean hasMoreRows = implementation.hasMoreRows();

@@ -2670,7 +2670,7 @@ public class Crud implements InformationObserver {
 
         List<List<PolyValue>> rows;
         try {
-            polyImplementation.open( statement, getPageSize(), false );
+            polyImplementation.execute( statement, getPageSize(), false );
             rows = polyImplementation.getRows();
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
@@ -3052,7 +3052,7 @@ public class Crud implements InformationObserver {
 
         try {
             result = crud.processQuery( statement, sqlSelect, isAnalyze );
-            result.open( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze );
+            result.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze );
             rows = result.getRows( true );
             hasMoreRows = result.hasMoreRows();
 

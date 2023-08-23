@@ -101,7 +101,7 @@ public abstract class Index {
         final PolyImplementation<PolyValue> result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        result.open( statement, 1, true );
+        result.execute( statement, 1, true );
         final List<List<PolyValue>> rows = result.getRows( false, true );
         final List<Pair<List<PolyValue>, List<PolyValue>>> kv = new ArrayList<>( rows.size() );
         for ( final List<PolyValue> row : rows ) {

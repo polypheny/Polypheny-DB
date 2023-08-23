@@ -87,20 +87,20 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public class Interpreter extends AbstractEnumerable<PolyValue[]> implements AutoCloseable {
 
-    private final Map<AlgNode, NodeInfo> nodes;
+    private final Map<AlgNode, NodeInfo<PolyValue>> nodes;
     private final DataContext dataContext;
-    private final AlgNode rootRel;
+    private final AlgNode algRoot;
 
 
     /**
      * Creates an Interpreter.
      */
-    public Interpreter( DataContext dataContext, AlgNode rootRel ) {
+    public Interpreter( DataContext dataContext, AlgNode algRoot ) {
         this.dataContext = Objects.requireNonNull( dataContext );
-        final AlgNode alg = optimize( rootRel );
-        final CompilerImpl compiler = new Nodes.CoreCompiler( this, rootRel.getCluster() );
-        Pair<AlgNode, Map<AlgNode, NodeInfo>> pair = compiler.visitRoot( alg );
-        this.rootRel = pair.left;
+        final AlgNode alg = optimize( algRoot );
+        final CompilerImpl compiler = new Nodes.CoreCompiler( this, algRoot.getCluster() );
+        Pair<AlgNode, Map<AlgNode, NodeInfo<PolyValue>>> pair = compiler.visitRoot( alg );
+        this.algRoot = pair.left;
         this.nodes = ImmutableMap.copyOf( pair.right );
     }
 
@@ -124,18 +124,18 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     @Override
     public Enumerator<PolyValue[]> enumerator() {
         start();
-        final NodeInfo nodeInfo = nodes.get( rootRel );
-        final Enumerator<Row> rows;
+        final NodeInfo<PolyValue> nodeInfo = nodes.get( algRoot );
+        final Enumerator<Row<PolyValue>> rows;
         if ( nodeInfo.rowEnumerable != null ) {
             rows = nodeInfo.rowEnumerable.enumerator();
         } else {
-            final ArrayDeque<Row> queue = Iterables.getOnlyElement( nodeInfo.sinks.values() ).list;
+            final ArrayDeque<Row<PolyValue>> queue = Iterables.getOnlyElement( nodeInfo.sinks.values() ).list;
             rows = Linq4j.iterableEnumerator( queue );
         }
 
-        return new TransformedEnumerator<Row, PolyValue[]>( rows ) {
+        return new TransformedEnumerator<>( rows ) {
             @Override
-            protected PolyValue[] transform( Row row ) {
+            protected PolyValue[] transform( Row<PolyValue> row ) {
                 return row.getValues();
             }
         };
@@ -144,8 +144,8 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
 
     private void start() {
         // We rely on the nodes being ordered leaves first.
-        for ( Map.Entry<AlgNode, NodeInfo> entry : nodes.entrySet() ) {
-            final NodeInfo nodeInfo = entry.getValue();
+        for ( Map.Entry<AlgNode, NodeInfo<PolyValue>> entry : nodes.entrySet() ) {
+            final NodeInfo<PolyValue> nodeInfo = entry.getValue();
             try {
                 nodeInfo.node.run();
             } catch ( InterruptedException e ) {
@@ -162,15 +162,15 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     /**
      * Information about a node registered in the data flow graph.
      */
-    private static class NodeInfo {
+    private static class NodeInfo<T> {
 
         final AlgNode alg;
         final Map<Edge, ListSink> sinks = new LinkedHashMap<>();
-        final Enumerable<Row> rowEnumerable;
+        final Enumerable<Row<T>> rowEnumerable;
         Node node;
 
 
-        NodeInfo( AlgNode alg, Enumerable<Row> rowEnumerable ) {
+        NodeInfo( AlgNode alg, Enumerable<Row<T>> rowEnumerable ) {
             this.alg = alg;
             this.rowEnumerable = rowEnumerable;
         }
@@ -181,18 +181,18 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     /**
      * A {@link Source} that is just backed by an {@link Enumerator}. The {@link Enumerator} is closed when it is finished or by calling {@link #close()}.
      */
-    private static class EnumeratorSource implements Source {
+    private static class EnumeratorSource<T> implements Source<T> {
 
-        private final Enumerator<Row> enumerator;
+        private final Enumerator<Row<T>> enumerator;
 
 
-        EnumeratorSource( final Enumerator<Row> enumerator ) {
+        EnumeratorSource( final Enumerator<Row<T>> enumerator ) {
             this.enumerator = Objects.requireNonNull( enumerator );
         }
 
 
         @Override
-        public Row receive() {
+        public Row<T> receive() {
             if ( enumerator.moveNext() ) {
                 return enumerator.current();
             }
@@ -215,16 +215,16 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
      */
     private static class ListSink implements Sink {
 
-        final ArrayDeque<Row> list;
+        final ArrayDeque<Row<PolyValue>> list;
 
 
-        private ListSink( ArrayDeque<Row> list ) {
+        private ListSink( ArrayDeque<Row<PolyValue>> list ) {
             this.list = list;
         }
 
 
         @Override
-        public void send( Row row ) throws InterruptedException {
+        public void send( Row<PolyValue> row ) {
             list.add( row );
         }
 
@@ -239,19 +239,19 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
     /**
      * Implementation of {@link Source} using a {@link java.util.ArrayDeque}.
      */
-    private static class ListSource implements Source {
+    private static class ListSource implements Source<PolyValue> {
 
-        private final ArrayDeque<Row> list;
-        private Iterator<Row> iterator = null;
+        private final ArrayDeque<Row<PolyValue>> list;
+        private Iterator<Row<PolyValue>> iterator = null;
 
 
-        ListSource( ArrayDeque<Row> list ) {
+        ListSource( ArrayDeque<Row<PolyValue>> list ) {
             this.list = list;
         }
 
 
         @Override
-        public Row receive() {
+        public Row<PolyValue> receive() {
             try {
                 if ( iterator == null ) {
                     iterator = list.iterator();
@@ -277,24 +277,24 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
      */
     private static class DuplicatingSink implements Sink {
 
-        private List<ArrayDeque<Row>> queues;
+        private List<ArrayDeque<Row<PolyValue>>> queues;
 
 
-        private DuplicatingSink( List<ArrayDeque<Row>> queues ) {
+        private DuplicatingSink( List<ArrayDeque<Row<PolyValue>>> queues ) {
             this.queues = ImmutableList.copyOf( queues );
         }
 
 
         @Override
-        public void send( Row row ) throws InterruptedException {
-            for ( ArrayDeque<Row> queue : queues ) {
+        public void send( Row<PolyValue> row ) {
+            for ( ArrayDeque<Row<PolyValue>> queue : queues ) {
                 queue.add( row );
             }
         }
 
 
         @Override
-        public void end() throws InterruptedException {
+        public void end() {
         }
 
     }
@@ -315,7 +315,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         protected AlgNode rootRel;
         protected AlgNode alg;
         protected Node node;
-        final Map<AlgNode, NodeInfo> nodes = new LinkedHashMap<>();
+        final Map<AlgNode, NodeInfo<PolyValue>> nodes = new LinkedHashMap<>();
         final Map<AlgNode, List<AlgNode>> algInputs = new HashMap<>();
         final Multimap<AlgNode, Edge> outEdges = LinkedHashMultimap.create();
 
@@ -332,7 +332,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         /**
          * Visits the tree, starting from the root {@code p}.
          */
-        Pair<AlgNode, Map<AlgNode, NodeInfo>> visitRoot( AlgNode p ) {
+        Pair<AlgNode, Map<AlgNode, NodeInfo<PolyValue>>> visitRoot( AlgNode p ) {
             rootRel = p;
             visit( p, 0, null );
             return Pair.of( rootRel, nodes );
@@ -391,7 +391,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                     throw new AssertionError( "interpreter: no implementation for " + p.getClass() );
                 }
             }
-            final NodeInfo nodeInfo = nodes.get( p );
+            final NodeInfo<PolyValue> nodeInfo = nodes.get( p );
             assert nodeInfo != null;
             nodeInfo.node = node;
             if ( inputs != null ) {
@@ -432,16 +432,16 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
 
 
         @Override
-        public Source source( AlgNode alg, int ordinal ) {
+        public Source<PolyValue> source( AlgNode alg, int ordinal ) {
             final AlgNode input = getInput( alg, ordinal );
             final Edge edge = new Edge( alg, ordinal );
             final Collection<Edge> edges = outEdges.get( input );
-            final NodeInfo nodeInfo = nodes.get( input );
+            final NodeInfo<PolyValue> nodeInfo = nodes.get( input );
             if ( nodeInfo == null ) {
                 throw new AssertionError( "should be registered: " + alg );
             }
             if ( nodeInfo.rowEnumerable != null ) {
-                return new EnumeratorSource( nodeInfo.rowEnumerable.enumerator() );
+                return new EnumeratorSource<>( nodeInfo.rowEnumerable.enumerator() );
             }
             assert nodeInfo.sinks.size() == edges.size();
             final ListSink sink = nodeInfo.sinks.get( edge );
@@ -468,9 +468,9 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
                     edges.isEmpty()
                             ? ImmutableList.of( new Edge( null, 0 ) )
                             : edges;
-            NodeInfo nodeInfo = nodes.get( alg );
+            NodeInfo<PolyValue> nodeInfo = nodes.get( alg );
             if ( nodeInfo == null ) {
-                nodeInfo = new NodeInfo( alg, null );
+                nodeInfo = new NodeInfo<>( alg, null );
                 nodes.put( alg, nodeInfo );
                 for ( Edge edge : edges2 ) {
                     nodeInfo.sinks.put( edge, new ListSink( new ArrayDeque<>() ) );
@@ -479,7 +479,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
             if ( edges.size() == 1 ) {
                 return Iterables.getOnlyElement( nodeInfo.sinks.values() );
             } else {
-                final List<ArrayDeque<Row>> queues = new ArrayList<>();
+                final List<ArrayDeque<Row<PolyValue>>> queues = new ArrayList<>();
                 for ( ListSink sink : nodeInfo.sinks.values() ) {
                     queues.add( sink.list );
                 }
@@ -489,15 +489,15 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
 
 
         @Override
-        public void enumerable( AlgNode alg, Enumerable<Row> rowEnumerable ) {
-            NodeInfo nodeInfo = new NodeInfo( alg, rowEnumerable );
+        public void enumerable( AlgNode alg, Enumerable<Row<PolyValue>> rowEnumerable ) {
+            NodeInfo<PolyValue> nodeInfo = new NodeInfo<>( alg, rowEnumerable );
             nodes.put( alg, nodeInfo );
         }
 
 
         @Override
-        public Context createContext() {
-            return new Context( getDataContext() );
+        public Context<PolyValue> createContext() {
+            return new Context<>( getDataContext() );
         }
 
 

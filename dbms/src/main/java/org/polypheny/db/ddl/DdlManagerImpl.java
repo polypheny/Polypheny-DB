@@ -3164,7 +3164,11 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check if there is a schema with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( namespaceName );
-        if ( optionalNamespace.isEmpty() || !ifExists ) {
+        if ( optionalNamespace.isEmpty() ) {
+            if ( ifExists ) {
+                return;
+            }
+
             throw new GenericRuntimeException( "The namespace does not exist" );
         }
 

@@ -41,7 +41,7 @@ import org.polypheny.db.type.entity.PolyValue;
  *
  * It also implements {@link Typed}; the {@link #getElementType()} method must return {@code Object[].class}.
  */
-public interface ArrayBindable extends Bindable<PolyValue[]>, Typed {
+public interface ArrayBindable<T> extends Bindable<T[]>, Typed {
 
     @Override
     Class<PolyValue[]> getElementType();

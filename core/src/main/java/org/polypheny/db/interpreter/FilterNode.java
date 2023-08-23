@@ -36,6 +36,7 @@ package org.polypheny.db.interpreter;
 
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -44,7 +45,7 @@ import org.polypheny.db.algebra.core.Filter;
 public class FilterNode extends AbstractSingleNode<Filter> {
 
     private final Scalar condition;
-    private final Context context;
+    private final Context<PolyValue> context;
 
 
     public FilterNode( Compiler compiler, Filter alg ) {
@@ -56,7 +57,7 @@ public class FilterNode extends AbstractSingleNode<Filter> {
 
     @Override
     public void run() throws InterruptedException {
-        Row row;
+        Row<PolyValue> row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
             Boolean b = condition.execute( context ).asBoolean().value;

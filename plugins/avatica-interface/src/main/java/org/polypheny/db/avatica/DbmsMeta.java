@@ -1512,7 +1512,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
-            throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+            throw new IllegalStateException( "Forbidden attempt to execute the connection `" + ch.id + "` twice!" );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -1652,7 +1652,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
@@ -1682,7 +1682,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
@@ -1715,9 +1715,9 @@ public class DbmsMeta implements ProtobufMeta {
             final PolyphenyDbConnectionHandle connectionToSync = openConnections.get( ch.id );
             if ( connectionToSync == null ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Connection {} is not open.", ch.id );
+                    log.debug( "Connection {} is not execute.", ch.id );
                 }
-                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
+                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been execute yet or is already closed." );
             }
 
             return connection.mergeConnectionProperties( connProps );

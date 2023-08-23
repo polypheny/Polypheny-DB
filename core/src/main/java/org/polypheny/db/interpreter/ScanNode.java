@@ -75,7 +75,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class ScanNode implements Node {
 
-    private ScanNode( Compiler compiler, RelScan<?> alg, Enumerable<Row> enumerable ) {
+    private ScanNode( Compiler compiler, RelScan<?> alg, Enumerable<Row<PolyValue>> enumerable ) {
         compiler.enumerable( alg, enumerable );
     }
 
@@ -105,7 +105,7 @@ public class ScanNode implements Node {
             return createScannable( compiler, alg, filters, projects, scannableTable );
         }
         //noinspection unchecked
-        final Enumerable<Row> enumerable = alg.entity.unwrap( Enumerable.class );
+        final Enumerable<Row<PolyValue>> enumerable = alg.entity.unwrap( Enumerable.class );
         if ( enumerable != null ) {
             return createEnumerable( compiler, alg, enumerable, null, filters, projects );
         }
@@ -118,7 +118,7 @@ public class ScanNode implements Node {
 
 
     private static ScanNode createScannable( Compiler compiler, RelScan<?> alg, ImmutableList<RexNode> filters, ImmutableList<Integer> projects, ScannableEntity scannableTable ) {
-        final Enumerable<Row> rowEnumerable = Enumerables.toRow( scannableTable.scan( compiler.getDataContext() ) );
+        final Enumerable<Row<PolyValue>> rowEnumerable = Enumerables.toRow( scannableTable.scan( compiler.getDataContext() ) );
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
 
@@ -127,10 +127,9 @@ public class ScanNode implements Node {
         final DataContext root = compiler.getDataContext();
         final Type elementType = queryableTable.getElementType();
 
-        final Enumerable<Row> rowEnumerable;
+        final Enumerable<Row<PolyValue>> rowEnumerable;
         if ( elementType instanceof Class ) {
-            //noinspection unchecked
-            final Queryable<Object> queryable = (Queryable<Object>) Schemas.queryable( root, (Class<?>) elementType, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
+            final Queryable<PolyValue> queryable = Schemas.queryable( root, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class<?> type = (Class<?>) elementType;
             for ( Field field : type.getFields() ) {
@@ -149,10 +148,10 @@ public class ScanNode implements Node {
                         throw new RuntimeException( e );
                     }
                 }
-                return new Row( values );
+                return new Row<>( values, PolyValue.class );
             } );
         } else {
-            rowEnumerable = Schemas.queryable( root, Row.class, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.getEntity().name ) );
+            rowEnumerable = Schemas.queryableRow( root, Object.class, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.getEntity().name ) );
         }
         return createEnumerable( compiler, alg, rowEnumerable, null, filters, projects );
     }
@@ -167,7 +166,7 @@ public class ScanNode implements Node {
                 throw RESOURCE.filterableTableInventedFilter( filter.toString() ).ex();
             }
         }
-        final Enumerable<Row> rowEnumerable = Enumerables.toRow( enumerable );
+        final Enumerable<Row<PolyValue>> rowEnumerable = Enumerables.toRow( enumerable );
         return createEnumerable( compiler, alg, rowEnumerable, null, mutableFilters, projects );
     }
 
@@ -204,7 +203,7 @@ public class ScanNode implements Node {
                     continue;
                 }
             }
-            final Enumerable<Row> rowEnumerable = Enumerables.toRow( enumerable1 );
+            final Enumerable<Row<PolyValue>> rowEnumerable = Enumerables.toRow( enumerable1 );
             final ImmutableList<Integer> rejectedProjects;
             if ( Objects.equals( projects, originalProjects ) ) {
                 rejectedProjects = null;
@@ -217,7 +216,7 @@ public class ScanNode implements Node {
     }
 
 
-    private static ScanNode createEnumerable( Compiler compiler, RelScan<?> alg, Enumerable<Row> enumerable, final ImmutableList<Integer> acceptedProjects, List<RexNode> rejectedFilters, final ImmutableList<Integer> rejectedProjects ) {
+    private static ScanNode createEnumerable( Compiler compiler, RelScan<?> alg, Enumerable<Row<PolyValue>> enumerable, final ImmutableList<Integer> acceptedProjects, List<RexNode> rejectedFilters, final ImmutableList<Integer> rejectedProjects ) {
         if ( !rejectedFilters.isEmpty() ) {
             final RexNode filter = RexUtil.composeConjunction( alg.getCluster().getRexBuilder(), rejectedFilters );
             // Re-map filter for the projects that have been applied already
@@ -237,7 +236,7 @@ public class ScanNode implements Node {
                 inputRowType = builder.build();
             }
             final Scalar condition = compiler.compile( ImmutableList.of( filter2 ), inputRowType );
-            final Context context = compiler.createContext();
+            final Context<PolyValue> context = compiler.createContext();
             enumerable = enumerable.where( row -> {
                 context.values = row.getValues();
                 Boolean b = condition.execute( context ).asBoolean().value;
@@ -251,7 +250,7 @@ public class ScanNode implements Node {
 
 
                         @Override
-                        public Row apply( Row row ) {
+                        public Row<PolyValue> apply( Row<PolyValue> row ) {
                             final PolyValue[] inValues = row.getValues();
                             for ( int i = 0; i < rejectedProjects.size(); i++ ) {
                                 values[i] = inValues[rejectedProjects.get( i )];

@@ -34,6 +34,7 @@
 package org.polypheny.db.interpreter;
 
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -41,17 +42,19 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Row.
  */
-public class Row {
+public class Row<T> {
 
-    private final PolyValue[] values;
+    private final T[] values;
 
+    public final Class<T> clazz;
 
     /**
      * Creates a Row.
      */
     // must stay package-protected, because does not copy
-    Row( PolyValue[] values ) {
+    Row( T[] values, Class<T> clazz ) {
         this.values = values;
+        this.clazz = clazz;
     }
 
 
@@ -60,40 +63,40 @@ public class Row {
      *
      * Makes a defensive copy of the array, so the Row is immutable. (If you're worried about the extra copy, call {@link #of(PolyValue)}. But the JIT probably avoids the copy.)
      */
-    public static Row asCopy( PolyValue... values ) {
-        return new Row( values.clone() );
+    public static Row<PolyValue> asCopy( PolyValue... values ) {
+        return new Row<>( values.clone(), PolyValue.class );
     }
 
 
     /**
      * Creates a Row with one column value.
      */
-    public static Row of( PolyValue value0 ) {
-        return new Row( new PolyValue[]{ value0 } );
+    public static Row<PolyValue> of( PolyValue value0 ) {
+        return new Row<>( new PolyValue[]{ value0 }, PolyValue.class );
     }
 
 
     /**
      * Creates a Row with two column values.
      */
-    public static Row of( PolyValue value0, PolyValue value1 ) {
-        return new Row( new PolyValue[]{ value0, value1 } );
+    public static Row<PolyValue> of( PolyValue value0, PolyValue value1 ) {
+        return new Row<>( new PolyValue[]{ value0, value1 }, PolyValue.class );
     }
 
 
     /**
      * Creates a Row with three column values.
      */
-    public static Row of( PolyValue value0, PolyValue value1, PolyValue value2 ) {
-        return new Row( new PolyValue[]{ value0, value1, value2 } );
+    public static Row<PolyValue> of( PolyValue value0, PolyValue value1, PolyValue value2 ) {
+        return new Row<>( new PolyValue[]{ value0, value1, value2 }, PolyValue.class );
     }
 
 
     /**
      * Creates a Row with variable number of values.
      */
-    public static Row of( PolyValue... values ) {
-        return new Row( values );
+    public static Row<PolyValue> of( PolyValue... values ) {
+        return new Row<>( values, PolyValue.class );
     }
 
 
@@ -117,13 +120,13 @@ public class Row {
     }
 
 
-    public PolyValue getObject( int index ) {
+    public T getObject( int index ) {
         return values[index];
     }
 
 
     // must stay package-protected
-    PolyValue[] getValues() {
+    T[] getValues() {
         return values;
     }
 
@@ -131,7 +134,7 @@ public class Row {
     /**
      * Returns a copy of the values.
      */
-    public Object[] copyValues() {
+    public T[] copyValues() {
         return values.clone();
     }
 
@@ -147,21 +150,25 @@ public class Row {
      * @param size Number of columns in output data.
      * @return New RowBuilder object.
      */
-    public static RowBuilder newBuilder( int size ) {
-        return new RowBuilder( size );
+    public static <T> RowBuilder<T> newBuilder( int size, Class<T> clazz ) {
+        return new RowBuilder<>( size, clazz );
     }
+
 
 
     /**
      * Utility class to build row objects.
      */
-    public static class RowBuilder {
+    public static class RowBuilder<T> {
 
-        PolyValue[] values;
+        T[] values;
+
+        public Class<T> clazz;
 
 
-        private RowBuilder( int size ) {
-            values = new PolyValue[size];
+        private RowBuilder( int size, Class<T> clazz ) {
+            this.values = (T[]) Array.newInstance( clazz, size );
+            this.clazz = clazz;
         }
 
 
@@ -171,7 +178,7 @@ public class Row {
          * @param index Zero-indexed position of value.
          * @param value Desired column value.
          */
-        public void set( int index, PolyValue value ) {
+        public void set( int index, T value ) {
             values[index] = value;
         }
 
@@ -179,8 +186,8 @@ public class Row {
         /**
          * Return a Row object
          **/
-        public Row build() {
-            return new Row( values );
+        public Row<T> build() {
+            return new Row<>( values, clazz );
         }
 
 
@@ -188,13 +195,14 @@ public class Row {
          * Allocates a new internal array.
          */
         public void reset() {
-            values = new PolyValue[values.length];
+            values = (T[]) Array.newInstance( clazz, values.length );
         }
 
 
         public int size() {
             return values.length;
         }
+
     }
 
 }

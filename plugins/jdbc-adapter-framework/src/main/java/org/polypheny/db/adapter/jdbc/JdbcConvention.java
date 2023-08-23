@@ -52,7 +52,7 @@ import org.polypheny.db.sql.language.SqlDialect;
  * This is the only convention, thus far, that is not a singleton. Each instance contains a JDBC schema
  * (and therefore a data source). If Polypheny-DB is working with two different databases, it would even make
  * sense to convert from "JDBC#A" convention to "JDBC#B", even though we don't do it currently.
- * (That would involve asking database B to open a database link to database A.)
+ * (That would involve asking database B to execute a database link to database A.)
  *
  * As a result, converter rules from and to this convention need to be instantiated, at the start of planning,
  * for each JDBC database in play.

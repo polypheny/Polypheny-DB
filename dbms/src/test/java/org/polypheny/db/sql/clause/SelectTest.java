@@ -213,7 +213,7 @@ public class SelectTest {
         AlgNode scan = builder.scan( "public", "TableC" ).build();
         PolyImplementation<Object> impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
-        impl.open( statement, 2, false );
+        impl.execute( statement, 2, false );
         List<List<Object>> first = impl.getRows();
         List<List<Object>> others = impl.getRows();
         try {

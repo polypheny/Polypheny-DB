@@ -92,7 +92,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    public static Pair<Bindable<PolyValue>, String> toBindable(
+    public static <T> Pair<Bindable<T>, String> toBindable(
             Map<String, Object> parameters,
             EnumerableAlg alg,
             EnumerableAlg.Prefer prefer,
@@ -115,7 +115,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     }
 
 
-    static Bindable<PolyValue> getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
+    static <T> Bindable<T> getBindable( ClassDeclaration expr, String s, int fieldCount ) throws CompileException, IOException {
         ICompilerFactory compilerFactory;
         try {
             compilerFactory = CompilerFactoryFactory.getDefaultCompilerFactory();
@@ -135,7 +135,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             // Add line numbers to the generated janino class
             cbe.setDebuggingInformation( true, true, true );
         }
-        return (Bindable<PolyValue>) cbe.createInstance( new StringReader( s ) );
+        return (Bindable<T>) cbe.createInstance( new StringReader( s ) );
     }
 
 

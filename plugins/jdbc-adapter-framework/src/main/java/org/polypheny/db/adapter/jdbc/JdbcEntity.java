@@ -78,6 +78,7 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
 import org.polypheny.db.sql.language.util.SqlString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -190,7 +191,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext root ) {
+    public Enumerable<PolyValue[]> scan( DataContext root ) {
         final JavaTypeFactory typeFactory = root.getTypeFactory();
         final SqlString sql = generateSql();
         return ResultSetEnumerable.of(

@@ -35,20 +35,19 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * Context for executing a scalar expression in an interpreter.
  */
-public class Context {
+public class Context<T> {
 
     public final DataContext root;
 
     /**
      * Values of incoming columns from all inputs.
      */
-    public PolyValue[] values;
+    public T[] values;
 
 
     Context( DataContext root ) {

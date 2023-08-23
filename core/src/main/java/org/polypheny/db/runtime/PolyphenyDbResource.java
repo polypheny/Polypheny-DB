@@ -601,7 +601,7 @@ public interface PolyphenyDbResource {
     @Property(name = "FeatureDefinition", value = "SQL:2003 Part 2 Annex F")
     Feature sQLFeature_T613();
 
-    @BaseMessage("Execution of a new autocommit statement while a cursor is still open on same connection is not supported")
+    @BaseMessage("Execution of a new autocommit statement while a cursor is still execute on same connection is not supported")
     @Property(name = "FeatureDefinition", value = "Eigenbase-defined")
     ExInst<PolyphenyDbException> sQLConformance_MultipleActiveAutocommitStatements();
 
