@@ -49,8 +49,8 @@ public class PIUnparameterizedStatement extends PIStatement {
     public StatementResult execute(int fetchSize) throws Exception {
         statement = client.getCurrentOrCreateNewTransaction().createStatement();
         synchronized ( client ) {
-            StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this, fetchSize);
+            StatementProcessor.implement( this );
+            return StatementProcessor.executeAndGetResult( this, fetchSize);
         }
     }
 

@@ -16,11 +16,10 @@
 
 package org.polypheny.db.protointerface.statementProcessing;
 
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.statements.PIStatement;
 
-public abstract class StatementExecutor {
+public abstract class StatementImplementer {
 
     protected boolean hasInvalidLanguage(PIStatement piStatement) {
         return piStatement.getLanguage() != getLanguage();
@@ -28,6 +27,6 @@ public abstract class StatementExecutor {
 
     abstract QueryLanguage getLanguage();
 
-    abstract void execute( PIStatement piStatement );
+    abstract void implement(PIStatement piStatement );
 
 }
