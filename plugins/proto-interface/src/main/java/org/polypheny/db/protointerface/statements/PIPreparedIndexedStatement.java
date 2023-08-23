@@ -18,7 +18,6 @@ package org.polypheny.db.protointerface.statements;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import lombok.Getter;
@@ -28,10 +27,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
-import org.polypheny.db.protointerface.proto.ParameterMeta;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
-import org.polypheny.db.protointerface.utils.PropertyUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -77,8 +74,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             for ( List<PolyValue> column : valuesBatch ) {
                 statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
             }
-            StatementProcessor.execute( this);
-            updateCounts.add(StatementProcessor.getResult(this, 0).getScalar());
+            StatementProcessor.implement( this);
+            updateCounts.add(StatementProcessor.executeAndGetResult(this, 0).getScalar());
         }
         return updateCounts;
     }
@@ -100,8 +97,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
                     statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
                 }
             }
-            StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this, fetchSize );
+            StatementProcessor.implement( this );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
         }
     }
 

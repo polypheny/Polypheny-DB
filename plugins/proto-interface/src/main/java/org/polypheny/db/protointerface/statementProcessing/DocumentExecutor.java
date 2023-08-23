@@ -29,7 +29,7 @@ import org.polypheny.db.protointerface.utils.ProtoUtils;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
 
-public class DocumentResultRetriever extends ResultRetriever {
+public class DocumentExecutor extends Executor {
 
     private static NamespaceType namespaceType = NamespaceType.DOCUMENT;
 
@@ -39,9 +39,38 @@ public class DocumentResultRetriever extends ResultRetriever {
         return namespaceType;
     }
 
+    @Override
+    StatementResult executeAndGetResult(PIStatement piStatement) throws Exception {
+        if ( hasInvalidNamespaceType( piStatement ) ) {
+            throw new PIServiceException( "The results of type "
+                    + piStatement.getLanguage().getNamespaceType()
+                    + "returned by this statement can't be retrieved by a document retriever.",
+                    "I9000",
+                    9000
+            );
+        }
+        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        if ( implementation == null ) {
+            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
+                    "I9002",
+                    9002
+            );
+        }
+        PIClient client = piStatement.getClient();
+        StatementResult.Builder resultBuilder = StatementResult.newBuilder();
+        if ( implementation.isDDL() ) {
+            resultBuilder.setScalar( 1 );
+            return resultBuilder.build();
+        }
+        throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
+                "I9003",
+                9002
+        );
+    }
+
 
     @Override
-    StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
+    StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
