@@ -57,6 +57,17 @@ public class StatementProcessor {
         statementImplementer.implement( piStatement );
     }
 
+    public static StatementResult executeAndGetResult(PIStatement piStatement) throws Exception {
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
+        if ( executor == null ) {
+            throw new PIServiceException( "No result retriever registered for namespace type "
+                    + piStatement.getLanguage().getNamespaceType(),
+                    "I9004",
+                    9004
+            );
+        }
+        return executor.executeAndGetResult( piStatement);
+    }
 
     public static StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception {
         Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
