@@ -171,7 +171,7 @@ public class Neo4jPlugin extends Plugin {
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
-                this.pass = PasswordGenerator.generatePassword( 256 );
+                this.pass = PasswordGenerator.generatePassword();
                 settings.put( "password", this.pass );
                 updateSettings( settings );
             } else {
