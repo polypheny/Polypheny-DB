@@ -70,8 +70,8 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
                     statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
                 }
             }
-            StatementProcessor.execute( this );
-            return StatementProcessor.getResult( this, fetchSize );
+            StatementProcessor.implement( this );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
         }
     }
 

@@ -19,21 +19,20 @@ package org.polypheny.db.protointerface.statementProcessing;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
-public class MongoExecutor extends StatementExecutor {
-
-    private static QueryLanguage language = QueryLanguage.from( "mongo" );
-
+public class SqlImplementer extends StatementImplementer {
+    private static QueryLanguage language = QueryLanguage.from( "sql" );
 
     @Override
     public QueryLanguage getLanguage() {
@@ -42,35 +41,36 @@ public class MongoExecutor extends StatementExecutor {
 
 
     @Override
-    public void execute( PIStatement piStatement ) throws PIServiceException {
+    public void implement(PIStatement piStatement ) throws PIServiceException{
         if ( hasInvalidLanguage( piStatement ) ) {
             throw new PIServiceException( "The statement in the language "
                     + piStatement.getLanguage()
-                    + "can't be executed using a mql executor.",
+                    + "can't be executed using a sql executor.",
                     "I9003",
                     9003
             );
         }
         Statement statement = piStatement.getStatement();
-        if ( statement == null ) {
+        if (statement == null) {
             throw new PIServiceException( "Statement is not linked to a polypheny statement",
-                    "I9001",
-                    9001
+                    "I9003",
+                    9003
             );
         }
         String query = piStatement.getQuery();
         PolyImplementation<PolyValue> implementation;
         Processor queryProcessor = statement.getTransaction().getProcessor( language );
-        QueryParameters parameters = new MqlQueryParameters( query, null, NamespaceType.DOCUMENT );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {
-            implementation = queryProcessor.prepareDdl( statement, parsedStatement, null );
+            implementation = queryProcessor.prepareDdl( statement, parsedStatement,
+                    new QueryParameters( query, language.getNamespaceType() ) );
         } else {
-            AlgRoot logicalRoot = queryProcessor.translate( statement, parsedStatement, null );
-            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+            Pair<Node, AlgDataType> validated = queryProcessor.validate( piStatement.getTransaction(),
+                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
+            AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
+            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
         }
         piStatement.setImplementation( implementation );
     }
-
-
 }
