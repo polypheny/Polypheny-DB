@@ -34,53 +34,53 @@ import org.polypheny.db.util.Pair;
 
 public class StatementProcessor {
 
-    private static final Map<QueryLanguage, StatementExecutor> EXECUTORS =
-            ImmutableMap.<QueryLanguage, StatementExecutor>builder()
-                    .put( QueryLanguage.from( "sql" ), new SqlExecutor() )
-                    .put( QueryLanguage.from( "mongo" ), new MongoExecutor() )
+    private static final Map<QueryLanguage, StatementImplementer> EXECUTORS =
+            ImmutableMap.<QueryLanguage, StatementImplementer>builder()
+                    .put( QueryLanguage.from( "sql" ), new SqlImplementer() )
+                    .put( QueryLanguage.from( "mongo" ), new MongoImplementer() )
                     .build();
-    private static final Map<NamespaceType, ResultRetriever> RESULT_RETRIEVERS =
-            ImmutableMap.<NamespaceType, ResultRetriever>builder()
-                    .put( NamespaceType.RELATIONAL, new RelationalResultRetriever() )
-                    .put( NamespaceType.DOCUMENT, new DocumentResultRetriever() )
+    private static final Map<NamespaceType, Executor> RESULT_RETRIEVERS =
+            ImmutableMap.<NamespaceType, Executor>builder()
+                    .put( NamespaceType.RELATIONAL, new RelationalExecutor() )
+                    .put( NamespaceType.DOCUMENT, new DocumentExecutor() )
                     .build();
 
 
-    public static void execute( PIStatement piStatement ) {
-        StatementExecutor statementExecutor = EXECUTORS.get( piStatement.getLanguage() );
-        if ( statementExecutor == null ) {
+    public static void implement(PIStatement piStatement ) {
+        StatementImplementer statementImplementer = EXECUTORS.get( piStatement.getLanguage() );
+        if ( statementImplementer == null ) {
             throw new PIServiceException( "No executor registered for language " + piStatement.getLanguage(),
                     "I9005",
                     9005
             );
         }
-        statementExecutor.execute( piStatement );
+        statementImplementer.implement( piStatement );
     }
 
 
-    public static StatementResult getResult( PIStatement piStatement, int fetchSize ) throws Exception {
-        ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
-        if ( resultRetriever == null ) {
+    public static StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception {
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
+        if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
                     + piStatement.getLanguage().getNamespaceType(),
                     "I9004",
                     9004
             );
         }
-        return resultRetriever.getResult( piStatement, fetchSize );
+        return executor.executeAndGetResult( piStatement, fetchSize );
     }
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        ResultRetriever resultRetriever = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
-        if ( resultRetriever == null ) {
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().getNamespaceType() );
+        if ( executor == null ) {
             throw new PIServiceException( "No result retriever registered for namespace type "
                     + piStatement.getLanguage().getNamespaceType(),
                     "I9004",
                     9004
             );
         }
-        return resultRetriever.fetch( piStatement, fetchSize );
+        return executor.fetch( piStatement, fetchSize );
     }
 
 
