@@ -19,11 +19,12 @@ package org.polypheny.db.webui.models.results;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.webui.models.FieldDefinition;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
-public class DocResult extends GenericResult<String> {
+public class DocResult extends Result<String, FieldDefinition> {
 
     public String query;
 

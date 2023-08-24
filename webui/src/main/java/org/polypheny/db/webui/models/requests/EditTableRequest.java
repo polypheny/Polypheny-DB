@@ -21,7 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 
 
 /**
@@ -37,7 +37,7 @@ public class EditTableRequest {
     public @Nullable String entityName;
 
     public String action; // truncate / drop
-    public DbColumn[] columns;
+    public UiColumnDefinition[] columns;
     public Long storeId;
     public EntityType tableType;
 

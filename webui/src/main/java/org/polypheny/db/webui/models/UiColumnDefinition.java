@@ -32,7 +32,7 @@ import lombok.experimental.SuperBuilder;
  */
 @Accessors(chain = true)
 @SuperBuilder
-public class DbColumn extends FieldDefinition {
+public class UiColumnDefinition extends FieldDefinition {
 
     // for the Data-Table in the UI
     public SortState sort;
@@ -54,8 +54,8 @@ public class DbColumn extends FieldDefinition {
     public String as;
 
 
-    private static DbColumn create( JsonReader in ) throws IOException {
-        DbColumnBuilder<?, ?> builder = DbColumn.builder();
+    private static UiColumnDefinition create( JsonReader in ) throws IOException {
+        UiColumnDefinitionBuilder<?, ?> builder = UiColumnDefinition.builder();
         while ( in.peek() != JsonToken.END_OBJECT ) {
             switch ( in.nextName() ) {
                 case "name":
@@ -116,9 +116,9 @@ public class DbColumn extends FieldDefinition {
     }
 
 
-    public static TypeAdapter<DbColumn> serializer = new TypeAdapter<>() {
+    public static TypeAdapter<UiColumnDefinition> serializer = new TypeAdapter<>() {
         @Override
-        public void write( JsonWriter out, DbColumn col ) throws IOException {
+        public void write( JsonWriter out, UiColumnDefinition col ) throws IOException {
             out.beginObject();
             out.name( "name" );
             out.value( col.name );
@@ -151,13 +151,13 @@ public class DbColumn extends FieldDefinition {
 
 
         @Override
-        public DbColumn read( JsonReader in ) throws IOException {
+        public UiColumnDefinition read( JsonReader in ) throws IOException {
             if ( in.peek() == null ) {
                 in.nextNull();
                 return null;
             }
             in.beginObject();
-            DbColumn column = DbColumn.create( in );
+            UiColumnDefinition column = UiColumnDefinition.create( in );
             in.endObject();
 
             return column;

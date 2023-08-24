@@ -60,18 +60,18 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.FieldDefinition;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
-import org.polypheny.db.webui.models.results.GenericResult;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 @Getter
@@ -81,7 +81,7 @@ public class LanguageCrud {
 
     public static Crud crud;
 
-    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<GenericResult<?>>>> REGISTER = new HashMap<>();
+    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<Result<?, ?>>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -89,7 +89,7 @@ public class LanguageCrud {
     }
 
 
-    public static List<GenericResult<?>> anyQuery(
+    public static List<Result<?, ?>> anyQuery(
             QueryLanguage language,
             Session session,
             QueryRequest request,
@@ -102,7 +102,7 @@ public class LanguageCrud {
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<GenericResult<?>> results, long executionTime ) {
+    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
         String commitStatus;
         try {
@@ -110,7 +110,7 @@ public class LanguageCrud {
             commitStatus = "Committed";
         } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            results.add( Result.builder().error( e.getMessage() ).build() );
+            results.add( RelationalResult.builder().error( e.getMessage() ).build() );
             try {
                 transaction.rollback();
                 commitStatus = "Rolled back";
@@ -167,9 +167,9 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<GenericResult<?>> results, String query, Throwable t ) {
+    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        Result result = Result.builder().error( t == null ? null : t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build();
+        RelationalResult result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build();
 
         if ( transaction.isActive() ) {
             try {
@@ -184,7 +184,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static GenericResult<?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, final boolean noLimit ) {
+    public static Result<?, ?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mongo" ) ) {
@@ -195,16 +195,21 @@ public class LanguageCrud {
 
         ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<List<PolyValue>> rows = iterator.getRows();
+        try {
+            iterator.close();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
 
         boolean hasMoreRows = implementation.hasMoreRows();
 
         LogicalTable catalogTable = null;
-        if ( request.tableId != null ) {
-            String[] t = request.tableId.split( "\\." );
+        if ( request.entityId != null ) {
+            String[] t = request.entityId.split( "\\." );
             catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] ).orElseThrow();
         }
 
-        ArrayList<DbColumn> header = new ArrayList<>();
+        ArrayList<UiColumnDefinition> header = new ArrayList<>();
         for ( AlgDataTypeField field : implementation.rowType.getFieldList() ) {
             String columnName = field.getName();
 
@@ -212,7 +217,7 @@ public class LanguageCrud {
 
             SortState sort = getSortState( field, request.sortState );
 
-            DbColumn dbCol = DbColumn.builder()
+            UiColumnDefinition dbCol = UiColumnDefinition.builder()
                     .name( field.getName() )
                     .dataType( field.getType().getFullTypeString() )
                     .nullable( field.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
@@ -234,9 +239,9 @@ public class LanguageCrud {
 
         List<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
 
-        return Result
+        return RelationalResult
                 .builder()
-                .header( header.toArray( new DbColumn[0] ) )
+                .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
                 .namespaceType( implementation.getNamespaceType() )
                 .namespaceName( request.database )
@@ -261,7 +266,7 @@ public class LanguageCrud {
 
         return GraphResult.builder()
                 .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).collect( Collectors.toList() ) )
+                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
                 .namespaceName( request.database )
@@ -320,15 +325,15 @@ public class LanguageCrud {
 
         String query = String.format( "db.createCollection(%s)", request.collection );
 
-        Result result;
+        RelationalResult result;
         try {
             anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), null );
 
-            result = Result.builder().affectedRows( 1 ).generatedQuery( query ).build();
+            result = RelationalResult.builder().affectedRows( 1 ).generatedQuery( query ).build();
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while creating a table", e );
-            result = Result.builder().error( e.getMessage() ).generatedQuery( query ).build();
+            result = RelationalResult.builder().error( e.getMessage() ).generatedQuery( query ).build();
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -350,9 +355,9 @@ public class LanguageCrud {
                 .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
-        ctx.json( Result
+        ctx.json( RelationalResult
                 .builder()
-                .header( new DbColumn[]{ DbColumn.builder().name( "Database/Schema" ).build(), DbColumn.builder().name( "Type" ).build() } )
+                .header( new UiColumnDefinition[]{ UiColumnDefinition.builder().name( "Database/Schema" ).build(), UiColumnDefinition.builder().name( "Type" ).build() } )
                 .data( data )
                 .build() );
     }
@@ -400,10 +405,10 @@ public class LanguageCrud {
     public void getFixedFields( Context context ) {
         Catalog catalog = Catalog.getInstance();
         UIRequest request = context.bodyAsClass( UIRequest.class );
-        Result result;
-        List<DbColumn> cols = new ArrayList<>();
+        RelationalResult result;
+        List<UiColumnDefinition> cols = new ArrayList<>();
 
-        result = Result.builder().header( cols.toArray( new DbColumn[0] ) ).data( null ).build();
+        result = RelationalResult.builder().header( cols.toArray( new UiColumnDefinition[0] ) ).data( null ).build();
         context.json( result );
 
     }
@@ -450,7 +455,7 @@ public class LanguageCrud {
                     Long,
                     Long,
                     Crud,
-                    List<GenericResult<?>>> function ) {
+                    List<Result<?, ?>>> function ) {
         REGISTER.put( language, function );
     }
 

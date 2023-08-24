@@ -39,7 +39,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 public class CypherLanguagePlugin extends PolyPlugin {
@@ -79,7 +79,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult<?>> anyCypherQuery(
+    public static List<Result<?, ?>> anyCypherQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -92,7 +92,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface Cypher" );
         AutomaticDdlProcessor cypherProcessor = (AutomaticDdlProcessor) transaction.getProcessor( QueryLanguage.from( NAME ) );
 
-        List<GenericResult<?>> results = new ArrayList<>();
+        List<Result<?, ?>> results = new ArrayList<>();
 
         InformationManager queryAnalyzer = null;
         long executionTime = 0;
@@ -131,7 +131,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
                 if ( stmt.isDDL() ) {
                     cypherProcessor.prepareDdl( statement, node, parameters );
-                    Result result = Result.builder().affectedRows( 1 ).generatedQuery( splits.get( i ) ).xid( transaction.getXid().toString() ).build();
+                    RelationalResult result = RelationalResult.builder().affectedRows( 1 ).generatedQuery( splits.get( i ) ).xid( transaction.getXid().toString() ).build();
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {

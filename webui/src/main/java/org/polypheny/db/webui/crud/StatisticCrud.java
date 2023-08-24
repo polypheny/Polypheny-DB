@@ -85,7 +85,7 @@ public class StatisticCrud {
 
     public void getTableStatistics( Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        LogicalTable table = Catalog.getInstance().getSnapshot().rel().getTable( request.tableId.split( "\\." )[0], request.tableId.split( "\\." )[1] ).orElseThrow();
+        LogicalTable table = Catalog.getInstance().getSnapshot().rel().getTable( request.entityId.split( "\\." )[0], request.entityId.split( "\\." )[1] ).orElseThrow();
 
         ctx.json( statisticsManager.getTableStatistic( table.namespaceId, table.id ) );
     }

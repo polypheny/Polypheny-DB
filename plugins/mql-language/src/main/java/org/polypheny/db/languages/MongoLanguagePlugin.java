@@ -48,7 +48,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 @Slf4j
@@ -92,7 +92,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult<?>> anyMongoQuery(
+    public static List<Result<?, ?>> anyMongoQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -110,7 +110,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         InformationManager queryAnalyzer = LanguageCrud.attachAnalyzerIfSpecified( request, crud, transaction );
 
-        List<GenericResult<?>> results = new ArrayList<>();
+        List<Result<?, ?>> results = new ArrayList<>();
 
         String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
 
@@ -146,7 +146,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
                 if ( parsed.getFamily() == Family.DDL ) {
                     mqlProcessor.prepareDdl( statement, parsed, parameters );
-                    Result result = Result.builder().affectedRows( 1 ).generatedQuery( query ).xid( transaction.getXid().toString() ).namespaceType( NamespaceType.DOCUMENT ).build();
+                    RelationalResult result = RelationalResult.builder().affectedRows( 1 ).generatedQuery( query ).xid( transaction.getXid().toString() ).namespaceType( NamespaceType.DOCUMENT ).build();
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {

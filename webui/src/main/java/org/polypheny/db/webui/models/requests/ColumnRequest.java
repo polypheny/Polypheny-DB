@@ -17,13 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 
 
 public class ColumnRequest extends UIRequest {
 
-    public DbColumn oldColumn;
-    public DbColumn newColumn;
+    public UiColumnDefinition oldColumn;
+    public UiColumnDefinition newColumn;
     // for data sources
     public boolean renameOnly;
     public String tableType;

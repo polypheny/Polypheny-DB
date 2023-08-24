@@ -18,19 +18,19 @@ package org.polypheny.db.webui.models.results;
 
 
 import java.util.List;
-import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 
 
 public class ExploreResult {
 
-    private DbColumn[] header;
+    private UiColumnDefinition[] header;
     private List<String[]> dataAfterClassification;
     private int exploreManagerId;
     private String graph;
 
 
     public ExploreResult(
-            final DbColumn[] header,
+            final UiColumnDefinition[] header,
             final List<String[]> dataAfterClassification,
             final int exploreManagerId,
             final String graph ) {

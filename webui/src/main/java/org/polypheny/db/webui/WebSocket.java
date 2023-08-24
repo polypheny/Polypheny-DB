@@ -42,7 +42,7 @@ import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 
@@ -116,7 +116,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
-                List<GenericResult<?>> results = LanguageCrud.anyQuery(
+                List<Result<?, ?>> results = LanguageCrud.anyQuery(
                         language,
                         ctx.session,
                         queryRequest,
@@ -125,8 +125,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         crud.getNamespaceId(),
                         crud );
 
-                for ( GenericResult<?> result : results ) {
-                    if ( !(result instanceof Result) ) {
+                for ( Result<?, ?> result : results ) {
+                    if ( !(result instanceof RelationalResult) ) {
                         continue;
                     }
                     if ( result.xid != null ) {
@@ -138,13 +138,13 @@ public class WebSocket implements Consumer<WsConfig> {
 
             case "RelAlgRequest":
             case "TableRequest":
-                GenericResult<?> result = null;
+                Result<?, ?> result = null;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
                         result = crud.executeAlg( relAlgRequest, ctx.session );
                     } catch ( Throwable t ) {
-                        ctx.send( Result.builder().error( t.getMessage() ).build() );
+                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
                         return;
                     }
                 } else {//TableRequest, is equal to UIRequest
@@ -167,7 +167,7 @@ public class WebSocket implements Consumer<WsConfig> {
                         }
 
                     } catch ( Throwable t ) {
-                        ctx.send( Result.builder().error( t.getMessage() ).build() );
+                        ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
                         return;
                     }
                 }

@@ -55,7 +55,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 /**
@@ -107,7 +107,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-                .registerTypeAdapter( Result.class, Result.getSerializer() )
+                .registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() )
                 .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
@@ -202,7 +202,7 @@ public class HttpServer implements Runnable {
 
     private void defaultException( Class<? extends Exception> exceptionClass, Javalin server ) {
         server.exception( exceptionClass, ( e, ctx ) -> {
-            ctx.status( 400 ).json( Result.builder().error( e.getMessage() ).build() );
+            ctx.status( 400 ).json( RelationalResult.builder().error( e.getMessage() ).build() );
         } );
     }
 

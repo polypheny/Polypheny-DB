@@ -70,7 +70,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
-import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
@@ -364,7 +364,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
 
 
         private MongoConnection() {
@@ -490,7 +490,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
 
 
         public static GraphResult executeGetResponse( String query ) {

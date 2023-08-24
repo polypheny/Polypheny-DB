@@ -55,7 +55,7 @@ import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.Result;
 
 public class HttpInterfacePlugin extends PolyPlugin {
 
@@ -175,7 +175,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
             String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
 
-            List<GenericResult<?>> results = LanguageCrud.anyQuery(
+            List<Result<?, ?>> results = LanguageCrud.anyQuery(
                     language,
                     null,
                     query,
@@ -183,7 +183,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                     Catalog.defaultUserId,
                     Catalog.defaultNamespaceId,
                     null );
-            ctx.json( results.toArray( new GenericResult[0] ) );
+            ctx.json( results.toArray( new Result[0] ) );
 
             if ( !statementCounters.containsKey( language ) ) {
                 statementCounters.put( language, new AtomicLong() );

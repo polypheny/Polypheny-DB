@@ -31,7 +31,7 @@ public class DbTable {
     private final String tableName;
     @Getter
     private final String schema;
-    private final ArrayList<DbColumn> columns = new ArrayList<>();
+    private final ArrayList<UiColumnDefinition> columns = new ArrayList<>();
     private final ArrayList<String> primaryKeyFields = new ArrayList<>();
     private final ArrayList<String> uniqueColumns = new ArrayList<>();
     private final boolean modifiable;
@@ -59,7 +59,7 @@ public class DbTable {
      *
      * @param col column that is part of this table
      */
-    public void addColumn( final DbColumn col ) {
+    public void addColumn( final UiColumnDefinition col ) {
         this.columns.add( col );
     }
 

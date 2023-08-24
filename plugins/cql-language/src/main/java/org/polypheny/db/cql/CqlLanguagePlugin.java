@@ -43,7 +43,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 @Slf4j
@@ -76,7 +76,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static List<GenericResult<?>> processCqlRequest(
+    public static List<Result<?, ?>> processCqlRequest(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -135,7 +135,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );
             }
-            GenericResult<?> result = LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, request.noLimit );
+            Result<?, ?> result = LanguageCrud.getResult( QueryLanguage.from( NAME ), statement, request, query, polyImplementation, transaction, request.noLimit );
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().stop( "Execution" );
             }
@@ -162,7 +162,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
             return Collections.singletonList( result );
         } catch ( Throwable t ) {
-            return Collections.singletonList( Result.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
+            return Collections.singletonList( RelationalResult.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
         }
     }
 

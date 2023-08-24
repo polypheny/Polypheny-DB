@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.exploreByExample.models.RelationalExploreResult;
+import org.polypheny.db.exploreByExample.models.RelationalExploreResult.RelationalExploreResultBuilder;
 import org.polypheny.db.exploreByExample.requests.ClassifyAllData;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -36,8 +38,8 @@ import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.results.ExploreResult;
-import org.polypheny.db.webui.models.results.Result;
-import org.polypheny.db.webui.models.results.Result.ResultBuilder;
+import org.polypheny.db.webui.models.results.RelationalResult;
+import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
 
 @Slf4j
 public class ExploreManager {
@@ -152,16 +154,16 @@ public class ExploreManager {
         if ( isConvertedToSql ) {
             Transaction transaction = crud.getTransaction();
             Statement statement = transaction.createStatement();
-            ResultBuilder<?, ?> result;
+            RelationalExploreResultBuilder<?, ?> result;
 
             try {
-                result = Crud
-                        .executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud )
+                result = RelationalExploreResult.from( Crud
+                                .executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud ).build() )
                         .generatedQuery( explore.getClassifiedSqlStatement() );
                 transaction.commit();
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
-                result = Result.builder()
+                result = RelationalExploreResult.builder()
                         .error( e.getMessage() )
                         .generatedQuery( explore.getClassifiedSqlStatement() );
                 try {
@@ -173,18 +175,19 @@ public class ExploreManager {
 
             result.explorerId( explore.getId() )
                     .currentPage( classifyAllData.cPage )
-                    .table( classifyAllData.tableId )
+                    .table( classifyAllData.entityId )
                     .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) )
                     .classificationInfo( "NoClassificationPossible" )
                     .isConvertedToSql( isConvertedToSql );
 
             ctx.json( result );
         } else {
-            ResultBuilder<?, ?> result = Result.builder()
+            RelationalResultBuilder<?, ?> result = RelationalExploreResult.builder()
                     .header( classifyAllData.header )
-                    .data( Arrays.copyOfRange( explore.getData(), 0, 10 ) ).classificationInfo( "NoClassificationPossible" )
+                    .data( Arrays.copyOfRange( explore.getData(), 0, 10 ) )
+                    .classificationInfo( "NoClassificationPossible" )
                     .explorerId( explore.getId() )
-                    .currentPage( classifyAllData.cPage ).table( classifyAllData.tableId )
+                    .currentPage( classifyAllData.cPage ).table( classifyAllData.entityId )
                     .highestPage( (int) Math.ceil( (double) explore.getData().length / crud.getPageSize() ) )
                     .isConvertedToSql( isConvertedToSql );
             ctx.json( result );
@@ -206,7 +209,7 @@ public class ExploreManager {
         Transaction transaction = crud.getTransaction();
         Statement statement = transaction.createStatement();
 
-        ResultBuilder<?, ?> result;
+        RelationalExploreResultBuilder<?, ?> result;
         Explore explore = getExploreInformation( exploreTables.id );
         String[][] paginationData;
 
@@ -220,22 +223,23 @@ public class ExploreManager {
             } else {
                 paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * crud.getPageSize()), ((Math.max( 0, exploreTables.cPage )) * crud.getPageSize()) );
             }
-            result = Result.builder().header( exploreTables.columns )
+            result = RelationalExploreResult.builder()
+                    .header( exploreTables.columns )
                     .classifiedData( paginationData )
                     .classificationInfo( "NoClassificationPossible" )
                     .explorerId( explore.getId() )
                     .currentPage( exploreTables.cPage )
-                    .table( exploreTables.tableId )
+                    .table( exploreTables.entityId )
                     .highestPage( (int) Math.ceil( (double) tablesize / crud.getPageSize() ) );
 
             ctx.json( result );
         }
 
         try {
-            result = crud.executeSqlSelect( statement, exploreTables, query );
+            result = RelationalExploreResult.from( crud.executeSqlSelect( statement, exploreTables, query ).build() );
         } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while fetching a table", e );
-            result = Result.builder().error( "Could not fetch table " + exploreTables.tableId );
+            result = RelationalExploreResult.builder().error( "Could not fetch table " + exploreTables.entityId );
             try {
                 transaction.rollback();
                 ctx.status( 500 ).json( result );
@@ -251,7 +255,7 @@ public class ExploreManager {
         }
         result.explorerId( explore.getId() )
                 .currentPage( exploreTables.cPage )
-                .table( exploreTables.tableId );
+                .table( exploreTables.entityId );
         int tableSize = explore.getTableSize();
 
         result.highestPage( (int) Math.ceil( (double) tableSize / crud.getPageSize() ) );
@@ -290,11 +294,11 @@ public class ExploreManager {
     public void createInitialExploreQuery( final Context ctx, final Crud crud ) {
         QueryExplorationRequest queryExplorationRequest = ctx.bodyAsClass( QueryExplorationRequest.class );
 
-        ResultBuilder<?, ?> result;
+        RelationalExploreResultBuilder<?, ?> result = RelationalExploreResult.builder();
 
         Explore explore = createSqlQuery( null, queryExplorationRequest.query );
         if ( explore.getDataType() == null ) {
-            ctx.status( 400 ).json( Result.builder().error( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
+            ctx.status( 400 ).json( RelationalExploreResult.builder().error( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" ) );
             return;
         }
 
@@ -302,11 +306,12 @@ public class ExploreManager {
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();
-            result = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).generatedQuery( query );
+            RelationalResult rel = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).generatedQuery( query ).build();
+            result = RelationalExploreResult.from( rel );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
-            result = Result.builder().error( e.getMessage() );
+            result = RelationalExploreResult.builder().error( e.getMessage() );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -322,7 +327,7 @@ public class ExploreManager {
             result.classificationInfo( "ClassificationPossible" );
         }
         result.currentPage( queryExplorationRequest.cPage )
-                .table( queryExplorationRequest.tableId )
+                .table( queryExplorationRequest.entityId )
                 .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) );
 
         ctx.json( result );
