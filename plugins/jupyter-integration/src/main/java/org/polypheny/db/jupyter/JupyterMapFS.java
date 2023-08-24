@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Base64;
@@ -64,7 +66,7 @@ class JupyterMapFS {
             throw new JupyterMapFSException( "Empty path is invalid" );
         }
 
-        if ( !path.matches( "^[a-zA-Z0-9_/. -]+$" ) ) {
+        if ( !path.matches( "^[a-zA-Z0-9_/.\\\\ -]+$" ) ) {
             throw new JupyterMapFSException( "Invalid character in path" );
         }
 
@@ -80,8 +82,8 @@ class JupyterMapFS {
             path = path.substring( 0, path.length() - 1 );
         }
 
-        if ( !(path.equals( "notebooks" ) || path.startsWith( "notebooks/" )) ) {
-            throw new JupyterMapFSException( "Paths must start with notebooks or notebooks/" );
+        if ( !(path.equals( "notebooks" ) || path.startsWith( "notebooks/" ) || path.startsWith( "notebooks\\" )) ) {
+            throw new JupyterMapFSException( "Paths must equal notebooks, or start with notebooks/ or notebooks\\" );
         }
 
         return path;
@@ -128,7 +130,9 @@ class JupyterMapFS {
         if ( !f.isDirectory() ) {
             throw new JupyterMapFSException( "Cannot create file: '" + path + "' is not a directory" );
         }
-        validateAndNormalizePath( f.getAbsolutePath().replaceFirst( rootPath.getAbsolutePath() + File.separator, "" ) + File.separator + name );
+        validateAndNormalizePath( f.getAbsolutePath().replaceFirst(
+                Pattern.quote( rootPath.getAbsolutePath() + File.separator ), "" )
+                + File.separator + name );
         return new File( f.getAbsolutePath() + File.separator + name );
     }
 
@@ -271,7 +275,8 @@ class JupyterMapFS {
     }
 
 
-    private String jsonEntry( File f, String name, String path, String content, String format, String mimetype, String size,
+    private String jsonEntry(
+            File f, String name, String path, String content, String format, String mimetype, String size,
             String writable, String type ) throws JupyterMapFSException {
         String creationTime;
         String lastModified;
