@@ -113,7 +113,7 @@ class JupyterMapFS {
             throw new JupyterMapFSException( 404, "No such file or directory: " + next );
         }
 
-        if ( !cur.getAbsolutePath().equals( rootPath.getAbsolutePath() + "/" + path ) ) {
+        if ( !cur.getAbsolutePath().equals( rootPath.getAbsolutePath() + File.separator + path.replace( "/", File.separator ) ) ) {
             // Not a JupyterMapFSException because this should not happen
             throw new AssertionError( "error while walking the filesystem" );
         }
@@ -128,8 +128,8 @@ class JupyterMapFS {
         if ( !f.isDirectory() ) {
             throw new JupyterMapFSException( "Cannot create file: '" + path + "' is not a directory" );
         }
-        validateAndNormalizePath( f.getAbsolutePath().replaceFirst( rootPath.getAbsolutePath() + "/", "" ) + "/" + name );
-        return new File( f.getAbsolutePath() + "/" + name );
+        validateAndNormalizePath( f.getAbsolutePath().replaceFirst( rootPath.getAbsolutePath() + File.separator, "" ) + File.separator + name );
+        return new File( f.getAbsolutePath() + File.separator + name );
     }
 
 
@@ -189,7 +189,7 @@ class JupyterMapFS {
             dst = validateAndNormalizePath( dst );
 
             File fsrc = walkToFile( src );
-            File fdst = new File( rootPath.getAbsolutePath() + "/" + dst );
+            File fdst = new File( rootPath.getAbsolutePath() + File.separator + dst.replace( "/", File.separator ) );
 
             Files.move( Path.of( fsrc.getAbsolutePath() ), Path.of( fdst.getAbsolutePath() ) );
             return getContents( dst, false, null );
