@@ -17,7 +17,13 @@
 package org.polypheny.db.jupyter;
 
 import io.javalin.http.Context;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -47,9 +53,11 @@ public class JupyterPlugin extends Plugin {
     private final static String CONFIG_TOKEN_KEY = "jupyter/token";
     private static final int JUPYTER_PORT = 8888;
     private String token;
-    public static final String SERVER_TARGET_PATH = "/home/jovyan/notebooks";  // notebook storage location inside container
     private DockerContainer container;
     private JupyterProxy proxy;
+
+    private final JupyterContentServer fs = new JupyterContentServer();
+
     private boolean pluginLoaded = false;
 
 
@@ -70,6 +78,7 @@ public class JupyterPlugin extends Plugin {
     public void start() {
         log.info( "Jupyter Plugin was started!" );
         TransactionExtension.REGISTER.add( new JupyterStarter( this ) );
+        pluginLoaded = true;
     }
 
 
@@ -78,6 +87,45 @@ public class JupyterPlugin extends Plugin {
         JupyterSessionManager.getInstance().reset();
         stopContainer();
         log.info( "Jupyter Plugin was stopped!" );
+        pluginLoaded = false;
+    }
+
+
+    private boolean checkContainer() {
+        String containerUUID = ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString();
+        if ( containerUUID.isEmpty() ) {
+            return false;
+        }
+
+        Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
+        if ( maybeContainer.isPresent() ) {
+            this.container = maybeContainer.get();
+            onContainerRunning();
+            return true;
+        }
+        return false;
+    }
+
+
+    private void createContainerRequest( Context ctx ) {
+        int dockerId = Integer.parseInt( ctx.queryParam( "dockerInstance" ) );
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
+        if ( createContainer( dockerInstance ) ) {
+            ctx.status( 200 );
+        } else {
+            ctx.status( 500 );
+        }
+    }
+
+
+    private void destroyContainerRequest( Context ctx ) {
+        stopContainer();
+    }
+
+
+    private void getDockerInstances( Context ctx ) {
+        List<Map<String, Object>> result = DockerManager.getInstance().getDockerInstances().values().stream().filter( DockerInstance::isConnected ).map( DockerInstance::getMap ).collect( Collectors.toList() );
+        ctx.status( 200 ).json( result );
     }
 
 
@@ -87,18 +135,15 @@ public class JupyterPlugin extends Plugin {
      *
      * @return true if the jupyter server was successfully deployed, false otherwise
      */
-    private boolean startContainer() {
+    private boolean createContainer( DockerInstance dockerInstance ) {
         token = ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).getString();
         if ( token.isEmpty() ) {
             token = generateToken();
             ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).setString( token );
         }
-        log.trace( "Token: {}", token );
         try {
             Optional<DockerContainer> maybeContainer = DockerContainer.getContainerByUUID( ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).getString() );
             if ( maybeContainer.isEmpty() ) {
-                // Just take the first docker instance
-                DockerInstance dockerInstance = DockerManager.getInstance().getDockerInstances().values().stream().findFirst().get();
                 this.container = dockerInstance.newBuilder( "polypheny/polypheny-jupyter-server", "jupyter-container" )
                         .withCommand( Arrays.asList( "start-notebook.sh", "--IdentityProvider.token=" + token ) )
                         .createAndStart();
@@ -112,6 +157,7 @@ public class JupyterPlugin extends Plugin {
             } else {
                 this.container = maybeContainer.get();
             }
+            onContainerRunning();
             return true;
         } catch ( Exception e ) {
             e.printStackTrace();
@@ -124,8 +170,6 @@ public class JupyterPlugin extends Plugin {
     public void onContainerRunning() {
         HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
         proxy = new JupyterProxy( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
-        registerEndpoints();
-        pluginLoaded = true;
     }
 
 
@@ -134,21 +178,25 @@ public class JupyterPlugin extends Plugin {
             ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( "" );
             ConfigManager.getInstance().getConfig( CONFIG_TOKEN_KEY ).setString( "" );
             container.destroy();
+            proxy = null;
         }
     }
 
 
-    public void restartContainer( Context ctx, Crud crud ) {
+    public void restartContainer( Context ctx ) {
+        if ( container == null ) {
+            ctx.status( 500 ).json( "cannot restart container: no container present" );
+        }
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceForContainer( container.getContainerId() ).get();
         stopContainer();
         JupyterSessionManager.getInstance().reset();
         log.info( "Restarting Jupyter container..." );
-        if ( startContainer() ) {
+        if ( createContainer( dockerInstance ) ) {
             HostAndPort hostAndPort = container.connectToContainer( JUPYTER_PORT );
             proxy.setClient( new JupyterClient( token, hostAndPort.getHost(), hostAndPort.getPort() ) );
             ctx.status( 200 ).json( "restart ok" );
         } else {
             container = null;
-            pluginLoaded = false;
             ctx.status( 500 ).json( "failed to restart container" );
         }
     }
@@ -163,6 +211,30 @@ public class JupyterPlugin extends Plugin {
     }
 
 
+    private Consumer<Context> proxyOrError( Function<JupyterProxy, Consumer<Context>> endpoint ) {
+        return ctx -> {
+            if ( proxy != null ) {
+                endpoint.apply( proxy ).accept( ctx );
+            } else {
+                ctx.status( 500 );
+                ctx.json( "Not connected to Jupyter" );
+            }
+        };
+    }
+
+
+    private Consumer<Context> proxyOrEmpty( Function<JupyterProxy, Consumer<Context>> endpoint ) {
+        return ctx -> {
+            if ( proxy != null ) {
+                endpoint.apply( proxy ).accept( ctx );
+            } else {
+                ctx.status( 200 );
+                ctx.json( List.of() );
+            }
+        };
+    }
+
+
     /**
      * Adds all REST and websocket endpoints required for the notebook functionality to the HttpServer.
      */
@@ -172,30 +244,45 @@ public class JupyterPlugin extends Plugin {
 
         server.addWebsocket( REST_PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<path>", proxy::contents, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxy::sessions, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::session, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernels", proxy::kernels, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernelspecs", proxy::kernelspecs, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/file/<path>", proxy::file, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/contents/<path>", fs::contents, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::session ), HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/kernels", proxyOrEmpty( proxy -> proxy::kernels ), HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/kernelspecs", ctx -> {
+            if ( proxy != null ) {
+                proxy.kernelspecs( ctx );
+            } else {
+                ctx.status( 200 ).json( Map.of( "default", "", "kernelspecs", Map.of() ) );
+            }
+        }, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/file/<path>", fs::file, HandlerType.GET );
         server.addSerializedRoute( REST_PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/status", proxy::connectionStatus, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/export/<path>", proxy::export, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/connections", proxy::openConnections, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/status", ctx -> {
+            if ( proxy != null ) {
+                proxy.connectionStatus( ctx );
+            } else {
+                ctx.status( 200 ).result( "null" );
+            }
+        }, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/export/<path>", fs::export, HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
+        server.addSerializedRoute( REST_PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", proxy::createFile, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxy::createSession, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxy::interruptKernel, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxy::restartKernel, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrError( proxy -> proxy::createSession ), HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxyOrError( proxy -> proxy::interruptKernel ), HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxyOrError( proxy -> proxy::restartKernel ), HandlerType.POST );
         server.addSerializedRoute( REST_PATH + "/container/restart", this::restartContainer, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/container/create", this::createContainerRequest, HandlerType.POST );
+        server.addSerializedRoute( REST_PATH + "/container/destroy", this::destroyContainerRequest, HandlerType.POST );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::moveFile, HandlerType.PATCH );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::patchSession, HandlerType.PATCH );
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::moveFile, HandlerType.PATCH );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::patchSession ), HandlerType.PATCH );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::uploadFile, HandlerType.PUT );
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::uploadFile, HandlerType.PUT );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", proxy::deleteFile, HandlerType.DELETE );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxy::deleteSession, HandlerType.DELETE );
+        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::deleteFile, HandlerType.DELETE );
+        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::deleteSession ), HandlerType.DELETE );
     }
 
 
@@ -244,10 +331,9 @@ public class JupyterPlugin extends Plugin {
 
         @Override
         public void initExtension( TransactionManager manager, Authenticator authenticator ) {
-            if ( plugin.startContainer() ) {
-                JupyterSessionManager.getInstance().setTransactionManager( manager );
-                plugin.onContainerRunning();
-            }
+            JupyterSessionManager.getInstance().setTransactionManager( manager );
+            plugin.registerEndpoints();
+            plugin.checkContainer();
         }
 
     }
