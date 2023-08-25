@@ -19,6 +19,7 @@ package org.polypheny.db.docker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,8 @@ final class PolyphenyDockerClient {
 
 
     PolyphenyDockerClient( String hostname, int port, PolyphenyKeypair kp, byte[] serverCertificate ) throws IOException {
-        con = new Socket( hostname, port );
+        con = new Socket();
+        con.connect( new InetSocketAddress( hostname, port ), 5000 );
         this.client = new PolyphenyTlsClient( kp, serverCertificate, con.getInputStream(), con.getOutputStream() );
 
         this.in = client.getInputStream().get();
