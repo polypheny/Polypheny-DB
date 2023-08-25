@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.protointerface.PIClient;
@@ -144,8 +145,13 @@ public class RelationalExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        implementation.hasMoreRows();
-        List<List<PolyValue>> rows = implementation.getRows( implementation.getStatement(), fetchSize );
+        ResultIterator<PolyValue> iterator = implementation.execute( implementation.getStatement(), fetchSize );
+        List<List<PolyValue>> rows = iterator.getRows();
+        try {
+            iterator.close();
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
         if ( isDone ) {
@@ -153,7 +159,7 @@ public class RelationalExecutor extends Executor {
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return ProtoUtils.buildRelationalFrame( implementation.hasMoreRows(), rows, columnMetas );
+        return ProtoUtils.buildRelationalFrame( iterator.hasMoreRows(), rows, columnMetas );
     }
 
 }

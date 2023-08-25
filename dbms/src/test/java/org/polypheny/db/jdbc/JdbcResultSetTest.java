@@ -956,7 +956,7 @@ public class JdbcResultSetTest {
         ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.isWrapperFor( PolyhenyResultSet.class ) );
+            assertTrue( rs.isWrapperFor( PolyResultSet.class ) );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
@@ -979,7 +979,7 @@ public class JdbcResultSetTest {
     }
 
     @Test
-    public void isWrapperForFalseTest() throws SQLException {
+    public void isuWrapperForFalseTest() throws SQLException {
         try (
                 JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
                 Connection connection = polyphenyDbConnection.getConnection();

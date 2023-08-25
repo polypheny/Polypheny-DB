@@ -34,7 +34,7 @@ public class AuthenticatorImpl implements Authenticator {
         if ( logicalUser.password.equals( password ) ) {
             return logicalUser;
         } else {
-            throw new AuthenticationException("Wrong password for user '" + username + "'!");
+            throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
         }
     }
 

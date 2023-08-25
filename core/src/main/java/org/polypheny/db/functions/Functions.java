@@ -1006,7 +1006,6 @@ public class Functions {
     }
 
 
-
     /**
      * SQL <code>&gt;</code> operator applied to Object values (at least one
      * operand has ANY type; neither may be null).

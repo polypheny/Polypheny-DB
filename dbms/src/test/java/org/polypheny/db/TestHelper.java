@@ -82,6 +82,7 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
