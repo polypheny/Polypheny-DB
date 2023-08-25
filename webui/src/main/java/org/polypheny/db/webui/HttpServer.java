@@ -299,7 +299,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
-        webuiServer.post( "/schemaRequest", crud::schemaRequest );
+        webuiServer.post( "/namespaceRequest", crud::namespaceRequest );
 
         webuiServer.get( "/getTypeInfo", crud::getTypeInfo );
 

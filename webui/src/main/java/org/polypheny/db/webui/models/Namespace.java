@@ -23,10 +23,10 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 /**
- * Model for a namespace of the logical schema.
+ * Model for a namespace of the logical namespace.
  */
 @Getter
-public class Schema {
+public class Namespace {
 
     private String name;
     private NamespaceType type;
@@ -47,7 +47,7 @@ public class Schema {
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Schema( final String name, final NamespaceType type, @Nullable final String store ) {
+    public Namespace( final String name, final NamespaceType type, @Nullable final String store ) {
         this.name = name;
         this.type = type;
 

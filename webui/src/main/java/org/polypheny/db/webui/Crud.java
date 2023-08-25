@@ -169,6 +169,7 @@ import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.MaterializedInfos;
+import org.polypheny.db.webui.models.Namespace;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
@@ -176,7 +177,6 @@ import org.polypheny.db.webui.models.PathAccessRequest;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Placement.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
-import org.polypheny.db.webui.models.Schema;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.TableConstraint;
@@ -2736,29 +2736,29 @@ public class Crud implements InformationObserver {
     /**
      * Create or drop a namespace
      */
-    void schemaRequest( final Context ctx ) {
-        Schema schema = ctx.bodyAsClass( Schema.class );
+    void namespaceRequest( final Context ctx ) {
+        Namespace namespace = ctx.bodyAsClass( Namespace.class );
         Transaction transaction = getTransaction();
 
-        NamespaceType type = schema.getType();
+        NamespaceType type = namespace.getType();
 
         if ( type == NamespaceType.GRAPH ) {
-            handleGraphDdl( schema, transaction, ctx );
+            handleGraphDdl( namespace, transaction, ctx );
             return;
         }
 
         // create namespace
-        if ( schema.isCreate() && !schema.isDrop() ) {
+        if ( namespace.isCreate() && !namespace.isDrop() ) {
 
             StringBuilder query = new StringBuilder( "CREATE " );
-            if ( schema.getType() == NamespaceType.DOCUMENT ) {
+            if ( namespace.getType() == NamespaceType.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
             query.append( "NAMESPACE " );
 
-            query.append( "\"" ).append( schema.getName() ).append( "\"" );
-            if ( schema.getAuthorization() != null && !schema.getAuthorization().equals( "" ) ) {
-                query.append( " AUTHORIZATION " ).append( schema.getAuthorization() );
+            query.append( "\"" ).append( namespace.getName() ).append( "\"" );
+            if ( namespace.getAuthorization() != null && !namespace.getAuthorization().equals( "" ) ) {
+                query.append( " AUTHORIZATION " ).append( namespace.getAuthorization() );
             }
             try {
                 int rows = executeSqlUpdate( transaction, query.toString() );
@@ -2775,21 +2775,21 @@ public class Crud implements InformationObserver {
             }
         }
         // drop namespace
-        else if ( !schema.isCreate() && schema.isDrop() ) {
+        else if ( !namespace.isCreate() && namespace.isDrop() ) {
             if ( type == null ) {
-                List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new org.polypheny.db.catalog.logistic.Pattern( schema.getName() ) );
+                List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new org.polypheny.db.catalog.logistic.Pattern( namespace.getName() ) );
                 assert namespaces.size() == 1;
                 type = namespaces.get( 0 ).namespaceType;
 
                 if ( type == NamespaceType.GRAPH ) {
-                    handleGraphDdl( schema, transaction, ctx );
+                    handleGraphDdl( namespace, transaction, ctx );
                     return;
                 }
             }
 
             StringBuilder query = new StringBuilder( "DROP NAMESPACE " );
-            query.append( "\"" ).append( schema.getName() ).append( "\"" );
-            if ( schema.isCascade() ) {
+            query.append( "\"" ).append( namespace.getName() ).append( "\"" );
+            if ( namespace.isCascade() ) {
                 query.append( " CASCADE" );
             }
             try {
@@ -2811,17 +2811,17 @@ public class Crud implements InformationObserver {
     }
 
 
-    private void handleGraphDdl( Schema schema, Transaction transaction, Context ctx ) {
-        if ( schema.isCreate() && !schema.isDrop() ) {
+    private void handleGraphDdl( Namespace namespace, Transaction transaction, Context ctx ) {
+        if ( namespace.isCreate() && !namespace.isDrop() ) {
             Statement statement = transaction.createStatement();
             Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
-            String query = String.format( "CREATE DATABASE %s", schema.getName() );
+            String query = String.format( "CREATE DATABASE %s", namespace.getName() );
 
             List<? extends Node> nodes = processor.parse( query );
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, namespace.getName() );
             try {
-                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                PolyImplementation<?> result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
                 ctx.json( RelationalResult.builder().affectedRows( rowsChanged ).build() );
@@ -2834,14 +2834,14 @@ public class Crud implements InformationObserver {
                 }
                 ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
             }
-        } else if ( schema.isDrop() && !schema.isCreate() ) {
+        } else if ( namespace.isDrop() && !namespace.isCreate() ) {
             Statement statement = transaction.createStatement();
             Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
 
-            String query = String.format( "DROP DATABASE %s", schema.getName() );
+            String query = String.format( "DROP DATABASE %s", namespace.getName() );
 
             List<? extends Node> nodes = processor.parse( query );
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, schema.getName() );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, namespace.getName() );
             try {
                 PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
