@@ -148,9 +148,9 @@ public class HostInformation {
         GlobalMemory mem = hal.getMemory();
         final String[] labels = new String[]{ "used", "free" };
         InformationGraph memoryGraph = new InformationGraph( memoryGroup, GraphType.PIE, labels );
-        memoryGroup.setRefreshFunction( () -> {
-            memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ (mem.getTotal() - mem.getAvailable()) / div, mem.getAvailable() / div } ) );
-        } );
+        memoryGroup.setRefreshFunction( () ->
+                memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ (mem.getTotal() - mem.getAvailable()) / div, mem.getAvailable() / div } ) )
+        );
         im.registerInformation( memoryGraph );
 
         //
