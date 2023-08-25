@@ -195,13 +195,12 @@ public class LanguageCrud {
 
         ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<List<PolyValue>> rows = iterator.getRows();
+        boolean hasMoreRows = iterator.hasMoreRows();
         try {
             iterator.close();
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
-
-        boolean hasMoreRows = implementation.hasMoreRows();
 
         LogicalTable catalogTable = null;
         if ( request.entityId != null ) {
@@ -255,7 +254,7 @@ public class LanguageCrud {
 
 
     private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
-ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue[]> data = iterator.getArrayRows();
         try {
             iterator.close();

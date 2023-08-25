@@ -16,26 +16,51 @@
 
 package org.polypheny.db.protointerface;
 
+import java.sql.DatabaseMetaData;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.entity.CatalogObject.Visibility;
-import org.polypheny.db.catalog.entity.logical.*;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalKey;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.protointerface.proto.*;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMeta;
+import org.polypheny.db.protointerface.proto.ClientInfoPropertyMetaResponse;
+import org.polypheny.db.protointerface.proto.Column;
+import org.polypheny.db.protointerface.proto.Database;
+import org.polypheny.db.protointerface.proto.DatabasesResponse;
+import org.polypheny.db.protointerface.proto.DbmsVersionResponse;
+import org.polypheny.db.protointerface.proto.EntitiesResponse;
+import org.polypheny.db.protointerface.proto.Entity;
+import org.polypheny.db.protointerface.proto.ForeignKey;
+import org.polypheny.db.protointerface.proto.Function;
+import org.polypheny.db.protointerface.proto.FunctionsResponse;
+import org.polypheny.db.protointerface.proto.Index;
+import org.polypheny.db.protointerface.proto.Namespace;
+import org.polypheny.db.protointerface.proto.NamespacesResponse;
+import org.polypheny.db.protointerface.proto.PrimaryKey;
+import org.polypheny.db.protointerface.proto.ProceduresResponse;
+import org.polypheny.db.protointerface.proto.Table;
+import org.polypheny.db.protointerface.proto.TableType;
+import org.polypheny.db.protointerface.proto.TableTypesResponse;
+import org.polypheny.db.protointerface.proto.Type;
+import org.polypheny.db.protointerface.proto.TypesResponse;
 import org.polypheny.db.type.PolyType;
-
-import java.sql.DatabaseMetaData;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class DbMetaRetriever {
 
@@ -73,13 +98,13 @@ public class DbMetaRetriever {
     }
 
     public static Namespace getNamespace(String namespaceName) {
-        return getNamespaceMeta(Catalog.getInstance().getSnapshot().getNamespace(namespaceName));
+        return getNamespaceMeta( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow() );
     }
 
     // Entity search by namespace
     public static EntitiesResponse searchEntities(String namespaceName, String entityPattern) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace(namespaceName);
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
         switch (namespace.getNamespaceType()) {
             case RELATIONAL:
                 responseBuilder.addAllEntities(getRelationalEntities(namespace.getId(), entityPattern));

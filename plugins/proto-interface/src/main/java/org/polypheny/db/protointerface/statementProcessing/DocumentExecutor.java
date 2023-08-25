@@ -19,6 +19,7 @@ package org.polypheny.db.protointerface.statementProcessing;
 import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIServiceException;
@@ -128,9 +129,11 @@ public class DocumentExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = implementation.getSingleRows( statement, true );
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, -1 );
+        List<PolyValue> data = iterator.getSingleRows();
+
         executionStopWatch.stop();
-        return ProtoUtils.buildDocumentFrame( implementation.hasMoreRows(), data );
+        return ProtoUtils.buildDocumentFrame( iterator.hasMoreRows(), data );
     }
 
 }

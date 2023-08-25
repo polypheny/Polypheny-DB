@@ -3056,8 +3056,9 @@ public class Crud implements InformationObserver {
             result = crud.processQuery( statement, sqlSelect, isAnalyze );
             ResultIterator<PolyValue> iterator = result.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
             rows = iterator.getRows();
+            hasMoreRows = iterator.hasMoreRows();
             iterator.close();
-            hasMoreRows = result.hasMoreRows();
+
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {

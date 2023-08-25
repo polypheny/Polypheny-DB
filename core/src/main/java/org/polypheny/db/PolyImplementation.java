@@ -78,10 +78,6 @@ public class PolyImplementation<T> {
 
     @Accessors(fluent = true)
     private final boolean isDDL;
-    private Iterator<T> iterator;
-    private boolean isOpen;
-    private StatementEvent statementEvent;
-    private int batch;
 
 
     /**
@@ -177,13 +173,6 @@ public class PolyImplementation<T> {
     }
 
 
-    public boolean hasMoreRows() {
-        if ( iterator == null ) {
-            throw new GenericRuntimeException( "Implementation was not opened" );
-        }
-        return iterator.hasNext();
-    }
-
     public List<ColumnMetaData> getColumns() {
         if ( columns != null ) {
             return columns;
@@ -240,10 +229,6 @@ public class PolyImplementation<T> {
 
 
     private Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
-        if ( iterator != null ) {
-            return this.iterator;
-        }
-
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }
@@ -253,9 +238,7 @@ public class PolyImplementation<T> {
             statement.getOverviewDuration().stop( "Execution" );
         }
 
-        this.iterator = enumerable.iterator();
-
-        return this.iterator;
+        return enumerable.iterator();
     }
 
 
@@ -476,6 +459,11 @@ public class PolyImplementation<T> {
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator", e );
             }
+        }
+
+
+        public boolean hasMoreRows() {
+            return iterator.hasNext();
         }
 
     }

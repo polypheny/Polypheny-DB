@@ -359,10 +359,9 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
+            ResultIterator<PolyValue> iter = result.execute( sourceStatement, batchSize );
             do {
-                ResultIterator<PolyValue> iter = result.execute( sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getRows();
-                iter.close();
                 if ( rows.isEmpty() ) {
                     continue;
                 }
@@ -408,7 +407,7 @@ public class DataMigratorImpl implements DataMigrator {
                     iterator.next();
                 }
                 targetStatement.getDataContext().resetParameterValues();
-            } while ( result.hasMoreRows() );
+            } while ( iter.hasMoreRows() );
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
@@ -755,11 +754,10 @@ public class DataMigratorImpl implements DataMigrator {
             }*/
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
-
+            ResultIterator<PolyValue> iter = result.execute( source.sourceStatement, batchSize );
             do {
-                ResultIterator<PolyValue> iter = result.execute( source.sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
-                iter.close();
+
                 if ( rows.isEmpty() ) {
                     continue;
                 }
@@ -818,7 +816,8 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                     currentTargetStatement.getDataContext().resetParameterValues();
                 }
-            } while ( result.hasMoreRows() );
+            } while ( iter.hasMoreRows() );
+            iter.close();
         } catch ( Throwable t ) {
             throw new GenericRuntimeException( t );
         }
