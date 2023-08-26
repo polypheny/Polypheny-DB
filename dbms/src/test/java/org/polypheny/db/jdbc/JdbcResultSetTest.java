@@ -956,7 +956,7 @@ public class JdbcResultSetTest {
         ) {
             createTableWithData( connection );
             ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.isWrapperFor( PolyResultSet.class ) );
+            assertTrue( rs.isWrapperFor( PolyhenyResultSet.class ) );
             rs.close();
             statement.executeUpdate( DROP_TABLE_SQL );
         }
