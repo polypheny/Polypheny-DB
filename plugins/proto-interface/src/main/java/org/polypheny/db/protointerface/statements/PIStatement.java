@@ -43,7 +43,7 @@ public abstract class PIStatement {
     protected final QueryLanguage language;
     @Getter
     @Setter
-    private Iterator<PolyValue> iterator;
+    private PolyImplementation.ResultIterator<PolyValue> iterator;
     @Getter
     protected LogicalNamespace namespace;
 
@@ -59,6 +59,16 @@ public abstract class PIStatement {
         this.namespace = namespace;
     }
 
+    public void closeResults() {
+        if (iterator == null) {
+            return;
+        }
+        try {
+            iterator.close();
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Closing of open result iterator failed" );
+        }
+    }
 
     public abstract PolyImplementation<PolyValue> getImplementation();
 
@@ -68,5 +78,4 @@ public abstract class PIStatement {
 
     public abstract String getQuery();
     public abstract Transaction getTransaction();
-
 }
