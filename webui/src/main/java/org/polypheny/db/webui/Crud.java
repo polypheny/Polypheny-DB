@@ -424,8 +424,12 @@ public class Crud implements InformationObserver {
         String fullTableName = String.format( "\"%s\".\"%s\"", namespaceTable.left.name, namespaceTable.right.name );
         query.append( fullTableName );
         try {
-            int a = executeSqlUpdate( transaction, query.toString() );
-            result = RelationalResult.builder().affectedRows( a ).generatedQuery( query.toString() ).build();
+            int updates = executeSqlUpdate( transaction, query.toString() );
+            result = RelationalResult.builder()
+                    .affectedRows( updates )
+                    .generatedQuery( query.toString() )
+                    .table( fullTableName )
+                    .build();
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while dropping or truncating a table", e );

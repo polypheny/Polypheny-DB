@@ -398,6 +398,11 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
+    public @NotNull List<AllocationColumn> getColumns() {
+        return columns.values().asList();
+    }
+
+    @Override
     public @NonNull Optional<List<AllocationEntity>> getEntitiesOnAdapter( long id ) {
         return Optional.ofNullable( allocsOnAdapters.get( id ) );
     }

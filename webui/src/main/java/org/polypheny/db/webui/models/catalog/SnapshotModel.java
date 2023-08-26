@@ -37,6 +37,7 @@ public class SnapshotModel {
     public final List<AllocationEntityModel> allocations;
     public final List<AllocationPlacementModel> placements;
     public final List<AllocationPartitionModel> partitions;
+    public final List<AllocationColumnModel> allocColumns;
 
 
     public SnapshotModel(
@@ -48,7 +49,8 @@ public class SnapshotModel {
             List<ConstraintModel> constraints,
             List<AllocationEntityModel> allocations,
             List<AllocationPlacementModel> placements,
-            List<AllocationPartitionModel> partitions ) {
+            List<AllocationPartitionModel> partitions,
+            List<AllocationColumnModel> allocColumns ) {
         this.id = id;
         this.namespaces = ImmutableList.copyOf( namespaces );
         this.entities = ImmutableList.copyOf( entities );
@@ -58,6 +60,7 @@ public class SnapshotModel {
         this.allocations = ImmutableList.copyOf( allocations );
         this.placements = ImmutableList.copyOf( placements );
         this.partitions = ImmutableList.copyOf( partitions );
+        this.allocColumns = ImmutableList.copyOf( allocColumns );
     }
 
 
@@ -82,7 +85,9 @@ public class SnapshotModel {
 
         List<AllocationPartitionModel> partitions = snapshot.alloc().getPartitions().stream().map( AllocationPartitionModel::from ).collect( Collectors.toList() );
 
-        return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions );
+        List<AllocationColumnModel> allocationColumns = snapshot.alloc().getColumns().stream().map( AllocationColumnModel::from ).collect( Collectors.toList() );
+
+        return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions, allocationColumns );
     }
 
 }
