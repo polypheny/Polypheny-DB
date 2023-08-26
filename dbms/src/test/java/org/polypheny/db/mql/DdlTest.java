@@ -55,7 +55,7 @@ public class DdlTest extends MqlTestTemplate {
     public void addCollectionTest() {
         String name = "testCollection";
 
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
 
         int size = Catalog.snapshot().doc().getCollections( namespace.id, null ).size();
 
@@ -80,7 +80,7 @@ public class DdlTest extends MqlTestTemplate {
 
         String placement = "store1";
         try {
-            LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
+            LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
 
             List<String> collectionNames = Catalog.snapshot().doc().getCollections( namespace.id, null ).stream().map( c -> c.name ).collect( Collectors.toList() );
             collectionNames.forEach( n -> execute( String.format( "db.%s.drop()", n ) ) );
@@ -114,7 +114,7 @@ public class DdlTest extends MqlTestTemplate {
 
         execute( "db.createCollection(\"" + collectionName + "\")" );
 
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
 
         LogicalCollection collection = Catalog.snapshot().doc().getCollections( namespace.id, new Pattern( collectionName ) ).get( 0 );
 

@@ -375,7 +375,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     private class Grouping {
 
         private final ImmutableBitSet grouping;
-        private final Map<Row, AccumulatorList> accumulators = new HashMap<>();
+        private final Map<Row<PolyValue>, AccumulatorList> accumulators = new HashMap<>();
 
 
         private Grouping( ImmutableBitSet grouping ) {
@@ -383,14 +383,14 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
         }
 
 
-        public void send( Row row ) {
+        public void send( Row<PolyValue> row ) {
             // TODO: fix the size of this row.
-            RowBuilder builder = Row.newBuilder( grouping.cardinality() );
+            RowBuilder<PolyValue> builder = Row.newBuilder( grouping.cardinality(), row.clazz );
             int j = 0;
             for ( Integer i : grouping ) {
                 builder.set( j++, row.getObject( i ) );
             }
-            Row key = builder.build();
+            Row<PolyValue> key = builder.build();
 
             if ( !accumulators.containsKey( key ) ) {
                 AccumulatorList list = new AccumulatorList();
@@ -405,11 +405,11 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
 
 
         public void end( Sink sink ) throws InterruptedException {
-            for ( Map.Entry<Row, AccumulatorList> e : accumulators.entrySet() ) {
-                final Row key = e.getKey();
+            for ( Map.Entry<Row<PolyValue>, AccumulatorList> e : accumulators.entrySet() ) {
+                final Row<PolyValue> key = e.getKey();
                 final AccumulatorList list = e.getValue();
 
-                RowBuilder rb = Row.newBuilder( outputRowLength );
+                RowBuilder<PolyValue> rb = Row.newBuilder( outputRowLength, PolyValue.class );
                 int index = 0;
                 for ( Integer groupPos : unionGroups ) {
                     if ( grouping.get( groupPos ) ) {
@@ -455,9 +455,9 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     /**
      * Defines function implementation for things like {@code count()} and {@code sum()}.
      */
-    private interface Accumulator {
+    private interface Accumulator<T> {
 
-        void send( Row row );
+        void send( Row<T> row );
 
         PolyValue end();
 
@@ -788,21 +788,21 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
     /**
      * Accumulator that applies a filter to another accumulator. The filter is a BOOLEAN field in the input row.
      */
-    private static class FilterAccumulator implements Accumulator {
+    private static class FilterAccumulator<T> implements Accumulator<T> {
 
-        private final Accumulator accumulator;
+        private final Accumulator<T> accumulator;
         private final int filterArg;
 
 
-        FilterAccumulator( Accumulator accumulator, int filterArg ) {
+        FilterAccumulator( Accumulator<T> accumulator, int filterArg ) {
             this.accumulator = accumulator;
             this.filterArg = filterArg;
         }
 
 
         @Override
-        public void send( Row row ) {
-            if ( row.getValues()[filterArg].asBoolean().value == Boolean.TRUE ) {
+        public void send( Row<T> row ) {
+            if ( ((PolyValue) row.getValues()[filterArg]).asBoolean().value == Boolean.TRUE ) {
                 accumulator.send( row );
             }
         }

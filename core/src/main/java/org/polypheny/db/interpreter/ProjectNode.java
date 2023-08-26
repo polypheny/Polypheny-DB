@@ -44,7 +44,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public class ProjectNode extends AbstractSingleNode<Project> {
 
     private final Scalar scalar;
-    private final Context context;
+    private final Context<PolyValue> context;
     private final int projectCount;
 
 
@@ -58,12 +58,12 @@ public class ProjectNode extends AbstractSingleNode<Project> {
 
     @Override
     public void run() throws InterruptedException {
-        Row row;
+        Row<PolyValue> row;
         while ( (row = source.receive()) != null ) {
             context.values = row.getValues();
             PolyValue[] values = new PolyValue[projectCount];
             scalar.execute( context, values );
-            sink.send( new Row( values ) );
+            sink.send( new Row<>( values, PolyValue.class ) );
         }
     }
 

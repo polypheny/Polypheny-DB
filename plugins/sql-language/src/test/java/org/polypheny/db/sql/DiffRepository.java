@@ -345,7 +345,7 @@ public class DiffRepository {
      */
     private String getCurrentTestCaseName( boolean fail ) {
         // REVIEW jvs 12-Mar-2006: Too clever by half.  Someone might not know about this and use a private helper method whose name also starts with test. Perhaps just require them to pass in getName() from the
-        // calling TestCase's setUp method and store it in a thread-local, failing here if they forgot?
+        // calling TestCase's setUp method and storeId it in a thread-local, failing here if they forgot?
 
         // Clever, this. Dump the stack and look up it for a method which looks like a test case name, e.g. "testFoo".
         final StackTraceElement[] stackTrace;

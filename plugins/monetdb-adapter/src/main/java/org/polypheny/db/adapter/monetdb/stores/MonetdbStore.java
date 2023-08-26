@@ -57,7 +57,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @Slf4j
 @AdapterProperties(
         name = "MonetDB",
-        description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
+        description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
         usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
 @AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.webui.models.results;
 
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -25,30 +24,19 @@ import org.polypheny.db.webui.models.FieldDefinition;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
-public class GraphResult extends GenericResult<String[]> {
+public class GraphResult extends Result<String[], FieldDefinition> {
 
     public String query;
 
-    //public Throwable exception;
 
-    public List<FieldDefinition> header;
-
-
-    public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends GenericResultBuilder<String[], C, B> {
+    public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends ResultBuilder<String[], FieldDefinition, C, B> {
 
         private String query;
         //private Throwable exception;
-        private List<FieldDefinition> header;
 
 
         public B query( String query ) {
             this.query = query;
-            return self();
-        }
-
-
-        public B header( List<FieldDefinition> header ) {
-            this.header = header;
             return self();
         }
 

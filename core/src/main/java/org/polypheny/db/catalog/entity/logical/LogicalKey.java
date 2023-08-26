@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
@@ -67,19 +66,16 @@ public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
     }
 
 
-    @SneakyThrows
     public String getSchemaName() {
-        return Catalog.snapshot().getNamespace( namespaceId ).name;
+        return Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public String getTableName() {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public List<String> getColumnNames() {
         return getColumns().stream().map(LogicalColumn::getName).collect(Collectors.toList());
     }

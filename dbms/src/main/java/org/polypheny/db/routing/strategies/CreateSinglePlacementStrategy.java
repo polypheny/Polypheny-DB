@@ -43,7 +43,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
         for ( DataStore<?> store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
-        throw new RuntimeException( "No suitable data store found" );
+        throw new RuntimeException( "No suitable data storeId found" );
     }
 
 }

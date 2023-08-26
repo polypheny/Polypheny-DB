@@ -54,12 +54,12 @@ public class Interpreters {
     /**
      * Creates a {@link Bindable} that interprets a given relational expression.
      */
-    public static ArrayBindable bindable( final AlgNode alg ) {
+    public static ArrayBindable<PolyValue> bindable( final AlgNode alg ) {
         if ( alg instanceof ArrayBindable ) {
             // E.g. if alg instanceof BindableRel
-            return (ArrayBindable) alg;
+            return (ArrayBindable<PolyValue>) alg;
         }
-        return new ArrayBindable() {
+        return new ArrayBindable<>() {
             @Override
             public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
                 return new Interpreter( dataContext, alg );

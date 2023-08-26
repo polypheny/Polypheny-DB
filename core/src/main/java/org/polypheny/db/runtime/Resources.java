@@ -1062,7 +1062,7 @@ public class Resources {
             Class<?> clazz = getClass();
             InputStream stream = openPropertiesFile( clazz );
             if ( stream == null ) {
-                throw new IOException( "could not open properties file for " + getClass() );
+                throw new IOException( "could not execute properties file for " + getClass() );
             }
             MyPropertyResourceBundle previousBundle = new MyPropertyResourceBundle( stream );
             bundle = previousBundle;

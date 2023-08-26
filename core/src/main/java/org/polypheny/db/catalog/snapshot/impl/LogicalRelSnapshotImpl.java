@@ -313,8 +313,19 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
+    public @NonNull List<LogicalConstraint> getConstraints() {
+        return constraints.values().asList();
+    }
+
+    @Override
     public @NonNull List<LogicalKey> getKeys() {
         return keys.values().asList();
+    }
+
+
+    @Override
+    public @NotNull List<LogicalPrimaryKey> getPrimaryKeys() {
+        return primaryKeys.values().asList();
     }
 
 
@@ -498,7 +509,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
 
 
     @Override
-    public @NonNull Optional<LogicalKey> getKeys( long[] columnIds ) {
+    public @NotNull Optional<LogicalKey> getKeys( long[] columnIds ) {
         return Optional.ofNullable( columnsKey.get( columnIds ) );
     }
 

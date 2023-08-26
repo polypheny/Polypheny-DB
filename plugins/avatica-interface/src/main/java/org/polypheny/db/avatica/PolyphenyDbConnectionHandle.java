@@ -45,7 +45,7 @@ public class PolyphenyDbConnectionHandle {
     @Getter
     private final CatalogUser user;
     private final CatalogDatabase database;
-    private final LogicalNamespace schema;
+    private final LogicalNamespace namespace;
 
     private final ConnectionId connectionId;
     private Transaction currentTransaction;
@@ -56,26 +56,26 @@ public class PolyphenyDbConnectionHandle {
     private final ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, Catalog.DATABASE_NAME, Catalog.defaultNamespaceName );
 
 
-    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final LogicalNamespace schema, final TransactionManager transactionManager ) {
+    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final LogicalNamespace namespace, final TransactionManager transactionManager ) {
         this.handle = handle;
 
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
         this.user = catalogUser;
         this.connectionId = connectionId;
         this.database = database;
-        this.schema = schema;
+        this.namespace = namespace;
         this.transactionManager = transactionManager;
     }
 
 
-    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final LogicalNamespace schema, final TransactionManager transactionManager ) {
+    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final CatalogUser catalogUser, final String connectionId, final CatalogDatabase database, final LogicalNamespace namespace, final TransactionManager transactionManager ) {
         this.handle = handle;
 
         this.userId = UserId.fromString( catalogUser.name ); // TODO: refactor CatalogUser
         this.user = catalogUser;
         this.connectionId = ConnectionId.fromString( connectionId );
         this.database = database;
-        this.schema = schema;
+        this.namespace = namespace;
         this.transactionManager = transactionManager;
     }
 
@@ -104,7 +104,7 @@ public class PolyphenyDbConnectionHandle {
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized ( this ) {
             if ( currentTransaction == null || !currentTransaction.isActive() ) {
-                currentTransaction = transactionManager.startTransaction( user, schema, false, "AVATICA Interface" );
+                currentTransaction = transactionManager.startTransaction( user.id, namespace.id, false, "AVATICA Interface" );
             }
             return currentTransaction;
         }

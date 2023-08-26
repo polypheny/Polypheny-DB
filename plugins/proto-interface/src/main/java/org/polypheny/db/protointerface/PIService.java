@@ -19,11 +19,11 @@ package org.polypheny.db.protointerface;
 import io.grpc.stub.StreamObserver;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.proto.ClientInfoProperties;
 import org.polypheny.db.protointerface.proto.ClientInfoPropertiesRequest;
@@ -354,7 +354,7 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
     public void executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, StreamObserver<StatementBatchResponse> resultObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
-       List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
+        List<List<PolyValue>> valuesList = ProtoValueDeserializer.deserializeParameterLists( request.getParametersList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
         resultObserver.onNext( ProtoUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
         resultObserver.onCompleted();
@@ -434,11 +434,11 @@ public class PIService extends ProtoInterfaceGrpc.ProtoInterfaceImplBase {
         }
         if ( properties.hasNamespaceName() ) {
             String namespaceName = properties.getNamespaceName();
-            try {
-                client.setNamespace( Catalog.getInstance().getSnapshot().getNamespace( namespaceName ) );
-            } catch ( Exception e ) {
+            Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+            if ( optionalNamespace.isEmpty() ) {
                 throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
             }
+            client.setNamespace( optionalNamespace.get() );
         }
         responseObserver.onNext( ConnectionPropertiesUpdateResponse.newBuilder().build() );
         responseObserver.onCompleted();

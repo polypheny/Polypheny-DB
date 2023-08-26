@@ -165,7 +165,7 @@ import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.Result;
 
 public class SqlLanguagePlugin extends PolyPlugin {
 
@@ -196,13 +196,13 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( "sql", (
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( "sql", (
                 session,
                 request,
                 transactionManager,
                 userId,
                 databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (GenericResult<?>) r ).collect( Collectors.toList() ) ) );
+                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (Result<?, ?>) r ).collect( Collectors.toList() ) ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessorImpl::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !isInit() ) {

@@ -21,7 +21,6 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.NamedValueProcessor;
@@ -63,14 +62,11 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         synchronized ( client ) {
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
-            } else {
-            statement.getDataContext().resetParameterValues();
             }
             List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
             long index = 0;
             for ( PolyValue value : valueList ) {
                 if ( value != null ) {
-                    AlgDataType algDataType = statement.getTransaction().getTypeFactory().createPolyType(value.getType());
                     statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
                 }
             }

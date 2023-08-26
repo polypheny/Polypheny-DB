@@ -55,7 +55,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 /**
@@ -107,7 +107,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-                .registerTypeAdapter( Result.class, Result.getSerializer() )
+                .registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() )
                 .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
@@ -202,7 +202,7 @@ public class HttpServer implements Runnable {
 
     private void defaultException( Class<? extends Exception> exceptionClass, Javalin server ) {
         server.exception( exceptionClass, ( e, ctx ) -> {
-            ctx.status( 400 ).json( Result.builder().error( e.getMessage() ).build() );
+            ctx.status( 400 ).json( RelationalResult.builder().error( e.getMessage() ).build() );
         } );
     }
 
@@ -211,9 +211,7 @@ public class HttpServer implements Runnable {
      * Defines the routes for this Server
      */
     private void crudRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/getSchemaTree", crud::getSchemaTree );
-
-        webuiServer.get( "/getTypeSchemas", crud::getTypeNamespaces );
+        attachCatalogMetaRoutes( webuiServer, crud );
 
         webuiServer.post( "/insertRow", crud::insertRow );
 
@@ -247,7 +245,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/dropColumn", crud::dropColumn );
 
-        webuiServer.post( "/getTables", crud::getTables );
+        webuiServer.post( "/getEntities", crud::getEntities );
 
         webuiServer.post( "/renameTable", crud::renameTable );
 
@@ -351,6 +349,21 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
+    }
+
+
+    private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
+
+        webuiServer.get( "/getSnapshot", crud.catalogCrud::getSnapshot );
+
+        webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
+
+        webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
+
+        webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
+
+        webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
     }
 
 

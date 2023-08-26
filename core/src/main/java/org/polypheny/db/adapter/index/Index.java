@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -98,10 +99,12 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyImplementation<PolyValue> result = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyImplementation<PolyValue> implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        final List<List<PolyValue>> rows = result.getRows( statement, 1, false, false, result.getStatement().getMonitoringEvent(), true );
+        ResultIterator<PolyValue> iterator = implementation.execute( statement, 1, true, false, true );
+        final List<List<PolyValue>> rows = iterator.getAllRowsAndClose();
+
         final List<Pair<List<PolyValue>, List<PolyValue>>> kv = new ArrayList<>( rows.size() );
         for ( final List<PolyValue> row : rows ) {
             if ( row.size() > columns.size() ) {

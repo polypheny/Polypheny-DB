@@ -281,7 +281,7 @@ public class PlannerImplMock implements Planner {
     }
 
 
-    // PolyphenyDbCatalogReader is stateless; no need to store one
+    // PolyphenyDbCatalogReader is stateless; no need to storeId one
     private PolyphenyDbCatalogReader createCatalogReader() {
         /*final SchemaPlus rootSchema = rootSchema( Catalog.snapshot() );
         return new PolyphenyDbCatalogReader(
@@ -302,7 +302,7 @@ public class PlannerImplMock implements Planner {
     }
 
 
-    // RexBuilder is stateless; no need to store one
+    // RexBuilder is stateless; no need to storeId one
     private RexBuilder createRexBuilder() {
         return new RexBuilder( typeFactory );
     }

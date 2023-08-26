@@ -77,17 +77,21 @@ public class SqlAlterViewRename extends SqlAlterView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, oldName );
+        LogicalTable table = searchEntity( context, oldName );
 
-        if ( catalogTable.entityType != EntityType.VIEW ) {
-            throw new GenericRuntimeException( "Not Possible to use ALTER VIEW because %s is not a View.", catalogTable.name );
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Could not find the entity with name %s", String.join( ".", oldName.names ) );
+        }
+
+        if ( table.entityType != EntityType.VIEW ) {
+            throw new GenericRuntimeException( "Not Possible to use ALTER VIEW because %s is not a View.", table.name );
         }
 
         if ( newName.names.size() != 1 ) {
             throw new GenericRuntimeException( "No FQDN allowed here: %s", newName );
         }
 
-        DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
+        DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
     }
 
 }

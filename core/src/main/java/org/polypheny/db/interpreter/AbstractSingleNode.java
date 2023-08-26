@@ -35,6 +35,7 @@ package org.polypheny.db.interpreter;
 
 
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -44,7 +45,7 @@ import org.polypheny.db.algebra.SingleAlg;
  */
 abstract class AbstractSingleNode<T extends SingleAlg> implements Node {
 
-    protected final Source source;
+    protected final Source<PolyValue> source;
     protected final Sink sink;
     protected final T alg;
 

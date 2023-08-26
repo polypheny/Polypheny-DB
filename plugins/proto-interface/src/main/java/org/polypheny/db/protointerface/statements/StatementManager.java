@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface.statements;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -47,11 +48,12 @@ public class StatementManager {
     }
 
     private LogicalNamespace getNamespace(String namespaceName) {
-        try {
-            return Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
-        } catch ( Exception e ) {
+        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+
+        if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
         }
+        return optionalNamespace.get();
     }
 
 

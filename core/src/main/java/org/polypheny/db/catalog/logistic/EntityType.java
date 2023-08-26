@@ -16,8 +16,10 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+@Getter
 public enum EntityType {
     ENTITY( 1 ),
     SOURCE( 2 ),
@@ -30,11 +32,6 @@ public enum EntityType {
 
     EntityType( int id ) {
         this.id = id;
-    }
-
-
-    public int getId() {
-        return id;
     }
 
 

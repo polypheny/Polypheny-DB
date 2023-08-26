@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import org.jetbrains.annotations.NotNull;
+
 public class Pattern {
 
     public final String pattern;
@@ -33,7 +35,7 @@ public class Pattern {
     }
 
 
-    public static Pattern of( String pattern ) {
+    public static Pattern of( @NotNull String pattern ) {
         return new Pattern( pattern );
     }
 

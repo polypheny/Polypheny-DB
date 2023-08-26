@@ -18,6 +18,7 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.ArrayList;
+import java.util.List;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -40,7 +41,7 @@ public class SidebarElement {
     @Setter
     private String label;
     private String cssClass;
-    private ArrayList<SidebarElement> children = new ArrayList<>();
+    private List<SidebarElement> children = new ArrayList<>();
 
 
     /**
@@ -56,7 +57,7 @@ public class SidebarElement {
         this.id = id;
         this.name = name;
         this.namespaceType = namespaceType;
-        if ( !routerLinkRoot.equals( "" ) ) {
+        if ( !routerLinkRoot.isEmpty() ) {
             this.routerLink = routerLinkRoot + id;
         } else {
             this.routerLink = "";
@@ -68,7 +69,7 @@ public class SidebarElement {
     /**
      * Add an ArrayList of SidebarElements as children of this one.
      */
-    public SidebarElement addChildren( final ArrayList<SidebarElement> children ) {
+    public SidebarElement addChildren( final List<SidebarElement> children ) {
         this.children.addAll( children );
         return this;
     }

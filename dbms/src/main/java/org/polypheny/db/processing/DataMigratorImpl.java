@@ -35,6 +35,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -262,7 +263,7 @@ public class DataMigratorImpl implements DataMigrator {
         // Check Lists
         /*List<AllocationColumn> targetColumnPlacements = new LinkedList<>();
         for ( LogicalColumn logicalColumn : columns ) {
-            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( store.id, logicalColumn.id ).orElseThrow() );
+            targetColumnPlacements.add( Catalog.getInstance().getSnapshot().alloc().getColumn( storeId.id, logicalColumn.id ).orElseThrow() );
         }*/
 
         List<LogicalColumn> selectedColumns = new ArrayList<>( columns );
@@ -302,7 +303,7 @@ public class DataMigratorImpl implements DataMigrator {
             AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
             Catalog.getInstance().updateSnapshot();
             if ( allocation.getColumns().size() == columns.size() ) {
-                // There have been no placements for this table on this store before. Build insert statement
+                // There have been no placements for this table on this storeId before. Build insert statement
                 targetAlg = buildInsertStatement( targetStatement, allocation.getColumns(), allocation );
             } else {
                 // Build update statement
@@ -358,8 +359,9 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
+            ResultIterator<PolyValue> iter = result.execute( sourceStatement, batchSize );
             do {
-                List<List<PolyValue>> rows = result.getRows( sourceStatement, batchSize );
+                List<List<PolyValue>> rows = iter.getRows();
                 if ( rows.isEmpty() ) {
                     continue;
                 }
@@ -405,7 +407,7 @@ public class DataMigratorImpl implements DataMigrator {
                     iterator.next();
                 }
                 targetStatement.getDataContext().resetParameterValues();
-            } while ( result.hasMoreRows() );
+            } while ( iter.hasMoreRows() );
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
         }
@@ -620,7 +622,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot targetAlg;
         AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
-            // There have been no placements for this table on this store before. Build insert statement
+            // There have been no placements for this table on this storeId before. Build insert statement
             targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
         } else {
             // Build update statement
@@ -716,7 +718,7 @@ public class DataMigratorImpl implements DataMigrator {
         List<AllocationColumn> columns = snapshot.alloc().getColumns( sourceTables.get( 0 ).placementId );
         for ( AllocationTable targetTable : targetTables ) {
             if ( targetTable.getColumns().size() == columns.size() ) {
-                // There have been no placements for this table on this store before. Build insert statement
+                // There have been no placements for this table on this storeId before. Build insert statement
                 targetAlgs.put( targetTable.partitionId, buildInsertStatement( targetStatements.get( targetTable.partitionId ), columns, targetTable ) );
             } else {
                 // Build update statement
@@ -752,9 +754,9 @@ public class DataMigratorImpl implements DataMigrator {
             }*/
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
-
+            ResultIterator<PolyValue> iter = result.execute( source.sourceStatement, batchSize );
             do {
-                List<List<PolyValue>> rows = result.getRows( source.sourceStatement, batchSize );//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                List<List<PolyValue>> rows = iter.getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
                 if ( rows.isEmpty() ) {
                     continue;
@@ -814,7 +816,8 @@ public class DataMigratorImpl implements DataMigrator {
                     }
                     currentTargetStatement.getDataContext().resetParameterValues();
                 }
-            } while ( result.hasMoreRows() );
+            } while ( iter.hasMoreRows() );
+            iter.close();
         } catch ( Throwable t ) {
             throw new GenericRuntimeException( t );
         }
@@ -925,7 +928,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
         if ( true ) {//allocation.getColumns().size() == columns.size() ) {
-            // There have been no placements for this table on this store before. Build insert statement
+            // There have been no placements for this table on this storeId before. Build insert statement
             targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );
         } else {
             // Build update statement

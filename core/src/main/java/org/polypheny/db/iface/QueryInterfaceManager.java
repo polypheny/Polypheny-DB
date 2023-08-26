@@ -206,7 +206,7 @@ public class QueryInterfaceManager {
         if ( !interfaceByName.containsKey( uniqueName ) ) {
             throw new RuntimeException( "Unknown query interface: " + uniqueName );
         }
-        CatalogQueryInterface catalogQueryInterface = catalog.getSnapshot().getQueryInterface( uniqueName );
+        CatalogQueryInterface catalogQueryInterface = catalog.getSnapshot().getQueryInterface( uniqueName ).orElseThrow();
 
         // Shutdown interface
         interfaceByName.get( uniqueName ).shutdown();

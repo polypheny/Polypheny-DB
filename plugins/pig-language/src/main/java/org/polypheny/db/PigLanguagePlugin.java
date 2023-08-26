@@ -40,7 +40,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.results.GenericResult;
+import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 
 @Slf4j
@@ -61,19 +61,19 @@ public class PigLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.getCrud().languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
+        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessorImpl::new, null );
     }
 
 
     @Override
     public void stop() {
-        LanguageCrud.getCrud().languageCrud.removeLanguage( NAME );
+        LanguageCrud.crud.languageCrud.removeLanguage( NAME );
         LanguageManager.removeQueryLanguage( NAME );
     }
 
 
-    public static List<GenericResult<?>> anyPigQuery(
+    public static List<Result<?, ?>> anyPigQuery(
             Session session,
             QueryRequest request,
             TransactionManager transactionManager,
@@ -126,7 +126,7 @@ public class PigLanguagePlugin extends PolyPlugin {
 
             PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
-            GenericResult<?> result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
+            Result<?, ?> result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
 
             String commitStatus;
             try {
@@ -150,7 +150,7 @@ public class PigLanguagePlugin extends PolyPlugin {
 
             return Collections.singletonList( result );
         } catch ( Throwable t ) {
-            return Collections.singletonList( Result.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
+            return Collections.singletonList( RelationalResult.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
         }
     }
 

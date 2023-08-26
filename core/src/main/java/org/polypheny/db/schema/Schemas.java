@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbPrepare;
 import org.polypheny.db.schema.types.FilterableEntity;
@@ -192,25 +193,32 @@ public final class Schemas {
      * Returns a {@link Queryable}, given a fully-qualified table name.
      */
     public static <E> Queryable<E> queryable( DataContext root, Class<E> clazz, String... names ) {
-        return queryable( root, clazz, Arrays.asList( names ) );
+        return queryable( root, Arrays.asList( names ) );
     }
 
 
     /**
      * Returns a {@link Queryable}, given a fully-qualified table name as an iterable.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Class<E> clazz, Iterable<? extends String> names ) {
+    public static <E> Queryable<E> queryable( DataContext root, Iterable<? extends String> names ) {
         Snapshot snapshot = root.getSnapshot();
 
-        return queryable( root, snapshot, clazz, names.iterator().next() );
+        return queryable( root, snapshot, names.iterator().next() );
 
+    }
+
+
+    public static <E> Enumerable<Row<E>> queryableRow( DataContext root, Class<Object> clazz, List<String> names ) {
+        Snapshot snapshot = root.getSnapshot();
+
+        return queryable( root, snapshot, names.iterator().next() );
     }
 
 
     /**
      * Returns a {@link Queryable}, given a schema and table name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, Class<E> clazz, String tableName ) {
+    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, String tableName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         LogicalTable table = snapshot.rel().getTable( null, tableName ).orElseThrow();
         return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot, table.id );

@@ -904,7 +904,7 @@ public class UtilTest {
         // empty due to exclusions
         checkIntegerIntervalSet( "2,4,-1-5" );
 
-        // open range
+        // execute range
         checkIntegerIntervalSet( "1-6,-3-5,4,9", 1, 2, 4, 6, 9 );
 
         // repeats

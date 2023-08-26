@@ -63,15 +63,15 @@ public class Enumerables {
     /**
      * Converts an {@link Enumerable} over object arrays into an {@link Enumerable} over {@link Row} objects.
      */
-    public static Enumerable<Row> toRow( final Enumerable<PolyValue[]> enumerable ) {
-        return enumerable.select( (Function1<PolyValue[], Row>) Row::asCopy );
+    public static Enumerable<Row<PolyValue>> toRow( final Enumerable<PolyValue[]> enumerable ) {
+        return enumerable.select( (Function1<PolyValue[], Row<PolyValue>>) Row::asCopy );
     }
 
 
     /**
      * Converts a supplier of an {@link Enumerable} over object arrays into a supplier of an {@link Enumerable} over {@link Row} objects.
      */
-    public static Supplier<Enumerable<Row>> toRow( final Supplier<Enumerable<PolyValue[]>> supplier ) {
+    public static Supplier<Enumerable<Row<PolyValue>>> toRow( final Supplier<Enumerable<PolyValue[]>> supplier ) {
         return () -> toRow( supplier.get() );
     }
 

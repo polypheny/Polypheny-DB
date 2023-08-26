@@ -19,9 +19,9 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
@@ -57,7 +57,7 @@ public interface Snapshot extends OperatorTable {
      * @param name Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
+    @NotNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name );
 
     /**
      * Returns the schema with the specified id.
@@ -65,7 +65,7 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the schema
      * @return The schema
      */
-    LogicalNamespace getNamespace( long id );
+    @NotNull Optional<LogicalNamespace> getNamespace( long id );
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -73,16 +73,7 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the schema
      * @return The schema
      */
-    LogicalNamespace getNamespace( String name );
-
-
-    /**
-     * Checks weather a schema with the specified name exists in a database.
-     *
-     * @param name The name of the schema to check
-     * @return True if there is a schema with this name. False if not.
-     */
-    boolean checkIfExistsNamespace( String name );
+    @NotNull Optional<LogicalNamespace> getNamespace( String name );
 
 
     /**
@@ -91,7 +82,7 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the user
      * @return The user
      */
-    CatalogUser getUser( String name );
+    @NotNull Optional<CatalogUser> getUser( String name );
 
     /**
      * Get the user with the specified id.
@@ -99,7 +90,7 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the user
      * @return The user
      */
-    CatalogUser getUser( long id );
+    @NotNull Optional<CatalogUser> getUser( long id );
 
     /**
      * Get list of all adapters
@@ -113,22 +104,14 @@ public interface Snapshot extends OperatorTable {
      *
      * @return The adapter
      */
-    CatalogAdapter getAdapter( String uniqueName );
+    @NotNull Optional<CatalogAdapter> getAdapter( String uniqueName );
 
     /**
      * Get an adapter by its id
      *
      * @return The adapter
      */
-    CatalogAdapter getAdapter( long id );
-
-    /**
-     * Check if an adapter with the given id exists
-     *
-     * @param id the id of the adapter
-     * @return if the adapter exists
-     */
-    boolean checkIfExistsAdapter( long id );
+    @NotNull Optional<CatalogAdapter> getAdapter( long id );
 
 
     /*
@@ -144,7 +127,7 @@ public interface Snapshot extends OperatorTable {
      * @param uniqueName The unique name of the query interface
      * @return The CatalogQueryInterface
      */
-    CatalogQueryInterface getQueryInterface( String uniqueName );
+    Optional<CatalogQueryInterface> getQueryInterface( String uniqueName );
 
     /**
      * Get a query interface by its id
@@ -152,7 +135,7 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the query interface
      * @return The CatalogQueryInterface
      */
-    CatalogQueryInterface getQueryInterface( long id );
+    Optional<CatalogQueryInterface> getQueryInterface( long id );
 
 
     List<LogicalTable> getTablesForPeriodicProcessing();

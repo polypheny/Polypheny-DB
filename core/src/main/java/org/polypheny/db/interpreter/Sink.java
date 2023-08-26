@@ -34,6 +34,8 @@
 package org.polypheny.db.interpreter;
 
 
+import org.polypheny.db.type.entity.PolyValue;
+
 /**
  * Sink to which to send rows.
  *
@@ -41,7 +43,7 @@ package org.polypheny.db.interpreter;
  */
 public interface Sink {
 
-    void send( Row row ) throws InterruptedException;
+    void send( Row<PolyValue> row ) throws InterruptedException;
 
     void end() throws InterruptedException;
 

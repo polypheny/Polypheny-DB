@@ -116,7 +116,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, table );
+        LogicalTable catalogTable = searchEntity( context, table );
 
         if ( catalogTable.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
@@ -126,7 +126,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
-        // Make sure that all adapters are of type store (and not source)
+        // Make sure that all adapters are of type storeId (and not source)
         for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }

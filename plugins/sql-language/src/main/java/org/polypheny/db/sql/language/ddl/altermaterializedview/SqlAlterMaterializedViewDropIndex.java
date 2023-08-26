@@ -71,7 +71,7 @@ public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView 
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, table );
+        LogicalTable catalogTable = searchEntity( context, table );
 
         if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );

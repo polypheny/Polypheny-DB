@@ -247,16 +247,16 @@ public class SqlProcessorImpl extends Processor {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
         if ( oldColumnList != null ) {
-            LogicalTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).namespaceType;
+            LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            NamespaceType namespaceType = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().namespaceType;
 
-            catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+            catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();
             if ( namespaceType == NamespaceType.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
-                size += oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
+                size += (int) oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
@@ -356,18 +356,18 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    private LogicalTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
+    private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
         LogicalTable catalogTable;
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
-            namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).id;
+            namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).orElseThrow().id;
             tableOldName = tableName.names.get( 0 );
         }
         catalogTable = snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow();

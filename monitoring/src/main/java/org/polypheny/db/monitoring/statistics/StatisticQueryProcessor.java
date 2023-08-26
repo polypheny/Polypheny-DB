@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -36,7 +37,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
@@ -154,12 +154,14 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
-        PolyImplementation<PolyValue> result;
+        PolyImplementation<PolyValue> implementation;
         List<List<PolyValue>> rows;
 
         try {
-            result = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
-            rows = result.getRows( statement, getPageSize() );
+            implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
+            ResultIterator<PolyValue> iterator = implementation.execute( statement, getPageSize() );
+            rows = iterator.getRows();
+            iterator.close();
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );
         }

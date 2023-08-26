@@ -52,7 +52,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         String database = ((MqlQueryParameters) parameters).getDatabase();
 
-        long schemaId = context.getSnapshot().getNamespace( database ).id;
+        long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 
         Node mqlNode = statement.getTransaction()
                 .getProcessor( QueryLanguage.from( "mongo" ) )

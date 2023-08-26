@@ -101,7 +101,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "Could not find entity with name %s", String.join( ".", this.table.getNames() ) );
@@ -167,7 +167,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         // Check if in-memory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
         // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
         /*if ( tempPartitionList.equals( catalog.getSnapshot().alloc().getPartitionGroupsOnDataPlacement( storeId, tableId ) ) ) {
-            log.info( "The data placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}",
+            log.info( "The data placement for table: '{}' on storeId: '{}' already contains all specified partitions of statement: {}",
                     table.name, storeName, partitionGroupList );
             return;
         }*/ // todo dl

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -266,8 +267,12 @@ public interface LogicalRelSnapshot {
 
     List<LogicalView> getConnectedViews( long id );
 
-    @NonNull Optional<LogicalKey> getKeys( long[] columnIds );
+    @NotNull Optional<LogicalKey> getKeys( long[] columnIds );
 
-    @NonNull Optional<LogicalKey> getKey( long id );
+    @NotNull Optional<LogicalKey> getKey( long id );
+
+    @NotNull List<LogicalConstraint> getConstraints();
+
+    @NotNull List<LogicalPrimaryKey> getPrimaryKeys();
 
 }

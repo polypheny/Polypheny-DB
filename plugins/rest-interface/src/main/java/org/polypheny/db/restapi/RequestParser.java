@@ -23,8 +23,6 @@ import io.javalin.http.Context;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -413,7 +411,7 @@ public class RequestParser {
             throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, name );
         }
 
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( splitString[0] );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( splitString[0] ).orElseThrow();
 
         return Catalog.snapshot().rel().getColumn( namespace.id, splitString[1], splitString[2] ).orElseThrow();
 

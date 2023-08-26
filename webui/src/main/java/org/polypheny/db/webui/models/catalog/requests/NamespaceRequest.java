@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog.requests;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
-import lombok.experimental.SuperBuilder;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@Value
-public class Doc extends FieldDefinition {
+@AllArgsConstructor
+public class NamespaceRequest {
 
+    public List<NamespaceType> namespaceTypes;
+
+    public String pattern;
 
 }

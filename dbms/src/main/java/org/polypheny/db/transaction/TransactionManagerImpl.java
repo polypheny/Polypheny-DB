@@ -78,8 +78,7 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
-    @Override
-    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin, MultimediaFlavor flavor ) {
+    private Transaction startTransaction( CatalogUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
@@ -90,16 +89,22 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, LogicalNamespace defaultNamespace, boolean analyze, String origin ) {
-        return startTransaction( user, defaultNamespace, analyze, origin, MultimediaFlavor.DEFAULT );
+    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin ) {
+        return startTransaction( Catalog.snapshot().getUser( userId ).orElseThrow(), Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(), analyze, origin, MultimediaFlavor.DEFAULT );
+    }
+
+
+    @Override
+    public Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor ) {
+        return startTransaction( Catalog.snapshot().getUser( userId ).orElseThrow(), Catalog.snapshot().getNamespace( defaultNamespaceId ).orElseThrow(), analyze, origin, flavor );
     }
 
 
     @Override
     public Transaction startTransaction( long userId, boolean analyze, String origin ) {
         return startTransaction(
-                Catalog.snapshot().getUser( userId ),
-                Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ),
+                Catalog.snapshot().getUser( userId ).orElseThrow(),
+                Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ).orElseThrow(),
                 analyze,
                 origin,
                 MultimediaFlavor.DEFAULT );

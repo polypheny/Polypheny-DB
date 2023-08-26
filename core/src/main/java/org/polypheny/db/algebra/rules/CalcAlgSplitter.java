@@ -328,7 +328,7 @@ public abstract class CalcAlgSplitter {
                         }
                     }
 
-                    // None of the reltypes still active for this level could implement expr. But maybe we could succeed with a new level, with all options open?
+                    // None of the reltypes still active for this level could implement expr. But maybe we could succeed with a new level, with all options execute?
                     if ( count( algTypesPossibleForTopLevel ) >= algTypes.length ) {
                         // Cannot implement for any type.
                         throw new AssertionError( "cannot implement " + expr );

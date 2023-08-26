@@ -519,7 +519,7 @@ public class BasicMaterializedViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Deploy additional store
+                // Deploy additional storeId
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 
@@ -569,10 +569,10 @@ public class BasicMaterializedViewTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                // Deploy additional store
+                // Deploy additional storeId
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                // Deploy additional store
+                // Deploy additional storeId
                 statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'Hsqldb' AS 'Store'"
                         + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
 

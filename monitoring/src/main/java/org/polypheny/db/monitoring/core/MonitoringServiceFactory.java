@@ -30,7 +30,7 @@ public class MonitoringServiceFactory {
         PersistentMonitoringRepository persistentRepo = PolyPluginManager.getPERSISTENT_MONITORING();
         StatisticRepository statisticRepo = new StatisticRepository();
 
-        // Initialize the mapDB repo and open connection
+        // Initialize the mapDB repo and execute connection
         persistentRepo.initialize( resetRepository );
 
         // Create monitoring service with dependencies

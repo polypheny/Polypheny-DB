@@ -173,7 +173,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         if ( clazz == PolyphenyDbSchema.class ) {
-            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).snapshot, List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).name, catalogEntity.name ) ) );
+            return clazz.cast( Schemas.subSchema( ((PolyphenyDbCatalogReader) schema).snapshot, List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).orElseThrow().name, catalogEntity.name ) ) );
         }
         return null;
     }
@@ -350,12 +350,13 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Override
     public List<String> getQualifiedName() {
-        return List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).name, catalogEntity.name );
+        return List.of( Catalog.getInstance().getSnapshot().getNamespace( catalogEntity.namespaceId ).orElseThrow().name, catalogEntity.name );
     }
 
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
+        assert entity != null;
         for ( AlgCollation collation : entity.getStatistic().getCollations() ) {
             final AlgFieldCollation fieldCollation = collation.getFieldCollations().get( 0 );
             final int fieldIndex = fieldCollation.getFieldIndex();

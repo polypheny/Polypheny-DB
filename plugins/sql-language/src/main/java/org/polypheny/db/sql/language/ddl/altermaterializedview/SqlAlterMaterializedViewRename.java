@@ -74,7 +74,7 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = getEntityFromCatalog( context, oldName );
+        LogicalTable catalogTable = searchEntity( context, oldName );
 
         if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );

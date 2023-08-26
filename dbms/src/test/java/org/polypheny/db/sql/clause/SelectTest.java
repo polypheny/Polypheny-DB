@@ -16,6 +16,8 @@
 
 package org.polypheny.db.sql.clause;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,11 +29,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -71,6 +81,7 @@ public class SelectTest {
                 connection.commit();
             }
         }
+
     }
 
 
@@ -190,6 +201,71 @@ public class SelectTest {
                         statement.executeQuery( "SELECT id FROM TABLEC WHERE category='AC' AND EXISTS (SELECT * FROM TABLEB WHERE age > 19 AND TABLEB.id = TABLEC.id)" ),
                         expectedResult
                 );
+            }
+        }
+    }
+
+
+    @Test // todo dl move
+    public void getRowsTest() {
+        Transaction trx = TestHelper.getInstance().getTransaction();
+        org.polypheny.db.transaction.Statement statement = trx.createStatement();
+
+        AlgBuilder builder = AlgBuilder.create( statement );
+
+        AlgNode scan = builder.scan( "public", "TableC" ).build();
+        PolyImplementation<Object> impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+
+        ResultIterator<Object> iter = impl.execute( statement, 2 );
+        List<List<Object>> first = iter.getRows();
+        List<List<Object>> others = iter.getRows();
+
+        assertEquals( 2, first.size() );
+        assertEquals( 1, others.size() );
+        try {
+            iter.close();
+            trx.commit();
+        } catch ( TransactionException | Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    @Test
+    public void databaseTest() throws SQLException {
+        String sql = "SELECT * FROM APP.public.TableC";
+
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 15, "AB", 8200 },
+                        new Object[]{ 25, "AB", 8201 },
+                        new Object[]{ 98, "AC", 8203 }
+                );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( sql ),
+                        expectedResult
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void insertUpdateTest() throws SQLException {
+        String ddl = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
+        String insert = "INSERT INTO my_table (column1, column2, column3) VALUES (1, 'v1', 100), (2, 'v2', 200), (3, 'v3', 300)";
+        String update = "UPDATE my_table SET column2 = 'foo' WHERE column1 = 1 AND column3 = 100";
+
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( ddl );
+                statement.executeUpdate( insert );
+                statement.executeUpdate( update );
+
             }
         }
     }

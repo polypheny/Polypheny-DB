@@ -16,29 +16,21 @@
 
 package org.polypheny.db.catalog.logistic;
 
-import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
 import org.polypheny.db.schema.trait.ModelTrait;
 
+@Getter
 public enum NamespaceType {
-    @SerializedName("relational")
     RELATIONAL( 1 ),
-    @SerializedName("document")
     DOCUMENT( 2 ),
-    @SerializedName("graph")
     GRAPH( 3 );
 
     // GRAPH, DOCUMENT, ...
-
     public final int id;
 
 
     NamespaceType( int id ) {
         this.id = id;
-    }
-
-
-    public int getId() {
-        return id;
     }
 
 

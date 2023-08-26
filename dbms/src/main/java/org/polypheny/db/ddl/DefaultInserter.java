@@ -63,7 +63,7 @@ public class DefaultInserter {
 
         catalog.updateSnapshot();
 
-        // Deploy default store
+        // Deploy default storeId
         ddlManager.addAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, Catalog.defaultStore.getDefaultSettings() );
         // Deploy default CSV view
         ddlManager.addAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, Catalog.defaultSource.getDefaultSettings() );

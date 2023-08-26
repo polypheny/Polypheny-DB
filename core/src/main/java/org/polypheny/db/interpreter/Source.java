@@ -39,12 +39,12 @@ package org.polypheny.db.interpreter;
  *
  * Corresponds to an input of a relational expression.
  */
-public interface Source extends AutoCloseable {
+public interface Source<T> extends AutoCloseable {
 
     /**
      * Reads a row. Null means end of data.
      */
-    Row receive();
+    Row<T> receive();
 
     @Override
     void close();

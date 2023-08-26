@@ -34,7 +34,7 @@ public class EditCollectionRequest {
     public String action; // truncate / drop
 
     /**
-     * Identifier of the store on which the collection is edited
+     * Identifier of the storeId on which the collection is edited
      */
     public String store;
 

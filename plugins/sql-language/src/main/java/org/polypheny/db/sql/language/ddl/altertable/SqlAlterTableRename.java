@@ -74,7 +74,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, oldName );
+        LogicalTable table = searchEntity( context, oldName );
 
         if ( newName.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + newName );

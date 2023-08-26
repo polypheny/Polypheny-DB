@@ -5646,7 +5646,7 @@ void SimpleIdentifierCommaList(List<SqlNode> list) :
 
 /**
   * List of simple identifiers in parentheses. The position extends from the
-  * open parenthesis to the close parenthesis.
+  * execute parenthesis to the close parenthesis.
   */
 SqlNodeList ParenthesizedSimpleIdentifierList() :
 {
@@ -5714,7 +5714,7 @@ void CompoundIdentifierTypeCommaList(List<SqlNode> list, List<SqlNode> extendLis
 
 /**
  * List of compound identifiers in parentheses. The position extends from the
- * open parenthesis to the close parenthesis.
+ * execute parenthesis to the close parenthesis.
  */
 Pair<SqlNodeList, SqlNodeList> ParenthesizedCompoundIdentifierList() :
 {

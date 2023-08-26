@@ -572,4 +572,22 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
+    @Override
+    public @NotNull List<AllocationEntity> getAllocations() {
+        return allocs.values().asList();
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPlacement> getPlacements() {
+        return placements.values().asList();
+    }
+
+
+    @Override
+    public @NotNull List<AllocationPartition> getPartitions() {
+        return partitions.values().asList();
+    }
+
+
 }

@@ -42,7 +42,7 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         AdapterManager adapterManager = AdapterManager.getInstance();
 
-        long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).id;
+        long namespaceId = context.getSnapshot().getNamespace( ((MqlQueryParameters) parameters).getDatabase() ).orElseThrow().id;
 
         LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 

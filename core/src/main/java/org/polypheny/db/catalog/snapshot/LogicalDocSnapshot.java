@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.logistic.Pattern;
 
@@ -40,7 +41,9 @@ public interface LogicalDocSnapshot {
      * @param namePattern The naming pattern of the collection itself, null if all are matched
      * @return collection of collections matching conditions
      */
-    @NonNull List<LogicalCollection> getCollections( long namespaceId, Pattern namePattern );
+    @NonNull List<LogicalCollection> getCollections( long namespaceId, @Nullable Pattern namePattern );
+
+    @NonNull List<LogicalCollection> getCollections(@Nullable Pattern namespacePattern,@Nullable Pattern namePattern );
 
 
 }

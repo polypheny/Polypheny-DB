@@ -85,7 +85,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
         DataStore<?> store = getDataStoreInstance( storeName );
 
         if ( table == null ) {

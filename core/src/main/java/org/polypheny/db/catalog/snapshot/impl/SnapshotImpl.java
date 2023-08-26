@@ -23,9 +23,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
@@ -89,7 +88,7 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NonNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name ) {
+    public @NotNull List<LogicalNamespace> getNamespaces( @Nullable Pattern name ) {
         if ( name == null ) {
             return namespaces.values().asList();
         }
@@ -98,43 +97,36 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public LogicalNamespace getNamespace( long id ) {
-        return namespaces.get( id );
+    public @NotNull Optional<LogicalNamespace> getNamespace( long id ) {
+        return Optional.ofNullable( namespaces.get( id ) );
     }
 
 
     @Override
-    public LogicalNamespace getNamespace( String name ) {
+    public @NotNull Optional<LogicalNamespace> getNamespace( String name ) {
         LogicalNamespace namespace = namespaceNames.get( name );
 
         if ( namespace != null ) {
-            return namespace;
+            return Optional.of( namespace );
         }
         namespace = namespaceNames.get( name.toLowerCase() );
 
         if ( namespace != null && !namespace.caseSensitive ) {
-            return namespace;
+            return Optional.of( namespace );
         }
 
-        throw new GenericRuntimeException( "Could not retrieve a namespace with name %s", name );
+        return Optional.empty();
+    }
+
+    @Override
+    public @NotNull Optional<CatalogUser> getUser( String name ) {
+        return Optional.ofNullable( userNames.get( name ) );
     }
 
 
     @Override
-    public boolean checkIfExistsNamespace( String name ) {
-        return namespaceNames.containsKey( name );
-    }
-
-
-    @Override
-    public CatalogUser getUser( String name ) {
-        return userNames.get( name );
-    }
-
-
-    @Override
-    public CatalogUser getUser( long id ) {
-        return users.get( id );
+    public @NotNull Optional<CatalogUser> getUser( long id ) {
+        return Optional.ofNullable( users.get( id ) );
     }
 
 
@@ -145,21 +137,16 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public CatalogAdapter getAdapter( String uniqueName ) {
-        return adapterNames.get( uniqueName );
+    public @NotNull Optional<CatalogAdapter> getAdapter( String uniqueName ) {
+        return Optional.ofNullable( adapterNames.get( uniqueName ) );
     }
 
 
     @Override
-    public CatalogAdapter getAdapter( long id ) {
-        return adapters.get( id );
+    public @NotNull Optional<CatalogAdapter> getAdapter( long id ) {
+        return Optional.ofNullable( adapters.get( id ) );
     }
 
-
-    @Override
-    public boolean checkIfExistsAdapter( long id ) {
-        return adapters.containsKey( id );
-    }
 
 
     @Override
@@ -169,14 +156,14 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public CatalogQueryInterface getQueryInterface( String uniqueName ) {
-        return interfaceNames.get( uniqueName );
+    public Optional<CatalogQueryInterface> getQueryInterface( String uniqueName ) {
+        return Optional.ofNullable( interfaceNames.get( uniqueName ) );
     }
 
 
     @Override
-    public CatalogQueryInterface getQueryInterface( long id ) {
-        return interfaces.get( id );
+    public Optional<CatalogQueryInterface> getQueryInterface( long id ) {
+        return Optional.ofNullable( interfaces.get( id ) );
     }
 
 

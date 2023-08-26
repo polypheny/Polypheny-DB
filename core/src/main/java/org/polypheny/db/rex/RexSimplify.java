@@ -1678,7 +1678,7 @@ public class RexSimplify {
                     }
                     if ( comparisonResult <= 0 ) {
                         // 1) No upper bound, or
-                        // 2) We need to open the upper bound, or
+                        // 2) We need to execute the upper bound, or
                         // 3) New upper bound is lower than old upper bound
                         if ( r.hasLowerBound() ) {
                             if ( v0.compareTo( r.lowerEndpoint() ) <= 0 ) {
@@ -1745,7 +1745,7 @@ public class RexSimplify {
                     }
                     if ( comparisonResult >= 0 ) {
                         // 1) No lower bound, or
-                        // 2) We need to open the lower bound, or
+                        // 2) We need to execute the lower bound, or
                         // 3) New lower bound is greater than old lower bound
                         if ( r.hasUpperBound() ) {
                             if ( v0.compareTo( r.upperEndpoint() ) >= 0 ) {

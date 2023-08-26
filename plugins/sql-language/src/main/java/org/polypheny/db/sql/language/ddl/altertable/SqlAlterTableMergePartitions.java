@@ -77,7 +77,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = getEntityFromCatalog( context, this.table );
+        LogicalTable table = searchEntity( context, this.table );
 
         if ( table == null ) {
             throw new GenericRuntimeException( "Entity %s not found.", String.join( ".", this.table.names ) );
@@ -91,7 +91,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         if ( statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType != PartitionType.NONE ) {
 
             if ( log.isDebugEnabled() ) {
-                log.debug( "Merging partitions for table: {} with id {} on namespace: {}", table.name, table.id, statement.getTransaction().getSnapshot().getNamespace( table.namespaceId ).name );
+                log.debug( "Merging partitions for table: {} with id {} on namespace: {}", table.name, table.id, statement.getTransaction().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name );
             }
 
             try {

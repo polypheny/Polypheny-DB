@@ -17,6 +17,7 @@
 package org.polypheny.db.protointerface;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,7 +80,7 @@ public class ClientManager {
         String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
         String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
         CatalogUser user = authenticator.authenticate( username, password );
-        Transaction transaction = transactionManager.startTransaction( user, null, false, "proto-interface" );
+        Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );
         assert namespace != null;
@@ -103,11 +104,12 @@ public class ClientManager {
         if ( connectionRequest.hasConnectionProperties() && connectionRequest.getConnectionProperties().hasNamespaceName() ) {
             namespaceName = connectionRequest.getConnectionProperties().getNamespaceName();
         }
-        try {
-            return Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
-        } catch ( Exception e ) {
+        Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
+        if ( optionalNamespace.isEmpty() ) {
             throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
         }
+
+        return optionalNamespace.get();
     }
 
 

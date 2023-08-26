@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -60,6 +61,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
@@ -151,7 +153,8 @@ public class DockerInstance extends DockerManager {
                     }
 
                     int adapterId = Integer.parseInt( unparsedAdapterId );
-                    if ( !snapshot.checkIfExistsAdapter( adapterId ) || !snapshot.getAdapter( adapterId ).uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
+                    Optional<CatalogAdapter> optionalAdapter = snapshot.getAdapter( adapterId );
+                    if ( optionalAdapter.isEmpty() || !optionalAdapter.get().uniqueName.equals( splits[0] ) || isTestContainer || Catalog.resetDocker ) {
                         idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
                         // As we remove this container later we skip the name and port adding
                         continue outer;

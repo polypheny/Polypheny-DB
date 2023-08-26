@@ -176,7 +176,7 @@ public class IndexManager {
                 method,
                 unique,
                 persistent,
-                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ),
+                Catalog.getInstance().getSnapshot().getNamespace( key.namespaceId ).orElseThrow(),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );

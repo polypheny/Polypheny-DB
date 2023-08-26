@@ -17,13 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 
 
 public class ExploreTables extends UIRequest{
 
     public Integer id;
-    public DbColumn[] columns;
+    public UiColumnDefinition[] columns;
     public int cPage;
 
 

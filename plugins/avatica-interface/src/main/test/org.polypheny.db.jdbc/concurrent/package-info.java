@@ -141,7 +141,7 @@
  *     msecs).  Stop on EOD or on timeout.
  * &nbsp;
  * &#64;close
- *     Closes the current prepared statement. However that an open prepared
+ *     Closes the current prepared statement. However that an execute prepared
  *     statement will be closed automatically at the end of its thread.
  * &nbsp;
  * &#64;shell &lt;Shell Command&gt;

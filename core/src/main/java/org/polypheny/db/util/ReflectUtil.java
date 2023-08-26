@@ -34,13 +34,16 @@
 package org.polypheny.db.util;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.linq4j.function.Parameter;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.linq4j.function.Parameter;
 
 
 /**
@@ -353,7 +356,7 @@ public abstract class ReflectUtil {
     public static <R extends ReflectiveVisitor, E> ReflectiveVisitDispatcher<R, E> createDispatcher( final Class<R> visitorBaseClazz, final Class<E> visiteeBaseClazz ) {
         assert ReflectiveVisitor.class.isAssignableFrom( visitorBaseClazz );
         assert Object.class.isAssignableFrom( visiteeBaseClazz );
-        return new ReflectiveVisitDispatcher<R, E>() {
+        return new ReflectiveVisitDispatcher<>() {
             final Map<List<Object>, Method> map = new HashMap<>();
 
 

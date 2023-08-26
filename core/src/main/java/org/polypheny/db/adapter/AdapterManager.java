@@ -261,14 +261,14 @@ public class AdapterManager {
     public void removeAdapter( long adapterId ) {
         Adapter<?> adapterInstance = getAdapter( adapterId );
         if ( adapterInstance == null ) {
-            throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
+            throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
-        CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId );
+        CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
         List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( catalogAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
-        if ( placements.size() != 0 ) {
-            throw new RuntimeException( "There is still data placed on this data store" );
+        if ( !placements.isEmpty() ) {
+            throw new GenericRuntimeException( "There is still data placed on this data store" );
         }
 
         // Shutdown store

@@ -17,14 +17,14 @@
 package org.polypheny.db.exploreByExample.requests;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import org.polypheny.db.webui.models.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 public class ClassifyAllData extends UIRequest {
 
     public Integer id;
-    public DbColumn[] header;
+    public UiColumnDefinition[] header;
     public String[][] classified;
     /**
      * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)

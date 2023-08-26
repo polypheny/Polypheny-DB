@@ -35,6 +35,7 @@ package org.polypheny.db.rex;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
@@ -128,6 +129,7 @@ public class RexTableIndexRef extends RexIndexRef {
     /**
      * Identifies uniquely a table by its qualified name and its entity number (occurrence)
      */
+    @Getter
     public static class AlgTableRef implements Comparable<AlgTableRef> {
 
         private final CatalogEntity table;
@@ -157,18 +159,8 @@ public class RexTableIndexRef extends RexIndexRef {
         }
 
 
-        public CatalogEntity getTable() {
-            return table;
-        }
-
-
         public List<String> getQualifiedName() {
-            return List.of( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).name, table.name );
-        }
-
-
-        public int getEntityNumber() {
-            return entityNumber;
+            return List.of( Catalog.getInstance().getSnapshot().getNamespace( table.namespaceId ).orElseThrow().name, table.name );
         }
 
 

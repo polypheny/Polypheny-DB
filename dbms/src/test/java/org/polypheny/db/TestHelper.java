@@ -69,7 +69,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
-import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
@@ -215,7 +215,7 @@ public class TestHelper {
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "': The difference between the expected double and the received double exceeds the epsilon. Difference: " + (diff - EPSILON),
                                         diff < EPSILON );
                             } else if ( columnType == Types.DECIMAL ) { // Decimals are exact // but not for calculations?
-                                BigDecimal expectedResult = new BigDecimal( expectedRow[j].toString() );
+                                BigDecimal expectedResult = (BigDecimal) expectedRow[j];
                                 double diff = Math.abs( expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue() );
                                 if ( isConvertingDecimals ) {
                                     Assert.assertTrue(
@@ -224,8 +224,6 @@ public class TestHelper {
                                 } else {
                                     Assert.assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", 0, expectedResult.doubleValue() - ((BigDecimal) row[j]).doubleValue(), 0.0 );
                                 }
-                            } else if ( expectedRow[j] != null && row[j] != null && expectedRow[j] instanceof Number && row[j] instanceof Number ) {
-                                assertEquals( "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'", ((Number) expectedRow[j]).longValue(), ((Number) row[j]).longValue() );
                             } else {
                                 Assert.assertEquals(
                                         "Unexpected data in column '" + rsmd.getColumnName( j + 1 ) + "'",
@@ -365,7 +363,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
 
 
         private MongoConnection() {
@@ -491,7 +489,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new GsonBuilder().registerTypeAdapter( Result.class, Result.getSerializer() ).create();
+        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
 
 
         public static GraphResult executeGetResponse( String query ) {

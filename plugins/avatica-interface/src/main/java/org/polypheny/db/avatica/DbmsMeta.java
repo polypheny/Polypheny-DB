@@ -1513,7 +1513,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
-            throw new IllegalStateException( "Forbidden attempt to open the connection `" + ch.id + "` twice!" );
+            throw new IllegalStateException( "Forbidden attempt to execute the connection `" + ch.id + "` twice!" );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -1540,15 +1540,14 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, false, "AVATICA Interface" );
+        Transaction transaction = transactionManager.startTransaction( user.id, false, "AVATICA Interface" );
 
-//            Authorizer.hasAccess( user, database );
+        //Authorizer.hasAccess( user, database );
 
         // Check schema access
-        final LogicalNamespace schema = catalog.getSnapshot().getNamespace( defaultSchemaName );
-        assert schema != null;
+        final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( defaultSchemaName ).orElseThrow();
 
-//            Authorizer.hasAccess( user, schema );
+        //Authorizer.hasAccess( user, schema );
 
         // commit transaction
         try {
@@ -1557,7 +1556,7 @@ public class DbmsMeta implements ProtobufMeta {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
-        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, schema, transactionManager ) );
+        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, namespace, transactionManager ) );
     }
 
 
@@ -1654,7 +1653,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
@@ -1684,7 +1683,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
-                    log.trace( "No open transaction for ConnectionHandle {}", connection );
+                    log.trace( "No execute transaction for ConnectionHandle {}", connection );
                 }
                 return;
             }
@@ -1717,9 +1716,9 @@ public class DbmsMeta implements ProtobufMeta {
             final PolyphenyDbConnectionHandle connectionToSync = openConnections.get( ch.id );
             if ( connectionToSync == null ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Connection {} is not open.", ch.id );
+                    log.debug( "Connection {} is not execute.", ch.id );
                 }
-                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
+                throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been execute yet or is already closed." );
             }
 
             return connection.mergeConnectionProperties( connProps );

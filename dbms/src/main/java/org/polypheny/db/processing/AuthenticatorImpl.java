@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 
+import java.util.Optional;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.AuthenticationException;
@@ -29,10 +30,10 @@ import org.polypheny.db.iface.Authenticator;
 public class AuthenticatorImpl implements Authenticator {
 
     @Override
-    public CatalogUser authenticate(final String username, final String password) throws AuthenticationException {
-        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser(username);
-        if (catalogUser == null) {
-            throw new AuthenticationException("There exists no user with the username " + username);
+    public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
+        Optional<CatalogUser> catalogUser = Catalog.getInstance().getSnapshot().getUser( username );
+        if ( catalogUser.isEmpty() ) {
+            throw new AuthenticationException( "There exists no user with the username " + username );
         }
 
         /******************************************************************
@@ -49,13 +50,13 @@ public class AuthenticatorImpl implements Authenticator {
          *  TODO: remove this upon implementation of user authentication  *
          *                                                                *
          ******************************************************************/
-        if (password.equals("")) {
-            return catalogUser;
+        if ( password.isEmpty() ) {
+            return catalogUser.get();
         }
         /******************************************************************/
 
-        if (catalogUser.password.equals(password)) {
-            return catalogUser;
+        if ( catalogUser.get().password.equals( password ) ) {
+            return catalogUser.get();
         } else {
             throw new AuthenticationException("Wrong password for user '" + username + "'!");
         }

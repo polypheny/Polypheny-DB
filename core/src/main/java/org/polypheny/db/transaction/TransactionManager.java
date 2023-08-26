@@ -17,16 +17,14 @@
 package org.polypheny.db.transaction;
 
 
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 
 public interface TransactionManager {
 
-    Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, boolean analyze, String origin );
+    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin );
 
-    Transaction startTransaction( CatalogUser user, LogicalNamespace defaultSchema, boolean analyze, String origin, MultimediaFlavor flavor );
+    Transaction startTransaction( long userId, long defaultNamespaceId, boolean analyze, String origin, MultimediaFlavor flavor );
 
     Transaction startTransaction( long userId, boolean analyze, String origin );
 

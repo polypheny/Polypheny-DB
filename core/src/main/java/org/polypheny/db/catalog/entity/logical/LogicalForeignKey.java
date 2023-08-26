@@ -69,19 +69,16 @@ public final class LogicalForeignKey extends LogicalKey {
     }
 
 
-    @SneakyThrows
     public String getReferencedKeySchemaName() {
-        return Catalog.snapshot().getNamespace( referencedKeySchemaId ).name;
+        return Catalog.snapshot().getNamespace( referencedKeySchemaId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public String getReferencedKeyTableName() {
         return Catalog.snapshot().rel().getTable( referencedKeyTableId ).orElseThrow().name;
     }
 
 
-    @SneakyThrows
     public List<String> getReferencedKeyColumnNames() {
         Snapshot snapshot = Catalog.snapshot();
         List<String> columnNames = new LinkedList<>();
