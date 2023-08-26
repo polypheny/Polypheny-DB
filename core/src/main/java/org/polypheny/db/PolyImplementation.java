@@ -371,6 +371,10 @@ public class PolyImplementation<T> {
 
 
         public List<List<T>> getRows() {
+            return getRows(batch);
+        }
+
+        public List<List<T>> getRows(int rowCount) {
 
             StopWatch stopWatch = null;
             try {
@@ -380,7 +384,7 @@ public class PolyImplementation<T> {
                 }
                 List<List<T>> res = new ArrayList<>();
                 int i = 0;
-                while ( i++ < batch && iterator.hasNext() ) {
+                while ( i++ < rowCount && iterator.hasNext() ) {
                     res.add( List.of( (T[]) iterator.next() ) );
                 }
 

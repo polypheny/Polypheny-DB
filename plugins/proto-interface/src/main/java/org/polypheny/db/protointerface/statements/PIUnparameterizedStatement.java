@@ -54,7 +54,6 @@ public class PIUnparameterizedStatement extends PIStatement {
         }
     }
 
-
     @Override
     public PolyImplementation<PolyValue> getImplementation() {
         return implementation;

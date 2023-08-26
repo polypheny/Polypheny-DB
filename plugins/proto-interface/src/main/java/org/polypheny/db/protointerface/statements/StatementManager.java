@@ -178,7 +178,7 @@ public class StatementManager {
             if ( statementToClose == null ) {
                 return;
             }
-            // TODO: implement closing of statements
+            statementToClose.closeResults();
         }
     }
 

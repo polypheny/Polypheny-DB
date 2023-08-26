@@ -100,7 +100,7 @@ public class RelationalExecutor extends Executor {
         }
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
         if (implementation == null) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
+            throw new PIServiceException( "Can't retrieve results form an unprepared statement.",
                     "I9002",
                     9002
             );
@@ -116,6 +116,7 @@ public class RelationalExecutor extends Executor {
             client.commitCurrentTransactionIfAuto();
             return resultBuilder.build();
         }
+        piStatement.setIterator(implementation.execute(implementation.getStatement()));
         Frame frame = fetch( piStatement, fetchSize);
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
@@ -139,19 +140,20 @@ public class RelationalExecutor extends Executor {
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
         PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
         if (implementation == null) {
+            throw new PIServiceException( "Can't fetch form an unprepared statement.",
+                    "I9002",
+                    9002
+            );
+        }
+        ResultIterator<PolyValue> iterator = piStatement.getIterator();
+        if (iterator == null) {
             throw new PIServiceException( "Can't fetch form an unexecuted statement.",
                     "I9002",
                     9002
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        ResultIterator<PolyValue> iterator = implementation.execute( implementation.getStatement(), fetchSize );
-        List<List<PolyValue>> rows = iterator.getRows();
-        try {
-            iterator.close();
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
+        List<List<PolyValue>> rows = piStatement.getIterator().getRows(fetchSize);
         executionStopWatch.suspend();
         boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
         if ( isDone ) {
