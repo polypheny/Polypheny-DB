@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-
 public class PolyMetadataModel {
 
     @Getter
@@ -29,7 +28,10 @@ public class PolyMetadataModel {
     private String cellType;
 
     @Getter
-    private String namespace, language;
+    private String namespace;
+
+    @Getter
+    private String language;
 
     @Getter
     @SerializedName("result_variable")

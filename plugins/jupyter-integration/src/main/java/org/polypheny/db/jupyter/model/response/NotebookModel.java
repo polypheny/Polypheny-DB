@@ -24,9 +24,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.polypheny.db.jupyter.model.language.JupyterKernelLanguage;
 
+/**
+ * See https://nbformat.readthedocs.io/en/latest/format_description.html
+ */
 @NoArgsConstructor
 public class NotebookModel {
-    // see https://nbformat.readthedocs.io/en/latest/format_description.html
 
     @Getter
     @Setter

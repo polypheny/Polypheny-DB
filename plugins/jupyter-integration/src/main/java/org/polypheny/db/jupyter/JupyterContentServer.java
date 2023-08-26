@@ -328,5 +328,4 @@ public class JupyterContentServer {
         ctx.result( String.format( "{\"message\": %s, \"reason\": null}", gson.toJson( message ) ) );
     }
 
-
 }

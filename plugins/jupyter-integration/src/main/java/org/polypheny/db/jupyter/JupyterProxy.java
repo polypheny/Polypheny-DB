@@ -17,12 +17,12 @@
 package org.polypheny.db.jupyter;
 
 import com.google.gson.Gson;
+import io.javalin.http.Context;
 import java.net.http.HttpResponse;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.jupyter.JupyterClient.JupyterServerException;
 import org.polypheny.db.jupyter.model.JupyterSessionManager;
-import io.javalin.http.Context;
 
 @Slf4j
 public class JupyterProxy {

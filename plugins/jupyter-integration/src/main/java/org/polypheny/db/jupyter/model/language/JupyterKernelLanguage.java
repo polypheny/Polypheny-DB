@@ -88,4 +88,3 @@ public interface JupyterKernelLanguage {
     }
 
 }
-

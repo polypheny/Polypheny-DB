@@ -211,9 +211,10 @@ public class JupyterKernel {
      * @param variable the name of the variable the result will be stored in
      * @param expandParams whether to expand variables specified in the form ${varname}
      */
-    public void executePolyCell( String query, String uuid, String language, String namespace,
+    public void executePolyCell(
+            String query, String uuid, String language, String namespace,
             String variable, boolean expandParams ) {
-        if ( query.strip().length() == 0 ) {
+        if ( query.strip().isEmpty() ) {
             execute( "", uuid ); // properly terminates the request
             return;
         }
@@ -230,7 +231,7 @@ public class JupyterKernel {
                 webSocket.sendBinary( request, true );
             }
         } catch ( Exception e ) {
-            e.printStackTrace();
+            log.error( "Exception while executing a Polypheny Notebook cell.", e );
         }
 
     }
@@ -412,7 +413,7 @@ public class JupyterKernel {
 
         @Override
         public void onError( WebSocket webSocket, Throwable error ) {
-            error.printStackTrace();
+            log.error( "Exception in Jupyter WebSocket.", error );
             jsm.removeKernel( kernelId );
             Listener.super.onError( webSocket, error );
         }

@@ -17,10 +17,11 @@
 package org.polypheny.db.jupyter;
 
 import io.javalin.http.Context;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,9 +43,6 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.HttpServer.HandlerType;
-
-import java.security.SecureRandom;
-import java.util.Arrays;
 
 @Slf4j
 public class JupyterPlugin extends Plugin {
@@ -150,18 +148,17 @@ public class JupyterPlugin extends Plugin {
 
                 if ( !this.container.waitTillStarted( this::testConnection, 20000 ) ) {
                     this.container.destroy();
-                    throw new RuntimeException( "Failed to start jupyter container" );
+                    throw new RuntimeException( "Failed to start Jupyter Server container" );
                 }
                 ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( this.container.getContainerId() );
-                log.info( "Jupyter container has been deployed." );
+                log.info( "Jupyter Server container has been deployed" );
             } else {
                 this.container = maybeContainer.get();
             }
             onContainerRunning();
             return true;
         } catch ( Exception e ) {
-            e.printStackTrace();
-            log.warn( "Unable to deploy Jupyter container." );
+            log.warn( "Unable to deploy Jupyter Server container", e );
             return false;
         }
     }

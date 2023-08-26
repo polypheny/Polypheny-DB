@@ -21,8 +21,10 @@ import lombok.Getter;
 
 @Getter
 public class ContentsCreateRequest {
-    @SerializedName( "copy_from" )
+
+    @SerializedName("copy_from")
     private String copyFrom;
     private String ext;
     private String type;
+
 }

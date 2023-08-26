@@ -20,12 +20,28 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * See https://jupyter-server.readthedocs.io/en/latest/developers/rest-api.html
+ */
 @NoArgsConstructor
 public class NotebookContentModel {
-    // see https://jupyter-server.readthedocs.io/en/latest/developers/rest-api.html
 
     @Getter
-    private String name, path, created, format, mimetype, size, writable, type;
+    private String name;
+    @Getter
+    private String path;
+    @Getter
+    private String created;
+    @Getter
+    private String format;
+    @Getter
+    private String mimetype;
+    @Getter
+    private String size;
+    @Getter
+    private String writable;
+    @Getter
+    private String type;
 
     @Getter
     @SerializedName("last_modified")
