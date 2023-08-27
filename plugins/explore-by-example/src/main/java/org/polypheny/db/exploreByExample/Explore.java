@@ -62,20 +62,23 @@ public class Explore {
     private String sqlStatement;
     @Getter
     private boolean classificationPossible = true;
-    private ExploreQueryProcessor exploreQueryProcessor;
+    private final ExploreQueryProcessor exploreQueryProcessor;
     @Getter
     private List<String[]> dataAfterClassification;
     @Getter
     private int tableSize;
-    private List<String> qualifiedNames = new ArrayList<>();
+    private final List<String> qualifiedNames = new ArrayList<>();
     @Getter
     private String classifiedSqlStatement;
-    private Map<String, String> nameAndType = new HashMap<>();
+    private final Map<String, String> nameAndType = new HashMap<>();
     @Getter
     private boolean isConvertedToSql;
     @Getter
     private boolean includesJoin;
     public boolean isDataAfterClassification;
+
+    public String entityName;
+    public long entityId;
 
 
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {

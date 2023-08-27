@@ -75,7 +75,7 @@ public abstract class SqlUtil {
         if ( node1 == null ) {
             return node2;
         }
-        ArrayList<Node> list = new ArrayList<>();
+        List<Node> list = new ArrayList<>();
         if ( node1.getKind() == Kind.AND ) {
             list.addAll( ((SqlCall) node1).getOperandList() );
         } else {
@@ -90,8 +90,8 @@ public abstract class SqlUtil {
     }
 
 
-    static ArrayList<SqlNode> flatten( SqlNode node ) {
-        ArrayList<SqlNode> list = new ArrayList<>();
+    static List<SqlNode> flatten( SqlNode node ) {
+        List<SqlNode> list = new ArrayList<>();
         flatten( node, list );
         return list;
     }
@@ -101,7 +101,7 @@ public abstract class SqlUtil {
      * Returns the <code>n</code>th (0-based) input to a join expression.
      */
     public static SqlNode getFromNode( SqlSelect query, int ordinal ) {
-        ArrayList<SqlNode> list = flatten( query.getSqlFrom() );
+        List<SqlNode> list = flatten( query.getSqlFrom() );
         return list.get( ordinal );
     }
 
@@ -124,7 +124,7 @@ public abstract class SqlUtil {
     }
 
 
-    private static void flatten( SqlNode node, ArrayList<SqlNode> list ) {
+    private static void flatten( SqlNode node, List<SqlNode> list ) {
         switch ( node.getKind() ) {
             case JOIN:
                 SqlJoin join = (SqlJoin) node;
@@ -137,7 +137,6 @@ public abstract class SqlUtil {
                 return;
             default:
                 list.add( node );
-                return;
         }
     }
 

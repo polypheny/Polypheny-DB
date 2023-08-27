@@ -103,7 +103,7 @@ public class FileProject extends Project implements FileAlg {
         AlgRecordType rowType = (AlgRecordType) getRowType();
         List<String> fields = new ArrayList<>();
 
-        ArrayList<Integer> mapping = new ArrayList<>();
+        List<Integer> mapping = new ArrayList<>();
         boolean inputRefsOnly = true;
         for ( RexNode e : exps ) {
             if ( e instanceof RexInputRef ) {

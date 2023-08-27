@@ -48,7 +48,9 @@ public class UIRequest {
     /**
      * The name of the table the data should be fetched from
      */
-    public String entityId;
+    public Long entityId;
+
+    public Long namespaceId;
 
     /**
      * Information about the pagination,
@@ -94,7 +96,7 @@ public class UIRequest {
                     requestType = in.nextString();
                     break;
                 case "entityId":
-                    entityId = in.nextString();
+                    entityId = in.nextLong();
                     break;
                 case "currentPage":
                     currentPage = in.nextInt();
@@ -120,21 +122,6 @@ public class UIRequest {
         }
     }
 
-
-    public String getSchemaName() {
-        if ( entityId != null ) {
-            return entityId.split( "\\." )[0];
-        }
-        return null;
-    }
-
-
-    public String getTableName() {
-        if ( entityId != null ) {
-            return entityId.split( "\\." )[1];
-        }
-        return null;
-    }
 
 
     static BiConsumer<JsonWriter, String> stringSerializer = ( out, val ) -> {

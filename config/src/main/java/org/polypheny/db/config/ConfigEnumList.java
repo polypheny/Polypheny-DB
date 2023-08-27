@@ -178,7 +178,7 @@ public class ConfigEnumList extends Config {
     @Override
     public boolean parseStringAndSetValue( String value ) {
         Gson gson = new Gson();
-        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<String> val = gson.fromJson( value, List.class );
         List<Enum> toAdd = new ArrayList<>();
         for ( Enum e : enumValues ) {
             if ( val.contains( e.name() ) ) {

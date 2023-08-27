@@ -142,8 +142,8 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         final Object[] insert;
 
-        ArrayList<Object[]> rows = new ArrayList<>();
-        ArrayList<Object> row = new ArrayList<>();
+        List<Object[]> rows = new ArrayList<>();
+        List<Object> row = new ArrayList<>();
         int i = 0;
         if ( dataContext.getParameterValues().size() > 0 ) {
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {

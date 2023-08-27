@@ -383,7 +383,7 @@ public class ConfigManager {
     public String getWebUiPageList() {
         //todo recursion with parentPage field
         // Angular wants: { id, name, icon, children[] }
-        ArrayList<PageListItem> out = new ArrayList<>();
+        List<PageListItem> out = new ArrayList<>();
         for ( WebUiPage p : uiPages.values() ) {
             out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon(), p.getLabel() ) );
         }

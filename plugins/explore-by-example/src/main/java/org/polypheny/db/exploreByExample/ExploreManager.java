@@ -175,7 +175,7 @@ public class ExploreManager {
 
             result.explorerId( explore.getId() )
                     .currentPage( classifyAllData.cPage )
-                    .table( classifyAllData.entityId )
+                    .table( explore.entityName )
                     .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) )
                     .classificationInfo( "NoClassificationPossible" )
                     .isConvertedToSql( isConvertedToSql );
@@ -187,7 +187,8 @@ public class ExploreManager {
                     .data( Arrays.copyOfRange( explore.getData(), 0, 10 ) )
                     .classificationInfo( "NoClassificationPossible" )
                     .explorerId( explore.getId() )
-                    .currentPage( classifyAllData.cPage ).table( classifyAllData.entityId )
+                    .currentPage( classifyAllData.cPage )
+                    .table( explore.entityName )
                     .highestPage( (int) Math.ceil( (double) explore.getData().length / crud.getPageSize() ) )
                     .isConvertedToSql( isConvertedToSql );
             ctx.json( result );
@@ -229,7 +230,7 @@ public class ExploreManager {
                     .classificationInfo( "NoClassificationPossible" )
                     .explorerId( explore.getId() )
                     .currentPage( exploreTables.cPage )
-                    .table( exploreTables.entityId )
+                    .table( explore.entityName )
                     .highestPage( (int) Math.ceil( (double) tablesize / crud.getPageSize() ) );
 
             ctx.json( result );
@@ -255,7 +256,7 @@ public class ExploreManager {
         }
         result.explorerId( explore.getId() )
                 .currentPage( exploreTables.cPage )
-                .table( exploreTables.entityId );
+                .table( explore.entityName );
         int tableSize = explore.getTableSize();
 
         result.highestPage( (int) Math.ceil( (double) tableSize / crud.getPageSize() ) );
@@ -326,8 +327,9 @@ public class ExploreManager {
         } else {
             result.classificationInfo( "ClassificationPossible" );
         }
-        result.currentPage( queryExplorationRequest.cPage )
-                .table( queryExplorationRequest.entityId )
+        result
+                .currentPage( queryExplorationRequest.cPage )
+                .table( explore.entityName )
                 .highestPage( (int) Math.ceil( (double) explore.getTableSize() / crud.getPageSize() ) );
 
         ctx.json( result );

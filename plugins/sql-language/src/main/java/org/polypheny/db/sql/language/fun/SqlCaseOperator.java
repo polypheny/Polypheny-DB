@@ -204,7 +204,7 @@ public class SqlCaseOperator extends SqlOperator {
     private AlgDataType inferTypeFromValidator( SqlCallBinding callBinding ) {
         SqlCase caseCall = (SqlCase) callBinding.getCall();
         SqlNodeList thenList = caseCall.getThenOperands();
-        ArrayList<SqlNode> nullList = new ArrayList<>();
+        List<SqlNode> nullList = new ArrayList<>();
         List<AlgDataType> argTypes = new ArrayList<>();
         for ( SqlNode node : thenList.getSqlList() ) {
             argTypes.add( callBinding.getValidator().deriveType( callBinding.getScope(), node ) );

@@ -203,13 +203,12 @@ public class LanguageCrud {
 
         boolean hasMoreRows = implementation.hasMoreRows();
 
-        LogicalTable catalogTable = null;
+        LogicalTable table = null;
         if ( request.entityId != null ) {
-            String[] t = request.entityId.split( "\\." );
-            catalogTable = catalog.getSnapshot().rel().getTable( t[0], t[1] ).orElseThrow();
+            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
         }
 
-        ArrayList<UiColumnDefinition> header = new ArrayList<>();
+        List<UiColumnDefinition> header = new ArrayList<>();
         for ( AlgDataTypeField field : implementation.rowType.getFieldList() ) {
             String columnName = field.getName();
 
@@ -226,8 +225,8 @@ public class LanguageCrud {
                     .filter( filter ).build();
 
             // Get column default values
-            if ( catalogTable != null ) {
-                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( catalogTable.id, columnName );
+            if ( table != null ) {
+                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( optional.isPresent() ) {
                     if ( optional.get().defaultValue != null ) {
                         dbCol.defaultValue = optional.get().defaultValue.value;

@@ -127,7 +127,7 @@ public class GeodeAggregate extends Aggregate implements GeodeAlg {
 
 
     private List<String> fieldNames( AlgDataType algDataType ) {
-        ArrayList<String> names = new ArrayList<>();
+        List<String> names = new ArrayList<>();
 
         for ( AlgDataTypeField rdtf : algDataType.getFieldList() ) {
             names.add( rdtf.getName() );

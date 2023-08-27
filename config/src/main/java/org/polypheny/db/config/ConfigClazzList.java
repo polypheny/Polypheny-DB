@@ -194,7 +194,7 @@ public class ConfigClazzList extends Config {
     @Override
     public boolean parseStringAndSetValue( String value ) {
         Gson gson = new Gson();
-        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<String> val = gson.fromJson( value, List.class );
         List<Class> toAdd = new ArrayList<>();
         for ( Class c : classes ) {
             if ( val.contains( c.getName() ) ) {

@@ -141,7 +141,7 @@ public abstract class AbstractAdapterSetting {
 
 
     public static List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
-        ArrayList<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
+        List<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
         for ( AbstractAdapterSetting s : availableSettings ) {
             for ( String current : currentSettings.keySet() ) {
                 if ( s.name.equals( current ) ) {

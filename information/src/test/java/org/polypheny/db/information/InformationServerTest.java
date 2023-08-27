@@ -112,8 +112,8 @@ public class InformationServerTest {
 
         List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
 
-        ArrayList<String> procNames = new ArrayList<>();
-        ArrayList<Double> procPerc = new ArrayList<>();
+        List<String> procNames = new ArrayList<>();
+        List<Double> procPerc = new ArrayList<>();
         for ( int i = 0; i < procs.size() && i < 5; i++ ) {
             OSProcess proc = procs.get( i );
             double cpuPerc = 100d * (proc.getKernelTime() + proc.getUserTime()) / proc.getUpTime();

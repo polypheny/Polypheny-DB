@@ -20,24 +20,28 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Value;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.webui.models.AdapterModel;
 
+@Value
 public class SnapshotModel {
 
-    public final long id;
+    public long id;
 
-    public final List<NamespaceModel> namespaces;
+    public List<NamespaceModel> namespaces;
 
-    public final List<EntityModel> entities;
+    public List<EntityModel> entities;
 
-    public final List<FieldModel> fields;
-    public final List<KeyModel> keys;
-    public final List<ConstraintModel> constraints;
-    public final List<AllocationEntityModel> allocations;
-    public final List<AllocationPlacementModel> placements;
-    public final List<AllocationPartitionModel> partitions;
-    public final List<AllocationColumnModel> allocColumns;
+    public List<FieldModel> fields;
+    public List<KeyModel> keys;
+    public List<ConstraintModel> constraints;
+    public List<AllocationEntityModel> allocations;
+    public List<AllocationPlacementModel> placements;
+    public List<AllocationPartitionModel> partitions;
+    public List<AllocationColumnModel> allocColumns;
+    public List<AdapterModel> adapters;
 
 
     public SnapshotModel(
@@ -50,7 +54,8 @@ public class SnapshotModel {
             List<AllocationEntityModel> allocations,
             List<AllocationPlacementModel> placements,
             List<AllocationPartitionModel> partitions,
-            List<AllocationColumnModel> allocColumns ) {
+            List<AllocationColumnModel> allocColumns,
+            List<AdapterModel> adapters ) {
         this.id = id;
         this.namespaces = ImmutableList.copyOf( namespaces );
         this.entities = ImmutableList.copyOf( entities );
@@ -61,6 +66,7 @@ public class SnapshotModel {
         this.placements = ImmutableList.copyOf( placements );
         this.partitions = ImmutableList.copyOf( partitions );
         this.allocColumns = ImmutableList.copyOf( allocColumns );
+        this.adapters = ImmutableList.copyOf( adapters );
     }
 
 
@@ -87,7 +93,9 @@ public class SnapshotModel {
 
         List<AllocationColumnModel> allocationColumns = snapshot.alloc().getColumns().stream().map( AllocationColumnModel::from ).collect( Collectors.toList() );
 
-        return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions, allocationColumns );
+        List<AdapterModel> adapters = snapshot.getAdapters().stream().map( AdapterModel::from ).collect( Collectors.toList() );
+
+        return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions, allocationColumns, adapters );
     }
 
 }

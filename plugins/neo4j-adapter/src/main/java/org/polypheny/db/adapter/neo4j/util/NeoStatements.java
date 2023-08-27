@@ -252,7 +252,7 @@ public interface NeoStatements {
         if ( addId ) {
             statements.add( property_( "_id", string_( (node.id) ) ) );
         }
-        ArrayList<String> labels = new ArrayList<>( node.labels );
+        List<String> labels = new ArrayList<>( node.labels );
         if ( mappingLabel != null ) {
             labels.add( mappingLabel );
         }

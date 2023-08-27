@@ -1674,7 +1674,7 @@ public class MqlToAlgConverter {
 
 
     private RexNode translateDocument( BsonDocument bsonDocument, AlgDataType rowType, String parentKey ) {
-        ArrayList<RexNode> operands = new ArrayList<>();
+        List<RexNode> operands = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : bsonDocument.entrySet() ) {
             if ( entry.getKey().equals( "$regex" ) ) {

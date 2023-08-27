@@ -19,6 +19,7 @@ package org.polypheny.db.webui;
 
 import com.google.gson.Gson;
 import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -101,7 +102,7 @@ public class QueryPlanBuilder {
                     return builder.filter( builder.call( getOperator( node.operator ), builder.field( node.inputCount, field[0], field[1] ), builder.literal( node.filter ) ) );
                 }
             case "Project":
-                ArrayList<RexNode> fields = getFields( node.fields, node.inputCount, builder );
+                List<RexNode> fields = getFields( node.fields, node.inputCount, builder );
                 builder.project( fields );
                 return builder;
             case "Aggregate":
@@ -154,10 +155,10 @@ public class QueryPlanBuilder {
     }
 
 
-    private static ArrayList<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) {
-        ArrayList<RexNode> nodes = new ArrayList<>();
+    private static List<RexNode> getFields( String[] fields, int inputCount, AlgBuilder builder ) {
+        List<RexNode> nodes = new ArrayList<>();
         for ( String f : fields ) {
-            if ( f.equals( "" ) ) {
+            if ( f.isEmpty() ) {
                 continue;
             }
             String[] field = f.split( "\\." );

@@ -18,14 +18,35 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
 
-public class AdapterModel {
+@EqualsAndHashCode(callSuper = true)
+@Value
+public class AdapterModel extends IdEntity {
 
     public String uniqueName;
     public String adapterName;
     public String adapterType;
     public Map<String, AbstractAdapterSetting> settings;
+
+
+    public AdapterModel( @Nullable Long id, @Nullable String name, String uniqueName, String adapterName, String adapterType, Map<String, AbstractAdapterSetting> settings ) {
+        super( id, name );
+        this.uniqueName = uniqueName;
+        this.adapterName = adapterName;
+        this.adapterType = adapterType;
+        this.settings = settings;
+    }
+
+
+    public static AdapterModel from( CatalogAdapter adapter ) {
+        return new AdapterModel( adapter.id, adapter.uniqueName, adapter.uniqueName, adapter.adapterName, adapter.adapterTypeName, Map.of() );
+    }
 
 }

@@ -142,7 +142,7 @@ public class Value {
 
 
     public static Value fromArrayRexCall( final RexCall call ) {
-        ArrayList<Object> arrayValues = new ArrayList<>();
+        List<Object> arrayValues = new ArrayList<>();
         for ( RexNode node : call.getOperands() ) {
             arrayValues.add( ((RexLiteral) node).getValueForFileCondition() );
         }

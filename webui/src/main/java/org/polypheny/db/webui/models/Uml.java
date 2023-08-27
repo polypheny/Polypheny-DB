@@ -17,8 +17,8 @@
 package org.polypheny.db.webui.models;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -32,7 +32,7 @@ public class Uml {
     private ForeignKey[] foreignKeys;
 
 
-    public Uml( final ArrayList<DbTable> tables, final ArrayList<ForeignKey> foreignKeys ) {
+    public Uml( final List<DbTable> tables, final List<ForeignKey> foreignKeys ) {
         for ( DbTable table : tables ) {
             this.tables.put( table.getTableName(), table );
         }

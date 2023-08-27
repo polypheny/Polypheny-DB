@@ -81,8 +81,8 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         FileImplementor fileImplementor = new FileImplementor();
         fileImplementor.visitChild( 0, getInput() );
 
-        ArrayList<Expression> columnIds = new ArrayList<>();
-        ArrayList<Expression> columnTypes = new ArrayList<>();
+        List<Expression> columnIds = new ArrayList<>();
+        List<Expression> columnTypes = new ArrayList<>();
         for ( long id : fileImplementor.getFileTable().columnIds ) {
             columnIds.add( Expressions.constant( id, Long.class ) );
             columnTypes.add( Expressions.constant( fileImplementor.getFileTable().getColumnTypeMap().get( id ), PolyType.class ) );
