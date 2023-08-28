@@ -73,22 +73,30 @@ public class EthereumSchema extends AbstractSchema {
                 ethereumDataSource,
                 catalogTable.id
         );
-
-        log.warn( catalogTable.name );
-        log.warn( catalogTable.getNamespaceName() );
-        log.warn( catalogTable.getDatabaseName() );
-        log.warn( catalogTable.getOwnerName() );
-        Boolean eventDataRetrieval = false; //ethereumDataSource.getEventDataRetrieval();
+        boolean eventDataRetrieval = ethereumDataSource.isEventDataRetrieval();
         if (eventDataRetrieval) {
+            String originalName = getOriginalName(catalogTable.name); // remove the last digit for key search in eventDataMap
+
             tableBuilder
-                    .contractAddress(ethereumDataSource.getSmartContractAddressFromCatalogTable(catalogTable.name))
+                    .contractAddress(ethereumDataSource.getSmartContractAddressFromCatalogTable(originalName))
                     .fromBlock(ethereumDataSource.getFromBlock())
                     .toBlock(ethereumDataSource.getToBlock())
-                    .event(ethereumDataSource.getEventFromCatalogTable(catalogTable.name));
+                    .event(ethereumDataSource.getEventFromCatalogTable(originalName));
         }
         EthereumTable table = tableBuilder.build();
         tableMap.put( catalogTable.name, table );
         return table;
+    }
+
+    public static String getOriginalName(String catalogName) {
+        if (catalogName == null || catalogName.isEmpty()) {
+            return catalogName;
+        }
+        char lastChar = catalogName.charAt(catalogName.length() - 1);
+        if (Character.isDigit(lastChar)) {
+            return catalogName.substring(0, catalogName.length() - 1);
+        }
+        return catalogName;
     }
 
 
