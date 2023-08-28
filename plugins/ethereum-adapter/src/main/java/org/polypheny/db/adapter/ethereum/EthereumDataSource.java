@@ -78,6 +78,7 @@ import org.web3j.protocol.http.HttpService;
 public class EthereumDataSource extends DataSource {
 
     public static final String SCHEMA_NAME = "public";
+    @Getter
     private final boolean eventDataRetrieval;
     private String clientURL;
     @Getter
@@ -339,6 +340,7 @@ public class EthereumDataSource extends DataSource {
                 String eventName = event.getString( "name" ); // to match it later with catalogTable.name
                 String compositeKey = contractName + "_" + eventName; // e.g. Uni_Transfer & Dai_Transfer
                 JSONArray abiInputs = event.getJSONArray( "inputs" ); // indexed and non-indexed values (topics + data)
+
                 eventDataMap.put( compositeKey.toLowerCase(), new EventData( eventName, contractName, address, abiInputs ) );
             }
         }

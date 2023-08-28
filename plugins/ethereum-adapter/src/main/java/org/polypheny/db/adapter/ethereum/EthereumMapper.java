@@ -108,5 +108,4 @@ public enum EthereumMapper {
         return new EventDataReader( clientUrl, blocks, blockNumberPredicate, contractAddress, fromBlock, toBlock, event ); // Event Data;
     }
 
-    // maybe I will need a new "makeEventReader"
 }

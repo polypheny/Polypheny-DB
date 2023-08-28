@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
+@Slf4j
 public class EthereumSchema extends AbstractSchema {
 
     private final String clientUrl;
@@ -60,21 +62,31 @@ public class EthereumSchema extends AbstractSchema {
         }
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : catalogTable.name.equals( "transaction" ) ? EthereumMapper.TRANSACTION : EthereumMapper.EVENTDATA; // Event Data; add EVENTDATA
+        EthereumMapper mapper = catalogTable.name.startsWith( "block" ) ? EthereumMapper.BLOCK : catalogTable.name.startsWith( "transaction" ) ? EthereumMapper.TRANSACTION : EthereumMapper.EVENTDATA;
         // each table will get one EthereumTable; send event metadata down here.
-        EthereumTable table = new EthereumTable(
+        EthereumTable.Builder tableBuilder = new EthereumTable.Builder(
                 clientUrl,
                 AlgDataTypeImpl.proto( fieldInfo.build() ),
                 fieldTypes,
                 fields,
                 mapper,
                 ethereumDataSource,
-                catalogTable.id,
-                ethereumDataSource.getSmartContractAddressFromCatalogTable(catalogTable.name),
-                ethereumDataSource.getFromBlock(),
-                ethereumDataSource.getToBlock(),
-                ethereumDataSource.getEventFromCatalogTable(catalogTable.name)
+                catalogTable.id
         );
+
+        log.warn( catalogTable.name );
+        log.warn( catalogTable.getNamespaceName() );
+        log.warn( catalogTable.getDatabaseName() );
+        log.warn( catalogTable.getOwnerName() );
+        Boolean eventDataRetrieval = false; //ethereumDataSource.getEventDataRetrieval();
+        if (eventDataRetrieval) {
+            tableBuilder
+                    .contractAddress(ethereumDataSource.getSmartContractAddressFromCatalogTable(catalogTable.name))
+                    .fromBlock(ethereumDataSource.getFromBlock())
+                    .toBlock(ethereumDataSource.getToBlock())
+                    .event(ethereumDataSource.getEventFromCatalogTable(catalogTable.name));
+        }
+        EthereumTable table = tableBuilder.build();
         tableMap.put( catalogTable.name, table );
         return table;
     }
