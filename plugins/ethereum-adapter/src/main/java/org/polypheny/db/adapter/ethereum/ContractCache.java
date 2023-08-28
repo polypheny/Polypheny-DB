@@ -82,7 +82,7 @@ public class ContractCache {
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                table -> EthereumPlugin.HIDDEN_PREFIX + table.getKey(), // we prepend this to hide the table to the user
+                                table -> EthereumPlugin.HIDDEN_PREFIX + "__" + targetAdapterId + "__" + table.getKey(), // we prepend this to hide the table to the user
                                 table -> table.getValue()
                                         .stream()
                                         .map( ExportedColumn::toFieldInformation )
@@ -107,7 +107,7 @@ public class ContractCache {
             for ( Map.Entry<String, EventCache> entry : cache.entrySet() ) {
                 String address = entry.getKey();
                 EventCache eventCache = entry.getValue();
-                eventCache.addToCache( address, currentBlock, endBlock );
+                eventCache.addToCache( address, currentBlock, endBlock, targetAdapterId );
             }
 
             currentBlock = endBlock.add( BigInteger.ONE ); // avoid overlapping block numbers
@@ -118,13 +118,19 @@ public class ContractCache {
     public CachingStatus getStatus() {
         CachingStatus status = new CachingStatus();
         BigInteger totalBlocks = toBlock.subtract( fromBlock ).add( BigInteger.ONE );
+        status.fromBlock = fromBlock;
+        status.toBlock = toBlock;
+        status.currentBlock = currentBlock;
+        status.currentEndBlock = currentBlock.add(BigInteger.valueOf(batchSizeInBlocks));
 
         if ( currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) ).compareTo( toBlock ) > 0 ) {
             status.percent = 100;
             status.state = CachingStatus.ProcessingState.DONE;
+            status.currentBlock = null;
+            status.currentEndBlock = null;
         } else {
             BigInteger processedBlocks = currentBlock.subtract( fromBlock );
-            status.percent = processedBlocks.floatValue() / totalBlocks.floatValue() * 100;
+            status.percent = Math.round((processedBlocks.floatValue() / totalBlocks.floatValue() * 100) * 100) / 100f;
 
             if ( status.percent == 0 ) {
                 status.state = CachingStatus.ProcessingState.INITIALIZED;

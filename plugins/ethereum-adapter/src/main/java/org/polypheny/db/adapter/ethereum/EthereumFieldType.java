@@ -40,7 +40,8 @@ enum EthereumFieldType {
     DOUBLE( Primitive.DOUBLE ),
     DATE( java.sql.Date.class, "date" ),
     TIME( java.sql.Time.class, "time" ),
-    TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
+    TIMESTAMP( java.sql.Timestamp.class, "timestamp" ),
+    DECIMAL( java.math.BigDecimal.class, "decimal" );
 
     private static final Map<String, EthereumFieldType> MAP = new HashMap<>();
 
@@ -89,6 +90,8 @@ enum EthereumFieldType {
                 return EthereumFieldType.TIME;
             case TIMESTAMP:
                 return EthereumFieldType.TIMESTAMP;
+            case DECIMAL:
+                return EthereumFieldType.DECIMAL;
             default:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
         }

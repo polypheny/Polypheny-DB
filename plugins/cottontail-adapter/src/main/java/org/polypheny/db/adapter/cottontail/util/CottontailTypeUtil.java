@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.cottontail.util;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -311,6 +312,9 @@ public class CottontailTypeUtil {
                 }
                 if ( value instanceof Long ) {
                     return builder.setLongData( ((Long) value) ).build();
+                }
+                if ( value instanceof BigInteger ) {
+                    return builder.setLongData(( (BigInteger) value ).longValue()).build();
                 }
                 break;
             }

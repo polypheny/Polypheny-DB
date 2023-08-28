@@ -58,13 +58,13 @@ public class EventCache {
     }
 
 
-    public void addToCache( String address, BigInteger startBlock, BigInteger endBlock ) {
+    public void addToCache( String address, BigInteger startBlock, BigInteger endBlock, int targetAdapterId ) {
         for ( EventData event : events ) {
             addLogsToCache( address, event, startBlock, endBlock );
             if ( cache.get( event ).size() == 0 ) {
                 continue;
             }
-            EventCacheManager.getInstance().writeToStore( event.getCompositeName(), cache.get( event ) ); // write the event into the store
+            EventCacheManager.getInstance().writeToStore( event.getCompositeName(), cache.get( event ), targetAdapterId ); // write the event into the store
             cache.get( event ).clear(); // clear cache batch
         }
     }
@@ -84,10 +84,9 @@ public class EventCache {
             EthLog ethLog = web3j.ethGetLogs( filter ).send(); // Get the EthLog response
 
             // todo: show on screen and update
-            /**if ( startBlock.equals( BigInteger.valueOf( 17669096 ) ) ) {
-             throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock ); // just start new caching from startBlock
-             }
-             **/
+            /*if ( startBlock.equals( BigInteger.valueOf( 17669096 ) ) ) {
+                throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock ); // just start new caching from startBlock
+            }*/
 
             if ( ethLog.hasError() ) {
                 Response.Error error = ethLog.getError();

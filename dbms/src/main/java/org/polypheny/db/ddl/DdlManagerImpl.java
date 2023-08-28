@@ -239,7 +239,8 @@ public class DdlManagerImpl extends DdlManager {
                 exportedColumns = ((DataSource) adapter).getExportedColumns();
             } catch ( Exception e ) {
                 AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
-                throw new RuntimeException( "Could not deploy adapter", e );
+                // throw new RuntimeException( "Could not deploy adapter", e );
+                throw new RuntimeException( "Could not deploy adapter: " + e.getMessage(), e );
             }
             // Create table, columns etc.
             for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {

@@ -524,7 +524,7 @@ public class EthereumDataSource extends DataSource {
                 return PolyType.VARCHAR;
             case "int": // 8 to 256...
             case "uint256":
-                return PolyType.BIGINT;
+                return PolyType.DECIMAL; // todo
             default:
                 return null;
         }

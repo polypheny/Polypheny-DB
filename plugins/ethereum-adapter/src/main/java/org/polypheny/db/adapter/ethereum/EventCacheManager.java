@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.ethereum;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -151,7 +152,7 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    void writeToStore( String tableName, List<List<Object>> logResults ) {
+    void writeToStore( String tableName, List<List<Object>> logResults, int targetAdapterId ) {
         if ( logResults.isEmpty() ) {
             return;
         }
@@ -162,13 +163,13 @@ public class EventCacheManager implements Runnable {
 
         // TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
         AlgOptSchema algOptSchema = transaction.getCatalogReader();
-        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( EthereumPlugin.HIDDEN_PREFIX + tableName ) );
+        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( EthereumPlugin.HIDDEN_PREFIX + "__" + targetAdapterId + "__" + tableName ) );
 
         AlgDataType rowType = table.getTable().getRowType( transaction.getTypeFactory() );
         builder.push( LogicalValues.createOneRow( builder.getCluster() ) );
         builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), rowType.getFieldNames() );
         builder.insert( (AlgOptTable) table );
-        // todo: we should re-use this for all batches (ignore right now); David will do this
+        // todo DL: we should re-use this for all batches (ignore right now)
 
         AlgNode node = builder.build(); // Construct the algebraic node
         AlgRoot root = AlgRoot.of( node, Kind.INSERT ); // Wrap the node into an AlgRoot as required by Polypheny
@@ -189,7 +190,7 @@ public class EventCacheManager implements Runnable {
                 if ( value instanceof Address ) {
                     value = value.toString();
                 } else if ( value instanceof Uint256 ) {
-                    value = ((Uint256) value).getValue() == null ? null : ((Uint256) value).getValue().longValue();
+                    value = ((Uint256) value).getValue() == null ? null : new BigDecimal(((Uint256) value).getValue());
                 }
                 fieldValues.add( value );
             }

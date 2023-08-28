@@ -16,11 +16,18 @@
 
 package org.polypheny.db.adapter.ethereum;
 
+import java.math.BigInteger;
+
 public class CachingStatus {
 
     public float percent;
 
     public ProcessingState state;
+    public BigInteger fromBlock;
+    public BigInteger toBlock;
+    public BigInteger currentBlock;
+    public BigInteger currentEndBlock;
+
 
 
     public enum ProcessingState {
