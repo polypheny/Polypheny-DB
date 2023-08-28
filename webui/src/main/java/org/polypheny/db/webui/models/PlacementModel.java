@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 /**
  * A model for the UI, modelling the placements of a table
  */
-public class Placement {
+public class PlacementModel {
 
     Throwable exception;
     public List<Store> stores = new ArrayList<>();
@@ -40,19 +40,19 @@ public class Placement {
     String tableType;
 
 
-    public Placement( final boolean isPartitioned, final List<String> partitionNames, final EntityType entityType ) {
+    public PlacementModel( final boolean isPartitioned, final List<String> partitionNames, final EntityType entityType ) {
         this.isPartitioned = isPartitioned;
         this.partitionNames = partitionNames;
         this.tableType = entityType.name();
     }
 
 
-    public Placement( final Throwable exception ) {
+    public PlacementModel( final Throwable exception ) {
         this.exception = exception;
     }
 
 
-    public Placement addAdapter( final RelationalStore s ) {
+    public PlacementModel addAdapter( final RelationalStore s ) {
         if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );
         }
@@ -60,14 +60,14 @@ public class Placement {
     }
 
 
-    public Placement addAdapter( final GraphStore s ) {
+    public PlacementModel addAdapter( final GraphStore s ) {
         this.stores.add( s );
 
         return this;
     }
 
 
-    public Placement addAdapter( final DocumentStore s ) {
+    public PlacementModel addAdapter( final DocumentStore s ) {
         this.stores.add( s );
 
         return this;

@@ -17,7 +17,7 @@
 package org.polypheny.db.webui.models;
 
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.StringJoiner;
 
 
@@ -30,7 +30,7 @@ public class TableConstraint {
     public String[] columns;
 
 
-    public TableConstraint( final String name, final String type, ArrayList<String> columns ) {
+    public TableConstraint( final String name, final String type, List<String> columns ) {
         this.name = name;
         this.type = type;
         this.columns = columns.toArray( new String[0] );

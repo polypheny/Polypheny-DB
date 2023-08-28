@@ -17,41 +17,34 @@
 package org.polypheny.db.webui.models;
 
 
+import java.util.List;
 import lombok.Getter;
+import lombok.Value;
 
 
 /**
  * Schema for the index of a table
  */
 @Getter
-public class Index {
+@Value
+public class IndexModel {
 
-    private String schema;
-    private String table;
-    private String name;
-    private String storeUniqueName;
-    private String method;
-    private String[] columns;
+    public Long namespaceId;
+    public Long entityId;
+    public String name;
+    public String storeUniqueName;
+    public String method;
+    public List<Long> columnIds;
 
 
-    public Index( final String schema, final String table, final String name, final String method, final String[] columns ) {
-        this.schema = schema;
-        this.table = table;
+    public IndexModel( final Long namespaceId, final Long entityId, final String name, final String method, final List<Long> columnIds ) {
+        this.namespaceId = namespaceId;
+        this.entityId = entityId;
         this.name = name;
         this.method = method;
-        this.columns = columns;
+        this.columnIds = columnIds;
+        this.storeUniqueName = null;
     }
 
-
-    /**
-     * Convert index to a row to display in the UI
-     */
-    public String[] asRow() {
-        String[] row = new String[3];
-        row[0] = this.name;
-        row[1] = this.method;
-        row[2] = String.join( ",", this.columns );
-        return row;
-    }
 
 }

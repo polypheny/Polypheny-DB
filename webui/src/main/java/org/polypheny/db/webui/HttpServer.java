@@ -309,7 +309,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getSources", crud::getSources );
 
-        webuiServer.post( "/getAvailableStoresForIndexes", ( ctx ) -> crud.getAvailableStoresForIndexes( ctx, gson ) );
+        webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
 
         webuiServer.post( "/removeAdapter", crud::removeAdapter );
 
@@ -319,7 +319,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
-        webuiServer.post( "/addAdapter", ( ctx ) -> crud.addAdapter( ctx, gson ) );
+        webuiServer.post( "/addAdapter", crud::addAdapter );
 
         webuiServer.post( "/pathAccess", crud::startAccessRequest );
 

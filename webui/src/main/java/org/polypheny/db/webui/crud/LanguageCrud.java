@@ -46,7 +46,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -61,9 +60,9 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.FieldDefinition;
-import org.polypheny.db.webui.models.Index;
-import org.polypheny.db.webui.models.Placement;
-import org.polypheny.db.webui.models.Placement.DocumentStore;
+import org.polypheny.db.webui.models.IndexModel;
+import org.polypheny.db.webui.models.PlacementModel;
+import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.EditCollectionRequest;
@@ -363,33 +362,23 @@ public class LanguageCrud {
 
 
     public void getGraphPlacements( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         ctx.json( getPlacements( index ) );
     }
 
 
-    private Placement getPlacements( final Index index ) {
+    private PlacementModel getPlacements( final IndexModel index ) {
         Catalog catalog = Catalog.getInstance();
-        String graphName = index.getSchema();
-        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new Pattern( graphName ) );
-        if ( namespaces.size() != 1 ) {
-            throw new RuntimeException();
-        }
-        List<LogicalGraph> graphs = catalog.getSnapshot().graph().getGraphs( new Pattern( graphName ) );
-        if ( graphs.size() != 1 ) {
-            log.error( "The requested graph does not exist." );
-            return new Placement( new RuntimeException( "The requested graph does not exist." ) );
-        }
-        LogicalGraph graph = graphs.get( 0 );
+        LogicalGraph graph = Catalog.snapshot().graph().getGraph( index.namespaceId ).orElseThrow();
         EntityType type = EntityType.ENTITY;
-        Placement p = new Placement( false, List.of(), EntityType.ENTITY );
+        PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
         if ( type == EntityType.VIEW ) {
             return p;
         } else {
             List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( graph.id );
             for ( CatalogDataPlacement placement : placements ) {
                 Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
-                p.addAdapter( new Placement.GraphStore(
+                p.addAdapter( new PlacementModel.GraphStore(
                         adapter.getUniqueName(),
                         adapter.getUniqueName(),
                         catalog.getSnapshot().alloc().getFromLogical( placement.adapterId ),
@@ -414,21 +403,11 @@ public class LanguageCrud {
 
 
     public void getCollectionPlacements( Context context ) {
-        Index index = context.bodyAsClass( Index.class );
-        String namespace = index.getSchema();
-        String collectionName = index.getTable();
+        IndexModel index = context.bodyAsClass( IndexModel.class );
         Catalog catalog = Catalog.getInstance();
-        long namespaceId = catalog.getSnapshot().getNamespace( namespace ).orElseThrow().id;
-        List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( namespaceId, new Pattern( collectionName ) );
+        LogicalCollection collection = catalog.getSnapshot().doc().getCollection( index.entityId ).orElseThrow();
 
-        if ( collections.size() != 1 ) {
-            context.json( new Placement( new RuntimeException( "The collation is not know" ) ) );
-            return;
-        }
-
-        LogicalCollection collection = collections.get( 0 );
-
-        Placement p = new Placement( false, List.of(), EntityType.ENTITY );
+        PlacementModel p = new PlacementModel( false, List.of(), EntityType.ENTITY );
 
         List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( collection.id );
 

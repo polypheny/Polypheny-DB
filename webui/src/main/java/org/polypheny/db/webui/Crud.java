@@ -168,15 +168,15 @@ import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.ForeignKey;
-import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.Namespace;
 import org.polypheny.db.webui.models.PartitionFunctionModel;
 import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
 import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.PathAccessRequest;
-import org.polypheny.db.webui.models.Placement;
-import org.polypheny.db.webui.models.Placement.RelationalStore;
+import org.polypheny.db.webui.models.PlacementModel;
+import org.polypheny.db.webui.models.PlacementModel.RelationalStore;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
@@ -237,7 +237,7 @@ public class Crud implements InformationObserver {
      */
     public static void cleanupOldSession( ConcurrentHashMap<String, Set<String>> sessionXIds, final String sessionId ) {
         Set<String> xIds = sessionXIds.remove( sessionId );
-        if ( xIds == null || xIds.size() == 0 ) {
+        if ( xIds == null || xIds.isEmpty() ) {
             return;
         }
         for ( String xId : xIds ) {
@@ -384,8 +384,8 @@ public class Crud implements InformationObserver {
 
 
     void renameTable( final Context ctx ) {
-        Index table = ctx.bodyAsClass( Index.class );
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getSchema(), table.getTable(), table.getName() );
+        IndexModel table = ctx.bodyAsClass( IndexModel.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getNamespaceId(), table.getEntityId(), table.getName() );
         Transaction transaction = getTransaction();
         RelationalResult result;
         try {
@@ -1093,12 +1093,12 @@ public class Crud implements InformationObserver {
     void getDataSourceColumns( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable tablee = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        if ( catalogTable.entityType == EntityType.VIEW ) {
+        if ( tablee.entityType == EntityType.VIEW ) {
 
             List<UiColumnDefinition> columns = new ArrayList<>();
-            List<LogicalColumn> cols = catalog.getSnapshot().rel().getColumns( catalogTable.id );
+            List<LogicalColumn> cols = catalog.getSnapshot().rel().getColumns( tablee.id );
             for ( LogicalColumn col : cols ) {
                 columns.add( UiColumnDefinition.builder()
                         .name( col.name )
@@ -1116,16 +1116,16 @@ public class Crud implements InformationObserver {
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.VIEW ).build() );
         } else {
-            List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
-            if ( catalog.getSnapshot().alloc().getFromLogical( catalogTable.id ).size() != 1 ) {
+            List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( tablee.id );
+            if ( catalog.getSnapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
                 throw new RuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
-            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( tablee.primaryKey ).orElseThrow();
             List<String> pkColumnNames = primaryKey.getColumnNames();
             List<UiColumnDefinition> columns = new ArrayList<>();
-            for ( AllocationColumn ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, catalogTable.id ) ) {
+            for ( AllocationColumn ccp : catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, tablee.id ) ) {
                 LogicalColumn col = catalog.getSnapshot().rel().getColumn( ccp.columnId ).orElseThrow();
                 columns.add( UiColumnDefinition.builder().name(
                         col.name ).dataType(
@@ -1193,13 +1193,12 @@ public class Crud implements InformationObserver {
 
     void getMaterializedInfo( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
-
         Pair<LogicalNamespace, LogicalTable> namespaceTable = getNamespaceTable( request );
 
-        LogicalTable catalogTable = getLogicalTable( namespaceTable.left.name, namespaceTable.right.name );
+        LogicalTable table = getLogicalTable( namespaceTable.left.name, namespaceTable.right.name );
 
-        if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW ) {
-            LogicalMaterializedView logicalMaterializedView = (LogicalMaterializedView) catalogTable;
+        if ( table.entityType == EntityType.MATERIALIZED_VIEW ) {
+            LogicalMaterializedView logicalMaterializedView = (LogicalMaterializedView) table;
 
             MaterializedCriteria materializedCriteria = logicalMaterializedView.getMaterializedCriteria();
 
@@ -1412,7 +1411,7 @@ public class Crud implements InformationObserver {
                 }
                 query = query + ")";
             }
-            if ( !request.newColumn.collectionsType.equals( "" ) ) {
+            if ( !request.newColumn.collectionsType.isEmpty() ) {
                 query = query + " " + request.newColumn.collectionsType;
                 int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
                 int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
@@ -1422,9 +1421,9 @@ public class Crud implements InformationObserver {
                 query = query + " NOT NULL";
             }
         }
-        if ( request.newColumn.defaultValue != null && !request.newColumn.defaultValue.equals( "" ) ) {
+        if ( request.newColumn.defaultValue != null && !request.newColumn.defaultValue.isEmpty() ) {
             query = query + " DEFAULT ";
-            if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.equals( "" ) ) {
+            if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.isEmpty() ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
                 if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
                     query = query + request.newColumn.collectionsType;
@@ -1517,33 +1516,33 @@ public class Crud implements InformationObserver {
         RelationalResult result;
 
         List<TableConstraint> resultList = new ArrayList<>();
-        Map<String, ArrayList<String>> temp = new HashMap<>();
+        Map<String, List<String>> temp = new HashMap<>();
 
-        LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
 
         // get primary key
-        if ( catalogTable.primaryKey != null ) {
-            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
+        if ( table.primaryKey != null ) {
+            LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
             for ( String columnName : primaryKey.getColumnNames() ) {
                 if ( !temp.containsKey( "" ) ) {
                     temp.put( "", new ArrayList<>() );
                 }
                 temp.get( "" ).add( columnName );
             }
-            for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
+            for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
                 resultList.add( new TableConstraint( entry.getKey(), "PRIMARY KEY", entry.getValue() ) );
             }
         }
 
         // get unique constraints.
         temp.clear();
-        List<LogicalConstraint> constraints = catalog.getSnapshot().rel().getConstraints( catalogTable.id );
+        List<LogicalConstraint> constraints = catalog.getSnapshot().rel().getConstraints( table.id );
         for ( LogicalConstraint logicalConstraint : constraints ) {
             if ( logicalConstraint.type == ConstraintType.UNIQUE ) {
                 temp.put( logicalConstraint.name, new ArrayList<>( logicalConstraint.key.getColumnNames() ) );
             }
         }
-        for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
+        for ( Map.Entry<String, List<String>> entry : temp.entrySet() ) {
             resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
         }
 
@@ -1675,8 +1674,8 @@ public class Crud implements InformationObserver {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
         Pair<LogicalNamespace, LogicalTable> namespaceTable = getNamespaceTable( request );
 
-        LogicalTable catalogTable = getLogicalTable( namespaceTable.left.name, namespaceTable.right.name );
-        List<LogicalIndex> logicalIndices = catalog.getSnapshot().rel().getIndexes( catalogTable.id, false );
+        LogicalTable table = getLogicalTable( namespaceTable.left.name, namespaceTable.right.name );
+        List<LogicalIndex> logicalIndices = catalog.getSnapshot().rel().getIndexes( table.id, false );
 
         UiColumnDefinition[] header = {
                 UiColumnDefinition.builder().name( "Name" ).build(),
@@ -1706,7 +1705,7 @@ public class Crud implements InformationObserver {
         }
 
         // Get functional indexes
-        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( catalogTable.id );
+        List<AllocationEntity> allocs = catalog.getSnapshot().alloc().getFromLogical( table.id );
         for ( AllocationEntity alloc : allocs ) {
             Adapter<?> adapter = AdapterManager.getInstance().getAdapter( alloc.adapterId );
             DataStore<?> store;
@@ -1715,7 +1714,7 @@ public class Crud implements InformationObserver {
             } else {
                 break;
             }
-            for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
+            for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( table ) ) {
                 String[] arr = new String[5];
                 arr[0] = "";
                 arr[1] = String.join( ", ", fif.getColumnNames() );
@@ -1736,10 +1735,10 @@ public class Crud implements InformationObserver {
      * @param ctx
      */
     void dropIndex( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         Transaction transaction = getTransaction();
 
-        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
+        String tableId = String.format( "\"%s\".\"%s\"", index.getNamespaceId(), index.getEntityId() );
         String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableId, index.getName() );
         RelationalResult result;
         try {
@@ -1763,17 +1762,20 @@ public class Crud implements InformationObserver {
      * Create an index for a table
      */
     void createIndex( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         Transaction transaction = getTransaction();
 
-        String tableId = String.format( "\"%s\".\"%s\"", index.getSchema(), index.getTable() );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( index.namespaceId ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
+
+        String tableId = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
         RelationalResult result;
         StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
-        for ( String col : index.getColumns() ) {
-            colJoiner.add( "\"" + col + "\"" );
+        for ( long col : index.columnIds ) {
+            colJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
         }
         String store = "POLYPHENY";
-        if ( !index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
+        if ( index.storeUniqueName != null && !index.storeUniqueName.equals( "Polypheny-DB" ) ) {
             store = index.getStoreUniqueName();
         }
         String onStore = String.format( "ON STORE \"%s\"", store );
@@ -1799,10 +1801,10 @@ public class Crud implements InformationObserver {
     void getUnderlyingTable( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
 
-        LogicalTable catalogTable = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
+        LogicalTable table = catalog.getSnapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        if ( catalogTable.entityType == EntityType.VIEW ) {
-            ImmutableMap<Long, List<Long>> underlyingTableOriginal = catalogTable.unwrap( LogicalView.class ).underlyingTables;
+        if ( table.entityType == EntityType.VIEW ) {
+            ImmutableMap<Long, List<Long>> underlyingTableOriginal = table.unwrap( LogicalView.class ).underlyingTables;
             Map<String, List<String>> underlyingTable = new HashMap<>();
             for ( Entry<Long, List<Long>> entry : underlyingTableOriginal.entrySet() ) {
                 List<String> columns = new ArrayList<>();
@@ -1822,18 +1824,16 @@ public class Crud implements InformationObserver {
      * Get placements of a table
      */
     void getPlacements( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         ctx.json( getPlacements( index ) );
     }
 
 
-    private Placement getPlacements( final Index index ) {
-        String namespaceName = index.getSchema();
-        String tableName = index.getTable();
+    private PlacementModel getPlacements( final IndexModel index ) {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
 
-        LogicalTable table = getLogicalTable( namespaceName, tableName );
-        Placement p = new Placement( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
+        LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
+        PlacementModel p = new PlacementModel( snapshot.alloc().getFromLogical( table.id ).size() > 1, snapshot.alloc().getPartitionGroupNames( table.id ), table.entityType );
         if ( table.entityType != EntityType.VIEW ) {
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = snapshot.rel().getPrimaryKey( pkid ).orElseThrow().columnIds;
@@ -1861,7 +1861,7 @@ public class Crud implements InformationObserver {
      * Index method: either 'ADD' or 'DROP'
      */
     void addDropPlacement( final Context ctx ) {
-        Index index = ctx.bodyAsClass( Index.class );
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
         if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
             ctx.json( RelationalResult.builder().error( "Invalid request" ).build() );
             return;
@@ -1869,16 +1869,16 @@ public class Crud implements InformationObserver {
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
         if ( !index.getMethod().equalsIgnoreCase( "DROP" ) ) {
-            for ( String col : index.getColumns() ) {
-                columnJoiner.add( "\"" + col + "\"" );
+            for ( long col : index.columnIds ) {
+                columnJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
                 counter++;
             }
         }
         String columnListStr = counter > 0 ? columnJoiner.toString() : "";
         String query = String.format(
                 "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
-                index.getSchema(),
-                index.getTable(),
+                index.getNamespaceId(),
+                index.getEntityId(),
                 index.getMethod().toUpperCase(),
                 columnListStr,
                 index.getStoreUniqueName() );
@@ -2024,22 +2024,22 @@ public class Crud implements InformationObserver {
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
-        String content = "";
+        StringBuilder content = new StringBuilder();
         for ( List<PartitionFunctionColumn> currentRow : request.rows ) {
             boolean rowSeparationApplied = false;
             for ( PartitionFunctionColumn currentColumn : currentRow ) {
                 if ( currentColumn.modifiable ) {
                     // If more than one row, keep appending ','
                     if ( !rowSeparationApplied && request.rows.indexOf( currentRow ) != 0 ) {
-                        content = content + functionInfo.getRowSeparation();
+                        content.append( functionInfo.getRowSeparation() );
                         rowSeparationApplied = true;
                     }
-                    content = content + currentColumn.sqlPrefix + " " + currentColumn.value + " " + currentColumn.sqlSuffix;
+                    content.append( currentColumn.sqlPrefix ).append( " " ).append( currentColumn.value ).append( " " ).append( currentColumn.sqlSuffix );
                 }
             }
         }
 
-        content = functionInfo.getSqlPrefix() + " " + content + " " + functionInfo.getSqlSuffix();
+        content = new StringBuilder( functionInfo.getSqlPrefix() + " " + content + " " + functionInfo.getSqlSuffix() );
 
         //INFO - do discuss
         //Problem is that we took the structure completely out of the original JSON therefore losing valuable information and context
@@ -2049,7 +2049,7 @@ public class Crud implements InformationObserver {
         //Changes to extensions to this model now have to be made on two parts
 
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
-                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
+                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content.toString() );
 
         Transaction trx = getTransaction();
         try {
@@ -2125,13 +2125,13 @@ public class Crud implements InformationObserver {
     /**
      * Get the available stores on which a new index can be placed. 'Polypheny-DB' is part of the list, if polystore-indexes are enabled
      */
-    void getAvailableStoresForIndexes( final Context ctx, Gson gson ) {
-        Index index = ctx.bodyAsClass( Index.class );
-        Placement dataPlacements = getPlacements( index );
-        ImmutableMap<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
+    void getAvailableStoresForIndexes( final Context ctx ) {
+        IndexModel index = ctx.bodyAsClass( IndexModel.class );
+        PlacementModel dataPlacements = getPlacements( index );
+        Map<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
         //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
-        JsonArray jsonArray = gson.toJsonTree( stores.values().stream().filter( ( s ) -> {
-            if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
+        JsonArray jsonArray = HttpServer.gson.toJsonTree( stores.values().stream().filter( ( s ) -> {
+            if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().isEmpty() ) {
                 return false;
             }
             return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
@@ -2139,7 +2139,7 @@ public class Crud implements InformationObserver {
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
             pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
-            pdbFakeStore.add( "availableIndexMethods", gson.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
+            pdbFakeStore.add( "availableIndexMethods", HttpServer.gson.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
             jsonArray.add( pdbFakeStore );
         }
         ctx.json( jsonArray );
@@ -2226,7 +2226,7 @@ public class Crud implements InformationObserver {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx, Gson gson ) throws ServletException, IOException {
+    void addAdapter( final Context ctx ) throws ServletException, IOException {
         initMultipart( ctx );
         String body = "";
         Map<String, InputStream> inputStreams = new HashMap<>();
@@ -2239,7 +2239,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        AdapterModel a = gson.fromJson( body, AdapterModel.class );
+        AdapterModel a = HttpServer.gson.fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
@@ -2417,9 +2417,9 @@ public class Crud implements InformationObserver {
         LogicalRelSnapshot relSnapshot = catalog.getSnapshot().rel();
         long namespaceId = request.namespaceId == null ? Catalog.defaultNamespaceId : request.namespaceId;
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        List<LogicalTable> catalogEntities = relSnapshot.getTablesFromNamespace( namespace.id );
+        List<LogicalTable> entities = relSnapshot.getTablesFromNamespace( namespace.id );
 
-        for ( LogicalTable table : catalogEntities ) {
+        for ( LogicalTable table : entities ) {
             if ( table.entityType == EntityType.ENTITY || table.entityType == EntityType.SOURCE ) {
                 // get foreign keys
                 List<LogicalForeignKey> foreignKeys = catalog.getSnapshot().rel().getForeignKeys( table.id );
@@ -2448,8 +2448,8 @@ public class Crud implements InformationObserver {
 
                 // get primary key with its columns
                 if ( table.primaryKey != null ) {
-                    LogicalPrimaryKey catalogPrimaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
-                    for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
+                    LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
+                    for ( String columnName : primaryKey.getColumnNames() ) {
                         dbTable.addPrimaryKeyField( columnName );
                     }
                 }
@@ -2767,7 +2767,7 @@ public class Crud implements InformationObserver {
             query.append( "NAMESPACE " );
 
             query.append( "\"" ).append( namespace.getName() ).append( "\"" );
-            if ( namespace.getAuthorization() != null && !namespace.getAuthorization().equals( "" ) ) {
+            if ( namespace.getAuthorization() != null && !namespace.getAuthorization().isEmpty() ) {
                 query.append( " AUTHORIZATION " ).append( namespace.getAuthorization() );
             }
             try {
@@ -2853,7 +2853,7 @@ public class Crud implements InformationObserver {
             List<? extends Node> nodes = processor.parse( query );
             ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, namespace.getName() );
             try {
-                PolyImplementation result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
+                PolyImplementation<?> result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
                 int rowsChanged = result.getRowsChanged( statement );
                 transaction.commit();
                 ctx.json( RelationalResult.builder().affectedRows( rowsChanged ).build() );
@@ -3547,6 +3547,7 @@ public class Crud implements InformationObserver {
     private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
         byte[] buffer = new byte[4096];
         File[] files = dir.listFiles();
+        assert files != null;
         for ( File file : files ) {
             if ( file.isDirectory() ) {
                 String path = basePath + file.getName() + "/";
