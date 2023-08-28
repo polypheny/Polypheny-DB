@@ -30,7 +30,7 @@ _Polypheny-DB_ builds upon the great work of several other projects:
 * [Apache Calcite](https://calcite.apache.org/): A framework for building databases
 * [HSQLDB](http://hsqldb.org/): A relational database written in Java
 * [JavaCC](https://javacc.org/): A parser generator
-* [Java Spark](http://sparkjava.com/): A framework for building web services
+* [Javalin](https://javalin.io/): A framework for building web services
 * [Project Lombok](https://projectlombok.org/): A library which provides annotations for tedious tasks
 
 Except for the first two, those projects are used "as is" and integrated as a library. _Apache Avatica_ we [forked](https://github.com/polypheny/Avatica) and made some Polypheny-DB specific adjustments. From _Apache Calcite_ we use parts of the code as foundation for Polypheny-DB.
