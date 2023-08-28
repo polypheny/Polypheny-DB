@@ -107,11 +107,10 @@ public class MimetypeFromExtension {
         extensions.put( "midi", "audio/midi" );
         extensions.put( "mif", "application/x-mif" );
         extensions.put( "mime", "www/mime" );
-        extensions.put( "mjs", "text/javascript" );
+        extensions.put( "mjs", "text/javascript" /*ES6 module*/ );
         extensions.put( "movie", "video/x-sgi-movie" );
         extensions.put( "mov", "video/quicktime" );
         extensions.put( "mp2", "audio/mpeg" );
-        extensions.put( "mp2", "video/mpeg" );
         extensions.put( "mp3", "audio/mpeg" );
         extensions.put( "mpeg", "video/mpeg" );
         extensions.put( "mpe", "video/mpeg" );
@@ -146,12 +145,10 @@ public class MimetypeFromExtension {
         extensions.put( "ram", "audio/x-pn-realaudio" );
         extensions.put( "rar", "application/x-rar-compressed" );
         extensions.put( "ras", "image/cmu-raster" );
-        extensions.put( "ras", "image/x-cmu-raster" );
         extensions.put( "rgb", "image/x-rgb" );
         extensions.put( "rm", "audio/x-pn-realaudio" );
         extensions.put( "roff", "application/x-troff" );
         extensions.put( "rpm", "audio/x-pn-realaudio-plugin" );
-        extensions.put( "rtf", "application/rtf" );
         extensions.put( "rtf", "text/rtf" );
         extensions.put( "rtx", "text/richtext" );
         extensions.put( "scm", "application/x-lotusscreencam" );
