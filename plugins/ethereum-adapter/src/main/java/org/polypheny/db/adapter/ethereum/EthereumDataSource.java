@@ -74,10 +74,10 @@ import org.web3j.protocol.http.HttpService;
 @AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 8, modifiable = true)
 @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 9, modifiable = true)
 @AdapterSettingInteger(name = "batchSizeInBlocks", description = "Batch size for caching in blocks", defaultValue = 50, position = 10, modifiable = true)
-@AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 11, modifiable = true) // todo DL: list
+@AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 11, modifiable = true)
 @AdapterSettingBoolean(name = "UseManualABI", description = "Cache event data", defaultValue = false, position = 12, modifiable = true)
-@AdapterSettingString(name = "ContractABI", description = "Contract ABI", defaultValue = "", position = 13, modifiable = true)
-@AdapterSettingString(name = "ContractName", description = "Contract name", defaultValue = "", position = 14, modifiable = true)
+@AdapterSettingString(name = "ContractABI", description = "Contract ABI", defaultValue = "", position = 13, modifiable = true, required = false)
+@AdapterSettingString(name = "ContractName", description = "Contract name", defaultValue = "", position = 14, modifiable = true, required = false)
 public class EthereumDataSource extends DataSource {
 
     public static final String SCHEMA_NAME = "public";
@@ -337,11 +337,11 @@ public class EthereumDataSource extends DataSource {
             String contractName = null;
             List<JSONObject> contractEvents = null;
             if ( useManualABI == true && !contractABI.isEmpty() && !this.contractName.isEmpty() ) {
-                if (smartContractAddresses.size() > 1) {
-                    throw new IllegalArgumentException("Only one smart contract address should be provided when using a manual ABI.");
+                if ( smartContractAddresses.size() > 1 ) {
+                    throw new IllegalArgumentException( "Only one smart contract address should be provided when using a manual ABI." );
                 }
-                JSONArray abiArray = new JSONArray(contractABI);
-                contractEvents = getEventsFromABIArray(abiArray);
+                JSONArray abiArray = new JSONArray( contractABI );
+                contractEvents = getEventsFromABIArray( abiArray );
                 contractName = this.contractName;
             } else {
                 try {
@@ -470,21 +470,23 @@ public class EthereumDataSource extends DataSource {
         return events;
     }
 
-    protected List<JSONObject> getEventsFromABIArray(JSONArray abiArray) {
+
+    protected List<JSONObject> getEventsFromABIArray( JSONArray abiArray ) {
         List<JSONObject> events = new ArrayList<>();
 
         // Loop through the ABI
-        for (int i = 0; i < abiArray.length(); i++) {
-            JSONObject item = abiArray.getJSONObject(i);
+        for ( int i = 0; i < abiArray.length(); i++ ) {
+            JSONObject item = abiArray.getJSONObject( i );
 
             // Check if the item is of type 'event'
-            if (item.has("type") && "event".equals(item.getString("type"))) {
-                events.add(item);
+            if ( item.has( "type" ) && "event".equals( item.getString( "type" ) ) ) {
+                events.add( item );
             }
         }
 
         return events;
     }
+
 
     private String getContractName( String contractAddress ) {
         try {
@@ -545,6 +547,8 @@ public class EthereumDataSource extends DataSource {
         switch ( type ) {
             case VARCHAR:
                 return 300;
+            case VARBINARY:
+                return 32;
             default:
                 return null;
         }
@@ -552,17 +556,16 @@ public class EthereumDataSource extends DataSource {
 
 
     static PolyType convertToPolyType( String type ) {
-        // todo: convert all types in evm to polytype
-        switch ( type ) {
-            case "bool":
-                return PolyType.BOOLEAN;
-            case "address":
-                return PolyType.VARCHAR;
-            case "int": // 8 to 256...
-            case "uint256":
-                return PolyType.DECIMAL; // todo
-            default:
-                return null;
+        if ( type.equals( "bool" ) ) {
+            return PolyType.BOOLEAN;
+        } else if ( type.equals( "address" ) || type.equals( "string" ) ) {
+            return PolyType.VARCHAR;
+        } else if ( type.startsWith( "int" ) || type.startsWith( "uint" ) ) {
+            return PolyType.DECIMAL;
+        } else if ( type.equals( "bytes" ) || type.startsWith( "bytes" ) ) {
+            return PolyType.VARCHAR; // for dynamic and fixed-size
+        } else {
+            return null;
         }
     }
 

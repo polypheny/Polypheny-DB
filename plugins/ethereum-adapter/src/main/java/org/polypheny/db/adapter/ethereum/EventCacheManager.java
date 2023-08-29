@@ -61,7 +61,14 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.Bytes;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Int;
+import org.web3j.abi.datatypes.Uint;
+import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.utils.Numeric;
 
 
 @Slf4j
@@ -184,14 +191,7 @@ public class EventCacheManager implements Runnable {
             List<Object> fieldValues = new ArrayList<>();
             for ( List<Object> logResult : logResults ) {
                 Object value = logResult.get( i );
-                // todo: converting to long (-2^63-1 till 2^63-1) from uint256 (2^256-1) if data is greater than 2^63-1
-                // how to convert it to bigint? Is there a Poltype that can handle unit256? Double? Evtl. Decimal?
-                // is Bigint 64-bit signed integer?
-                if ( value instanceof Address ) {
-                    value = value.toString();
-                } else if ( value instanceof Uint256 ) {
-                    value = ((Uint256) value).getValue() == null ? null : new BigDecimal(((Uint256) value).getValue());
-                }
+                value = convertValueBasedOnType(value);
                 fieldValues.add( value );
             }
             i++;
@@ -215,6 +215,25 @@ public class EventCacheManager implements Runnable {
     protected Map<Integer, CachingStatus> getAllStreamStatus() {
         // return status of process
         return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, ContractCache::getStatus ) );
+    }
+
+    private Object convertValueBasedOnType(Object value) {
+        if (value instanceof Address) {
+            return value.toString();
+        } else if (value instanceof Bool) {
+            return ((Bool) value).getValue();
+        } else if (value instanceof DynamicBytes) {
+            return ((DynamicBytes) value).getValue().toString();
+        } else if (value instanceof Bytes) {
+            return value.toString();
+        } else if (value instanceof Uint) {   // Similarly for Uint and its subclasses
+            BigInteger bigIntValue = ((Uint) value).getValue();
+            return bigIntValue == null ? null : new BigDecimal(bigIntValue);
+        } else if (value instanceof Int) {    // Similarly for Int and its subclasses
+            BigInteger bigIntValue = ((Int) value).getValue();
+            return bigIntValue == null ? null : new BigDecimal(bigIntValue);
+        }
+        return value; // return the original value if none of the conditions match
     }
 
 

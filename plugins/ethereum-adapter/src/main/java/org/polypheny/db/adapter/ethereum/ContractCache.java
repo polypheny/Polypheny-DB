@@ -16,9 +16,7 @@
 
 package org.polypheny.db.adapter.ethereum;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,16 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.ethereum.CachingStatus.ProcessingState;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
-import org.web3j.abi.EventEncoder;
-import org.web3j.abi.FunctionReturnDecoder;
-import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Event;
-import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.DefaultBlockParameter;
-import org.web3j.protocol.core.methods.request.EthFilter;
-import org.web3j.protocol.core.methods.response.EthLog;
-import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.http.HttpService;
 
 @Slf4j
