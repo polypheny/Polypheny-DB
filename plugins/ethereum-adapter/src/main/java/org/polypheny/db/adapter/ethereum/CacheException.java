@@ -16,23 +16,15 @@
 
 package org.polypheny.db.adapter.ethereum;
 
-import java.math.BigInteger;
+public class CacheException extends RuntimeException {
 
-public class CachingStatus {
-
-    public float percent;
-
-    public ProcessingState state;
-    public BigInteger fromBlock;
-    public BigInteger toBlock;
-    public BigInteger currentBlock;
-    public BigInteger currentEndBlock;
-    public int sourceAdapterId;
-    public String errorMessage;
+    public CacheException( String message ) {
+        super( message );
+    }
 
 
-    public enum ProcessingState {
-        INITIALIZED, PROCESSING, DONE, ERROR
+    public CacheException( String message, Throwable cause ) {
+        super( message, cause );
     }
 
 }

@@ -83,22 +83,17 @@ public class EventCache {
         try {
             EthLog ethLog = web3j.ethGetLogs( filter ).send(); // Get the EthLog response
 
-            // todo: show on screen and update
-            /*if ( startBlock.equals( BigInteger.valueOf( 17669096 ) ) ) {
-                throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock ); // just start new caching from startBlock
-            }*/
-
             if ( ethLog.hasError() ) {
                 Response.Error error = ethLog.getError();
                 log.error( "Error fetching logs: " + error.getMessage() );
-                throw new RuntimeException( "Error fetching logs for block range: " + startBlock + " to " + endBlock + ". Message: " + error.getMessage() ); // just start new caching from startBlock
+                throw new CacheException( "Error occurred while fetching logs for block range: " + startBlock + " to " + endBlock + ". Please retry starting from block " + startBlock + " and continue to your intended final block. Error Message: " + error.getMessage() );
             }
             List<EthLog.LogResult> rawLogs = ethLog.getLogs();
             List<List<Object>> structuredLogs = normalizeLogs( event, rawLogs );
             cache.put( eventData, structuredLogs );
 
         } catch ( IOException e ) {
-            throw new RuntimeException( "IO Error fetching logs", e );
+            throw new CacheException( "IO Error fetching logs", e );
         }
     }
 

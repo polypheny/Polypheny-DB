@@ -75,6 +75,9 @@ import org.web3j.protocol.http.HttpService;
 @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 9, modifiable = true)
 @AdapterSettingInteger(name = "batchSizeInBlocks", description = "Batch size for caching in blocks", defaultValue = 50, position = 10, modifiable = true)
 @AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 11, modifiable = true) // todo DL: list
+@AdapterSettingBoolean(name = "UseManualABI", description = "Cache event data", defaultValue = false, position = 12, modifiable = true)
+@AdapterSettingString(name = "ContractABI", description = "Contract ABI", defaultValue = "", position = 13, modifiable = true)
+@AdapterSettingString(name = "ContractName", description = "Contract name", defaultValue = "", position = 14, modifiable = true)
 public class EthereumDataSource extends DataSource {
 
     public static final String SCHEMA_NAME = "public";
@@ -101,6 +104,10 @@ public class EthereumDataSource extends DataSource {
 
     private Map<String, List<ExportedColumn>> map;
 
+    private final boolean useManualABI;
+    private final String contractABI;
+    private final String contractName;
+
 
     public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
@@ -120,6 +127,9 @@ public class EthereumDataSource extends DataSource {
         this.eventDataMap = new HashMap<>();
         this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
         this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
+        this.useManualABI = Boolean.parseBoolean( settings.get( "UseManualABI" ) );
+        this.contractABI = settings.get( "ContractABI" );
+        this.contractName = settings.get( "ContractName" );
         // todo DL
         new Thread( () -> {
             createInformationPage();
@@ -326,11 +336,20 @@ public class EthereumDataSource extends DataSource {
         for ( String address : smartContractAddresses ) {
             String contractName = null;
             List<JSONObject> contractEvents = null;
-            try {
-                contractName = callWithExponentialBackoff( () -> getContractName( address ) );
-                contractEvents = callWithExponentialBackoff( () -> getEventsFromABI( etherscanApiKey, address ) );
-            } catch ( Exception e ) {
-                throw new RuntimeException( e );
+            if ( useManualABI == true && !contractABI.isEmpty() && !this.contractName.isEmpty() ) {
+                if (smartContractAddresses.size() > 1) {
+                    throw new IllegalArgumentException("Only one smart contract address should be provided when using a manual ABI.");
+                }
+                JSONArray abiArray = new JSONArray(contractABI);
+                contractEvents = getEventsFromABIArray(abiArray);
+                contractName = this.contractName;
+            } else {
+                try {
+                    contractName = callWithExponentialBackoff( () -> getContractName( address ) );
+                    contractEvents = callWithExponentialBackoff( () -> getEventsFromABI( etherscanApiKey, address ) );
+                } catch ( Exception e ) {
+                    throw new RuntimeException( e );
+                }
             }
 
             for ( JSONObject event : contractEvents ) {
@@ -451,6 +470,21 @@ public class EthereumDataSource extends DataSource {
         return events;
     }
 
+    protected List<JSONObject> getEventsFromABIArray(JSONArray abiArray) {
+        List<JSONObject> events = new ArrayList<>();
+
+        // Loop through the ABI
+        for (int i = 0; i < abiArray.length(); i++) {
+            JSONObject item = abiArray.getJSONObject(i);
+
+            // Check if the item is of type 'event'
+            if (item.has("type") && "event".equals(item.getString("type"))) {
+                events.add(item);
+            }
+        }
+
+        return events;
+    }
 
     private String getContractName( String contractAddress ) {
         try {

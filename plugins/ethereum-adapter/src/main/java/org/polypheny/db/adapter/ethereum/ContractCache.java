@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.ethereum.CachingStatus.ProcessingState;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
@@ -48,6 +49,9 @@ public class ContractCache {
     private final BigInteger fromBlock;
     private final BigInteger toBlock;
     private BigInteger currentBlock;
+    private boolean hasError = false;
+    private String errorMessage;
+
 
     private final Map<String, EventCache> cache = new ConcurrentHashMap<>(); // a cache for each event
     private final Map<String, List<EventData>> eventsPerContract;
@@ -107,7 +111,19 @@ public class ContractCache {
             for ( Map.Entry<String, EventCache> entry : cache.entrySet() ) {
                 String address = entry.getKey();
                 EventCache eventCache = entry.getValue();
-                eventCache.addToCache( address, currentBlock, endBlock, targetAdapterId );
+                try {
+                    eventCache.addToCache(address, currentBlock, endBlock, targetAdapterId);
+                } catch (CacheException e) {
+                    log.error("Error occurred while adding to cache: " + e.getMessage());
+                    hasError = true;
+                    errorMessage = e.getMessage();
+                    throw e;
+                } catch (Throwable t) {
+                    log.error("Unexpected error during caching: " + t.getMessage(), t);
+                    hasError = true;
+                    errorMessage = t.getMessage();
+                    return;
+                }
             }
 
             currentBlock = endBlock.add( BigInteger.ONE ); // avoid overlapping block numbers
@@ -122,6 +138,7 @@ public class ContractCache {
         status.toBlock = toBlock;
         status.currentBlock = currentBlock;
         status.currentEndBlock = currentBlock.add(BigInteger.valueOf(batchSizeInBlocks));
+        status.sourceAdapterId = sourceAdapterId;
 
         if ( currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) ).compareTo( toBlock ) > 0 ) {
             status.percent = 100;
@@ -137,6 +154,11 @@ public class ContractCache {
             } else {
                 status.state = CachingStatus.ProcessingState.PROCESSING;
             }
+        }
+
+        if (hasError) {
+            status.state = ProcessingState.ERROR;
+            status.errorMessage = errorMessage;
         }
 
         return status;
