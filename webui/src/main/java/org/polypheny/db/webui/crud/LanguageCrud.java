@@ -65,7 +65,6 @@ import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.UiColumnDefinition;
-import org.polypheny.db.webui.models.requests.EditCollectionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
@@ -85,6 +84,14 @@ public class LanguageCrud {
 
     public LanguageCrud( Crud crud ) {
         LanguageCrud.crud = crud;
+    }
+
+
+    public static void anyQuery( Context ctx ) {
+        QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
+        QueryLanguage language = QueryLanguage.from( request.language );
+        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), null ).get( 0 );
+        ctx.json( result );
     }
 
 
@@ -137,13 +144,13 @@ public class LanguageCrud {
     }
 
 
-    public static PolyGraph getGraph( String databaseName, TransactionManager manager ) {
+    public static PolyGraph getGraph( Long namespaceId, TransactionManager manager ) {
 
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
         Statement statement = transaction.createStatement();
 
-        ExtendedQueryParameters parameters = new ExtendedQueryParameters( databaseName );
+        ExtendedQueryParameters parameters = new ExtendedQueryParameters( namespaceId );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
         PolyImplementation<PolyGraph> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
@@ -242,7 +249,7 @@ public class LanguageCrud {
                 .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
                 .namespaceType( implementation.getNamespaceType() )
-                .namespaceName( request.database )
+                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
                 .language( language )
                 .affectedRows( data.size() )
                 .hasMoreRows( hasMoreRows )
@@ -267,7 +274,7 @@ public class LanguageCrud {
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
-                .namespaceName( request.database )
+                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
                 .build();
     }
 
@@ -286,7 +293,7 @@ public class LanguageCrud {
                 .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )
-                .namespaceName( request.database )
+                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
                 .build();
     }
 
@@ -311,34 +318,6 @@ public class LanguageCrud {
             return sortState.get( field.getName() );
         }
         return new SortState();
-    }
-
-
-    /**
-     * Creates a new document collection
-     */
-    public void createCollection( final Context ctx ) {
-        EditCollectionRequest request = ctx.bodyAsClass( EditCollectionRequest.class );
-        Transaction transaction = crud.getTransaction();
-
-        String query = String.format( "db.createCollection(%s)", request.collection );
-
-        RelationalResult result;
-        try {
-            anyQuery( QueryLanguage.from( "mongo" ), null, new QueryRequest( query, false, false, "CYPHER", request.database ), crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), null );
-
-            result = RelationalResult.builder().affectedRows( 1 ).generatedQuery( query ).build();
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception while creating a table", e );
-            result = RelationalResult.builder().error( e.getMessage() ).generatedQuery( query ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback createCollection statement: {}", ex.getMessage(), ex );
-            }
-        }
-        ctx.json( result );
     }
 
 

@@ -1657,6 +1657,25 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    public void renameCollection( LogicalCollection collection, String newName, Statement statement ) {
+        if ( catalog.getSnapshot().rel().getTable( collection.namespaceId, newName ).isPresent() ) {
+            throw new GenericRuntimeException( "An entity with name %s already exists", newName );
+        }
+        // Check if views are dependent from this view
+        //checkViewDependencies( collection );
+
+        if ( !catalog.getSnapshot().getNamespace( collection.namespaceId ).orElseThrow().caseSensitive ) {
+            newName = newName.toLowerCase();
+        }
+
+        catalog.getLogicalDoc( collection.namespaceId ).renameCollection( collection, newName );
+
+        // Reset plan cache implementation cache & routing cache
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
     public void renameColumn( LogicalTable table, String columnName, String newColumnName, Statement statement ) {
         LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
 

@@ -107,7 +107,7 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.requestType ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceName, crud.getTransactionManager() );
+                PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceId, crud.getTransactionManager() );
 
                 ctx.send( graph.toJson() );
 
@@ -156,10 +156,24 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
-                                result = LanguageCrud.anyQuery( QueryLanguage.from( "mongo" ), ctx.session, new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.name ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery(
+                                        QueryLanguage.from( "mongo" ),
+                                        ctx.session,
+                                        new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.id ),
+                                        crud.getTransactionManager(),
+                                        Catalog.defaultUserId,
+                                        Catalog.defaultNamespaceId,
+                                        this.crud ).get( 0 );
                                 break;
                             case GRAPH:
-                                result = LanguageCrud.anyQuery( QueryLanguage.from( "cypher" ), ctx.session, new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.name ), crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId, this.crud ).get( 0 );
+                                result = LanguageCrud.anyQuery(
+                                        QueryLanguage.from( "cypher" ),
+                                        ctx.session,
+                                        new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.id ),
+                                        crud.getTransactionManager(),
+                                        Catalog.defaultUserId,
+                                        Catalog.defaultNamespaceId,
+                                        this.crud ).get( 0 );
                                 break;
                         }
                         if ( result == null ) {

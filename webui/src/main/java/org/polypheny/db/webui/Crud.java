@@ -146,7 +146,6 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
-import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
@@ -2266,7 +2265,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.uniqueName, a.adapterName, a.adapterType, Crud.gson.toJson( settings ) );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             int numRows = executeSqlUpdate( transaction, query );
@@ -2312,7 +2311,7 @@ public class Crud implements InformationObserver {
         for ( String fileName : setting.fileNames ) {
             setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
         }
-        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
+        File path = PolyphenyHomeDirManager.getInstance().registerNewFolder( "data/csv/" + a.name );
         for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
             try {
                 File file = new File( path, is.getKey() );
@@ -2752,11 +2751,6 @@ public class Crud implements InformationObserver {
 
         NamespaceType type = namespace.getType();
 
-        if ( type == NamespaceType.GRAPH ) {
-            handleGraphDdl( namespace, transaction, ctx );
-            return;
-        }
-
         // create namespace
         if ( namespace.isCreate() && !namespace.isDrop() ) {
 
@@ -2789,12 +2783,6 @@ public class Crud implements InformationObserver {
             if ( type == null ) {
                 List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( new org.polypheny.db.catalog.logistic.Pattern( namespace.getName() ) );
                 assert namespaces.size() == 1;
-                type = namespaces.get( 0 ).namespaceType;
-
-                if ( type == NamespaceType.GRAPH ) {
-                    handleGraphDdl( namespace, transaction, ctx );
-                    return;
-                }
             }
 
             StringBuilder query = new StringBuilder( "DROP NAMESPACE " );
@@ -2808,57 +2796,6 @@ public class Crud implements InformationObserver {
                 ctx.json( RelationalResult.builder().affectedRows( rows ).build() );
             } catch ( TransactionException | QueryExecutionException e ) {
                 log.error( "Caught exception while dropping a namespace", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-                ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-            }
-        } else {
-            ctx.json( RelationalResult.builder().error( "Neither the field 'create' nor the field 'drop' was set." ).build() );
-        }
-    }
-
-
-    private void handleGraphDdl( Namespace namespace, Transaction transaction, Context ctx ) {
-        if ( namespace.isCreate() && !namespace.isDrop() ) {
-            Statement statement = transaction.createStatement();
-            Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
-
-            String query = String.format( "CREATE DATABASE %s", namespace.getName() );
-
-            List<? extends Node> nodes = processor.parse( query );
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, namespace.getName() );
-            try {
-                PolyImplementation<?> result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
-                int rowsChanged = result.getRowsChanged( statement );
-                transaction.commit();
-                ctx.json( RelationalResult.builder().affectedRows( rowsChanged ).build() );
-            } catch ( TransactionException | Exception e ) {
-                log.error( "Caught exception while creating a graph namespace", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-                ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-            }
-        } else if ( namespace.isDrop() && !namespace.isCreate() ) {
-            Statement statement = transaction.createStatement();
-            Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
-
-            String query = String.format( "DROP DATABASE %s", namespace.getName() );
-
-            List<? extends Node> nodes = processor.parse( query );
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, namespace.getName() );
-            try {
-                PolyImplementation<?> result = processor.prepareDdl( statement, nodes.get( 0 ), parameters );
-                int rowsChanged = result.getRowsChanged( statement );
-                transaction.commit();
-                ctx.json( RelationalResult.builder().affectedRows( rowsChanged ).build() );
-            } catch ( TransactionException | Exception e ) {
-                log.error( "Caught exception while dropping a graph namespace", e );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {

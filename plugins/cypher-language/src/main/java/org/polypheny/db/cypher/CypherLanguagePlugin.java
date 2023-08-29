@@ -106,7 +106,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
             executionTime = System.nanoTime();
 
             Statement statement = transaction.createStatement();
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.database );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.namespaceId );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );

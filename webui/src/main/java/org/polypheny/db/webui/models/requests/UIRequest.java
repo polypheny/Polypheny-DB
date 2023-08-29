@@ -35,10 +35,6 @@ import org.polypheny.db.webui.models.SortState;
  */
 public class UIRequest {
 
-    static {
-
-    }
-
 
     /**
      * ExpressionType of a request, e.g. QueryRequest or RelAlgRequest

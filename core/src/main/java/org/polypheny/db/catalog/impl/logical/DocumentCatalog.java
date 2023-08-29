@@ -91,6 +91,13 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
 
 
     @Override
+    public void renameCollection( LogicalCollection collection, String newName ) {
+        LogicalCollection newCollection = collection.toBuilder().name( newName ).build();
+        collections.put( newCollection.id, newCollection );
+    }
+
+
+    @Override
     public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
         return toBuilder().logicalNamespace( namespace ).build();
     }

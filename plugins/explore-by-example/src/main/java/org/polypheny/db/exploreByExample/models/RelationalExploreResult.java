@@ -64,7 +64,7 @@ public class RelationalExploreResult extends RelationalResult {
         builder.request( rel.request );
         builder.affectedRows( rel.affectedRows );
         builder.exception( rel.exception );
-        builder.generatedQuery( rel.generatedQuery );
+        builder.generatedQuery( rel.query );
         builder.language( rel.language );
         builder.type( rel.type );
 

@@ -20,12 +20,12 @@ package org.polypheny.db.webui.models.requests;
 public class QueryRequest extends UIRequest {
 
 
-    public QueryRequest( String query, boolean analyze, boolean cache, String language, String database ) {
+    public QueryRequest( String query, boolean analyze, boolean cache, String language, Long namespaceId ) {
         this.query = query;
         this.analyze = analyze;
         this.cache = cache;
         this.language = language;
-        this.database = database;
+        this.namespaceId = namespaceId;
     }
 
 
@@ -49,9 +49,5 @@ public class QueryRequest extends UIRequest {
      */
     public String language;
 
-    /**
-     * This flag defines the default Polypheny schema (document database) to use
-     */
-    public String database;
 
 }

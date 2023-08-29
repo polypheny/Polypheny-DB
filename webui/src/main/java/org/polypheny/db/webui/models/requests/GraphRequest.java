@@ -23,15 +23,13 @@ import lombok.Getter;
 @Getter
 public class GraphRequest extends QueryRequest {
 
-    public String namespaceName;
-
     public List<String> nodeIds;
 
     public List<String> edgeIds;
 
 
-    public GraphRequest( String query, boolean analyze, boolean cache, String language, String database ) {
-        super( query, analyze, cache, language, database );
+    public GraphRequest( String query, boolean analyze, boolean cache, String language, Long namespaceId ) {
+        super( query, analyze, cache, language, namespaceId );
     }
 
 }

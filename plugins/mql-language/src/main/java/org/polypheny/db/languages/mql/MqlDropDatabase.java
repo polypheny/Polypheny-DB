@@ -16,6 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -34,9 +35,9 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+        Long namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
 
-        DdlManager.getInstance().dropNamespace( database, true, statement );
+        DdlManager.getInstance().dropNamespace( Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name, true, statement );
     }
 
 

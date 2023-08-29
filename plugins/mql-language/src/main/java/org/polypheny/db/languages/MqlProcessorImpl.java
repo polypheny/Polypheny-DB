@@ -27,7 +27,6 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -104,7 +103,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
     public boolean needsDdlGeneration( Node query, QueryParameters parameters ) {
         if ( query instanceof MqlCollectionStatement ) {
             return Catalog.snapshot()
-                    .getNamespaces( Pattern.of( ((MqlQueryParameters) parameters).getDatabase() ) )
+                    .getNamespace( ((MqlQueryParameters) parameters).getNamespaceId() )
                     .stream().flatMap( n -> Catalog.getInstance().getSnapshot().doc().getCollections( n.id, null ).stream() )
                     .noneMatch( t -> t.name.equals( ((MqlCollectionStatement) query).getCollection() ) );
         }

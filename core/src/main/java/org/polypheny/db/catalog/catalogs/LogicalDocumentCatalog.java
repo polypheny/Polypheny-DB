@@ -46,4 +46,7 @@ public interface LogicalDocumentCatalog extends LogicalCatalog {
 
     Map<Long, LogicalCollection> getCollections();
 
+
+    void renameCollection( LogicalCollection collection, String newName );
+
 }

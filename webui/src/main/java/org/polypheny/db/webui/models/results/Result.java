@@ -38,6 +38,13 @@ public abstract class Result<E, F> {
 
     public F[] header;
 
+    /**
+     * Exception with additional information
+     */
+    public Throwable exception;
+
+    public String query;
+
 
     /**
      * Transaction id, for the websocket. It will not be serialized to gson.
@@ -61,6 +68,8 @@ public abstract class Result<E, F> {
             this.xid = instance.xid;
             this.error = instance.error;
             this.namespaceName = instance.namespaceName;
+            this.query = instance.query;
+            this.exception = instance.exception;
 
             return self();
         }

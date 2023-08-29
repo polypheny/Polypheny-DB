@@ -16,10 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
-import java.util.List;
-import java.util.Optional;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.Pattern;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -50,27 +47,15 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+        Long namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
 
-        List<LogicalTable> tables = context.getSnapshot().rel().getTables( Pattern.of( database ), null );
+        LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 
         if ( dropTarget ) {
-            Optional<LogicalTable> newTable = tables.stream()
-                    .filter( t -> t.name.equals( newName ) )
-                    .findAny();
-
-            newTable.ifPresent( logicalTable -> DdlManager.getInstance().deleteTable( logicalTable, statement ) );
+            DdlManager.getInstance().dropCollection( collection, statement );
         }
 
-        Optional<LogicalTable> table = tables.stream()
-                .filter( t -> t.name.equals( getCollection() ) )
-                .findAny();
-
-        if ( table.isEmpty() ) {
-            throw new RuntimeException( "The target for the rename is not valid." );
-        }
-
-        DdlManager.getInstance().renameTable( table.get(), newName, statement );
+        DdlManager.getInstance().renameCollection( collection, newName, statement );
 
     }
 

@@ -14,21 +14,32 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.results;
+package org.polypheny.db.webui.models;
 
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.experimental.SuperBuilder;
-import org.polypheny.db.webui.models.FieldDefinition;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 @EqualsAndHashCode(callSuper = true)
-@SuperBuilder(toBuilder = true)
 @Value
-public class GraphResult extends Result<String[], FieldDefinition> {
+public class SourceModel extends AdapterModel {
+
+    public boolean readOnly;
 
 
-    public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends ResultBuilder<String[], FieldDefinition, C, B> {
-
+    public SourceModel(
+            @Nullable Long id,
+            @Nullable String name,
+            String adapterName,
+            AdapterType type,
+            Map<String, AbstractAdapterSetting> settings,
+            boolean persistent,
+            boolean readOnly ) {
+        super( id, name, adapterName, type, settings, persistent );
+        this.readOnly = readOnly;
     }
 
 }

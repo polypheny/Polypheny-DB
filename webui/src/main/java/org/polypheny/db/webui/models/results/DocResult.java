@@ -26,8 +26,6 @@ import org.polypheny.db.webui.models.FieldDefinition;
 @Value
 public class DocResult extends Result<String, FieldDefinition> {
 
-    public String query;
-
     // public Throwable exception;
 
 }

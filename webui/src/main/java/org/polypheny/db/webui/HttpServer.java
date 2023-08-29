@@ -55,6 +55,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
 
@@ -107,7 +108,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
                 .registerTypeAdapter( Duration.class, Duration.getSerializer() )
-                .registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() )
+                //.registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() )
                 .registerTypeAdapter( InformationPage.class, InformationPage.getSerializer() )
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
@@ -213,6 +214,8 @@ public class HttpServer implements Runnable {
     private void crudRoutes( Javalin webuiServer, Crud crud ) {
         attachCatalogMetaRoutes( webuiServer, crud );
 
+        webuiServer.post( "/anyQuery", LanguageCrud::anyQuery );
+
         webuiServer.post( "/insertRow", crud::insertRow );
 
         webuiServer.post( "/deleteRow", crud::deleteRow );
@@ -252,8 +255,6 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable );
 
         webuiServer.post( "/createTable", crud::createTable );
-
-        webuiServer.post( "/createCollection", crud.languageCrud::createCollection );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 

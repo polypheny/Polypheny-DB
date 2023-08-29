@@ -208,7 +208,7 @@ public class MqlToAlgConverter {
 
     private boolean _dataExists = true;
     private boolean elemMatchActive = false;
-    private String defaultDatabase;
+    private long namespaceId;
     private boolean notActive = false;
     private boolean usesDocumentModel;
     private CatalogEntity entity;
@@ -239,7 +239,7 @@ public class MqlToAlgConverter {
 
     public AlgRoot convert( Node query, QueryParameters parameters ) {
         resetDefaults();
-        this.defaultDatabase = ((MqlQueryParameters) parameters).getDatabase();
+        this.namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query );
         }
@@ -255,7 +255,7 @@ public class MqlToAlgConverter {
      */
     public AlgRoot convert( MqlCollectionStatement query ) {
         Type kind = query.getMqlKind();
-        this.entity = getEntity( query, defaultDatabase );
+        this.entity = getEntity( query, namespaceId );
         if ( entity == null ) {
             throw new RuntimeException( "The used collection does not exist." );
         }
@@ -309,8 +309,8 @@ public class MqlToAlgConverter {
     }
 
 
-    private CatalogEntity getEntity( MqlCollectionStatement query, String namespaceName ) {
-        LogicalNamespace namespace = snapshot.getNamespace( namespaceName ).orElseThrow();
+    private CatalogEntity getEntity( MqlCollectionStatement query, long namespaceId ) {
+        LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
 
         Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
         if ( optionalDoc.isPresent() ) {

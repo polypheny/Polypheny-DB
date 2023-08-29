@@ -72,19 +72,9 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     public UIRequest request;
 
     /**
-     * Exception with additional information
-     */
-    public Throwable exception;
-
-    /**
      * Number of affected rows
      */
     public int affectedRows;
-
-    /**
-     * The query that was generated
-     */
-    public String generatedQuery;
 
     /**
      * ExpressionType of the result: if the data is from a table/view/arbitrary query
@@ -283,7 +273,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
                 out.name( "affectedRows" );
                 out.value( result.affectedRows );
                 out.name( "generatedQuery" );
-                out.value( result.generatedQuery );
+                out.value( result.query );
                 out.name( "type" );
                 handleEnum( out, result.type );
                 out.name( "namespaceType" );

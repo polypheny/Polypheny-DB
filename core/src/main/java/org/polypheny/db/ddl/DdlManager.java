@@ -384,11 +384,13 @@ public abstract class DdlManager {
     /**
      * Rename a table (changing the logical name of the table)
      *
-     * @param tble the table to be renamed
+     * @param table the table to be renamed
      * @param newTableName the new name for the table
      * @param statement the used statement
      */
-    public abstract void renameTable( LogicalTable tble, String newTableName, Statement statement );
+    public abstract void renameTable( LogicalTable table, String newTableName, Statement statement );
+
+    public abstract void renameCollection( LogicalCollection collection, String newName, Statement statement );
 
     /**
      * Rename a column of a table (changing the logical name of the column)

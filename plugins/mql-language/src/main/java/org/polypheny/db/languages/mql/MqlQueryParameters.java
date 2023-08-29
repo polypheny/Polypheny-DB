@@ -20,15 +20,15 @@ import lombok.Getter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryParameters;
 
+@Getter
 public class MqlQueryParameters extends QueryParameters {
 
-    @Getter
-    final String database;
+    final Long namespaceId;
 
 
-    public MqlQueryParameters( String query, String database, NamespaceType namespaceType ) {
+    public MqlQueryParameters( String query, Long namespaceId, NamespaceType namespaceType ) {
         super( query, namespaceType );
-        this.database = database;
+        this.namespaceId = namespaceId;
     }
 
 }

@@ -20,6 +20,7 @@ import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
@@ -29,6 +30,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
+@SuperBuilder(toBuilder = true)
 public class LogicalCollection extends LogicalEntity implements CatalogObject {
 
     private static final long serialVersionUID = -6490762948368178584L;

@@ -107,14 +107,14 @@ public class CypherToAlgConverter {
 
 
     public AlgRoot convert( CypherNode query, ExtendedQueryParameters parameters, AlgOptCluster cluster ) {
-        long databaseId;
-        if ( parameters.getDatabaseId() == null ) {
-            databaseId = getDatabaseId( parameters );
+        long namespaceId;
+        if ( parameters.namespaceId == null ) {
+            namespaceId = getDatabaseId( parameters );
         } else {
-            databaseId = parameters.getDatabaseId();
+            namespaceId = parameters.namespaceId;
         }
 
-        LogicalEntity entity = getEntity( databaseId, parameters );
+        LogicalEntity entity = getEntity( namespaceId, parameters );
 
         if ( parameters.isFullGraph() ) {
             // simple full graph scan
@@ -140,12 +140,12 @@ public class CypherToAlgConverter {
             return optionalGraph.get();
         }
 
-        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( databaseId, parameters.getDatabaseName() );
+        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( databaseId );
         if ( optionalTable.isPresent() ) {
             return optionalTable.get();
         }
 
-        return this.snapshot.doc().getCollection( databaseId, parameters.getDatabaseName() ).orElseThrow();
+        return this.snapshot.doc().getCollection( databaseId ).orElseThrow();
     }
 
 
@@ -159,7 +159,7 @@ public class CypherToAlgConverter {
 
 
     private long getDatabaseId( ExtendedQueryParameters parameters ) {
-        return snapshot.getNamespace( parameters.getDatabaseName() ).orElseThrow().id;
+        return snapshot.getNamespace( parameters.getNamespaceId() ).orElseThrow().id;
     }
 
 

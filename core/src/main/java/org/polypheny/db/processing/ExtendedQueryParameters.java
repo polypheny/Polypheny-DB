@@ -18,33 +18,34 @@ package org.polypheny.db.processing;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryParameters;
 
 
-@Getter
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class ExtendedQueryParameters extends QueryParameters {
 
-    List<String> nodeLabels = new ArrayList<>();
-    List<String> relationshipLabels = new ArrayList<>();
-    final String databaseName;
-    @Setter
-    Long databaseId;
-    final boolean fullGraph;
+    public List<String> nodeLabels = new ArrayList<>();
+    public List<String> relationshipLabels = new ArrayList<>();
+    @NonFinal
+    public Long namespaceId;
+    public boolean fullGraph;
 
 
-    public ExtendedQueryParameters( String query, NamespaceType namespaceType, String databaseName ) {
+    public ExtendedQueryParameters( String query, NamespaceType namespaceType, Long namespaceId ) {
         super( query, namespaceType );
-        this.databaseName = databaseName;
+        this.namespaceId = namespaceId;
         this.fullGraph = false;
     }
 
 
-    public ExtendedQueryParameters( String databaseName ) {
+    public ExtendedQueryParameters( Long namespaceId ) {
         super( "*", NamespaceType.GRAPH );
-        this.databaseName = databaseName;
+        this.namespaceId = namespaceId;
         this.fullGraph = true;
     }
 

@@ -50,7 +50,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        String database = ((MqlQueryParameters) parameters).getDatabase();
+        Long database = ((MqlQueryParameters) parameters).getNamespaceId();
 
         long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 

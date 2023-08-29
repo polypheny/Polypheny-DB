@@ -26,6 +26,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.mql.Mql.Family;
@@ -114,14 +115,14 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         String[] mqls = request.query.trim().split( "\\n(?=(use|db.|show))" );
 
-        String database = request.database;
+        Long namespaceId = request.namespaceId;
         long executionTime = System.nanoTime();
         boolean noLimit = false;
 
         for ( String query : mqls ) {
             try {
                 Statement statement = transaction.createStatement();
-                QueryParameters parameters = new MqlQueryParameters( query, database, NamespaceType.DOCUMENT );
+                QueryParameters parameters = new MqlQueryParameters( query, namespaceId, NamespaceType.DOCUMENT );
 
                 if ( transaction.isAnalyze() ) {
                     statement.getOverviewDuration().start( "Parsing" );
@@ -132,7 +133,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 }
 
                 if ( parsed instanceof MqlUseDatabase ) {
-                    database = ((MqlUseDatabase) parsed).getDatabase();
+                    namespaceId = Catalog.snapshot().getNamespace( ((MqlUseDatabase) parsed).getDatabase() ).orElseThrow().id;
                     //continue;
                 }
 
