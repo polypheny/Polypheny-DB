@@ -58,7 +58,7 @@ public final class DockerManager {
     }
 
 
-    Optional<DockerInstance> getInstanceForContainer( String uuid ) {
+    public Optional<DockerInstance> getInstanceForContainer( String uuid ) {
         return dockerInstances.values().stream().filter( d -> d.hasContainer( uuid ) ).findFirst();
     }
 
