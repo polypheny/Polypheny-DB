@@ -244,7 +244,9 @@ public final class DockerInstance {
                 uuids.remove( container.getContainerId() );
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
-                if ( !e.getMessage().startsWith( "No such container" ) ) {
+                if ( e.getMessage().startsWith( "No such container" ) ) {
+                    log.info( "Cannot delete container: No container with UUID " + container.getContainerId() );
+                } else {
                     log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
                 }
             }
