@@ -1,8 +1,14 @@
 group "org.polypheny"
 
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
 
 dependencies {
     compileOnly project(":core")
+    compileOnly project(":dbms")
     compileOnly project(":monitoring")
     compileOnly project(":plugins:mql-language")
 
@@ -12,21 +18,27 @@ dependencies {
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
     // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
     testImplementation group: "junit", name: "junit", version: junit_version
+
+    // --- Test Compile ---
+
 }
 
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java"]
+            srcDirs = ["src/main/java", "build/generated-sources"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
             srcDirs = ["src/main/resources"]
+            exclude "version/*.properties"
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -36,7 +48,8 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/test-classes")
         }
         resources {
-            srcDirs = ["src/test/resources"]
+            // We need the main resources for the tests as well.
+            srcDirs = ["src/test/resources", "src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
@@ -64,9 +77,10 @@ jar {
         attributes "Version": "$project.version"
     }
 }
-java {
-    withJavadocJar()
-    withSourcesJar()
+
+java{
+    withJavadocJar();
+    withSourcesJar();
 }
 
 licensee {
