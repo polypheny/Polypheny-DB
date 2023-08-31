@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog;
 
 
 import java.util.Map;
@@ -26,7 +26,6 @@ import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.webui.models.catalog.IdEntity;
 
 
 @EqualsAndHashCode(callSuper = true)

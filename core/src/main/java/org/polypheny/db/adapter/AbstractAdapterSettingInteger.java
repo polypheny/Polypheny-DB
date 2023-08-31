@@ -23,11 +23,8 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 
 public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
-    private final String type = "Integer";
-
-
     public AbstractAdapterSettingInteger( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
-        super( name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position );
+        super( AdapterSettingType.INTEGER, name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position );
     }
 
 

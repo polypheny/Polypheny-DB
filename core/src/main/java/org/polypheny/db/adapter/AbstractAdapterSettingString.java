@@ -23,11 +23,9 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 
 public class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
-    private final String type = "String";
-
 
     public AbstractAdapterSettingString( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-        super( name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+        super( AdapterSettingType.STRING, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
     }
 
 

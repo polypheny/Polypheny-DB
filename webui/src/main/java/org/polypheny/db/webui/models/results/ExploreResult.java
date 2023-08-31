@@ -18,7 +18,7 @@ package org.polypheny.db.webui.models.results;
 
 
 import java.util.List;
-import org.polypheny.db.webui.models.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
 
 public class ExploreResult {

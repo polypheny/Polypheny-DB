@@ -23,10 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,7 +32,6 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -43,15 +39,13 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.config.ConfigDocker;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.util.Pair;
 
 public class AdapterManager {
 
     public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
 
-    private static final Map<Pair<String, AdapterType>, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
+    public static final Map<Pair<String, AdapterType>, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
@@ -170,60 +164,18 @@ public class AdapterManager {
     public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
         List<AdapterTemplate> adapterTemplates = getAdapters( adapterType );
 
-        List<AdapterInformation> result = new LinkedList<>();
+        List<AdapterInformation> result = new ArrayList<>();
 
         for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
             // Exclude abstract classes
             if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
-                Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
                 AdapterProperties properties = adapterTemplate.getClazz().getAnnotation( AdapterProperties.class );
                 if ( properties == null ) {
-                    throw new RuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
+                    throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
-
-                // Used to evaluate which mode is used when deploying the adapter
-                settings.put(
-                        "mode",
-                        Collections.singletonList(
-                                new AbstractAdapterSettingList(
-                                        "mode",
-                                        false,
-                                        null,
-                                        true,
-                                        true,
-                                        Collections.singletonList( "default" ),
-                                        Collections.singletonList( DeploySetting.DEFAULT ),
-                                        "default",
-                                        0 ) ) );
-
-                // Add empty list for each available mode
-                Arrays.stream( properties.usedModes() ).forEach( mode -> settings.put( mode.getName(), new ArrayList<>() ) );
-
-                // Add default which is used by all available modes
-                settings.put( "default", new ArrayList<>() );
-
                 // Merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
-                settings.putAll( annotatedSettings );
-
-                // If the adapter uses docker add the dynamic docker setting
-                if ( settings.containsKey( "docker" ) ) {
-                    settings
-                            .get( "docker" )
-                            .add( new BindableAbstractAdapterSettingsList<>(
-                                    "instanceId",
-                                    "DockerInstance",
-                                    false,
-                                    null,
-                                    true,
-                                    false,
-                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( ConfigDocker::isDockerRunning ).collect( Collectors.toList() ),
-                                    ConfigDocker::getAlias,
-                                    ConfigDocker.class )
-                                    .bind( RuntimeConfig.DOCKER_INSTANCES )
-                                    .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
-                }
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
 
                 result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings ) );
             }
@@ -301,13 +253,20 @@ public class AdapterManager {
     }
 
 
+    public List<AdapterInformation> getAvailableAdapters() {
+        List<AdapterInformation> adapters = new ArrayList<>( getAvailableAdapters( AdapterType.STORE ) );
+        adapters.addAll( getAvailableAdapters( AdapterType.SOURCE ) );
+        return adapters;
+    }
+
+
     @AllArgsConstructor
     public static class AdapterInformation {
 
         public final String name;
         public final String description;
         public final AdapterType type;
-        public final Map<String, List<AbstractAdapterSetting>> settings;
+        public final List<AbstractAdapterSetting> settings;
 
 
         public static JsonSerializer<AdapterInformation> getSerializer() {

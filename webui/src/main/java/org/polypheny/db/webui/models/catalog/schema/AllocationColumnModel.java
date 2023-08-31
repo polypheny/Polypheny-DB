@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.catalog;
+package org.polypheny.db.webui.models.catalog.schema;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.logistic.PlacementType;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
 @EqualsAndHashCode(callSuper = true)
 @Value

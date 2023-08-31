@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.catalog;
+package org.polypheny.db.webui.models.catalog.schema;
 
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
-public class CollectionModel extends EntityModel {
+public class TableModel extends EntityModel {
 
 
-    public CollectionModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
+    public TableModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
         super( id, name, namespaceId, modifiable, namespaceType, entityType );
     }
 
 
-    public static CollectionModel from( LogicalCollection collection ) {
-        return new CollectionModel( collection.id, collection.name, collection.namespaceId, collection.modifiable, collection.namespaceType, collection.entityType );
+    public static TableModel from( LogicalTable table ) {
+        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.namespaceType, table.entityType );
     }
 
 }

@@ -19,7 +19,6 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -145,19 +144,13 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
 
 
     public List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
-        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties )
-                .values()
-                .stream()
-                .flatMap( Collection::stream )
-                .collect( Collectors.toList() );
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties );
     }
 
 
     public static Map<String, String> getDefaultSettings( Class<DataStore<?>> clazz ) {
         return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) )
-                .values()
                 .stream()
-                .flatMap( Collection::stream )
                 .collect( Collectors.toMap( e -> e.name, e -> e.defaultValue ) );
     }
 

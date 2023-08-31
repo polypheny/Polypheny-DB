@@ -17,7 +17,7 @@
 package org.polypheny.db.exploreByExample.requests;
 
 
-import org.polypheny.db.webui.models.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 

@@ -33,9 +33,9 @@ import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.AssetsModel;
 import org.polypheny.db.webui.models.SidebarElement;
-import org.polypheny.db.webui.models.catalog.NamespaceModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.requests.NamespaceRequest;
+import org.polypheny.db.webui.models.catalog.schema.NamespaceModel;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 
 @Slf4j

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog;
 
 
 import com.google.gson.TypeAdapter;
@@ -25,6 +25,7 @@ import java.io.IOException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.webui.models.SortState;
 
 
 /**

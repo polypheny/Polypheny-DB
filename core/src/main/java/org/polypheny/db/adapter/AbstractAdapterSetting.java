@@ -19,15 +19,14 @@ package org.polypheny.db.adapter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Value;
 import lombok.experimental.Accessors;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -37,23 +36,28 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 
 @Accessors(chain = true)
+@Value
+@NonFinal
 public abstract class AbstractAdapterSetting {
 
-    public final String name;
-    public final boolean canBeNull;
-    public final String subOf;
-    public final boolean required;
-    public final boolean modifiable;
-    public final String defaultValue;
-    private final int position;
+    public String name;
+    public boolean canBeNull;
+    public String subOf;
+    public boolean required;
+    public boolean modifiable;
+    public String defaultValue;
+    public int position;
     @Setter
+    @NonFinal
     public String description;
+    public AdapterSettingType type;
 
     @Getter
-    public final List<DeploySetting> appliesTo;
+    public List<DeploySetting> appliesTo;
 
 
-    public AbstractAdapterSetting( final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+    public AbstractAdapterSetting( final AdapterSettingType type, final String name, final boolean canBeNull, final String subOf, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, String defaultValue, int position ) {
+        this.type = type;
         this.name = name;
         this.canBeNull = canBeNull;
         this.subOf = Objects.equals( subOf, "" ) ? null : subOf;
@@ -77,60 +81,34 @@ public abstract class AbstractAdapterSetting {
      * @param properties which are defined by the corresponding Adapter
      * @return a map containing the available modes and the corresponding collections of AdapterSettings
      */
-    public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
-        Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
+    public static List<AbstractAdapterSetting> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
+        List<AbstractAdapterSetting> settings = new ArrayList<>();
 
         for ( Annotation annotation : annotations ) {
             if ( annotation instanceof AdapterSettingString ) {
-                mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
+                settings.add( AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
             } else if ( annotation instanceof AdapterSettingString.List ) {
-                Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( el ) ) );
+                Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingString.fromAnnotation( el ) ) );
             } else if ( annotation instanceof AdapterSettingBoolean ) {
-                mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
+                settings.add( AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
             } else if ( annotation instanceof AdapterSettingBoolean.List ) {
-                Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
+                Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
             } else if ( annotation instanceof AdapterSettingInteger ) {
-                mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
+                settings.add( AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
             } else if ( annotation instanceof AdapterSettingInteger.List ) {
-                Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
+                Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
             } else if ( annotation instanceof AdapterSettingList ) {
-                mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
+                settings.add( AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
             } else if ( annotation instanceof AdapterSettingList.List ) {
-                Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( el ) ) );
+                Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingList.fromAnnotation( el ) ) );
             } else if ( annotation instanceof AdapterSettingDirectory ) {
-                mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
+                settings.add( AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
             } else if ( annotation instanceof AdapterSettingDirectory.List ) {
-                Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
+                Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
             }
         }
 
-        settings.forEach( ( key, values ) -> values.sort( Comparator.comparingInt( value -> value.position ) ) );
         return settings;
-    }
-
-
-    /**
-     * Merges the provided setting into the provided map of AdapterSettings
-     *
-     * @param settings already correctly sorted settings
-     * @param deployModes the deployment modes which are supported by this specific adapter
-     * @param setting the setting which is merged into the map
-     */
-    private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
-        // we need to unpack the underlying DeployModes
-        for ( DeployMode mode : setting.appliesTo
-                .stream()
-                .flatMap( mode -> mode.getModes( Arrays.asList( deployModes ) ).stream() )
-                .collect( Collectors.toList() ) ) {
-
-            if ( settings.containsKey( mode.getName() ) ) {
-                settings.get( mode.getName() ).add( setting );
-            } else {
-                List<AbstractAdapterSetting> temp = new ArrayList<>();
-                temp.add( setting );
-                settings.put( mode.getName(), temp );
-            }
-        }
     }
 
 
@@ -152,5 +130,10 @@ public abstract class AbstractAdapterSetting {
         return abstractAdapterSettings;
     }
 
+
+    public enum AdapterSettingType {
+        DIRECTORY, INTEGER, LIST, STRING, BOOLEAN
+
+    }
 
 }

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.catalog;
+package org.polypheny.db.webui.models.catalog.schema;
 
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
 public class NamespaceModel extends IdEntity {
 

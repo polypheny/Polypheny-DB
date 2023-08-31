@@ -34,8 +34,8 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.models.FieldDefinition;
-import org.polypheny.db.webui.models.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 

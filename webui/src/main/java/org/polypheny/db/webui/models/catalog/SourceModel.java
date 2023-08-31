@@ -16,25 +16,30 @@
 
 package org.polypheny.db.webui.models.catalog;
 
+import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
-public class AllocationPlacementModel extends IdEntity {
+@EqualsAndHashCode(callSuper = true)
+@Value
+public class SourceModel extends AdapterModel {
 
-    public final long logicalEntityId;
-
-    public final long adapterId;
-
-
-    public AllocationPlacementModel( @Nullable Long id, long logicalEntityId, long adapterId ) {
-        super( id, null );
-        this.logicalEntityId = logicalEntityId;
-        this.adapterId = adapterId;
-    }
+    public boolean readOnly;
 
 
-    public static AllocationPlacementModel from( AllocationPlacement placement ) {
-        return new AllocationPlacementModel( placement.id, placement.logicalEntityId, placement.adapterId );
+    public SourceModel(
+            @Nullable Long id,
+            @Nullable String name,
+            String adapterName,
+            AdapterType type,
+            Map<String, AbstractAdapterSetting> settings,
+            boolean persistent,
+            boolean readOnly ) {
+        super( id, name, adapterName, type, settings, persistent );
+        this.readOnly = readOnly;
     }
 
 }

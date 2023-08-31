@@ -14,28 +14,19 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog.schema;
 
-import java.util.Map;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
-@EqualsAndHashCode(callSuper = true)
-@Value
-public class StoreModel extends AdapterModel {
+public class FieldModel extends IdEntity {
+
+    public final Long entityId;
 
 
-    public StoreModel(
-            @Nullable Long id,
-            @Nullable String name,
-            String adapterName,
-            AdapterType type,
-            Map<String, AbstractAdapterSetting> settings,
-            boolean persistent ) {
-        super( id, name, adapterName, type, settings, persistent );
+    public FieldModel( @Nullable Long id, @Nullable String name, @Nullable Long entityId ) {
+        super( id, name );
+        this.entityId = entityId;
     }
 
 }

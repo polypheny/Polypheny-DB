@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.webui.models.catalog;
 
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -25,21 +25,17 @@ import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class SourceModel extends AdapterModel {
-
-    public boolean readOnly;
+public class StoreModel extends AdapterModel {
 
 
-    public SourceModel(
+    public StoreModel(
             @Nullable Long id,
             @Nullable String name,
             String adapterName,
             AdapterType type,
             Map<String, AbstractAdapterSetting> settings,
-            boolean persistent,
-            boolean readOnly ) {
+            boolean persistent ) {
         super( id, name, adapterName, type, settings, persistent );
-        this.readOnly = readOnly;
     }
 
 }

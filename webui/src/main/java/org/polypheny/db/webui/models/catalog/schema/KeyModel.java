@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.catalog;
+package org.polypheny.db.webui.models.catalog.schema;
 
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
 public class KeyModel extends IdEntity {
 

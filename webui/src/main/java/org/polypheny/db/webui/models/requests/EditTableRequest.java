@@ -21,7 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.webui.models.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
 
 /**

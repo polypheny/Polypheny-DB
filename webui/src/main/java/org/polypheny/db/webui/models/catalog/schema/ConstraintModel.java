@@ -14,24 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.catalog;
+package org.polypheny.db.webui.models.catalog.schema;
 
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
+import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.webui.models.catalog.IdEntity;
 
-public class AllocationPartitionModel extends IdEntity {
+public class ConstraintModel extends IdEntity {
 
-    public final long logicalEntityId;
+    public final long keyId;
+    public final String type;
 
 
-    public AllocationPartitionModel( @Nullable Long id, @Nullable String name, long logicalEntityId ) {
+    public ConstraintModel( @Nullable Long id, @Nullable String name, long keyId, ConstraintType type ) {
         super( id, name );
-        this.logicalEntityId = logicalEntityId;
+        this.keyId = keyId;
+        this.type = type.name();
     }
 
 
-    public static AllocationPartitionModel from( AllocationPartition partition ) {
-        return new AllocationPartitionModel( partition.id, partition.name, partition.logicalEntityId );
+    public static ConstraintModel from( LogicalConstraint constraint ) {
+        return new ConstraintModel( constraint.id, constraint.name, constraint.keyId, constraint.type );
     }
 
 }

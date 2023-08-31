@@ -17,7 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.webui.models.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
 
 public class ColumnRequest extends UIRequest {

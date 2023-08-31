@@ -24,14 +24,12 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingList extends AbstractAdapterSetting {
-
-    private final String type = "List";
     public List<String> options;
     public boolean dynamic = false;
 
 
     public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, String defaultValue, int position ) {
-        super( name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
         this.options = options;
     }
 

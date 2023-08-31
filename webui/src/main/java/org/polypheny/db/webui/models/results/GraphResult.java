@@ -19,7 +19,7 @@ package org.polypheny.db.webui.models.results;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.webui.models.FieldDefinition;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
