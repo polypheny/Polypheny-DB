@@ -60,7 +60,6 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch) throws Exception {
         List<Long> updateCounts = new LinkedList<>();
         synchronized ( client ) {
-            Transaction transaction;
             if ( statement == null ) {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             } else {
