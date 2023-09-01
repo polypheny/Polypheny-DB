@@ -153,15 +153,15 @@ public class RelationalExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<List<PolyValue>> rows = piStatement.getIterator().getRows(fetchSize);
+        List<List<PolyValue>> rows = iterator.getRows(fetchSize);
         executionStopWatch.suspend();
-        boolean isDone = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
-        if ( isDone ) {
+        boolean isLast = fetchSize == 0 || Objects.requireNonNull( rows ).size() < fetchSize;
+        if ( isLast ) {
             executionStopWatch.stop();
             implementation.getExecutionTimeMonitor().setExecutionTime( executionStopWatch.getNanoTime() );
         }
         List<ColumnMeta> columnMetas = RelationalMetaRetriever.retrieveColumnMetas( implementation );
-        return ProtoUtils.buildRelationalFrame( iterator.hasMoreRows(), rows, columnMetas );
+        return ProtoUtils.buildRelationalFrame( isLast, rows, columnMetas );
     }
 
 }
