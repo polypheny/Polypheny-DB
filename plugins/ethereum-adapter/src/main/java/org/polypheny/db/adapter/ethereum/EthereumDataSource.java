@@ -188,20 +188,20 @@ public class EthereumDataSource extends DataSource {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
 
         String[] blockColumns = { "number", "hash", "parent_hash", "nonce", "sha3uncles", "logs_bloom", "transactions_root", "state_root", "receipts_root", "author", "miner", "mix_hash", "difficulty", "total_difficulty", "extra_data", "size", "gas_limit", "gas_used", "timestamp" };
-        PolyType[] blockTypes = { PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.TIMESTAMP };
+        PolyType[] blockTypes = { PolyType.DECIMAL, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.TIMESTAMP };
         createExportedColumns( "block", map, blockColumns, blockTypes );
 
         String[] transactionColumns = { "hash", "nonce", "block_hash", "block_number", "transaction_index", "from", "to", "value", "gas_price", "gas", "input", "creates", "public_key", "raw", "r", "s" };
-        PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
+        PolyType[] transactionTypes = { PolyType.VARCHAR, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.VARCHAR };
         createExportedColumns( "transaction", map, transactionColumns, transactionTypes );
 
-        if ( eventDataRetrieval == false ) {
+        if ( !eventDataRetrieval ) {
             this.map = map;
             return map;
         }
 
         String[] commonEventColumns = { "removed", "log_index", "transaction_index", "transaction_hash", "block_hash", "block_number", "address" };
-        PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.BIGINT, PolyType.BIGINT, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.BIGINT, PolyType.VARCHAR };
+        PolyType[] commonEventTypes = { PolyType.BOOLEAN, PolyType.DECIMAL, PolyType.DECIMAL, PolyType.VARCHAR, PolyType.VARCHAR, PolyType.DECIMAL, PolyType.VARCHAR };
         createExportedColumnsForEvents( map, commonEventColumns, commonEventTypes );
 
         if ( caching == Boolean.TRUE ) {
@@ -336,7 +336,7 @@ public class EthereumDataSource extends DataSource {
         for ( String address : smartContractAddresses ) {
             String contractName = null;
             List<JSONObject> contractEvents = null;
-            if ( useManualABI == true && !contractABI.isEmpty() && !this.contractName.isEmpty() ) {
+            if ( useManualABI && !contractABI.isEmpty() && !this.contractName.isEmpty() ) {
                 if ( smartContractAddresses.size() > 1 ) {
                     throw new IllegalArgumentException( "Only one smart contract address should be provided when using a manual ABI." );
                 }
@@ -549,6 +549,8 @@ public class EthereumDataSource extends DataSource {
                 return 300;
             case VARBINARY:
                 return 32;
+            case DECIMAL:
+                return 100;
             default:
                 return null;
         }
@@ -564,9 +566,8 @@ public class EthereumDataSource extends DataSource {
             return PolyType.DECIMAL;
         } else if ( type.equals( "bytes" ) || type.startsWith( "bytes" ) ) {
             return PolyType.VARCHAR; // for dynamic and fixed-size
-        } else {
-            return null;
         }
+        throw new RuntimeException( "Could not find a matching PolyType" );
     }
 
 

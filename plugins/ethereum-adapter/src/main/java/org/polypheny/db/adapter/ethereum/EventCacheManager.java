@@ -87,12 +87,11 @@ public class EventCacheManager implements Runnable {
      *
      * @param manager is used to create new transactions, which are required to create new queries.
      */
-    public static synchronized EventCacheManager getAndSet( TransactionManager manager ) {
+    public static synchronized void getAndSet( TransactionManager manager ) {
         if ( INSTANCE != null ) {
             throw new RuntimeException( String.format( "The %s was already set.", EventCacheManager.class.getSimpleName() ) );
         }
         INSTANCE = new EventCacheManager( manager );
-        return INSTANCE;
     }
 
 
@@ -148,8 +147,7 @@ public class EventCacheManager implements Runnable {
 
     private Transaction getTransaction() {
         try {
-            Transaction transaction = transactionManager.startTransaction( Catalog.defaultDatabaseId, Catalog.defaultUserId, false, "Ethereum Plugin" );
-            return transaction;
+            return transactionManager.startTransaction( Catalog.defaultDatabaseId, Catalog.defaultUserId, false, "Ethereum Plugin" );
         } catch ( UnknownSchemaException | UnknownDatabaseException | GenericCatalogException | UnknownUserException e ) {
             throw new RuntimeException( e );
         }
@@ -172,7 +170,7 @@ public class EventCacheManager implements Runnable {
         AlgDataType rowType = table.getTable().getRowType( transaction.getTypeFactory() );
         builder.push( LogicalValues.createOneRow( builder.getCluster() ) );
         builder.project( rowType.getFieldList().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), rowType.getFieldNames() );
-        builder.insert( (AlgOptTable) table );
+        builder.insert( table );
         // todo DL: we should re-use this for all batches (ignore right now)
 
         AlgNode node = builder.build(); // Construct the algebraic node
