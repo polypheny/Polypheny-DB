@@ -101,10 +101,10 @@ public class LanguageCrud {
             QueryRequest request,
             TransactionManager transactionManager,
             long userId,
-            long databaseId,
+            long namespaceId,
             InformationObserver observer ) {
 
-        return REGISTER.get( language.getSerializedName() ).apply( session, request, transactionManager, userId, databaseId, crud );
+        return REGISTER.get( language.getSerializedName() ).apply( session, request, transactionManager, userId, namespaceId, crud );
     }
 
 

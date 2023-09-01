@@ -49,6 +49,7 @@ include 'plugins:monetdb-adapter'
 
 // other plugins
 include 'plugins:explore-by-example'
+include 'plugins:notebooks'
 
 // disabled adapter plugins
 //include 'plugins:pig-adapter'

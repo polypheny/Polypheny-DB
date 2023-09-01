@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
@@ -771,6 +772,87 @@ public abstract class SqlUtil {
 
     static public <T extends Node> List<T> toSqlList( List<? extends Node> nodes, Class<T> clazz ) {
         return nodes.stream().map( clazz::cast ).collect( Collectors.toList() );
+    }
+
+
+    /*
+     * Splits a string with comments and multiple statements into multiple strings with one statement each and without comments.
+     * This is separate until the parser can deal with this.
+     */
+    public static List<String> splitStatements( String statements ) {
+        List<String> split = new ArrayList<>();
+        Stack<Character> brackets = new Stack<>();
+        StringBuilder currentStatement = new StringBuilder();
+        Character quote = null;
+
+        for ( int i = 0; i < statements.length(); i++ ) {
+            char ch = statements.charAt( i );
+
+            if ( quote != null && ch == quote ) {
+                if ( i + 1 == statements.length() || statements.charAt( i + 1 ) != quote ) {
+                    quote = null;
+                } else {
+                    currentStatement.append( quote );
+                    currentStatement.append( quote );
+                    i += 1;
+                    continue;
+                }
+            } else if ( quote == null ) {
+                if ( ch == '\'' || ch == '"' ) {
+                    quote = ch;
+                } else if ( ch == '(' || ch == '[' || ch == '{' ) {
+                    brackets.push( ch == '(' ? ')' : ch == '[' ? ']' : '}' );
+                } else if ( ch == ')' || ch == ']' || ch == '}' ) {
+                    if ( ch != brackets.pop() ) {
+                        throw new RuntimeException( "Unbalanced brackets" );
+                    }
+                } else if ( ch == ';' ) {
+                    if ( !brackets.isEmpty() ) {
+                        throw new RuntimeException( "Missing " + brackets.pop() );
+                    }
+                    split.add( currentStatement.toString() );
+                    currentStatement = new StringBuilder();
+                    continue;
+                } else if ( ch == '-' && i + 1 < statements.length() && statements.charAt( i + 1 ) == '-' ) {
+                    i += 1;
+                    while ( i + 1 < statements.length() && statements.charAt( i + 1 ) != '\n' ) {
+                        i++;
+                    }
+                    // i + 1 < statements.length() means that statements.charAt( i + 1 ) == '\n'
+                    if ( i + 1 < statements.length() ) {
+                        i++;
+                    }
+                    // This whitespace prevents constructions like "SEL--\nECT" from resulting in valid SQL
+                    ch = ' ';
+                } else if ( ch == '/' && i + 1 < statements.length() && statements.charAt( i + 1 ) == '*' ) {
+                    i += 2;
+                    while ( i + 1 < statements.length() && !(statements.charAt( i ) == '*' && statements.charAt( i + 1 ) == '/') ) {
+                        i++;
+                    }
+                    if ( i + 1 == statements.length() ) {
+                        throw new RuntimeException( "Unterminated comment" );
+                    }
+                    i++;
+                    // Same reason as above for cases like "SEL/**/ECT"
+                    ch = ' ';
+                }
+            }
+            currentStatement.append( ch );
+        }
+
+        if ( quote != null ) {
+            throw new RuntimeException( String.format( "Unterminated %s", quote ) );
+        }
+
+        if ( !brackets.empty() ) {
+            throw new RuntimeException( "Missing " + brackets.pop() );
+        }
+
+        if ( !currentStatement.toString().isBlank() ) {
+            split.add( currentStatement.toString() );
+        }
+
+        return split.stream().map( String::strip ).collect( Collectors.toList() );
     }
 
 }

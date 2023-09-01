@@ -43,9 +43,7 @@ public class PostgresqlPlugin extends PolyPlugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
-                "password", "polypheny",
                 "instanceId", "0",
-                "port", "3306",
                 "maxConnections", "25"
         );
 

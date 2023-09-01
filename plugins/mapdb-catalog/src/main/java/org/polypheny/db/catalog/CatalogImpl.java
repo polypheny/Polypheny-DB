@@ -4018,6 +4018,20 @@ public class CatalogImpl extends Catalog {
     /**
      * {@inheritDoc}
      */
+    public void updateQueryInterfaceSettings( int queryInterfaceId, Map<String, String> newSettings ) {
+        CatalogQueryInterface old = getQueryInterface( queryInterfaceId );
+        CatalogQueryInterface queryInterface = new CatalogQueryInterface( old.id, old.name, old.clazz, newSettings );
+        synchronized ( this ) {
+            queryInterfaces.put( queryInterface.id, queryInterface );
+            queryInterfaceNames.put( queryInterface.name, queryInterface );
+        }
+        listeners.firePropertyChange( "queryInterface", old, queryInterface );
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long addPartitionGroup( long tableId, String partitionGroupName, long schemaId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) throws GenericCatalogException {
         try {

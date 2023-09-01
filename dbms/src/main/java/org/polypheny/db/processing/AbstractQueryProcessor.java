@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1535,7 +1535,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             InformationGroup group = new InformationGroup( page, "Java Code" );
             queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
-            InformationCode informationCode = new InformationCode( group, code );
+
+            // Clean Code (remove package names to make code better readable)
+            String cleanedCode = code.replaceAll( "(org.)([a-z][a-z_0-9]*\\.)*", "" );
+
+            InformationCode informationCode = new InformationCode( group, cleanedCode );
             queryAnalyzer.registerInformation( informationCode );
         } else {
             log.error( "Generated code is null" );

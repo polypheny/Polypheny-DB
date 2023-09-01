@@ -16,7 +16,7 @@ buildscript {
 
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.5.31"
-    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.1"
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
 }
 
 
@@ -90,16 +90,6 @@ allprojects {
         options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
-    task dockerTests(type: Test) {
-        description = 'Runs docker tests.'
-        group = 'verification'
-        useJUnit {
-            includeCategories 'org.polypheny.db.docker.DockerManagerTest'
-        }
-        shouldRunAfter(tasks.named('test'))
-    }
-    dockerTests.dependsOn(testClasses)
-
     String storeName = System.getProperty("store.default") != null ? System.getProperty("store.default") : 'hsqldb'
 
     task integrationTests(type: Test) {
@@ -135,12 +125,12 @@ allprojects {
 
     dependencies {
         ////// PF4J
-        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        compileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
-        annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
+        annotationProcessor group: 'org.pf4j', name: 'pf4j', version: pf4j_version
 
-        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+        testCompileOnly(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
             exclude group: "org.slf4j"
         }
     }

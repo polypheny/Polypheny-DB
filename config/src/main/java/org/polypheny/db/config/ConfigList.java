@@ -158,7 +158,7 @@ public class ConfigList extends Config {
 
 
     private void dockerList( String key, final List<ConfigDocker> list ) {
-        this.template = new ConfigDocker( "localhost", null, null );
+        this.template = new ConfigDocker( "localhost", null );
         this.list = list.stream().map( el -> (ConfigScalar) el ).collect( Collectors.toList() );
         this.defaultList = ImmutableList.copyOf( this.list );
     }

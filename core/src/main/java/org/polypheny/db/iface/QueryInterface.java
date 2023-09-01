@@ -27,6 +27,7 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -120,6 +121,7 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
         this.validateSettings( newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
+        Catalog.getInstance().commit();
     }
 
 

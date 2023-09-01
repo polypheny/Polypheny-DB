@@ -394,19 +394,19 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" ),
 
-    USE_DOCKER_NETWORK(
-            "docker/useDockerNetwork",
-            "If Polypheny should use the container network to communicate with the container.",
-            false,
-            ConfigType.BOOLEAN ),
-
     DOCKER_INSTANCES(
             "runtime/dockerInstances",
             "Configure different docker instances, which can be used to place adapters on.",
-            Collections.singletonList( new ConfigDocker( 0, "localhost", null, null, "localhost" )
-                    .setDockerRunning( true ) ),
+            Collections.EMPTY_LIST,
             ConfigType.DOCKER_LIST,
-            "dockerGroup" ),
+            "dockerHostsGroup" ),
+
+    DOCKER_CONTAINER_REGISTRY(
+            "docker/defaultContainerRegistry",
+            "The default container registry to be used when pull container. Default is Docker Hub.",
+            "docker.io",
+            ConfigType.STRING,
+            "dockerGeneralGroup" ),
 
     FILE_HANDLE_CACHE_SIZE(
             "runtime/fileHandleCacheSize",
@@ -474,6 +474,13 @@ public enum RuntimeConfig {
                     "html-adapter",
                     "pig-adapter" ),
             ConfigType.STRING_LIST
+    ),
+
+    INSTANCE_UUID(
+            "runtime/uuid",
+            "Unique ID of this instance of Polypheny.",
+            "WARNING! YOU SHOULD NOT BE SEEING THIS",
+            ConfigType.STRING
     );
 
 
@@ -544,12 +551,9 @@ public enum RuntimeConfig {
         final WebUiPage dockerPage = new WebUiPage(
                 "dockerPage",
                 "Docker",
-                "Settings for the Docker-based data store deployment." );
+                "Settings and configuration related to Docker" );
 
-        final WebUiGroup dockerGroup = new WebUiGroup( "dockerGroup", dockerPage.getId() );
-        dockerGroup.withTitle( "Docker" );
         configManager.registerWebUiPage( dockerPage );
-        configManager.registerWebUiGroup( dockerGroup );
 
         // Plugin Settings
         final WebUiPage pluginPage = new WebUiPage(

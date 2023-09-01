@@ -31,6 +31,9 @@ dependencies {
     testImplementation project(path: ':dbms')
     testImplementation project(path: ':core')
 
+    // Workaround so org.polypheny.db.docker gets the right protobuf during testing
+    testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
+
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version // MIT
@@ -39,9 +42,6 @@ dependencies {
 }
 
 task generateParser(type: CompileJavaccTask) {
-    /*mainClass = "org.javacc.parser.Main"
-    classpath = configurations.runtimeClasspath
-    args = ['-OUTPUT_DIRECTORY=' + file(project.buildDir.absolutePath + "/generated-sources/org/polypheny/db/cql/parser"), '-STATIC=false', 'src/main/codegen/CqlParser.jj']*/
     getConventionMapping().map("classpath", { configurations.javacc })
     arguments = [static: "false"]
     inputDirectory = file("src/main/codegen")

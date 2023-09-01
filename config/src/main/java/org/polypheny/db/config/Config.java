@@ -46,7 +46,7 @@ public abstract class Config {
     private String description;
 
     /**
-     * Indicated weather applying changes to this configuration element requires a restart of Polypheny-DB.
+     * Indicated whether applying changes to this configuration element requires a restart of Polypheny-DB.
      */
     @Setter
     @Getter

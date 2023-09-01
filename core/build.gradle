@@ -3,6 +3,7 @@
 group "org.polypheny"
 
 apply plugin: "io.freefair.lombok"
+apply plugin: "com.google.protobuf"
 
 configurations {
     //javacc
@@ -16,13 +17,15 @@ configurations {
 
 
 buildscript {
-    /*dependencies {
+    dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: "gradle.plugin.ca.coglinc2", name: "javacc-gradle-plugin", version: javacc_plugin_version
         // Fmpp
         classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
+        // Protobuf
+        classpath group: "com.google.protobuf", name: "protobuf-gradle-plugin", version: protobuf_plugin_version
     }
-    ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)*/
+    ant.taskdef(name: "fmpp", classname: "fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
 
 
@@ -32,8 +35,7 @@ dependencies {
 
     //javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    ////// PF4J
-    implementation(group: 'org.pf4j', name: 'pf4j', version: pf4jVersion) {
+    implementation(group: 'org.pf4j', name: 'pf4j', version: pf4j_version) {
         exclude group: "org.slf4j"
     }
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
@@ -53,15 +55,19 @@ dependencies {
     implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
 
     api(group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) { exclude(module: "guava") } // Apache 2.0
-    api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) //{ exclude(module: "protobuf-java") } // Apache 2.0
+    api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) { exclude(module: "protobuf-java") } // Apache 2.0
 
     implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 
-    // https://github.com/docker-java/docker-java
-    implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
-    implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
+    // For Docker integration
+    implementation group: "org.bouncycastle", name: "bcprov-jdk18on", version: bouncycastle_version // MIT
+    implementation group: "org.bouncycastle", name: "bctls-jdk18on", version: bouncycastle_version // MIT
+    implementation group: "org.bouncycastle", name: "bcpkix-jdk18on", version: bouncycastle_version // MIT
+    implementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
+    implementation group: "com.github.docker-java", name: "docker-java", version: java_docker_version // Apache 2.0
+    implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
 
     // uses config internally...
     implementation(group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version) { // Apache 2.0
@@ -73,15 +79,20 @@ dependencies {
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+}
 
 
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$protobuf_version"
+    }
 }
 
 
 sourceSets {
     main {
         java {
-            srcDirs = ["src/main/java","build/generated-sources"]
+            srcDirs = ["src/main/java", "build/generated-sources", "build/generated/source/proto/main/java"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -113,11 +124,18 @@ compileJava {
     dependsOn("generateJdbcVersionProperties")
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
+    dependsOn("generateProto")
 }
 
 delombok {
     dependsOn(":config:processResources")
     dependsOn(":information:processResources")
+    dependsOn("generateProto")
+}
+
+extractIncludeProto {
+    dependsOn(":config:compileJava")
+    dependsOn(":information:compileJava")
 }
 
 
@@ -146,7 +164,6 @@ javadoc {
 test {
     maxHeapSize = "2g" // Increase heap size (default is 512MB)
     useJUnit {
-        excludeCategories 'org.polypheny.db.docker.DockerManagerTest'
         excludeCategories 'org.polypheny.db.AdapterTestSuite'
     }
 }
