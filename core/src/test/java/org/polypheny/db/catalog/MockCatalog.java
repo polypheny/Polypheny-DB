@@ -348,7 +348,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, boolean cached, boolean hidden ) {
         throw new NotImplementedException();
     }
 

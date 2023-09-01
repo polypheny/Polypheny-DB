@@ -111,15 +111,15 @@ public class EthereumDataSource extends DataSource {
 
     public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
+        this.canCache = true;
         setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
         this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
         this.eventDataRetrieval = Boolean.parseBoolean( settings.get( "EventDataRetrieval" ) );
         String smartContractAddressesStr = settings.get( "SmartContractAddresses" );
-        List<String> smartContractAddresses = Arrays.stream( smartContractAddressesStr.split( "," ) )
+        this.smartContractAddresses = Arrays.stream( smartContractAddressesStr.split( "," ) )
                 .map( String::trim )
                 .collect( Collectors.toList() );
-        this.smartContractAddresses = smartContractAddresses;
         this.etherscanApiKey = settings.get( "EtherscanApiKey" );
         this.fromBlock = new BigInteger( settings.get( "fromBlock" ) );
         this.toBlock = new BigInteger( settings.get( "toBlock" ) );

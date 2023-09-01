@@ -71,6 +71,7 @@ import org.polypheny.db.algebra.metadata.JaninoRelMetadataProvider;
 import org.polypheny.db.algebra.rules.AggregateJoinTransposeRule;
 import org.polypheny.db.algebra.rules.AggregateProjectMergeRule;
 import org.polypheny.db.algebra.rules.AggregateRemoveRule;
+import org.polypheny.db.algebra.rules.CacheSwitcherRule;
 import org.polypheny.db.algebra.rules.CalcRemoveRule;
 import org.polypheny.db.algebra.rules.DocumentToEnumerableRule;
 import org.polypheny.db.algebra.rules.FilterJoinRule;
@@ -850,6 +851,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         //addRule( ProjectRemoveRule.INSTANCE );
         addRule( AggregateJoinTransposeRule.INSTANCE );
         addRule( AggregateProjectMergeRule.INSTANCE );
+        addRule( CacheSwitcherRule.INSTANCE );
         addRule( CalcRemoveRule.INSTANCE );
         addRule( SortRemoveRule.INSTANCE );
 

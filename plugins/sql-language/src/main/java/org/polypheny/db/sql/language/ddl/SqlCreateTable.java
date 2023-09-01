@@ -248,7 +248,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                     ifNotExists,
                     stores,
                     placementType,
-                    statement );
+                    false, statement, false );
 
             if ( partitionType != null ) {
                 DdlManager.getInstance().addPartitioning(

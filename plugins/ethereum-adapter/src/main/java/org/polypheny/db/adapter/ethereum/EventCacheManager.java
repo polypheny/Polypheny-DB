@@ -66,9 +66,6 @@ import org.web3j.abi.datatypes.Bytes;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.Int;
 import org.web3j.abi.datatypes.Uint;
-import org.web3j.abi.datatypes.generated.Bytes32;
-import org.web3j.abi.datatypes.generated.Uint256;
-import org.web3j.utils.Numeric;
 
 
 @Slf4j
@@ -135,7 +132,7 @@ public class EventCacheManager implements Runnable {
             // For each table, a new table is created with their constraint (e.g., a primary key).
             for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
                 ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( "log_index", "transaction_index", "block_number" ) );
-                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, transaction.createStatement() );
+                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, false, transaction.createStatement(), false );
             }
 
             try {
@@ -170,7 +167,7 @@ public class EventCacheManager implements Runnable {
 
         // TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
         AlgOptSchema algOptSchema = transaction.getCatalogReader();
-        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( EthereumPlugin.HIDDEN_PREFIX + "__" + targetAdapterId + "__" + tableName ) );
+        AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( Catalog.HIDDEN_PREFIX + tableName ) );
 
         AlgDataType rowType = table.getTable().getRowType( transaction.getTypeFactory() );
         builder.push( LogicalValues.createOneRow( builder.getCluster() ) );

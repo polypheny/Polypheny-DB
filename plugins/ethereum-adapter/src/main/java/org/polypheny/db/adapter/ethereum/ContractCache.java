@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.ethereum.CachingStatus.ProcessingState;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
@@ -75,7 +76,7 @@ public class ContractCache {
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                table -> EthereumPlugin.HIDDEN_PREFIX + "__" + targetAdapterId + "__" + table.getKey(), // we prepend this to hide the table to the user
+                                table -> Catalog.HIDDEN_PREFIX + table.getKey(), // we prepend this to hide the table to the user
                                 table -> table.getValue()
                                         .stream()
                                         .map( ExportedColumn::toFieldInformation )

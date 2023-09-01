@@ -258,7 +258,7 @@ public class DdlManagerImpl extends DdlManager {
                     tableName += i;
                 }
 
-                long tableId = catalog.addTable( tableName, 1, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly() );
+                long tableId = catalog.addTable( tableName, 1, 1, EntityType.SOURCE, !((DataSource) adapter).isDataReadOnly(), adapter.canCache, false );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
                 String physicalSchemaName = null;
@@ -2172,7 +2172,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createTable( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException {
+    public void createTable( long schemaId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, boolean cached, Statement statement, boolean hidden ) throws EntityAlreadyExistsException {
         name = adjustNameIfNeeded( name, schemaId );
 
         try {
@@ -2210,7 +2210,9 @@ public class DdlManagerImpl extends DdlManager {
                     schemaId,
                     statement.getPrepareContext().getCurrentUserId(),
                     EntityType.ENTITY,
-                    true );
+                    true,
+                    cached,
+                    false );
 
             // Initially create DataPlacement containers on every store the table should be placed.
             stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), tableId ) );

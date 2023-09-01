@@ -65,7 +65,7 @@ public class CatalogView extends CatalogTable {
             ImmutableMap<Long, ImmutableList<Long>> underlyingTables,
             String language ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, entityType, primaryKey, dataPlacements,
-                modifiable, partitionProperty, connectedViews );
+                modifiable, partitionProperty, connectedViews, false, false );
         this.query = query;
         this.algCollation = algCollation;
         this.underlyingTables = underlyingTables;

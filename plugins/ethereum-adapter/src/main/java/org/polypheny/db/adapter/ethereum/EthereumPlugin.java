@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.ethereum;
 
 
 import com.google.common.collect.ImmutableMap;
-import org.polypheny.db.webui.HttpServer;
 import java.util.Map;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -30,8 +29,6 @@ public class EthereumPlugin extends Plugin {
 
 
     public static final String ADAPTER_NAME = "ETHEREUM";
-
-    public static final String HIDDEN_PREFIX = "__hidden__";
 
 
     /**
