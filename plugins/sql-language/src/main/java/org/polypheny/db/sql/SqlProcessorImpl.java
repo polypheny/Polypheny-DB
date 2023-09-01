@@ -65,6 +65,7 @@ import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
@@ -243,6 +244,11 @@ public class SqlProcessorImpl extends Processor {
     @Override
     public AlgDataType getParameterRowType( Node sqlNode ) {
         return validator.getParameterRowType( sqlNode );
+    }
+
+
+    public List<String> splitStatements( String statements ) {
+        return SqlUtil.splitStatements( statements );
     }
 
 

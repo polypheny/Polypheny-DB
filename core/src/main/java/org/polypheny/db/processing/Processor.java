@@ -89,4 +89,8 @@ public abstract class Processor {
     public abstract AlgDataType getParameterRowType( Node left );
 
 
+    public List<String> splitStatements( String statements ) {
+        throw new RuntimeException( "splitStatements not implemented" );
+    }
+
 }

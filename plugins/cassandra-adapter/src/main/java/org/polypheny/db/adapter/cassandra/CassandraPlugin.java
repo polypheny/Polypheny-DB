@@ -38,6 +38,7 @@ import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,10 +63,10 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.docker.DockerManager.Container;
-import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Schema;
@@ -94,8 +95,7 @@ public class CassandraPlugin extends Plugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
-                "instanceId", "0",
-                "port", "9042"
+                "instanceId", "0"
         );
 
         Adapter.addAdapter( CassandraStore.class, ADAPTER_NAME, settings );
@@ -114,7 +114,7 @@ public class CassandraPlugin extends Plugin {
             description = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.",
             usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE, DeployMode.DOCKER })
     @AdapterSettingString(name = "host", defaultValue = "localhost", position = 0, appliesTo = DeploySetting.REMOTE)
-    @AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1, appliesTo = { DeploySetting.REMOTE, DeploySetting.DOCKER })
+    @AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "password", defaultValue = "cassandra", position = 4, appliesTo = DeploySetting.REMOTE)
@@ -123,7 +123,7 @@ public class CassandraPlugin extends Plugin {
 
         // Running embedded
         private final Cassandra embeddedCassandra;
-        private Container container;
+        private DockerContainer container;
 
         // Connection information
         private String dbHostname;
@@ -147,8 +147,8 @@ public class CassandraPlugin extends Plugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
-        public CassandraStore( int storeId, String uniqueName, Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true );
+        public CassandraStore( int storeId, String uniqueName, Map<String, String> adapterSettings ) {
+            super( storeId, uniqueName, adapterSettings, true );
 
             // Parse settings
 
@@ -180,20 +180,37 @@ public class CassandraPlugin extends Plugin {
                 this.dbUsername = "cassandra";
                 this.dbPassword = "cassandra";
 
-                DockerManager.Container container = new ContainerBuilder( getAdapterId(), "polypheny/cassandra", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
-                        .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
-                        // cassandra can take quite some time to start
-                        .withReadyTest( this::testDockerConnection, 80000 )
-                        //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
-                        .build();
+                if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+                    int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                    try {
+                        this.container = instance.newBuilder( "polypheny/cassandra:latest", getUniqueName() )
+                                .createAndStart();
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
 
-                this.container = container;
+                    // cassandra can take quite some time to start
+                    if ( !container.waitTillStarted( this::testDockerConnection, 80000 ) ) {
+                        container.destroy();
+                        throw new RuntimeException( "Failed to start cassandra container" );
+                    }
+
+                    this.deploymentId = this.container.getContainerId();
+                    settings.put( "deploymentId", deploymentId );
+                    updateSettings( settings );
+                } else {
+                    deploymentId = settings.get( "deploymentId" );
+                    DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
+                    container = DockerContainer.getContainerByUUID( deploymentId )
+                            .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+                    if ( !testDockerConnection() ) {
+                        throw new RuntimeException( "Could not connect to container" );
+                    }
+                }
 
                 this.dbKeyspace = "cassandra";
-                this.dbPort = Integer.parseInt( settings.get( "port" ) );
-
-                DockerManager.getInstance().initialize( container ).start();
-
                 this.embeddedCassandra = null;
             } else if ( deployMode == DeployMode.REMOTE ) {
                 this.embeddedCassandra = null;
@@ -541,7 +558,7 @@ public class CassandraPlugin extends Plugin {
             if ( deployMode == DeployMode.EMBEDDED ) {
                 this.embeddedCassandra.stop();
             } else if ( deployMode == DeployMode.DOCKER ) {
-                DockerInstance.getInstance().destroyAll( getAdapterId() );
+                DockerContainer.getContainerByUUID( deploymentId ).get().destroy();
             }
 
             log.info( "Shut down Cassandra store: {}", this.getUniqueName() );
@@ -561,11 +578,10 @@ public class CassandraPlugin extends Plugin {
             if ( container == null ) {
                 return false;
             }
-            container.updateIpAddress();
-            this.dbHostname = container.getIpAddress();
-            if ( this.dbHostname == null ) {
-                return false;
-            }
+
+            HostAndPort hp = container.connectToContainer( 9042 );
+            this.dbHostname = hp.getHost();
+            this.dbPort = hp.getPort();
 
             try {
                 mySession = getSession();

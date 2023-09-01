@@ -394,7 +394,8 @@ public class OperatorsTest {
                 );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT ID, NumberData%ID FROM TestTableB" ),
-                        expectedResult4
+                        expectedResult4,
+                        true
                 );
             }
         }

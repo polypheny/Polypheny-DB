@@ -18,12 +18,16 @@ package org.polypheny.db.sql;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.util.SqlBuilder;
 import org.polypheny.db.sql.language.util.SqlString;
@@ -52,7 +56,7 @@ public class SqlUtilTest {
         assertEquals( PolyphenyDbSqlDialect.DEFAULT, sqlString.getDialect() );
         assertEquals( buf.getSql(), sqlString.getSql() );
 
-        assertTrue( buf.getSql().length() > 0 );
+        assertFalse( buf.getSql().isEmpty() );
         assertEquals( buf.getSqlAndClear(), sqlString.getSql() );
         assertEquals( 0, buf.length() );
 
@@ -107,6 +111,306 @@ public class SqlUtilTest {
                         + "> seem more interesting.\n"
                         + "5d6\n"
                         + "< Yeah yeah yeah.\n" ) );
+    }
+
+
+    @Test
+    public void noQuotesSingleStatement() {
+        String statement = "SELECT * FROM emp";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void doubleQuotesSingleStatement() {
+        String statement = "SELECT * FROM \"emp\"";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void singleQuotesSingleStatement() {
+        String statement = "SELECT 'Hello World' FROM emp";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void doubleQuotesEscapeSingleStatement() {
+        String statement = "SELECT 'Hello World' FROM \"em\"\"p\"";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void doubleQuotesEscapeSingleStatement2() {
+        String statement = "SELECT 'Hello World' FROM \"emp\"\"\"";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void doubleQuotesEscapeSingleStatement3() {
+        String statement = "SELECT 'Hello World' FROM \"\"\"emp\"";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void singleQuotesEscapeSingleStatement() {
+        String statement = "SELECT 'O''Reilly' FROM emp";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void singleQuotesEscapeSingleStatement2() {
+        String statement = "SELECT 'Reilly''' FROM emp";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void singleQuotesEscapeSingleStatement3() {
+        String statement = "SELECT '''OReilly' FROM emp";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( statement, statements.get( 0 ) );
+    }
+
+
+    @Rule
+    public ExpectedException unterminatedQuoteRuntimeException = ExpectedException.none();
+
+
+    @Test
+    public void unterminatedQuote() {
+        String statement = "SELECT '";
+        unterminatedQuoteRuntimeException.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void lineComment() {
+        String statement = "-- Only a comment";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 0, statements.size() );
+    }
+
+
+    @Test
+    public void lineComment2() {
+        String statement = "SELECT * FROM emp--comment ";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT * FROM emp", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void lineComment3() {
+        String statement = "SELECT 1-2-3 FROM emp ";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT 1-2-3 FROM emp", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void blockComment() {
+        String statement = "/* Only a comment */";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 0, statements.size() );
+    }
+
+
+    @Test
+    public void blockComment2() {
+        String statement = "/**/";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 0, statements.size() );
+    }
+
+
+    @Test
+    public void blockComment3() {
+        String statement = "SELECT 86400 /* 24 * 60 * 60 */";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT 86400", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void commentInSingleQuotes() {
+        String statement = "SELECT '/* Hello World*/'";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT '/* Hello World*/'", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void commentInSingleQuotes2() {
+        String statement = "SELECT '-- Hello World'";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT '-- Hello World'", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void brackets() {
+        String statement = "SELECT (1 + 1) * 2";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT (1 + 1) * 2", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void brackets2() {
+        String statement = "SELECT timeseries[0]";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT timeseries[0]", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void brackets3() {
+        String statement = "SELECT {1, 2, 3}";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT {1, 2, 3}", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void mixedBrackets() {
+        String statement = "SELECT {({1, 2, 3}[0] + timeseries[(3 * t)])}";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT {({1, 2, 3}[0] + timeseries[(3 * t)])}", statements.get( 0 ) );
+    }
+
+
+    @Rule
+    public ExpectedException unterminatedComment = ExpectedException.none();
+
+
+    @Test
+    public void unterminatedComment() {
+        String statement = "SELECT /*/";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void unterminatedComment2() {
+        String statement = "SELECT /**";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Rule
+    public ExpectedException unbalancedBrackets = ExpectedException.none();
+
+
+    @Test
+    public void unbalancedBrackets() {
+        String statement = "SELECT (";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void unbalancedBrackets2() {
+        String statement = "SELECT ([)";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void unbalancedBrackets3() {
+        String statement = "SELECT (3 * 4;)";
+        unterminatedComment.expect( RuntimeException.class );
+        SqlUtil.splitStatements( statement );
+    }
+
+
+    @Test
+    public void multipleStatements() {
+        String statement = "SELECT * FROM emp;"
+                + "SELECT * FROM emp;";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 2, statements.size() );
+        assertEquals( "SELECT * FROM emp", statements.get( 0 ) );
+        assertEquals( "SELECT * FROM emp", statements.get( 1 ) );
+
+    }
+
+
+    @Test
+    public void multipleStatements2() {
+        String statement = "SEL/**/ECT \"id/*\"\"\", 'O''Reily--' FROM emp; -- Comment\n\n\n"
+                + "COMMIT;\n"
+                + "/**/SEL--\n"
+                + "ECT \"\", username FROM emp--";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 3, statements.size() );
+        assertEquals( "SEL ECT \"id/*\"\"\", 'O''Reily--' FROM emp", statements.get( 0 ) );
+        assertEquals( "COMMIT", statements.get( 1 ) );
+        assertEquals( "SEL ECT \"\", username FROM emp", statements.get( 2 ) );
+    }
+
+
+    // These are for full branch coverage
+    @Test
+    public void invalidSql() {
+        String statement = "SELECT 1 /";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT 1 /", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void invalidSql2() {
+        String statement = "SELECT 1 / ";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT 1 /", statements.get( 0 ) );
+    }
+
+
+    @Test
+    public void invalidSql3() {
+        String statement = "SELECT 1 -";
+        List<String> statements = SqlUtil.splitStatements( statement );
+        assertEquals( 1, statements.size() );
+        assertEquals( "SELECT 1 -", statements.get( 0 ) );
     }
 
 }

@@ -15,6 +15,7 @@ dependencies {
     implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
 
     ////// APACHE CALCITE AVATICA
+    implementation group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version
     implementation(group: "org.polypheny.avatica", name: "avatica-server", version: avatica_server_version) {
         exclude(group: "org.slf4j")
     }  // Apache 2.0
@@ -86,6 +87,7 @@ java {
 licensee {
     allow('Apache-2.0')
     allow('BSD-3-Clause')
+    allow('MIT')
 
     // Category B
     allow('EPL-1.0')
@@ -94,4 +96,3 @@ licensee {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
 }
-
