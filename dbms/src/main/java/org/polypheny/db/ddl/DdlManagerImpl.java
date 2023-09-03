@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -194,9 +195,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config ) {
+    public void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
         uniqueName = uniqueName.toLowerCase();
-        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, config );
+        Adapter<?> adapter = AdapterManager.getInstance().addAdapter( adapterName, uniqueName, adapterType, mode, config );
         //catalog.addStoreSnapshot( adapter.storeCatalog );
         if ( adapter instanceof DataSource<?> ) {
             handleSource( (DataSource<?>) adapter );

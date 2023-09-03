@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -36,8 +37,9 @@ public class SourceModel extends AdapterModel {
             AdapterType type,
             List<AdapterSettingValueModel> settings,
             boolean persistent,
+            DeployMode mode,
             boolean readOnly ) {
-        super( id, name, adapterName, type, settings, persistent );
+        super( id, name, adapterName, type, settings, mode, persistent );
         this.readOnly = readOnly;
     }
 

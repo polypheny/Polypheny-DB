@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -37,6 +38,7 @@ public abstract class AdapterModel extends IdEntity {
     public AdapterType type;
     public List<AdapterSettingValueModel> settings;
     public boolean persistent;
+    public DeployMode mode;
 
 
     public AdapterModel(
@@ -45,12 +47,14 @@ public abstract class AdapterModel extends IdEntity {
             String adapterName,
             AdapterType type,
             List<AdapterSettingValueModel> settings,
+            DeployMode mode,
             boolean persistent ) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
         this.settings = settings;
         this.persistent = persistent;
+        this.mode = mode;
     }
 
 
@@ -64,6 +68,7 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.adapterName,
                         adapter.type,
                         settings,
+                        adapter.mode,
                         true );
             case SOURCE:
                 return new SourceModel(
@@ -73,6 +78,7 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.type,
                         settings,
                         true,
+                        adapter.mode,
                         false );
             default:
                 throw new GenericRuntimeException( "Type of adapter is not known" );

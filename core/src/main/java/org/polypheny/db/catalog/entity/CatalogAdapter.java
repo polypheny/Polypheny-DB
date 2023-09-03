@@ -26,6 +26,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 
@@ -46,9 +48,10 @@ public class CatalogAdapter implements CatalogObject {
     public AdapterType type;
     @Serialize
     public ImmutableMap<String, String> settings;
-
     @Serialize
     public String adapterTypeName;
+    @Serialize
+    public DeployMode mode;
 
 
     public enum AdapterType {STORE, SOURCE}
@@ -59,6 +62,7 @@ public class CatalogAdapter implements CatalogObject {
             @Deserialize("uniqueName") @NonNull final String uniqueName,
             @Deserialize("adapterName") @NonNull final String adapterName,
             @Deserialize("type") @NonNull final AdapterType adapterType,
+            @Deserialize("mode") @NotNull final DeployMode mode,
             @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
@@ -66,6 +70,7 @@ public class CatalogAdapter implements CatalogObject {
         this.type = adapterType;
         this.settings = ImmutableMap.copyOf( settings );
         this.adapterTypeName = getAdapterName();
+        this.mode = mode;
     }
 
 
@@ -74,7 +79,6 @@ public class CatalogAdapter implements CatalogObject {
         AdapterProperties annotations = AdapterTemplate.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
         return annotations.name();
     }
-
 
 
     // Used for creating ResultSets

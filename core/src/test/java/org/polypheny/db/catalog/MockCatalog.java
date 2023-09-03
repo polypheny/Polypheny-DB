@@ -20,6 +20,7 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -218,7 +219,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
+    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         throw new NotImplementedException();
     }
 

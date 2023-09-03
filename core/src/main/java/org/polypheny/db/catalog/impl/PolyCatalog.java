@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -363,9 +364,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
+    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
-        adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, settings ) );
+        adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, mode, settings ) );
         return id;
     }
 

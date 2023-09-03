@@ -185,7 +185,7 @@ public class AdapterManager {
     }
 
 
-    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
+    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new GenericRuntimeException( "There is already an adapter with this unique name" );
@@ -196,7 +196,7 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings );
+        long adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
             adapterByName.put( adapter.getUniqueName(), adapter );

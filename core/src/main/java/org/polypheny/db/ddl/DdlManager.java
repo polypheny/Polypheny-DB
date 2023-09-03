@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -100,8 +101,9 @@ public abstract class DdlManager {
      * @param adapterName name of adapter, which is used to create the adapter
      * @param adapterType the specific {@link AdapterType} for the adapter to create
      * @param config configuration for the adapter
+     * @param mode
      */
-    public abstract void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config );
+    public abstract void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
 
     /**
      * Drop an adapter

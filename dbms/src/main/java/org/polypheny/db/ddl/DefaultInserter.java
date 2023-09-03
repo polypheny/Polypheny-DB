@@ -17,6 +17,7 @@
 package org.polypheny.db.ddl;
 
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -64,9 +65,9 @@ public class DefaultInserter {
         catalog.updateSnapshot();
 
         // Deploy default storeId
-        ddlManager.addAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, Catalog.defaultStore.getDefaultSettings() );
+        ddlManager.addAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, Catalog.defaultStore.getDefaultSettings(), DeployMode.EMBEDDED );
         // Deploy default CSV view
-        ddlManager.addAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, Catalog.defaultSource.getDefaultSettings() );
+        ddlManager.addAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, Catalog.defaultSource.getDefaultSettings(), DeployMode.REMOTE );
     }
 
 

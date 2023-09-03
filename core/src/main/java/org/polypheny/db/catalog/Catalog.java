@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
@@ -198,9 +199,10 @@ public abstract class Catalog implements ExtensionPoint {
      * @param clazz The class name of the adapter
      * @param type The type of adapter
      * @param settings The configuration of the adapter
+     * @param mode
      * @return The id of the newly added adapter
      */
-    public abstract long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings );
+    public abstract long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
 
     /**
      * Update settings of an adapter

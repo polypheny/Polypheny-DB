@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.ddl.DdlManager;
@@ -99,7 +100,8 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
                 AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),
-                configMap );
+                configMap,
+                configMap.containsKey( "mode" ) ? DeployMode.valueOf( configMap.get( "mode" ).toUpperCase() ) : DeployMode.EMBEDDED );
     }
 
 
