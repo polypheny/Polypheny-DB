@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentTransformer;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalGraph;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
@@ -259,6 +260,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentScan scan ) {
         hashBasis.add( "LogicalDocumentScan#" + scan.getCollection().getTable().getTableId() );
         return super.visit( scan );
+    }
+
+    public AlgNode visit( LogicalDocumentValues values ) {
+        hashBasis.add( "LogicalDocumentValues" );
+        return super.visit( values );
     }
 
 

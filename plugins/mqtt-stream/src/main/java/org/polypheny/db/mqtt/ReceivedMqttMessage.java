@@ -16,10 +16,11 @@
 
 package org.polypheny.db.mqtt;
 
+import javax.management.Query;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
-
+//TODO: javadoc
 public class ReceivedMqttMessage {
 
     private final MqttMessage msg;
@@ -35,14 +36,19 @@ public class ReceivedMqttMessage {
     private final long databaseId;
     @Getter
     private final int userId;
+    /**
+     * if MqttStreamServer.collectionPerTopic = TRUE, then collectionName is name of the topic or (if the subscribed topic
+     * has wildcards) the wildcardTopic
+     * if MqttStreamServer.collectionPerTopic = FALSE, then collectionName is the name of the common collection
+     */
     @Getter
-    private final String collectionName;    // if MqttStreamServer.collectionPerTopic = TRUE, then collectionName is name of the topic
-                                            // if MqttStreamServer.collectionPerTopic = FALSE, then collectionName is the name of the common collection
+    private final String collectionName;
 
     public ReceivedMqttMessage( MqttMessage msg, String namespaceName, long namespaceId, NamespaceType namespaceType, String uniqueNameOfInterface, long databaseId, int userId, String collectionName ) {
         this.msg = msg;
         this.namespaceName = namespaceName;
         this.namespaceType = namespaceType;
+        //TODO: schauen, wo namespaceId gebraucht wird.
         this.namespaceId = namespaceId;
         this.uniqueNameOfInterface = uniqueNameOfInterface;
         this.databaseId = databaseId;

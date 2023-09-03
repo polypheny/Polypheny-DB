@@ -328,6 +328,57 @@ public class MqlToAlgConverter {
     }
 
 
+    /**
+     * Converts the initial MongoQl by stepping through it iteratively
+     * but queries on a given input instead of a given collection
+     * @param query the query in MqlNode format
+     * @param input the value that should be queried
+     * @return the {@link AlgNode} format of the initial query
+     */
+    public AlgRoot convert( MqlCollectionStatement query, AlgNode input ) {
+        Type kind = query.getMqlKind();
+        this.usesDocumentModel = true;
+
+        AlgDataType rowType = input.getRowType();
+
+        this.builder = new RexBuilder( cluster.getTypeFactory() );
+
+        AlgRoot root;
+
+        switch ( kind ) {
+            case FIND:
+                AlgNode find = convertFind( (MqlFind) query, rowType, input );
+                root = AlgRoot.of( find, find.getRowType(), Kind.SELECT );
+                break;
+            case COUNT:
+                AlgNode count = convertCount( (MqlCount) query, rowType, input );
+                root = AlgRoot.of( count, count.getRowType(), Kind.SELECT );
+                break;
+            case AGGREGATE:
+                AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, input );
+                root = AlgRoot.of( aggregate, Kind.SELECT );
+                break;
+            /// dmls
+            case INSERT:
+                root = AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );
+                break;
+            case DELETE:
+            case FIND_DELETE:
+                root = AlgRoot.of( convertDelete( (MqlDelete) query, entity, input ), Kind.DELETE );
+                break;
+            case UPDATE:
+                root = AlgRoot.of( convertUpdate( (MqlUpdate) query, entity, input ), Kind.UPDATE );
+                break;
+            default:
+                throw new IllegalStateException( "Unexpected value: " + kind );
+        }
+        /*if ( usesDocumentModel ) {
+            root.usesDocumentModel = true;
+        }*/
+        return root;
+    }
+
+
     private AlgOptTable getEntity( MqlCollectionStatement query, String dbSchemaName ) {
         List<String> names = ImmutableList.of( dbSchemaName, query.getCollection() );
 

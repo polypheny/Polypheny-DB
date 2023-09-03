@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModify;
 import org.polypheny.db.algebra.logical.relational.LogicalScan;
@@ -172,6 +173,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             builder.push( handleDocumentScan( (DocumentScan) alg, statement, builder, null ).build() );
             return alg;
         } else if ( alg.getDocType() == DocType.VALUES ) {
+            builder.push( handleDocuments( (LogicalDocumentValues) alg, builder ).build() );
             return alg;
         }
         throw new UnsupportedOperationException();

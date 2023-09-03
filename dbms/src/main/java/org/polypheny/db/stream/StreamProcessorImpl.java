@@ -25,10 +25,15 @@ public class StreamProcessorImpl implements StreamProcessor {
         this.stream = stream;
     }
 
-
     @Override
     public String getStream() {
         return stream;
+    }
+
+
+    @Override
+    public boolean validateContent( String stream ) {
+        return false;
     }
 
 }
