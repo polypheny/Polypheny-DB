@@ -17,12 +17,12 @@
 package org.polypheny.db.webui.models.catalog;
 
 
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -35,7 +35,7 @@ public abstract class AdapterModel extends IdEntity {
 
     public String adapterName;
     public AdapterType type;
-    public Map<String, AbstractAdapterSetting> settings;
+    public List<AdapterSettingValueModel> settings;
     public boolean persistent;
 
 
@@ -44,7 +44,7 @@ public abstract class AdapterModel extends IdEntity {
             @Nullable String name,
             String adapterName,
             AdapterType type,
-            Map<String, AbstractAdapterSetting> settings,
+            List<AdapterSettingValueModel> settings,
             boolean persistent ) {
         super( id, name );
         this.adapterName = adapterName;
@@ -55,6 +55,7 @@ public abstract class AdapterModel extends IdEntity {
 
 
     public static AdapterModel from( CatalogAdapter adapter ) {
+        List<AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().map( s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ).collect( Collectors.toList() );
         switch ( adapter.type ) {
             case STORE:
                 return new StoreModel(
@@ -62,7 +63,7 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.uniqueName,
                         adapter.adapterName,
                         adapter.type,
-                        Map.of(),
+                        settings,
                         true );
             case SOURCE:
                 return new SourceModel(
@@ -70,12 +71,26 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.uniqueName,
                         adapter.adapterName,
                         adapter.type,
-                        Map.of(),
+                        settings,
                         true,
                         false );
             default:
                 throw new GenericRuntimeException( "Type of adapter is not known" );
         }
+    }
+
+
+    @Value
+    public static class AdapterSettingValueModel {
+
+        String name;
+        String value;
+
+
+        public static AdapterSettingValueModel from( String name, String value ) {
+            return new AdapterSettingValueModel( name, value );
+        }
+
     }
 
 }

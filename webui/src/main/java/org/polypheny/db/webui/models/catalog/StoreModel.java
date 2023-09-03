@@ -16,11 +16,10 @@
 
 package org.polypheny.db.webui.models.catalog;
 
-import java.util.Map;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -33,7 +32,7 @@ public class StoreModel extends AdapterModel {
             @Nullable String name,
             String adapterName,
             AdapterType type,
-            Map<String, AbstractAdapterSetting> settings,
+            List<AdapterSettingValueModel> settings,
             boolean persistent ) {
         super( id, name, adapterName, type, settings, persistent );
     }

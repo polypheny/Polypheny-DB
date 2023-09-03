@@ -48,7 +48,7 @@ public @interface AdapterSettingList {
 
     int position() default 100;
 
-    DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+    DeploySetting[] appliesTo() default DeploySetting.ALL;
 
     String subOf() default "";
 

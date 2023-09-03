@@ -190,6 +190,7 @@ import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
+import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
@@ -2249,15 +2250,21 @@ public class Crud implements InformationObserver {
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
-        if ( a.settings.containsKey( "method" ) ) {
-            method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
+        if ( a.settings.stream().anyMatch( s -> s.getName().equalsIgnoreCase( "method" ) ) ) {
+            method = ConnectionMethod.valueOf( a.settings.stream().filter( s -> s.getName().equalsIgnoreCase( "method" ) ).findFirst().orElseThrow().getValue().toUpperCase() );
         }
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( a.id );
+        Map<String, AbstractAdapterSetting> allSettings = adapter.getAvailableSettings( adapter.getClass() ).stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-        for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
-            if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
-                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
+        for ( AdapterSettingValueModel entry : a.settings ) {
+            AbstractAdapterSetting set = allSettings.get( entry.getName() );
+            if ( set == null ) {
+                continue;
+            }
+            if ( set instanceof AbstractAdapterSettingDirectory ) {
+                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) set);
                 if ( method == ConnectionMethod.LINK ) {
-                    Exception e = handleLinkFiles( ctx, a, setting, a.settings );
+                    Exception e = handleLinkFiles( ctx, a, setting, allSettings );
                     if ( e != null ) {
                         ctx.json( RelationalResult.builder().exception( e ).build() );
                         return;
@@ -2265,10 +2272,10 @@ public class Crud implements InformationObserver {
                 } else {
                     handleUploadFiles( inputStreams, a, setting );
                 }
-                settings.put( entry.getKey(), entry.getValue().getValue() );
+                settings.put( set.name, entry.getValue() );
 
             } else {
-                settings.put( entry.getKey(), entry.getValue().getValue() );
+                settings.put( set.name, entry.getValue() );
             }
         }
 

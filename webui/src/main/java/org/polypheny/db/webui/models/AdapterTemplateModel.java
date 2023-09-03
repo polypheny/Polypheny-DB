@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSetting.AdapterSettingType;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
@@ -35,22 +36,30 @@ public class AdapterTemplateModel {
     public AdapterType adapterType;
     public List<AdapterSettingsModel> defaultSettings;
     public String description;
+    public List<DeployMode> modes;
 
 
     public AdapterTemplateModel(
             @NotNull String adapterName,
             @NotNull AdapterType adapterType,
             @NotNull List<AdapterSettingsModel> defaultSettings,
-            @NotNull String description ) {
+            @NotNull String description,
+            @NotNull List<DeployMode> modes ) {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
         this.defaultSettings = defaultSettings;
         this.description = description;
+        this.modes = modes;
     }
 
 
     public static AdapterTemplateModel from( AdapterInformation template ) {
-        return new AdapterTemplateModel( template.name, template.type, template.settings.stream().map( AdapterSettingsModel::from ).collect( Collectors.toList() ), template.description );
+        return new AdapterTemplateModel(
+                template.name,
+                template.type,
+                template.settings.stream().map( AdapterSettingsModel::from ).collect( Collectors.toList() ),
+                template.description,
+                template.modes );
     }
 
 

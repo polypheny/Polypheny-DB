@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
@@ -83,10 +84,10 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
         this.storeCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
-            throw new RuntimeException( "The used adapter does not annotate its properties correctly." );
+            throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
         if ( !settings.containsKey( "mode" ) ) {
-            throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
+            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
         this.deployMode = DeployMode.fromString( settings.get( "mode" ) );

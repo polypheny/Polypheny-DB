@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
@@ -107,6 +108,16 @@ public abstract class AbstractAdapterSetting {
                 Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> settings.add( AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
             }
         }
+        settings.add( new AbstractAdapterSettingList(
+                "mode",
+                false,
+                null,
+                true,
+                false,
+                Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ),
+                List.of( DeploySetting.ALL ),
+                properties.usedModes()[0].getName(),
+                0 ) );
 
         return settings;
     }

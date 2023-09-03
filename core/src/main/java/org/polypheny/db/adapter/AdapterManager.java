@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
@@ -176,7 +177,7 @@ public class AdapterManager {
                 // Merge annotated AdapterSettings into settings
                 List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
 
-                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings ) );
+                result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
             }
         }
 
@@ -187,10 +188,10 @@ public class AdapterManager {
     public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
-            throw new RuntimeException( "There is already an adapter with this unique name" );
+            throw new GenericRuntimeException( "There is already an adapter with this unique name" );
         }
         if ( !settings.containsKey( "mode" ) ) {
-            throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
+            throw new GenericRuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
@@ -204,7 +205,7 @@ public class AdapterManager {
 
         } catch ( Exception e ) {
             Catalog.getInstance().deleteAdapter( adapterId );
-            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
+            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
         }
     }
 
@@ -260,12 +261,15 @@ public class AdapterManager {
 
 
     @AllArgsConstructor
+    @Value
     public static class AdapterInformation {
 
-        public final String name;
-        public final String description;
-        public final AdapterType type;
-        public final List<AbstractAdapterSetting> settings;
+        public String name;
+        public String description;
+        public AdapterType type;
+        public List<AbstractAdapterSetting> settings;
+
+        public List<DeployMode> modes;
 
 
         public static JsonSerializer<AdapterInformation> getSerializer() {
