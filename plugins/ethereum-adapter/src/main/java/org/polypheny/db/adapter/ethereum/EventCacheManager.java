@@ -131,7 +131,7 @@ public class EventCacheManager implements Runnable {
             // For each table, a new table is created with their constraint (e.g., a primary key).
             for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
                 ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( "log_index", "transaction_index", "block_number" ) );
-                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, false, transaction.createStatement(), false );
+                DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, false, transaction.createStatement(), true );
             }
 
             try {

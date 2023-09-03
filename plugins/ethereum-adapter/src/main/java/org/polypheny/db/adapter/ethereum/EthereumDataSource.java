@@ -111,7 +111,6 @@ public class EthereumDataSource extends DataSource {
 
     public EthereumDataSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-        this.canCache = true;
         setClientURL( settings.get( "ClientUrl" ) );
         this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
         this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
@@ -126,6 +125,7 @@ public class EthereumDataSource extends DataSource {
         this.batchSizeInBlocks = Integer.parseInt( settings.get( "batchSizeInBlocks" ) );
         this.eventDataMap = new HashMap<>();
         this.caching = Boolean.parseBoolean( settings.get( "Caching" ) );
+        this.canCache = this.caching;
         this.cachingAdapterTargetName = settings.get( "CachingAdapterTargetName" );
         this.useManualABI = Boolean.parseBoolean( settings.get( "UseManualABI" ) );
         this.contractABI = settings.get( "ContractABI" );

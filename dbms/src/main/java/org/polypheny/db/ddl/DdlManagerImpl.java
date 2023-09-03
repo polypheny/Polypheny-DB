@@ -2212,7 +2212,7 @@ public class DdlManagerImpl extends DdlManager {
                     EntityType.ENTITY,
                     true,
                     cached,
-                    false );
+                    hidden );
 
             // Initially create DataPlacement containers on every store the table should be placed.
             stores.forEach( store -> catalog.addDataPlacement( store.getAdapterId(), tableId ) );
