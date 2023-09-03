@@ -25,13 +25,6 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogCollection;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -52,7 +45,7 @@ public class StreamCapture {
     }
 
 
-    public void handleContent( ReceivedMqttMessage receivedMqttMessage ) {
+    public void insert( ReceivedMqttMessage receivedMqttMessage ) {
         this.receivedMqttMessage = receivedMqttMessage;
         insertDocument( this.receivedMqttMessage.getCollectionName() );
     }
@@ -66,7 +59,6 @@ public class StreamCapture {
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
         AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
 
-        // we insert document { age: 28, name: "David" } into the collection users
         BsonDocument document = new BsonDocument();
         document.put( "source", new BsonString( this.receivedMqttMessage.getUniqueNameOfInterface() ) );
         document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
@@ -74,7 +66,6 @@ public class StreamCapture {
 
         AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
 
-        // we can then wrap the tree in an AlgRoot and execute it
         AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
         // for inserts and all DML queries only a number is returned
         List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
