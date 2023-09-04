@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.rules;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableAggregate;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
+import org.polypheny.db.adapter.enumerable.EnumerableDocumentValues;
 import org.polypheny.db.adapter.enumerable.EnumerableFilter;
 import org.polypheny.db.adapter.enumerable.EnumerableLimit;
 import org.polypheny.db.adapter.enumerable.EnumerableProject;
@@ -30,6 +31,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentSort;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -42,6 +44,8 @@ public class DocumentToEnumerableRule extends AlgOptRule {
     public static DocumentToEnumerableRule AGGREGATE_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.AGGREGATE, operand( LogicalDocumentAggregate.class, any() ), "DOCUMENT_AGGREGATE_TO_ENUMERABLE" );
     public static DocumentToEnumerableRule FILTER_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.FILTER, operand( LogicalDocumentFilter.class, any() ), "DOCUMENT_FILTER_TO_ENUMERABLE" );
     public static DocumentToEnumerableRule SORT_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.SORT, operand( LogicalDocumentSort.class, any() ), "DOCUMENT_SORT_TO_ENUMERABLE" );
+
+    public static DocumentToEnumerableRule VALUES_TO_ENUMERABLE = new DocumentToEnumerableRule( Type.VALUES, operand( LogicalDocumentValues.class, any() ), "DOCUMENT_VALUES_TO_ENUMERABLE" );
 
     private final Type type;
 
@@ -62,10 +66,23 @@ public class DocumentToEnumerableRule extends AlgOptRule {
             convertAggregate( call );
         } else if ( type == Type.SORT ) {
             convertSort( call );
+        } else if ( type == Type.VALUES ) {
+            convertValues( call );
         } else {
             throw new UnsupportedOperationException( "This document is not supported." );
         }
 
+    }
+
+
+    private void convertValues( AlgOptRuleCall call ) {
+        LogicalDocumentValues values = call.alg( 0 );
+        AlgTraitSet out = values.getTraitSet().replace( EnumerableConvention.INSTANCE );
+
+        EnumerableDocumentValues enumerable = new EnumerableDocumentValues( values.getCluster(), out, values.getRowType(), values.documentTuples );
+        call.transformTo( enumerable );
+
+        // call.transformTo( values.getRelationalEquivalent() );
     }
 
 

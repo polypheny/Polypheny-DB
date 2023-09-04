@@ -32,7 +32,7 @@ public class MqttTest {
     public void algTest() {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
-        String filterQuery = "db.buttontest.find({value:10})";
+        String filterQuery = "{\"value\":11}";
         MqttMessage mqttMessage = new MqttMessage( "10", "button/battery" );
         MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
         streamProcessor.processStream();

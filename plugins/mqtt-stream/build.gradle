@@ -22,6 +22,7 @@ dependencies {
     testImplementation project(path: ":dbms")
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
+    testImplementation project(":plugins:mql-language")
     testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
     testImplementation group: "junit", name: "junit", version: junit_version
 

@@ -17,63 +17,32 @@
 package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
-import com.sun.jdi.BooleanType;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonArray;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.bson.conversions.Bson;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
-import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.languages.mql.Mql.Type;
-import org.polypheny.db.languages.mql.MqlAggregate;
-import org.polypheny.db.languages.mql.MqlCount;
-import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlFind;
-import org.polypheny.db.languages.mql.MqlInsert;
-import org.polypheny.db.languages.mql.MqlNode;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
-import org.polypheny.db.languages.mql.MqlUpdate;
-import org.polypheny.db.languages.mql.parser.MqlParser;
-import org.polypheny.db.languages.mql.parser.MqlParser.MqlParserConfig;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -82,11 +51,9 @@ import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.stream.StreamProcessor;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SourceStringReader;
 
 @Slf4j
 public class MqttStreamProcessor implements StreamProcessor {
@@ -126,7 +93,7 @@ public class MqttStreamProcessor implements StreamProcessor {
 
         // QueryParameters parameters = new MqlQueryParameters( this.filterQuery, Catalog.getInstance().getDatabase( Catalog.defaultDatabaseId ).name,NamespaceType.DOCUMENT );
 
-        MqlFind find = (MqlFind) mqlProcessor.parse("db.collection.find({" + this.filterQuery + "})").get( 0 );
+        MqlFind find = (MqlFind) mqlProcessor.parse( String.format( "db.%s.find(%s)", "collection", this.filterQuery ) ).get( 0 );
 
         final AlgDataType rowType =
                 cluster.getTypeFactory()

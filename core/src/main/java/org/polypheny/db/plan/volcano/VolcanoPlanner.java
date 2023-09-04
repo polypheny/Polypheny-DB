@@ -830,6 +830,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         addRule( DocumentToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( DocumentToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
         addRule( DocumentToEnumerableRule.SORT_TO_ENUMERABLE );
+        addRule( DocumentToEnumerableRule.VALUES_TO_ENUMERABLE );
 
         // Relational
     }
