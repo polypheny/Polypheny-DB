@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
@@ -68,16 +66,13 @@ import org.web3j.abi.datatypes.Int;
 import org.web3j.abi.datatypes.Uint;
 
 
-@Slf4j
 public class EventCacheManager implements Runnable {
 
-    // Singleton instance of EventCacheManager (T)
     private static EventCacheManager INSTANCE = null;
 
     private final TransactionManager transactionManager;
 
-    // concurrent map, which maintains multiple caches, which correspond to the adapter which requested the caches
-    // to allow multiple threads to read and modify; keys: adapterId, value: EventCache (T)
+
     public Map<Integer, ContractCache> caches = new ConcurrentHashMap<>();
 
 
@@ -115,20 +110,13 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    @Nullable
-    public ContractCache getCache( int adapterId ) {
-        return caches.get( adapterId );
-    }
-
-
-    void createTables( int sourceAdapterId, Map<String, List<FieldInformation>> tableInformations, int targetAdapterId ) {
-        log.warn( "start to create tables" );
+    void createTables( Map<String, List<FieldInformation>> tableInformations, int targetAdapterId ) {
         try {
             long namespaceId = Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, "public" ).id; // get the default schema
             Transaction transaction = getTransaction(); // get the transaction
             DataStore store = AdapterManager.getInstance().getStore( targetAdapterId ); // get the target store from the adapater
 
-            // For each table, a new table is created with their constraint (e.g., a primary key).
+            // For each table, a new table is created with their constraints (e.g., primary key).
             for ( Entry<String, List<FieldInformation>> table : tableInformations.entrySet() ) {
                 ConstraintInformation primaryConstraint = new ConstraintInformation( table.getKey() + "primary", ConstraintType.PRIMARY, List.of( "log_index", "transaction_index", "block_number" ) );
                 DdlManager.getInstance().createTable( namespaceId, table.getKey(), table.getValue(), List.of( primaryConstraint ), false, List.of( store ), PlacementType.AUTOMATIC, false, transaction.createStatement(), true );
@@ -154,7 +142,7 @@ public class EventCacheManager implements Runnable {
     }
 
 
-    void writeToStore( String tableName, List<List<Object>> logResults, int targetAdapterId ) {
+    void writeToStore( String tableName, List<List<Object>> logResults ) {
         if ( logResults.isEmpty() ) {
             return;
         }
@@ -163,7 +151,6 @@ public class EventCacheManager implements Runnable {
 
         AlgBuilder builder = AlgBuilder.create( statement );
 
-        // TableEntry table = transaction.getSchema().getTable( EthereumPlugin.HIDDEN_PREFIX + tableName );
         AlgOptSchema algOptSchema = transaction.getCatalogReader();
         AlgOptTable table = algOptSchema.getTableForMember( Collections.singletonList( Catalog.HIDDEN_PREFIX + tableName ) );
 
@@ -186,19 +173,16 @@ public class EventCacheManager implements Runnable {
             List<Object> fieldValues = new ArrayList<>();
             for ( List<Object> logResult : logResults ) {
                 Object value = logResult.get( i );
-                value = convertValueBasedOnType(value);
+                value = convertValueBasedOnType( value );
                 fieldValues.add( value );
             }
             i++;
             statement.getDataContext().addParameterValues( idx, type, fieldValues ); // take the correct indexedParameters - at the moment we only add one row at a time, could refactor to add the whole batch
         }
 
-        log.warn( "write to store before; table name: " + tableName );
         // execute the transaction (query will be executed)
         PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( root, false ); // implements the code basically
-        log.warn( "write to store after; table name: " + tableName );
         implementation.getRows( statement, -1 ); // Executes the query, with -1 meaning to fill in the whole batch
-        log.warn( "finish write to store for table: " + tableName );
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
@@ -212,21 +196,22 @@ public class EventCacheManager implements Runnable {
         return caches.values().stream().collect( Collectors.toMap( c -> c.sourceAdapterId, ContractCache::getStatus ) );
     }
 
-    private Object convertValueBasedOnType(Object value) {
-        if (value instanceof Address) {
+
+    private Object convertValueBasedOnType( Object value ) {
+        if ( value instanceof Address ) {
             return value.toString();
-        } else if (value instanceof Bool) {
+        } else if ( value instanceof Bool ) {
             return ((Bool) value).getValue();
-        } else if (value instanceof DynamicBytes) {
+        } else if ( value instanceof DynamicBytes ) {
             return ((DynamicBytes) value).getValue().toString();
-        } else if (value instanceof Bytes) {
+        } else if ( value instanceof Bytes ) { // Similarly for Bytes and its subclasses (e.g. Bytes1...Bytes32)
             return value.toString();
-        } else if (value instanceof Uint) {   // Similarly for Uint and its subclasses
+        } else if ( value instanceof Uint ) {   // Similarly for Uint and its subclasses (e.g. Uint256)
             BigInteger bigIntValue = ((Uint) value).getValue();
-            return bigIntValue == null ? null : new BigDecimal(bigIntValue);
-        } else if (value instanceof Int) {    // Similarly for Int and its subclasses
+            return bigIntValue == null ? null : new BigDecimal( bigIntValue );
+        } else if ( value instanceof Int ) {    // Similarly for Int and its subclasses
             BigInteger bigIntValue = ((Int) value).getValue();
-            return bigIntValue == null ? null : new BigDecimal(bigIntValue);
+            return bigIntValue == null ? null : new BigDecimal( bigIntValue );
         }
         return value; // return the original value if none of the conditions match
     }
@@ -234,7 +219,6 @@ public class EventCacheManager implements Runnable {
 
     @Override
     public void run() {
-
     }
 
 }

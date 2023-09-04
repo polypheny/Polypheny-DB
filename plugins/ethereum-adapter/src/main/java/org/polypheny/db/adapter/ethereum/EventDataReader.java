@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.function.Predicate;
-import lombok.extern.slf4j.Slf4j;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.core.Response;
@@ -34,7 +33,7 @@ import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.EventEncoder;
 
-@Slf4j
+
 public class EventDataReader extends BlockReader {
 
     private List<EthLog.LogResult> logs;
@@ -55,11 +54,10 @@ public class EventDataReader extends BlockReader {
         filter.addSingleTopic( EventEncoder.encode( event ) );
 
         try {
-            EthLog ethLog = web3j.ethGetLogs( filter ).send(); // Get the EthLog response
+            EthLog ethLog = web3j.ethGetLogs( filter ).send();
 
             if ( ethLog.hasError() ) {
                 Response.Error error = ethLog.getError();
-                log.error( "Error fetching logs: " + error.getMessage() );
                 throw new RuntimeException( "Error fetching logs: " + error.getMessage() );
             }
 
@@ -74,22 +72,22 @@ public class EventDataReader extends BlockReader {
     @Override
     public String[] readNext() throws IOException {
         if ( this.blockReads <= 0 || currentLogIndex >= logs.size() ) {
-            return null; // no more blocks to read or no more logs to process
+            return null;
         }
 
         EthLog.LogResult logResult = logs.get( currentLogIndex );
         Log log = (Log) logResult.get();
 
-        currentLogIndex++; // Move to the next log for the next call to readNext()
+        currentLogIndex++;
         if ( currentLogIndex >= logs.size() ) {
-            this.blockReads--; // Decrement blockReads when all logs for the current block have been processed
+            this.blockReads--;
         }
 
-        // Decode the data field of the log(non-indexed parameters)
+        // Decode the data field of the log (non-indexed parameters)
         String data = log.getData();
         List<Type> decodedData = FunctionReturnDecoder.decode( data, event.getNonIndexedParameters() );
 
-        // Decode the topics of the log
+        // Decode the topics of the log (index parameters)
         List<String> topics = log.getTopics();
         topics.remove( 0 ); // The first topic is the event signature, so we skip it
         List<Type> decodedTopics = new ArrayList<>();

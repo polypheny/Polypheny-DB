@@ -182,6 +182,7 @@ public class EventData {
                     } );
                     break;
                 default:
+                    // cover all cases; doing this dynamically would need external library
                     if ( type.startsWith( "uint" ) ) {
                         int bitSize = Integer.parseInt( type.substring( 4 ) ); // Get the bit size, e.g., 8 from uint8
                         typeReferences.add( createUintTypeReference( bitSize, indexed ) );

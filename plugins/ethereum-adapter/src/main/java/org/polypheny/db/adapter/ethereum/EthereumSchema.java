@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -36,7 +35,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
-@Slf4j
 public class EthereumSchema extends AbstractSchema {
 
     private final String clientUrl;
@@ -63,7 +61,6 @@ public class EthereumSchema extends AbstractSchema {
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         EthereumMapper mapper = catalogTable.name.startsWith( "block" ) ? EthereumMapper.BLOCK : catalogTable.name.startsWith( "transaction" ) ? EthereumMapper.TRANSACTION : EthereumMapper.EVENTDATA;
-        // each table will get one EthereumTable; send event metadata down here.
         EthereumTable.Builder tableBuilder = new EthereumTable.Builder(
                 clientUrl,
                 AlgDataTypeImpl.proto( fieldInfo.build() ),

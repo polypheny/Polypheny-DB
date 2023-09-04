@@ -29,6 +29,9 @@ import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 
+/**
+ *  ContractCache serves as a contract-level cache that holds a set of smart contracts along with their corresponding events.
+ */
 @Slf4j
 public class ContractCache {
 
@@ -44,7 +47,6 @@ public class ContractCache {
 
 
     private final Map<String, EventCache> cache = new ConcurrentHashMap<>(); // a cache for each event
-    private final Map<String, List<EventData>> eventsPerContract;
     protected final Web3j web3j;
 
 
@@ -56,7 +58,6 @@ public class ContractCache {
         this.fromBlock = fromBlock;
         this.currentBlock = fromBlock;
         this.toBlock = toBlock;
-        this.eventsPerContract = eventsPerContract;
         this.web3j = Web3j.build( new HttpService( clientUrl ) );
         eventsPerContract.forEach( ( address, events ) -> this.cache.put( address, new EventCache( events, web3j ) ) );
     }
@@ -71,7 +72,6 @@ public class ContractCache {
 
 
     private void createSchema() {
-        log.warn( "start to create schema" );
         Map<String, List<FieldInformation>> columnInformations = columns.entrySet()
                 .stream()
                 .collect(
@@ -82,12 +82,12 @@ public class ContractCache {
                                         .map( ExportedColumn::toFieldInformation )
                                         .collect( Collectors.toList() ) ) );
 
-        EventCacheManager.getInstance().createTables( sourceAdapterId, columnInformations, targetAdapterId );
+        EventCacheManager.getInstance().createTables( columnInformations, targetAdapterId );
     }
 
 
     public void startCaching() {
-        log.warn( "start to cache" );
+        log.debug( "start to cache" );
         currentBlock = fromBlock;
 
         while ( currentBlock.compareTo( toBlock ) <= 0 ) {
@@ -96,20 +96,20 @@ public class ContractCache {
                 endBlock = toBlock;
             }
 
-            log.warn( "from-to: " + currentBlock + " to " + endBlock ); // in production: instead of .warn take .debug
+            log.debug( "from-to: " + currentBlock + " to " + endBlock );
 
             for ( Map.Entry<String, EventCache> entry : cache.entrySet() ) {
                 String address = entry.getKey();
                 EventCache eventCache = entry.getValue();
                 try {
-                    eventCache.addToCache(address, currentBlock, endBlock, targetAdapterId);
-                } catch (CacheException e) {
-                    log.error("Error occurred while adding to cache: " + e.getMessage());
+                    eventCache.addToCache( address, currentBlock, endBlock );
+                } catch ( CacheException e ) {
+                    log.error( "Error occurred while adding to cache: " + e.getMessage() );
                     hasError = true;
                     errorMessage = e.getMessage();
                     throw e;
-                } catch (Throwable t) {
-                    log.error("Unexpected error during caching: " + t.getMessage(), t);
+                } catch ( Throwable t ) {
+                    log.error( "Unexpected error during caching: " + t.getMessage(), t );
                     hasError = true;
                     errorMessage = t.getMessage();
                     return;
@@ -127,7 +127,7 @@ public class ContractCache {
         status.fromBlock = fromBlock;
         status.toBlock = toBlock;
         status.currentBlock = currentBlock;
-        status.currentEndBlock = currentBlock.add(BigInteger.valueOf(batchSizeInBlocks));
+        status.currentEndBlock = currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) );
         status.sourceAdapterId = sourceAdapterId;
 
         if ( currentBlock.add( BigInteger.valueOf( batchSizeInBlocks ) ).compareTo( toBlock ) > 0 ) {
@@ -137,7 +137,7 @@ public class ContractCache {
             status.currentEndBlock = null;
         } else {
             BigInteger processedBlocks = currentBlock.subtract( fromBlock );
-            status.percent = Math.round((processedBlocks.floatValue() / totalBlocks.floatValue() * 100) * 100) / 100f;
+            status.percent = Math.round( (processedBlocks.floatValue() / totalBlocks.floatValue() * 100) * 100 ) / 100f;
 
             if ( status.percent == 0 ) {
                 status.state = CachingStatus.ProcessingState.INITIALIZED;
@@ -146,7 +146,7 @@ public class ContractCache {
             }
         }
 
-        if (hasError) {
+        if ( hasError ) {
             status.state = ProcessingState.ERROR;
             status.errorMessage = errorMessage;
         }

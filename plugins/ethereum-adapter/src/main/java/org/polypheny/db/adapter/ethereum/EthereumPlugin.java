@@ -47,15 +47,8 @@ public class EthereumPlugin extends Plugin {
                 "Blocks", "10",
                 "ExperimentalFiltering", "false"
         );
-
         TransactionExtension.REGISTER.add( new EthereumStarter() ); // add extension to transaction manager
-
         Adapter.addAdapter( EthereumDataSource.class, ADAPTER_NAME, settings );
-
     }
-
-
-
-
 
 }

@@ -69,9 +69,9 @@ import org.web3j.protocol.http.HttpService;
 @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
 @AdapterSettingBoolean(name = "EventDataRetrieval", description = "Enables or disables the retrieval of event data. When set to true, all subsequent adapter settings will be taken into account.", defaultValue = true, position = 4, modifiable = true)
 @AdapterSettingString(name = "SmartContractAddresses", description = "Comma sepretaed addresses of the smart contracts", defaultValue = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984, 0x6b175474e89094c44da98b954eedeac495271d0f", position = 5, modifiable = true) // Event Data: Add annotation
-@AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 6, modifiable = true) // Event Data: Add annotation
-@AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contract)", defaultValue = "17669045", position = 7, modifiable = true)
-@AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contract)", defaultValue = "17669155", position = 8, modifiable = true)
+@AdapterSettingString(name = "EtherscanApiKey", description = "Etherscan API Token", defaultValue = "PJBVZ3BE1AI5AKIMXGK1HNC59PCDH7CQSP", position = 6, modifiable = true)
+@AdapterSettingString(name = "fromBlock", description = "Fetch block from (Smart Contracts)", defaultValue = "17669045", position = 7, modifiable = true)
+@AdapterSettingString(name = "toBlock", description = "Fetch block to (Smart Contracts)", defaultValue = "17669155", position = 8, modifiable = true)
 @AdapterSettingBoolean(name = "Caching", description = "Cache event data", defaultValue = true, position = 9, modifiable = true)
 @AdapterSettingInteger(name = "batchSizeInBlocks", description = "Batch size for caching in blocks", defaultValue = 50, position = 10, modifiable = true)
 @AdapterSettingString(name = "CachingAdapterTargetName", description = "Adapter Target Name", defaultValue = "hsqldb", position = 11, modifiable = true)
@@ -179,7 +179,6 @@ public class EthereumDataSource extends DataSource {
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
-        log.warn( "getExportedColumn" );
         // Ensure that this block of code is called only once by checking if 'map' is null before proceeding
         if ( map != null ) {
             return map;
@@ -230,7 +229,6 @@ public class EthereumDataSource extends DataSource {
                             .register( getAdapterId(), cachingAdapter.id, clientURL, batchSizeInBlocks, fromBlock, toBlock, eventsPerContract, columns )
                             .initializeCaching();
                 } catch ( UnknownAdapterException e ) {
-                    // If the specified adapter is not found, throw a RuntimeException
                     throw new RuntimeException( e );
                 }
             } ).start();
@@ -512,10 +510,10 @@ public class EthereumDataSource extends DataSource {
                     throw new RuntimeException( "Etherscan API error getting contract name: " + errorMessage );
                 }
 
-                JSONArray resultArray = jsonObject.getJSONArray( "result" ); // Get result array
+                JSONArray resultArray = jsonObject.getJSONArray( "result" );
                 if ( resultArray.length() > 0 ) {
-                    JSONObject contractObject = resultArray.getJSONObject( 0 ); // Get the first object in result array
-                    return contractObject.getString( "ContractName" ); // Return ContractName field
+                    JSONObject contractObject = resultArray.getJSONObject( 0 );
+                    return contractObject.getString( "ContractName" );
                 }
             }
 

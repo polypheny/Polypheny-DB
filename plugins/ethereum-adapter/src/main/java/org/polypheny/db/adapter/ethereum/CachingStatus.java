@@ -21,7 +21,6 @@ import java.math.BigInteger;
 public class CachingStatus {
 
     public float percent;
-
     public ProcessingState state;
     public BigInteger fromBlock;
     public BigInteger toBlock;

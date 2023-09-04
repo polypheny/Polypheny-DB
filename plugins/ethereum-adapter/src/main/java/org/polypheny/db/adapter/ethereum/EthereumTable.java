@@ -64,6 +64,7 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
     }
 
 
+    // Utilize nested Builder pattern to provide the flexibility of toggling between fetching event data and not fetching it.
     public static class Builder {
 
         protected final String clientUrl;

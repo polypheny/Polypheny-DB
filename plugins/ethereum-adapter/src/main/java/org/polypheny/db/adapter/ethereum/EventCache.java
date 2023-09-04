@@ -23,12 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
-import org.polypheny.db.ddl.DdlManager.FieldInformation;
-import org.polypheny.db.type.PolyType;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
@@ -39,11 +33,8 @@ import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.response.EthLog;
-import org.web3j.protocol.core.methods.response.EthLog.LogResult;
 import org.web3j.protocol.core.methods.response.Log;
-import org.web3j.protocol.http.HttpService;
 
-@Slf4j // library to use logging annotations
 public class EventCache {
 
     private final Map<EventData, List<List<Object>>> cache = new ConcurrentHashMap<>(); // a cache for each event
@@ -58,13 +49,13 @@ public class EventCache {
     }
 
 
-    public void addToCache( String address, BigInteger startBlock, BigInteger endBlock, int targetAdapterId ) {
+    public void addToCache( String address, BigInteger startBlock, BigInteger endBlock ) {
         for ( EventData event : events ) {
             addLogsToCache( address, event, startBlock, endBlock );
             if ( cache.get( event ).size() == 0 ) {
                 continue;
             }
-            EventCacheManager.getInstance().writeToStore( event.getCompositeName(), cache.get( event ), targetAdapterId ); // write the event into the store
+            EventCacheManager.getInstance().writeToStore( event.getCompositeName(), cache.get( event ) ); // write event data into the store
             cache.get( event ).clear(); // clear cache batch
         }
     }
@@ -85,7 +76,6 @@ public class EventCache {
 
             if ( ethLog.hasError() ) {
                 Response.Error error = ethLog.getError();
-                log.error( "Error fetching logs: " + error.getMessage() );
                 throw new CacheException( "Error occurred while fetching logs for block range: " + startBlock + " to " + endBlock + ". Please retry starting from block " + startBlock + " and continue to your intended final block. Error Message: " + error.getMessage() );
             }
             List<EthLog.LogResult> rawLogs = ethLog.getLogs();
@@ -106,7 +96,7 @@ public class EventCache {
             if ( rawLog.getLogIndex() == null ||
                     rawLog.getTransactionIndex() == null ||
                     rawLog.getBlockNumber() == null ) {
-                continue; // don't add pending logs because of primary key
+                continue; // don't add pending logs because of primary key constraint
             }
 
             List<Object> structuredLog = new ArrayList<>();
@@ -129,7 +119,7 @@ public class EventCache {
                 }
             }
 
-            // Add other log information as needed
+            // Add other log information
             structuredLog.add( rawLog.isRemoved() );
             structuredLog.add( rawLog.getLogIndex() );
             structuredLog.add( rawLog.getTransactionIndex() );
