@@ -78,7 +78,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
      * @param tuples the documents in their native BSON format
      */
     public LogicalDocumentValues( AlgOptCluster cluster, AlgDataType defaultRowType, AlgTraitSet traitSet, ImmutableList<BsonValue> tuples ) {
-        super( cluster, traitSet, defaultRowType, tuples );
+        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), defaultRowType, tuples );
     }
 
 
