@@ -2234,29 +2234,17 @@ public class Crud implements InformationObserver {
      * Deploy a new adapter
      */
     void addAdapter( final Context ctx ) throws ServletException, IOException {
-        initMultipart( ctx );
-        String body = "";
-        Map<String, InputStream> inputStreams = new HashMap<>();
-
-        for ( Part part : ctx.req.getParts() ) {
-            if ( part.getName().equals( "body" ) ) {
-                body = IOUtils.toString( ctx.req.getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 );
-            } else {
-                inputStreams.put( part.getName(), part.getInputStream() );
-            }
-        }
-
-        AdapterModel a = HttpServer.gson.fromJson( body, AdapterModel.class );
+        AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
         ConnectionMethod method = ConnectionMethod.UPLOAD;
-        if ( a.settings.stream().anyMatch( s -> s.getName().equalsIgnoreCase( "method" ) ) ) {
-            method = ConnectionMethod.valueOf( a.settings.stream().filter( s -> s.getName().equalsIgnoreCase( "method" ) ).findFirst().orElseThrow().getValue().toUpperCase() );
+        if ( a.settings.containsKey( "method" ) ) {
+            method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
         }
         Adapter<?> adapter = AdapterManager.getInstance().getAdapter( a.id );
         Map<String, AbstractAdapterSetting> allSettings = adapter.getAvailableSettings( adapter.getClass() ).stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
-        for ( AdapterSettingValueModel entry : a.settings ) {
+        for ( AdapterSettingValueModel entry : a.settings.values() ) {
             AbstractAdapterSetting set = allSettings.get( entry.getName() );
             if ( set == null ) {
                 continue;
@@ -2270,7 +2258,7 @@ public class Crud implements InformationObserver {
                         return;
                     }
                 } else {
-                    handleUploadFiles( inputStreams, a, setting );
+                    handleUploadFiles( null, a, setting );
                 }
                 settings.put( set.name, entry.getValue() );
 

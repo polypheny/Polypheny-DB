@@ -16,15 +16,17 @@
 
 package org.polypheny.db.webui.models.catalog;
 
-import java.util.List;
+import java.util.Map;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 
 @EqualsAndHashCode(callSuper = true)
-@Value
+@Data
+@NoArgsConstructor
 public class SourceModel extends AdapterModel {
 
     public boolean readOnly;
@@ -35,11 +37,10 @@ public class SourceModel extends AdapterModel {
             @Nullable String name,
             String adapterName,
             AdapterType type,
-            List<AdapterSettingValueModel> settings,
-            boolean persistent,
+            Map<String, AdapterSettingValueModel> settings,
             DeployMode mode,
             boolean readOnly ) {
-        super( id, name, adapterName, type, settings, mode, persistent );
+        super( id, name, adapterName, type, settings, mode );
         this.readOnly = readOnly;
     }
 

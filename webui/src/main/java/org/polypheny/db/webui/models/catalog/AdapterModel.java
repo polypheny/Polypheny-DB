@@ -17,11 +17,13 @@
 package org.polypheny.db.webui.models.catalog;
 
 
-import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.Value;
-import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -30,14 +32,13 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 @EqualsAndHashCode(callSuper = true)
-@Value
-@NonFinal
-public abstract class AdapterModel extends IdEntity {
+@Data
+@NoArgsConstructor
+public class AdapterModel extends IdEntity {
 
     public String adapterName;
     public AdapterType type;
-    public List<AdapterSettingValueModel> settings;
-    public boolean persistent;
+    public Map<String, AdapterSettingValueModel> settings;
     public DeployMode mode;
 
 
@@ -46,20 +47,18 @@ public abstract class AdapterModel extends IdEntity {
             @Nullable String name,
             String adapterName,
             AdapterType type,
-            List<AdapterSettingValueModel> settings,
-            DeployMode mode,
-            boolean persistent ) {
+            Map<String, AdapterSettingValueModel> settings,
+            DeployMode mode ) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
         this.settings = settings;
-        this.persistent = persistent;
         this.mode = mode;
     }
 
 
     public static AdapterModel from( CatalogAdapter adapter ) {
-        List<AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().map( s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ).collect( Collectors.toList() );
+        Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
         switch ( adapter.type ) {
             case STORE:
                 return new StoreModel(
@@ -68,8 +67,7 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.adapterName,
                         adapter.type,
                         settings,
-                        adapter.mode,
-                        true );
+                        adapter.mode );
             case SOURCE:
                 return new SourceModel(
                         adapter.id,
@@ -77,7 +75,6 @@ public abstract class AdapterModel extends IdEntity {
                         adapter.adapterName,
                         adapter.type,
                         settings,
-                        true,
                         adapter.mode,
                         false );
             default:

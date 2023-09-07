@@ -18,15 +18,19 @@ package org.polypheny.db.webui.models.catalog;
 
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.polypheny.db.catalog.Catalog;
 
 @AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class IdEntity {
     public final long snapshotId = Catalog.snapshot().id();
 
     @Nullable
-    public final Long id;
+    public Long id;
 
     @Nullable
-    public final String name;
+    public String name;
 }
