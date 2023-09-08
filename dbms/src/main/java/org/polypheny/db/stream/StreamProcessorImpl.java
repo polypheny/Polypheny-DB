@@ -21,24 +21,27 @@ import static org.reflections.Reflections.log;
 import java.util.List;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 
 public class StreamProcessorImpl implements StreamProcessor {
 
     String stream;
-    public StreamProcessorImpl(String stream) {
+
+
+    public StreamProcessorImpl( String stream ) {
         this.stream = stream;
     }
+
 
     @Override
     public String getStream() {
         return stream;
     }
 
+
     public boolean isNumber( String value ) {
-        try{
+        try {
             Double.parseDouble( value );
         } catch ( NumberFormatException e ) {
             return false;
@@ -46,7 +49,8 @@ public class StreamProcessorImpl implements StreamProcessor {
         return true;
     }
 
-    public boolean isBoolean( String value) {
+
+    public boolean isBoolean( String value ) {
         return value.equals( "true" ) || value.equals( "false" );
     }
 
@@ -69,4 +73,5 @@ public class StreamProcessorImpl implements StreamProcessor {
             return null;
         }
     }
+
 }
