@@ -17,11 +17,13 @@
 package org.polypheny.db.http;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -126,24 +128,12 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            JsonMapper gsonMapper = new JsonMapper() {
-                @NotNull
-                @Override
-                public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                    return HttpServer.gson.fromJson( json, targetType );
-                }
-
-
-                @NotNull
-                @Override
-                public String toJsonString( @NotNull Object obj ) {
-                    return HttpServer.gson.toJson( obj );
-                }
-
-            };
             server = Javalin.create( config -> {
-                config.jsonMapper( gsonMapper );
-                config.enableCorsForAllOrigins();
+                config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
+                config.staticFiles.add( "webapp" );
+                config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
+                    mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                } ) );
             } ).start( port );
             server.exception( Exception.class, ( e, ctx ) -> {
                 log.warn( "Caught exception in the HTTP interface", e );
@@ -172,7 +162,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
-            String sessionId = ctx.req.getSession().getId();
+            String sessionId = ctx.req().getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
 
             List<Result<?, ?>> results = LanguageCrud.anyQuery(

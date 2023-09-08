@@ -59,27 +59,13 @@ public class AdapterModel extends IdEntity {
 
     public static AdapterModel from( CatalogAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
-        switch ( adapter.type ) {
-            case STORE:
-                return new StoreModel(
-                        adapter.id,
-                        adapter.uniqueName,
-                        adapter.adapterName,
-                        adapter.type,
-                        settings,
-                        adapter.mode );
-            case SOURCE:
-                return new SourceModel(
-                        adapter.id,
-                        adapter.uniqueName,
-                        adapter.adapterName,
-                        adapter.type,
-                        settings,
-                        adapter.mode,
-                        false );
-            default:
-                throw new GenericRuntimeException( "Type of adapter is not known" );
-        }
+        return new AdapterModel(
+                adapter.id,
+                adapter.uniqueName,
+                adapter.adapterName,
+                adapter.type,
+                settings,
+                adapter.mode );
     }
 
 

@@ -288,8 +288,8 @@ public class RestResult {
                 fos.close();
                 ctx.contentType( "application/octet-stream" );
                 //ctx.res().setContentType( "application/octet-stream" );
-                ctx.res.setHeader( "Content-Disposition", "attachment; filename=result.zip" );
-                os = ctx.res.getOutputStream();
+                ctx.res().setHeader( "Content-Disposition", "attachment; filename=result.zip" );
+                os = ctx.res().getOutputStream();
                 FileInputStream fis = new FileInputStream( zipFile );
                 byte[] buf = new byte[2048];
                 int len;
@@ -303,7 +303,7 @@ public class RestResult {
                 zipFile.delete();
                 ctx.status( 500 );
             }
-            return new Pair( "", finalResult.size() );
+            return new Pair<>( "", finalResult.size() );
         }
     }
 

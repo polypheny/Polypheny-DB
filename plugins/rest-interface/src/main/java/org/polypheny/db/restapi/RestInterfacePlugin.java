@@ -20,12 +20,17 @@ package org.polypheny.db.restapi;
 import static io.javalin.apibuilder.ApiBuilder.before;
 import static io.javalin.apibuilder.ApiBuilder.path;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import io.javalin.Javalin;
 import io.javalin.apibuilder.ApiBuilder;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Part;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -40,9 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
@@ -146,25 +148,12 @@ public class RestInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            JsonMapper gsonMapper = new JsonMapper() {
-
-                @NotNull
-                @Override
-                public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                    return gson.fromJson( json, targetType );
-                }
-
-
-                @NotNull
-                @Override
-                public String toJsonString( @NotNull Object obj ) {
-                    return gson.toJson( obj );
-                }
-
-            };
             restServer = Javalin.create( config -> {
-                config.jsonMapper( gsonMapper );
-                config.enableCorsForAllOrigins();
+                config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
+                config.staticFiles.add( "webapp" );
+                config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
+                    mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                } ) );
             } ).start( port );
 
             Rest rest = new Rest( transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
@@ -205,12 +194,12 @@ public class RestInterfacePlugin extends PolyPlugin {
                 switch ( type ) {
                     case DELETE:
                         deleteCounter.incrementAndGet();
-                        ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( ctx.req, resourceName );
+                        ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( ctx.req(), resourceName );
                         ctx.result( rest.processDeleteResource( resourceDeleteRequest, ctx ) );
                         break;
                     case GET:
                         getCounter.incrementAndGet();
-                        ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( ctx.req, resourceName );
+                        ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( ctx.req(), resourceName );
                         ctx.result( rest.processGetResource( resourceGetRequest, ctx ) );
                         break;
                     case PATCH:
@@ -285,7 +274,7 @@ public class RestInterfacePlugin extends PolyPlugin {
             Map<String, InputStream> inputStreams = new HashMap<>();
             try {
 
-                for ( Part part : ctx.req.getParts() ) {
+                for ( Part part : ctx.req().getParts() ) {
                     if ( part.getSubmittedFileName() != null ) {
                         inputStreams.put( part.getName(), part.getInputStream() );
                     } else {
@@ -345,7 +334,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                     } finally {
                         try {
                             inputStreams.clear();
-                            for ( Part part : ctx.req.getParts() ) {
+                            for ( Part part : ctx.req().getParts() ) {
                                 part.delete();
                             }
                         } catch ( ServletException | IOException e ) {

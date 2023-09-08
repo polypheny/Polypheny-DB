@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -24,7 +25,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,9 +37,7 @@ import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import javax.servlet.ServletException;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
@@ -140,30 +140,16 @@ public class HttpServer implements Runnable {
 
     @Override
     public void run() {
-        JsonMapper gsonMapper = new JsonMapper() {
-
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                return gson.fromJson( json, targetType );
-            }
-
-
-            @NotNull
-            @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
-            }
-
-        };
         long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
         long maxRequestSize = 1_000_000L * maxSizeMB;
 
         this.server = Javalin.create( config -> {
-            config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
-            config.maxRequestSize = maxRequestSize;
+            config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
+            config.staticFiles.add( "webapp" );
+            config.http.maxRequestSize = maxRequestSize;
+            config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
+                mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            } ) );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         this.crud = new Crud(
@@ -201,7 +187,6 @@ public class HttpServer implements Runnable {
         } );
 
         defaultException( IOException.class, server );
-        defaultException( ServletException.class, server );
     }
 
 
@@ -475,14 +460,14 @@ public class HttpServer implements Runnable {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
         webuiServer.options( "/*", ctx -> {
-            String accessControlRequestHeaders = ctx.req.getHeader( "Access-Control-Request-Headers" );
+            String accessControlRequestHeaders = ctx.req().getHeader( "Access-Control-Request-Headers" );
             if ( accessControlRequestHeaders != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
+                ctx.res().setHeader( "Access-Control-Allow-Headers", accessControlRequestHeaders );
             }
 
-            String accessControlRequestMethod = ctx.req.getHeader( "Access-Control-Request-Method" );
+            String accessControlRequestMethod = ctx.req().getHeader( "Access-Control-Request-Method" );
             if ( accessControlRequestMethod != null ) {
-                ctx.res.setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
+                ctx.res().setHeader( "Access-Control-Allow-Methods", accessControlRequestMethod );
             }
 
             ctx.result( "OK" );
@@ -490,10 +475,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.before( ctx -> {
             //res.header("Access-Control-Allow-Origin", "*");
-            ctx.res.setHeader( "Access-Control-Allow-Origin", "*" );
-            ctx.res.setHeader( "Access-Control-Allow-Credentials", "true" );
-            ctx.res.setHeader( "Access-Control-Allow-Headers", "*" );
-            ctx.res.setContentType( "application/json" );
+            ctx.res().setHeader( "Access-Control-Allow-Origin", "*" );
+            ctx.res().setHeader( "Access-Control-Allow-Credentials", "true" );
+            ctx.res().setHeader( "Access-Control-Allow-Headers", "*" );
+            ctx.res().setContentType( "application/json" );
         } );
     }
 

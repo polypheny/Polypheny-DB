@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -25,7 +26,8 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
-import io.javalin.plugin.json.JsonMapper;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
@@ -85,23 +87,12 @@ public class InformationServer implements InformationObserver {
 
 
     public InformationServer( final int port ) {
-        JsonMapper gsonMapper = new JsonMapper() {
-            @NotNull
-            @Override
-            public <T> T fromJsonString( @NotNull String json, @NotNull Class<T> targetType ) {
-                return gson.fromJson( json, targetType );
-            }
-
-
-            @NotNull
-            @Override
-            public String toJsonString( @NotNull Object obj ) {
-                return gson.toJson( obj );
-            }
-        };
         Javalin http = Javalin.create( config -> {
-            config.jsonMapper( gsonMapper );
-            config.enableCorsForAllOrigins();
+            config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
+            config.staticFiles.add( "webapp" );
+            config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
+                mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            } ) );
         } ).start( port );
 
         // Needs to be called before defining routes!
