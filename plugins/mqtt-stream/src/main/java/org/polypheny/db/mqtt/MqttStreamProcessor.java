@@ -17,14 +17,12 @@
 package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
+import org.bson.BsonDouble;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -36,31 +34,31 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.stream.StreamProcessor;
+import org.polypheny.db.stream.StreamProcessorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 
 @Slf4j
-public class MqttStreamProcessor implements StreamProcessor {
+public class MqttStreamProcessor extends StreamProcessorImpl {
+
     private final String filterQuery;
-    private final StreamProcessor streamProcessor;
     private final Statement statement;
 
 
     public MqttStreamProcessor( MqttMessage mqttMessage, String filterQuery, Statement statement ) {
+        super( mqttMessage.getMessage() );
         this.filterQuery = filterQuery;
-        this.streamProcessor = statement.getStreamProcessor( mqttMessage.getMessage() );
         this.statement = statement;
     }
 
 
+    //TODO: in Tutorial schreiben, was allgemein für Strings gilt
     public boolean applyFilter() {
         AlgRoot root = processMqlQuery();
-        List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
+        List<List<Object>> res = executeAndTransformPolyAlg( root, statement);
         log.info( res.toString() );
-        return !res.isEmpty();
-
+        return res.size() != 0;
     }
 
 
@@ -73,77 +71,25 @@ public class MqttStreamProcessor implements StreamProcessor {
 
         MqlFind find = (MqlFind) mqlProcessor.parse( String.format( "db.%s.find(%s)", "null", this.filterQuery ) ).get( 0 );
         String msg = getStream();
+        BsonDocument msgDoc;
         AlgNode input;
         if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
             // msg is in JSON format
-            BsonDocument msgDoc = BsonDocument.parse(msg);
-            input = LogicalDocumentValues.create( cluster, ImmutableList.of( msgDoc ) );
+            msgDoc = BsonDocument.parse( msg );
         } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
             // msg is an array
-            List<BsonValue> values = arrayToBsonList(msg);
-            BsonDocument msgDoc = new BsonDocument( "$$ROOT", new BsonArray( values ) );
-            input = LogicalDocumentValues.create( cluster, ImmutableList.of( msgDoc ) );
+            msgDoc = BsonDocument.parse( "{\"$$ROOT\":" + msg + "}" );
+        } else if ( isNumber( msg ) ) {
+            double value = Double.parseDouble( msg );
+            msgDoc = new BsonDocument( "$$ROOT", new BsonDouble( value ) );
+        } else if ( isBoolean( msg ) ) {
+            boolean value = Boolean.parseBoolean( msg );
+            msgDoc = new BsonDocument( "$$ROOT", new BsonBoolean( value ) );
         } else {
-            // msg is single value
-            BsonDocument msgDoc = new BsonDocument( "$$ROOT", new BsonInt32( Integer.parseInt( msg ) ) );
-            input = LogicalDocumentValues.create( cluster, ImmutableList.of( msgDoc ) );
+            // msg is String
+            msgDoc = new BsonDocument( "$$ROOT", new BsonString( msg ) );
         }
-
-
+        input = LogicalDocumentValues.create( cluster, ImmutableList.of( msgDoc ) );
         return mqlConverter.convert( find, input );
     }
-
-
-    /**
-     * converts the array, currently a String into a list of BSON values
-     * @param msg
-     */
-    private List<BsonValue> arrayToBsonList( String msg ) {
-        msg = msg.replace( "[", "" ).replace( "]", "" );
-        String[] array = msg.split( "," );
-        List<BsonValue> list = new ArrayList<>(array.length);
-        for ( String stringValue : array ) {
-            //TODO: if BsonString dont work -> try with BsonInt
-            BsonString bsonValue = new BsonString( stringValue.trim() );
-            list.add( bsonValue );
-        }
-        return list;
-    }
-
-
-    @Override
-    public String getStream() {
-        return streamProcessor.getStream();
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean validateContent( String msg ) {
-        //TODO: Implement
-        return true;
-    }
-
-
-    List<List<Object>> executeAndTransformPolyAlg( AlgRoot algRoot, Statement statement, final Context ctx ) {
-
-        try {
-            PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, false );
-            log.debug( "AlgRoot was prepared." );
-            List<List<Object>> rows = result.getRows( statement, -1 );
-            statement.getTransaction().commit();
-            return rows;
-        } catch ( Throwable e ) {
-            log.error( "Error during execution of stream processor query", e );
-            try {
-                statement.getTransaction().rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Could not rollback", e );
-            }
-            return null;
-        }
-    }
-
 }

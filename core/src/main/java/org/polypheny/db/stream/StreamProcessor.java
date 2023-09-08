@@ -21,9 +21,12 @@ package org.polypheny.db.stream;
  */
 public interface StreamProcessor {
 
-    //TODO: maybe change type to MqttStream?
     String getStream( );
 
-    boolean validateContent( String stream );
+    boolean isNumber ( String value );
+
+    boolean isBoolean( String value);
+
+
 
 }

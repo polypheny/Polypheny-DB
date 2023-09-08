@@ -18,6 +18,13 @@ package org.polypheny.db.stream;
 
 import static org.reflections.Reflections.log;
 
+import java.util.List;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.prepare.Context;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
+
 public class StreamProcessorImpl implements StreamProcessor {
 
     String stream;
@@ -30,10 +37,36 @@ public class StreamProcessorImpl implements StreamProcessor {
         return stream;
     }
 
-
-    @Override
-    public boolean validateContent( String stream ) {
-        return false;
+    public boolean isNumber( String value ) {
+        try{
+            Double.parseDouble( value );
+        } catch ( NumberFormatException e ) {
+            return false;
+        }
+        return true;
     }
 
+    public boolean isBoolean( String value) {
+        return value.equals( "true" ) || value.equals( "false" );
+    }
+
+
+    protected List<List<Object>> executeAndTransformPolyAlg( AlgRoot algRoot, Statement statement ) {
+
+        try {
+            PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, false );
+            log.debug( "AlgRoot was prepared." );
+            List<List<Object>> rows = result.getRows( statement, -1 );
+            statement.getTransaction().commit();
+            return rows;
+        } catch ( Throwable e ) {
+            log.error( "Error during execution of stream processor query", e );
+            try {
+                statement.getTransaction().rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Could not rollback", e );
+            }
+            return null;
+        }
+    }
 }
