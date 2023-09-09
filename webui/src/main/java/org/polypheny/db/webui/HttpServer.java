@@ -18,6 +18,7 @@ package org.polypheny.db.webui;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -39,22 +40,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
-import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
-import org.polypheny.db.adapter.AdapterSettingDeserializer;
-import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.information.InformationDuration.Duration;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationStacktrace;
-import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
@@ -68,7 +57,6 @@ public class HttpServer implements Runnable {
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
 
-    public static final Gson gson;
     private final Gson gsonExpose = new GsonBuilder()
             .excludeFieldsWithoutExposeAnnotation()
             .enableComplexMapKeySerialization()
@@ -98,12 +86,11 @@ public class HttpServer implements Runnable {
                 return new Throwable( in.nextString() );
             }
         };
-        gson = new GsonBuilder()
+        /*gson = new GsonBuilder()
                 .enableComplexMapKeySerialization()
                 .registerTypeHierarchyAdapter( DataSource.class, DataSource.getSerializer() )
                 .registerTypeHierarchyAdapter( DataStore.class, DataStore.getSerializer() )
                 .registerTypeHierarchyAdapter( Throwable.class, throwableTypeAdapter )
-                .registerTypeAdapter( PolyType.class, PolyType.getSerializer() )
                 .registerTypeAdapter( AdapterInformation.class, AdapterInformation.getSerializer() )
                 .registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() )
                 .registerTypeAdapter( InformationDuration.class, InformationDuration.getSerializer() )
@@ -113,7 +100,7 @@ public class HttpServer implements Runnable {
                 .registerTypeAdapter( InformationGroup.class, InformationGroup.getSerializer() )
                 .registerTypeAdapter( InformationStacktrace.class, InformationStacktrace.getSerializer() )
                 .registerTypeAdapter( PluginStatus.class, PluginStatus.getSerializer() )
-                .create();
+                .create();*/
     }
 
 
@@ -149,6 +136,8 @@ public class HttpServer implements Runnable {
             config.http.maxRequestSize = maxRequestSize;
             config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
                 mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                mapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                mapper.writerWithDefaultPrettyPrinter();
             } ) );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
@@ -157,7 +146,7 @@ public class HttpServer implements Runnable {
                 Catalog.defaultUserId,
                 Catalog.defaultNamespaceId );
 
-        WebSocket webSocketHandler = new WebSocket( crud, gson );
+        WebSocket webSocketHandler = new WebSocket( crud );
         webSockets( server, webSocketHandler );
 
         // Get modified index.html

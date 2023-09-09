@@ -17,7 +17,6 @@
 package org.polypheny.db.webui;
 
 
-import com.google.gson.Gson;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConfig;
 import io.javalin.websocket.WsConnectContext;
@@ -53,12 +52,10 @@ public class WebSocket implements Consumer<WsConfig> {
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final Crud crud;
     private final ConcurrentHashMap<String, Set<String>> queryAnalyzers = new ConcurrentHashMap<>();
-    private final Gson gson;
 
 
-    WebSocket( Crud crud, Gson gson ) {
+    WebSocket( Crud crud ) {
         this.crud = crud;
-        this.gson = gson;
     }
 
 

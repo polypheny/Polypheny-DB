@@ -17,10 +17,19 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class QueryRequest extends UIRequest {
 
 
-    public QueryRequest( String query, boolean analyze, boolean cache, String language, Long namespaceId ) {
+    @JsonCreator
+    public QueryRequest(
+            @JsonProperty("query") String query,
+            @JsonProperty("analyze") boolean analyze,
+            @JsonProperty("cache") boolean cache,
+            @JsonProperty("language") String language,
+            @JsonProperty("namespaceId") Long namespaceId ) {
         this.query = query;
         this.analyze = analyze;
         this.cache = cache;

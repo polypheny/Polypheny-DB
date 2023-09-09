@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.results;
 
+import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -25,6 +26,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @Value
 @NonFinal
 @SuperBuilder
+@AllArgsConstructor
 public abstract class Result<E, F> {
 
     /**

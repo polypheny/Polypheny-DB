@@ -38,8 +38,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.util.Arrays;
@@ -47,6 +45,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.util.Util;
 
@@ -527,6 +526,7 @@ public enum PolyType {
     /**
      * Bitwise-or of flags indicating allowable precision/scale combinations.
      */
+    @Getter
     private final int signatures;
 
     /**
@@ -1227,16 +1227,6 @@ public enum PolyType {
         int YES_NO = 2;
         int YES_YES = 4;
 
-    }
-
-
-    public static JsonSerializer<PolyType> getSerializer() {
-        return ( src, typeOfSrc, context ) -> {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty( "name", src.name() );
-            jsonObject.addProperty( "signatures", src.signatures );
-            return jsonObject;
-        };
     }
 }
 

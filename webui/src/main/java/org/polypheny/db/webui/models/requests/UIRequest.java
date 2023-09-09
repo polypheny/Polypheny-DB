@@ -153,7 +153,7 @@ public class UIRequest {
 
 
     public static TypeAdapter<UIRequest> getSerializer() {
-        return new TypeAdapter<UIRequest>() {
+        return new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, UIRequest value ) throws IOException {
                 if ( value == null ) {
@@ -197,7 +197,7 @@ public class UIRequest {
 
 
     private static <E> TypeAdapter<Map<String, E>> getMapTypeAdapter( BiConsumer<JsonWriter, E> valSerializer, Function<JsonReader, E> valDeserializer ) {
-        return new TypeAdapter<Map<String, E>>() {
+        return new TypeAdapter<>() {
             @Override
             public void write( JsonWriter out, Map<String, E> value ) throws IOException {
                 if ( value == null ) {

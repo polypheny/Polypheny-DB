@@ -19,7 +19,6 @@ package org.polypheny.db.webui;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
@@ -31,7 +30,6 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
@@ -46,7 +44,6 @@ import org.polypheny.db.information.InformationResponse;
 @Slf4j
 public class InformationServer implements InformationObserver {
 
-    private static final Gson gson;
     public static final TypeAdapterFactory throwableTypeAdapterFactory;
     public static final TypeAdapter<Throwable> throwableTypeAdapter;
 
@@ -82,7 +79,6 @@ public class InformationServer implements InformationObserver {
                 return new Throwable( in.nextString() );
             }
         };
-        gson = new GsonBuilder().registerTypeAdapterFactory( throwableTypeAdapterFactory ).create();
     }
 
 

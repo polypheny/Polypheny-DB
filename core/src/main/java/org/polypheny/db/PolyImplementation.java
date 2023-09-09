@@ -398,7 +398,7 @@ public class PolyImplementation<T> {
                 List<List<T>> res = new ArrayList<>();
                 int i = 0;
                 while ( i++ < batch && iterator.hasNext() ) {
-                    res.add( List.of( (T[]) iterator.next() ) );
+                    res.add( rowType.getFieldCount() == 1 ? List.of( iterator.next() ) : List.of( (T[]) iterator.next() ) );
                 }
 
                 //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );

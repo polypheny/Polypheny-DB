@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -44,9 +43,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Array;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -174,6 +171,8 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.ForeignKey;
+import org.polypheny.db.webui.models.IndexAdapterModel;
+import org.polypheny.db.webui.models.IndexAdapterModel.IndexMethodModel;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.Namespace;
@@ -191,6 +190,7 @@ import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
 import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
+import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
@@ -2136,20 +2136,21 @@ public class Crud implements InformationObserver {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
         PlacementModel dataPlacements = getPlacements( index );
         Map<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
-        //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
-        JsonArray jsonArray = HttpServer.gson.toJsonTree( stores.values().stream().filter( ( s ) -> {
+        List<IndexAdapterModel> filtered = stores.values().stream().filter( ( s ) -> {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().isEmpty() ) {
                 return false;
             }
             return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
-        } ).toArray( DataStore[]::new ) ).getAsJsonArray();
+        } ).map( IndexAdapterModel::from ).collect( Collectors.toCollection( ArrayList::new ) );
+
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
-            JsonObject pdbFakeStore = new JsonObject();
-            pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
-            pdbFakeStore.add( "availableIndexMethods", HttpServer.gson.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
-            jsonArray.add( pdbFakeStore );
+            IndexAdapterModel poly = new IndexAdapterModel(
+                    -1L,
+                    "Polypheny-DB",
+                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).collect( Collectors.toList() ) );
+            filtered.add( poly );
         }
-        ctx.json( jsonArray );
+        ctx.json( filtered );
     }
 
 
@@ -2233,7 +2234,7 @@ public class Crud implements InformationObserver {
     /**
      * Deploy a new adapter
      */
-    void addAdapter( final Context ctx ) throws ServletException, IOException {
+    void addAdapter( final Context ctx ) {
         AdapterModel a = ctx.bodyAsClass( AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
 
@@ -2815,7 +2816,7 @@ public class Crud implements InformationObserver {
      * Get all supported data types of the DBMS.
      */
     public void getTypeInfo( final Context ctx ) {
-        ctx.json( PolyType.availableTypes().toArray( new PolyType[0] ) );
+        ctx.json( PolyType.availableTypes().stream().map( t -> PolyTypeModel.from( t ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -3211,8 +3212,8 @@ public class Crud implements InformationObserver {
                         default:
                             temp[counter] = o.toString();
                     }*/
-                    temp[counter] = o.toString();
-                    if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                    temp[counter] = o.toJson();
+                    /*if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
                         if ( o instanceof Array ) {
                             try {
                                 temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
@@ -3228,7 +3229,7 @@ public class Crud implements InformationObserver {
                     }
                     if ( header.get( counter ).dataType.contains( "Path" ) ) {
                         temp[counter] = o.toJson();
-                    }
+                    }*/
                 }
                 counter++;
             }
