@@ -25,6 +25,7 @@ dependencies {
     testImplementation project(":plugins:mql-language")
     testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4jVersion
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 
     // --- Test Compile ---
 
