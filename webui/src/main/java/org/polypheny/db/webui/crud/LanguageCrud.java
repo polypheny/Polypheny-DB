@@ -290,6 +290,7 @@ public class LanguageCrud {
         }
 
         return DocResult.builder()
+                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
                 .query( query )
                 .xid( transaction.getXid().toString() )

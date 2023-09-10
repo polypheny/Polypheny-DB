@@ -19,12 +19,7 @@ package org.polypheny.db.webui.models.results;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.gson.Gson;
-import java.io.IOException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -44,14 +39,6 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 @NonFinal
 public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
-    /**
-     * Information for the pagination: what current page is being displayed
-     */
-    public int currentPage;
-    /**
-     * Information for the pagination: how many pages there can be in total
-     */
-    public int highestPage;
     /**
      * Table from which the data has been fetched
      */
@@ -74,17 +61,6 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
      */
     public ResultType type;
 
-    /**
-     * language type of result MQL/SQL/CQL
-     */
-    @JsonSerialize(using = LanguageSerializer.class)
-    public QueryLanguage language = QueryLanguage.from( "sql" );
-
-    /**
-     * Indicate that only a subset of the specified query is being displayed.
-     */
-    public boolean hasMoreRows;
-
 
     @JsonCreator
     public RelationalResult(
@@ -103,16 +79,13 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("UIRequest") UIRequest request,
             @JsonProperty("int") int affectedRows,
             @JsonProperty("ResultType") ResultType type,
-            @JsonProperty("hasMoreRows") boolean hasMoreRows ) {
-        super( namespaceType, namespaceName, data, header, exception, query, xid, error );
-        this.currentPage = currentPage;
-        this.highestPage = highestPage;
+            @JsonProperty("hasMoreRows") boolean hasMore ) {
+        super( namespaceType, namespaceName, data, header, exception, query, xid, error, currentPage, highestPage, hasMore );
         this.table = table;
         this.tables = tables;
         this.request = request;
         this.affectedRows = affectedRows;
         this.type = type;
-        this.hasMoreRows = hasMoreRows;
     }
 
 
@@ -213,16 +186,6 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             return self();
         }
 
-
-    }
-
-
-    private static class LanguageSerializer extends JsonSerializer<QueryLanguage> {
-
-        @Override
-        public void serialize( QueryLanguage value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            gen.writeString( value.getSerializedName() );
-        }
 
     }
 

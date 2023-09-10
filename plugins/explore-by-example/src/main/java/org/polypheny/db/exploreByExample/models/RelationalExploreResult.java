@@ -58,7 +58,7 @@ public class RelationalExploreResult extends RelationalResult {
         builder.header( rel.header );
         builder.currentPage( rel.currentPage );
         builder.highestPage( rel.highestPage );
-        builder.hasMoreRows( rel.hasMoreRows );
+        builder.hasMoreRows( rel.hasMore );
         builder.table( rel.table );
         builder.tables( rel.tables );
         builder.request( rel.request );

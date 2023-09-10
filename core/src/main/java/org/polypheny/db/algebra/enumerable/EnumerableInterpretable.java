@@ -142,11 +142,11 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
     /**
      * Converts a bindable over scalar values into an array bindable, with each row as an array of 1 element.
      */
-    public static ArrayBindable box( final Bindable<?> bindable ) {
+    public static ArrayBindable<PolyValue> box( final Bindable<?> bindable ) {
         if ( bindable instanceof ArrayBindable ) {
-            return (ArrayBindable) bindable;
+            return (ArrayBindable<PolyValue>) bindable;
         }
-        return new ArrayBindable() {
+        return new ArrayBindable<>() {
             @Override
             public Class<PolyValue[]> getElementType() {
                 return PolyValue[].class;

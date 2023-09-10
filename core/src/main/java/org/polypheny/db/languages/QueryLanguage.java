@@ -16,10 +16,6 @@
 
 package org.polypheny.db.languages;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -32,19 +28,14 @@ import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.Processor;
 
+@Getter
 public class QueryLanguage {
 
-    @Getter
     private final NamespaceType namespaceType;
-    @Getter
     private final String serializedName;
-    @Getter
     private final ParserFactory factory;
-    @Getter
     private final Supplier<Processor> processorSupplier;
-    @Getter
     private final BiFunction<Context, Snapshot, Validator> validatorSupplier;
-    @Getter
     private final List<String> otherNames;
 
 
@@ -72,24 +63,6 @@ public class QueryLanguage {
         String normalized = name.toLowerCase( Locale.ROOT );
 
         return LanguageManager.getLanguages().stream().anyMatch( l -> Objects.equals( l.serializedName, normalized ) );
-    }
-
-
-    public static TypeAdapter<QueryLanguage> getSerializer() {
-
-        return new TypeAdapter<>() {
-
-            @Override
-            public void write( JsonWriter out, QueryLanguage value ) throws IOException {
-                out.value( value.serializedName );
-            }
-
-
-            @Override
-            public QueryLanguage read( JsonReader in ) throws IOException {
-                return QueryLanguage.from( in.nextString() );
-            }
-        };
     }
 
 }

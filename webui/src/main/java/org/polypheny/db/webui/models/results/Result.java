@@ -16,11 +16,17 @@
 
 package org.polypheny.db.webui.models.results;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.languages.QueryLanguage;
 
 
 @Value
@@ -57,6 +63,23 @@ public abstract class Result<E, F> {
      * Error message if a query failed
      */
     public String error;
+    /**
+     * Information for the pagination: what current page is being displayed
+     */
+    public int currentPage;
+    /**
+     * Information for the pagination: how many pages there can be in total
+     */
+    public int highestPage;
+    /**
+     * Indicate that only a subset of the specified query is being displayed.
+     */
+    public boolean hasMore;
+    /**
+     * language type of result MQL/SQL/CQL
+     */
+    @JsonSerialize(using = LanguageSerializer.class)
+    public QueryLanguage language = QueryLanguage.from( "sql" );
 
 
     /**
@@ -74,6 +97,16 @@ public abstract class Result<E, F> {
             this.exception = instance.exception;
 
             return self();
+        }
+
+    }
+
+
+    private static class LanguageSerializer extends JsonSerializer<QueryLanguage> {
+
+        @Override
+        public void serialize( QueryLanguage value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeString( value.getSerializedName() );
         }
 
     }
