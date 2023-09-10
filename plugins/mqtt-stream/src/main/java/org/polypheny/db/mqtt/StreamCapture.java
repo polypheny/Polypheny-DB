@@ -16,7 +16,6 @@
 
 package org.polypheny.db.mqtt;
 
-import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
@@ -47,13 +46,12 @@ public class StreamCapture {
 
     public void insert( ReceivedMqttMessage receivedMqttMessage ) {
         this.receivedMqttMessage = receivedMqttMessage;
-        insertDocument( this.receivedMqttMessage.getCollectionName() );
+        insertMessage();
     }
 
 
-    // added by Datomo
-    public void insertDocument( String collectionName) {
-        String sqlCollectionName = this.receivedMqttMessage.getNamespaceName() + "." + collectionName;
+    private void insertMessage() {
+        String sqlCollectionName = this.receivedMqttMessage.getNamespaceName() + "." + this.receivedMqttMessage.getCollectionName();
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
@@ -74,27 +72,6 @@ public class StreamCapture {
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
         }
-    }
-
-
-    // added by Datomo
-    public List<String> scanCollection( String namespaceName, String collectionName ) {
-        String sqlCollectionName = namespaceName + "." + collectionName;
-        Statement statement = transaction.createStatement();
-
-        // Builder which allows to construct the algebra tree which is equivalent to query and is executed
-        AlgBuilder builder = AlgBuilder.create( statement );
-
-        AlgNode algNode = builder.docScan( statement, sqlCollectionName ).build();
-
-        // we can then wrap the tree in an AlgRoot and execute it
-        AlgRoot root = AlgRoot.of( algNode, Kind.SELECT );
-        List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
-        List<String> result = new ArrayList<>();
-        for ( List<Object> objectsList : res ) {
-            result.add( objectsList.get( 0 ).toString() );
-        }
-        return result;
     }
 
 
