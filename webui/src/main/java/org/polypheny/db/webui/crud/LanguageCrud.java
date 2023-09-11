@@ -194,9 +194,9 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mongo" ) ) {
-            return getDocResult( statement, request, query, implementation, transaction, noLimit );
+            return getDocResult( statement, language, request, query, implementation, transaction, noLimit );
         } else if ( language == QueryLanguage.from( "cypher" ) ) {
-            return getGraphResult( statement, request, query, implementation, transaction, noLimit );
+            return getGraphResult( statement, language, request, query, implementation, transaction, noLimit );
         }
 
         ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
@@ -259,7 +259,7 @@ public class LanguageCrud {
     }
 
 
-    private static GraphResult getGraphResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
+    private static GraphResult getGraphResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
         ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue[]> data = iterator.getArrayRows();
@@ -273,13 +273,15 @@ public class LanguageCrud {
                 .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .query( query )
+                .language( language )
+                .namespaceType( implementation.getNamespaceType() )
                 .xid( transaction.getXid().toString() )
                 .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
                 .build();
     }
 
 
-    private static DocResult getDocResult( Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
+    private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
 
         ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue> data = iterator.getSingleRows();
@@ -293,7 +295,9 @@ public class LanguageCrud {
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
                 .query( query )
+                .language( language )
                 .xid( transaction.getXid().toString() )
+                .namespaceType( implementation.getNamespaceType() )
                 .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
                 .build();
     }

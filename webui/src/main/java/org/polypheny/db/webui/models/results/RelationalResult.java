@@ -79,8 +79,9 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("UIRequest") UIRequest request,
             @JsonProperty("int") int affectedRows,
             @JsonProperty("ResultType") ResultType type,
-            @JsonProperty("hasMoreRows") boolean hasMore ) {
-        super( namespaceType, namespaceName, data, header, exception, query, xid, error, currentPage, highestPage, hasMore );
+            @JsonProperty("hasMoreRows") boolean hasMore,
+            @JsonProperty("language") QueryLanguage language ) {
+        super( namespaceType, namespaceName, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language );
         this.table = table;
         this.tables = tables;
         this.request = request;

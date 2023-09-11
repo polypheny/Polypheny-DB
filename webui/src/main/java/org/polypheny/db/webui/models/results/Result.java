@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -53,7 +54,6 @@ public abstract class Result<E, F> {
 
     public String query;
 
-
     /**
      * Transaction id, for the websocket. It will not be serialized to gson.
      */
@@ -79,6 +79,7 @@ public abstract class Result<E, F> {
      * language type of result MQL/SQL/CQL
      */
     @JsonSerialize(using = LanguageSerializer.class)
+    @Builder.Default
     public QueryLanguage language = QueryLanguage.from( "sql" );
 
 
@@ -87,6 +88,9 @@ public abstract class Result<E, F> {
      */
     public static abstract class ResultBuilder<E, F, C extends Result<E, F>, B extends ResultBuilder<E, F, C, B>> {
 
+        /**
+         * Only necessary due to lombok builder downside
+         */
         protected B $fillValuesFrom( C instance ) {
             this.data = instance.data;
             this.namespaceType = instance.namespaceType;
@@ -95,6 +99,7 @@ public abstract class Result<E, F> {
             this.namespaceName = instance.namespaceName;
             this.query = instance.query;
             this.exception = instance.exception;
+            this.language$value = instance.language;
 
             return self();
         }
