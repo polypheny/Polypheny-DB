@@ -14,6 +14,8 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.hivemq/hivemq-mqtt-client
     implementation group: 'com.hivemq', name: 'hivemq-mqtt-client', version: hivemq_mqttclient_version
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on
+    implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.70'
 
     implementation group: "org.mongodb", name: "mongodb-driver-sync", version: mongodb_driver_sync_version  // Apache 2.0
 

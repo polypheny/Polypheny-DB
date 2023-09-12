@@ -21,8 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.KeyFactory;
@@ -47,6 +50,9 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -100,13 +106,13 @@ public class MqttStreamPlugin extends Plugin {
     public void start() {
         // Add MQTT stream
         Map<String, String> mqttDefaultSettings = new HashMap<>();
-        mqttDefaultSettings.put( "broker", "localhost" );
+        mqttDefaultSettings.put( "brokerAddress", "localhost" );
         mqttDefaultSettings.put( "brokerPort", "1883" );
         mqttDefaultSettings.put( "Tsl/SslConnection", "false" );
         mqttDefaultSettings.put( "namespace", "default" );
         mqttDefaultSettings.put( "namespaceType", "DOCUMENT" );
         mqttDefaultSettings.put( "commonCollection", "false" );
-        mqttDefaultSettings.put( "collectionName", "" );
+        mqttDefaultSettings.put( "commonCollectionName", "" );
         mqttDefaultSettings.put( "Query Interface Name", "mqtt" );
         QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttDefaultSettings );
     }
@@ -127,12 +133,21 @@ public class MqttStreamPlugin extends Plugin {
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_DESCRIPTION = "Connection establishment to a MQTT broker.";
         @SuppressWarnings("WeakerAccess")
-        public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of( new QueryInterfaceSettingString( "broker", false, true, false, null ), new QueryInterfaceSettingInteger( "brokerPort", false, true, false, null ), new QueryInterfaceSettingString( "namespace", false, true, true, null ),
+        public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+                new QueryInterfaceSettingString( "brokerAddress", false, true, false, null ),
+                new QueryInterfaceSettingInteger( "brokerPort", false, true, false, null ),
+                new QueryInterfaceSettingString( "namespace", false, true, true, null ),
                 // "RELATIONAL", "GRAPH" types are not supported yet.
-                new QueryInterfaceSettingList( "namespaceType", false, true, true, new ArrayList<>( List.of( "DOCUMENT", "RELATIONAL", "GRAPH" ) ) ), new QueryInterfaceSettingList( "commonCollection", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ), new QueryInterfaceSettingString( "collectionName", true, false, true, null ), new QueryInterfaceSettingString( "topics", false, true, true, null ), new QueryInterfaceSettingString( "filterQuery", true, false, true, "" ), new QueryInterfaceSettingList( "Tsl/SslConnection", false, true, false, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ) );
+                new QueryInterfaceSettingList( "namespaceType", false, true, true,
+                        new ArrayList<>( List.of( "DOCUMENT", "RELATIONAL", "GRAPH" ) ) ),
+                new QueryInterfaceSettingList( "commonCollection", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
+                new QueryInterfaceSettingString( "commonCollectionName", true, false, true, null ),
+                new QueryInterfaceSettingString( "topics", false, true, true, null ),
+                new QueryInterfaceSettingString( "filterQuery", true, false, true, "" ),
+                new QueryInterfaceSettingList( "Tsl/SslConnection", false, true, false, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ) );
 
         @Getter
-        private final String broker;
+        private final String brokerAddress;
         @Getter
         private final int brokerPort;
         private Map<String, AtomicLong> topicsMap = new ConcurrentHashMap<>();
@@ -142,13 +157,19 @@ public class MqttStreamPlugin extends Plugin {
          * be inserted. If there is no predicate for a topic, then all messages are saved.
          * If there are several queries for the topic of the message, they are comma seperated.
          */
+        @Getter
         private Map<String, String> filterMap = new ConcurrentHashMap<>();
+        @Getter
         private ConcurrentLinkedQueue<String[]> messageQueue = new ConcurrentLinkedQueue<>();
-        private Mqtt3AsyncClient client;
+        private Mqtt5AsyncClient client;
+        @Getter
         private String namespaceName;
+        @Getter
         private NamespaceType namespaceType;
+        @Getter
         private AtomicBoolean commonCollection;
-        private String collectionName;
+        @Getter
+        private String commonCollectionName;
         private final long databaseId;
         private final int userId;
         final boolean ssl; // todo this.
@@ -161,7 +182,7 @@ public class MqttStreamPlugin extends Plugin {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             // Add information page
             this.monitoringPage = new MonitoringPage();
-            this.broker = settings.get( "broker" ).trim();
+            this.brokerAddress = settings.get( "brokerAddress" ).trim();
             this.brokerPort = Integer.parseInt( settings.get( "brokerPort" ).trim() );
             this.databaseId = Catalog.defaultDatabaseId;
             this.userId = Catalog.defaultUserId;
@@ -178,13 +199,18 @@ public class MqttStreamPlugin extends Plugin {
             this.namespaceType = type;
 
             this.commonCollection = new AtomicBoolean( Boolean.parseBoolean( settings.get( "commonCollection" ) ) );
-            this.collectionName = settings.get( "collectionName" ) == null ? settings.get( "collectionName" ) : settings.get( "collectionName" ).trim().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+            this.commonCollectionName = settings.get( "commonCollectionName" ) == null ?
+                    settings.get( "commonCollectionName" ) : settings.get( "commonCollectionName" )
+                                                                .trim()
+                                                                .replace( '#', '_' )
+                                                                .replace( '+', '_' )
+                                                                .replace( '/', '_' );
             if ( this.commonCollection.get() ) {
-                if ( this.collectionName.equals( null ) || this.collectionName.isEmpty() || this.collectionName.isBlank() ) {
-                    throw new NullPointerException( "commonCollection is set to FALSE but no valid collection name was given! Please enter a collection name." );
-                } else if ( !collectionExists( this.collectionName ) ) {
+                if ( this.commonCollectionName == null || this.commonCollectionName.isEmpty() || this.commonCollectionName.isBlank() ) {
+                    throw new NullPointerException( "commonCollection is set to true but no valid collection name was given! Please enter a collection name." );
+                } else if ( !collectionExists( this.commonCollectionName ) ) {
                     this.createCommonCollection = true;
-                    createStreamCollection( this.collectionName );
+                    createStreamCollection( this.commonCollectionName );
                 }
             }
             String queryString = settings.get( "filterQuery" );
@@ -201,21 +227,29 @@ public class MqttStreamPlugin extends Plugin {
         public void run() {
             if ( ssl ) {
 
-                this.client = MqttClient.builder().useMqttVersion3().identifier( getUniqueName() ).serverHost( broker ).serverPort( brokerPort )
-
+                this.client = MqttClient.builder().useMqttVersion5()
+                        .identifier( getUniqueName() )
+                        .serverHost( brokerAddress )
+                        .serverPort( brokerPort )
                         .sslConfig()
                         //TODO: delete or enter password from GUI password thinghere and in method
-                        .keyManagerFactory( SslHelper.createKeyManagerFactory( "polyphenyClient.crt", "polyphenyClient.key", "" ) ).trustManagerFactory( SslHelper.createTrustManagerFactory( "ca.crt" ) ).applySslConfig().buildAsync();
-
+                        .keyManagerFactory( SslHelper.createKeyManagerFactory( "polyphenyClient.crt", "polyphenyClient.key", "" ) )
+                        .trustManagerFactory( SslHelper.createTrustManagerFactory( "ca.crt" ) )
+                        .applySslConfig()
+                        .buildAsync();
             } else {
-                this.client = MqttClient.builder().useMqttVersion3().identifier( getUniqueName() ).serverHost( broker ).serverPort( brokerPort ).buildAsync();
+                this.client = MqttClient.builder().useMqttVersion5()
+                        .identifier( getUniqueName() )
+                        .serverHost( brokerAddress )
+                        .serverPort( brokerPort )
+                        .buildAsync();
             }
 
             client.connectWith().send().whenComplete( ( connAck, throwable ) -> {
                 if ( throwable != null ) {
                     throw new RuntimeException( "Connection to broker could not be established. Please delete and recreate the Plug-In." + throwable );
                 } else {
-                    log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, broker, brokerPort );
+                    log.info( "{} started and is listening to broker on {}:{}", INTERFACE_NAME, brokerAddress, brokerPort );
                     subscribe( toList( this.settings.get( "topics" ) ) );
                 }
             } );
@@ -234,7 +268,7 @@ public class MqttStreamPlugin extends Plugin {
 
             client.disconnect().whenComplete( ( disconn, throwable ) -> {
                 if ( throwable != null ) {
-                    throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + broker + ":" + brokerPort + ". Please try again.", throwable );
+                    throw new RuntimeException( INTERFACE_NAME + " could not disconnect from MQTT broker " + brokerAddress + ":" + brokerPort + ". Please try again.", throwable );
                 } else {
                     log.info( "{} stopped.", INTERFACE_NAME );
                     monitoringPage.remove();
@@ -388,9 +422,9 @@ public class MqttStreamPlugin extends Plugin {
                             this.commonCollection.set( Boolean.parseBoolean( this.getCurrentSettings().get( "commonCollection" ) ) );
                             createAllCollections();
                             break;
-                        case "collectionName":
-                            String newCollectionName = this.getCurrentSettings().get( "collectionName" ).trim();
-                            newCollectionName = newCollectionName == null ? null : newCollectionName.trim().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+                        case "commonCollectionName":
+                            String newCommonCollectionName = this.getCurrentSettings().get( "commonCollectionName" ).trim();
+                            newCommonCollectionName = newCommonCollectionName == null ? null : newCommonCollectionName.trim().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
                             boolean mode;
                             if ( updatedSettings.contains( "commonCollection" ) ) {
                                 mode = Boolean.parseBoolean( this.getCurrentSettings().get( "commonCollection" ) );
@@ -398,19 +432,19 @@ public class MqttStreamPlugin extends Plugin {
                                 mode = this.commonCollection.get();
                             }
                             if ( mode ) {
-                                if ( !(newCollectionName.equals( "null" ) || newCollectionName.isEmpty() || newCollectionName.isBlank()) ) {
-                                    if ( !collectionExists( newCollectionName ) ) {
-                                        createStreamCollection( this.collectionName );
+                                if ( !(newCommonCollectionName.equals( "null" ) || newCommonCollectionName.isEmpty() || newCommonCollectionName.isBlank()) ) {
+                                    if ( !collectionExists( newCommonCollectionName ) ) {
+                                        createStreamCollection( this.commonCollectionName );
                                     }
-                                    this.collectionName = newCollectionName;
+                                    this.commonCollectionName = newCommonCollectionName;
                                     createAllCollections();
                                 } else {
-                                    this.settings.put( "collectionName", this.collectionName );
+                                    this.settings.put( "commonCollectionName", this.commonCollectionName );
                                     throw new NullPointerException( "commonCollection is set to FALSE but no valid collection name was given! Please enter a collection name." );
                                 }
 
                             } else {
-                                this.collectionName = newCollectionName;
+                                this.commonCollectionName = newCommonCollectionName;
                             }
                             break;
                         case "filterQuery":
@@ -491,7 +525,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        void processMsg( Mqtt3Publish subMsg ) {
+        void processMsg( Mqtt5Publish subMsg ) {
             Transaction transaction = getTransaction();
             Statement statement = transaction.createStatement();
 
@@ -533,7 +567,7 @@ public class MqttStreamPlugin extends Plugin {
                     collectionToBeSaved = mqttMessage.getTopic().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
                     receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, collectionToBeSaved );
                 } else {
-                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.collectionName );
+                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.commonCollectionName );
                 }
             }
             StreamCapture streamCapture = new StreamCapture( transaction );
@@ -542,7 +576,7 @@ public class MqttStreamPlugin extends Plugin {
 
 
         // helper methods:
-        private static String extractPayload( Mqtt3Publish subMsg ) {
+        private static String extractPayload( Mqtt5Publish subMsg ) {
             return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
         }
 
@@ -669,9 +703,9 @@ public class MqttStreamPlugin extends Plugin {
                         }
                     }
                 } else {
-                    if ( !(this.collectionName.equals( null ) || this.collectionName.equals( "" ) || this.collectionName.isBlank()) ) {
-                        if ( !collectionExists( this.collectionName ) ) {
-                            createStreamCollection( this.collectionName );
+                    if ( !(this.commonCollectionName == null || this.commonCollectionName.equals( "" ) || this.commonCollectionName.isBlank()) ) {
+                        if ( !collectionExists( this.commonCollectionName ) ) {
+                            createStreamCollection( this.commonCollectionName );
                         }
                     } else {
                         throw new NullPointerException( "commonCollection is set to 'true' but no valid collection name was given! Please enter a collection name." );
@@ -724,7 +758,7 @@ public class MqttStreamPlugin extends Plugin {
 
         private static class SslHelper {
 
-            private KeyFactory getKeyFactoryInstance() {
+            private static KeyFactory getKeyFactoryInstance() {
                 try {
                     return KeyFactory.getInstance( "RSA" );
                 } catch ( NoSuchAlgorithmException e ) {
@@ -733,7 +767,7 @@ public class MqttStreamPlugin extends Plugin {
             }
 
 
-            private X509Certificate createX509CertificateFromFile( final String certificateFileName ) {
+            private static X509Certificate createX509CertificateFromFile( final String certificateFileName ) {
                 String path = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + certificateFileName;
                 final File file = PolyphenyHomeDirManager.getInstance().getFileIfExists( path );
                 if ( !file.isFile() ) {
@@ -775,37 +809,65 @@ public class MqttStreamPlugin extends Plugin {
                 try {
                     //todo: this.getUniqueName() in path
                     String clientCrtPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "polyphenyClient.p12";
-
-                    // load client certificate:
                     File crtFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( clientCrtPath );
+                    //final X509Certificate clientCertificate = createX509CertificateFromFile("polyphenyClient.p12");
                     InputStream crtStream = new FileInputStream( crtFile );
+                    final KeyStore ks = KeyStore.getInstance( "PKCS12" );
+                    ks.load(crtStream,"1234".toCharArray());
+                    X509Certificate clientCertificate = (X509Certificate) ks.getCertificate( "alias" );
+                    keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    keyManagerFactory.init(ks, "".toCharArray());
+                    /*
+                    // load client certificate:
+
+
                     //CertificateFactory cf = CertificateFactory.getInstance("X.509");
                     //Certificate clientCertificate = cf.generateCertificate( crtStream );
+                    crtStream.close();*/
 
-                    final KeyStore ks = KeyStore.getInstance( KeyStore.getDefaultType() );
-                    ks.load( crtStream, null );
-                    Certificate clientCertificate = ks.getCertificate( "alias" );
-                    crtStream.close();
+                    //
+                    //ks.load( null, null );
+                    //Certificate clientCertificate = ks.getCertificate( "alias" );
+
 
                     //load client key:
                     String keyPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "polyphenyClient.key";
                     File keyFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( keyPath );
                     InputStream keyStream = new FileInputStream( keyFile );
+                    /*
                     String key = keyStream.toString();
                     key = key.replace( "-----BEGIN PRIVATE KEY-----", "" ).replace( "-----END PRIVATE KEY-----", "" );
-                    final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec( key.getBytes() );
-                    KeyFactory kf = KeyFactory.getInstance( "RSA" );
-                    PrivateKey privateKey = kf.generatePrivate( spec );
+
+                     */
+
+
+
+
+                    /*
+
+
+                    // create private key method:------------------------------------------
+                    final PemReader pemReader = new PemReader(new FileReader(keyFile));
+                    final PemObject pemObject = pemReader.readPemObject();
+                    final byte[] pemContent = pemObject.getContent();
+                    pemReader.close();
+                    final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(pemContent);
+                    final KeyFactory keyFactory = getKeyFactoryInstance();
+                    final PrivateKey privateKey = keyFactory.generatePrivate(encodedKeySpec);
+
+                    //---------------------------------------------------------------------
+
 
                     // create keystore
-                    final KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-                    keyStore.load( null, null );
-
-                    keyStore.setCertificateEntry( "certificate", clientCertificate );
-                    keyStore.setKeyEntry( "private-key", privateKey, "".toCharArray(), new Certificate[]{ clientCertificate } );
-                    keyManagerFactory = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
-                    keyManagerFactory.init( keyStore, "".toCharArray() );
-
+                    final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                    keyStore.load(null, null);
+                    keyStore.setCertificateEntry("certificate", clientCertificate);
+                    keyStore.setKeyEntry("private-key", privateKey,
+                            "".toCharArray(),
+                            new Certificate[] { clientCertificate });
+                    keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                    keyManagerFactory.init(keyStore, "".toCharArray());
+                    */
                 } catch ( Exception e ) {
                     throw new RuntimeException( e );
                 }
@@ -818,13 +880,15 @@ public class MqttStreamPlugin extends Plugin {
                 try {
                     // load ca certificate:
                     //todo: this.getUniqueName() in path
+                    /*
                     String caPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "ca.crt";
                     File caFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( caPath );
                     InputStream ca = new FileInputStream( caFile );
                     CertificateFactory cf = CertificateFactory.getInstance( "X.509" );
                     Certificate caCertificate = cf.generateCertificate( ca );
                     ca.close();
-
+*/
+                    final X509Certificate caCertificate = (X509Certificate) createX509CertificateFromFile(caCertificateFileName);
                     final KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
                     trustStore.load( null, null );
                     trustStore.setCertificateEntry( "ca-certificate", caCertificate );
@@ -937,7 +1001,7 @@ public class MqttStreamPlugin extends Plugin {
                 brokerKv.putPair( "Client state", client.getState() + "" );
                 brokerKv.putPair( "Client identifier", client.getConfig().getClientIdentifier().get() + "" );
                 //TODO: check this after having SSL Configuration.
-                brokerKv.putPair( "SSL configuration", client.getConfig().getSslConfig().get() + "" );
+                brokerKv.putPair( "SSL configuration", client.getConfig().getSslConfig() + "" );
             }
 
 
