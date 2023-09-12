@@ -51,10 +51,6 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
      * The request from the UI is being sent back and contains information about which columns are being filtered and which are being sorted
      */
     public UIRequest request;
-    /**
-     * Number of affected rows
-     */
-    public int affectedRows;
 
     /**
      * ExpressionType of the result: if the data is from a table/view/arbitrary query
@@ -65,7 +61,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     @JsonCreator
     public RelationalResult(
             @JsonProperty("namespaceType") NamespaceType namespaceType,
-            @JsonProperty("namespaceName") String namespaceName,
+            @JsonProperty("namespaceId") Long namespaceId,
             @JsonProperty("data") String[][] data,
             @JsonProperty("UiColumnDefinition") UiColumnDefinition[] header,
             @JsonProperty("exception") Throwable exception,
@@ -77,15 +73,14 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("table") String table,
             @JsonProperty("tables") String[] tables,
             @JsonProperty("UIRequest") UIRequest request,
-            @JsonProperty("int") int affectedRows,
+            @JsonProperty("int") int affectedTuples,
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language ) {
-        super( namespaceType, namespaceName, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language );
+        super( namespaceType, namespaceId, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
         this.table = table;
         this.tables = tables;
         this.request = request;
-        this.affectedRows = affectedRows;
         this.type = type;
     }
 

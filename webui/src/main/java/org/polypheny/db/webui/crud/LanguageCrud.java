@@ -249,7 +249,7 @@ public class LanguageCrud {
                 .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
                 .namespaceType( implementation.getNamespaceType() )
-                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
+                .namespaceId( request.namespaceId )
                 .language( language )
                 .affectedRows( data.size() )
                 .hasMoreRows( hasMoreRows )
@@ -276,7 +276,7 @@ public class LanguageCrud {
                 .language( language )
                 .namespaceType( implementation.getNamespaceType() )
                 .xid( transaction.getXid().toString() )
-                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
+                .namespaceId( request.namespaceId )
                 .build();
     }
 
@@ -298,7 +298,7 @@ public class LanguageCrud {
                 .language( language )
                 .xid( transaction.getXid().toString() )
                 .namespaceType( implementation.getNamespaceType() )
-                .namespaceName( Catalog.snapshot().getNamespace( request.namespaceId ).orElseThrow().name )
+                .namespaceId( request.namespaceId )
                 .build();
     }
 

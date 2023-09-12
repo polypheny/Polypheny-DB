@@ -108,11 +108,7 @@ public class CypherToAlgConverter {
 
     public AlgRoot convert( CypherNode query, ExtendedQueryParameters parameters, AlgOptCluster cluster ) {
         long namespaceId;
-        if ( parameters.namespaceId == null ) {
-            namespaceId = getDatabaseId( parameters );
-        } else {
-            namespaceId = parameters.namespaceId;
-        }
+        namespaceId = Objects.requireNonNullElseGet( parameters.namespaceId, () -> getNamespaceId( parameters ) );
 
         LogicalEntity entity = getEntity( namespaceId, parameters );
 
@@ -134,18 +130,18 @@ public class CypherToAlgConverter {
 
 
     @NotNull
-    private LogicalEntity getEntity( long databaseId, ExtendedQueryParameters parameters ) {
-        Optional<LogicalGraph> optionalGraph = this.snapshot.graph().getGraph( databaseId );
+    private LogicalEntity getEntity( long namespaceId, ExtendedQueryParameters parameters ) {
+        Optional<LogicalGraph> optionalGraph = this.snapshot.graph().getGraph( namespaceId );
         if ( optionalGraph.isPresent() ) {
             return optionalGraph.get();
         }
 
-        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( databaseId );
+        Optional<LogicalTable> optionalTable = this.snapshot.rel().getTable( namespaceId );
         if ( optionalTable.isPresent() ) {
             return optionalTable.get();
         }
 
-        return this.snapshot.doc().getCollection( databaseId ).orElseThrow();
+        return this.snapshot.doc().getCollection( namespaceId ).orElseThrow();
     }
 
 
@@ -154,11 +150,11 @@ public class CypherToAlgConverter {
                 cluster,
                 cluster.traitSet(),
                 graph,
-                new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "*", 0, cluster.getTypeFactory().createPolyType( PolyType.GRAPH ) ) ) ) );
+                GraphType.of() );
     }
 
 
-    private long getDatabaseId( ExtendedQueryParameters parameters ) {
+    private long getNamespaceId( ExtendedQueryParameters parameters ) {
         return snapshot.getNamespace( parameters.getNamespaceId() ).orElseThrow().id;
     }
 

@@ -144,7 +144,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
             JsonObject object = json.getAsJsonObject();
             Map<PolyString, PolyValue> map = new HashMap<>();
             for ( Entry<String, JsonElement> entry : object.entrySet() ) {
-                map.put( PolyString.of( entry.getKey() ), PolyValue.GSON.fromJson( entry.getValue(), PolyValue.class ) );
+                map.put( PolyString.of( entry.getKey() ), context.deserialize( entry.getValue(), PolyValue.class ) );
             }
             return new PolyDocument( map );
         }

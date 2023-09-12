@@ -41,7 +41,7 @@ public abstract class Result<E, F> {
      */
     public NamespaceType namespaceType;
 
-    public String namespaceName;
+    public Long namespaceId;
 
     public E[] data;
 
@@ -81,6 +81,10 @@ public abstract class Result<E, F> {
     @JsonSerialize(using = LanguageSerializer.class)
     @Builder.Default
     public QueryLanguage language = QueryLanguage.from( "sql" );
+    /**
+     * Number of affected rows
+     */
+    public int affectedTuples;
 
 
     /**
@@ -96,7 +100,7 @@ public abstract class Result<E, F> {
             this.namespaceType = instance.namespaceType;
             this.xid = instance.xid;
             this.error = instance.error;
-            this.namespaceName = instance.namespaceName;
+            this.namespaceId = instance.namespaceId;
             this.query = instance.query;
             this.exception = instance.exception;
             this.language$value = instance.language;

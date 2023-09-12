@@ -31,13 +31,13 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.Map;
 import lombok.NonNull;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -303,7 +303,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NonNull PolyGraph asGraph() {
-        return new PolyGraph( null, new FlatMap<>(), new FlatMap<>() );
+        return new PolyGraph( null, PolyMap.of( Map.of() ), PolyMap.of( Map.of() ) );
     }
 
 

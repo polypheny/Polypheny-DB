@@ -16,11 +16,17 @@
 
 package org.polypheny.db.webui.models.requests;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
 
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
+@Value
 public class GraphRequest extends QueryRequest {
 
     public List<String> nodeIds;
@@ -28,8 +34,18 @@ public class GraphRequest extends QueryRequest {
     public List<String> edgeIds;
 
 
-    public GraphRequest( String query, boolean analyze, boolean cache, String language, Long namespaceId ) {
+    @JsonCreator
+    public GraphRequest(
+            @JsonProperty("nodeIds") List<String> nodeIds,
+            @JsonProperty("edgeIds") List<String> edgeIds,
+            @JsonProperty("query") String query,
+            @JsonProperty("analyze") boolean analyze,
+            @JsonProperty("cache") boolean cache,
+            @JsonProperty("language") String language,
+            @JsonProperty("namespaceId") Long namespaceId ) {
         super( query, analyze, cache, language, namespaceId );
+        this.nodeIds = nodeIds;
+        this.edgeIds = edgeIds;
     }
 
 }

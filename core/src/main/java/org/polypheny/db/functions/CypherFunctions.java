@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -39,6 +38,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.relational.PolyMap;
 
 
 @Deterministic
@@ -91,17 +91,17 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static Enumerable<PolyGraph> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
-        FlatMap<PolyString, PolyNode> ns = new FlatMap<>();
+        Map<PolyString, PolyNode> ns = new HashMap<>();
         for ( PolyNode node : nodes ) {
             ns.put( node.id, node );
         }
 
-        FlatMap<PolyString, PolyEdge> es = new FlatMap<>();
+        Map<PolyString, PolyEdge> es = new HashMap<>();
         for ( PolyEdge edge : edges ) {
             es.put( edge.id, edge );
         }
 
-        return Linq4j.asEnumerable( List.of( new PolyGraph( ns, es ) ) );
+        return Linq4j.asEnumerable( List.of( new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) ) );
     }
 
 

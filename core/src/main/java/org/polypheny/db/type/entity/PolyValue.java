@@ -90,6 +90,8 @@ import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionarySerialize
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.PolyEdgeSerializer;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyGraph.PolyGraphSerializer;
+import org.polypheny.db.type.entity.graph.PolyGraph.PolyGraphSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializer;
 import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializerDef;
@@ -111,6 +113,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyDocument.class,
         PolyMap.class,
         PolyList.class,
+        PolyGraph.class,
         PolyBoolean.class,
         PolyTime.class,
         PolyString.class,
@@ -135,7 +138,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBigDecimal.class, ctx -> new PolyBigDecimalSerializerDef() )
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
-            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() ).build()
+            .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
+            .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() ).build()
             .create( PolySerializable.CLASS_LOADER, PolyValue.class );
 
     // used to serialize to Json
@@ -160,6 +164,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .registerTypeAdapter( PolyTimeStamp.class, new PolyTimeStampSerializer() )
             .registerTypeAdapter( PolyInterval.class, new PolyIntervalSerializer() )
             .registerTypeAdapter( PolyNull.class, new PolyNullSerializer() )
+            .registerTypeAdapter( PolyGraph.class, new PolyGraphSerializer() )
             .registerTypeAdapter( PolyValue.class, new PolyValueTypeAdapter() );
 
 

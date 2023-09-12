@@ -117,7 +117,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
             JsonObject object = json.getAsJsonObject();
             Map<PolyString, PolyValue> map = new HashMap<>();
             for ( Entry<String, JsonElement> entry : object.entrySet() ) {
-                map.put( PolyString.of( entry.getKey() ), PolyValue.GSON.fromJson( entry.getValue(), PolyValue.class ) );
+                map.put( PolyString.of( entry.getKey() ), context.deserialize( entry.getValue(), PolyValue.class ) );
             }
             return new PolyDictionary( map );
         }
@@ -127,7 +127,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
         public JsonElement serialize( PolyDictionary src, Type typeOfSrc, JsonSerializationContext context ) {
             JsonObject object = new JsonObject();
             for ( Entry<PolyString, PolyValue> entry : src.map.entrySet() ) {
-                object.add( entry.getKey().toString(), context.serialize( entry.getValue(), PolyValue.class ) );
+                object.add( entry.getKey().toString(), context.serialize( entry.getValue(), entry.getValue().getClass() ) );
             }
             return object;
         }

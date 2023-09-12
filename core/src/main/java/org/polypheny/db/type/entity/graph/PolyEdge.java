@@ -211,12 +211,12 @@ public class PolyEdge extends GraphPropertyHolder {
         public PolyEdge deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             JsonObject jsonObject = json.getAsJsonObject();
             PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
-            PolyDictionary props = PolyValue.GSON.fromJson( jsonObject.get( "properties" ).getAsString(), PolyDictionary.class );
-            List<PolyString> labels = PolyValue.GSON.fromJson( jsonObject.get( "labels" ).getAsString(), PolyList.class );
+            PolyDictionary props = context.deserialize( jsonObject.get( "properties" ), PolyDictionary.class );
+            List<PolyString> labels = context.deserialize( jsonObject.get( "labels" ), PolyList.class );
             PolyString source = PolyString.of( jsonObject.get( "source" ).getAsString() );
             PolyString target = PolyString.of( jsonObject.get( "target" ).getAsString() );
             EdgeDirection dir = EdgeDirection.valueOf( jsonObject.get( "direction" ).getAsString() );
-            PolyString var = PolyValue.GSON.fromJson( jsonObject.get( "var" ).getAsString(), PolyString.class );
+            PolyString var = context.deserialize( jsonObject.get( "var" ), PolyString.class );
             return new PolyEdge( id, props, labels, source, target, dir, var );
         }
 
@@ -225,12 +225,12 @@ public class PolyEdge extends GraphPropertyHolder {
         public JsonElement serialize( PolyEdge src, Type typeOfSrc, JsonSerializationContext context ) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty( "id", src.id.value );
-            jsonObject.addProperty( "properties", PolyValue.GSON.toJson( src.properties ) );
-            jsonObject.addProperty( "labels", PolyValue.GSON.toJson( src.labels ) );
+            jsonObject.add( "properties", context.serialize( src.properties ) );
+            jsonObject.add( "labels", context.serialize( src.labels ) );
             jsonObject.addProperty( "source", src.source.value );
             jsonObject.addProperty( "target", src.target.value );
             jsonObject.addProperty( "direction", src.direction.name() );
-            jsonObject.addProperty( "var", PolyValue.GSON.toJson( src.variableName ) );
+            jsonObject.add( "var", context.serialize( src.variableName ) );
             return jsonObject;
         }
 

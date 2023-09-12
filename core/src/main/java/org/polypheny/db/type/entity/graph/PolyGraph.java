@@ -17,7 +17,21 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.Expose;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.def.SimpleSerializerDef;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,15 +44,15 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.runtime.PolyCollections;
-import org.polypheny.db.runtime.PolyCollections.FlatMap;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
 
@@ -46,17 +60,17 @@ import org.polypheny.db.util.Pair;
 public class PolyGraph extends GraphObject {
 
     @Expose
-    private final FlatMap<PolyString, PolyNode> nodes;
+    private final PolyMap<PolyString, PolyNode> nodes;
     @Expose
-    private final FlatMap<PolyString, PolyEdge> edges;
+    private final PolyMap<PolyString, PolyEdge> edges;
 
 
-    public PolyGraph( @NonNull PolyCollections.FlatMap<PolyString, PolyNode> nodes, @NonNull PolyCollections.FlatMap<PolyString, PolyEdge> edges ) {
+    public PolyGraph( @NonNull PolyMap<PolyString, PolyNode> nodes, @NonNull PolyMap<PolyString, PolyEdge> edges ) {
         this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges );
     }
 
 
-    public PolyGraph( PolyString id, @NonNull PolyCollections.FlatMap<PolyString, PolyNode> nodes, @NonNull PolyCollections.FlatMap<PolyString, PolyEdge> edges ) {
+    public PolyGraph( PolyString id, @NonNull PolyMap<PolyString, PolyNode> nodes, @NonNull PolyMap<PolyString, PolyEdge> edges ) {
         super( id, PolyType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
@@ -321,6 +335,51 @@ public class PolyGraph extends GraphObject {
                 parent.getPath( namedIds );
             }
             return namedIds;
+        }
+
+    }
+
+
+    public static class PolyGraphSerializerDef extends SimpleSerializerDef<PolyGraph> {
+
+        @Override
+        protected BinarySerializer<PolyGraph> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyGraph item ) {
+                    throw new NotImplementedException();
+                }
+
+
+                @Override
+                public PolyGraph decode( BinaryInput in ) throws CorruptedDataException {
+                    throw new NotImplementedException();
+                }
+            };
+        }
+
+    }
+
+
+    public static class PolyGraphSerializer implements JsonSerializer<PolyGraph>, JsonDeserializer<PolyGraph> {
+
+        @Override
+        public JsonElement serialize( PolyGraph src, Type typeOfSrc, JsonSerializationContext context ) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty( "id", src.id.value );
+            jsonObject.add( "nodes", context.serialize( src.nodes ) );
+            jsonObject.add( "edges", context.serialize( src.edges ) );
+            return jsonObject;
+        }
+
+
+        @Override
+        public PolyGraph deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
+            PolyMap<PolyString, PolyNode> nodes = context.deserialize( jsonObject.get( "nodes" ), PolyMap.class );
+            PolyMap<PolyString, PolyEdge> edges = context.deserialize( jsonObject.get( "edges" ), PolyMap.class );
+            return new PolyGraph( id, nodes, edges );
         }
 
     }
