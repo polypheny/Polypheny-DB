@@ -19,8 +19,6 @@ package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
-import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import java.io.File;
@@ -212,6 +210,15 @@ public class MqttStreamPlugin extends Plugin {
                     this.createCommonCollection = true;
                     createStreamCollection( this.commonCollectionName );
                 }
+            } else {
+                for( String topic : toList( settings.get( "topics" ) ) ) {
+                    topic = topic.replace( '#', '_' )
+                            .replace( '+', '_' )
+                            .replace( '/', '_' );
+                    if ( !this.commonCollection.get() && !collectionExists( topic ) ) {
+                        createStreamCollection( topic );
+                    }
+                }
             }
             String queryString = settings.get( "filterQuery" );
             if ( queryString != null && !queryString.isBlank() ) {
@@ -231,6 +238,7 @@ public class MqttStreamPlugin extends Plugin {
                         .identifier( getUniqueName() )
                         .serverHost( brokerAddress )
                         .serverPort( brokerPort )
+                        .automaticReconnectWithDefaultConfig()
                         .sslConfig()
                         //TODO: delete or enter password from GUI password thinghere and in method
                         .keyManagerFactory( SslHelper.createKeyManagerFactory( "polyphenyClient.crt", "polyphenyClient.key", "" ) )
@@ -242,6 +250,7 @@ public class MqttStreamPlugin extends Plugin {
                         .identifier( getUniqueName() )
                         .serverHost( brokerAddress )
                         .serverPort( brokerPort )
+                        .automaticReconnectWithDefaultConfig()
                         .buildAsync();
             }
 
@@ -494,9 +503,6 @@ public class MqttStreamPlugin extends Plugin {
                     throw new RuntimeException( "Subscription was not successful. Please try again.", throwable );
                 } else {
                     this.topicsMap.put( topic, new AtomicLong( 0 ) );
-                    if ( !this.commonCollection.get() && !collectionExists( topic ) ) {
-                        createStreamCollection( topic );
-                    }
                 }
             } );
             //info: no notify() here, because otherwise only the first topic will be subscribed from the method subscribeToAll().
