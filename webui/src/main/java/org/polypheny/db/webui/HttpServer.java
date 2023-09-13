@@ -19,6 +19,7 @@ package org.polypheny.db.webui;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -137,6 +138,7 @@ public class HttpServer implements Runnable {
             config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
                 mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
                 mapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
                 mapper.writerWithDefaultPrettyPrinter();
             } ) );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );

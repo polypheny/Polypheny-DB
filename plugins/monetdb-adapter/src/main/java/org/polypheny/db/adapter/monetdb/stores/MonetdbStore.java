@@ -270,7 +270,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public List<IndexMethodModel> getAvailableIndexMethods() {
         // According to the MonetDB documentation, MonetDB takes create index statements only as an advice and often freely
         // neglects them. Indexes are created and removed automatically. We therefore decided to not support manually creating
         // indexes on MonetDB.
@@ -279,7 +279,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public AvailableIndexMethod getDefaultIndexMethod() {
+    public IndexMethodModel getDefaultIndexMethod() {
         throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 

@@ -37,7 +37,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
+import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
@@ -628,10 +628,10 @@ public class DdlManagerImpl extends DdlManager {
         String method;
         String methodDisplayName;
         if ( indexMethodName != null && !indexMethodName.equalsIgnoreCase( "default" ) ) {
-            AvailableIndexMethod aim = null;
-            for ( AvailableIndexMethod availableIndexMethod : location.getAvailableIndexMethods() ) {
-                if ( availableIndexMethod.name.equals( indexMethodName ) ) {
-                    aim = availableIndexMethod;
+            IndexMethodModel aim = null;
+            for ( IndexMethodModel indexMethodModel : location.getAvailableIndexMethods() ) {
+                if ( indexMethodModel.name.equals( indexMethodName ) ) {
+                    aim = indexMethodModel;
                 }
             }
             if ( aim == null ) {
@@ -685,10 +685,10 @@ public class DdlManagerImpl extends DdlManager {
         String method;
         String methodDisplayName;
         if ( indexMethodName != null ) {
-            AvailableIndexMethod aim = null;
-            for ( AvailableIndexMethod availableIndexMethod : IndexManager.getAvailableIndexMethods() ) {
-                if ( availableIndexMethod.name.equals( indexMethodName ) ) {
-                    aim = availableIndexMethod;
+            IndexMethodModel aim = null;
+            for ( IndexMethodModel indexMethodModel : IndexManager.getAvailableIndexMethods() ) {
+                if ( indexMethodModel.name.equals( indexMethodName ) ) {
+                    aim = indexMethodModel;
                 }
             }
             if ( aim == null ) {

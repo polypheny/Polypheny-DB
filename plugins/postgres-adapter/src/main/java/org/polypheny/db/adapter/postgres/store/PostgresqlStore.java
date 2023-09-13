@@ -298,18 +298,18 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
-                new AvailableIndexMethod( "btree", "B-TREE" ),
-                new AvailableIndexMethod( "hash", "HASH" ),
-                new AvailableIndexMethod( "gin", "GIN (Generalized Inverted Index)" ),
-                new AvailableIndexMethod( "brin", "BRIN (Block Range index)" )
+                new IndexMethodModel( "btree", "B-TREE" ),
+                new IndexMethodModel( "hash", "HASH" ),
+                new IndexMethodModel( "gin", "GIN (Generalized Inverted Index)" ),
+                new IndexMethodModel( "brin", "BRIN (Block Range index)" )
         );
     }
 
 
     @Override
-    public AvailableIndexMethod getDefaultIndexMethod() {
+    public IndexMethodModel getDefaultIndexMethod() {
         return getAvailableIndexMethods().get( 0 );
     }
 

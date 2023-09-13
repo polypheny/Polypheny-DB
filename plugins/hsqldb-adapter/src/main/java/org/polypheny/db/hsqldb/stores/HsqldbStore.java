@@ -154,15 +154,15 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
-                new AvailableIndexMethod( "default", "Default" )
+                new IndexMethodModel( "default", "Default" )
         );
     }
 
 
     @Override
-    public AvailableIndexMethod getDefaultIndexMethod() {
+    public IndexMethodModel getDefaultIndexMethod() {
         return getAvailableIndexMethods().get( 0 );
     }
 

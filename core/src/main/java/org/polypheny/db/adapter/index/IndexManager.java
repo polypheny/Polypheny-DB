@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
+import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -82,14 +82,14 @@ public class IndexManager {
     }
 
 
-    public static List<AvailableIndexMethod> getAvailableIndexMethods() {
+    public static List<IndexMethodModel> getAvailableIndexMethods() {
         return ImmutableList.of(
-                new AvailableIndexMethod( "hash", "HASH" )
+                new IndexMethodModel( "hash", "HASH" )
         );
     }
 
 
-    public static AvailableIndexMethod getDefaultIndexMethod() {
+    public static IndexMethodModel getDefaultIndexMethod() {
         return getAvailableIndexMethods().get( 0 );
     }
 

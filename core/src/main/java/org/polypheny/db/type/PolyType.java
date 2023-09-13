@@ -60,6 +60,7 @@ import org.polypheny.db.util.Util;
  * <li>PolyType provides a place to hang extra information such as whether the type carries precision and scale.</li>
  * </ul>
  */
+@Getter
 public enum PolyType {
     BOOLEAN(
             PrecScale.NO_NO,
@@ -526,14 +527,24 @@ public enum PolyType {
     /**
      * Bitwise-or of flags indicating allowable precision/scale combinations.
      */
-    @Getter
     private final int signatures;
 
     /**
      * Returns true if not of a "pure" standard sql type. "Inpure" types are {@link #ANY}, {@link #NULL} and {@link #SYMBOL}
      */
     private final boolean special;
+    /**
+     * -- GETTER --
+     *
+     * @return the ordinal from {@link Types} corresponding to this PolyType
+     */
     private final int jdbcOrdinal;
+    /**
+     * -- GETTER --
+     * Gets the SqlTypeFamily containing this PolyType.
+     *
+     * @return containing family, or null for none
+     */
     private final PolyTypeFamily family;
 
 
@@ -604,19 +615,6 @@ public enum PolyType {
     }
 
 
-    public boolean isSpecial() {
-        return special;
-    }
-
-
-    /**
-     * @return the ordinal from {@link java.sql.Types} corresponding to this PolyType
-     */
-    public int getJdbcOrdinal() {
-        return jdbcOrdinal;
-    }
-
-
     private static List<PolyType> combine( List<PolyType> list0, List<PolyType> list1 ) {
         return ImmutableList.<PolyType>builder()
                 .addAll( list0 )
@@ -649,16 +647,6 @@ public enum PolyType {
             default:
                 return -1;
         }
-    }
-
-
-    /**
-     * Gets the SqlTypeFamily containing this PolyType.
-     *
-     * @return containing family, or null for none
-     */
-    public PolyTypeFamily getFamily() {
-        return family;
     }
 
 

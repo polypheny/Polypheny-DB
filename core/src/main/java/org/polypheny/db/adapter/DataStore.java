@@ -48,10 +48,9 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
     }
 
 
+    public abstract List<IndexMethodModel> getAvailableIndexMethods();
 
-    public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
-
-    public abstract AvailableIndexMethod getDefaultIndexMethod();
+    public abstract IndexMethodModel getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
@@ -59,7 +58,7 @@ public abstract class DataStore<S extends StoreCatalog> extends Adapter<S> imple
 
 
     @AllArgsConstructor
-    public static class AvailableIndexMethod {
+    public static class IndexMethodModel {
 
         public final String name;
         public final String displayName;

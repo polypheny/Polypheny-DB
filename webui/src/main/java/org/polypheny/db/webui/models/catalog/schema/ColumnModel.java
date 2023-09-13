@@ -16,21 +16,33 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.IOException;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class ColumnModel extends FieldModel {
 
-    public final PolyType type;
-    public final PolyType collectionsType;
-    public final Integer precision;
-    public final Integer scale;
-    public final String defaultValue;
-    public final Integer dimension;
-    public final Integer cardinality;
-    public final boolean nullable;
-    public final int position;
+    @JsonSerialize(using = PolyTypeSerializer.class)
+    public PolyType type;
+
+    @JsonSerialize(using = PolyTypeSerializer.class)
+    public PolyType collectionsType;
+    public Integer precision;
+    public Integer scale;
+    public String defaultValue;
+    public Integer dimension;
+    public Integer cardinality;
+    public boolean nullable;
+    public int position;
 
 
     public ColumnModel(
@@ -60,7 +72,34 @@ public class ColumnModel extends FieldModel {
 
 
     public static ColumnModel from( LogicalColumn column ) {
-        return new ColumnModel( column.id, column.name, column.tableId, column.type, column.collectionsType, column.length, column.scale, column.defaultValue == null ? null : column.defaultValue.value, column.dimension, column.cardinality, column.nullable, column.position );
+        return new ColumnModel(
+                column.id,
+                column.name,
+                column.tableId,
+                column.type,
+                column.collectionsType,
+                column.length,
+                column.scale,
+                column.defaultValue == null ? null : column.defaultValue.value,
+                column.dimension,
+                column.cardinality,
+                column.nullable,
+                column.position );
+    }
+
+
+    public static class PolyTypeSerializer extends JsonSerializer<PolyType> {
+
+        @Override
+        public void serialize( PolyType value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName( "name" );
+            gen.writeString( value.getName() );
+            gen.writeFieldName( "signatures" );
+            gen.writeNumber( value.getSignatures() );
+            gen.writeEndObject();
+        }
+
     }
 
 }

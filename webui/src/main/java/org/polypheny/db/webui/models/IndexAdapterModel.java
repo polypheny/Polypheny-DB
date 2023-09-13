@@ -23,24 +23,23 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class IndexAdapterModel extends IdEntity {
 
-    public List<IndexMethodModel> availableIndexMethods;
+    public List<IndexMethodModel> indexMethodModels;
 
 
-    public IndexAdapterModel( @Nullable Long id, @Nullable String name, List<IndexMethodModel> availableIndexMethods ) {
+    public IndexAdapterModel( @Nullable Long id, @Nullable String name, List<IndexMethodModel> indexMethodModels ) {
         super( id, name );
-        this.availableIndexMethods = availableIndexMethods;
+        this.indexMethodModels = indexMethodModels;
     }
 
 
     public static IndexAdapterModel from( DataStore<?> store ) {
-        return new IndexAdapterModel( store.adapterId, store.getUniqueName(), store.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).collect( Collectors.toList() ) );
+        return new IndexAdapterModel( store.adapterId, store.getUniqueName(), store.getAvailableIndexMethods().stream().map( IndexAdapterModel.IndexMethodModel::from ).collect( Collectors.toList() ) );
     }
 
 
@@ -51,7 +50,7 @@ public class IndexAdapterModel extends IdEntity {
         public String displayName;
 
 
-        public static IndexMethodModel from( AvailableIndexMethod index ) {
+        public static IndexMethodModel from( DataStore.IndexMethodModel index ) {
             return new IndexMethodModel( index.name, index.displayName );
         }
 

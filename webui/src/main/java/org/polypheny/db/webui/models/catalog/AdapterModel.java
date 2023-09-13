@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models.catalog;
 
 
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -25,10 +26,13 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -40,6 +44,7 @@ public class AdapterModel extends IdEntity {
     public AdapterType type;
     public Map<String, AdapterSettingValueModel> settings;
     public DeployMode mode;
+    public List<IndexMethodModel> indexMethods;
 
 
     public AdapterModel(
@@ -48,24 +53,28 @@ public class AdapterModel extends IdEntity {
             String adapterName,
             AdapterType type,
             Map<String, AdapterSettingValueModel> settings,
-            DeployMode mode ) {
+            DeployMode mode,
+            List<IndexMethodModel> indexMethods ) {
         super( id, name );
         this.adapterName = adapterName;
         this.type = type;
         this.settings = settings;
         this.mode = mode;
+        this.indexMethods = indexMethods;
     }
 
 
     public static AdapterModel from( CatalogAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
+        Adapter<?> a = AdapterManager.getInstance().getAdapter( adapter.id );
         return new AdapterModel(
                 adapter.id,
                 adapter.uniqueName,
                 adapter.adapterName,
                 adapter.type,
                 settings,
-                adapter.mode );
+                adapter.mode,
+                adapter.type == AdapterType.STORE ? ((DataStore<?>) a).getAvailableIndexMethods() : List.of() );
     }
 
 
