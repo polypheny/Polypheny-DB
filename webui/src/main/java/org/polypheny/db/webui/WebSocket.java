@@ -34,6 +34,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
@@ -134,7 +135,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 break;
 
             case "RelAlgRequest":
-            case "TableRequest":
+            case "EntityRequest":
                 Result<?, ?> result = null;
                 if ( request.requestType.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
@@ -174,7 +175,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 break;
                         }
                         if ( result == null ) {
-                            throw new RuntimeException( "Could not load data." );
+                            throw new GenericRuntimeException( "Could not load data." );
                         }
 
                     } catch ( Throwable t ) {
@@ -188,7 +189,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 ctx.send( result );
                 break;
             default:
-                throw new RuntimeException( "Unexpected WebSocket request: " + request.requestType );
+                throw new GenericRuntimeException( "Unexpected WebSocket request: " + request.requestType );
         }
         queryAnalyzers.put( ctx.getSessionId(), xIds );
     }
