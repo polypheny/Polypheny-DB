@@ -73,7 +73,6 @@ public class CypherTestTemplate {
     protected final TestNode HANS_AGE = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) );
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
-
     @BeforeClass
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
@@ -120,7 +119,6 @@ public class CypherTestTemplate {
         }
         return res;
     }
-
 
     protected boolean containsNodes( GraphResult res, boolean exclusive, TestObject... nodes ) {
         if ( res.getHeader().size() == 1 && res.getHeader().get( 0 ).dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
@@ -425,6 +423,4 @@ public class CypherTestTemplate {
         }
 
     }
-
-
 }

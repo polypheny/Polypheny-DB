@@ -50,7 +50,7 @@ public class AuthenticatorImpl implements Authenticator {
          *  TODO: remove this upon implementation of user authentication  *
          *                                                                *
          ******************************************************************/
-        if ( password.isEmpty() ) {
+        if ( password == null || password.isEmpty() ) {
             return catalogUser.get();
         }
         /******************************************************************/

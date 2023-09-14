@@ -26,9 +26,10 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.excluded.CassandraExcluded;
-import org.polypheny.jdbc.PolyphenyConnection;
-import org.polypheny.jdbc.multimodel.ProtoStatement;
-import org.polypheny.jdbc.multimodel.ProtoStatement.ResultType;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.multimodel.PolyStatement;
+import org.polypheny.jdbc.multimodel.Result;
+import org.polypheny.jdbc.multimodel.ScalarResult;
 
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
 public class MqlTest {
@@ -41,7 +42,7 @@ public class MqlTest {
     @Test
     public void connectionUnwrapTest() {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyphenyConnection.class ) ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
         } catch ( SQLException e ) {
@@ -53,14 +54,14 @@ public class MqlTest {
     @Test
     public void simpleMqlTest() {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyphenyConnection.class ) ) {
+            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
-            ProtoStatement protoStatement = connection.unwrap( PolyphenyConnection.class ).createProtoStatement();
-            protoStatement.execute( "public", MQL_LANGUAGE_NAME, "use test" );
-            ResultType resultType = protoStatement.execute( "test", MQL_LANGUAGE_NAME, TEST_DATA );
-            assertEquals( resultType, ResultType.SCALAR );
-            assertEquals( 1, protoStatement.getScalarResult() );
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
+            polyStatement.execute( "public", MQL_LANGUAGE_NAME, "use test" );
+            Result result = polyStatement.execute( "test", MQL_LANGUAGE_NAME, TEST_DATA );
+            assertEquals( result.getResultType(), Result.ResultType.SCALAR );
+            assertEquals( 1, result.unwrap( ScalarResult.class ).getScalar() );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
