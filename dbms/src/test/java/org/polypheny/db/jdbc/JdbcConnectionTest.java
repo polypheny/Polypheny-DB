@@ -47,9 +47,9 @@ import org.junit.Test;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.jdbc.PolyphenyConnection;
-import org.polypheny.jdbc.types.PolyphenyBlob;
-import org.polypheny.jdbc.types.PolyphenyClob;
+import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.jdbctypes.PolyphenyBlob;
+import org.polypheny.jdbc.jdbctypes.PolyphenyClob;
 
 @Slf4j
 public class JdbcConnectionTest {
@@ -285,7 +285,7 @@ public class JdbcConnectionTest {
     @Test
     public void isWrapperForTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            PolyphenyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyphenyConnection.class );
+            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
         }
     }
 
@@ -293,7 +293,7 @@ public class JdbcConnectionTest {
     @Test
     public void unwrapTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            PolyphenyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyphenyConnection.class );
+            PolyConnection polyphenyConnection = jdbcConnection.getConnection().unwrap( PolyConnection.class );
         }
     }
 
