@@ -159,13 +159,13 @@ public class ExploreManager {
             try {
                 result = RelationalExploreResult.from( Crud
                                 .executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false, crud ).build() )
-                        .generatedQuery( explore.getClassifiedSqlStatement() );
+                        .query( explore.getClassifiedSqlStatement() );
                 transaction.commit();
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
                 result = RelationalExploreResult.builder()
                         .error( e.getMessage() )
-                        .generatedQuery( explore.getClassifiedSqlStatement() );
+                        .query( explore.getClassifiedSqlStatement() );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -307,7 +307,7 @@ public class ExploreManager {
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();
-            RelationalResult rel = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).generatedQuery( query ).build();
+            RelationalResult rel = Crud.executeSqlSelect( statement, queryExplorationRequest, query, false, crud ).query( query ).build();
             result = RelationalExploreResult.from( rel );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {

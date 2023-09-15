@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -49,22 +50,22 @@ public abstract class Processor {
                 // Acquire global schema lock
                 lock( statement );
                 // Execute statement
-                return getResult( statement, (ExecutableStatement) parsed, parameters );
+                return getImplementation( statement, (ExecutableStatement) parsed, parameters );
             } catch ( DeadlockException e ) {
-                throw new RuntimeException( "Exception while acquiring global schema lock", e );
+                throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
             } catch ( TransactionException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             } finally {
                 // Release lock
                 unlock( statement );
             }
         } else {
-            throw new RuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
+            throw new GenericRuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
         }
     }
 
 
-    <T> PolyImplementation<T> getResult( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
+    <T> PolyImplementation<T> getImplementation( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
         parsed.execute( statement.getPrepareContext(), statement, parameters );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();

@@ -58,13 +58,13 @@ public class RelationalExploreResult extends RelationalResult {
         builder.header( rel.header );
         builder.currentPage( rel.currentPage );
         builder.highestPage( rel.highestPage );
-        builder.hasMoreRows( rel.hasMore );
+        builder.hasMore( rel.hasMore );
         builder.table( rel.table );
         builder.tables( rel.tables );
         builder.request( rel.request );
-        builder.affectedRows( rel.affectedTuples );
+        builder.affectedTuples( rel.affectedTuples );
         builder.exception( rel.exception );
-        builder.generatedQuery( rel.query );
+        builder.query( rel.query );
         builder.language( rel.language );
         builder.type( rel.type );
 

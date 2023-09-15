@@ -147,7 +147,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
                 if ( parsed.getFamily() == Family.DDL ) {
                     mqlProcessor.prepareDdl( statement, parsed, parameters );
-                    RelationalResult result = RelationalResult.builder().affectedRows( 1 ).generatedQuery( query ).xid( transaction.getXid().toString() ).namespaceType( NamespaceType.DOCUMENT ).build();
+                    RelationalResult result = RelationalResult.builder().affectedTuples( 1 ).query( query ).xid( transaction.getXid().toString() ).namespaceType( NamespaceType.DOCUMENT ).build();
                     results.add( result );
                 } else {
                     if ( transaction.isAnalyze() ) {

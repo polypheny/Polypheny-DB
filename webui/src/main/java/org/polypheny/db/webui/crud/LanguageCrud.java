@@ -175,7 +175,7 @@ public class LanguageCrud {
 
     public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        RelationalResult result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build();
+        RelationalResult result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
 
         if ( transaction.isActive() ) {
             try {
@@ -251,10 +251,10 @@ public class LanguageCrud {
                 .namespaceType( implementation.getNamespaceType() )
                 .namespaceId( request.namespaceId )
                 .language( language )
-                .affectedRows( data.size() )
-                .hasMoreRows( hasMoreRows )
+                .affectedTuples( data.size() )
+                .hasMore( hasMoreRows )
                 .xid( transaction.getXid().toString() )
-                .generatedQuery( query )
+                .query( query )
                 .build();
     }
 

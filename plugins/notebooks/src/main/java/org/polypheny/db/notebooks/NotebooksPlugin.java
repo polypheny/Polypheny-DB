@@ -21,6 +21,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -106,8 +107,8 @@ public class NotebooksPlugin extends PolyPlugin {
 
 
     private void createContainerRequest( Context ctx ) {
-        int dockerId = Integer.parseInt( ctx.queryParam( "dockerInstance" ) );
-        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).get();
+        int dockerId = Integer.parseInt( Objects.requireNonNull( ctx.queryParam( "dockerInstance" ) ) );
+        DockerInstance dockerInstance = DockerManager.getInstance().getInstanceById( dockerId ).orElseThrow();
         if ( createContainer( dockerInstance ) ) {
             ctx.status( 200 );
         } else {
@@ -201,9 +202,9 @@ public class NotebooksPlugin extends PolyPlugin {
 
     public void pluginStatus( Context ctx, Crud crud ) {
         if ( pluginLoaded ) {
-            ctx.status( 200 ).json( "plugin is loaded correctly" );
+            ctx.status( 200 );
         } else {
-            ctx.status( 500 ).json( "plugin is not loaded correctly" );
+            ctx.status( 500 );
         }
     }
 
@@ -237,49 +238,49 @@ public class NotebooksPlugin extends PolyPlugin {
      */
     private void registerEndpoints() {
         HttpServer server = HttpServer.getInstance();
-        final String REST_PATH = "/notebooks";
+        final String PATH = "/notebooks";
 
-        server.addWebsocket( REST_PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
+        server.addWebsocket( PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<path>", fs::contents, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::session ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernels", proxyOrEmpty( proxy -> proxy::kernels ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/kernelspecs", ctx -> {
+        server.addSerializedRoute( PATH + "/contents/<path>", fs::contents, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::session ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/kernels", proxyOrEmpty( proxy -> proxy::kernels ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/kernelspecs", ctx -> {
             if ( proxy != null ) {
                 proxy.kernelspecs( ctx );
             } else {
                 ctx.status( 200 ).json( Map.of( "default", "", "kernelspecs", Map.of() ) );
             }
         }, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/file/<path>", fs::file, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/status", ctx -> {
+        server.addSerializedRoute( PATH + "/file/<path>", fs::file, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/plugin/status", this::pluginStatus, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/status", ctx -> {
             if ( proxy != null ) {
                 proxy.connectionStatus( ctx );
             } else {
                 ctx.status( 200 ).result( "null" );
             }
         }, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/export/<path>", fs::export, HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
-        server.addSerializedRoute( REST_PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/export/<path>", fs::export, HandlerType.GET );
+        server.addSerializedRoute( PATH + "/connections", proxyOrEmpty( proxy -> proxy::openConnections ), HandlerType.GET );
+        server.addSerializedRoute( PATH + "/container/getDockerInstances", this::getDockerInstances, HandlerType.GET );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/sessions", proxyOrError( proxy -> proxy::createSession ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/interrupt", proxyOrError( proxy -> proxy::interruptKernel ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/kernels/{kernelId}/restart", proxyOrError( proxy -> proxy::restartKernel ), HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/restart", this::restartContainer, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/create", this::createContainerRequest, HandlerType.POST );
-        server.addSerializedRoute( REST_PATH + "/container/destroy", this::destroyContainerRequest, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/contents/<parentPath>", fs::createFile, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/sessions", proxyOrError( proxy -> proxy::createSession ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/kernels/{kernelId}/interrupt", proxyOrError( proxy -> proxy::interruptKernel ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/kernels/{kernelId}/restart", proxyOrError( proxy -> proxy::restartKernel ), HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/restart", this::restartContainer, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/create", this::createContainerRequest, HandlerType.POST );
+        server.addSerializedRoute( PATH + "/container/destroy", this::destroyContainerRequest, HandlerType.POST );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::moveFile, HandlerType.PATCH );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::patchSession ), HandlerType.PATCH );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::moveFile, HandlerType.PATCH );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::patchSession ), HandlerType.PATCH );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::uploadFile, HandlerType.PUT );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::uploadFile, HandlerType.PUT );
 
-        server.addSerializedRoute( REST_PATH + "/contents/<filePath>", fs::deleteFile, HandlerType.DELETE );
-        server.addSerializedRoute( REST_PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::deleteSession ), HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/contents/<filePath>", fs::deleteFile, HandlerType.DELETE );
+        server.addSerializedRoute( PATH + "/sessions/{sessionId}", proxyOrError( proxy -> proxy::deleteSession ), HandlerType.DELETE );
     }
 
 

@@ -162,7 +162,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
             return Collections.singletonList( result );
         } catch ( Throwable t ) {
-            return Collections.singletonList( RelationalResult.builder().error( t.getMessage() ).generatedQuery( query ).xid( transaction.getXid().toString() ).build() );
+            return Collections.singletonList( RelationalResult.builder().error( t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build() );
         }
     }
 

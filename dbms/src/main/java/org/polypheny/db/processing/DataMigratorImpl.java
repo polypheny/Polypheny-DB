@@ -319,29 +319,27 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<AllocationColumn> selectedColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyImplementation<PolyValue> result;
+            PolyImplementation<PolyValue> implementation;
             if ( isMaterializedView ) {
-                result = sourceStatement.getQueryProcessor().prepareQuery(
+                implementation = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
                         sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
                         false,
                         false,
                         doesSubstituteOrderBy );
             } else {
-                result = sourceStatement.getQueryProcessor().prepareQuery(
+                implementation = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
                         sourceAlg.alg.getCluster().getTypeFactory().builder().build(),
                         true,
                         false,
                         false );
             }
-            final Enumerable<PolyValue> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            Iterator<PolyValue> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : implementation.getRowType().getFieldList() ) {
                     if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
@@ -360,7 +358,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             do {
-                ResultIterator<PolyValue> iter = result.execute( sourceStatement, batchSize );
+                ResultIterator<PolyValue> iter = implementation.execute( sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getRows();
                 iter.close();
                 if ( rows.isEmpty() ) {
@@ -408,9 +406,9 @@ public class DataMigratorImpl implements DataMigrator {
                     iterator.next();
                 }
                 targetStatement.getDataContext().resetParameterValues();
-            } while ( result.hasMoreRows() );
+            } while ( implementation.hasMoreRows() );
         } catch ( Throwable t ) {
-            throw new RuntimeException( t );
+            throw new GenericRuntimeException( t );
         }
     }
 

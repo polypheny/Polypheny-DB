@@ -102,30 +102,11 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
     public static abstract class RelationalResultBuilder<C extends RelationalResult, B extends RelationalResultBuilder<C, B>> extends ResultBuilder<String[], UiColumnDefinition, C, B> {
 
-        private int currentPage;
-        private int highestPage;
         private String table;
         private String[] tables;
         private UIRequest request;
         private Throwable exception;
-        private int affectedRows;
-        private String generatedQuery;
         private ResultType type;
-        private QueryLanguage language$value;
-        private boolean language$set;
-        private boolean hasMoreRows;
-
-
-        public B currentPage( int currentPage ) {
-            this.currentPage = currentPage;
-            return self();
-        }
-
-
-        public B highestPage( int highestPage ) {
-            this.highestPage = highestPage;
-            return self();
-        }
 
 
         public B table( String table ) {
@@ -152,33 +133,10 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         }
 
 
-        public B affectedRows( int affectedRows ) {
-            this.affectedRows = affectedRows;
-            return self();
-        }
-
-
-        public B generatedQuery( String generatedQuery ) {
-            this.generatedQuery = generatedQuery;
-            return self();
-        }
 
 
         public B type( ResultType type ) {
             this.type = type;
-            return self();
-        }
-
-
-        public B language( QueryLanguage language ) {
-            this.language$value = language;
-            this.language$set = true;
-            return self();
-        }
-
-
-        public B hasMoreRows( boolean hasMoreRows ) {
-            this.hasMoreRows = hasMoreRows;
             return self();
         }
 
