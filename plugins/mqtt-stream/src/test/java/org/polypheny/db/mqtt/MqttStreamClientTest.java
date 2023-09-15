@@ -27,21 +27,28 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.verification.VerificationMode;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class MqttStreamClientTest {
     static TransactionManager transactionManager;
+    static Transaction transaction;
     static  Map<String, String> initialSettings = new HashMap<>();
     static  Map<String, String> changedSettings = new HashMap<>();
+
+    MqttStreamServer client;
     @BeforeClass
     public static void init() {
         TestHelper testHelper = TestHelper.getInstance();
         transactionManager = testHelper.getTransactionManager();
+        transaction = testHelper.getTransaction();
 
     }
 
@@ -59,11 +66,21 @@ public class MqttStreamClientTest {
         initialSettings.put( "Tsl/SslConnection", "false");
         initialSettings.put( "filterQuery", "");
 
+        QueryInterface iface = QueryInterfaceManager.getInstance().getQueryInterface( "mqtt" );
+
+        client = new MqttStreamServer(
+                transactionManager,
+                null,
+                iface.getQueryInterfaceId(),
+                iface.getUniqueName(),
+                initialSettings);
+
+
         changedSettings.clear();
         changedSettings.put( "commonCollectionName", "testCollection" );
         changedSettings.put( "commonCollection", "true");
         changedSettings.put( "namespace", "testNamespace");
-        changedSettings.put( "namespaceType", "DOCUMENT");
+        //changedSettings.put( "namespaceType", "DOCUMENT");
         changedSettings.put( "topics", "");
         changedSettings.put( "filterQuery", "");
     }
@@ -74,66 +91,179 @@ public class MqttStreamClientTest {
     // TODO: UI komponenten testen
 
     @Test
-    public void saveQueryTest() {
-        Catalog mockedCatalog = mock( Catalog.class );
-        QueryInterface iface = QueryInterfaceManager.getInstance().addQueryInterface( mockedCatalog, "MqttStreamServer", "testmqtt", initialSettings );
-        MqttStreamServer client = new MqttStreamServer(
-                transactionManager,
-                null,
-                iface.getQueryInterfaceId(),
-                iface.getUniqueName(),
-                initialSettings);
+    public void saveQueryEmptyStringTest() {
+        changedSettings.replace( "filterQuery", " " );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>(0);
+        assertEquals( expected, client.getFilterMap() );
+    }
 
-        System.out.println(client.getUniqueName());
-        assertEquals( "testCollection", client.getCommonCollectionName() );
+
+    @Test
+    public void saveSimpleQueryTest() {
+        changedSettings.replace( "filterQuery", "topic1:{key1:value1}" );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>(1);
+        expected.put( "topic1", "{key1:value1}" );
+        assertEquals( expected, client.getFilterMap() );
+    }
+
+
+    @Test
+    public void saveQueryWithArrayTest() {
+        changedSettings.replace( "filterQuery", "topic1:{key1:[1, 2, 3]}" );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>(1);
+        expected.put( "topic1", "{key1:[1, 2, 3]}" );
+        assertEquals( expected, client.getFilterMap() );
+    }
+
+
+    @Test
+    public void saveTwoSimpleQueryTest() {
+        changedSettings.replace( "filterQuery", "topic1:{key1:value1}, topic2:{key2:value2}" );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>(2);
+        expected.put( "topic1", "{key1:value1}" );
+        expected.put( "topic2", "{key2:value2}" );
+        assertEquals( expected, client.getFilterMap() );
+    }
+
+
+    @Test
+    public void saveNestedQueryTest() {
+        changedSettings.replace( "filterQuery", "topic1:{key1:{$lt:3}}, topic2:{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>(2);
+        expected.put( "topic1", "{key1:{$lt:3}}" );
+        expected.put( "topic2", "{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
+        assertEquals( expected, client.getFilterMap() );
+    }
+
+
+
+    @Test
+    public void toListEmptyTest() {
+        List <String> result = client.toList( "" );
+        List<String> expected = new ArrayList<>();
+        assertEquals( expected, result );
+    }
+
+    @Test
+    public void toListSpaceTest() {
+        List <String> result = client.toList( " " );
+        List<String> expected = new ArrayList<>();
+        assertEquals( expected, result );
+    }
+
+
+    @Test
+    public void toListWithContentTest() {
+        List <String> result = client.toList( "1, 2 " );
+        List<String> expected = new ArrayList<>();
+        expected.add( "1" );
+        expected.add( "2" );
+        assertEquals( expected, result );
+    }
+
+    
+    @Test
+    public void reloadSettingsTopicTest() {
+        //TODO with broker
+        //TODO: with wildcards
+    }
+
+    @Test
+    public void reloadSettingsNewNamespaceTest() {
+        // change to new namespace:
+        changedSettings.replace( "namespace", "namespace2" );
+        client.updateSettings( changedSettings );
+        assertEquals( "namespace2", client.getNamespaceName() );
+    }
+
+    @Test
+    public void reloadSettingsExistingNamespaceTest() {
+        // change to existing namespace:
+        changedSettings.replace( "namespace", "testNamespace" );
+        client.updateSettings( changedSettings );
+        assertEquals( "testNamespace", client.getNamespaceName() );
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void reloadSettingsWrongTypeNamespaceTest() {
+        // change to existing namespace other type:
+        changedSettings.replace( "namespace", "public" );
+        client.updateSettings( changedSettings  );
+        assertEquals( "testNamespace", client.getNamespaceName() );
+    }
+
+
+    @Test
+    public void reloadSettingsCommonCollectionToFalseTest() {
+        changedSettings.replace( "commonCollection", "false" );
+        client.updateSettings( changedSettings );
+        assertFalse( client.getCommonCollection().get() );
+    }
+
+    @Test
+    public void reloadSettingsCommonCollectionToTrueTest() {
+        changedSettings.replace( "commonCollection", "true" );
+        client.updateSettings( changedSettings );
         assertTrue( client.getCommonCollection().get() );
+    }
 
+    @Test
+    public void reloadSettingsNewCommonCollectionNameTest() {
         changedSettings.replace( "commonCollectionName", "buttonCollection" );
         client.updateSettings( changedSettings );
         assertEquals( "buttonCollection", client.getCommonCollectionName() );
         assertTrue( client.getCommonCollection().get() );
     }
-    
+
+
     @Test
-    public void reloadSettingsTopicTest() {
-        MqttStreamServer mockPlugin = mock( MqttStreamPlugin.MqttStreamServer.class);
-        List<String> updatedSettings = new ArrayList<>();
-        updatedSettings.add( "topics" );
-        mockPlugin.reloadSettings( updatedSettings  );
+    public void reloadSettingsExistingCommonCollectionNameTest() {
+        changedSettings.replace( "commonCollectionName", "testCollection" );
+        client.updateSettings( changedSettings );
+        assertEquals( "testCollection", client.getCommonCollectionName() );
+        assertTrue( client.getCommonCollection().get() );
     }
 
-    public void reloadSettingsNamespaceTest() {
-        QueryInterfaceManager.getInstance().getQueryInterface( "mqtt" );
-        MqttStreamServer mockPlugin = mock( MqttStreamPlugin.MqttStreamServer.class);
-        List<String> updatedSettings = new ArrayList<>();
-        updatedSettings.add( "namespace" );
-        mockPlugin.reloadSettings( updatedSettings  );
+
+    @Test
+    public void reloadSettingsCommonCollectionAndCommonCollectionNameTest() {
+        // testing special case: commonCollection changed from false to true + commonCollectionName changes
+        changedSettings.replace( "commonCollection", "false" );
+        client.updateSettings( changedSettings );
+
+
+        changedSettings.replace( "commonCollectionName", "buttonCollection" );
+        changedSettings.replace( "commonCollection", "true" );
+        client.updateSettings( changedSettings );
+        assertEquals( "buttonCollection", client.getCommonCollectionName() );
+        assertTrue( client.getCommonCollection().get() );
     }
 
-    public void reloadSettingsNamespaceTypeTest() {
-        MqttStreamServer mockPlugin = mock( MqttStreamPlugin.MqttStreamServer.class);
-        List<String> updatedSettings = new ArrayList<>();
-        updatedSettings.add( "namespaceType" );
-        mockPlugin.reloadSettings( updatedSettings  );
+    @Test(expected = NullPointerException.class)
+    public void reloadSettingsCommonCollectionAndCommonCollectionNameTest2() {
+        // testing special case: commonCollection changed from false to true + commonCollectionName changes
+        changedSettings.replace( "commonCollection", "false" );
+        client.updateSettings( changedSettings );
+
+
+        changedSettings.replace( "commonCollectionName", " " );
+        changedSettings.replace( "commonCollection", "true" );
+        client.updateSettings( changedSettings );
+        assertEquals( "testCollection", client.getCommonCollectionName() );
+        assertTrue( client.getCommonCollection().get() );
     }
 
-    public void reloadSettingsNamespaceNamespaceTypeTest1() {
-        MqttStreamServer mockPlugin = mock( MqttStreamPlugin.MqttStreamServer.class);
-        List<String> updatedSettings = new ArrayList<>();
-        updatedSettings.add( "namespaceType" );
-        updatedSettings.add( "namespace" );
-        mockPlugin.reloadSettings( updatedSettings  );
+
+
+
+
+    @Test
+    public void processMsgTest() {
+//TODO
     }
-
-    public void reloadSettingsNamespaceNamespaceTypeTest2() {
-        MqttStreamServer mockPlugin = mock( MqttStreamPlugin.MqttStreamServer.class);
-        List<String> updatedSettings = new ArrayList<>();
-        updatedSettings.add( "namespace" );
-        updatedSettings.add( "namespaceType" );
-        mockPlugin.reloadSettings( updatedSettings  );
-    }
-
-    public void reloadSettingsCommonCollectionTest() {}
-
-    public void reloadSettingsCommonCollectionNameTest() {}
 }
