@@ -23,7 +23,6 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonString;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
@@ -31,13 +30,11 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.stream.StreamProcessorImpl;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
 
 @Slf4j
 public class MqttStreamProcessor extends StreamProcessorImpl {
@@ -56,7 +53,7 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
     //TODO: in Tutorial schreiben, was allgemein für Strings gilt
     public boolean applyFilter() {
         AlgRoot root = processMqlQuery();
-        List<List<Object>> res = executeAndTransformPolyAlg( root, statement);
+        List<List<Object>> res = executeAndTransformPolyAlg( root, statement );
         log.info( res.toString() );
         return res.size() != 0;
     }
@@ -69,7 +66,7 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
         final AlgOptCluster cluster = AlgOptCluster.createDocument( statement.getQueryProcessor().getPlanner(), algBuilder.getRexBuilder() );
         MqlToAlgConverter mqlConverter = new MqlToAlgConverter( mqlProcessor, catalogReader, cluster );
 
-        MqlFind find = (MqlFind) mqlProcessor.parse( String.format( "db.%s.find(%s)", "null", this.filterQuery ) ).get( 0 );
+        MqlFind find = (MqlFind) mqlProcessor.parse( String.format( "db.%s.find(%s)", "collection", this.filterQuery ) ).get( 0 );
         String msg = getStream();
         BsonDocument msgDoc;
         AlgNode input;
@@ -92,4 +89,5 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
         input = LogicalDocumentValues.create( cluster, ImmutableList.of( msgDoc ) );
         return mqlConverter.convert( find, input );
     }
+
 }
