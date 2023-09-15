@@ -94,7 +94,9 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
     private AlgNode handleRelationalEntity( AlgOptRuleCall call, Scan<?> scan, AllocationEntity alloc ) {
         AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).getRelScan( alloc.id, call.builder() );
-        alg = attachReorder( alg, scan, call.builder() );
+        if ( scan.getModel() == scan.entity.namespaceType ) {
+            alg = attachReorder( alg, scan, call.builder() );
+        }
 
         if ( scan.getModel() != scan.entity.namespaceType ) {
             // cross-model queries need a transformer first, we let another rule handle that
