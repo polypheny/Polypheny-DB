@@ -16,10 +16,17 @@
 
 package org.polypheny.db.mqtt;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
+import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder;
+import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder.Default;
+import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
+import com.hivemq.client.mqtt.datatypes.MqttQos;
+import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +34,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.verification.VerificationMode;
 import org.polypheny.db.TestHelper;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer;
@@ -38,12 +42,15 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 public class MqttStreamClientTest {
+
     static TransactionManager transactionManager;
     static Transaction transaction;
-    static  Map<String, String> initialSettings = new HashMap<>();
-    static  Map<String, String> changedSettings = new HashMap<>();
+    static Map<String, String> initialSettings = new HashMap<>();
+    static Map<String, String> changedSettings = new HashMap<>();
 
     MqttStreamServer client;
+
+
     @BeforeClass
     public static void init() {
         TestHelper testHelper = TestHelper.getInstance();
@@ -59,12 +66,12 @@ public class MqttStreamClientTest {
         initialSettings.put( "brokerAddress", "localhost" );
         initialSettings.put( "brokerPort", "1883" );
         initialSettings.put( "commonCollectionName", "testCollection" );
-        initialSettings.put( "commonCollection", "true");
-        initialSettings.put( "namespace", "testNamespace");
-        initialSettings.put( "namespaceType", "DOCUMENT");
-        initialSettings.put( "topics", "");
-        initialSettings.put( "Tsl/SslConnection", "false");
-        initialSettings.put( "filterQuery", "");
+        initialSettings.put( "commonCollection", "true" );
+        initialSettings.put( "namespace", "testNamespace" );
+        initialSettings.put( "namespaceType", "DOCUMENT" );
+        initialSettings.put( "topics", "" );
+        initialSettings.put( "Tsl/SslConnection", "false" );
+        initialSettings.put( "filterQuery", "" );
 
         QueryInterface iface = QueryInterfaceManager.getInstance().getQueryInterface( "mqtt" );
 
@@ -73,28 +80,28 @@ public class MqttStreamClientTest {
                 null,
                 iface.getQueryInterfaceId(),
                 iface.getUniqueName(),
-                initialSettings);
-
+                initialSettings );
 
         changedSettings.clear();
         changedSettings.put( "commonCollectionName", "testCollection" );
-        changedSettings.put( "commonCollection", "true");
-        changedSettings.put( "namespace", "testNamespace");
+        changedSettings.put( "commonCollection", "true" );
+        changedSettings.put( "namespace", "testNamespace" );
         //changedSettings.put( "namespaceType", "DOCUMENT");
-        changedSettings.put( "topics", "");
-        changedSettings.put( "filterQuery", "");
+        changedSettings.put( "topics", "" );
+        changedSettings.put( "filterQuery", "" );
     }
 
 
-// TODO in tEst auch prüfen ob collection name richtig ist mit _
-    //TODO: Tests for save Query methode nur!!
-    // TODO: UI komponenten testen
+    @Test
+    public void UITest() { // TODO: UI komponenten testen
+    }
+
 
     @Test
     public void saveQueryEmptyStringTest() {
         changedSettings.replace( "filterQuery", " " );
         client.updateSettings( changedSettings );
-        Map<String, String> expected = new HashMap<>(0);
+        Map<String, String> expected = new HashMap<>( 0 );
         assertEquals( expected, client.getFilterMap() );
     }
 
@@ -103,7 +110,7 @@ public class MqttStreamClientTest {
     public void saveSimpleQueryTest() {
         changedSettings.replace( "filterQuery", "topic1:{key1:value1}" );
         client.updateSettings( changedSettings );
-        Map<String, String> expected = new HashMap<>(1);
+        Map<String, String> expected = new HashMap<>( 1 );
         expected.put( "topic1", "{key1:value1}" );
         assertEquals( expected, client.getFilterMap() );
     }
@@ -113,7 +120,7 @@ public class MqttStreamClientTest {
     public void saveQueryWithArrayTest() {
         changedSettings.replace( "filterQuery", "topic1:{key1:[1, 2, 3]}" );
         client.updateSettings( changedSettings );
-        Map<String, String> expected = new HashMap<>(1);
+        Map<String, String> expected = new HashMap<>( 1 );
         expected.put( "topic1", "{key1:[1, 2, 3]}" );
         assertEquals( expected, client.getFilterMap() );
     }
@@ -123,7 +130,7 @@ public class MqttStreamClientTest {
     public void saveTwoSimpleQueryTest() {
         changedSettings.replace( "filterQuery", "topic1:{key1:value1}, topic2:{key2:value2}" );
         client.updateSettings( changedSettings );
-        Map<String, String> expected = new HashMap<>(2);
+        Map<String, String> expected = new HashMap<>( 2 );
         expected.put( "topic1", "{key1:value1}" );
         expected.put( "topic2", "{key2:value2}" );
         assertEquals( expected, client.getFilterMap() );
@@ -134,24 +141,24 @@ public class MqttStreamClientTest {
     public void saveNestedQueryTest() {
         changedSettings.replace( "filterQuery", "topic1:{key1:{$lt:3}}, topic2:{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
         client.updateSettings( changedSettings );
-        Map<String, String> expected = new HashMap<>(2);
+        Map<String, String> expected = new HashMap<>( 2 );
         expected.put( "topic1", "{key1:{$lt:3}}" );
         expected.put( "topic2", "{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
         assertEquals( expected, client.getFilterMap() );
     }
 
 
-
     @Test
     public void toListEmptyTest() {
-        List <String> result = client.toList( "" );
+        List<String> result = client.toList( "" );
         List<String> expected = new ArrayList<>();
         assertEquals( expected, result );
     }
 
+
     @Test
     public void toListSpaceTest() {
-        List <String> result = client.toList( " " );
+        List<String> result = client.toList( " " );
         List<String> expected = new ArrayList<>();
         assertEquals( expected, result );
     }
@@ -159,19 +166,20 @@ public class MqttStreamClientTest {
 
     @Test
     public void toListWithContentTest() {
-        List <String> result = client.toList( "1, 2 " );
+        List<String> result = client.toList( "1, 2 " );
         List<String> expected = new ArrayList<>();
         expected.add( "1" );
         expected.add( "2" );
         assertEquals( expected, result );
     }
 
-    
+
     @Test
     public void reloadSettingsTopicTest() {
         //TODO with broker
         //TODO: with wildcards
     }
+
 
     @Test
     public void reloadSettingsNewNamespaceTest() {
@@ -181,6 +189,7 @@ public class MqttStreamClientTest {
         assertEquals( "namespace2", client.getNamespaceName() );
     }
 
+
     @Test
     public void reloadSettingsExistingNamespaceTest() {
         // change to existing namespace:
@@ -189,11 +198,12 @@ public class MqttStreamClientTest {
         assertEquals( "testNamespace", client.getNamespaceName() );
     }
 
+
     @Test(expected = RuntimeException.class)
     public void reloadSettingsWrongTypeNamespaceTest() {
         // change to existing namespace other type:
         changedSettings.replace( "namespace", "public" );
-        client.updateSettings( changedSettings  );
+        client.updateSettings( changedSettings );
         assertEquals( "testNamespace", client.getNamespaceName() );
     }
 
@@ -205,12 +215,14 @@ public class MqttStreamClientTest {
         assertFalse( client.getCommonCollection().get() );
     }
 
+
     @Test
     public void reloadSettingsCommonCollectionToTrueTest() {
         changedSettings.replace( "commonCollection", "true" );
         client.updateSettings( changedSettings );
         assertTrue( client.getCommonCollection().get() );
     }
+
 
     @Test
     public void reloadSettingsNewCommonCollectionNameTest() {
@@ -236,7 +248,6 @@ public class MqttStreamClientTest {
         changedSettings.replace( "commonCollection", "false" );
         client.updateSettings( changedSettings );
 
-
         changedSettings.replace( "commonCollectionName", "buttonCollection" );
         changedSettings.replace( "commonCollection", "true" );
         client.updateSettings( changedSettings );
@@ -244,12 +255,12 @@ public class MqttStreamClientTest {
         assertTrue( client.getCommonCollection().get() );
     }
 
+
     @Test(expected = NullPointerException.class)
     public void reloadSettingsCommonCollectionAndCommonCollectionNameTest2() {
         // testing special case: commonCollection changed from false to true + commonCollectionName changes
         changedSettings.replace( "commonCollection", "false" );
         client.updateSettings( changedSettings );
-
 
         changedSettings.replace( "commonCollectionName", " " );
         changedSettings.replace( "commonCollection", "true" );
@@ -259,11 +270,11 @@ public class MqttStreamClientTest {
     }
 
 
-
-
-
     @Test
     public void processMsgTest() {
-//TODO
+        MqttUserPropertiesImplBuilder.Default defaultProperties = new Default();
+        Mqtt5Publish message = new MqttPublish( MqttTopicImpl.of( "topic1" ), ByteBuffer.wrap( "payload".getBytes() ), MqttQos.AT_LEAST_ONCE, false, 10, null, null, null, null, defaultProperties.build(), null );
+        client.processMsg( message );
     }
+
 }
