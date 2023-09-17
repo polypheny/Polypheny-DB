@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.commons.lang3.ArrayUtils;
@@ -27,22 +28,19 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 @Value
 public class PolyAudio extends PolyBlob {
 
-    public byte[] value;
 
-
-    public PolyAudio( byte[] value ) {
-        super( PolyType.AUDIO );
-        this.value = value;
+    public PolyAudio( byte @Nullable [] value, @Nullable InputStream stream ) {
+        super( PolyType.AUDIO, value, stream );
     }
 
 
     public static PolyAudio of( byte[] value ) {
-        return new PolyAudio( value );
+        return new PolyAudio( value, null );
     }
 
 
     public static PolyAudio ofNullable( @Nullable Byte[] value ) {
-        return value == null ? new PolyAudio( null ) : new PolyAudio( ArrayUtils.toPrimitive( value ) );
+        return value == null ? new PolyAudio( null, null ) : new PolyAudio( ArrayUtils.toPrimitive( value ), null );
     }
 
 }

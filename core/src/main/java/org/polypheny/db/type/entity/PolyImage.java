@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.commons.lang3.ArrayUtils;
@@ -27,17 +28,14 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 @Value
 public class PolyImage extends PolyBlob {
 
-    public byte[] value;
 
-
-    public PolyImage( byte[] value ) {
-        super( PolyType.IMAGE );
-        this.value = value;
+    public PolyImage( byte @Nullable [] value, @Nullable InputStream stream ) {
+        super( PolyType.IMAGE, value, stream );
     }
 
 
     public static PolyImage of( byte[] value ) {
-        return new PolyImage( value );
+        return new PolyImage( value, null );
     }
 
 
@@ -47,7 +45,7 @@ public class PolyImage extends PolyBlob {
 
 
     public static PolyImage ofNullable( @Nullable Byte[] value ) {
-        return value == null ? new PolyImage( null ) : new PolyImage( ArrayUtils.toPrimitive( value ) );
+        return value == null ? new PolyImage( null, null ) : new PolyImage( ArrayUtils.toPrimitive( value ), null );
     }
 
 }

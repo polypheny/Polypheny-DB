@@ -88,9 +88,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFile;
 import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyImage;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
@@ -98,7 +96,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.PolyVideo;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -339,7 +337,29 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                 .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
                                 .appendIf( offset, getTimeZoneExpression( implementor ) ) );
                 break;
-            //When it is of type array, fetch with getObject, because it could either be an array or the elementType
+            case FILE:
+            case AUDIO:
+            case VIDEO:
+                //source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
+                source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                break;
+            /*case FILE:
+            case AUDIO:
+            case VIDEO:
+                // if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ){ ..getBytes } else { ..getBinaryStream }
+                Expression getStatement = Expressions.call( DataContext.ROOT, Types.lookupMethod( DataContext.class, "getStatement" ) );
+                Expression getTransaction = Expressions.call( getStatement, Types.lookupMethod( Statement.class, "getTransaction" ) );
+                Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
+                Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
+                Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                builder.add( EnumUtils.ifThenElse(
+                        Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
+                        Expressions.statement( Expressions.assign( target, getBytes ) ),
+                        //assign a PushbackInputStream for the SQL META function
+                        Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
+                source = null;
+                break;
+                //When it is of type array, fetch with getObject, because it could either be an array or the elementType
                 /*case ARRAY:
                 if( dialect.supportsNestedArrays() ) {
                     final Expression x = Expressions.convert_(
@@ -352,24 +372,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
                 */
             default:
-                /*if ( polyType.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    // if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ){ ..getBytes } else { ..getBinaryStream }
-                    Expression getStatement = Expressions.call( DataContext.ROOT, Types.lookupMethod( DataContext.class, "getStatement" ) );
-                    Expression getTransaction = Expressions.call( getStatement, Types.lookupMethod( Statement.class, "getTransaction" ) );
-                    Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
-                    Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
-                    Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                    builder.add( EnumUtils.ifThenElse(
-                            Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
-                            Expressions.statement( Expressions.assign( target, getBytes ) ),
-                            //assign a PushbackInputStream for the SQL META function
-                            Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
-                    source = null;
-                } else {*/
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
-                //}
+
         }
-        final Expression poly = getOfPolyExpression( fieldType, source );
+        final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i );
 
         //source is null if an expression was already added to the builder.
         if ( poly != null ) {
@@ -403,7 +409,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             return Expressions.call(
                     BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
                     Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
-                    Expressions.lambda( getOfPolyExpression( componentType, argument ), argument ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i ), argument ),
                     Expressions.constant( depth )
             );
         }
@@ -417,7 +423,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source ) {
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i ) {
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
@@ -461,13 +467,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             case FILE:
-                poly = Expressions.call( PolyFile.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
-                break;
             case IMAGE:
-                poly = Expressions.call( PolyImage.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
-                break;
             case VIDEO:
-                poly = Expressions.call( PolyVideo.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Byte[].class ) );
+                poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

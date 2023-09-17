@@ -16,8 +16,10 @@
 
 package org.polypheny.db.type.entity;
 
+import java.io.InputStream;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyBlob;
 
@@ -25,17 +27,13 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 @Value
 public class PolyFile extends PolyBlob {
 
-    public byte[] value;
-
-
-    public PolyFile( byte[] value ) {
-        super( PolyType.FILE );
-        this.value = value;
+    public PolyFile( byte @Nullable [] value, @Nullable InputStream stream ) {
+        super( PolyType.FILE, value, stream );
     }
 
 
     public static PolyFile of( byte[] value ) {
-        return new PolyFile( value );
+        return new PolyFile( value, null );
     }
 
 

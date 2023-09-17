@@ -160,8 +160,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
@@ -585,24 +585,25 @@ public class Crud implements InformationObserver {
     /**
      * Insert data into a table
      */
-    void insertRow( final Context ctx ) {
+    void insertTuple( final Context ctx ) {
         ctx.contentType( "multipart/form-data" );
         initMultipart( ctx );
-        String tableId = null;
-        try {
-            tableId = new BufferedReader( new InputStreamReader( ctx.req().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-        } catch ( IOException | ServletException e ) {
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+        String unparsed = ctx.formParam( "entityId" );
+        if ( unparsed == null ) {
+            throw new GenericRuntimeException( "Error on tuple insert" );
         }
-        String[] split = tableId.split( "\\." );
-        tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
+
+        long entityId = Long.parseLong( unparsed );
+
+        LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElseThrow();
+        String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
 
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         StringJoiner columns = new StringJoiner( ",", "(", ")" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        LogicalTable table = catalog.getSnapshot().rel().getTable( split[0], split[1] ).orElseThrow();
         List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
         try {
             int i = 0;
@@ -620,7 +621,7 @@ public class Crud implements InformationObserver {
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
                         if ( logicalColumn.name.equals( "_id" ) ) {
-                            if ( value.length() == 0 ) {
+                            if ( value.isEmpty() ) {
                                 value = BsonUtil.getObjectId();
                             }
                         }
@@ -628,7 +629,7 @@ public class Crud implements InformationObserver {
                     } else {
                         values.add( "?" );
                         FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyStream.of( fih.getData() ) ) );
+                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( logicalColumn.type, fih.getData() ) ) );
                     }
                 }
             }
@@ -638,7 +639,7 @@ public class Crud implements InformationObserver {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
         }
 
-        String query = String.format( "INSERT INTO %s %s VALUES %s", tableId, columns, values );
+        String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
         try {
             int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
@@ -978,7 +979,7 @@ public class Crud implements InformationObserver {
             } else {
                 setStatements.add( String.format( "\"%s\" = ?", logicalColumn.name ) );
                 FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( PolyStream.of( fih.getData() ) ) );
+                statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( logicalColumn.type, fih.getData() ) ) );
             }
         }
 
@@ -2904,7 +2905,7 @@ public class Crud implements InformationObserver {
                 String group2 = m.group( 2 );
                 //chrome and firefox send "bytes=0-"
                 //safari sends "bytes=0-1" to get the file length and then bytes=0-fileLength
-                if ( group2 != null && !group2.equals( "" ) ) {
+                if ( group2 != null && !group2.isEmpty() ) {
                     rangeEnd = Long.parseLong( group2 );
                 } else {
                     rangeEnd = Math.min( rangeStart + 10_000_000L, fileLength - 1 );

@@ -72,8 +72,8 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -398,7 +398,7 @@ public class Rest {
                 AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyStream.of( fih.getData() ) ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyBlob.of( typeField.getType().getPolyType(), fih.getData() ) ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {

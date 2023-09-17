@@ -300,6 +300,15 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     preparedStatement.setString( i, PolyValue.GSON.toJson( value.asList() ) );
                 }
                 break;
+            case IMAGE:
+            case AUDIO:
+            case VIDEO:
+                if ( connectionHandler.getDialect().supportsBinaryStream() ) {
+                    preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );
+                } else {
+                    preparedStatement.setBytes( i, value.asBlob().asByteArray() );
+                }
+                break;
             default:
                 log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );

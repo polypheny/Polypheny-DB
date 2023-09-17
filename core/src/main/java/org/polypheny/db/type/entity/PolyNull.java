@@ -368,7 +368,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public @NotNull PolyVideo asVideo() {
-        return PolyVideo.of( null );
+        return PolyVideo.of( (byte[]) null );
     }
 
 
