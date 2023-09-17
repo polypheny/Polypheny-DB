@@ -40,7 +40,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -314,7 +313,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public PolyNumber asNumber() {
+    public @NotNull PolyNumber asNumber() {
         return PolyInteger.of( null );
     }
 
@@ -326,7 +325,7 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public PolyInterval asInterval() {
+    public @NotNull PolyInterval asInterval() {
         return PolyInterval.of( null, null );
     }
 
@@ -350,8 +349,26 @@ public class PolyNull extends PolyValue {
 
 
     @Override
-    public @NonNull PolyBlob asBlob() {
-        return new PolyBlob( PolyType.FILE );
+    public @NotNull PolyUserDefinedValue asUserDefinedValue() {
+        return new PolyUserDefinedValue( null, null );
+    }
+
+
+    @Override
+    public @NotNull PolyAudio asAudio() {
+        return PolyAudio.of( null );
+    }
+
+
+    @Override
+    public @NotNull PolyImage asImage() {
+        return PolyImage.of( null );
+    }
+
+
+    @Override
+    public @NotNull PolyVideo asVideo() {
+        return PolyVideo.of( null );
     }
 
 

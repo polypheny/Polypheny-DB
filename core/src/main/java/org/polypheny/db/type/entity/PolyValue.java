@@ -179,8 +179,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     Long byteSize;
 
 
-    public PolyValue(
-            @Deserialize("type") PolyType type ) {
+    public PolyValue( @Deserialize("type") PolyType type ) {
         this.type = type;
     }
 
@@ -219,6 +218,12 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                                 ? (o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ))
                                 : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ).toArray();
             case FILE:
+                return o -> o;
+            case IMAGE:
+                return o -> o;
+            case AUDIO:
+                return o -> o;
+            case VIDEO:
                 return o -> o;
             default:
                 throw new org.apache.commons.lang3.NotImplementedException( "meta" );
@@ -395,11 +400,11 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case FILE:
                 return PolyFile.class;
             case IMAGE:
-                break;
+                return PolyImage.class;
             case VIDEO:
-                break;
+                return PolyVideo.class;
             case AUDIO:
-                break;
+                return PolyAudio.class;
             case JSON:
                 return PolyString.class;
         }
@@ -722,6 +727,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
     public PolyNumber asNumber() {
         if ( isNumber() ) {
             return (PolyNumber) this;
@@ -735,6 +741,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
     public PolyInterval asInterval() {
         if ( isInterval() ) {
             return (PolyInterval) this;
@@ -775,11 +782,54 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    @NotNull
     public PolyUserDefinedValue asUserDefinedValue() {
         if ( isUserDefinedValue() ) {
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
+    }
+
+
+    public boolean isAudio() {
+        return type == PolyType.AUDIO;
+    }
+
+
+    @NotNull
+    public PolyAudio asAudio() {
+        if ( isAudio() ) {
+            return (PolyAudio) this;
+        }
+        throw cannotParse( this, PolyAudio.class );
+    }
+
+
+    public boolean isImage() {
+        return type == PolyType.IMAGE;
+    }
+
+
+    @NotNull
+    public PolyImage asImage() {
+        if ( isImage() ) {
+            return (PolyImage) this;
+        }
+        throw cannotParse( this, PolyImage.class );
+    }
+
+
+    public boolean isVideo() {
+        return type == PolyType.VIDEO;
+    }
+
+
+    @NotNull
+    public PolyVideo asVideo() {
+        if ( isVideo() ) {
+            return (PolyVideo) this;
+        }
+        throw cannotParse( this, PolyVideo.class );
     }
 
 

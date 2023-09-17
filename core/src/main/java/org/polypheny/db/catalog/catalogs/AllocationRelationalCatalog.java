@@ -88,14 +88,14 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * Adds a partition to the catalog
      *
      * @param tableId The unique id of the table
-     * @param schemaId The unique id of the table
-     * @param partitionGroupId partitionGroupId where the partition should be initially added to
+     * @param namespaceId The unique id of the table
      * @param name
      * @param placementType
      * @param role
+     * @param partitionType
      * @return The id of the created partition
      */
-    AllocationPartition addPartition( long tableId, long schemaId, long partitionGroupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role );
+    AllocationPartition addPartition( long tableId, long namespaceId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, PartitionType partitionType );
 
     /**
      * Deletes a single partition and all references.

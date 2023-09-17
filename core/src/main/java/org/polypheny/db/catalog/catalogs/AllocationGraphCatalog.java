@@ -21,6 +21,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 public interface AllocationGraphCatalog extends AllocationCatalog {
 
@@ -48,7 +49,7 @@ public interface AllocationGraphCatalog extends AllocationCatalog {
 
     void removePlacement( long id );
 
-    AllocationPartition addPartition( LogicalGraph graph, String name );
+    AllocationPartition addPartition( LogicalGraph graph, PartitionType partitionType, String name );
 
     void removePartition( long id );
 

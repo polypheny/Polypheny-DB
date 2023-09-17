@@ -932,43 +932,43 @@ public class StatisticsManagerImpl extends StatisticsManager {
      */
     @Override
     public void updateRowCountPerTable( long tableId, int number, MonitoringType type ) {
-        StatisticTable statisticTable;
+        StatisticTable table;
         switch ( type ) {
             case INSERT:
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.get( tableId );
-                    int totalRows = statisticTable.getNumberOfRows() + number;
+                    table = tableStatistic.get( tableId );
+                    int totalRows = table.getNumberOfRows() + number;
 
-                    statisticTable.setNumberOfRows( totalRows );
+                    table.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable( tableId );
-                    statisticTable.setNumberOfRows( number );
+                    table = new StatisticTable( tableId );
+                    table.setNumberOfRows( number );
                 }
                 break;
             case DELETE:
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.get( tableId );
-                    int totalRows = statisticTable.getNumberOfRows() - number;
+                    table = tableStatistic.get( tableId );
+                    int totalRows = table.getNumberOfRows() - number;
 
-                    statisticTable.setNumberOfRows( totalRows );
+                    table.setNumberOfRows( totalRows );
                 } else {
-                    statisticTable = new StatisticTable( tableId );
+                    table = new StatisticTable( tableId );
                 }
                 break;
             case SET_ROW_COUNT:
             case TRUNCATE:
                 if ( tableStatistic.containsKey( tableId ) ) {
-                    statisticTable = tableStatistic.get( tableId );
+                    table = tableStatistic.get( tableId );
                 } else {
-                    statisticTable = new StatisticTable( tableId );
+                    table = new StatisticTable( tableId );
                 }
-                statisticTable.setNumberOfRows( number );
+                table.setNumberOfRows( number );
                 break;
             default:
                 throw new RuntimeException( "updateRowCountPerTable is not implemented for: " + type );
         }
 
-        tableStatistic.put( tableId, statisticTable );
+        tableStatistic.put( tableId, table );
     }
 
 

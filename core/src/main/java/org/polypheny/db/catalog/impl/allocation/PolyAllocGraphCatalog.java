@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.type.PolySerializable;
 
@@ -107,9 +108,9 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
 
 
     @Override
-    public AllocationPartition addPartition( LogicalGraph graph, String name ) {
+    public AllocationPartition addPartition( LogicalGraph graph, PartitionType partitionType, String name ) {
         long id = idBuilder.getNewPartitionId();
-        AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, -1 );
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
         partitions.put( id, partition );
         return partition;
     }

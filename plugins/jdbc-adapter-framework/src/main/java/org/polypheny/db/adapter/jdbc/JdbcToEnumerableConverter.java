@@ -90,6 +90,7 @@ import org.polypheny.db.type.entity.PolyDefaults;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFile;
 import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyImage;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
@@ -97,6 +98,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.PolyVideo;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -460,6 +462,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case FILE:
                 poly = Expressions.call( PolyFile.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                break;
+            case IMAGE:
+                poly = Expressions.call( PolyImage.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                break;
+            case VIDEO:
+                poly = Expressions.call( PolyVideo.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, Byte[].class ) );
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

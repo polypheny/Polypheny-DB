@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.Value;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 
@@ -55,6 +56,9 @@ public class AllocationPartition implements CatalogObject {
     @Serialize
     public PlacementType placementType;
 
+    @Serialize
+    public PartitionType partitionType;
+
     // Related to multi-tier replication. A physical partition placement is considered to be primary (uptodate) if it needs to receive every update eagerly.
     // If false, physical partition placements are considered to be refreshable and can therefore become outdated and need to be lazily updated.
     // This attribute is derived from an effective data placement (table entity on a store)
@@ -71,9 +75,6 @@ public class AllocationPartition implements CatalogObject {
     public DataPlacementRole role;
     @Serialize
     public boolean isUnbound;
-    @Serialize
-    public long partitionGroupId;
-
 
     public AllocationPartition(
             @Deserialize("id") final long id,
@@ -83,14 +84,14 @@ public class AllocationPartition implements CatalogObject {
             @Deserialize("name") @Nullable final String name,
             @Deserialize("role") DataPlacementRole role,
             @Deserialize("isUnbound") final boolean isUnbound,
-            @Deserialize("partitionGroupId") final long partitionGroupId ) {
+            @Deserialize("partitionType") PartitionType partitionType ) {
         this.namespaceId = namespaceId;
         this.logicalEntityId = logicalEntityId;
         this.placementType = placementType;
+        this.partitionType = partitionType;
         this.id = id;
         this.role = role;
         this.isUnbound = isUnbound;
-        this.partitionGroupId = partitionGroupId;
         this.name = name;
     }
 

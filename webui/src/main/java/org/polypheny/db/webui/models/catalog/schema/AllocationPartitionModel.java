@@ -16,23 +16,30 @@
 
 package org.polypheny.db.webui.models.catalog.schema;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class AllocationPartitionModel extends IdEntity {
 
-    public final long logicalEntityId;
+    public long logicalEntityId;
+    public PartitionType partitionType;
 
 
-    public AllocationPartitionModel( @Nullable Long id, @Nullable String name, long logicalEntityId ) {
+    public AllocationPartitionModel( @Nullable Long id, @Nullable String name, long logicalEntityId, PartitionType partitionType ) {
         super( id, name );
         this.logicalEntityId = logicalEntityId;
+        this.partitionType = partitionType;
     }
 
 
     public static AllocationPartitionModel from( AllocationPartition partition ) {
-        return new AllocationPartitionModel( partition.id, partition.name, partition.logicalEntityId );
+        return new AllocationPartitionModel( partition.id, partition.name, partition.logicalEntityId, partition.partitionType );
     }
 
 }

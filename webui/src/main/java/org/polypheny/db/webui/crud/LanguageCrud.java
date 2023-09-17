@@ -65,6 +65,7 @@ import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
@@ -90,7 +91,7 @@ public class LanguageCrud {
     public static void anyQuery( Context ctx ) {
         QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
         QueryLanguage language = QueryLanguage.from( request.language );
-        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), null ).get( 0 );
+        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId() ).get( 0 );
         ctx.json( result );
     }
 
@@ -101,8 +102,7 @@ public class LanguageCrud {
             QueryRequest request,
             TransactionManager transactionManager,
             long userId,
-            long namespaceId,
-            InformationObserver observer ) {
+            long namespaceId ) {
 
         return REGISTER.get( language.getSerializedName() ).apply( session, request, transactionManager, userId, namespaceId, crud );
     }
@@ -181,7 +181,7 @@ public class LanguageCrud {
             try {
                 transaction.rollback();
             } catch ( TransactionException e ) {
-                throw new RuntimeException( "Error while rolling back the failed transaction." );
+                throw new GenericRuntimeException( "Error while rolling back the failed transaction." );
             }
         }
 
@@ -222,24 +222,24 @@ public class LanguageCrud {
 
             SortState sort = getSortState( field, request.sortState );
 
-            UiColumnDefinition dbCol = UiColumnDefinition.builder()
+            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
                     .name( field.getName() )
                     .dataType( field.getType().getFullTypeString() )
                     .nullable( field.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
                     .precision( field.getType().getPrecision() )
                     .sort( sort )
-                    .filter( filter ).build();
+                    .filter( filter );
 
             // Get column default values
             if ( table != null ) {
                 Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( optional.isPresent() ) {
                     if ( optional.get().defaultValue != null ) {
-                        dbCol.defaultValue = optional.get().defaultValue.value;
+                        dbCol.defaultValue( optional.get().defaultValue.value );
                     }
                 }
             }
-            header.add( dbCol );
+            header.add( dbCol.build() );
         }
 
         List<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
@@ -288,7 +288,7 @@ public class LanguageCrud {
         try {
             iterator.close();
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         return DocResult.builder()

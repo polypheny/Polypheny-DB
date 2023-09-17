@@ -227,8 +227,7 @@ public class DdlManagerImpl extends DdlManager {
 
             LogicalTable logical = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
-            AllocationPartitionGroup group = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartitionGroup( logical.id, UNPARTITIONED, Catalog.defaultNamespaceId, PartitionType.NONE, 1, List.of(), false );
-            AllocationPartition partition = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartition( logical.id, Catalog.defaultNamespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE );
+            AllocationPartition partition = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartition( logical.id, Catalog.defaultNamespaceId, UNPARTITIONED, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, PartitionType.NONE );
 
             AllocationPlacement placement = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPlacement( logical.id, Catalog.defaultNamespaceId, adapter.adapterId );
             AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partition.id, logical.id );
@@ -1814,7 +1813,7 @@ public class DdlManagerImpl extends DdlManager {
         //catalog.getLogicalRel( namespaceId ).addPrimaryKey( view.id, columnIds );
 
         AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, List.of(), false );
-        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE );
+        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, PartitionType.NONE );
 
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( view.id, namespaceId, store.adapterId );
@@ -1868,7 +1867,7 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.updateSnapshot();
 
-        AllocationPartition partition = catalog.getAllocGraph( graphId ).addPartition( logical, "undefined" );
+        AllocationPartition partition = catalog.getAllocGraph( graphId ).addPartition( logical, PartitionType.NONE, "undefined" );
 
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocGraph( graphId ).addPlacement( logical, store.adapterId );
@@ -2191,7 +2190,7 @@ public class DdlManagerImpl extends DdlManager {
     @NotNull
     private Pair<AllocationPartition, PartitionProperty> createSinglePartition( long namespaceId, LogicalTable logical ) {
         AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( logical.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, List.of(), false );
-        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( logical.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.REFRESHABLE );
+        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( logical.id, namespaceId, null, false, PlacementType.AUTOMATIC, DataPlacementRole.REFRESHABLE, PartitionType.NONE );
         PartitionProperty property = addBlankPartition( namespaceId, logical.id, List.of( group.id ), List.of( partition.id ) );
         return Pair.of( partition, property );
     }
@@ -2273,7 +2272,7 @@ public class DdlManagerImpl extends DdlManager {
                 EntityType.ENTITY,
                 true );
 
-        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, "undefined" );
+        AllocationPartition partition = catalog.getAllocDoc( namespaceId ).addPartition( logical, PartitionType.NONE, "undefined" );
 
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocDoc( namespaceId ).addPlacement( logical, store.adapterId );
@@ -2643,11 +2642,10 @@ public class DdlManagerImpl extends DdlManager {
             partitionGroups.put( group, List.of( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                     partitionInfo.table.id,
                     partitionInfo.table.namespaceId,
-                    group.id,
                     group.name,
                     group.isUnbound,
                     PlacementType.AUTOMATIC,
-                    DataPlacementRole.REFRESHABLE ) ) );
+                    DataPlacementRole.REFRESHABLE, PartitionType.NONE ) ) );
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
@@ -2689,11 +2687,10 @@ public class DdlManagerImpl extends DdlManager {
                 partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                         partitionInfo.table.id,
                         partitionInfo.table.namespaceId,
-                        firstGroup.id,
                         null,
                         false,
                         PlacementType.AUTOMATIC,
-                        DataPlacementRole.UP_TO_DATE ) );
+                        DataPlacementRole.UP_TO_DATE, PartitionType.NONE ) );
             }
 
             // -1 because one partition is already created in COLD
@@ -2703,11 +2700,10 @@ public class DdlManagerImpl extends DdlManager {
                 partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                         partitionInfo.table.id,
                         partitionInfo.table.namespaceId,
-                        secondGroup.id,
                         null,
                         false,
                         PlacementType.AUTOMATIC,
-                        DataPlacementRole.UP_TO_DATE ) );
+                        DataPlacementRole.UP_TO_DATE, PartitionType.NONE ) );
             }
 
             partitionProperty = TemperaturePartitionProperty.builder()

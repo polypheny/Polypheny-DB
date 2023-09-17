@@ -39,11 +39,11 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
+@Getter
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class PolyTimeStamp extends PolyTemporal {
 
-    @Getter
     public Long milliSinceEpoch; // normalized to utz
 
 

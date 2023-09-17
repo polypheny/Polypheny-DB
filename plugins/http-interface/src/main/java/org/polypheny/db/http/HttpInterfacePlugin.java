@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
@@ -54,7 +53,6 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.results.Result;
@@ -171,8 +169,8 @@ public class HttpInterfacePlugin extends PolyPlugin {
                     query,
                     transactionManager,
                     Catalog.defaultUserId,
-                    Catalog.defaultNamespaceId,
-                    null );
+                    Catalog.defaultNamespaceId
+            );
             ctx.json( results.toArray( new Result[0] ) );
 
             if ( !statementCounters.containsKey( language ) ) {

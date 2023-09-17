@@ -192,6 +192,7 @@ import org.polypheny.db.webui.models.catalog.AdapterModel;
 import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -1112,7 +1113,8 @@ public class Crud implements InformationObserver {
                         .dimension( col.dimension )
                         .cardinality( col.cardinality )
                         .primary( false )
-                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value ).physicalName( col.name ).build()
+                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value )
+                        .build()
                 );
 
             }
@@ -1177,7 +1179,7 @@ public class Crud implements InformationObserver {
                                 .dimension( col.dimension )
                                 .cardinality( col.cardinality )
                                 .primary( col.primary )
-                                .physicalName( col.physicalColumnName ).build();
+                                .build();
                         columnList.add( dbCol );
                     }
                     exportedColumns.add( RelationalResult.builder().header( columnList.toArray( new UiColumnDefinition[0] ) ).table( entry.getKey() ).build() );
@@ -1349,8 +1351,8 @@ public class Crud implements InformationObserver {
                             case "FLOAT":
                             case "SMALLINT":
                             case "TINYINT":
-                                request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                                BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                                String defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                                BigDecimal b = new BigDecimal( defaultValue );
                                 query = query + b.toString();
                                 break;
                             case "VARCHAR":
@@ -1440,8 +1442,8 @@ public class Crud implements InformationObserver {
                     case "FLOAT":
                     case "DOUBLE":
                     case "DECIMAL":
-                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                        String defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                        BigDecimal b = new BigDecimal( defaultValue );
                         query = query + b;
                         break;
                     case "VARCHAR":
@@ -3038,24 +3040,24 @@ public class Crud implements InformationObserver {
                 sort = new SortState();
             }
 
-            UiColumnDefinition dbCol = UiColumnDefinition.builder()
+            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
                     .name( metaData.getName() )
                     .dataType( metaData.getType().getPolyType().getTypeName() )
                     .nullable( metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
                     .precision( metaData.getType().getPrecision() )
                     .sort( sort )
-                    .filter( filter ).build();
+                    .filter( filter );
 
             // Get column default values
             if ( table != null ) {
                 Optional<LogicalColumn> logicalColumn = crud.catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( logicalColumn.isPresent() ) {
                     if ( logicalColumn.get().defaultValue != null ) {
-                        dbCol.defaultValue = logicalColumn.get().defaultValue.value;
+                        dbCol.defaultValue( logicalColumn.get().defaultValue.value );
                     }
                 }
             }
-            header.add( dbCol );
+            header.add( dbCol.build() );
         }
 
         List<String[]> data = computeResultData( rows, header, statement.getTransaction() );

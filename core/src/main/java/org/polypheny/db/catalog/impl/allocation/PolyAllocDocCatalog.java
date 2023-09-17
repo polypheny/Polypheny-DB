@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
+import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.type.PolySerializable;
 
@@ -115,9 +116,9 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
 
 
     @Override
-    public AllocationPartition addPartition( LogicalCollection collection, String name ) {
+    public AllocationPartition addPartition( LogicalCollection collection, PartitionType partitionType, String name ) {
         long id = idBuilder.getNewPartitionId();
-        AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, -1 );
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
         partitions.put( id, partition );
         return partition;
     }

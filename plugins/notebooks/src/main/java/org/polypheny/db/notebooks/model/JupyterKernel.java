@@ -255,8 +255,8 @@ public class JupyterKernel {
                 queryRequest,
                 jsm.getTransactionManager(),
                 Catalog.defaultUserId,
-                Catalog.defaultNamespaceId,
-                null );
+                Catalog.defaultNamespaceId
+        );
         return resultSetGson.toJson( results );
     }
 

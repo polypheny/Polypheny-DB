@@ -120,8 +120,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         queryRequest,
                         crud.getTransactionManager(),
                         crud.getUserId(),
-                        crud.getNamespaceId(),
-                        crud );
+                        crud.getNamespaceId()
+                );
 
                 for ( Result<?, ?> result : results ) {
                     if ( !(result instanceof RelationalResult) ) {
@@ -160,8 +160,8 @@ public class WebSocket implements Consumer<WsConfig> {
                                         new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.id ),
                                         crud.getTransactionManager(),
                                         Catalog.defaultUserId,
-                                        Catalog.defaultNamespaceId,
-                                        this.crud ).get( 0 );
+                                        Catalog.defaultNamespaceId
+                                ).get( 0 );
                                 break;
                             case GRAPH:
                                 result = LanguageCrud.anyQuery(
@@ -170,8 +170,8 @@ public class WebSocket implements Consumer<WsConfig> {
                                         new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.id ),
                                         crud.getTransactionManager(),
                                         Catalog.defaultUserId,
-                                        Catalog.defaultNamespaceId,
-                                        this.crud ).get( 0 );
+                                        Catalog.defaultNamespaceId
+                                ).get( 0 );
                                 break;
                         }
                         if ( result == null ) {

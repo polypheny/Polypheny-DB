@@ -21,6 +21,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.logistic.PartitionType;
 
 public interface AllocationDocumentCatalog extends AllocationCatalog {
 
@@ -33,7 +34,7 @@ public interface AllocationDocumentCatalog extends AllocationCatalog {
     void removePlacement( long placementId );
 
 
-    AllocationPartition addPartition( LogicalCollection collection, String name );
+    AllocationPartition addPartition( LogicalCollection collection, PartitionType partitionType, String name );
 
     void removePartition( long partitionId );
 

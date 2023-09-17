@@ -177,7 +177,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationPartition addPartition( long tableId, long namespaceId, long partitionGroupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role ) {
+    public AllocationPartition addPartition( long tableId, long namespaceId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, PartitionType partitionType ) {
         long id = idBuilder.getNewPartitionId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition with id '{}'", id );
@@ -191,7 +191,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 name,
                 role,
                 isUnbound,
-                partitionGroupId );
+                partitionType );
 
         partitions.put( id, partition );
         return partition;
