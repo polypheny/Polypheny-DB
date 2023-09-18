@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -29,6 +30,7 @@ import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.jdbc.PolyConnection;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.multimodel.Result;
+import org.polypheny.jdbc.multimodel.Result.ResultType;
 import org.polypheny.jdbc.multimodel.ScalarResult;
 
 @Category({ AdapterTestSuite.class, CassandraExcluded.class })
@@ -50,21 +52,17 @@ public class MqlTest {
         }
     }
 
-
     @Test
-    public void simpleMqlTest() {
+    public void simpleMqlTest() throws ClassNotFoundException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
             if ( !connection.isWrapperFor( PolyConnection.class ) ) {
                 fail( "Driver must support unwrapping to PolyphenyConnection" );
             }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createProtoStatement();
-            polyStatement.execute( "public", MQL_LANGUAGE_NAME, "use test" );
-            Result result = polyStatement.execute( "test", MQL_LANGUAGE_NAME, TEST_DATA );
-            assertEquals( result.getResultType(), Result.ResultType.SCALAR );
-            assertEquals( 1, result.unwrap( ScalarResult.class ).getScalar() );
+            Result result = polyStatement.execute( "public", MQL_LANGUAGE_NAME, TEST_QUERY );
+            assertEquals( ResultType.DOCUMENT, result.getResultType() );
         } catch ( SQLException e ) {
             throw new RuntimeException( e );
         }
     }
-
 }
