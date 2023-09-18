@@ -139,7 +139,7 @@ public class DocumentExecutor extends Executor {
         startOrResumeStopwatch( executionStopWatch );
         List<PolyValue> data = iterator.getSingleRows();
         executionStopWatch.stop();
-        return ProtoUtils.buildDocumentFrame( iterator.hasMoreRows(), data );
+        return ProtoUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
     }
 
 }
