@@ -302,6 +302,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 break;
             case IMAGE:
             case AUDIO:
+            case FILE:
             case VIDEO:
                 if ( connectionHandler.getDialect().supportsBinaryStream() ) {
                     preparedStatement.setBinaryStream( i, value.asBlob().asBinaryStream() );

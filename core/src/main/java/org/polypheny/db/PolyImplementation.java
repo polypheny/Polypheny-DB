@@ -19,7 +19,9 @@ package org.polypheny.db;
 import static org.reflections.Reflections.log;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -398,7 +400,7 @@ public class PolyImplementation<T> {
                 List<List<T>> res = new ArrayList<>();
                 int i = 0;
                 while ( i++ < batch && iterator.hasNext() ) {
-                    res.add( rowType.getFieldCount() == 1 ? List.of( iterator.next() ) : List.of( (T[]) iterator.next() ) );
+                    res.add( rowType.getFieldCount() == 1 ? Collections.singletonList( iterator.next() ) : Lists.newArrayList( (T[]) iterator.next() ) );
                 }
 
                 //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );

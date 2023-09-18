@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -122,7 +123,7 @@ public class SqlProcessorImpl extends Processor {
             parsed = parser.parseStmt();
         } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -160,7 +161,7 @@ public class SqlProcessorImpl extends Processor {
         try {
             validated = validator.validate( parsed );
             type = validator.getValidatedNodeType( validated );
-        } catch ( RuntimeException e ) {
+        } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
             throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );

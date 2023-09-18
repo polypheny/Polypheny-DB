@@ -34,6 +34,7 @@ import jakarta.servlet.http.Part;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -629,7 +630,7 @@ public class Crud implements InformationObserver {
                     } else {
                         values.add( "?" );
                         FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( logicalColumn.type, fih.getData() ) ) );
+                        statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
                     }
                 }
             }
@@ -906,7 +907,7 @@ public class Crud implements InformationObserver {
     /**
      * Delete a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
-    void deleteRow( final Context ctx ) {
+    void deleteTuple( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Transaction transaction = getTransaction();
         RelationalResult result;
@@ -940,27 +941,24 @@ public class Crud implements InformationObserver {
     /**
      * Update a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
-    void updateRow( final Context ctx ) throws ServletException, IOException {
+    void updateTuple( final Context ctx ) throws ServletException, IOException {
         ctx.contentType( "multipart/form-data" );
         initMultipart( ctx );
-        String tableId = null;
         Map<String, String> oldValues = null;
+        long entityId = Long.parseLong( Objects.requireNonNull( ctx.formParam( "entityId" ) ) );
         try {
-            tableId = new BufferedReader( new InputStreamReader( ctx.req().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             String _oldValues = new BufferedReader( new InputStreamReader( ctx.req().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             oldValues = gson.fromJson( _oldValues, Map.class );
         } catch ( IOException | ServletException e ) {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
         }
-
-        String[] split = tableId.split( "\\." );
-        tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
+        String fullName = getFullEntityName( entityId );
 
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         StringJoiner setStatements = new StringJoiner( ",", "", "" );
 
-        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( new org.polypheny.db.catalog.logistic.Pattern( split[1] ), null );
+        List<LogicalColumn> logicalColumns = catalog.getSnapshot().rel().getColumns( entityId );
 
         int i = 0;
         for ( LogicalColumn logicalColumn : logicalColumns ) {
@@ -979,31 +977,31 @@ public class Crud implements InformationObserver {
             } else {
                 setStatements.add( String.format( "\"%s\" = ?", logicalColumn.name ) );
                 FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( logicalColumn.type, fih.getData() ) ) );
+                statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
             }
         }
 
         StringBuilder builder = new StringBuilder();
         builder
                 .append( "UPDATE " )
-                .append( tableId )
+                .append( fullName )
                 .append( " SET " )
                 .append( setStatements )
                 .append( computeWherePK( Catalog.snapshot().rel().getTable( logicalColumns.get( 0 ).tableId ).orElseThrow(), oldValues ) );
 
         RelationalResult result;
         try {
-            int numOfRows = executeSqlUpdate( statement, transaction, builder.toString() );
+            int numOfTuples = executeSqlUpdate( statement, transaction, builder.toString() );
 
-            if ( numOfRows == 1 ) {
+            if ( numOfTuples == 1 ) {
                 if ( statisticCrud.isActiveTracking() ) {
-                    transaction.addChangedTable( tableId );
+                    transaction.addChangedTable( fullName );
                 }
                 transaction.commit();
-                result = RelationalResult.builder().affectedTuples( numOfRows ).build();
+                result = RelationalResult.builder().affectedTuples( numOfTuples ).build();
             } else {
                 transaction.rollback();
-                result = RelationalResult.builder().error( "Attempt to update " + numOfRows + " rows was blocked." ).query( builder.toString() ).build();
+                result = RelationalResult.builder().error( "Attempt to update " + numOfTuples + " tuples was blocked." ).query( builder.toString() ).build();
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a row", e );
@@ -3085,9 +3083,30 @@ public class Crud implements InformationObserver {
             String[] temp = new String[row.size()];
             int counter = 0;
             for ( PolyValue o : row ) {
-                if ( o == null ) {
+                if ( o == null || o.isNull() ) {
                     temp[counter] = null;
                 } else {
+                    String columnName = String.valueOf( header.get( counter ).name.hashCode() );
+                    File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                    mmFolder.mkdirs();
+                    ContentInfoUtil util = new ContentInfoUtil();
+                    if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {
+                        ContentInfo info = util.findMatch( o.asBlob().value );
+                        String extension = "";
+                        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
+                            extension = "." + info.getFileExtensions()[0];
+                        }
+                        File f = new File( mmFolder, columnName + "_" + UUID.randomUUID() + extension );
+                        try ( FileOutputStream fos = new FileOutputStream( f ) ) {
+                            fos.write( o.asBlob().value );
+                        } catch ( IOException e ) {
+                            throw new GenericRuntimeException( "Could not place file in mm folder", e );
+                        }
+                        temp[counter] = f.getName();
+                        TemporalFileManager.addFile( transaction.getXid().toString(), f );
+                    } else {
+                        temp[counter] = o.toJson();
+                    }
                     /*switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":
                             if ( o instanceof Long ) {
@@ -3216,7 +3235,7 @@ public class Crud implements InformationObserver {
                         default:
                             temp[counter] = o.toString();
                     }*/
-                    temp[counter] = o.toJson();
+
                     /*if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
                         if ( o instanceof Array ) {
                             try {

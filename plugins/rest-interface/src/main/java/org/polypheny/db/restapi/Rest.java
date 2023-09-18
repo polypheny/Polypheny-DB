@@ -398,7 +398,7 @@ public class Rest {
                 AlgDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyBlob.of( typeField.getType().getPolyType(), fih.getData() ) ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {

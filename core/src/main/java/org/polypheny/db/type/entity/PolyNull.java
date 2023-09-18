@@ -354,23 +354,6 @@ public class PolyNull extends PolyValue {
     }
 
 
-    @Override
-    public @NotNull PolyAudio asAudio() {
-        return PolyAudio.of( null );
-    }
-
-
-    @Override
-    public @NotNull PolyImage asImage() {
-        return PolyImage.of( null );
-    }
-
-
-    @Override
-    public @NotNull PolyVideo asVideo() {
-        return PolyVideo.of( (byte[]) null );
-    }
-
 
     @Override
     public Expression asExpression() {

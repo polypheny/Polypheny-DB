@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -44,54 +45,58 @@ public class PolyBlob extends PolyValue {
     public InputStream stream;
 
 
-    public PolyBlob( PolyType type, byte @Nullable [] value, @Nullable InputStream stream ) {
-        super( type );
+    public PolyBlob( byte @Nullable [] value, @Nullable InputStream stream ) {
+        super( PolyType.FILE );
         this.value = value;
         this.stream = stream;
     }
 
 
-    public static PolyBlob of( PolyType type, byte[] value ) {
-        return new PolyBlob( type, value, null );
-    }
-
-
-    public static PolyBlob ofNullable( PolyType type, byte[] value ) {
-        return of( type, value );
+    public static PolyBlob of( byte[] value ) {
+        return new PolyBlob( value, null );
     }
 
 
     public static PolyBlob ofNullable( byte[] value ) {
-        return of( null, value );
+        return of( value );
     }
 
 
-    public static PolyBlob of( PolyType type, File file ) {
+    public static PolyBlob of( File file ) {
         try {
-            return new PolyBlob( type, ByteStreams.toByteArray( new FileInputStream( file ) ), null );
+            return new PolyBlob( ByteStreams.toByteArray( new FileInputStream( file ) ), null );
         } catch ( IOException e ) {
             throw new GenericRuntimeException( "Could not generate FileInputStream", e );
         }
     }
 
 
-    public static PolyBlob ofNullable( PolyType type, File file ) {
-        return of( type, file );
+    public static PolyBlob ofNullable( File file ) {
+        return of( file );
     }
 
 
-    public static PolyBlob of( PolyType type, FileInputHandle handle ) {
-        return new PolyBlob( type, null, handle.getData() );
+    public static PolyBlob of( FileInputHandle handle ) {
+        return new PolyBlob( null, handle.getData() );
     }
 
 
-    public static PolyBlob ofNullable( PolyType type, FileInputHandle handle ) {
-        return of( type, handle );
+    public static PolyBlob ofNullable( FileInputHandle handle ) {
+        return of( handle );
     }
 
 
-    public static PolyBlob of( PolyType type, InputStream stream ) {
-        return new PolyBlob( type, null, stream );
+    public static PolyBlob of( InputStream stream ) {
+        return new PolyBlob( null, stream );
+    }
+
+
+    @Override
+    public String toJson() {
+        if ( value == null && stream == null ) {
+            return null;
+        }
+        return Arrays.toString( value );
     }
 
 
@@ -116,6 +121,12 @@ public class PolyBlob extends PolyValue {
     @Override
     public PolySerializable copy() {
         return null;
+    }
+
+
+    @Override
+    public boolean isNull() {
+        return value == null && stream == null;
     }
 
 

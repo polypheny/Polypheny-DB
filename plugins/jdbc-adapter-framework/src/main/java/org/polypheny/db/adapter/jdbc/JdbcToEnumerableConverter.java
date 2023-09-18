@@ -339,6 +339,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
             case FILE:
             case AUDIO:
+            case IMAGE:
             case VIDEO:
                 //source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                 source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
@@ -467,6 +468,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             case FILE:
+            case AUDIO:
             case IMAGE:
             case VIDEO:
                 poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );

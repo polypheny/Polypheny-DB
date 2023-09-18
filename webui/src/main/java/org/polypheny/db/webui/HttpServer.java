@@ -198,9 +198,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/insertTuple", crud::insertTuple );
 
-        webuiServer.post( "/deleteRow", crud::deleteRow );
+        webuiServer.post( "/deleteTuple", crud::deleteTuple );
 
-        webuiServer.post( "/updateRow", crud::updateRow );
+        webuiServer.post( "/updateTuple", crud::updateTuple );
 
         webuiServer.post( "/batchUpdate", crud::batchUpdate );
 

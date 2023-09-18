@@ -398,13 +398,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case GEOMETRY:
                 return PolyValue.class;
             case FILE:
-                return PolyFile.class;
             case IMAGE:
-                return PolyImage.class;
             case VIDEO:
-                return PolyVideo.class;
             case AUDIO:
-                return PolyAudio.class;
+                return PolyBlob.class;
             case JSON:
                 return PolyString.class;
         }
@@ -788,48 +785,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
-    }
-
-
-    public boolean isAudio() {
-        return type == PolyType.AUDIO;
-    }
-
-
-    @NotNull
-    public PolyAudio asAudio() {
-        if ( isAudio() ) {
-            return (PolyAudio) this;
-        }
-        throw cannotParse( this, PolyAudio.class );
-    }
-
-
-    public boolean isImage() {
-        return type == PolyType.IMAGE;
-    }
-
-
-    @NotNull
-    public PolyImage asImage() {
-        if ( isImage() ) {
-            return (PolyImage) this;
-        }
-        throw cannotParse( this, PolyImage.class );
-    }
-
-
-    public boolean isVideo() {
-        return type == PolyType.VIDEO;
-    }
-
-
-    @NotNull
-    public PolyVideo asVideo() {
-        if ( isVideo() ) {
-            return (PolyVideo) this;
-        }
-        throw cannotParse( this, PolyVideo.class );
     }
 
 
