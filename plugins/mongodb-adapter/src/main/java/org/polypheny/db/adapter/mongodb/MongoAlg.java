@@ -55,8 +55,8 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
 
@@ -145,11 +145,11 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoEntity.logical.getColumnNames().indexOf( name );
+            int index = mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoEntity.logical.fieldIds.get( index ) );
+                return MongoStore.getPhysicalColumnName( name, mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
             }
-            throw new RuntimeException( "This column is not part of the table." );
+            throw new GenericRuntimeException( "This column is not part of the table." );
         }
 
 
@@ -157,7 +157,7 @@ public interface MongoAlg extends AlgNode {
             BsonDocument filter;
             if ( this.filter.size() == 1 ) {
                 filter = this.filter.get( 0 ).asDocument();
-            } else if ( this.filter.size() == 0 ) {
+            } else if ( this.filter.isEmpty() ) {
                 filter = new BsonDocument();
             } else {
                 filter = new BsonDocument( "$or", this.filter );

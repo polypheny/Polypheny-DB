@@ -26,7 +26,7 @@ import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BsonUtil;
@@ -140,7 +140,7 @@ public class BsonFunctionHelper extends BsonDocument {
 
     private static BsonValue getVal( RexNode rexNode, MongoRowType rowType, Implementor implementor ) {
         if ( rexNode.isA( Kind.INPUT_REF ) ) {
-            RexInputRef rex = (RexInputRef) rexNode;
+            RexIndexRef rex = (RexIndexRef) rexNode;
             return new BsonString( "$" + rowType.getPhysicalName( rowType.getFieldNames().get( rex.getIndex() ), implementor ) );
         } else if ( rexNode.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;

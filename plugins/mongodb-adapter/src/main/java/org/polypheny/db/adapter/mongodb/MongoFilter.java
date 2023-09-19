@@ -35,7 +35,24 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableList;
 import com.mongodb.client.gridfs.GridFSBucket;
-import org.bson.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonNull;
+import org.bson.BsonRegularExpression;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
@@ -45,17 +62,21 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.*;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.JsonBuilder;
-
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 
 /**
@@ -528,7 +549,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             key += "." + ((RexCall) node.operands.get( 1 ))
                     .operands
                     .stream()
-                    .map( o -> ((RexLiteral) o).getValueAs( String.class ) )
+                    .map( o -> ((RexLiteral) o).value.asString().value )
                     .collect( Collectors.joining( "." ) );
             attachCondition( "$exists", key, new BsonBoolean( true ) );
         }
@@ -574,7 +595,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             String key = getParamAsKey( node.operands.get( 0 ) );
             List<BsonValue> types = ((RexCall) node.operands.get( 1 )).operands
                     .stream()
-                    .map( el -> ((RexLiteral) el).getValueAs( Integer.class ) )
+                    .map( el -> ((RexLiteral) el).value.asNumber().intValue() )
                     .map( BsonInt32::new )
                     .collect( Collectors.toList() );
             attachCondition( "$type", key, new BsonArray( types ) );
@@ -591,12 +612,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return;
             }
             String left = getParamAsKey( node.operands.get( 0 ) );
-            String value = getLiteralAs( node, 1, String.class );
+            String value = getLiteralAs( node, 1, p -> p.asString().value );
 
-            boolean isInsensitive = getLiteralAs( node, 2, Boolean.class );
-            boolean isMultiline = getLiteralAs( node, 3, Boolean.class );
-            boolean doesIgnoreWhitespace = getLiteralAs( node, 4, Boolean.class );
-            boolean allowsDot = getLiteralAs( node, 5, Boolean.class );
+            boolean isInsensitive = getLiteralAs( node, 2, p -> p.asBoolean().value );
+            boolean isMultiline = getLiteralAs( node, 3, p -> p.asBoolean().value );
+            boolean doesIgnoreWhitespace = getLiteralAs( node, 4, p -> p.asBoolean().value );
+            boolean allowsDot = getLiteralAs( node, 5, p -> p.asBoolean().value );
 
             String options = (isInsensitive ? "i" : "")
                     + (isMultiline ? "m" : "")
@@ -607,8 +628,8 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        private <E> E getLiteralAs( RexCall node, int pos, Class<E> clazz ) {
-            return ((RexLiteral) node.operands.get( pos )).getValueAs( clazz );
+        private <E> E getLiteralAs( RexCall node, int pos, Function<PolyValue, E> transformer ) {
+            return transformer.apply( ((RexLiteral) node.operands.get( pos )).value );
         }
 
 
@@ -625,7 +646,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         private String getParamAsKey( RexNode node ) {
             if ( node.isA( Kind.INPUT_REF ) ) {
-                return rowType.getFieldNames().get( ((RexInputRef) node).getIndex() );
+                return rowType.getFieldNames().get( ((RexIndexRef) node).getIndex() );
             } else {
                 return MongoRules.translateDocValueAsKey( rowType, (RexCall) node, "" );
             }
@@ -635,7 +656,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         @Nullable
         private BsonValue getParamAsValue( RexNode node ) {
             if ( node.isA( Kind.INPUT_REF ) ) {
-                return new BsonString( "$" + rowType.getFieldNames().get( ((RexInputRef) node).getIndex() ) );
+                return new BsonString( "$" + rowType.getFieldNames().get( ((RexIndexRef) node).getIndex() ) );
             } else if ( node.isA( Kind.DYNAMIC_PARAM ) ) {
                 return new BsonDynamic( (RexDynamicParam) node );
             } else if ( node.isA( Kind.LITERAL ) ) {
@@ -656,13 +677,13 @@ public class MongoFilter extends Filter implements MongoAlg {
 
             switch ( right.getKind() ) {
                 case DYNAMIC_PARAM:
-                    attachCondition( null, getPhysicalName( (RexInputRef) left ),
+                    attachCondition( null, getPhysicalName( (RexIndexRef) left ),
                             new BsonDynamic( (RexDynamicParam) right ).setIsRegex( true ) );
                     break;
 
                 case LITERAL:
-                    attachCondition( null, getPhysicalName( (RexInputRef) left ),
-                            BsonUtil.replaceLikeWithRegex( ((RexLiteral) right).getValueAs( String.class ) ) );
+                    attachCondition( null, getPhysicalName( (RexIndexRef) left ),
+                            BsonUtil.replaceLikeWithRegex( ((RexLiteral) right).getValue().asString().value ) );
                     break;
 
                 case INPUT_REF:
@@ -670,8 +691,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                             "$eq",
                             new BsonArray(
                                     Arrays.asList(
-                                            new BsonString( "$" + getPhysicalName( (RexInputRef) left ) ),
-                                            new BsonString( "$" + getPhysicalName( (RexInputRef) right ) ) ) ) ) );
+                                            new BsonString( "$" + getPhysicalName( (RexIndexRef) left ) ),
+                                            new BsonString( "$" + getPhysicalName( (RexIndexRef) right ) ) ) ) ) );
 
                     break;
                 default:
@@ -711,8 +732,8 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue field;
             BsonBoolean trueBool = new BsonBoolean( true );
             String randomName = getRandomName();
-            if ( single.isA( Kind.LITERAL ) && ((RexLiteral) single).getTypeName() == PolyType.BOOLEAN ) {
-                field = new BsonBoolean( ((RexLiteral) single).getValueAs( Boolean.class ) );
+            if ( single.isA( Kind.LITERAL ) && single.getType().getPolyType() == PolyType.BOOLEAN ) {
+                field = new BsonBoolean( ((RexLiteral) single).value.asBoolean().value );
                 this.preProjections.put( randomName, field );
 
                 attachCondition( isInverted ? "$ne" : "$eq", randomName, trueBool );
@@ -774,7 +795,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue l;
             BsonValue r;
             if ( left.isA( Kind.INPUT_REF ) ) {
-                l = new BsonString( "$" + getPhysicalName( (RexInputRef) left ) );
+                l = new BsonString( "$" + getPhysicalName( (RexIndexRef) left ) );
             } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
                 l = MongoRules.translateDocValue( rowType, (RexCall) left, "$" );
             } else {
@@ -782,7 +803,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             if ( right.isA( Kind.INPUT_REF ) ) {
-                r = new BsonString( "$" + getPhysicalName( (RexInputRef) right ) );
+                r = new BsonString( "$" + getPhysicalName( (RexIndexRef) right ) );
             } else if ( right.isA( Kind.MQL_QUERY_VALUE ) ) {
                 r = MongoRules.translateDocValue( rowType, (RexCall) right, "$" );
             } else {
@@ -810,9 +831,9 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was successful
          */
         private boolean translateArray( String op, RexNode right, RexNode left ) {
-            if ( right instanceof RexCall && left instanceof RexInputRef ) {
+            if ( right instanceof RexCall && left instanceof RexIndexRef ) {
                 // $9 ( index ) -> [el1, el2]
-                String name = getPhysicalName( (RexInputRef) left );
+                String name = getPhysicalName( (RexIndexRef) left );
                 attachCondition( op, "$expr", translateCall( name, (RexCall) right ) );
                 return true;
             } else if ( right instanceof RexCall && left instanceof RexLiteral ) {
@@ -824,9 +845,9 @@ public class MongoFilter extends Filter implements MongoAlg {
 
                 } else {
                     // $9[1] -> el1
-                    String name = getPhysicalName( (RexInputRef) ((RexCall) right).operands.get( 0 ) );
+                    String name = getPhysicalName( (RexIndexRef) ((RexCall) right).operands.get( 0 ) );
                     // we have to adjust as mongodb arrays start at 0 and sql at 1
-                    int pos = ((RexLiteral) ((RexCall) right).operands.get( 1 )).getValueAs( Integer.class ) - 1;
+                    int pos = ((RexLiteral) ((RexCall) right).operands.get( 1 )).value.asInteger().value - 1;
                     translateOp2( null, name + "." + pos, (RexLiteral) left );
                 }
 
@@ -883,7 +904,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         private BsonDocument getArray( RexCall right ) {
             BsonArray array = new BsonArray( right.operands.stream().map( el -> {
                 if ( el.isA( Kind.INPUT_REF ) ) {
-                    return new BsonString( getPhysicalName( (RexInputRef) el ) );
+                    return new BsonString( getPhysicalName( (RexIndexRef) el ) );
                 } else if ( el.isA( Kind.DYNAMIC_PARAM ) ) {
                     return new BsonDynamic( (RexDynamicParam) el );
                 } else if ( el.isA( Kind.LITERAL ) ) {
@@ -1025,7 +1046,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         private boolean translateLiteral( String op, RexNode left, RexLiteral right ) {
             switch ( left.getKind() ) {
                 case INPUT_REF:
-                    translateOp2( op, getPhysicalName( (RexInputRef) left ), right );
+                    translateOp2( op, getPhysicalName( (RexIndexRef) left ), right );
                     return true;
 
                 case CAST:
@@ -1059,7 +1080,7 @@ public class MongoFilter extends Filter implements MongoAlg {
          */
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
             if ( left.getKind() == Kind.INPUT_REF ) {
-                attachCondition( op, getPhysicalName( (RexInputRef) left ), new BsonDynamic( right ) );
+                attachCondition( op, getPhysicalName( (RexIndexRef) left ), new BsonDynamic( right ) );
                 return true;
             }
             if ( left.getKind() == Kind.DISTANCE ) {
@@ -1139,13 +1160,13 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         private String handleElemMatch( RexCall left ) {
             RexCall names = (RexCall) ((RexCall) this.tempElem).operands.get( 1 );
-            RexInputRef parent = (RexInputRef) left.getOperands().get( 0 );
+            RexIndexRef parent = (RexIndexRef) left.getOperands().get( 0 );
             String mergedName = rowType.getFieldNames().get( parent.getIndex() );
 
             if ( names.operands.size() > 0 ) {
                 mergedName += "." + names.operands
                         .stream()
-                        .map( name -> ((RexLiteral) name).getValueAs( String.class ) )
+                        .map( name -> ((RexLiteral) name).value.asString().value )
                         .collect( Collectors.joining( "." ) );
             }
             return mergedName;
@@ -1173,7 +1194,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     String name = getRandomName();
                     BsonArray array = new BsonArray(
                             Arrays.asList(
-                                    new BsonString( "$" + getPhysicalName( (RexInputRef) l ) ),
+                                    new BsonString( "$" + getPhysicalName( (RexIndexRef) l ) ),
                                     new BsonDocument( "$add", new BsonArray( Arrays.asList( item, new BsonInt32( -1 ) ) ) ) ) );
                     this.preProjections.put( name, new BsonDocument( "$arrayElemAt", array ) );
 
@@ -1206,7 +1227,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        private String getPhysicalName( RexInputRef input ) {
+        private String getPhysicalName( RexIndexRef input ) {
             String name = fieldNames.get( input.getIndex() );
             // DML (and also DDL) have to use the physical name, as they do not allow
             // to use projections beforehand

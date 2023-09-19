@@ -49,8 +49,6 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.polypheny.db.adapter.enumerable.RexImpTable;
-import org.polypheny.db.adapter.enumerable.RexToLixTranslator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
@@ -65,13 +63,16 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
+import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.RexImpTable;
+import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
@@ -96,20 +97,20 @@ import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
+import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
@@ -158,8 +159,8 @@ public class MongoRules {
         }
         final RexNode op0 = call.operands.get( 0 );
         final RexNode op1 = call.operands.get( 1 );
-        if ( op0 instanceof RexInputRef
-                && ((RexInputRef) op0).getIndex() == 0
+        if ( op0 instanceof RexIndexRef
+                && ((RexIndexRef) op0).getIndex() == 0
                 && op1 instanceof RexLiteral
                 && ((RexLiteral) op1).getValue2() instanceof String ) {
             return (String) ((RexLiteral) op1).getValue2();
@@ -168,7 +169,7 @@ public class MongoRules {
             return new BsonDynamic( (RexDynamicParam) op1 ).toJson();
         }*/
 
-        if ( op0.getType().getPolyType() == PolyType.ARRAY & op1 instanceof RexLiteral && op0 instanceof RexInputRef ) {
+        if ( op0.getType().getPolyType() == PolyType.ARRAY & op1 instanceof RexLiteral && op0 instanceof RexIndexRef ) {
             return null;
         }
         return null;
@@ -229,9 +230,9 @@ public class MongoRules {
 
     public static Pair<String, RexNode> getAddFields( RexCall call, AlgDataType rowType ) {
         assert call.operands.size() == 3;
-        assert call.operands.get( 0 ) instanceof RexInputRef;
+        assert call.operands.get( 0 ) instanceof RexIndexRef;
         assert call.operands.get( 1 ) instanceof RexLiteral;
-        String field = rowType.getFieldNames().get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+        String field = rowType.getFieldNames().get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
         field += "." + ((RexLiteral) call.operands.get( 1 )).getValueAs( String.class );
         return new Pair<>( field, call.operands.get( 2 ) );
     }
@@ -251,7 +252,7 @@ public class MongoRules {
 
 
     public static BsonValue translateDocValue( AlgDataType rowType, RexCall call, String prefix ) {
-        RexInputRef parent = (RexInputRef) call.getOperands().get( 0 );
+        RexIndexRef parent = (RexIndexRef) call.getOperands().get( 0 );
 
         if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
             return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
@@ -265,7 +266,7 @@ public class MongoRules {
                 + "."
                 + names.operands
                 .stream()
-                .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                .map( n -> ((RexLiteral) n).value.asString().value )
                 .collect( Collectors.joining( "." ) ) );
     }
 
@@ -348,7 +349,7 @@ public class MongoRules {
 
 
         @Override
-        public String visitInputRef( RexInputRef inputRef ) {
+        public String visitIndexRef( RexIndexRef inputRef ) {
             implementor.physicalMapper.add( inFields.get( inputRef.getIndex() ) );
             return maybeQuote( "$" + inFields.get( inputRef.getIndex() ) );
         }
@@ -383,7 +384,7 @@ public class MongoRules {
                 if ( op1 instanceof RexLiteral && op1.getType().
 
                         getPolyType() == PolyType.INTEGER ) {
-                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).getValueAs( Integer.class ) - 1) + "]}";
+                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).value.asNumber().intValue() - 1) + "]}";
                 }
                 // prepared
                 if ( op1 instanceof RexDynamicParam ) {
@@ -427,9 +428,9 @@ public class MongoRules {
             if ( special != null ) {
                 return special;
             }
-            if ( call.op.getOperatorName() == OperatorName.MQL_JSONIFY ) {
+            /*if ( call.op.getOperatorName() == OperatorName.MQL ) {
                 return call.operands.get( 0 ).accept( this );
-            }
+            }*/
 
             if ( call.op.getOperatorName() == OperatorName.SIGN ) {
                 // x < 0, -1
@@ -495,7 +496,7 @@ public class MongoRules {
                 String parent = implementor
                         .getStaticRowType()
                         .getFieldNames()
-                        .get( ((RexInputRef) call.operands.get( 0 )).getIndex() );
+                        .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
 
                 if ( !(call.operands.get( 1 ) instanceof RexCall) || call.operands.size() != 2 ) {
                     return null;
@@ -509,7 +510,7 @@ public class MongoRules {
                     fields.add( "\"" + parent + "." + ((RexCall) operand)
                             .operands
                             .stream()
-                            .map( op -> ((RexLiteral) op).getValueAs( String.class ) )
+                            .map( op -> ((RexLiteral) op).value.asString().value )
                             .collect( Collectors.joining( "." ) ) + "\": 0" );
                 }
 
@@ -840,7 +841,7 @@ public class MongoRules {
             DocumentValues documentValues = (DocumentValues) alg;
             return new MongoDocuments(
                     alg.getCluster(),
-                    documentValues.getDocumentTuples(),
+                    documentValues.documents,
                     alg.getTraitSet().replace( out )
             );
 
@@ -853,7 +854,7 @@ public class MongoRules {
     public static class MongoDocuments extends DocumentValues implements MongoAlg {
 
 
-        public MongoDocuments( AlgOptCluster cluster, ImmutableList<BsonValue> documentTuples, AlgTraitSet traitSet ) {
+        public MongoDocuments( AlgOptCluster cluster, List<PolyDocument> documentTuples, AlgTraitSet traitSet ) {
             super( cluster, traitSet, documentTuples );
         }
 
@@ -913,7 +914,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final RelModify modify = (RelModify) alg;
+            final RelModify<MongoEntity> modify = (RelModify<MongoEntity>) alg;
             final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
             if ( modifiableTable == null ) {
                 return null;
@@ -927,7 +928,6 @@ public class MongoRules {
                     modify.getCluster(),
                     traitSet,
                     modify.getEntity(),
-                    modify.getCatalogReader(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
@@ -975,7 +975,7 @@ public class MongoRules {
     }
 
 
-    private static class MongoEntityModify extends RelModify implements MongoAlg {
+    private static class MongoEntityModify extends Modify<MongoEntity> implements MongoAlg {
 
 
         private final GridFSBucket bucket;
@@ -986,14 +986,13 @@ public class MongoRules {
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
                 AlgOptEntity table,
-                CatalogReader catalogReader,
                 AlgNode input,
                 Operation operation,
                 List<String> updateColumnList,
                 List<RexNode> sourceExpressionList,
                 boolean flattened ) {
-            super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
-            this.bucket = table.unwrap( MongoEntity.class ).getMongoSchema().getBucket();
+            super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
+            this.bucket = table.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
         }
 
 
@@ -1021,7 +1020,7 @@ public class MongoRules {
         @Override
         public void implement( Implementor implementor ) {
             implementor.setDML( true );
-            Entity preEntity = table.getEntity();
+            Entity preEntity = entity.getEntity();
             this.implementor = implementor;
 
             if ( !(preEntity instanceof MongoEntity) ) {
@@ -1053,7 +1052,7 @@ public class MongoRules {
                     int pos = 0;
                     BsonDocument doc = new BsonDocument();
                     List<BsonDocument> docDocs = new ArrayList<>();
-                    GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
+                    GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
                     for ( RexNode el : getSourceExpressionList() ) {
                         if ( el.isA( Kind.LITERAL ) ) {
                             doc.append(
@@ -1268,7 +1267,7 @@ public class MongoRules {
                 } else if ( operand instanceof RexCall ) {
                     array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
                 } else if ( operand.getKind() == Kind.LITERAL ) {
-                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoEntity.getMongoSchema().getBucket() ) );
+                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoEntity.getMongoNamespace().getBucket() ) );
                 } else if ( operand.getKind() == Kind.DYNAMIC_PARAM ) {
                     array.add( new BsonDynamic( (RexDynamicParam) operand ) );
                 } else {
@@ -1303,7 +1302,7 @@ public class MongoRules {
 
             BsonDocument doc = new BsonDocument();
             LogicalTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( LogicalTable.class );
-            GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
+            GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
             //noinspection AssertWithSideEffects
             assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
             Map<Integer, String> physicalMapping;
@@ -1396,7 +1395,7 @@ public class MongoRules {
         private void handleDirectInsert( Implementor implementor, MongoValues values ) {
             List<BsonDocument> docs = new ArrayList<>();
             LogicalTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( LogicalTable.class );
-            GridFSBucket bucket = implementor.mongoEntity.getMongoSchema().getBucket();
+            GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
 
             AlgDataType valRowType = rowType;
 

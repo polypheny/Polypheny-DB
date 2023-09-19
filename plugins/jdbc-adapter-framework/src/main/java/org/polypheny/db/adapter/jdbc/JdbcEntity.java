@@ -246,7 +246,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
         @Override
         public String toString() {
-            return "JdbcTableQueryable {table: " + table.namespaceName + "." + table.name + "}";
+            return "JdbcTableQueryable {table: " + entity.namespaceName + "." + entity.name + "}";
         }
 
 

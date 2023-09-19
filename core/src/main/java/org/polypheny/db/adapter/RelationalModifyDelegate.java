@@ -72,6 +72,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -119,8 +120,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
-        PhysicalTable table = catalog.getTable( relations.getValue().get( 0 ) );
+        PhysicalTable table = catalog.fromAllocation( allocId );
         if ( table.unwrap( ModifiableEntity.class ) == null ) {
             return null;
         }
@@ -137,14 +137,12 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
-        PhysicalTable table = catalog.getTable( relations.getValue().get( 0 ) );
+        PhysicalTable table = catalog.fromAllocation( allocId );
         if ( table.unwrap( ModifiableEntity.class ) == null ) {
             return null;
         }
 
         builder.clear();
-
         builder.push( modify.getInput() );
 
         Pair<List<String>, List<RexNode>> updates = getRelationalDocumentModify( modify );
@@ -213,10 +211,11 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public AlgNode getGraphModify( long allocId, LpgModify<?> alg, AlgBuilder builder ) {
-        PhysicalTable nodesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        PhysicalTable nodePropertiesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        PhysicalTable edgesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        PhysicalTable edgePropertiesTable = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
+        List<PhysicalEntity> physicals = catalog.getPhysicalsFromAllocs( allocId );
+        PhysicalEntity nodesTable = physicals.get( 0 );
+        PhysicalEntity nodePropertiesTable = physicals.get( 1 );
+        PhysicalEntity edgesTable = physicals.get( 2 );
+        PhysicalEntity edgePropertiesTable = physicals.get( 3 );
 
         List<AlgNode> inputs = new ArrayList<>();
 
@@ -344,7 +343,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
                 Triple.of( "key", GraphType.KEY_SIZE, PolyType.VARCHAR ),
                 Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
-        catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( node.id, nProperties.id, edge.id, eProperties.id ) ) );
+        catalog.addPhysical( allocation, node, nProperties, edge, eProperties );
     }
 
 
@@ -369,28 +368,26 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
         }
 
         modifiable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
-        return catalog.getTable( catalog.getAllocRelations().get( allocTable.id ).right.get( 0 ) );
+        return catalog.fromAllocation( allocation.id );
     }
 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-        catalog.dropTable( allocation.id );
-        catalog.getAllocRelations().remove( allocation.id );
+        catalog.removePhysical( allocation.id );
     }
 
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable physical = createSubstitution( context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
-        catalog.getAllocRelations().put( allocation.id, Pair.of( allocation, List.of( physical.id ) ) );
+        catalog.addPhysical( allocation, physical );
     }
 
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-        catalog.dropTable( allocation.id );
-        catalog.getAllocRelations().remove( allocation.id );
+        catalog.removePhysical( allocation.id );
     }
 
 

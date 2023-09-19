@@ -37,6 +37,15 @@ package org.polypheny.db.adapter.mongodb;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSDownloadStream;
+import java.io.PushbackInputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -44,13 +53,6 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-import org.polypheny.db.runtime.functions.Functions;
-
-import java.io.PushbackInputStream;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 
 /**
@@ -156,8 +158,8 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
-    static Function1<Document, Map> mapGetter() {
-        return a0 -> (Map) a0;
+    static <E> Function1<Document, E> mapGetter() {
+        return a0 -> (E) a0;
     }
 
 
@@ -199,11 +201,11 @@ class MongoEnumerator implements Enumerator<Object> {
     }
 
 
-    static Function1<Document, Object> singletonGetter( final String fieldName, final Class<?> fieldClass, Class<?> arrayFieldClass ) {
+    static <E> Function1<Document, E> singletonGetter( final String fieldName, final Class<?> fieldClass, Class<?> arrayFieldClass ) {
         return a0 -> {
-            Object obj = convert( a0.get( fieldName ), fieldClass );
+            E obj = (E) convert( a0.get( fieldName ), fieldClass );
             if ( fieldClass == List.class ) {
-                return arrayGetter( (List) obj, arrayFieldClass );
+                return (E) arrayGetter( (List<Object>) obj, arrayFieldClass );
             }
             return obj;
         };
@@ -214,38 +216,38 @@ class MongoEnumerator implements Enumerator<Object> {
      * @param fields List of fields to project; or null to return map
      * @param arrayFields
      */
-    static Function1<Document, Object[]> listGetter( final List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
+    static <E> Function1<Document, E> listGetter( final List<Entry<String, Class<?>>> fields, List<Entry<String, Class<?>>> arrayFields ) {
         return a0 -> {
             Object[] objects = new Object[fields.size()];
             for ( int i = 0; i < fields.size(); i++ ) {
-                final Map.Entry<String, Class> field = fields.get( i );
+                final Map.Entry<String, Class<?>> field = fields.get( i );
                 final String name = field.getKey();
-                if ( name.equals( "_data" ) ) {
+                /*if ( name.equals( "_data" ) ) {
                     objects[i] = Functions.jsonize( a0.get( name ) );
-                } else {
+                } else {*/
                     objects[i] = convert( a0.get( name ), field.getValue() );
-                }
+                //}
 
                 if ( field.getValue() == List.class ) {
                     objects[i] = arrayGetter( (List) objects[i], arrayFields.get( i ).getValue() );
                 }
             }
-            return objects;
+            return (E) objects;
         };
     }
 
 
-    static Function1<Document, Object> getter( List<Entry<String, Class>> fields, List<Entry<String, Class>> arrayFields ) {
+    static Function1<Document, Object> getter( List<Entry<String, Class<?>>> fields, List<Entry<String, Class<?>>> arrayFields ) {
         //noinspection unchecked
         return fields == null
-                ? (Function1) mapGetter()
+                ? mapGetter()
                 : fields.size() == 1
                         ? singletonGetter( fields.get( 0 ).getKey(), fields.get( 0 ).getValue(), arrayFields.get( 0 ).getValue() )
-                        : (Function1) listGetter( fields, arrayFields );
+                        : listGetter( fields, arrayFields );
     }
 
 
-    private static Object convert( Object o, Class clazz ) {
+    private static Object convert( Object o, Class<?> clazz ) {
         if ( o == null ) {
             return null;
         }

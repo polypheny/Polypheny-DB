@@ -29,7 +29,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.bson.BsonBinary;
@@ -49,41 +49,46 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingBoolean;
-import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
-import org.polypheny.db.catalog.Adapter;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogCollectionMapping;
-import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.adapter.RelationalModifyDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 
-public class MongoPlugin extends Plugin {
+public class MongoPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "MONGODB";
@@ -93,8 +98,8 @@ public class MongoPlugin extends Plugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MongoPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public MongoPlugin( PluginContext context ) {
+        super( context );
     }
 
 
@@ -107,13 +112,13 @@ public class MongoPlugin extends Plugin {
                 "trxLifetimeLimit", "1209600"
         );
 
-        Adapter.addAdapter( MongoStore.class, ADAPTER_NAME, settings );
+        AdapterManager.addAdapterDeploy( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( MongoStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( MongoStore.class, ADAPTER_NAME );
     }
 
 
@@ -122,36 +127,34 @@ public class MongoPlugin extends Plugin {
     @AdapterProperties(
             name = "MongoDB",
             description = "MongoDB is a document-oriented database system.",
-            supportedNamespaceTypes = { NamespaceType.DOCUMENT, NamespaceType.RELATIONAL },
             usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
     @AdapterSettingInteger(name = "port", defaultValue = 27017, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
-    public static class MongoStore extends DataStore {
+    public static class MongoStore extends DataStore<MongoStoreCatalog> {
 
+        private String DEFAULT_DATABASE;
+
+        @Delegate(excludes = Exclude.class)
+        private final RelationalModifyDelegate delegate;
 
         private String host;
         private int port;
         private DockerContainer container;
         private transient MongoClient client;
         private final transient TransactionProvider transactionProvider;
-        private transient MongoSchema currentSchema;
+        @Getter
+        private transient MongoNamespace currentNamespace;
 
         @Getter
         private final List<PolyType> unsupportedTypes = ImmutableList.of();
 
 
-        @Override
-        public List<NamespaceType> getSupportedSchemaType() {
-            return ImmutableList.of( NamespaceType.RELATIONAL, NamespaceType.DOCUMENT );
-        }
-
-
-        public MongoStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true );
+        public MongoStore( long adapterId, String uniqueName, Map<String, String> settings ) {
+            super( adapterId, uniqueName, settings, true, new MongoStoreCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
-                if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+                if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
                             .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
@@ -160,7 +163,7 @@ public class MongoPlugin extends Plugin {
                                 .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )
                                 .createAndStart();
                     } catch ( IOException e ) {
-                        throw new RuntimeException( e );
+                        throw new GenericRuntimeException( e );
                     }
 
                     if ( !container.waitTillStarted( this::testConnection, 20000 ) ) {
@@ -218,17 +221,13 @@ public class MongoPlugin extends Plugin {
             configs.put( "transactionLifetimeLimitSeconds", Integer.parseInt( trxLifetimeLimit ) );
             configs.put( "cursorTimeoutMillis", 6 * 600000 );
             db.runCommand( configs );
+
+            this.delegate = new RelationalModifyDelegate( this, storeCatalog );
         }
 
 
         private String getSetting( Map<String, String> settings, String key ) {
-            String trxLifetimeLimit;
-            if ( settings.containsKey( key ) ) {
-                trxLifetimeLimit = settings.get( key );
-            } else {
-                trxLifetimeLimit = Adapter.fromString( "MONGODB", AdapterType.STORE ).getDefaultSettings().get( key );
-            }
-            return trxLifetimeLimit;
+            return settings.get( key );
         }
 
 
@@ -256,42 +255,23 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( Snapshot snapshot, String name, long id ) {
+        public void updateNamespace( String name, long id ) {
             String[] splits = name.split( "_" );
             String database = name;
             if ( splits.length >= 2 ) {
                 database = splits[0] + "_" + splits[1];
             }
-            currentSchema = new MongoSchema( id, database, this.client, transactionProvider, this );
+            currentNamespace = new MongoNamespace( id, database, this.client, transactionProvider, this );
         }
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
-            return currentSchema.createTable( logicalTable, allocationTable );
-        }
-
-
-        @Override
-        public Namespace getCurrentSchema() {
-            return this.currentSchema;
-        }
-
-
-        @Override
-        public void truncate( Context context, LogicalTable table ) {
+        public void truncate( Context context, long allocId ) {
             commitAll();
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
-                // DDL is auto-committed
-                currentSchema.database.getCollection( partitionPlacement.physicalTableName ).deleteMany( new Document() );
-            }
-        }
-
-
-        @Override
-        public Entity createDocumentSchema( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
-            return null;//this.currentSchema.createCollection( catalogEntity, partitionPlacement );
+            // DDL is auto-committed
+            currentNamespace.database.getCollection( physical.name ).deleteMany( new Document() );
         }
 
 
@@ -332,39 +312,43 @@ public class MongoPlugin extends Plugin {
         }
 
 
-        @Override
-        public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
+        /*@Override
+        public PhysicalTable createPhysicalTable( Context context, LogicalTable logical, AllocationTable allocation ) {
             commitAll();
 
-            if ( this.currentSchema == null ) {
-                createNewSchema( null, logicalTable.getNamespaceName(), logicalTable.namespaceId );
+            if ( this.currentNamespace == null ) {
+                updateNamespace( DEFAULT_DATABASE, allocation.id );
+                storeCatalog.addNamespace( allocation.namespaceId, currentNamespace );
             }
 
-            String physicalTableName = getPhysicalTableName( logicalTable.id, allocationTable.id );
-            this.currentSchema.database.createCollection( physicalTableName );
+            String physicalTableName = getPhysicalTableName( logical.id, allocation.id );
+            this.currentNamespace.database.createCollection( physicalTableName );
 
-            return this.currentSchema.createTable( logicalTable, allocationTable );
-        }
+            return this.currentNamespace.createEntity( logicalTable, allocationTable );
+        }*/
 
 
         @Override
-        public void createCollection( Context prepareContext, LogicalCollection catalogCollection, long adapterId ) {
-            Catalog catalog = Catalog.getInstance();
+        public void createCollection( Context context, LogicalCollection collection, AllocationCollection allocation ) {
             commitAll();
-
-            if ( this.currentSchema == null ) {
+            String name = getPhysicalTableName( allocation.id, adapterId );
+            /*if ( this.currentNamespace == null ) {
                 createNewSchema( null, catalogCollection.getNamespaceName(), catalogCollection.namespaceId );
+            }*/
+            if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
+                updateNamespace( DEFAULT_DATABASE, allocation.namespaceId );
+                storeCatalog.addNamespace( allocation.namespaceId, currentNamespace );
             }
 
-            String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );
-            this.currentSchema.database.createCollection( physicalCollectionName );
+            //String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );
+            this.currentNamespace.database.createCollection( name );
 
-            catalog.updateCollectionPartitionPhysicalNames(
+            /*catalog.updateCollectionPartitionPhysicalNames(
                     catalogCollection.namespaceId,
                     catalogCollection.id,
                     getAdapterId(),
                     catalogCollection.getNamespaceName(),
-                    this.currentSchema.database.getName(),
+                    this.currentNamespace.database.getName(),
                     physicalCollectionName );
 
             // for cross-model queries
@@ -374,147 +358,128 @@ public class MongoPlugin extends Plugin {
                     mapping.idId,
                     catalogCollection.getNamespaceName(),
                     null,
-                    false );
+                    false );*/
         }
 
 
         @Override
-        public void dropCollection( Context context, LogicalCollection catalogCollection ) {
-            Catalog catalog = Catalog.getInstance();
+        public void dropCollection( Context context, AllocationCollection allocation ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            CatalogCollectionPlacement placement = catalog.getCollectionPlacement( catalogCollection.id, getAdapterId() );
+            PhysicalCollection collection = storeCatalog.fromAllocation( allocation.id ).unwrap( PhysicalCollection.class );
+            this.currentNamespace.database.getCollection( collection.name ).drop();
 
-            this.currentSchema.database.getCollection( placement.physicalName ).drop();
+            catalog.dropCollection( allocation.id );
+            catalog.getAllocRelations().remove( allocation.id );
+
         }
 
 
         @Override
-        public void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
+        public void dropTable( Context context, long allocId ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            //transactionProvider.startTransaction();
-            List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-            partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
 
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-                //this.currentSchema.database.getCollection( getPhysicalTableName( combinedTable.id ) ).drop();
-                this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).drop();
-            }
+            this.currentNamespace.database.getCollection( physical.name ).drop();
+            storeCatalog.dropTable( allocId );
         }
 
 
         @Override
-        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
+        public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
             // updates all columns with this field if a default value is provided
+            PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, table.columns.size() - 1, logicalColumn );
 
-            List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-            catalogTable.partitionProperty.partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
-
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                Document field;
-                if ( catalogColumn.defaultValue != null ) {
-                    CatalogDefaultValue defaultValue = catalogColumn.defaultValue;
-                    BsonValue value;
-                    if ( catalogColumn.type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                        value = new BsonString( defaultValue.value );
-                    } else if ( PolyType.INT_TYPES.contains( catalogColumn.type ) ) {
-                        value = new BsonInt32( Integer.parseInt( defaultValue.value ) );
-                    } else if ( PolyType.FRACTIONAL_TYPES.contains( catalogColumn.type ) ) {
-                        value = new BsonDouble( Double.parseDouble( defaultValue.value ) );
-                    } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BOOLEAN ) {
-                        value = new BsonBoolean( Boolean.parseBoolean( defaultValue.value ) );
-                    } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.DATE ) {
-                        try {
-                            value = new BsonInt64( new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime() );
-                        } catch ( ParseException e ) {
-                            throw new RuntimeException( e );
-                        }
-                    } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIME ) {
-                        value = new BsonInt32( (int) Time.valueOf( defaultValue.value ).getTime() );
-                    } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
-                        value = new BsonInt64( Timestamp.valueOf( defaultValue.value ).getTime() );
-                    } else if ( catalogColumn.type.getFamily() == PolyTypeFamily.BINARY ) {
-                        value = new BsonBinary( ByteString.parseBase64( defaultValue.value ) );
-                    } else {
-                        value = new BsonString( defaultValue.value );
+            Document field;
+            if ( logicalColumn.defaultValue != null ) {
+                CatalogDefaultValue defaultValue = logicalColumn.defaultValue;
+                BsonValue value;
+                if ( logicalColumn.type.getFamily() == PolyTypeFamily.CHARACTER ) {
+                    value = new BsonString( defaultValue.value );
+                } else if ( PolyType.INT_TYPES.contains( logicalColumn.type ) ) {
+                    value = new BsonInt32( Integer.parseInt( defaultValue.value ) );
+                } else if ( PolyType.FRACTIONAL_TYPES.contains( logicalColumn.type ) ) {
+                    value = new BsonDouble( Double.parseDouble( defaultValue.value ) );
+                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.BOOLEAN ) {
+                    value = new BsonBoolean( Boolean.parseBoolean( defaultValue.value ) );
+                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.DATE ) {
+                    try {
+                        value = new BsonInt64( new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime() );
+                    } catch ( ParseException e ) {
+                        throw new GenericRuntimeException( e );
                     }
-                    if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
-                        throw new RuntimeException( "Default values are not supported for array types" );
-                    }
-
-                    field = new Document().append( getPhysicalColumnName( catalogColumn ), value );
+                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.TIME ) {
+                    value = new BsonInt32( (int) Time.valueOf( defaultValue.value ).getTime() );
+                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
+                    value = new BsonInt64( Timestamp.valueOf( defaultValue.value ).getTime() );
+                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.BINARY ) {
+                    value = new BsonBinary( ByteString.parseBase64( defaultValue.value ) );
                 } else {
-                    field = new Document().append( getPhysicalColumnName( catalogColumn ), null );
+                    value = new BsonString( defaultValue.value );
                 }
-                Document update = new Document().append( "$set", field );
+                if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
+                    throw new GenericRuntimeException( "Default values are not supported for array types" );
+                }
 
-                // DDL is auto-commit
-                this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), update );
-
-                // Add physical name to placement
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        catalogColumn.id,
-                        currentSchema.getDatabase().getName(),
-                        getPhysicalColumnName( catalogColumn ),
-                        false );
+                field = new Document().append( getPhysicalColumnName( logicalColumn ), value );
+            } else {
+                field = new Document().append( getPhysicalColumnName( logicalColumn ), null );
             }
+            Document update = new Document().append( "$set", field );
+
+            // DDL is auto-commit
+            this.currentNamespace.database.getCollection( physical.name ).updateMany( new Document(), update );
+
         }
 
 
-        private String getPhysicalColumnName( CatalogColumn catalogColumn ) {
+        private String getPhysicalColumnName( LogicalColumn catalogColumn ) {
             return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );
         }
 
 
-        private String getPhysicalColumnName( CatalogColumnPlacement columnPlacement ) {
-            return getPhysicalColumnName( columnPlacement.getLogicalColumnName(), columnPlacement.columnId );
-        }
-
-
         @Override
-        public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
+        public void dropColumn( Context context, long allocId, long columnId ) {
             commitAll();
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-                Document field = new Document().append( MongoStore.getPhysicalColumnName( columnPlacement.physicalColumnName, columnPlacement.columnId ), 1 );
-                Document filter = new Document().append( "$unset", field );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
+            PhysicalColumn column = storeCatalog.getColumn( columnId, allocId );
 
-                context.getStatement().getTransaction().registerInvolvedAdapter( this );
-                // DDL is auto-commit
-                this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( new Document(), filter );
-            }
-        }
+            Document field = new Document().append( column.name, 1 );
+            Document filter = new Document().append( "$unset", field );
 
-
-        @Override
-        public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-            commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            IndexTypes type = IndexTypes.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
+            // DDL is auto-commit
+            this.currentNamespace.database.getCollection( physical.name ).updateMany( new Document(), filter );
+            storeCatalog.dropColumn( allocId, columnId );
+        }
 
-            List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-            partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
-            String physicalIndexName = getPhysicalIndexName( catalogIndex );
+        @Override
+        public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
+            commitAll();
+            PhysicalTable physical = storeCatalog.fromAllocation( allocation.id ).unwrap( PhysicalTable.class );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            IndexTypes type = IndexTypes.valueOf( logicalIndex.method.toUpperCase( Locale.ROOT ) );
 
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                switch ( type ) {
-                    case SINGLE:
-                        List<String> columns = catalogIndex.key.getColumnNames();
-                        if ( columns.size() > 1 ) {
-                            throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
-                        }
-                        addCompositeIndex( catalogIndex, columns, partitionPlacement, physicalIndexName );
-                        break;
+            String physicalIndexName = getPhysicalIndexName( logicalIndex );
 
-                    case DEFAULT:
-                    case COMPOUND:
-                        addCompositeIndex( catalogIndex, catalogIndex.key.getColumnNames(), partitionPlacement, physicalIndexName );
-                        break;
+            switch ( type ) {
+                case SINGLE:
+                    List<String> columns = logicalIndex.key.getColumnNames();
+                    if ( columns.size() > 1 ) {
+                        throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
+                    }
+                    addCompositeIndex( logicalIndex, columns, physical, physicalIndexName );
+                    break;
+
+                case DEFAULT:
+                case COMPOUND:
+                    addCompositeIndex( logicalIndex, logicalIndex.key.getColumnNames(), physical, physicalIndexName );
+                    break;
 /*
             case MULTIKEY:
                 //array
@@ -523,61 +488,58 @@ public class MongoPlugin extends Plugin {
                 // stemd and stop words removed
             case HASHED:
                 throw new UnsupportedOperationException( "The MongoDB adapter does not yet support this type of index: " + type );*/
-                }
             }
 
-            Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+            return physicalIndexName;
         }
 
 
-        private String getPhysicalIndexName( CatalogIndex catalogIndex ) {
+        private String getPhysicalIndexName( LogicalIndex catalogIndex ) {
             return "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
         }
 
 
-        private void addCompositeIndex( CatalogIndex catalogIndex, List<String> columns, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
+        private void addCompositeIndex( LogicalIndex index, List<String> columns, PhysicalEntity physical, String physicalIndexName ) {
             Document doc = new Document();
 
-            Pair.zip( catalogIndex.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.right, p.left ), 1 ) );
+            Pair.zip( index.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.right, p.left ), 1 ) );
 
             IndexOptions options = new IndexOptions();
-            options.unique( catalogIndex.unique );
-            options.name( physicalIndexName + "_" + partitionPlacement.partitionId );
+            options.unique( index.unique );
+            options.name( physicalIndexName );
 
-            this.currentSchema.database
-                    .getCollection( partitionPlacement.physicalTableName )
+            this.currentNamespace.database
+                    .getCollection( physical.name )
                     .createIndex( doc, options );
         }
 
 
         @Override
-        public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-            List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-            partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
-
+        public void dropIndex( Context context, LogicalIndex logicalIndex, long allocId ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).dropIndex( catalogIndex.physicalName + "_" + partitionPlacement.partitionId );
-            }
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
+
+            this.currentNamespace.database.getCollection( physical.name ).dropIndex( catalogIndex.physicalName + "_" + partitionPlacement.partitionId );
         }
 
 
         @Override
-        public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType polyType ) {
-            String name = columnPlacement.physicalColumnName;
-            CatalogPartitionPlacement partitionPlacement = catalog.getPartitionPlacement( getAdapterId(), catalog.getTable( columnPlacement.tableId ).partitionProperty.partitionIds.get( 0 ) );
+        public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
+            PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
+
             BsonDocument filter = new BsonDocument();
-            List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( name, new BsonDocument( "$convert", new BsonDocument()
-                    .append( "input", new BsonString( "$" + name ) )
-                    .append( "to", new BsonInt32( BsonUtil.getTypeNumber( catalogColumn.type ) ) ) ) ) ) );
+            List<BsonDocument> updates = Collections.singletonList( new BsonDocument( "$set", new BsonDocument( physical.name, new BsonDocument( "$convert", new BsonDocument()
+                    .append( "input", new BsonString( "$" + physical.name ) )
+                    .append( "to", new BsonInt32( BsonUtil.getTypeNumber( newCol.type ) ) ) ) ) ) );
 
-            this.currentSchema.database.getCollection( partitionPlacement.physicalTableName ).updateMany( filter, updates );
+            this.currentNamespace.database.getCollection( physical.name ).updateMany( filter, updates );
         }
 
 
         @Override
-        public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        public List<IndexMethodModel> getAvailableIndexMethods() {
             return Arrays.stream( IndexTypes.values() )
                     .map( IndexTypes::asMethod )
                     .collect( Collectors.toList() );
@@ -585,9 +547,10 @@ public class MongoPlugin extends Plugin {
 
 
         @Override
-        public AvailableIndexMethod getDefaultIndexMethod() {
+        public IndexMethodModel getDefaultIndexMethod() {
             return IndexTypes.COMPOUND.asMethod();
         }
+
 
 
         @Override
@@ -648,6 +611,50 @@ public class MongoPlugin extends Plugin {
         }
 
 
+        @Override
+        public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
+            PhysicalCollection collection = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalCollection.class );
+            if ( collection.unwrap( ModifiableEntity.class ) == null ) {
+                return null;
+            }
+            return collection.unwrap( ModifiableEntity.class ).toModificationAlg(
+                    modify.getCluster(),
+                    modify.getTraitSet(),
+                    collection,
+                    modify.getInput(),
+                    modify.getOperation(),
+                    null,
+                    null );
+        }
+
+
+        @Override
+        public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
+            PhysicalCollection collection = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalCollection.class );
+            return builder.scan( collection ).build();
+        }
+
+
+        @Override
+        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+
+        }
+
+
+        @Override
+        public void refreshTable( long allocId ) {
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
+            storeCatalog.addTable( currentNamespace.createEntity( storeCatalog, physical ) );
+        }
+
+
+        @Override
+        public void refreshCollection( long allocId ) {
+            PhysicalCollection physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalCollection.class );
+            storeCatalog.addTable( this.currentNamespace.createEntity( storeCatalog, physical ) );
+        }
+
+
         private enum IndexTypes {
             DEFAULT,
             COMPOUND,
@@ -658,10 +665,40 @@ public class MongoPlugin extends Plugin {
         HASHED;*/
 
 
-            public AvailableIndexMethod asMethod() {
-                return new AvailableIndexMethod( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
+            public IndexMethodModel asMethod() {
+                return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
             }
         }
+
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder );
+
+        AlgNode getDocumentScan( long allocId, AlgBuilder builder );
+
+        void refreshCollection( long allocId );
+
+        void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
+
+        void dropCollection( Context context, AllocationCollection allocation );
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
 
     }
 

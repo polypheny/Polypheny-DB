@@ -29,12 +29,12 @@ import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.util.Pair;
 
 @AllArgsConstructor
 public class RelationalScanDelegate implements Scannable {
@@ -46,23 +46,19 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public AlgNode getRelScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> relations = catalog.getAllocRelations().get( allocId );
-        return builder.scan( catalog.getTable( relations.right.get( 0 ) ) ).build();
+        PhysicalEntity entity = catalog.fromAllocation( allocId );
+        return builder.scan( entity ).build();
     }
 
 
     @Override
     public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalTable node = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
-        PhysicalTable nProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) );
-        PhysicalTable edge = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) );
-        PhysicalTable eProps = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) );
-
-        builder.scan( node );
-        builder.scan( nProps );
-        builder.scan( edge );
-        builder.scan( eProps );
+        List<PhysicalEntity> physicals = catalog.getPhysicalsFromAllocs( allocId );
+        builder.scan( physicals.get( 0 ) );//node
+        builder.scan( physicals.get( 1 ) );//node Props
+        builder.scan( physicals.get( 2 ) );//edge
+        builder.scan( physicals.get( 3 ) );//edge Props
 
         builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
 
@@ -73,7 +69,7 @@ public class RelationalScanDelegate implements Scannable {
     @Override
     public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalTable table = catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) );
+        PhysicalTable table = catalog.fromAllocation( allocId );
         builder.scan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false );
@@ -83,12 +79,12 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public AlgNode getScan( long allocId, AlgBuilder builder ) {
-        Pair<AllocationEntity, List<Long>> alloc = catalog.getAllocRelations().get( allocId );
-        if ( alloc.left.unwrap( AllocationTable.class ) != null ) {
+        AllocationEntity alloc = catalog.getAlloc( allocId );
+        if ( alloc.unwrap( AllocationTable.class ) != null ) {
             return getRelScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationCollection.class ) != null ) {
+        } else if ( alloc.unwrap( AllocationCollection.class ) != null ) {
             return getDocumentScan( allocId, builder );
-        } else if ( alloc.left.unwrap( AllocationGraph.class ) != null ) {
+        } else if ( alloc.unwrap( AllocationGraph.class ) != null ) {
             return getGraphScan( allocId, builder );
         } else {
             throw new GenericRuntimeException( "This should not happen" );
@@ -110,16 +106,17 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public void refreshGraph( long allocId ) {
-        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) ).allocationId );
-        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 1 ) ).allocationId );
-        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 2 ) ).allocationId );
-        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 3 ) ).allocationId );
+        List<PhysicalEntity> physicals = catalog.getPhysicalsFromAllocs( allocId );
+        scannable.refreshTable( physicals.get( 0 ).allocationId );
+        scannable.refreshTable( physicals.get( 1 ).allocationId );
+        scannable.refreshTable( physicals.get( 2 ).allocationId );
+        scannable.refreshTable( physicals.get( 3 ).allocationId );
     }
 
 
     @Override
     public void refreshCollection( long allocId ) {
-        scannable.refreshTable( catalog.getTable( catalog.getAllocRelations().get( allocId ).getValue().get( 0 ) ).allocationId );
+        scannable.refreshTable( catalog.fromAllocation( allocId ).allocationId );
     }
 
 }

@@ -35,27 +35,35 @@ package org.polypheny.db.adapter.mongodb;
 
 
 import com.google.common.collect.Lists;
+import java.util.AbstractList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.polypheny.db.adapter.enumerable.*;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.PhysType;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.*;
+import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptPlanner;
+import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-
-import java.util.AbstractList;
-import java.util.List;
 
 
 /**
@@ -144,7 +152,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
                                         } ),
                                 Pair.class ) );
 
-        final Expression table = list.append( "table", mongoImplementor.table.getExpression( MongoEntity.MongoQueryable.class ) );
+        final Expression table = list.append( "table", mongoImplementor.table.asExpression()/*.getExpression( MongoEntity.MongoQueryable.class )*/ );
 
         List<String> opList = Pair.right( mongoImplementor.list );
 

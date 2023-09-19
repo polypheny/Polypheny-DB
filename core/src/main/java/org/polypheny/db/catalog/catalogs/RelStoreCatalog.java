@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Pair;
@@ -49,13 +48,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     @Serialize
-    ConcurrentMap<Long, Namespace> namespaces;
-    @Serialize
-    ConcurrentMap<Long, PhysicalTable> tables;
-    @Serialize
     ConcurrentMap<Pair<Long, Long>, PhysicalColumn> columns; // allocId, columnId
-
-    ConcurrentMap<Long, Pair<AllocationEntity, List<Long>>> allocRelations;
 
 
     public RelStoreCatalog( long adapterId ) {
@@ -69,17 +62,8 @@ public class RelStoreCatalog extends StoreCatalog {
             @Deserialize("tables") Map<Long, PhysicalTable> tables,
             @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
             @Deserialize("allocRelations") Map<Long, Pair<AllocationEntity, List<Long>>> allocRelations ) {
-        super( adapterId );
-        this.namespaces = new ConcurrentHashMap<>( namespaces );
-        this.tables = new ConcurrentHashMap<>( tables );
+        super( adapterId, namespaces, tables, Map.of(), Map.of() );
         this.columns = new ConcurrentHashMap<>( columns );
-
-        this.allocRelations = new ConcurrentHashMap<>( allocRelations );
-    }
-
-
-    public void addTable( PhysicalTable table ) {
-        tables.put( table.id, table );
     }
 
 
@@ -89,7 +73,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalTable getTable( long id ) {
-        return tables.get( id );
+        return getPhysical( id ).unwrap( PhysicalTable.class );
     }
 
 
@@ -98,24 +82,13 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public Namespace getNamespace( long id ) {
-        return namespaces.get( id );
-    }
-
-
-    public void addNamespace( long id, Namespace namespace ) {
-        namespaces.put( id, namespace );
-    }
-
-
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
-        addTable( table );
         pColumns.forEach( this::addColumn );
-        allocRelations.put( allocation.id, Pair.of( allocation, List.of( table.id ) ) );
+        addPhysical( allocation, table );
         return table;
     }
 
@@ -126,7 +99,7 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> columns = new ArrayList<>( table.columns );
         columns.add( position - 1, column );
         addColumn( column );
-        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
+        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;
     }
 
@@ -138,32 +111,16 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
         pColumn.remove( old );
         pColumn.add( column );
-        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
+
         return column;
     }
 
 
     public PhysicalTable fromAllocation( long id ) {
-        return tables.get( allocRelations.get( id ).getValue().get( 0 ) );
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class );
     }
 
-
-    @Override
-    public PhysicalEntity getPhysical( long id ) {
-        return tables.get( id );
-    }
-
-
-    public void dropTable( long id ) {
-        for ( long allocId : allocRelations.get( id ).right ) {
-            for ( PhysicalColumn column : tables.get( allocId ).columns ) {
-                columns.remove( column.id );
-            }
-            tables.remove( allocId );
-        }
-        allocRelations.remove( id );
-
-    }
 
 
     public void dropColum( long allocId, long columnId ) {
@@ -171,7 +128,7 @@ public class RelStoreCatalog extends StoreCatalog {
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
-        tables.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
+        addPhysical( getAlloc( allocId ), table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
         columns.remove( Pair.of( allocId, columnId ) );
     }
 

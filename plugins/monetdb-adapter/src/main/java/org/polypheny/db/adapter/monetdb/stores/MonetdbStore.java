@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -86,7 +87,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         database = "monetdb";
         username = "monetdb";
 
-        if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
+        if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
                 settings.put( "password", PasswordGenerator.generatePassword( 256 ) );
                 updateSettings( settings );
@@ -100,7 +101,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                         .withEnvironmentVariable( "MONET_DATABASE", "monetdb" )
                         .createAndStart();
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {

@@ -40,6 +40,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 
 
@@ -223,8 +224,8 @@ public class MongoDynamic {
      * @param parameterValues the dynamic parameters
      * @return a final BsonObject with the correct values inserted
      */
-    public BsonDocument insert( Map<Long, Object> parameterValues ) {
-        for ( Entry<Long, Object> entry : parameterValues.entrySet() ) {
+    public BsonDocument insert( Map<Long, PolyValue> parameterValues ) {
+        for ( Entry<Long, PolyValue> entry : parameterValues.entrySet() ) {
             if ( arrayHandles.containsKey( entry.getKey() ) ) {
                 Boolean isRegex = isRegexMap.get( entry.getKey() );
                 Boolean isFunction = isFuncMap.get( entry.getKey() );
@@ -232,7 +233,7 @@ public class MongoDynamic {
                 String key = keyMap.get( entry.getKey() );
 
                 if ( isRegex ) {
-                    Consumer<Wrapper> task = el -> el.insert( BsonUtil.replaceLikeWithRegex( (String) entry.getValue() ) );
+                    Consumer<Wrapper> task = el -> el.insert( BsonUtil.replaceLikeWithRegex( entry.getValue().asString().value ) );
                     arrayHandles.get( entry.getKey() ).forEach( task );
                     docHandles.get( entry.getKey() ).forEach( task );
                     keyHandles.get( entry.getKey() ).forEach( task );
@@ -275,7 +276,7 @@ public class MongoDynamic {
      * @return a list of rows, which can directly be inserted
      */
     public List<? extends WriteModel<Document>> getAll(
-            List<Map<Long, Object>> parameterValues,
+            List<Map<Long, PolyValue>> parameterValues,
             Function<Document, ? extends WriteModel<Document>> constructor ) {
         return parameterValues.stream()
                 .map( value -> constructor.apply( BsonUtil.asDocument( insert( value ) ) ) )
@@ -283,7 +284,7 @@ public class MongoDynamic {
     }
 
 
-    public List<Document> getAll( List<Map<Long, Object>> parameterValues ) {
+    public List<Document> getAll( List<Map<Long, PolyValue>> parameterValues ) {
         return parameterValues.stream().map( value -> BsonUtil.asDocument( insert( value ) ) ).collect( Collectors.toList() );
     }
 

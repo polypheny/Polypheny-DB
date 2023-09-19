@@ -34,26 +34,36 @@
 package org.polypheny.db.adapter.mongodb;
 
 
+import com.google.common.collect.ImmutableSet;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import lombok.Getter;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.impl.Expressible;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Entity;
+import org.polypheny.db.schema.Function;
+import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.impl.AbstractNamespace;
+import org.polypheny.db.schema.SchemaVersion;
 
 
 /**
  * Schema mapped onto a directory of MONGO files. Each table in the schema is a MONGO file in that directory.
  */
-public class MongoSchema extends AbstractNamespace implements Schema {
+public class MongoNamespace implements Namespace, Schema, Expressible {
 
     @Getter
     final MongoDatabase database;
@@ -72,6 +82,8 @@ public class MongoSchema extends AbstractNamespace implements Schema {
     private final GridFSBucket bucket;
     @Getter
     private final MongoStore store;
+    @Getter
+    private final long id;
 
 
     /**
@@ -81,8 +93,8 @@ public class MongoSchema extends AbstractNamespace implements Schema {
      * @param transactionProvider
      * @param mongoStore
      */
-    public MongoSchema( long id, String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
-        super( id );
+    public MongoNamespace( long id, String database, MongoClient connection, TransactionProvider transactionProvider, MongoStore mongoStore ) {
+        this.id = id;
         this.transactionProvider = transactionProvider;
         this.connection = connection;
         this.database = this.connection.getDatabase( database );
@@ -91,8 +103,80 @@ public class MongoSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public MongoEntity createTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
-        return new MongoEntity( logicalTable, allocationTable, this, transactionProvider );
+    public MongoEntity createEntity( StoreCatalog catalog, PhysicalEntity physical ) {
+        return new MongoEntity( physical, this, transactionProvider );
+    }
+
+
+    @Override
+    public Namespace getSubNamespace( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getSubNamespaceNames() {
+        return ImmutableSet.of();
+    }
+
+
+    @Override
+    public CatalogEntity getEntity( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getEntityNames() {
+        return null;
+    }
+
+
+    @Override
+    public AlgProtoDataType getType( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getTypeNames() {
+        return null;
+    }
+
+
+    @Override
+    public Collection<Function> getFunctions( String name ) {
+        return null;
+    }
+
+
+    @Override
+    public Set<String> getFunctionNames() {
+        return null;
+    }
+
+
+    @Override
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return null;
+    }
+
+
+    @Override
+    public boolean isMutable() {
+        return false;
+    }
+
+
+    @Override
+    public Namespace snapshot( SchemaVersion version ) {
+        return null;
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return null;
     }
 
 

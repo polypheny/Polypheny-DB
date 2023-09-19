@@ -38,6 +38,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.languages.ParserPos;
@@ -81,7 +82,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         } else if ( deployMode == DeployMode.REMOTE ) {
             connectionFactory = deployRemote();
         } else {
-            throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
+            throw new GenericRuntimeException( "Unknown deploy mode: " + deployMode.name() );
         }
 
         // Register the JDBC Pool Size as information in the information manager and enable it
@@ -174,8 +175,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     @Override
     public void refreshTable( long allocId ) {
-        PhysicalTable template = storeCatalog.fromAllocation( allocId );
-        storeCatalog.addTable( this.currentJdbcSchema.createJdbcTable( storeCatalog, template ) );
+        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        storeCatalog.addPhysical( storeCatalog.getAlloc( allocId ), this.currentJdbcSchema.createJdbcTable( storeCatalog, physical ) );
     }
 
 
@@ -350,7 +351,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.dropTable( allocId );
+        storeCatalog.removePhysical( allocId );
         // }
     }
 

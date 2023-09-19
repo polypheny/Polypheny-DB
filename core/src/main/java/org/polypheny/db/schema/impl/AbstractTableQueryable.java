@@ -58,20 +58,20 @@ public abstract class AbstractTableQueryable<T, K extends CatalogEntity & Querya
 
     public final DataContext dataContext;
     public final Snapshot snapshot;
-    public final K table;
+    public final K entity;
 
 
-    public AbstractTableQueryable( DataContext dataContext, Snapshot snapshot, K table ) {
+    public AbstractTableQueryable( DataContext dataContext, Snapshot snapshot, K entity ) {
         this.dataContext = dataContext;
         this.snapshot = snapshot;
-        assert table.unwrap( QueryableEntity.class ) != null;
-        this.table = table;
+        assert entity.unwrap( QueryableEntity.class ) != null;
+        this.entity = entity;
     }
 
 
     @Override
     public Expression getExpression() {
-        return table.asExpression();
+        return entity.asExpression();
     }
 
 
@@ -83,7 +83,7 @@ public abstract class AbstractTableQueryable<T, K extends CatalogEntity & Querya
 
     @Override
     public Type getElementType() {
-        return table.getElementType();
+        return entity.getElementType();
     }
 
 

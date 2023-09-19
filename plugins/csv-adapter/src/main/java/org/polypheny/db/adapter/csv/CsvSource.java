@@ -129,7 +129,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             log.warn( "todo" );
             return;
         }
-        storeCatalog.addTable( currentNamespace.createCsvTable( table.id, table, this ) );
+        storeCatalog.replacePhysical( currentNamespace.createCsvTable( table.id, table, this ) );
     }
 
 
