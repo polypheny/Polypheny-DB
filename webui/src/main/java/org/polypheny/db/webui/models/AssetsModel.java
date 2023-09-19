@@ -22,15 +22,15 @@ package org.polypheny.db.webui.models;
  */
 public class AssetsModel {
 
-    public final String RELATIONAL_ICON = "cui-layers";
+    public final String RELATIONAL_ICON = "cil-layers";
 
-    public final String DOCUMENT_ICON = "cui-folder";
+    public final String DOCUMENT_ICON = "cil-folder";
 
-    public final String GRAPH_ICON = "cui-graph";
+    public final String GRAPH_ICON = "cil-graph";
 
     public final String TABLE_ICON = "fa fa-table";
 
-    public final String COLLECTION_ICON = "cui-description";
+    public final String COLLECTION_ICON = "cil-description";
 
     public final String VIEW_ICON = "icon-eye";
 

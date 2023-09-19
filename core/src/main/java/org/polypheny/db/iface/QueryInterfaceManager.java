@@ -36,6 +36,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
@@ -169,7 +170,7 @@ public class QueryInterfaceManager {
             String[] split = clazzName.split( "\\$" );
             split = split[split.length - 1].split( "\\." );
             Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
-            Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
+            Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
             ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
 
@@ -189,12 +190,12 @@ public class QueryInterfaceManager {
             if ( ifaceId != -1 ) {
                 catalog.deleteQueryInterface( ifaceId );
             }
-            throw new RuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
+            throw new GenericRuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
         } catch ( NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
             if ( ifaceId != -1 ) {
                 catalog.deleteQueryInterface( ifaceId );
             }
-            throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
+            throw new GenericRuntimeException( "Something went wrong while adding a new query interface!", e );
         }
         return instance;
     }
