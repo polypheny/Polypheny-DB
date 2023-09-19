@@ -94,19 +94,6 @@ public class StatementProcessor {
         return executor.fetch( piStatement, fetchSize );
     }
 
-
-    public static Frame fetchGraphFrame( PIStatement piStatement ) {
-        throw new RuntimeException( "Feature not implemented" );
-        /*
-        Statement statement = piStatement.getStatement();
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
-        //TODO TH:  Whats the actual type here?
-        List<PolyValue[]> data = implementation.getArrayRows( statement, true );
-        return ProtoUtils.buildGraphFrame();
-        */
-    }
-
-
     public static void prepare( PIPreparedStatement piStatement ) {
         Transaction transaction = piStatement.getClient().getCurrentOrCreateNewTransaction();
         String query = piStatement.getQuery();
