@@ -16,6 +16,7 @@
 
 package org.polypheny.db.protointerface;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -58,8 +59,8 @@ public class PolyValueSerializationTest {
 
     @BeforeClass
     public static void init() {
+        // needed to launch polypheny
         TestHelper.getInstance();
-
     }
 
     private enum TestEnum {
@@ -125,7 +126,7 @@ public class PolyValueSerializationTest {
     public void polyBinarySerializationTest() {
         PolyBinary expected = PolyBinary.of( new byte[]{ 0x01, 0x02, 0x03 } );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        assertEquals( new byte[]{ 0x01, 0x02, 0x03 }, protoValue.getBinary().toByteArray() );
+        assertArrayEquals( new byte[]{ 0x01, 0x02, 0x03 }, protoValue.getBinary().toByteArray() );
     }
 
 
@@ -177,13 +178,6 @@ public class PolyValueSerializationTest {
         assertEquals( 1234, protoValue.getInteger().getInteger() );
     }
 
-
-    @Test
-    public void polyIntervalSerializationTest() {
-        //TODO TH: create test
-    }
-
-
     @Test
     public void polyListSerializationTest() {
         PolyList<PolyInteger> expected = new PolyList(
@@ -193,10 +187,10 @@ public class PolyValueSerializationTest {
                 new PolyInteger( 4 )
         );
         List<ProtoValue> protoValues = PolyValueSerializer.serialize( expected ).getList().getValuesList();
-        assertEquals( 1, protoValues.get( 1 ).getInteger().getInteger() );
-        assertEquals( 2, protoValues.get( 2 ).getInteger().getInteger() );
-        assertEquals( 3, protoValues.get( 3 ).getInteger().getInteger() );
-        assertEquals( 4, protoValues.get( 4 ).getInteger().getInteger() );
+        assertEquals( 1, protoValues.get( 0 ).getInteger().getInteger() );
+        assertEquals( 2, protoValues.get( 1 ).getInteger().getInteger() );
+        assertEquals( 3, protoValues.get( 2 ).getInteger().getInteger() );
+        assertEquals( 4, protoValues.get( 3 ).getInteger().getInteger() );
     }
 
 
@@ -209,29 +203,11 @@ public class PolyValueSerializationTest {
 
 
     @Test
-    public void polyStreamSerializationTest() {
-        ByteArrayInputStream stream = new ByteArrayInputStream( "test data".getBytes() );
-        PolyStream expected = new PolyStream( stream );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        //TODO TH: create test
-    }
-
-
-    @Test
     public void polyStringSerializationTest() {
         PolyString expected = new PolyString( "sample string" );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( "sample string", protoValue.getString().getString() );
     }
-
-
-    @Test
-    public void polySymbolSerializationTest() {
-        PolySymbol expected = new PolySymbol( TestEnum.UNTESTED );
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        //TODO TH: create test
-    }
-
 
     @Test
     public void polyTimeSerializationTest() {
@@ -247,15 +223,6 @@ public class PolyValueSerializationTest {
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( 1691879380700L, protoValue.getTimeStamp().getTimeStamp() );
     }
-
-
-    @Test
-    public void polyUserDefinedValueSerializationTest() {
-        PolyUserDefinedValue expected = buildTestUdt();
-        ProtoValue protoValue = PolyValueSerializer.serialize( expected );
-        //TODO TH: create test
-    }
-
 
     @Test
     public void polyBigDecimalSerializationCorrectTypeTest() {
@@ -391,7 +358,6 @@ public class PolyValueSerializationTest {
         PolySymbol expected = new PolySymbol( TestEnum.UNTESTED );
         ProtoValue protoValue = PolyValueSerializer.serialize( expected );
         assertEquals( ProtoValueType.SYMBOL, protoValue.getType() );
-
     }
 
 
