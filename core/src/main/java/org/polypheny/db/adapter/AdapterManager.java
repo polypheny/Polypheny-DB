@@ -65,7 +65,7 @@ public class AdapterManager {
     }
 
 
-    public static void addAdapterDeploy( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public static void addAdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         REGISTER.put( Pair.of( adapterName.toLowerCase(), AdapterTemplate.getAdapterType( clazz ) ), new AdapterTemplate( clazz, adapterName, defaultSettings, deployer ) );
     }
 

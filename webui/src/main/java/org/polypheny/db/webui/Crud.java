@@ -86,6 +86,7 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.index.IndexManager;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
@@ -2238,8 +2239,8 @@ public class Crud implements InformationObserver {
         if ( a.settings.containsKey( "method" ) ) {
             method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
         }
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( a.adapterName );
-        Map<String, AbstractAdapterSetting> allSettings = adapter.getAvailableSettings( adapter.getClass() ).stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
+        AdapterTemplate adapter = AdapterManager.getAdapterType( a.adapterName, a.type );
+        Map<String, AbstractAdapterSetting> allSettings = adapter.getAllSettings().stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
         for ( AdapterSettingValueModel entry : a.settings.values() ) {
             AbstractAdapterSetting set = allSettings.get( entry.getName() );
@@ -2295,11 +2296,11 @@ public class Crud implements InformationObserver {
 
     private Exception handleLinkFiles( Context ctx, AdapterModel a, AbstractAdapterSettingDirectory setting, Map<String, AbstractAdapterSetting> settings ) {
         if ( !settings.containsKey( "directoryName" ) ) {
-            return new RuntimeException( "Security check for access was not performed; id missing." );
+            return new GenericRuntimeException( "Security check for access was not performed; id missing." );
         }
         Path path = Path.of( settings.get( "directoryName" ).defaultValue );
         if ( !SecurityManager.getInstance().checkPathAccess( path ) ) {
-            return new RuntimeException( "Security check for access was not successful; not enough permissions." );
+            return new GenericRuntimeException( "Security check for access was not successful; not enough permissions." );
         }
 
         return null;

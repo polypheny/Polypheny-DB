@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -44,6 +45,7 @@ import org.polypheny.db.util.Pair;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j
+@NonFinal
 public class RelStoreCatalog extends StoreCatalog {
 
 
@@ -122,8 +124,7 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-
-    public void dropColum( long allocId, long columnId ) {
+    public void dropColumn( long allocId, long columnId ) {
         PhysicalColumn column = columns.get( Pair.of( allocId, columnId ) );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.mongodb;
 
+import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;

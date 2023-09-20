@@ -48,8 +48,8 @@ public class MonetdbPlugin extends PolyPlugin {
                 "maxConnections", "25"
         );
 
-        AdapterManager.addAdapterDeploy( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
-        AdapterManager.addAdapterDeploy( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
+        AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
+        AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
     }
 
 

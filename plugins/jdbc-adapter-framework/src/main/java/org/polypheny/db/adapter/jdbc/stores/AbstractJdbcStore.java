@@ -368,7 +368,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 .append( dialect.quoteIdentifier( table.name ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
-        storeCatalog.dropColum( allocId, columnId );
+        storeCatalog.dropColumn( allocId, columnId );
         //}
     }
 

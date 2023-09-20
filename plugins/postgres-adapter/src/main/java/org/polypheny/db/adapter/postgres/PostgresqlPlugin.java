@@ -47,8 +47,8 @@ public class PostgresqlPlugin extends PolyPlugin {
                 "maxConnections", "25"
         );
 
-        AdapterManager.addAdapterDeploy( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
-        AdapterManager.addAdapterDeploy( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
+        AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
+        AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
     }
 
 

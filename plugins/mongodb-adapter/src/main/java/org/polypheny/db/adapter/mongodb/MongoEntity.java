@@ -71,6 +71,7 @@ import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
+import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;

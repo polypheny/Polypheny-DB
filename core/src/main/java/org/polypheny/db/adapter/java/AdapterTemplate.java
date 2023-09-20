@@ -16,14 +16,18 @@
 
 package org.polypheny.db.adapter.java;
 
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 @Value
 public class AdapterTemplate {
@@ -55,5 +59,13 @@ public class AdapterTemplate {
         return AdapterManager.getAdapterType( adapterName, adapterType );
     }
 
+
+    public List<AbstractAdapterSetting> getAllSettings() {
+        AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+        if ( clazz.getAnnotation( AdapterProperties.class ) == null ) {
+            throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
+        }
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties );
+    }
 
 }

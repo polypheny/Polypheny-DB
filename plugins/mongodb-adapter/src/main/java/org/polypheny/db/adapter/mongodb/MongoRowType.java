@@ -23,7 +23,7 @@ import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 
 public class MongoRowType extends AlgRecordType {
 
@@ -33,7 +33,7 @@ public class MongoRowType extends AlgRecordType {
 
     public MongoRowType( StructKind kind, List<AlgDataTypeField> fields, MongoEntity mongoEntity ) {
         super( kind, fields );
-        Catalog.getInstance().getColumns( mongoEntity.getId() ).forEach( column -> {
+        mongoEntity.physical.unwrap( PhysicalTable.class ).columns.forEach( column -> {
             idToName.put( column.id, column.name );
             nameToId.put( column.name, column.id );
         } );

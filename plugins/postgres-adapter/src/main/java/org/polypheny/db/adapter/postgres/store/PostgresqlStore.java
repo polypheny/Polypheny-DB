@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
@@ -144,7 +145,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         database = settings.get( "database" );
         username = settings.get( "username" );
         if ( !testConnection() ) {
-            throw new RuntimeException( "Unable to connect" );
+            throw new GenericRuntimeException( "Unable to connect" );
         }
         return createConnectionFactory();
     }

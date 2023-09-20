@@ -16,9 +16,9 @@
 
 package org.polypheny.db.adapter.mongodb;
 
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 
-public class MongoStoreCatalog extends StoreCatalog {
+public class MongoStoreCatalog extends RelStoreCatalog {
 
     public MongoStoreCatalog( long adapterId ) {
         super( adapterId );

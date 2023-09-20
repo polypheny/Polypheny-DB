@@ -124,6 +124,7 @@ public abstract class StoreCatalog {
         }
 
         allocToPhysicals.put( allocation.id, physicals );
+        allocations.put( allocation.id, allocation );
         List.of( physicalEntities ).forEach( p -> this.physicals.put( p.id, p ) );
     }
 

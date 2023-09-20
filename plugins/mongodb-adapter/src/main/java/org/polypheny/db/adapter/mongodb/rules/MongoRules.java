@@ -12,33 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb.rules;
 
-import com.google.common.collect.ImmutableList;
-import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +25,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
+import org.polypheny.db.adapter.mongodb.MongoConvention;
+import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
-import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -65,7 +44,6 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -79,19 +57,11 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -99,19 +69,16 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableEntity;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.Util;
@@ -578,6 +545,7 @@ public class MongoRules {
                     traitSet,
                     convert( sort.getInput(), traitSet.replace( AlgCollations.EMPTY ) ),
                     sort.getCollation(),
+                    sort.getChildExps(),
                     sort.offset,
                     sort.fetch );
         }
@@ -605,6 +573,7 @@ public class MongoRules {
                     traitSet,
                     convert( sort.getInput(), out ),
                     sort.collation,
+                    sort.fieldExps,
                     sort.offset,
                     sort.fetch );
         }
@@ -727,12 +696,12 @@ public class MongoRules {
         public AlgNode convert( AlgNode alg ) {
             final LogicalDocumentProject project = (LogicalDocumentProject) alg;
             final AlgTraitSet traitSet = project.getTraitSet().replace( out );
-            return new MongoProject(
+            return new MongoDocumentProject(
                     project.getCluster(),
                     traitSet,
                     convert( project.getInput(), out ),
-                    project.projects,
-                    project.getRowType() );
+                    project.includes,
+                    project.excludes );
         }
 
     }
@@ -756,9 +725,9 @@ public class MongoRules {
      * which for one have similar performance to a JavaScript implementation but don't need
      * maintenance
      */
+    @Getter
     public static class MongoExcludeVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         private boolean containsIncompatible = false;
 
 
@@ -806,21 +775,6 @@ public class MongoRules {
                     values.getRowType(),
                     values.getTuples(),
                     values.getTraitSet().replace( out ) );
-        }
-
-    }
-
-
-    public static class MongoValues extends Values implements MongoAlg {
-
-        MongoValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
-            super( cluster, rowType, tuples, traitSet );
-        }
-
-
-        @Override
-        public void implement( Implementor implementor ) {
-
         }
 
     }
@@ -877,7 +831,7 @@ public class MongoRules {
         }
 
 
-        private static boolean mongoSupported( RelModify modify ) {
+        private static boolean mongoSupported( RelModify<MongoEntity> modify ) {
             if ( !modify.isInsert() ) {
                 return true;
             }
@@ -888,9 +842,9 @@ public class MongoRules {
         }
 
 
+        @Getter
         private static class ScanChecker extends AlgShuttleImpl {
 
-            @Getter
             private boolean supported = true;
 
 
@@ -950,480 +904,24 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final DocumentModify modify = (DocumentModify) alg;
-            final ModifiableEntity modifiableCollection = modify.getCollection().unwrap( ModifiableEntity.class );
+            final DocumentModify<MongoEntity> modify = (DocumentModify<MongoEntity>) alg;
+            final ModifiableEntity modifiableCollection = modify.entity.unwrap( ModifiableEntity.class );
             if ( modifiableCollection == null ) {
                 return null;
             }
-            if ( modify.getCollection().unwrap( MongoEntity.class ) == null ) {
+            if ( modify.entity.unwrap( MongoEntity.class ) == null ) {
                 return null;
             }
 
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoEntityModify(
-                    modify.getCluster(),
+            return new MongoDocumentModify(
                     traitSet,
-                    modify.getCollection(),
-                    modify.getCatalogReader(),
+                    modify.entity,
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.operation,
-                    modify.getKeys(),
-                    modify.getUpdates(),
-                    true );
-        }
-
-    }
-
-
-    private static class MongoEntityModify extends Modify<MongoEntity> implements MongoAlg {
-
-
-        private final GridFSBucket bucket;
-        private Implementor implementor;
-
-
-        protected MongoEntityModify(
-                AlgOptCluster cluster,
-                AlgTraitSet traitSet,
-                AlgOptEntity table,
-                AlgNode input,
-                Operation operation,
-                List<String> updateColumnList,
-                List<RexNode> sourceExpressionList,
-                boolean flattened ) {
-            super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
-            this.bucket = table.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
-        }
-
-
-        @Override
-        public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-            return super.computeSelfCost( planner, mq ).multiplyBy( .1 );
-        }
-
-
-        @Override
-        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MongoEntityModify(
-                    getCluster(),
-                    traitSet,
-                    getEntity(),
-                    getCatalogReader(),
-                    AbstractAlgNode.sole( inputs ),
-                    getOperation(),
-                    getUpdateColumnList(),
-                    getSourceExpressionList(),
-                    isFlattened() );
-        }
-
-
-        @Override
-        public void implement( Implementor implementor ) {
-            implementor.setDML( true );
-            Entity preEntity = entity.getEntity();
-            this.implementor = implementor;
-
-            if ( !(preEntity instanceof MongoEntity) ) {
-                throw new RuntimeException( "There seems to be a problem with the correct costs for one of stores." );
-            }
-            implementor.mongoEntity = (MongoEntity) preEntity;
-            implementor.table = table;
-            implementor.setOperation( this.getOperation() );
-
-            switch ( this.getOperation() ) {
-                case INSERT:
-                    if ( input instanceof MongoValues ) {
-                        handleDirectInsert( implementor, ((MongoValues) input) );
-                    } else if ( input instanceof MongoDocuments ) {
-                        handleDocumentInsert( implementor, ((MongoDocuments) input) );
-                    } else if ( input instanceof MongoProject ) {
-                        handlePreparedInsert( implementor, ((MongoProject) input) );
-                    } else {
-                        return;
-                    }
-                    break;
-                case UPDATE:
-                    MongoAlg.Implementor condImplementor = new Implementor( true );
-                    condImplementor.setStaticRowType( implementor.getStaticRowType() );
-                    ((MongoAlg) input).implement( condImplementor );
-                    implementor.filter = condImplementor.filter;
-                    assert condImplementor.getStaticRowType() instanceof MongoRowType;
-                    MongoRowType rowType = (MongoRowType) condImplementor.getStaticRowType();
-                    int pos = 0;
-                    BsonDocument doc = new BsonDocument();
-                    List<BsonDocument> docDocs = new ArrayList<>();
-                    GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
-                    for ( RexNode el : getSourceExpressionList() ) {
-                        if ( el.isA( Kind.LITERAL ) ) {
-                            doc.append(
-                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                    BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
-                        } else if ( el instanceof RexCall ) {
-                            RexCall call = ((RexCall) el);
-                            if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
-                                doc.append(
-                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        visitCall( implementor, (RexCall) el, call.op.getKind(), el.getType().getPolyType() ) );
-                            } else if ( call.op.getKind().belongsTo( Kind.MQL_KIND ) ) {
-                                docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
-                            } else {
-                                doc.append(
-                                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                        BsonUtil.getBsonArray( call, bucket ) );
-                            }
-                        } else if ( el.isA( Kind.DYNAMIC_PARAM ) ) {
-                            doc.append(
-                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                    new BsonDynamic( (RexDynamicParam) el ) );
-                        } else if ( el.isA( Kind.FIELD_ACCESS ) ) {
-                            doc.append(
-                                    rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
-                                    new BsonString(
-                                            "$" + rowType.getPhysicalName(
-                                                    ((RexFieldAccess) el).getField().getName(), implementor ) ) );
-                        }
-                        pos++;
-                    }
-                    if ( doc.size() > 0 ) {
-                        BsonDocument update = new BsonDocument().append( "$set", doc );
-
-                        implementor.operations = Collections.singletonList( update );
-                    } else {
-                        implementor.operations = docDocs;
-                    }
-
-                    if ( Pair.right( condImplementor.list ).contains( "{$limit: 1}" ) ) {
-                        implementor.onlyOne = true;
-                    }
-
-                    break;
-                case MERGE:
-                    break;
-                case DELETE:
-                    MongoAlg.Implementor filterCollector = new Implementor( true );
-                    filterCollector.setStaticRowType( implementor.getStaticRowType() );
-                    ((MongoAlg) input).implement( filterCollector );
-                    implementor.filter = filterCollector.filter;
-                    if ( Pair.right( filterCollector.list ).contains( "{$limit: 1}" ) ) {
-                        implementor.onlyOne = true;
-                    }
-
-                    break;
-            }
-        }
-
-
-        private BsonDocument handleDocumentUpdate( RexCall el, GridFSBucket bucket, MongoRowType rowType ) {
-            if ( el.op.getKind() == Kind.MQL_JSONIFY ) {
-                assert el.getOperands().size() == 1;
-                return handleDocumentUpdate( (RexCall) el.getOperands().get( 0 ), bucket, rowType );
-            }
-
-            BsonDocument doc = new BsonDocument();
-            assert el.getOperands().size() >= 2;
-            assert el.getOperands().get( 0 ) instanceof RexInputRef;
-
-            String key = getDocParentKey( (RexInputRef) el.operands.get( 0 ), rowType );
-            attachUpdateStep( doc, el, rowType, key );
-
-            return doc;
-        }
-
-
-        private void attachUpdateStep( BsonDocument doc, RexCall el, MongoRowType rowType, String key ) {
-            List<String> keys = getDocUpdateKey( (RexInputRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
-            switch ( el.op.getKind() ) {
-                case MQL_UPDATE_REPLACE:
-                    assert el.getOperands().size() == 3;
-                    assert el.getOperands().get( 2 ) instanceof RexCall;
-
-                    doc.putAll( getReplaceUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
-                    break;
-                case MQL_ADD_FIELDS:
-                    assert el.getOperands().size() == 3;
-                    assert el.getOperands().get( 2 ) instanceof RexCall;
-
-                    doc.putAll( getAddUpdate( keys, (RexCall) el.operands.get( 2 ) ) );
-                    break;
-                case MQL_UPDATE_REMOVE:
-                    assert el.getOperands().size() == 2;
-
-                    doc.putAll( getRemoveUpdate( keys, (RexCall) el.operands.get( 1 ) ) );
-                    break;
-                case MQL_UPDATE_RENAME:
-                    assert el.getOperands().size() == 3;
-                    assert el.getOperands().get( 2 ) instanceof RexCall;
-
-                    doc.putAll( getRenameUpdate( keys, key, (RexCall) el.operands.get( 2 ) ) );
-                    break;
-                default:
-                    throw new RuntimeException( "The used update operation is not supported by the MongoDB adapter." );
-            }
-        }
-
-
-        private String getDocParentKey( RexInputRef rexInputRef, MongoRowType rowType ) {
-            return rowType.getFieldNames().get( rexInputRef.getIndex() );
-        }
-
-
-        private BsonDocument getRenameUpdate( List<String> keys, String parentKey, RexCall call ) {
-            BsonDocument doc = new BsonDocument();
-            assert keys.size() == call.operands.size();
-            int pos = 0;
-            for ( String key : keys ) {
-                doc.put( key, new BsonString( parentKey + "." + ((RexLiteral) call.operands.get( pos )).getValueAs( String.class ) ) );
-                pos++;
-            }
-
-            return new BsonDocument( "$rename", doc );
-        }
-
-
-        private BsonDocument getRemoveUpdate( List<String> keys, RexCall call ) {
-            BsonDocument doc = new BsonDocument();
-            for ( String key : keys ) {
-                doc.put( key, new BsonString( "" ) );
-            }
-
-            return new BsonDocument( "$unset", doc );
-        }
-
-
-        private BsonDocument getAddUpdate( List<String> keys, RexCall call ) {
-            BsonDocument doc = new BsonDocument();
-            assert keys.size() == call.operands.size();
-            int pos = 0;
-            for ( String key : keys ) {
-                doc.put( key, BsonUtil.getAsBson( (RexLiteral) call.operands.get( pos ), this.bucket ) );
-                pos++;
-            }
-
-            return new BsonDocument( "$set", doc );
-        }
-
-
-        private BsonDocument getReplaceUpdate( List<String> keys, RexCall call ) {
-            BsonDocument doc = new BsonDocument();
-            assert keys.size() == call.operands.size();
-
-            int pos = 0;
-            for ( RexNode operand : call.operands ) {
-                if ( !(operand instanceof RexCall) ) {
-                    doc.append( "$set", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) operand, this.bucket ) ) );
-                } else {
-                    RexCall op = (RexCall) operand;
-                    this.implementor.isDocumentUpdate = true;
-                    switch ( op.getKind() ) {
-                        case PLUS:
-                            doc.append( "$inc", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                            break;
-                        case TIMES:
-                            doc.append( "$mul", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                            break;
-                        case MIN:
-                            doc.append( "$min", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                            break;
-                        case MAX:
-                            doc.append( "$max", new BsonDocument( keys.get( pos ), BsonUtil.getAsBson( (RexLiteral) op.operands.get( 1 ), this.bucket ) ) );
-                            break;
-                    }
-                }
-                pos++;
-            }
-
-            return doc;
-        }
-
-
-        private List<String> getDocUpdateKey( RexInputRef row, RexCall subfield, MongoRowType rowType ) {
-            String name = rowType.getFieldNames().get( row.getIndex() );
-            return subfield
-                    .operands
-                    .stream()
-                    .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
-                    .map( n -> name + "." + n )
-                    .collect( Collectors.toList() );
-        }
-
-
-        private void handleDocumentInsert( Implementor implementor, MongoDocuments documents ) {
-            implementor.operations = documents.documentTuples
-                    .stream()
-                    .filter( BsonValue::isDocument )
-                    .map( d -> new BsonDocument( "d", d.asDocument() ) )
-                    .collect( Collectors.toList() );
-        }
-
-
-        private BsonValue visitCall( Implementor implementor, RexCall call, Kind op, PolyType type ) {
-            BsonDocument doc = new BsonDocument();
-
-            BsonArray array = new BsonArray();
-            for ( RexNode operand : call.operands ) {
-                if ( operand.getKind() == Kind.FIELD_ACCESS ) {
-                    String physicalName = "$" + implementor.getPhysicalName( ((RexFieldAccess) operand).getField().getName() );
-                    array.add( new BsonString( physicalName ) );
-                } else if ( operand instanceof RexCall ) {
-                    array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
-                } else if ( operand.getKind() == Kind.LITERAL ) {
-                    array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, implementor.mongoEntity.getMongoNamespace().getBucket() ) );
-                } else if ( operand.getKind() == Kind.DYNAMIC_PARAM ) {
-                    array.add( new BsonDynamic( (RexDynamicParam) operand ) );
-                } else {
-                    throw new RuntimeException( "Not implemented yet" );
-                }
-            }
-            switch ( op ) {
-                case PLUS:
-                    doc.append( "$add", array );
-                    break;
-                case MINUS:
-                    doc.append( "$subtract", array );
-                    break;
-                case TIMES:
-                    doc.append( "$multiply", array );
-                    break;
-                case DIVIDE:
-                    doc.append( "$divide", array );
-                    break;
-                default:
-                    throw new RuntimeException( "Not implemented yet" );
-            }
-
-            return doc;
-        }
-
-
-        private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-            if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFieldList().size() == 1 ) {
-                return;
-            }
-
-            BsonDocument doc = new BsonDocument();
-            LogicalTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( LogicalTable.class );
-            GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
-            //noinspection AssertWithSideEffects
-            assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
-            Map<Integer, String> physicalMapping;
-            if ( input.getInput() instanceof MongoValues ) {
-                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), catalogTable );
-            } else if ( input.getInput() instanceof MongoDocuments ) {
-                physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), implementor.mongoEntity.getCatalogCollection() );
-            } else {
-                throw new RuntimeException( "Mapping for physical mongo fields not found" );
-            }
-
-            implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
-
-            int pos = 0;
-            for ( RexNode rexNode : input.getChildExps() ) {
-                if ( rexNode instanceof RexDynamicParam ) {
-                    // preparedInsert
-                    doc.append( physicalMapping.get( pos ), new BsonDynamic( (RexDynamicParam) rexNode ) );
-                } else if ( rexNode instanceof RexLiteral ) {
-                    doc.append( getPhysicalName( input, catalogTable, pos ), BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
-                } else if ( rexNode instanceof RexCall ) {
-                    PolyType type = table
-                            .getEntity()
-                            .getRowType( getCluster().getTypeFactory() )
-                            .getFieldList()
-                            .get( pos )
-                            .getType()
-                            .getComponentType()
-                            .getPolyType();
-
-                    doc.append( physicalMapping.get( pos ), getBsonArray( (RexCall) rexNode, type, bucket ) );
-
-                } else if ( rexNode.getKind() == Kind.INPUT_REF && input.getInput() instanceof MongoValues ) {
-                    handleDirectInsert( implementor, (MongoValues) input.getInput() );
-                    return;
-                } else {
-                    throw new RuntimeException( "This rexType was not considered" );
-                }
-
-                pos++;
-            }
-            implementor.operations = Collections.singletonList( doc );
-        }
-
-
-        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, LogicalCollection catalogCollection ) {
-            Map<Integer, String> map = new HashMap<>();
-            map.put( 0, "d" );
-            return map;
-        }
-
-
-        private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, LogicalTable catalogTable ) {
-            Map<Integer, String> map = new HashMap<>();
-            List<String> names = catalogTable.getColumnNames();
-            List<Long> ids = catalogTable.fieldIds;
-            int pos = 0;
-            for ( String name : Pair.left( fieldList ) ) {
-                map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
-                pos++;
-            }
-            return map;
-        }
-
-
-        private String getPhysicalName( MongoProject input, LogicalTable catalogTable, int pos ) {
-            String logicalName = input.getRowType().getFieldNames().get( pos );
-            int index = catalogTable.getColumnNames().indexOf( logicalName );
-            return MongoStore.getPhysicalColumnName( logicalName, catalogTable.fieldIds.get( index ) );
-        }
-
-
-        private BsonValue getBsonArray( RexCall el, PolyType type, GridFSBucket bucket ) {
-            if ( el.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
-                BsonArray array = new BsonArray();
-                array.addAll( el.operands.stream().map( operand -> {
-                    if ( operand instanceof RexLiteral ) {
-                        return BsonUtil.getAsBson( BsonUtil.getMongoComparable( type, (RexLiteral) operand ), type, bucket );
-                    } else if ( operand instanceof RexCall ) {
-                        return getBsonArray( (RexCall) operand, type, bucket );
-                    }
-                    throw new RuntimeException( "The given RexCall could not be transformed correctly." );
-                } ).collect( Collectors.toList() ) );
-                return array;
-            }
-            throw new RuntimeException( "The given RexCall could not be transformed correctly." );
-        }
-
-
-        private void handleDirectInsert( Implementor implementor, MongoValues values ) {
-            List<BsonDocument> docs = new ArrayList<>();
-            LogicalTable catalogTable = implementor.mongoEntity.getCatalogEntity().unwrap( LogicalTable.class );
-            GridFSBucket bucket = implementor.mongoEntity.getMongoNamespace().getBucket();
-
-            AlgDataType valRowType = rowType;
-
-            if ( valRowType == null ) {
-                valRowType = values.getRowType();
-            }
-
-            List<String> columnNames = catalogTable.getColumnNames();
-            List<Long> columnIds = catalogTable.fieldIds;
-            for ( ImmutableList<RexLiteral> literals : values.tuples ) {
-                BsonDocument doc = new BsonDocument();
-                int pos = 0;
-                for ( RexLiteral literal : literals ) {
-                    String name = valRowType.getFieldNames().get( pos );
-                    if ( columnNames.contains( name ) ) {
-                        doc.append(
-                                MongoStore.getPhysicalColumnName( name, columnIds.get( columnNames.indexOf( name ) ) ),
-                                BsonUtil.getAsBson( literal, bucket ) );
-                    } else {
-                        doc.append(
-                                rowType.getFieldNames().get( pos ),
-                                BsonUtil.getAsBson( literal, bucket ) );
-                    }
-                    pos++;
-                }
-                docs.add( doc );
-            }
-            implementor.operations = docs;
+                    modify.updates,
+                    modify.removes,
+                    modify.renames );
         }
 
     }
@@ -1488,19 +986,15 @@ public class MongoRules {
             final LogicalDocumentAggregate agg = (LogicalDocumentAggregate) alg;
             final AlgTraitSet traitSet =
                     agg.getTraitSet().replace( out );
-            try {
-                return new MongoAggregate(
-                        alg.getCluster(),
-                        traitSet,
-                        convert( agg.getInput(), traitSet.simplify() ),
-                        agg.indicator,
-                        agg.groupSet,
-                        agg.groupSets,
-                        agg.aggCalls );
-            } catch ( InvalidAlgException e ) {
-                LOGGER.warn( e.toString() );
-                return null;
-            }
+            return new MongoDocumentAggregate(
+                    alg.getCluster(),
+                    traitSet,
+                    convert( agg.getInput(), traitSet.simplify() ),
+                    agg.indicator,
+                    agg.groupSet,
+                    agg.groupSets,
+                    agg.aggCalls,
+                    agg.names );
         }
 
     }

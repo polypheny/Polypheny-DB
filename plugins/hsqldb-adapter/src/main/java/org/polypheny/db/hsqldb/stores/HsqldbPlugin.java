@@ -48,7 +48,7 @@ public class HsqldbPlugin extends PolyPlugin {
                 "trxIsolationLevel", "read_committed"
         ) );
 
-        AdapterManager.addAdapterDeploy( HsqldbStore.class, ADAPTER_NAME, defaults, HsqldbStore::new );
+        AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, defaults, HsqldbStore::new );
     }
 
 

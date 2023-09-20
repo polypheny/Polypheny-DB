@@ -30,13 +30,13 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 public class MongoTypeUtil {
 
 
-    public static BsonDocument getPhysicalProjections( List<String> logicalCols, LogicalTable catalogTable ) {
+    public static BsonDocument getPhysicalProjections( List<String> logicalCols, LogicalTable table ) {
         BsonDocument projections = new BsonDocument();
-        List<String> names = catalogTable.getColumnNames();
+        List<String> names = table.getColumnNames();
         for ( String logicalCol : logicalCols ) {
             int index = names.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, catalogTable.fieldIds.get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, table.getColumnIds().get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }

@@ -117,7 +117,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
             log.warn( "todo" );
             return;
         }
-        storeCatalog.addTable( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+        storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
     }
 
 

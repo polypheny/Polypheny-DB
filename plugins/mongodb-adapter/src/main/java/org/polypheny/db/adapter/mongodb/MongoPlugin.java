@@ -112,7 +112,7 @@ public class MongoPlugin extends PolyPlugin {
                 "trxLifetimeLimit", "1209600"
         );
 
-        AdapterManager.addAdapterDeploy( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
+        AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
     }
 
 
@@ -369,9 +369,7 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalCollection collection = storeCatalog.fromAllocation( allocation.id ).unwrap( PhysicalCollection.class );
             this.currentNamespace.database.getCollection( collection.name ).drop();
 
-            catalog.dropCollection( allocation.id );
-            catalog.getAllocRelations().remove( allocation.id );
-
+            storeCatalog.removePhysical( allocation.id );
         }
 
 
@@ -382,7 +380,7 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
 
             this.currentNamespace.database.getCollection( physical.name ).drop();
-            storeCatalog.dropTable( allocId );
+            storeCatalog.removePhysical( allocId );
         }
 
 
@@ -391,8 +389,9 @@ public class MongoPlugin extends PolyPlugin {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
+            String physicalName = getPhysicalColumnName( logicalColumn );
             // updates all columns with this field if a default value is provided
-            PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, adapterId, table.columns.size() - 1, logicalColumn );
+            PhysicalColumn column = storeCatalog.addColumn( physicalName, allocId, adapterId, physical.columns.size() - 1, logicalColumn );
 
             Document field;
             if ( logicalColumn.defaultValue != null ) {
@@ -515,16 +514,6 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void dropIndex( Context context, LogicalIndex logicalIndex, long allocId ) {
-            commitAll();
-            context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
-
-            this.currentNamespace.database.getCollection( physical.name ).dropIndex( catalogIndex.physicalName + "_" + partitionPlacement.partitionId );
-        }
-
-
-        @Override
         public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
             PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
@@ -550,7 +539,6 @@ public class MongoPlugin extends PolyPlugin {
         public IndexMethodModel getDefaultIndexMethod() {
             return IndexTypes.COMPOUND.asMethod();
         }
-
 
 
         @Override
@@ -644,14 +632,14 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public void refreshTable( long allocId ) {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalTable.class );
-            storeCatalog.addTable( currentNamespace.createEntity( storeCatalog, physical ) );
+            storeCatalog.replacePhysical( currentNamespace.createEntity( storeCatalog, physical ) );
         }
 
 
         @Override
         public void refreshCollection( long allocId ) {
             PhysicalCollection physical = storeCatalog.fromAllocation( allocId ).unwrap( PhysicalCollection.class );
-            storeCatalog.addTable( this.currentNamespace.createEntity( storeCatalog, physical ) );
+            storeCatalog.replacePhysical( this.currentNamespace.createEntity( storeCatalog, physical ) );
         }
 
 

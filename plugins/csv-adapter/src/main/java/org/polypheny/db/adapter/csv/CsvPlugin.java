@@ -43,7 +43,7 @@ public class CsvPlugin extends PolyPlugin {
                 "maxStringLength", "255"
         );
 
-        AdapterManager.addAdapterDeploy( CsvSource.class, "CSV", defaults, CsvSource::new );
+        AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", defaults, CsvSource::new );
     }
 
 

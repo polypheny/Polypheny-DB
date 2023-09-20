@@ -150,13 +150,6 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
     }
 
 
-    public static Map<String, String> getDefaultSettings( Class<DataStore<?>> clazz ) {
-        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) )
-                .stream()
-                .collect( Collectors.toMap( e -> e.name, e -> e.defaultValue ) );
-    }
-
-
     public void shutdownAndRemoveListeners() {
         shutdown();
         if ( deployMode == DeployMode.DOCKER ) {

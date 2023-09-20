@@ -260,13 +260,10 @@ public class DdlManagerImpl extends DdlManager {
                 aColumns.add( allocationColumn );
             }
 
-            catalog.updateSnapshot();
-            logical = catalog.getSnapshot().rel().getTable( logical.id ).orElseThrow();
-            allocation = catalog.getSnapshot().alloc().getEntity( allocation.id ).orElseThrow();
 
             buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
             adapter.createTable( null, LogicalTableWrapper.of( logical, columns ), AllocationTableWrapper.of( allocation.unwrap( AllocationTable.class ), aColumns ) );
-
+            catalog.updateSnapshot();
 
         }
         catalog.updateSnapshot();

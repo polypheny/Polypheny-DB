@@ -12,34 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.adapter.mongodb;
+package org.polypheny.db.adapter.mongodb.rules;
 
 
 import com.google.common.collect.Streams;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.mongodb.MongoAlg;
+import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -55,11 +44,6 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -154,7 +138,7 @@ public class MongoProject extends Project implements MongoAlg {
         }
         List<String> mergedItems;
 
-        if ( documents.size() != 0 ) {
+        if ( !documents.isEmpty() ) {
             String functions = documents.toJson( JsonWriterSettings.builder().outputMode( JsonMode.RELAXED ).build() );
             mergedItems = Streams.concat( items.stream(), Stream.of( functions.substring( 1, functions.length() - 1 ) ) )
                     .collect( Collectors.toList() );
@@ -171,11 +155,11 @@ public class MongoProject extends Project implements MongoAlg {
         implementor.hasProject = true;
         if ( !implementor.isDML() && items.size() + documents.size() != 0 ) {
             implementor.add( op.left, op.right );
-            if ( unwinds.size() != 0 ) {
+            if ( !unwinds.isEmpty() ) {
                 implementor.add( Util.toString( unwinds, "{", ",", "}" ), Util.toString( unwinds, "{$unwind:", ",", "}" ) );
             }
         }
-        if ( excludes.size() != 0 ) {
+        if ( !excludes.isEmpty() ) {
             String excludeString = Util.toString(
                     excludes,
                     "{", ", ", "}" );

@@ -79,7 +79,7 @@ public interface MongoAlg extends AlgNode {
      */
     class Implementor extends AlgShuttleImpl implements Serializable {
 
-        final List<Pair<String, String>> list = new ArrayList<>();
+        public final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
         public BsonArray filter = new BsonArray();
         @Getter
@@ -93,7 +93,7 @@ public interface MongoAlg extends AlgNode {
         public boolean onlyOne = false;
         public boolean isDocumentUpdate = false;
 
-        CatalogEntity table;
+        public CatalogEntity entity;
         @Setter
         @Getter
         public boolean hasProject = false;
@@ -211,8 +211,8 @@ public interface MongoAlg extends AlgNode {
         public List<String> reorderPhysical() {
             // this is only needed if there is a basic scan without project or group,
             // where we cannot be sure if the fields are all ordered as intended
-            assert table.getRowType().getFieldCount() == physicalMapper.size();
-            return table.getRowType().getFieldNames();
+            assert entity.getRowType().getFieldCount() == physicalMapper.size();
+            return entity.getRowType().getFieldNames();
         }
 
     }
