@@ -19,12 +19,16 @@ package org.polypheny.db.catalog;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
@@ -237,6 +241,8 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void deleteQueryInterface( long id );
 
+    public abstract long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+
 
     public abstract void close();
 
@@ -261,5 +267,13 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Map<Long, CatalogAdapter> getAdapters();
 
     public abstract Map<Long, CatalogQueryInterface> getInterfaces();
+
+    public abstract Map<Long, AdapterTemplate> getAdapterTemplates();
+
+
+    public abstract void removeAdapterTemplate( long templateId );
+
+
+
 
 }

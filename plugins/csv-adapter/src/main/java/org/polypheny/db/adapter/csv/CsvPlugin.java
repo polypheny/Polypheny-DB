@@ -25,6 +25,9 @@ import org.polypheny.db.plugins.PolyPlugin;
 
 public class CsvPlugin extends PolyPlugin {
 
+    private long id;
+
+
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
@@ -43,8 +46,13 @@ public class CsvPlugin extends PolyPlugin {
                 "maxStringLength", "255"
         );
 
-        AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", defaults, CsvSource::new );
+        this.id = AdapterManager.addAdapterTemplate( CsvSource.class, "Csv", defaults, CsvSource::new );
     }
 
+
+    @Override
+    public void stop() {
+        AdapterManager.removeAdapterTemplate( id );
+    }
 
 }

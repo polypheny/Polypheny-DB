@@ -2240,7 +2240,7 @@ public class Crud implements InformationObserver {
             method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
         }
         AdapterTemplate adapter = AdapterManager.getAdapterType( a.adapterName, a.type );
-        Map<String, AbstractAdapterSetting> allSettings = adapter.getAllSettings().stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
+        Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
         for ( AdapterSettingValueModel entry : a.settings.values() ) {
             AbstractAdapterSetting set = allSettings.get( entry.getName() );

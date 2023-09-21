@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,13 +38,10 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.util.Pair;
 
 public class AdapterManager {
 
     public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
-
-    public static final Map<Pair<String, AdapterType>, AdapterTemplate> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
@@ -65,26 +60,24 @@ public class AdapterManager {
     }
 
 
-    public static void addAdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
-        REGISTER.put( Pair.of( adapterName.toLowerCase(), AdapterTemplate.getAdapterType( clazz ) ), new AdapterTemplate( clazz, adapterName, defaultSettings, deployer ) );
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz, defaultSettings );
+        AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+        return Catalog.getInstance().addAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, defaultSettings, deployer );
     }
 
 
-    public static void removeAdapterTemplate( Class<?> clazz, String adapterName ) {
-        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( adapterName ) ) ) {
+    public static void removeAdapterTemplate( long templateId ) {
+        AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
+        if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new RuntimeException( "Adapter is still deployed!" );
         }
-        REGISTER.remove( Pair.of( adapterName.toLowerCase(), AdapterTemplate.getAdapterType( clazz ) ) );
-    }
-
-
-    public static List<AdapterTemplate> getAdapters( AdapterType adapterType ) {
-        return REGISTER.values().stream().filter( a -> a.adapterType == adapterType ).collect( Collectors.toList() );
+        Catalog.getInstance().removeAdapterTemplate( templateId );
     }
 
 
     public static AdapterTemplate getAdapterType( String name, AdapterType adapterType ) {
-        return REGISTER.get( Pair.of( name.toLowerCase(), adapterType ) );
+        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
     }
 
 
@@ -162,7 +155,7 @@ public class AdapterManager {
 
 
     public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
-        List<AdapterTemplate> adapterTemplates = getAdapters( adapterType );
+        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
 
         List<AdapterInformation> result = new ArrayList<>();
 

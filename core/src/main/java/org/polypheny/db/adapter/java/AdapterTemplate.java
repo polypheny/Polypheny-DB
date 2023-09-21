@@ -34,6 +34,7 @@ import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.DockerManager;
 
 @Value
 public class AdapterTemplate {
@@ -45,12 +46,20 @@ public class AdapterTemplate {
     public String adapterName;
     public AdapterType adapterType;
     Function4<Long, String, Map<String, String>, Adapter<?>> deployer;
+    public List<AbstractAdapterSetting> settings;
+    public List<DeployMode> modes;
+    public long id;
+    public String description;
 
 
-    public AdapterTemplate( Class<?> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, Map<String, String> defaultSettings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        this.id = id;
         this.adapterName = adapterName;
+        this.description = description;
         this.clazz = clazz;
+        this.settings = settings;
         this.defaultSettings = defaultSettings;
+        this.modes = modes;
         this.adapterType = getAdapterType( clazz );
         this.deployer = deployer;
     }
@@ -66,14 +75,15 @@ public class AdapterTemplate {
     }
 
 
-    public List<AbstractAdapterSetting> getAllSettings() {
+    public static List<AbstractAdapterSetting> getAllSettings( Class<? extends Adapter<?>> clazz, Map<String, String> defaultSettings ) {
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         if ( clazz.getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
         List<AbstractAdapterSetting> settings = new ArrayList<>( AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties ) );
         if ( Arrays.stream( properties.usedModes() ).anyMatch( m -> m == DeployMode.DOCKER ) ) {
-            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), "0", 0 ) );
+            String instanceId = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElseThrow().toString();
+            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
         }
         return settings;
     }

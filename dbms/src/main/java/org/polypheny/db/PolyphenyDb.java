@@ -43,6 +43,7 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.ConfigManager;
@@ -376,24 +377,17 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
+        PolyPluginManager.getCustomClassLoader( null );
+        // Startup and restore catalog
+        Catalog catalog = startCatalog();
 
         final Authenticator authenticator = new AuthenticatorImpl();
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        // Initialize plugin manager
-        PolyPluginManager.init( resetPlugins );
-
-        // Initialize statistic manager
-        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
-
-        // Initialize MaterializedViewManager
-        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
-
-        // Startup and restore catalog
-        Catalog catalog = restoreCatalog();
+        // Call DockerManager once to remove old containers
+        DockerManager.getInstance();
 
         if ( AutoDocker.getInstance().isAvailable() ) {
             if ( testMode ) {
@@ -410,22 +404,9 @@ public class PolyphenyDb {
             }
         }
 
-        // Initialize DDL Manager
-        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
-
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
-
-        // Start Polypheny-UI
-        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
-        Thread polyphenyUiThread = new Thread( httpServer );
-        polyphenyUiThread.start();
-        try {
-            polyphenyUiThread.join();
-        } catch ( InterruptedException e ) {
-            log.warn( "Interrupted on join()", e );
-        }
 
         // temporary add sql and rel here
         LanguageManager.getINSTANCE().addQueryLanguage(
@@ -441,11 +422,33 @@ public class PolyphenyDb {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
         } catch ( TransactionException e ) {
-            throw new RuntimeException( "Something went wrong while initializing index manager.", e );
+            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
-        // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
+        // Initialize statistic manager
+        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
+        StatisticsManager.setAndGetInstance( new StatisticsManagerImpl( statisticQueryProcessor ) );
+
+        // Initialize MaterializedViewManager
+        MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
+
+        // Start Polypheny-UI
+        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
+        Thread polyphenyUiThread = new Thread( httpServer );
+        polyphenyUiThread.start();
+        try {
+            polyphenyUiThread.join();
+        } catch ( InterruptedException e ) {
+            log.warn( "Interrupted on join()", e );
+        }
+
+        // Initialize plugin manager
+        PolyPluginManager.init( resetPlugins );
+
+        // Initialize DDL Manager
+        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
+
+
 
         // Add config and monitoring test page for UI testing
         if ( testMode ) {
@@ -462,6 +465,7 @@ public class PolyphenyDb {
             // Init TrayGUI
             TrayGui.getInstance();
         }
+        Catalog.getInstance().updateSnapshot();
 
         restoreDefaults( authenticator, catalog );
 
@@ -504,16 +508,14 @@ public class PolyphenyDb {
 
 
     @NotNull
-    private Catalog restoreCatalog() {
+    private Catalog startCatalog() {
         Catalog.resetCatalog = resetCatalog;
         Catalog.memoryCatalog = memoryCatalog;
         Catalog.testMode = testMode;
         Catalog.resetDocker = resetDocker;
-        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
-        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
         if ( catalog == null ) {
-            throw new RuntimeException( "There was no catalog submitted, aborting." );
+            throw new GenericRuntimeException( "There was no catalog submitted, aborting." );
         }
         catalog.init();
         return catalog;
@@ -521,6 +523,8 @@ public class PolyphenyDb {
 
 
     private void restoreDefaults( Authenticator authenticator, Catalog catalog ) {
+        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         PolyPluginManager.startUp( transactionManager, authenticator );
         catalog.updateSnapshot();
         DefaultInserter.restoreData( DdlManager.getInstance() );

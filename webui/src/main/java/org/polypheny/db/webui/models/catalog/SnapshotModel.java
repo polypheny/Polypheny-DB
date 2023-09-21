@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Value;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.webui.models.AdapterTemplateModel;
@@ -112,7 +111,7 @@ public class SnapshotModel {
 
         List<AdapterModel> adapters = snapshot.getAdapters().stream().map( AdapterModel::from ).collect( Collectors.toList() );
 
-        List<AdapterTemplateModel> adapterTemplates = AdapterManager.getInstance().getAvailableAdapters().stream().map( AdapterTemplateModel::from ).collect( Collectors.toList() );
+        List<AdapterTemplateModel> adapterTemplates = snapshot.getAdapterTemplates().stream().map( AdapterTemplateModel::from ).collect( Collectors.toList() );
 
         return new SnapshotModel( snapshot.id(), namespaces, entities, fields, keys, constraints, allocations, placements, partitions, allocationColumns, adapters, adapterTemplates );
     }

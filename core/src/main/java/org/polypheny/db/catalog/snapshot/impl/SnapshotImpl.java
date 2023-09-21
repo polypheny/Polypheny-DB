@@ -26,8 +26,10 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -58,6 +60,7 @@ public class SnapshotImpl implements Snapshot {
 
     ImmutableMap<String, CatalogQueryInterface> interfaceNames;
     ImmutableMap<Long, CatalogAdapter> adapters;
+    ImmutableMap<Long, AdapterTemplate> templates;
 
     ImmutableMap<String, CatalogAdapter> adapterNames;
 
@@ -84,6 +87,7 @@ public class SnapshotImpl implements Snapshot {
         this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name, i -> i ) ) );
         this.adapters = ImmutableMap.copyOf( catalog.getAdapters() );
         this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName, a -> a ) ) );
+        this.templates = ImmutableMap.copyOf( catalog.getAdapterTemplates().values().stream().collect( Collectors.toMap( t -> t.id, t -> t ) ) );
     }
 
 
@@ -118,6 +122,7 @@ public class SnapshotImpl implements Snapshot {
         return Optional.empty();
     }
 
+
     @Override
     public @NotNull Optional<CatalogUser> getUser( String name ) {
         return Optional.ofNullable( userNames.get( name ) );
@@ -148,7 +153,6 @@ public class SnapshotImpl implements Snapshot {
     }
 
 
-
     @Override
     public List<CatalogQueryInterface> getQueryInterfaces() {
         return interfaces.values().asList();
@@ -174,6 +178,18 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
+    public Optional<AdapterTemplate> getAdapterTemplate( long templateId ) {
+        return Optional.ofNullable( templates.get( templateId ) );
+    }
+
+
+    @Override
+    public @NotNull List<AdapterTemplate> getAdapterTemplates() {
+        return List.copyOf( templates.values() );
+    }
+
+
+    @Override
     public Optional<? extends LogicalEntity> getLogicalEntity( long id ) {
         if ( rel.getTable( id ).isPresent() ) {
             return rel.getTable( id );
@@ -184,6 +200,18 @@ public class SnapshotImpl implements Snapshot {
         }
 
         return graph.getGraph( id );
+    }
+
+
+    @Override
+    public Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
+        return templates.values().stream().filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType ).findAny();
+    }
+
+
+    @Override
+    public List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType ) {
+        return templates.values().stream().filter( t -> t.adapterType == adapterType ).collect( Collectors.toList() );
     }
 
 

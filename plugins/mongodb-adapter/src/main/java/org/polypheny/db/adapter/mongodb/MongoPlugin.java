@@ -91,7 +91,8 @@ import org.polypheny.db.util.Pair;
 public class MongoPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "MONGODB";
+    public static final String ADAPTER_NAME = "MongoDB";
+    private long id;
 
 
     /**
@@ -107,18 +108,17 @@ public class MongoPlugin extends PolyPlugin {
     public void start() {
         Map<String, String> settings = ImmutableMap.of(
                 "type", "mongo",
-                "instanceId", "0",
                 "mode", "docker",
                 "trxLifetimeLimit", "1209600"
         );
 
-        AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
+        this.id = AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
     }
 
 
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( MongoStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( id );
     }
 
 

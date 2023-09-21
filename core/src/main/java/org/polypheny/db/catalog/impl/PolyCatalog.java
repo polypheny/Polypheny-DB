@@ -22,13 +22,18 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -88,6 +93,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, CatalogQueryInterface> interfaces;
 
     @Getter
+    public final Map<Long, AdapterTemplate> adapterTemplates;
+
+    @Getter
     public final Map<Long, StoreCatalog> storeCatalogs;
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
@@ -117,12 +125,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
 
-        this.users = users;
-        this.logicalCatalogs = logicalCatalogs;
-        this.allocationCatalogs = allocationCatalogs;
-        this.adapters = adapters;
-        this.interfaces = interfaces;
-        this.storeCatalogs = new HashMap<>();
+        this.users = new ConcurrentHashMap<>( users );
+        this.logicalCatalogs = new ConcurrentHashMap<>( logicalCatalogs );
+        this.allocationCatalogs = new ConcurrentHashMap<>( allocationCatalogs );
+        this.adapters = new ConcurrentHashMap<>( adapters );
+        this.interfaces = new ConcurrentHashMap<>( interfaces );
+        this.adapterTemplates = new ConcurrentHashMap<>();
+        this.storeCatalogs = new ConcurrentHashMap<>();
         updateSnapshot();
     }
 
@@ -400,6 +409,20 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void deleteQueryInterface( long id ) {
         interfaces.remove( id );
+    }
+
+
+    @Override
+    public long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        long id = idBuilder.getNewAdapterTemplateId();
+        adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, defaultSettings, modes, description, deployer ) );
+        return id;
+    }
+
+
+    @Override
+    public void removeAdapterTemplate( long templateId ) {
+        adapterTemplates.remove( templateId );
     }
 
 

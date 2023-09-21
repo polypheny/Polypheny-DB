@@ -57,7 +57,7 @@ public class DefaultInserter {
 
 
     private static void restoreAdapters( DdlManager ddlManager, Catalog catalog ) {
-        if ( catalog.getAdapters().size() != 0 ) {
+        if ( !catalog.getAdapters().isEmpty() ) {
             catalog.commit();
             return;
         }
@@ -85,7 +85,7 @@ public class DefaultInserter {
     public static void restoreInterfacesIfNecessary() {
         ////////////////////////
         // init query interfaces
-        if ( Catalog.getInstance().getInterfaces().size() != 0 ) {
+        if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
         QueryInterfaceManager.getREGISTER().values().forEach( i -> Catalog.getInstance().addQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
@@ -95,7 +95,7 @@ public class DefaultInserter {
 
 
     public static void restoreAvatica() {
-        if ( Catalog.snapshot().getQueryInterface( "avatica" ) != null ) {
+        if ( Catalog.snapshot().getQueryInterface( "avatica" ).isPresent() ) {
             return;
         }
         QueryInterfaceType avatica = QueryInterfaceManager.getREGISTER().get( "AvaticaInterface" );

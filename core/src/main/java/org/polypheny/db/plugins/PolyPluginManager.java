@@ -58,6 +58,7 @@ import org.pf4j.PluginLoader;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigPlugin;
@@ -255,16 +256,16 @@ public class PolyPluginManager extends DefaultPluginManager {
      */
     private static void stopAvailablePlugin( String pluginId ) {
         if ( !PLUGINS.containsKey( pluginId ) ) {
-            throw new RuntimeException( "Plugin is not not loaded and can not be stopped." );
+            throw new GenericRuntimeException( "Plugin is not not loaded and can not be stopped." );
         }
         PluginWrapper plugin = PLUGINS.get( pluginId );
 
         if ( plugin.getPluginState() != PluginState.STARTED ) {
-            throw new RuntimeException( "Plugin is not active and can not be stopped." );
+            throw new GenericRuntimeException( "Plugin is not active and can not be stopped." );
         }
         PolyPluginDescriptor descriptor = (PolyPluginDescriptor) plugin.getDescriptor();
         if ( descriptor.isSystemComponent ) {
-            throw new RuntimeException( "Plugin is system component and cannot be stopped." );
+            throw new GenericRuntimeException( "Plugin is system component and cannot be stopped." );
         }
 
         pluginManager.stopPlugin( pluginId );
@@ -444,7 +445,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    private static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
         if ( mainClassLoader == null ) {
             mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
         }

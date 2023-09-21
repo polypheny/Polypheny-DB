@@ -27,7 +27,9 @@ import org.polypheny.db.plugins.PolyPlugin;
 public class MonetdbPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "MONETDB";
+    public static final String ADAPTER_NAME = "MonetDB";
+    private long storeId;
+    private long sourcId;
 
 
     /**
@@ -48,15 +50,15 @@ public class MonetdbPlugin extends PolyPlugin {
                 "maxConnections", "25"
         );
 
-        AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
-        AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
+        this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
+        this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
     }
 
 
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( MonetdbStore.class, ADAPTER_NAME );
-        AdapterManager.removeAdapterTemplate( MonetdbSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( storeId );
+        AdapterManager.removeAdapterTemplate( sourcId );
     }
 
 }

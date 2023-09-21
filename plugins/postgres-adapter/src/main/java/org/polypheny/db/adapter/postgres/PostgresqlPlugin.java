@@ -27,7 +27,9 @@ import org.polypheny.db.plugins.PolyPlugin;
 public class PostgresqlPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "POSTGRESQL";
+    public static final String ADAPTER_NAME = "PostgreSQL";
+    private long storeId;
+    private long sourceId;
 
 
     /**
@@ -47,15 +49,15 @@ public class PostgresqlPlugin extends PolyPlugin {
                 "maxConnections", "25"
         );
 
-        AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
-        AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
+        this.storeId = AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
+        this.sourceId = AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
     }
 
 
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME );
-        AdapterManager.removeAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( storeId );
+        AdapterManager.removeAdapterTemplate( sourceId );
     }
 
 }

@@ -19,6 +19,7 @@ package org.polypheny.db;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.events.MonitoringType;
 
 
@@ -38,7 +39,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }

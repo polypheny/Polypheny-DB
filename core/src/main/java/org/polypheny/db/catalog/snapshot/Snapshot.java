@@ -22,11 +22,13 @@ import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -153,7 +155,16 @@ public interface Snapshot extends OperatorTable {
     }
 
 
+    Optional<AdapterTemplate> getAdapterTemplate( long templateId );
+
+    @NotNull
+    List<AdapterTemplate> getAdapterTemplates();
+
     Optional<? extends LogicalEntity> getLogicalEntity( long id );
+
+    Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType );
+
+    List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType );
 
 
     LogicalRelSnapshot rel();
@@ -165,5 +176,6 @@ public interface Snapshot extends OperatorTable {
 
 
     AllocSnapshot alloc();
+
 
 }

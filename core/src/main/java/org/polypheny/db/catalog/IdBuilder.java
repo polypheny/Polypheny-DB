@@ -39,6 +39,8 @@ public class IdBuilder {
 
     AtomicLong adapterId;
 
+    AtomicLong adapterTemplateId;
+
     AtomicLong interfaceId;
 
     AtomicLong constraintId;
@@ -75,6 +77,7 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
+                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
@@ -90,6 +93,7 @@ public class IdBuilder {
             AtomicLong indexId,
             AtomicLong keyId,
             AtomicLong adapterId,
+            AtomicLong adapterTemplateId,
             AtomicLong interfaceId,
             AtomicLong constraintId,
             AtomicLong groupId,
@@ -108,6 +112,7 @@ public class IdBuilder {
         this.constraintId = constraintId;
 
         this.adapterId = adapterId;
+        this.adapterTemplateId = adapterTemplateId;
         this.interfaceId = interfaceId;
         this.groupId = groupId;
         this.partitionId = partitionId;
@@ -187,6 +192,11 @@ public class IdBuilder {
 
     public long getNewPlacementId() {
         return placementId.getAndIncrement();
+    }
+
+
+    public long getNewAdapterTemplateId() {
+        return adapterTemplateId.getAndIncrement();
     }
 
 }

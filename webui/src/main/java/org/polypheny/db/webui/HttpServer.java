@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.transaction.TransactionManager;
@@ -110,7 +111,7 @@ public class HttpServer implements Runnable {
 
     public static HttpServer getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "HttpServer is not yet created." );
+            throw new GenericRuntimeException( "HttpServer is not yet created." );
         }
         return INSTANCE;
     }

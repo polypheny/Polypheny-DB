@@ -26,6 +26,7 @@ public class HsqldbPlugin extends PolyPlugin {
 
 
     public static final String ADAPTER_NAME = "HSQLDB";
+    private long id;
 
 
     /**
@@ -48,13 +49,13 @@ public class HsqldbPlugin extends PolyPlugin {
                 "trxIsolationLevel", "read_committed"
         ) );
 
-        AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, defaults, HsqldbStore::new );
+        this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, defaults, HsqldbStore::new );
     }
 
 
     @Override
     public void stop() {
-        AdapterManager.removeAdapterTemplate( HsqldbStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( this.id );
     }
 
 }
