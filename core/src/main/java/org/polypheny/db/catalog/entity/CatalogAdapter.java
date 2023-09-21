@@ -28,8 +28,6 @@ import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.annotations.AdapterProperties;
-import org.polypheny.db.adapter.java.AdapterTemplate;
 
 @EqualsAndHashCode
 @Value
@@ -73,12 +71,6 @@ public class CatalogAdapter implements CatalogObject {
         this.mode = mode;
     }
 
-
-    private String getAdapterTypeName() {
-        // General settings are provided by the annotations of the adapter class
-        AdapterProperties annotations = AdapterTemplate.fromString( adapterName, type ).getClazz().getAnnotation( AdapterProperties.class );
-        return annotations.name();
-    }
 
 
     // Used for creating ResultSets

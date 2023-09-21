@@ -118,10 +118,6 @@ public abstract class StoreCatalog {
 
     public void addPhysical( AllocationEntity allocation, PhysicalEntity... physicalEntities ) {
         Set<Long> physicals = Arrays.stream( physicalEntities ).map( p -> p.id ).collect( Collectors.toSet() );
-        if ( allocToPhysicals.containsKey( allocation.id ) ) {
-            physicals.addAll( allocToPhysicals.get( allocation.id ) );
-            log.warn( "should only overwrite" );
-        }
 
         allocToPhysicals.put( allocation.id, physicals );
         allocations.put( allocation.id, allocation );

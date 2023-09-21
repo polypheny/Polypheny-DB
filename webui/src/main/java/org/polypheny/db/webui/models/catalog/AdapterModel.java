@@ -66,6 +66,7 @@ public class AdapterModel extends IdEntity {
 
     public static AdapterModel from( CatalogAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
+
         Adapter<?> a = AdapterManager.getInstance().getAdapter( adapter.id );
         return new AdapterModel(
                 adapter.id,
