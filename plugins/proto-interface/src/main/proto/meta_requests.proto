@@ -50,6 +50,6 @@ message ClientInfoPropertyMetaRequest {
 }
 
 message FunctionsRequest {
-  string queryLanguage = 1;
-  string functionCategory = 2;
+  string query_language = 1;
+  string function_category = 2;
 }

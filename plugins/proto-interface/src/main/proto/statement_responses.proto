@@ -42,7 +42,7 @@ message CloseStatementResponse {
 }
 
 message Frame {
-  bool isLast = 1;
+  bool is_last = 1;
   oneof result {
     RelationalFrame relational_frame = 2;
     GraphFrame graph_frame = 3;
