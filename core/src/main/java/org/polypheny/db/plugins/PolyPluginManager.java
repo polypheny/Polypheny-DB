@@ -23,6 +23,8 @@ import com.google.gson.stream.JsonWriter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +43,6 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.io.FileUtils;
-import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginDescriptor;
@@ -88,7 +89,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
     @Getter
-    private static PluginClassLoader mainClassLoader;
+    private static URLClassLoader mainClassLoader;
     // create the plugin manager
     private static final PolyPluginManager pluginManager;
 
@@ -445,9 +446,10 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+    public static URLClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
         if ( mainClassLoader == null ) {
-            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
+            mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
+            //mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
         }
         return mainClassLoader;
     }
@@ -507,7 +509,7 @@ public class PolyPluginManager extends DefaultPluginManager {
 
             if ( attribute == null && !allowsNull ) {
                 if ( !allowsNull ) {
-                    throw new RuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
+                    throw new GenericRuntimeException( String.format( "Plugin contains not all required keys: %s", key ) );
                 }
                 return null;
             }
