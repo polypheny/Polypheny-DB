@@ -56,7 +56,7 @@ message Column {
   optional string default_value_as_string = 9;
   int32 column_index = 10;
   optional string collation = 11;
-  bool isHidden = 12;
+  bool is_hidden = 12;
   ColumnType column_type = 13;
   enum ColumnType {
     UNSPECIFIED = 0;
