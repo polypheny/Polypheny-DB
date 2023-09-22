@@ -27,7 +27,6 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 
 @Value
 public class AdapterTemplateModel {
@@ -35,7 +34,6 @@ public class AdapterTemplateModel {
 
     public String adapterName;
     public AdapterType adapterType;
-    public List<AdapterSettingValueModel> defaultSettings;
     public List<AdapterSettingsModel> settings;
     public String description;
     public List<DeployMode> modes;
@@ -44,13 +42,11 @@ public class AdapterTemplateModel {
     public AdapterTemplateModel(
             @NotNull String adapterName,
             @NotNull AdapterType adapterType,
-            @NotNull List<AdapterSettingValueModel> defaultSettings,
             @NotNull List<AdapterSettingsModel> settings,
             @NotNull String description,
             @NotNull List<DeployMode> modes ) {
         this.adapterName = adapterName;
         this.adapterType = adapterType;
-        this.defaultSettings = defaultSettings;
         this.settings = settings;
         this.description = description;
         this.modes = modes;
@@ -61,7 +57,6 @@ public class AdapterTemplateModel {
         return new AdapterTemplateModel(
                 template.adapterName,
                 template.adapterType,
-                template.defaultSettings.entrySet().stream().map( p -> new AdapterSettingValueModel( p.getKey(), p.getValue() ) ).collect( Collectors.toList() ),
                 template.settings.stream().map( AdapterSettingsModel::from ).collect( Collectors.toList() ),
                 template.description,
                 template.modes );

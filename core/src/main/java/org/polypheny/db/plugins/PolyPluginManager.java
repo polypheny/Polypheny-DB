@@ -23,8 +23,6 @@ import com.google.gson.stream.JsonWriter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +41,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.io.FileUtils;
+import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginDescriptorFinder;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DefaultPluginDescriptor;
@@ -89,7 +88,7 @@ public class PolyPluginManager extends DefaultPluginManager {
     public static List<Runnable> AFTER_INIT = new ArrayList<>();
 
     @Getter
-    private static URLClassLoader mainClassLoader;
+    private static PluginClassLoader mainClassLoader;
     // create the plugin manager
     private static final PolyPluginManager pluginManager;
 
@@ -126,6 +125,16 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public PolyPluginManager( Path... paths ) {
         super( List.of( paths ) );
+    }
+
+
+    public static void initAfterCatalog() {
+        getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterCatalogInit() );
+    }
+
+
+    public static void initAfterTransaction( TransactionManager manager ) {
+        getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterTransactionInit( manager ) );
     }
 
 
@@ -446,10 +455,10 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
-    public static URLClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
         if ( mainClassLoader == null ) {
-            mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
-            //mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
+            //mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
+            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
         }
         return mainClassLoader;
     }

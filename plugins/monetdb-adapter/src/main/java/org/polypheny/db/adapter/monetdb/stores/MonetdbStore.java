@@ -61,7 +61,8 @@ import org.polypheny.db.util.PasswordGenerator;
 @AdapterProperties(
         name = "MonetDB",
         description = "MonetDB is an execute-source column-oriented database management system. It is based on an optimistic concurrency control.",
-        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
+        usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
+        defaultMode = DeployMode.DOCKER)
 @AdapterSettingString(name = "host", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2, appliesTo = DeploySetting.REMOTE)
 @AdapterSettingString(name = "database", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 3, appliesTo = DeploySetting.REMOTE)
@@ -198,7 +199,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( getTypeString( column.type ) );
         executeUpdate( builder, context );
 
-            // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
+        // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
         builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -210,7 +211,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
 
-            // (3) Remove the original column `alter table tabX drop column colX;`
+        // (3) Remove the original column `alter table tabX drop column colX;`
         builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -220,7 +221,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( column.name ) );
         executeUpdate( builder, context );
 
-            // (4) Re-create the original column with the new type `alter table tabX add column colX NEW_TYPE;
+        // (4) Re-create the original column with the new type `alter table tabX add column colX NEW_TYPE;
         builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -232,7 +233,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( getTypeString( column.type ) );
         executeUpdate( builder, context );
 
-            // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;
+        // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;
         builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( table.namespaceName ) )
@@ -242,7 +243,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( column.name ) )
                 .append( "=" )
                 .append( dialect.quoteIdentifier( tmpColName ) );
-            executeUpdate( builder, context );
+        executeUpdate( builder, context );
 
         // (6) Drop the temporary column `alter table tabX drop column colXtemp;`
         builder = new StringBuilder();

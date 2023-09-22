@@ -53,7 +53,8 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterProperties(
         name = "HSQLDB",
         description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
-        usedModes = DeployMode.EMBEDDED)
+        usedModes = DeployMode.EMBEDDED,
+        defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1, defaultValue = "Memory")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
 @AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, defaultValue = "mvcc")
@@ -96,7 +97,6 @@ public class HsqldbStore extends AbstractJdbcStore {
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
     }
-
 
 
     @Override

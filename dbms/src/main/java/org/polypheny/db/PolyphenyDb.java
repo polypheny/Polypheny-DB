@@ -377,9 +377,15 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        PolyPluginManager.getCustomClassLoader( null );
+        // Initialize plugin manager
+        PolyPluginManager.init( resetPlugins );
+
         // Startup and restore catalog
         Catalog catalog = startCatalog();
+
+        PolyPluginManager.initAfterCatalog();
+
+        PolyPluginManager.initAfterTransaction( transactionManager );
 
         final Authenticator authenticator = new AuthenticatorImpl();
 
@@ -442,13 +448,8 @@ public class PolyphenyDb {
             log.warn( "Interrupted on join()", e );
         }
 
-        // Initialize plugin manager
-        PolyPluginManager.init( resetPlugins );
-
         // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
-
-
 
         // Add config and monitoring test page for UI testing
         if ( testMode ) {

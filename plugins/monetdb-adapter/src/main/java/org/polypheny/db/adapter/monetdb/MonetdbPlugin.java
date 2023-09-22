@@ -43,15 +43,15 @@ public class MonetdbPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
                 "instanceId", "0",
                 "maxConnections", "25"
         );
 
-        this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, settings, MonetdbStore::new );
-        this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, settings, MonetdbSource::new );
+        this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, MonetdbStore::new );
+        this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, MonetdbSource::new );
     }
 
 

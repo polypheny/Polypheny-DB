@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.mongodb;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
@@ -105,14 +104,8 @@ public class MongoPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.of(
-                "type", "mongo",
-                "mode", "docker",
-                "trxLifetimeLimit", "1209600"
-        );
-
-        this.id = AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, settings, MongoStore::new );
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( MongoStore.class, ADAPTER_NAME, MongoStore::new );
     }
 
 
@@ -127,7 +120,8 @@ public class MongoPlugin extends PolyPlugin {
     @AdapterProperties(
             name = "MongoDB",
             description = "MongoDB is a document-oriented database system.",
-            usedModes = { DeployMode.REMOTE, DeployMode.DOCKER })
+            usedModes = { DeployMode.REMOTE, DeployMode.DOCKER },
+            defaultMode = DeployMode.DOCKER)
     @AdapterSettingInteger(name = "port", defaultValue = 27017, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks

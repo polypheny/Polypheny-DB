@@ -60,10 +60,10 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
-        List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz, defaultSettings );
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+        List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().addAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, defaultSettings, deployer );
+        return Catalog.getInstance().addAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
     }
 
 

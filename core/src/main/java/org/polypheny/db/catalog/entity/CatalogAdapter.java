@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
@@ -45,7 +44,7 @@ public class CatalogAdapter implements CatalogObject {
     @Serialize
     public AdapterType type;
     @Serialize
-    public ImmutableMap<String, String> settings;
+    public Map<String, String> settings;
     @Serialize
     public String adapterTypeName;
     @Serialize
@@ -66,7 +65,7 @@ public class CatalogAdapter implements CatalogObject {
         this.uniqueName = uniqueName;
         this.adapterName = adapterName;
         this.type = adapterType;
-        this.settings = ImmutableMap.copyOf( settings );
+        this.settings = Map.copyOf( settings );
         this.adapterTypeName = getAdapterName();
         this.mode = mode;
     }

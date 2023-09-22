@@ -42,15 +42,14 @@ public class PostgresqlPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         Map<String, String> settings = ImmutableMap.of(
                 "mode", "docker",
-                "instanceId", "0",
                 "maxConnections", "25"
         );
 
-        this.storeId = AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, settings, PostgresqlStore::new );
-        this.sourceId = AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, settings, PostgresqlSource::new );
+        this.storeId = AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, PostgresqlStore::new );
+        this.sourceId = AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, PostgresqlSource::new );
     }
 
 

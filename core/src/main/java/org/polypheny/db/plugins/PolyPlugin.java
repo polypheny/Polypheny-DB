@@ -17,8 +17,9 @@
 package org.polypheny.db.plugins;
 
 import org.pf4j.Plugin;
+import org.polypheny.db.transaction.TransactionManager;
 
-public class PolyPlugin extends Plugin {
+public abstract class PolyPlugin extends Plugin {
 
     protected final PluginContext context;
 
@@ -27,6 +28,16 @@ public class PolyPlugin extends Plugin {
         super();
 
         this.context = context;
+    }
+
+
+    public void afterCatalogInit() {
+        // empty on purpose
+    }
+
+
+    public void afterTransactionInit( TransactionManager manager ) {
+        // empty on purpose
     }
 
 }

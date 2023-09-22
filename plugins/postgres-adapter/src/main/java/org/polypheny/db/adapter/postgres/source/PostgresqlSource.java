@@ -39,7 +39,8 @@ import org.polypheny.db.sql.language.dialect.PostgresqlSqlDialect;
 @AdapterProperties(
         name = "PostgreSQL",
         description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
-        usedModes = DeployMode.REMOTE)
+        usedModes = DeployMode.REMOTE,
+        defaultMode = DeployMode.REMOTE)
 @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
 @AdapterSettingInteger(name = "port", defaultValue = 5432, position = 2,

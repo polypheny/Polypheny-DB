@@ -18,10 +18,10 @@ package org.polypheny.db.adapter.java;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingList;
@@ -39,9 +39,6 @@ import org.polypheny.db.docker.DockerManager;
 @Value
 public class AdapterTemplate {
 
-    @Getter
-    public Map<String, String> defaultSettings;
-
     public Class<?> clazz;
     public String adapterName;
     public AdapterType adapterType;
@@ -52,13 +49,12 @@ public class AdapterTemplate {
     public String description;
 
 
-    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, Map<String, String> defaultSettings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public AdapterTemplate( long id, Class<?> clazz, String adapterName, List<AbstractAdapterSetting> settings, List<DeployMode> modes, String description, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         this.id = id;
         this.adapterName = adapterName;
         this.description = description;
         this.clazz = clazz;
         this.settings = settings;
-        this.defaultSettings = defaultSettings;
         this.modes = modes;
         this.adapterType = getAdapterType( clazz );
         this.deployer = deployer;
@@ -75,7 +71,7 @@ public class AdapterTemplate {
     }
 
 
-    public static List<AbstractAdapterSetting> getAllSettings( Class<? extends Adapter<?>> clazz, Map<String, String> defaultSettings ) {
+    public static List<AbstractAdapterSetting> getAllSettings( Class<? extends Adapter<?>> clazz ) {
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
         if ( clazz.getAnnotation( AdapterProperties.class ) == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
@@ -86,6 +82,17 @@ public class AdapterTemplate {
             settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
         }
         return settings;
+    }
+
+
+    public Map<String, String> getDefaultSettings() {
+        Map<String, String> map = new HashMap<>();
+        for ( AbstractAdapterSetting s : settings ) {
+            if ( map.put( s.name, s.defaultValue ) != null ) {
+                throw new IllegalStateException( "Duplicate key" );
+            }
+        }
+        return map;
     }
 
 }

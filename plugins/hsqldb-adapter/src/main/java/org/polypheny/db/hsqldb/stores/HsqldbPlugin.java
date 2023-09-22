@@ -39,7 +39,7 @@ public class HsqldbPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         Map<String, String> defaults = ImmutableMap.copyOf( Map.of(
                 "type", "Memory",
                 "mode", "embedded",
@@ -49,7 +49,7 @@ public class HsqldbPlugin extends PolyPlugin {
                 "trxIsolationLevel", "read_committed"
         ) );
 
-        this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, defaults, HsqldbStore::new );
+        this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, HsqldbStore::new );
     }
 
 

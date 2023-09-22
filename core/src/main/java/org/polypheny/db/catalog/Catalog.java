@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
@@ -73,7 +74,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Setting the Catalog, when already set is not permitted." );
+            throw new GenericRuntimeException( "Setting the Catalog, when already set is not permitted." );
         }
         INSTANCE = catalog;
         return INSTANCE;
@@ -241,7 +242,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void deleteQueryInterface( long id );
 
-    public abstract long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Map<String, String> defaultSettings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
 
 
     public abstract void close();
