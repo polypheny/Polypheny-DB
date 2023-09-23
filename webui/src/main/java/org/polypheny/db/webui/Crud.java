@@ -96,6 +96,7 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
@@ -506,7 +507,7 @@ public class Crud implements InformationObserver {
                 }
                 colBuilder.append( ")" );
             }
-            if ( col.collectionsType != null && !col.collectionsType.equals( "" ) ) {
+            if ( col.collectionsType != null && !col.collectionsType.isEmpty() ) {
                 colBuilder.append( " " ).append( col.collectionsType );
                 if ( col.dimension != null ) {
                     colBuilder.append( "(" ).append( col.dimension );
@@ -547,7 +548,8 @@ public class Crud implements InformationObserver {
         query.append( colJoiner );
         query.append( ")" );
         if ( request.storeId != null ) {
-            query.append( String.format( " ON STORE \"%s\"", request.storeId ) );
+            CatalogAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
+            query.append( String.format( " ON STORE \"%s\"", adapter.uniqueName ) );
         }
 
         try {

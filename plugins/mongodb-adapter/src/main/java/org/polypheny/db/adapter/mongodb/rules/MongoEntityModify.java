@@ -439,7 +439,7 @@ class MongoEntityModify extends RelModify<MongoEntity> implements MongoAlg {
         List<Long> ids = table.getColumnIds();
         int pos = 0;
         for ( String name : Pair.left( fieldList ) ) {
-            map.put( pos, MongoStore.getPhysicalColumnName( name, ids.get( names.indexOf( name ) ) ) );
+            map.put( pos, MongoStore.getPhysicalColumnName( ids.get( names.indexOf( name ) ) ) );
             pos++;
         }
         return map;
@@ -449,7 +449,7 @@ class MongoEntityModify extends RelModify<MongoEntity> implements MongoAlg {
     private String getPhysicalName( MongoProject input, LogicalTable table, int pos ) {
         String logicalName = input.getRowType().getFieldNames().get( pos );
         int index = table.getColumnNames().indexOf( logicalName );
-        return MongoStore.getPhysicalColumnName( logicalName, table.getColumnIds().get( index ) );
+        return MongoStore.getPhysicalColumnName( table.getColumnIds().get( index ) );
     }
 
 
@@ -490,7 +490,7 @@ class MongoEntityModify extends RelModify<MongoEntity> implements MongoAlg {
                 String name = valRowType.getFieldNames().get( pos );
                 if ( columnNames.contains( name ) ) {
                     doc.append(
-                            MongoStore.getPhysicalColumnName( name, columnIds.get( columnNames.indexOf( name ) ) ),
+                            MongoStore.getPhysicalColumnName( columnIds.get( columnNames.indexOf( name ) ) ),
                             BsonUtil.getAsBson( literal, bucket ) );
                 } else {
                     doc.append(

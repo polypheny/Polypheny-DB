@@ -377,6 +377,21 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
+        if ( AutoDocker.getInstance().isAvailable() ) {
+            if ( testMode ) {
+                resetDocker = true;
+                Catalog.resetDocker = true;
+            }
+            boolean success = AutoDocker.getInstance().doAutoConnect();
+            if ( testMode && !success ) {
+                // AutoDocker does not work in Windows containers
+                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to docker instance" );
+                    return;
+                }
+            }
+        }
+
         // Initialize plugin manager
         PolyPluginManager.init( resetPlugins );
 
@@ -395,20 +410,7 @@ public class PolyphenyDb {
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
 
-        if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( testMode ) {
-                resetDocker = true;
-                Catalog.resetDocker = true;
-            }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( testMode && !success ) {
-                // AutoDocker does not work in Windows containers
-                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to docker instance" );
-                    return;
-                }
-            }
-        }
+
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
@@ -549,7 +551,7 @@ public class PolyphenyDb {
             } catch ( TransactionException ex ) {
                 log.error( "Error while rolling back the transaction", e );
             }
-            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+            throw new GenericRuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
     }
 

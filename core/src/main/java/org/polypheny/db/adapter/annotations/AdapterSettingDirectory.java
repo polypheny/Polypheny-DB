@@ -39,6 +39,8 @@ public @interface AdapterSettingDirectory {
 
     boolean modifiable() default false;
 
+    String defaultValue();
+
     String description() default "";
 
     int position() default 100;

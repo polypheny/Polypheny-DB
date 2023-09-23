@@ -28,6 +28,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
+
     @Setter
     public String directory;
     //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
@@ -36,8 +37,8 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
     public transient final Map<String, InputStream> inputStreams;
 
 
-    public AbstractAdapterSettingDirectory( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, null, position );
+    public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
+        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
         //so it will be serialized
         this.directory = "";
         this.inputStreams = new HashMap<>();
@@ -47,6 +48,7 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
     public static AbstractAdapterSetting fromAnnotation( AdapterSettingDirectory annotation ) {
         return new AbstractAdapterSettingDirectory(
                 annotation.name(),
+                annotation.defaultValue(),
                 annotation.canBeNull(),
                 annotation.subOf(),
                 annotation.required(),

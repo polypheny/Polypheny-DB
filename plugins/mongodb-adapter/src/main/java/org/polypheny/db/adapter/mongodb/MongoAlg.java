@@ -147,7 +147,7 @@ public interface MongoAlg extends AlgNode {
         public String getPhysicalName( String name ) {
             int index = mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( name, mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
+                return MongoStore.getPhysicalColumnName( mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
             }
             throw new GenericRuntimeException( "This column is not part of the table." );
         }

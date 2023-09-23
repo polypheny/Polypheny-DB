@@ -65,7 +65,8 @@ public class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdap
             case "Directory":
                 String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
                 String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                out = new AbstractAdapterSettingDirectory( name, canBeNull, subOf, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
+                String value = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
+                out = new AbstractAdapterSettingDirectory( name, value, canBeNull, subOf, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
                 break;
             default:
                 throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );

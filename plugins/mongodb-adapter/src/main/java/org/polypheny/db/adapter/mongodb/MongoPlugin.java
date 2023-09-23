@@ -431,7 +431,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         private String getPhysicalColumnName( LogicalColumn catalogColumn ) {
-            return getPhysicalColumnName( catalogColumn.name, catalogColumn.id );
+            return getPhysicalColumnName( catalogColumn.id );
         }
 
 
@@ -495,7 +495,7 @@ public class MongoPlugin extends PolyPlugin {
         private void addCompositeIndex( LogicalIndex index, List<String> columns, PhysicalEntity physical, String physicalIndexName ) {
             Document doc = new Document();
 
-            Pair.zip( index.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.right, p.left ), 1 ) );
+            Pair.zip( index.key.columnIds, columns ).forEach( p -> doc.append( getPhysicalColumnName( p.left ), 1 ) );
 
             IndexOptions options = new IndexOptions();
             options.unique( index.unique );
@@ -541,10 +541,10 @@ public class MongoPlugin extends PolyPlugin {
         }
 
 
-        public static String getPhysicalColumnName( String name, long id ) {
-            if ( name.startsWith( "_" ) ) {
+        public static String getPhysicalColumnName( long id ) {
+            /*if ( name.startsWith( "_" ) ) {
                 return name;
-            }
+            }*/
             // we can simply use ids as our physical column names as MongoDB allows this
             return "col" + id;
         }
@@ -619,7 +619,23 @@ public class MongoPlugin extends PolyPlugin {
 
         @Override
         public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            commitAll();
 
+            if ( this.currentNamespace == null ) {
+                updateNamespace( DEFAULT_DATABASE, allocation.table.id );
+                storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
+            }
+
+            String physicalTableName = getPhysicalTableName( logical.table.id, allocation.table.id );
+            PhysicalTable physical = storeCatalog.createTable(
+                    logical.getTable().getNamespaceName(),
+                    physicalTableName,
+                    allocation.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId ) ) ),
+                    logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                    allocation );
+
+            this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( storeCatalog, physical ) );
         }
 
 

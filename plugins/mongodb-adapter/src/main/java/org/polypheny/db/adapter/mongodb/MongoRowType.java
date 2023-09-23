@@ -51,7 +51,7 @@ public class MongoRowType extends AlgRecordType {
 
 
     public String getPhysicalName( String name, Implementor implementor ) {
-        String id = MongoStore.getPhysicalColumnName( name, getId( name ) );
+        String id = MongoStore.getPhysicalColumnName( getId( name ) );
         implementor.physicalMapper.add( id );
         return id;
     }

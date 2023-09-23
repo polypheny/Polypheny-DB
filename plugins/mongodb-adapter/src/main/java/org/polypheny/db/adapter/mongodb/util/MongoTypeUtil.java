@@ -36,7 +36,7 @@ public class MongoTypeUtil {
         for ( String logicalCol : logicalCols ) {
             int index = names.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, table.getColumnIds().get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( table.getColumnIds().get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }

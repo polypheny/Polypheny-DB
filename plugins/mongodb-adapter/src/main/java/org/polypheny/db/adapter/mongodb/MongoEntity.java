@@ -267,7 +267,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
         for ( String logicalCol : logicalCols ) {
             int index = fieldNames.indexOf( logicalCol );
             if ( index != -1 ) {
-                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( logicalCol, fieldIds.get( index ) ) ) );
+                projections.append( logicalCol, new BsonString( "$" + MongoStore.getPhysicalColumnName( fieldIds.get( index ) ) ) );
             } else {
                 projections.append( logicalCol, new BsonInt32( 1 ) );
             }

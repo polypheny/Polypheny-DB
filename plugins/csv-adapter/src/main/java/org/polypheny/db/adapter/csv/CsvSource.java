@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
         usedModes = DeployMode.EMBEDDED,
         defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingList(name = "method", options = { "upload", "link" }, defaultValue = "upload", description = "If the supplied file(s) should be uploaded or a link to the local filesystem is used (sufficient permissions are required).", position = 1)
-@AdapterSettingDirectory(subOf = "method_upload", name = "directory", description = "You can upload one or multiple .csv or .csv.gz files.", position = 2)
+@AdapterSettingDirectory(subOf = "method_upload", name = "directory", defaultValue = "classpath://hr", description = "You can upload one or multiple .csv or .csv.gz files.", position = 2)
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://hr", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")

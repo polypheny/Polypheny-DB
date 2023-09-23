@@ -20,6 +20,7 @@ package org.polypheny.db.catalog.entity;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -65,7 +66,7 @@ public class CatalogAdapter implements CatalogObject {
         this.uniqueName = uniqueName;
         this.adapterName = adapterName;
         this.type = adapterType;
-        this.settings = Map.copyOf( settings );
+        this.settings = new HashMap<>( settings );
         this.adapterTypeName = getAdapterName();
         this.mode = mode;
     }
