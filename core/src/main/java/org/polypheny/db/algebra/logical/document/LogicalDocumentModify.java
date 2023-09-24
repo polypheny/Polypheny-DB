@@ -38,12 +38,12 @@ public class LogicalDocumentModify extends DocumentModify<CatalogEntity> impleme
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, Map<String, RexNode> updates, List<String> removes, Map<String, String> renames ) {
+    public LogicalDocumentModify( AlgTraitSet traits, CatalogEntity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
         super( traits, entity, input, operation, updates, removes, renames );
     }
 
 
-    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, Operation operation, Map<String, RexNode> updates, List<String> removes, Map<String, String> renames ) {
+    public static LogicalDocumentModify create( CatalogEntity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
         return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, updates, removes, renames );
     }
 

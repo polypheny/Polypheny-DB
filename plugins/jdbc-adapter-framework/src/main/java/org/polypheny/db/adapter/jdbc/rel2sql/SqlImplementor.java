@@ -57,8 +57,8 @@ import java.util.function.IntFunction;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.jdbc.JdbcEntity;
 import org.polypheny.db.adapter.jdbc.JdbcScan;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.JoinType;
@@ -191,13 +191,13 @@ public abstract class SqlImplementor {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = result.asSelect( input.getValue().getEntity().unwrap( JdbcEntity.class ).getNodeList() );
+                    node = result.asSelect( input.getValue().getEntity().unwrap( JdbcTable.class ).getNodeList() );
                 } else {
                     node = result.asSelect();
                 }
             } else {
                 if ( input.getValue() instanceof JdbcScan ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().getEntity().unwrap( JdbcEntity.class ).getNodeList() ) );
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().getEntity().unwrap( JdbcTable.class ).getNodeList() ) );
                 } else {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
                 }
@@ -1176,7 +1176,7 @@ public abstract class SqlImplementor {
                 select = subSelect();
             } else {
                 if ( explicitColumnNames && alg.getInputs().size() == 1 && alg.getInput( 0 ) instanceof JdbcScan ) {
-                    select = asSelect( alg.getInput( 0 ).getEntity().unwrap( JdbcEntity.class ).getNodeList() );
+                    select = asSelect( alg.getInput( 0 ).getEntity().unwrap( JdbcTable.class ).getNodeList() );
                 } else {
                     select = asSelect();
                 }

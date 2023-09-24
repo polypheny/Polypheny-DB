@@ -117,6 +117,11 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
     }
 
 
+    public Expression getCatalogAsExpression() {
+        return Expressions.field( asExpression(), "storeCatalog" );
+    }
+
+
     public Namespace getNamespace( long id ) {
         return namespaces.get( id );
     }

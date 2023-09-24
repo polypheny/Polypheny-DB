@@ -85,7 +85,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     @Getter
     private final JdbcConvention convention;
 
-    private final Map<String, JdbcEntity> tableMap;
+    private final Map<String, JdbcTable> tableMap;
 
     public final Adapter<?> adapter;
     @Getter
@@ -97,7 +97,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            Map<String, JdbcEntity> tableMap,
+            Map<String, JdbcTable> tableMap,
             Adapter<?> adapter ) {
         this.id = id;
         this.connectionFactory = connectionFactory;
@@ -138,10 +138,10 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     }
 
 
-    public JdbcEntity createJdbcTable(
+    public JdbcTable createJdbcTable(
             StoreCatalog storeCatalog,
             PhysicalTable table ) {
-        return new JdbcEntity(
+        return new JdbcTable(
                 this,
                 table,
                 TableType.TABLE );
@@ -228,7 +228,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
     }
 
 
-    public synchronized ImmutableMap<String, JdbcEntity> getTableMap() {
+    public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
         return ImmutableMap.copyOf( tableMap );
     }
 

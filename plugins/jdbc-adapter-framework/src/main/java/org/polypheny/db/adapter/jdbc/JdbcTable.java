@@ -65,8 +65,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.TableType;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
@@ -90,7 +90,7 @@ import org.polypheny.db.util.Util;
  * applying Queryable operators such as {@link org.apache.calcite.linq4j.Queryable#where(org.apache.calcite.linq4j.function.Predicate2)}.
  * The resulting queryable can then be converted to a SQL query, which can be executed efficiently on the JDBC server.
  */
-public class JdbcEntity extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableEntity, QueryableEntity {
+public class JdbcTable extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableTable, QueryableEntity {
 
     private final PhysicalTable table;
     private JdbcSchema jdbcSchema;
@@ -98,7 +98,7 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
     private final TableType jdbcTableType;
 
 
-    public JdbcEntity(
+    public JdbcTable(
             JdbcSchema jdbcSchema,
             PhysicalTable table,
             @NonNull TableType jdbcTableType ) {
@@ -185,8 +185,8 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
-        return new JdbcTableQueryable<>( dataContext, snapshot, this );
+    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot ) {
+        return new JdbcEntityQueryable<>( dataContext, snapshot, this );
     }
 
 
@@ -233,13 +233,13 @@ public class JdbcEntity extends PhysicalTable implements TranslatableEntity, Sca
 
 
     /**
-     * Enumerable that returns the contents of a {@link JdbcEntity} by connecting to the JDBC data source.
+     * Enumerable that returns the contents of a {@link JdbcTable} by connecting to the JDBC data source.
      *
      * @param <T> element type
      */
-    private class JdbcTableQueryable<T> extends AbstractTableQueryable<T, JdbcEntity> {
+    private class JdbcEntityQueryable<T> extends AbstractEntityQueryable<T, JdbcTable> {
 
-        JdbcTableQueryable( DataContext dataContext, Snapshot snapshot, JdbcEntity entity ) {
+        JdbcEntityQueryable( DataContext dataContext, Snapshot snapshot, JdbcTable entity ) {
             super( dataContext, snapshot, entity );
         }
 

@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.Extension;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.ConfigString;
@@ -35,11 +34,9 @@ import org.polypheny.db.docker.DockerContainer;
 import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
-import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
-import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
@@ -74,8 +71,10 @@ public class NotebooksPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
-        TransactionExtension.REGISTER.add( new NotebooksStarter( this ) );
+    public void afterTransactionInit( TransactionManager manager ) {
+        JupyterSessionManager.getInstance().setTransactionManager( manager );
+        registerEndpoints();
+        checkContainer();
         log.info( "Notebooks plugin was started!" );
         pluginLoaded = true;
     }
@@ -313,27 +312,6 @@ public class NotebooksPlugin extends PolyPlugin {
             token.append( String.format( "%02x", i ) );
         }
         return token.toString();
-    }
-
-
-    @Extension
-    public static class NotebooksStarter implements TransactionExtension {
-
-        private final NotebooksPlugin plugin;
-
-
-        public NotebooksStarter( NotebooksPlugin plugin ) {
-            this.plugin = plugin;
-        }
-
-
-        @Override
-        public void initExtension( TransactionManager manager, Authenticator authenticator ) {
-            JupyterSessionManager.getInstance().setTransactionManager( manager );
-            plugin.registerEndpoints();
-            plugin.checkContainer();
-        }
-
     }
 
 }

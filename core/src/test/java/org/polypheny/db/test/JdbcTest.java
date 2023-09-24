@@ -26,7 +26,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AbstractEntity;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 
 
 /**
@@ -35,11 +35,11 @@ import org.polypheny.db.schema.types.ModifiableEntity;
 public class JdbcTest {
 
     /**
-     * Abstract base class for implementations of {@link ModifiableEntity}.
+     * Abstract base class for implementations of {@link ModifiableTable}.
      */
-    public abstract static class AbstractModifiableEntity extends AbstractEntity implements ModifiableEntity {
+    public abstract static class AbstractModifiableTable extends AbstractEntity implements ModifiableTable {
 
-        protected AbstractModifiableEntity( String tableName ) {
+        protected AbstractModifiableTable( String tableName ) {
             super( null, null, null );
         }
 

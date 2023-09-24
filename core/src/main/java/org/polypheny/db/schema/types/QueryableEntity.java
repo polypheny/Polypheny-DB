@@ -26,7 +26,7 @@ public interface QueryableEntity extends Typed {
     /**
      * Converts this table into a {@link Queryable}.
      */
-    <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId );
+    <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot );
 
     default Type getElementType() {
         return Object[].class;

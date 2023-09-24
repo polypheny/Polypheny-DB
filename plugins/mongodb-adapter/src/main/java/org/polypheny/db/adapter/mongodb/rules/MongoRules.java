@@ -74,7 +74,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.sql.language.fun.SqlDatetimePlusOperator;
 import org.polypheny.db.sql.language.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.type.PolyType;
@@ -868,20 +868,21 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final RelModify<MongoEntity> modify = (RelModify<MongoEntity>) alg;
-            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
+            final RelModify<?> modify = (RelModify<?>) alg;
+            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
             }
-            if ( modify.getEntity().unwrap( MongoEntity.class ) == null ) {
+            MongoEntity mongo = modify.getEntity().unwrap( MongoEntity.class );
+            if ( mongo == null ) {
                 return null;
             }
 
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoEntityModify(
+            return new MongoTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity(),
+                    mongo,
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
@@ -905,7 +906,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final DocumentModify<MongoEntity> modify = (DocumentModify<MongoEntity>) alg;
-            final ModifiableEntity modifiableCollection = modify.entity.unwrap( ModifiableEntity.class );
+            final ModifiableTable modifiableCollection = modify.entity.unwrap( ModifiableTable.class );
             if ( modifiableCollection == null ) {
                 return null;
             }

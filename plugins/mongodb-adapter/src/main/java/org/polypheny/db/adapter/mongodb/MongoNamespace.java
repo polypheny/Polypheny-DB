@@ -41,15 +41,16 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
@@ -103,8 +104,8 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
     }
 
 
-    public MongoEntity createEntity( StoreCatalog catalog, PhysicalEntity physical ) {
-        return new MongoEntity( physical, this, transactionProvider );
+    public MongoEntity createEntity( PhysicalEntity physical, List<? extends PhysicalField> fields ) {
+        return new MongoEntity( physical, fields, this, transactionProvider );
     }
 
 
@@ -179,19 +180,6 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
         return null;
     }
 
-
-    /*public Entity createCollection( LogicalCollection catalogEntity, CatalogCollectionPlacement partitionPlacement ) {
-        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-
-        AlgDataType type = typeFactory.createPolyType( PolyType.DOCUMENT );
-        fieldInfo.add( "d", "d", type ).nullable( false );
-
-        MongoEntity table = new MongoEntity( catalogEntity, this, AlgDataTypeImpl.proto( fieldInfo.build() ), transactionProvider, partitionPlacement.adapter, partitionPlacement );
-
-        tableMap.put( catalogEntity.name + "_" + partitionPlacement.id, table );
-        return table;
-    }*/
 
 }
 

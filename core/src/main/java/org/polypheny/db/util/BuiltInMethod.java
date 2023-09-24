@@ -161,7 +161,7 @@ public enum BuiltInMethod {
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
-    QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, Snapshot.class, long.class ),
+    QUERYABLE_TABLE_AS_QUERYABLE( QueryableEntity.class, "asQueryable", DataContext.class, Snapshot.class ),
     AS_QUERYABLE( Enumerable.class, "asQueryable" ),
     ABSTRACT_ENUMERABLE_CTOR( AbstractEnumerable.class ),
     BATCH_ITERATOR_CTOR( BatchIteratorEnumerable.class ),

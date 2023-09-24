@@ -55,7 +55,7 @@ public class MongoDynamic {
     private final Map<Long, List<ArrayWrapper>> arrayHandles = new HashMap<>(); // parent, index,
 
     private final Map<Long, List<KeyWrapper>> keyHandles = new HashMap<>(); // parent, index,
-    private final Map<Long, Function<Object, BsonValue>> transformerMap = new HashMap<>();
+    private final Map<Long, Function<PolyValue, BsonValue>> transformers = new HashMap<>();
     private final GridFSBucket bucket;
     private final BsonDocument document;
     private final Map<Long, Boolean> isRegexMap = new HashMap<>();
@@ -207,7 +207,7 @@ public class MongoDynamic {
 
 
     private void initMaps( long index, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, Boolean isValue, String keyName ) {
-        this.transformerMap.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
+        this.transformers.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
         this.isRegexMap.put( index, isRegex );
         this.isFuncMap.put( index, isFunction );
         this.isValueMap.put( index, isValue );
@@ -241,7 +241,7 @@ public class MongoDynamic {
                     // function is always part of a document
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonString( BsonFunctionHelper.getUsedFunction( entry.getValue() ) ) ) );
                 } else if ( isValue ) {
-                    Function<Object, BsonValue> transformer = transformerMap.get( entry.getKey() );
+                    Function<PolyValue, BsonValue> transformer = transformers.get( entry.getKey() );
                     Consumer<Wrapper> task = el -> el.insert(
                             new BsonString( key
                                     + "."
@@ -250,7 +250,7 @@ public class MongoDynamic {
                     arrayHandles.get( entry.getKey() ).forEach( task );
                     keyHandles.get( entry.getKey() ).forEach( task );
                 } else {
-                    Function<Object, BsonValue> transformer = transformerMap.get( entry.getKey() );
+                    Function<PolyValue, BsonValue> transformer = transformers.get( entry.getKey() );
                     Consumer<Wrapper> task;
                     if ( this.isProject ) {
                         task = el -> el.insert( new BsonDocument( "$literal", transformer.apply( entry.getValue() ) ) );

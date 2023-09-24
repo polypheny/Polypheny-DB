@@ -36,34 +36,35 @@ package org.polypheny.db.adapter.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.gridfs.GridFSBucket;
-import com.mongodb.client.gridfs.GridFSDownloadStream;
-import java.io.PushbackInputStream;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.DateTimeUtils;
+import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.commons.lang3.NotImplementedException;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.types.Decimal128;
-import org.bson.types.ObjectId;
+import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * Enumerator that reads from a MongoDB collection.
  */
-class MongoEnumerator implements Enumerator<Object> {
+class MongoEnumerator implements Enumerator<PolyValue> {
 
     protected final Iterator<Document> cursor;
-    protected final Function1<Document, Object> getter;
+    protected final Function1<Document, PolyValue> getter;
     protected final GridFSBucket bucket;
-    protected Object current;
+    protected PolyValue current;
 
 
     /**
@@ -72,7 +73,7 @@ class MongoEnumerator implements Enumerator<Object> {
      * @param cursor Mongo iterator (usually a {@link com.mongodb.ServerCursor})
      * @param getter Converts an object into a list of fields
      */
-    MongoEnumerator( Iterator<Document> cursor, Function1<Document, Object> getter, GridFSBucket bucket ) {
+    MongoEnumerator( Iterator<Document> cursor, Function1<Document, PolyValue> getter, GridFSBucket bucket ) {
         this.cursor = cursor;
         this.getter = getter;
         this.bucket = bucket;
@@ -80,7 +81,7 @@ class MongoEnumerator implements Enumerator<Object> {
 
 
     @Override
-    public Object current() {
+    public PolyValue current() {
         return current;
     }
 
@@ -92,7 +93,7 @@ class MongoEnumerator implements Enumerator<Object> {
                 Document map = cursor.next();
                 current = getter.apply( map );
 
-                current = handleTransforms( current );
+                //current = handleTransforms( current );
 
                 return true;
             } else {
@@ -100,34 +101,33 @@ class MongoEnumerator implements Enumerator<Object> {
                 return false;
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
 
-    protected Object handleTransforms( Object current ) {
+    /*protected PolyValue handleTransforms( Bson current ) {
         if ( current == null ) {
             return null;
         }
         if ( current.getClass().isArray() ) {
-            List<Object> temp = new ArrayList<>();
-            for ( Object el : (Object[]) current ) {
+            List<PolyValue> temp = new ArrayList<>();
+            for ( Bson el : (Bson[]) current ) {
                 temp.add( handleTransforms( el ) );
             }
             return temp.toArray();
         } else {
             if ( current instanceof List ) {
-                return ((List<?>) current).stream().map( this::handleTransforms ).collect( Collectors.toList() );
+                return PolyList.of((List<Bson>) current).stream().map( this::handleTransforms ).collect( Collectors.toList() );
             } else if ( current instanceof Document ) {
                 return handleDocument( (Document) current );
             }
         }
         return current;
-    }
-
+    }*/
 
     // s -> stream
-    private Object handleDocument( Document el ) {
+    /*private PolyValue handleDocument( Document el ) {
         if ( el.containsKey( "_type" ) ) {
             String type = el.getString( "_type" );
             if ( type.equals( "s" ) ) {
@@ -136,11 +136,11 @@ class MongoEnumerator implements Enumerator<Object> {
                 GridFSDownloadStream stream = bucket.openDownloadStream( objectId );
                 return new PushbackInputStream( stream );
             }
-            throw new RuntimeException( "The document type was not recognized" );
+            throw new GenericRuntimeException( "The document type was not recognized" );
         } else {
             return el.toJson();
         }
-    }
+    }*/
 
 
     @Override
@@ -152,7 +152,7 @@ class MongoEnumerator implements Enumerator<Object> {
     @Override
     public void close() {
         if ( cursor instanceof MongoCursor ) {
-            ((MongoCursor) cursor).close();
+            ((MongoCursor<?>) cursor).close();
         }
         // AggregationOutput implements Iterator but not DBCursor. There is no available close() method -- apparently there is no open resource.
     }
@@ -169,8 +169,8 @@ class MongoEnumerator implements Enumerator<Object> {
      * This needs to be fixed when retrieving the arrays.
      * Additionally, for array we cannot be sure how the value is stored, as we lose this information on insert
      */
-    static List<Object> arrayGetter( List<Object> objects, Class<?> arrayFieldClass ) {
-        if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
+    static List<PolyValue> arrayGetter( List<Object> objects, Class<? extends PolyValue> arrayFieldClass ) {
+        /*if ( arrayFieldClass == Float.class || arrayFieldClass == float.class ) {
             if ( objects.size() > 1 ) {
                 if ( objects.get( 0 ) instanceof Double ) {
                     return objects.stream().map( o -> ((Double) o).floatValue() ).collect( Collectors.toList() );
@@ -197,58 +197,69 @@ class MongoEnumerator implements Enumerator<Object> {
             return objects;
         } else {
             return objects;
-        }
+        }*/
+        return null;
     }
 
 
-    static <E> Function1<Document, E> singletonGetter( final String fieldName, final Class<?> fieldClass, Class<?> arrayFieldClass ) {
-        return a0 -> {
-            E obj = (E) convert( a0.get( fieldName ), fieldClass );
-            if ( fieldClass == List.class ) {
-                return (E) arrayGetter( (List<Object>) obj, arrayFieldClass );
-            }
-            return obj;
-        };
+    static Function1<Document, PolyValue> singletonGetter( final MongoTupleType type ) {
+        return a0 -> convert( a0.toBsonDocument().get( type.name ), type );
     }
 
 
     /**
-     * @param fields List of fields to project; or null to return map
-     * @param arrayFields
+     *
      */
-    static <E> Function1<Document, E> listGetter( final List<Entry<String, Class<?>>> fields, List<Entry<String, Class<?>>> arrayFields ) {
-        return a0 -> {
-            Object[] objects = new Object[fields.size()];
+    static Function1<Document, PolyValue> listGetter( final MongoTupleType type ) {
+        /*return a0 -> {
+            PolyValue[] objects = new PolyValue[fields.size()];
             for ( int i = 0; i < fields.size(); i++ ) {
-                final Map.Entry<String, Class<?>> field = fields.get( i );
+                final Map.Entry<String, Class<? extends PolyValue>> field = fields.get( i );
                 final String name = field.getKey();
-                /*if ( name.equals( "_data" ) ) {
-                    objects[i] = Functions.jsonize( a0.get( name ) );
-                } else {*/
-                    objects[i] = convert( a0.get( name ), field.getValue() );
-                //}
+
+                objects[i] = convert( a0.get( name ), field.getValue() );
 
                 if ( field.getValue() == List.class ) {
                     objects[i] = arrayGetter( (List) objects[i], arrayFields.get( i ).getValue() );
                 }
             }
-            return (E) objects;
+            return objects;
+        };*/
+        List<Function<BsonValue, PolyValue>> trans = new ArrayList<>();
+        for ( MongoTupleType sub : type.subs ) {
+            trans.add( o -> convert( o.asDocument().get( sub.name ), sub ) );
+        }
+        return e -> {
+            BsonDocument doc = e.toBsonDocument();
+
+            return PolyList.of( trans.stream().map( t -> t.apply( doc ) ).toArray( PolyValue[]::new ) );
         };
     }
 
 
-    static Function1<Document, Object> getter( List<Entry<String, Class<?>>> fields, List<Entry<String, Class<?>>> arrayFields ) {
-        //noinspection unchecked
-        return fields == null
+    static Function1<Document, PolyValue> getter( MongoTupleType tupleType ) {
+        return tupleType == null
                 ? mapGetter()
-                : fields.size() == 1
-                        ? singletonGetter( fields.get( 0 ).getKey(), fields.get( 0 ).getValue(), arrayFields.get( 0 ).getValue() )
-                        : listGetter( fields, arrayFields );
+                : tupleType.size() == 1
+                        ? singletonGetter( tupleType.subs.get( 0 ) )
+                        : listGetter( tupleType );
     }
 
 
-    private static Object convert( Object o, Class<?> clazz ) {
-        if ( o == null ) {
+    private static PolyValue convert( BsonValue o, MongoTupleType type ) {
+        switch ( type.type ) {
+            case BIGINT:
+                return PolyLong.of( o.asNumber().longValue() );
+            case INTEGER:
+                return PolyInteger.of( o.asNumber().longValue() );
+            case VARCHAR:
+                return PolyString.of( o.asString().getValue() );
+            case DECIMAL:
+                return PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
+        }
+        throw new NotImplementedException();
+
+        /*if ( o == null ) {
             return null;
         }
         Primitive primitive = Primitive.of( clazz );
@@ -274,7 +285,7 @@ class MongoEnumerator implements Enumerator<Object> {
             }
         }
 
-        return o;
+        return o;*/
     }
 
 

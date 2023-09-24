@@ -26,6 +26,7 @@ import org.polypheny.db.rex.RexLiteral;
 
 public class MongoValues extends Values implements MongoAlg {
 
+
     MongoValues( AlgOptCluster cluster, AlgDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, AlgTraitSet traitSet ) {
         super( cluster, rowType, tuples, traitSet );
     }

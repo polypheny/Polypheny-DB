@@ -40,6 +40,7 @@ import org.apache.calcite.linq4j.AbstractQueryable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
 import org.polypheny.db.catalog.entity.CatalogEntity;
@@ -54,14 +55,14 @@ import org.polypheny.db.schema.types.QueryableEntity;
  *
  * @param <T> element type
  */
-public abstract class AbstractTableQueryable<T, K extends CatalogEntity & QueryableEntity> extends AbstractQueryable<T> {
+public abstract class AbstractEntityQueryable<T, K extends CatalogEntity & QueryableEntity> extends AbstractQueryable<T> {
 
     public final DataContext dataContext;
     public final Snapshot snapshot;
     public final K entity;
 
 
-    public AbstractTableQueryable( DataContext dataContext, Snapshot snapshot, K entity ) {
+    public AbstractEntityQueryable( DataContext dataContext, Snapshot snapshot, K entity ) {
         this.dataContext = dataContext;
         this.snapshot = snapshot;
         assert entity.unwrap( QueryableEntity.class ) != null;
@@ -88,7 +89,7 @@ public abstract class AbstractTableQueryable<T, K extends CatalogEntity & Querya
 
 
     @Override
-    public Iterator<T> iterator() {
+    public @NotNull Iterator<T> iterator() {
         return Linq4j.enumeratorIterator( enumerator() );
     }
 }

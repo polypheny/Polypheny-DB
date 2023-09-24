@@ -95,7 +95,7 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalColumn addColumn( String name, long allocId, long adapterId, int position, LogicalColumn lColumn ) {
+    public PhysicalColumn addColumn( String name, long allocId, int position, LogicalColumn lColumn ) {
         PhysicalColumn column = new PhysicalColumn( name, lColumn.tableId, allocId, adapterId, position, lColumn );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> columns = new ArrayList<>( table.columns );

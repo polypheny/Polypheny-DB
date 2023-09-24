@@ -169,7 +169,7 @@ import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -2886,7 +2886,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      * Creates a relational expression to modify a table or modifiable view.
      */
     private AlgNode createModify( CatalogEntity targetTable, AlgNode source ) {
-        final ModifiableEntity modifiableTable = targetTable.unwrap( ModifiableEntity.class );
+        final ModifiableTable modifiableTable = targetTable.unwrap( ModifiableTable.class );
         if ( modifiableTable != null && modifiableTable == targetTable.unwrap( Entity.class ) ) {
             return modifiableTable.toModificationAlg(
                     cluster,

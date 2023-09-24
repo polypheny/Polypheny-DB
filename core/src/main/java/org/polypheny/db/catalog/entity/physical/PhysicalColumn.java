@@ -27,21 +27,15 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @SuperBuilder(toBuilder = true)
-public class PhysicalColumn extends CatalogEntity {
-
-    public long adapterId;
-
-    public long tableId;
+public class PhysicalColumn extends PhysicalField {
 
     @Serialize
     public int position; // normalized to start with 0
@@ -73,19 +67,13 @@ public class PhysicalColumn extends CatalogEntity {
     @Serialize
     public CatalogDefaultValue defaultValue;
 
-    @Serialize
-    public String logicalName;
-
-    @Serialize
-    public long allocId;
-
 
     public PhysicalColumn(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
             @Deserialize("logicalName") final String logicalName,
             @Deserialize("allocId") final long allocId,
-            @Deserialize("tableId") final long tableId,
+            @Deserialize("entityId") final long tableId,
             @Deserialize("adapterId") final long adapterId,
             @Deserialize("position") final int position,
             @Deserialize("type") @NotNull final PolyType type,
@@ -97,10 +85,7 @@ public class PhysicalColumn extends CatalogEntity {
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
-        super( id, name, tableId, EntityType.ENTITY, NamespaceType.RELATIONAL, true );
-        this.adapterId = adapterId;
-        this.allocId = allocId;
-        this.tableId = tableId;
+        super( id, name, logicalName, allocId, tableId, adapterId, NamespaceType.RELATIONAL, true );
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -111,8 +96,6 @@ public class PhysicalColumn extends CatalogEntity {
         this.nullable = nullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
-        this.logicalName = logicalName;
-
     }
 
 

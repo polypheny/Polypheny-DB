@@ -155,8 +155,8 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
                                     Expressions.convert_( expr, QueryableEntity.class ),
                                     BuiltInMethod.QUERYABLE_TABLE_AS_QUERYABLE.method,
                                     Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_QUERY_PROVIDER.method ),
-                                    Expressions.constant( null, SchemaPlus.class ),
-                                    Expressions.constant( call.getOperator().getName(), String.class ) );
+                                    Expressions.constant( null, SchemaPlus.class )
+                                    /*Expressions.constant( call.getOperator().getName(), String.class )*/ );
                             expr = Expressions.call( queryable, BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method );
                         } else {
                             expr = Expressions.call( expr, BuiltInMethod.SCANNABLE_TABLE_SCAN.method, DataContext.ROOT );

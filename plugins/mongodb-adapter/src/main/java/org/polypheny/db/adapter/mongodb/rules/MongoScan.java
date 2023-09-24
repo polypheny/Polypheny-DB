@@ -17,19 +17,27 @@
 package org.polypheny.db.adapter.mongodb.rules;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.bson.BsonDocument;
+import org.bson.BsonElement;
+import org.bson.BsonString;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -90,8 +98,15 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
     @Override
     public void implement( Implementor implementor ) {
         implementor.entity = entity;
-        implementor.setStaticRowType( (AlgRecordType) rowType );
-        implementor.physicalMapper.addAll( rowType.getFieldNames() );
+        //implementor.setStaticRowType( (AlgRecordType) rowType );
+        //implementor.physicalMapper.addAll( rowType.getFieldNames() );
+        Map<String, String> logicalPhysicalMapping = new HashMap<>();
+
+        Map<String, ? extends PhysicalField> fields = entity.mongoNamespace.getStore().storeCatalog.getFields( entity.allocationId ).stream().collect( Collectors.toMap( f -> f.logicalName, f -> f ) );
+        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            logicalPhysicalMapping.put( field.getName(), fields.get( field.getName() ).name );
+        }
+        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( logicalPhysicalMapping.entrySet().stream().map( p -> new BsonElement( p.getKey(), new BsonString( "$" + p.getValue() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
     }
 
 }

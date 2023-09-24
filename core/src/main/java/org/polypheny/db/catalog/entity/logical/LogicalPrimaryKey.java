@@ -25,15 +25,17 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 
 
+@Value
 @EqualsAndHashCode(callSuper = true)
-public final class LogicalPrimaryKey extends LogicalKey {
+public class LogicalPrimaryKey extends LogicalKey {
 
     @Serialize
-    private final LogicalKey key;
+    public LogicalKey key;
 
 
     public LogicalPrimaryKey( @Deserialize("key") @NonNull final LogicalKey key ) {

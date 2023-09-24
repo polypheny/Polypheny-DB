@@ -398,9 +398,6 @@ public class PolyphenyDb {
         // Startup and restore catalog
         Catalog catalog = startCatalog();
 
-        PolyPluginManager.initAfterCatalog();
-
-        PolyPluginManager.initAfterTransaction( transactionManager );
 
         final Authenticator authenticator = new AuthenticatorImpl();
 
@@ -409,8 +406,6 @@ public class PolyphenyDb {
 
         // Call DockerManager once to remove old containers
         DockerManager.getInstance();
-
-
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
@@ -468,6 +463,11 @@ public class PolyphenyDb {
             // Init TrayGUI
             TrayGui.getInstance();
         }
+
+        PolyPluginManager.initAfterCatalog();
+
+        PolyPluginManager.initAfterTransaction( transactionManager );
+
         Catalog.getInstance().updateSnapshot();
 
         restoreDefaults( authenticator, catalog );

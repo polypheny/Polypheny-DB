@@ -17,8 +17,8 @@
 package org.polypheny.db.catalog.entity.logical;
 
 import com.google.common.collect.ImmutableList;
-import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,28 +34,28 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 @EqualsAndHashCode
 @Value
 @NonFinal
-public class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
+@SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
+public abstract class LogicalKey implements CatalogObject, Comparable<LogicalKey> {
 
     private static final long serialVersionUID = -5803762884192662540L;
 
     @Serialize
     public long id;
+
     @Serialize
     public long tableId;
+
     @Serialize
     public long namespaceId;
+
     @Serialize
     public ImmutableList<Long> columnIds;
+
     @Serialize
     public EnforcementTime enforcementTime;
 
 
-    public LogicalKey(
-            @Deserialize("id") final long id,
-            @Deserialize("tableId") final long tableId,
-            @Deserialize("namespaceId") final long namespaceId,
-            @Deserialize("columnIds") final List<Long> columnIds,
-            @Deserialize("enforcementTime") EnforcementTime enforcementTime ) {
+    public LogicalKey( long id, long tableId, long namespaceId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         this.id = id;
         this.tableId = tableId;
         this.namespaceId = namespaceId;

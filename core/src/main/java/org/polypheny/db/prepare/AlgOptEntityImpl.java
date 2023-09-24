@@ -72,7 +72,7 @@ import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.types.FilterableEntity;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
@@ -153,7 +153,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, AllocationPartition placement ) {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
-                || entity instanceof ModifiableEntity;
+                || entity instanceof ModifiableTable;
         return new AlgOptEntityImpl( schema, rowType, entity, catalogEntity, placement, null );
     }
 

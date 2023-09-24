@@ -38,7 +38,7 @@ public class MongoConvention extends Convention.Impl {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : MongoRules.RULES ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
     }
 

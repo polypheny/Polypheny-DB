@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.NotSupportedException;
-import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -31,7 +30,6 @@ import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -74,6 +72,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -85,7 +84,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -106,39 +105,9 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
 
     @Override
-    public AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
-        if ( modify.getEntity().unwrap( AllocationTable.class ) != null ) {
-            return getRelModify( allocId, (RelModify<?>) modify, builder );
-        } else if ( modify.getEntity().unwrap( AllocationCollection.class ) != null ) {
-            return getDocModify( allocId, (DocumentModify<?>) modify, builder );
-        } else if ( modify.getEntity().unwrap( AllocationGraph.class ) != null ) {
-            return getGraphModify( allocId, (LpgModify<?>) modify, builder );
-        }
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder ) {
-        PhysicalTable table = catalog.fromAllocation( allocId );
-        if ( table.unwrap( ModifiableEntity.class ) == null ) {
-            return null;
-        }
-        return table.unwrap( ModifiableEntity.class ).toModificationAlg(
-                modify.getCluster(),
-                modify.getTraitSet(),
-                table,
-                modify.getInput(),
-                modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() );
-    }
-
-
-    @Override
     public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
         PhysicalTable table = catalog.fromAllocation( allocId );
-        if ( table.unwrap( ModifiableEntity.class ) == null ) {
+        if ( table.unwrap( ModifiableTable.class ) == null ) {
             return null;
         }
 
@@ -159,7 +128,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
         if ( updates.left == null ) {
             // Values have already been replaced
-            AlgNode node = table.unwrap( ModifiableEntity.class ).toModificationAlg(
+            AlgNode node = table.unwrap( ModifiableTable.class ).toModificationAlg(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     table,
@@ -177,7 +146,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
             LogicalStreamer.attachFilter( table, builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
 
             AlgNode collector = builder.build();
-            collector = table.unwrap( ModifiableEntity.class ).toModificationAlg(
+            collector = table.unwrap( ModifiableTable.class ).toModificationAlg(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     table,
@@ -307,17 +276,6 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
         throw new NotSupportedException();
     }
 
-
-    @Override
-    public void refreshTable( long allocId ) {
-        throw new NotSupportedException();
-    }
-
-
-    @Override
-    public void dropTable( Context context, long allocId ) {
-        throw new NotSupportedException();
-    }
 
 
     @Override
@@ -466,7 +424,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
             case MODIFY:
                 break;
             default:
-                throw new RuntimeException( "Modifies cannot be nested." );
+                throw new GenericRuntimeException( "Modifies cannot be nested." );
         }
         return builder;
     }
@@ -486,7 +444,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
                 inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
                 inputs.addAll( attachPreparedGraphNodeModifyInsert( alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
             } else {
-                throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
+                throw new GenericRuntimeException( "Graph insert of non-graph elements is not possible." );
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
@@ -508,7 +466,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
             } else if ( field.getType().getPolyType() == PolyType.NODE ) {
                 inputs.addAll( attachPreparedGraphNodeModifyDelete( alg.getCluster(), nodesTable, nodePropertiesTable, algBuilder ) );
             } else {
-                throw new RuntimeException( "Graph delete of non-graph elements is not possible." );
+                throw new GenericRuntimeException( "Graph delete of non-graph elements is not possible." );
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
@@ -655,7 +613,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
 
     private Modify<?> getModify( CatalogEntity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( ModifiableEntity.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
+        return table.unwrap( ModifiableTable.class ).toModificationAlg( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
 
@@ -668,9 +626,9 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
             case DELETE:
                 return attachRelationalDoc( alg, statement, alg.entity, queryInformation, adapterId ).get( 0 );
             case MERGE:
-                throw new RuntimeException( "MERGE is not supported." );
+                throw new GenericRuntimeException( "MERGE is not supported." );
             default:
-                throw new RuntimeException( "Unknown update operation for document." );
+                throw new GenericRuntimeException( "Unknown update operation for document." );
         }
 
     }

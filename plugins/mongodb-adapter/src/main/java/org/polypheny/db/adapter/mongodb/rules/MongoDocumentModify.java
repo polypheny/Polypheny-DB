@@ -16,39 +16,79 @@
 
 package org.polypheny.db.adapter.mongodb.rules;
 
+import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
+import org.bson.BsonDocument;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
+import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class MongoDocumentModify extends DocumentModify<MongoEntity> implements MongoAlg {
 
+    private final GridFSBucket bucket;
+    private Implementor implementor;
 
     protected MongoDocumentModify(
             AlgTraitSet traits,
             MongoEntity collection,
             AlgNode input,
             @NonNull Operation operation,
-            Map<String, RexNode> updates,
+            Map<String, ? extends RexNode> updates,
             List<String> removes,
             Map<String, String> renames ) {
         super( traits, collection, input, operation, updates, removes, renames );
+        this.bucket = entity.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
-        Implementor condImplementor = new Implementor( true );
-        condImplementor.setStaticRowType( implementor.getStaticRowType() );
-        ((MongoAlg) input).implement( condImplementor );
+        implementor.setDML( true );
+        this.implementor = implementor;
 
+        implementor.entity = entity;
+        implementor.setOperation( this.getOperation() );
+
+        switch ( this.getOperation() ) {
+            case INSERT:
+                handleInsert( implementor, ((MongoDocuments) input) );
+            case UPDATE:
+                handleUpdate( implementor );
+                break;
+            case MERGE:
+                break;
+            case DELETE:
+                handleDelete( implementor );
+                break;
+        }
+    }
+
+
+    private void handleDelete( Implementor implementor ) {
         throw new NotImplementedException();
+    }
+
+
+    private void handleUpdate( Implementor implementor ) {
+        throw new NotImplementedException();
+    }
+
+
+    private void handleInsert( Implementor implementor, MongoDocuments documents ) {
+        implementor.operations = documents.documents
+                .stream()
+                .filter( PolyValue::isDocument )
+                .map( d -> BsonDocument.parse( d.toJson() ) )
+                .collect( Collectors.toList() );
     }
 
 }

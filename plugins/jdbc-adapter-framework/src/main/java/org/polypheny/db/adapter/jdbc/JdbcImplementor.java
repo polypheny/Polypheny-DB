@@ -73,7 +73,7 @@ public class JdbcImplementor extends AlgToSqlConverter {
 
 
     @Override
-    public SqlIdentifier getPhysicalTableName( JdbcEntity physical ) {
+    public SqlIdentifier getPhysicalTableName( JdbcTable physical ) {
         return new SqlIdentifier( Arrays.asList( physical.namespaceName, physical.name ), ParserPos.ZERO );
     }
 

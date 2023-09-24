@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.algebra.core.common;
+package org.polypheny.db.schema.types;
 
-import lombok.Getter;
-import org.polypheny.db.algebra.AbstractAlgNode;
+import java.util.List;
+import java.util.Map;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexNode;
 
-@Getter
-public abstract class Scan<E extends CatalogEntity> extends AbstractAlgNode {
+public interface ModifiableCollection extends Typed {
 
-    public final E entity;
-
-
-    /**
-     * Creates an <code>AbstractRelNode</code>.
-     *
-     * @param cluster
-     * @param traitSet
-     */
-    public Scan( AlgOptCluster cluster, AlgTraitSet traitSet, E entity ) {
-        super( cluster, traitSet );
-        this.entity = entity;
-    }
-
+    Modify<?> toModificationAlg(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            CatalogEntity physicalEntity,
+            AlgNode child,
+            Operation operation,
+            Map<String, ? extends RexNode> updates,
+            Map<String, String> renames,
+            List<String> removes );
 
 }

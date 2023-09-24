@@ -34,7 +34,7 @@ import org.polypheny.db.schema.Statistic;
 
 public interface ModifiableGraph {
 
-    LpgModify toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
+    LpgModify<?> toModificationAlg( AlgOptCluster cluster, AlgTraitSet traits, LogicalGraph graph, PolyphenyDbCatalogReader catalogReader, AlgNode input, Operation operation, List<String> ids, List<? extends RexNode> operations );
 
     Expression getExpression( SchemaPlus schema, String tableName, Class<?> clazz );
 

@@ -49,9 +49,9 @@ import org.polypheny.db.schema.trait.ModelTrait;
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
-public class JdbcScan extends RelScan<JdbcEntity> implements JdbcAlg {
+public class JdbcScan extends RelScan<JdbcTable> implements JdbcAlg {
 
-    protected final JdbcEntity jdbcTable;
+    protected final JdbcTable jdbcTable;
 
 
     @Override
@@ -60,7 +60,7 @@ public class JdbcScan extends RelScan<JdbcEntity> implements JdbcAlg {
     }
 
 
-    public JdbcScan( AlgOptCluster cluster, JdbcEntity jdbcTable, JdbcConvention jdbcConvention ) {
+    public JdbcScan( AlgOptCluster cluster, JdbcTable jdbcTable, JdbcConvention jdbcConvention ) {
         super( cluster, cluster.traitSetOf( jdbcConvention ).replace( ModelTrait.RELATIONAL ), jdbcTable );
         this.jdbcTable = jdbcTable;
     }

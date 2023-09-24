@@ -230,7 +230,7 @@ public class DocumentUtil {
      * @return the unified UPDATE AlgNode
      */
     public static Pair<List<String>, List<RexNode>> transformUpdateRelational(
-            Map<String, RexNode> updates,
+            Map<String, ? extends RexNode> updates,
             List<String> removes,
             Map<String, String> renames,
             AlgDataType rowType,

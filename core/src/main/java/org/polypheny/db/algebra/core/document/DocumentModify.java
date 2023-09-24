@@ -43,7 +43,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
 
     @NonNull
-    public ImmutableMap<String, RexNode> updates;
+    public ImmutableMap<String, ? extends RexNode> updates;
     @NonNull
     public ImmutableList<String> removes;
     @NonNull
@@ -61,7 +61,7 @@ public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> 
             E collection,
             AlgNode input,
             @NonNull Operation operation,
-            @Nullable Map<String, RexNode> updates,
+            @Nullable Map<String, ? extends RexNode> updates,
             @Nullable List<String> removes,
             @Nullable Map<String, String> renames ) {
         super( input.getCluster(), input.getTraitSet().replace( ModelTrait.DOCUMENT ), collection, input );

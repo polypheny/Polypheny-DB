@@ -18,6 +18,8 @@ package org.polypheny.db.catalog.entity.logical;
 
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,37 +27,51 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
-
+@Value
 @EqualsAndHashCode(callSuper = true)
-public final class LogicalForeignKey extends LogicalKey {
+public class LogicalForeignKey extends LogicalKey {
 
-    public final String name;
-    public final long referencedKeyId;
-    public final long referencedKeySchemaId;
-    public final long referencedKeyTableId;
-    public final ForeignKeyOption updateRule;
-    public final ForeignKeyOption deleteRule;
-    public final ImmutableList<Long> referencedKeyColumnIds;
+    @Serialize
+    public String name;
+
+    @Serialize
+    public long referencedKeyId;
+
+    @Serialize
+    public long referencedKeySchemaId;
+
+    @Serialize
+    public long referencedKeyTableId;
+
+    @Serialize
+    public ForeignKeyOption updateRule;
+
+    @Serialize
+    public ForeignKeyOption deleteRule;
+
+    @Serialize
+    public ImmutableList<Long> referencedKeyColumnIds;
 
 
     public LogicalForeignKey(
-            final long id,
-            @NonNull final String name,
-            final long tableId,
-            final long schemaId,
-            final long referencedKeyId,
-            final long referencedKeyTableId,
-            final long referencedKeySchemaId,
-            final List<Long> columnIds,
-            final List<Long> referencedKeyColumnIds,
-            final ForeignKeyOption updateRule,
-            final ForeignKeyOption deleteRule ) {
-        super( id, tableId, schemaId, columnIds, EnforcementTime.ON_COMMIT );
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String name,
+            @Deserialize("tableId") final long tableId,
+            @Deserialize("namespaceId") final long namespaceId,
+            @Deserialize("referencedKeyId") final long referencedKeyId,
+            @Deserialize("referencedKeyTableId") final long referencedKeyTableId,
+            @Deserialize("referencedKeySchemaId") final long referencedKeySchemaId,
+            @Deserialize("columnIds") final List<Long> columnIds,
+            @Deserialize("referencedKeyColumnIds") final List<Long> referencedKeyColumnIds,
+            @Deserialize("updateRule") final ForeignKeyOption updateRule,
+            @Deserialize("deleteRule") final ForeignKeyOption deleteRule ) {
+        super( id, tableId, namespaceId, columnIds, EnforcementTime.ON_COMMIT );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;

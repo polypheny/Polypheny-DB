@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 
 import com.google.common.collect.Lists;
-import java.util.AbstractList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -27,11 +26,11 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoMethod;
+import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.JavaRowFormat;
@@ -39,7 +38,6 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -87,55 +85,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             return implementor.result( physType, new BlockBuilder().toBlock() );
         }
 
-        final Expression fields =
-                list.append(
-                        list.newName( "fields" ),
-                        constantArrayList(
-                                Pair.zip(
-                                        MongoRules.mongoFieldNames( rowType ),
-                                        new AbstractList<Class<?>>() {
-
-                                            @Override
-                                            public Class<?> get( int index ) {
-                                                return physType.fieldClass( index );
-                                            }
-
-
-                                            @Override
-                                            public int size() {
-                                                return rowType.getFieldCount();
-                                            }
-                                        } ),
-                                Pair.class ) );
-
-        List<AlgDataTypeField> fieldList = rowType.getFieldList();
-
-        final Expression arrayClassFields =
-                list.append(
-                        "arrayClassFields",
-                        constantArrayList(
-                                Pair.zip(
-                                        MongoRules.mongoFieldNames( rowType ),
-                                        new AbstractList<Class<?>>() {
-
-                                            @Override
-                                            public Class<?> get( int index ) {
-                                                Class<?> clazz = physType.fieldClass( index );
-                                                if ( clazz != List.class ) {
-                                                    return physType.fieldClass( index );
-                                                } else {
-                                                    return EnumUtils.javaRowClass( implementor.getTypeFactory(), fieldList.get( index ).getType().getComponentType() );
-                                                }
-
-                                            }
-
-
-                                            @Override
-                                            public int size() {
-                                                return rowType.getFieldCount();
-                                            }
-                                        } ),
-                                Pair.class ) );
+        final Expression tupleTypes = MongoTupleType.from( rowType ).asExpression();
 
         final Expression table = list.append( "table", mongoImplementor.entity.asExpression()/*.getExpression( MongoEntity.MongoQueryable.class )*/ );
 
@@ -153,7 +103,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
                     list.newName( "enumerable" ),
-                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, fields, arrayClassFields, ops, preProjects, logicalCols ) );
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols ) );
         } else {
             final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );

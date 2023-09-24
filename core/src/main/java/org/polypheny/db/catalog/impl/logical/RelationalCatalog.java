@@ -46,6 +46,7 @@ import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalGenericKey;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
@@ -260,7 +261,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     private long addKey( long tableId, List<Long> columnIds, EnforcementTime enforcementTime ) {
         LogicalTable table = Objects.requireNonNull( tables.get( tableId ) );
         long id = idBuilder.getNewKeyId();
-        LogicalKey key = new LogicalKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
+        LogicalKey key = new LogicalGenericKey( id, table.id, table.namespaceId, columnIds, enforcementTime );
         synchronized ( this ) {
             keys.put( id, key );
         }

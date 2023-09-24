@@ -65,7 +65,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 
@@ -102,8 +102,8 @@ class QueryableAlgBuilder<T> implements QueryableFactory<T> {
             ((QueryableDefaults.Replayable) queryable).replay( this );
             return alg;
         }
-        if ( queryable instanceof AbstractTableQueryable ) {
-            final AbstractTableQueryable tableQueryable = (AbstractTableQueryable) queryable;
+        if ( queryable instanceof AbstractEntityQueryable ) {
+            final AbstractEntityQueryable tableQueryable = (AbstractEntityQueryable) queryable;
             final QueryableEntity table = tableQueryable.entity.unwrap( QueryableEntity.class );
 
             if ( table instanceof TranslatableEntity ) {

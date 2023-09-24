@@ -216,12 +216,12 @@ public final class Schemas {
 
 
     /**
-     * Returns a {@link Queryable}, given a schema and table name.
+     * Returns a {@link Queryable}, given a schema and entity name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, String tableName ) {
+    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, String entityName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
-        LogicalTable table = snapshot.rel().getTable( null, tableName ).orElseThrow();
-        return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot, table.id );
+        LogicalTable table = snapshot.rel().getTable( null, entityName ).orElseThrow();
+        return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot );
     }
 
 

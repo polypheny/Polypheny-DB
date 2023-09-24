@@ -24,8 +24,9 @@ import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
 
-public interface ModifiableEntity extends Typed {
+public interface ModifiableGraph extends Typed {
 
     Modify<?> toModificationAlg(
             AlgOptCluster cluster,
@@ -33,8 +34,7 @@ public interface ModifiableEntity extends Typed {
             CatalogEntity physicalEntity,
             AlgNode child,
             Operation operation,
-            List<String> targets,
+            List<PolyString> targets,
             List<? extends RexNode> sources );
-
 
 }

@@ -50,17 +50,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -73,24 +74,32 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
+import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
+import org.polypheny.db.schema.types.ModifiableCollection;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Util;
@@ -99,45 +108,38 @@ import org.polypheny.db.util.Util;
 /**
  * Table based on a MongoDB collection.
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ScannableEntity, ModifiableEntity, QueryableEntity {
+@Value
+public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ScannableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
 
     @Getter
-    private final MongoNamespace mongoNamespace;
+    public MongoNamespace mongoNamespace;
     @Getter
-    private final TransactionProvider transactionProvider;
+    public TransactionProvider transactionProvider;
     @Getter
-    private final long storeId;
-    public final PhysicalEntity physical;
+    public long storeId;
+    public PhysicalEntity physical;
 
     @Getter
-    private final MongoCollection<Document> collection;
+    public MongoCollection<Document> collection;
+    public AlgDataType rowType;
+    public List<? extends PhysicalField> fields;
 
 
     /**
      * Creates a MongoTable.
      */
-    MongoEntity( PhysicalEntity physical, MongoNamespace namespace, TransactionProvider transactionProvider ) {
+    MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
         super( physical.id, physical.allocationId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
         this.storeId = physical.adapterId;
         this.collection = namespace.database.getCollection( physical.name );
+        this.rowType = physical.getRowType();
+        this.fields = fields;
     }
-
-
-    /*public MongoEntity( LogicalCollection catalogEntity, MongoSchema schema, AlgProtoDataType proto, TransactionProvider transactionProvider, long adapter, CatalogCollectionPlacement partitionPlacement ) {
-        super( Object[].class, catalogEntity.id, partitionPlacement.id, adapter );
-        this.collectionName = MongoStore.getPhysicalTableName( catalogEntity.id, partitionPlacement.id );
-        this.transactionProvider = transactionProvider;
-        this.logical = null;
-        this.catalogCollection = catalogEntity;
-        this.protoRowType = proto;
-        this.mongoSchema = schema;
-        this.collection = schema.database.getCollection( collectionName );
-        this.storeId = adapter;
-    }*/
 
 
     public String toString() {
@@ -161,18 +163,18 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
      * @param mongoDb MongoDB connection
      * @param filterJson Filter JSON string, or null
      * @param projectJson Project JSON string, or null
-     * @param fields List of fields to project; or null to return map
+     * @param tupleType List of fields to project; or null to return map
      * @return Enumerator of results
      */
-    private Enumerable<Object> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, List<Entry<String, Class<?>>> fields, List<Entry<String, Class<?>>> arrayFields ) {
+    private Enumerable<PolyValue> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, MongoTupleType tupleType ) {
         final MongoCollection<Document> collection = mongoDb.getCollection( physical.name );
         final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
         final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
-        final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
+        final Function1<Document, PolyValue> getter = MongoEnumerator.getter( tupleType );
 
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
+            public Enumerator<PolyValue> enumerator() {
                 final FindIterable<Document> cursor = collection.find( filter ).projection( project );
                 return new MongoEnumerator( cursor.iterator(), getter, table.getMongoNamespace().getBucket() );
             }
@@ -192,24 +194,23 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
      * @param dataContext the context, which specifies multiple parameters regarding data
      * @param session the sessions to which the aggregation belongs
      * @param mongoDb MongoDB connection
-     * @param fields List of fields to project; or null to return map
+     * @param tupleType List of fields to project; or null to return map
      * @param operations One or more JSON strings
      * @param parameterValues the values pre-ordered
      * @return Enumerator of results
      */
-    private Enumerable<Object> aggregate(
-            DataContext dataContext, ClientSession session,
+    public Enumerable<PolyValue> aggregate(
+            DataContext dataContext,
+            ClientSession session,
             final MongoDatabase mongoDb,
             MongoEntity table,
-            final List<Entry<String, Class<?>>> fields,
-            List<Entry<String, Class<?>>> arrayFields,
+            MongoTupleType tupleType,
             final List<String> operations,
             Map<Long, PolyValue> parameterValues,
-            List<BsonDocument> preOps,
-            List<String> logicalCols ) {
+            List<BsonDocument> preOps ) {
         final List<BsonDocument> list = new ArrayList<>();
 
-        if ( parameterValues.size() == 0 ) {
+        if ( parameterValues.isEmpty() ) {
             // direct query
             preOps.forEach( op -> list.add( new BsonDocument( "$addFields", op ) ) );
 
@@ -232,7 +233,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
             list.add( 0, getPhysicalProjections( logicalCols, logical.getColumnNames(), logical.fieldIds ) );
         }*/
 
-        final Function1<Document, Object> getter = MongoEnumerator.getter( fields, arrayFields );
+        final Function1<Document, PolyValue> getter = MongoEnumerator.getter( tupleType );
 
         if ( log.isDebugEnabled() ) {
             log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
@@ -245,16 +246,16 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
+            public Enumerator<PolyValue> enumerator() {
                 final Iterator<Document> resultIterator;
                 try {
-                    if ( list.size() != 0 ) {
+                    if ( !list.isEmpty() ) {
                         resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
                 } catch ( Exception e ) {
-                    throw new RuntimeException( "While running MongoDB query " + Util.toString( list, "[", ",\n", "]" ), e );
+                    throw new GenericRuntimeException( "While running MongoDB query " + Util.toString( list, "[", ",\n", "]" ), e );
                 }
                 return new MongoEnumerator( resultIterator, getter, table.getMongoNamespace().getBucket() );
             }
@@ -304,8 +305,35 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
                 child,
                 operation,
                 updateColumnList,
-                sourceExpressionList
-        );
+                sourceExpressionList );
+    }
+
+
+    @Override
+    public Modify<?> toModificationAlg(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            CatalogEntity entity,
+            AlgNode child,
+            Operation operation,
+            Map<String, ? extends RexNode> updates,
+            Map<String, String> renames,
+            List<String> removes ) {
+        mongoNamespace.getConvention().register( cluster.getPlanner() );
+        return new LogicalDocumentModify(
+                cluster.traitSetOf( Convention.NONE ),
+                entity,
+                child,
+                operation,
+                updates,
+                removes,
+                renames );
+    }
+
+
+    @Override
+    public AlgDataType getRowType() {
+        return this.rowType;
     }
 
 
@@ -317,12 +345,22 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
     @Override
     public Expression asExpression() {
-        return null;
+        return Expressions.call(
+                Expressions.convert_(
+                        Expressions.call(
+                                Expressions.call(
+                                        mongoNamespace.getStore().getCatalogAsExpression(),
+                                        "getPhysical", Expressions.constant( id ) ),
+                                "unwrap", Expressions.constant( MongoEntity.class ) ),
+                        MongoEntity.class ),
+                "asQueryable",
+                DataContext.ROOT,
+                Catalog.SNAPSHOT_EXPRESSION );
     }
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
+    public <T> MongoQueryable<T> asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new MongoQueryable<>( dataContext, snapshot, this );
     }
 
@@ -331,6 +369,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         return null;
     }
+
+
 
 
     /*@Override
@@ -352,7 +392,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
      *
      * @param <T> element type
      */
-    public static class MongoQueryable<T> extends AbstractTableQueryable<T, MongoEntity> {
+    public static class MongoQueryable<T> extends AbstractEntityQueryable<T, MongoEntity> {
 
         MongoQueryable( DataContext dataContext, Snapshot snapshot, MongoEntity entity ) {
             super( dataContext, snapshot, entity );
@@ -362,7 +402,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
         @Override
         public Enumerator<T> enumerator() {
             //noinspection unchecked
-            final Enumerable<T> enumerable = (Enumerable<T>) getEntity().find( getMongoDb(), getEntity(), null, null, null, null );
+            final Enumerable<T> enumerable = (Enumerable<T>) getEntity().find( getMongoDb(), getEntity(), null, null, null );
             return enumerable.enumerator();
         }
 
@@ -383,7 +423,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> aggregate( List<Map.Entry<String, Class<?>>> fields, List<Map.Entry<String, Class<?>>> arrayClass, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
+        public Enumerable<PolyValue> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ) );
 
@@ -397,12 +437,10 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
                     session,
                     getMongoDb(),
                     getEntity(),
-                    fields,
-                    arrayClass,
+                    tupleType,
                     operations,
                     values,
-                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ),
-                    logicalCols );
+                    preProjections.stream().map( BsonDocument::parse ).collect( Collectors.toList() ) );
         }
 
 
@@ -411,13 +449,13 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
          *
          * @param filterJson Filter document
          * @param projectJson Projection document
-         * @param fields List of expected fields (and their types)
+         * @param tupleType List of expected fields (and their types)
          * @return result of mongo query
          * @see MongoMethod#MONGO_QUERYABLE_FIND
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<Object> find( String filterJson, String projectJson, List<Map.Entry<String, Class<?>>> fields, List<Map.Entry<String, Class<?>>> arrayClasses ) {
-            return getEntity().find( getMongoDb(), getEntity(), filterJson, projectJson, fields, arrayClasses );
+        public Enumerable<PolyValue> find( String filterJson, String projectJson, MongoTupleType tupleType ) {
+            return getEntity().find( getMongoDb(), getEntity(), filterJson, projectJson, tupleType );
         }
 
 
@@ -439,13 +477,13 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
             try {
                 final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
 
-                return Linq4j.asEnumerable( Collections.singletonList( changes ) );
+                return Linq4j.asEnumerable( Collections.singletonList( PolyLong.of( changes ) ) );
             } catch ( MongoException e ) {
                 mongoEntity.getTransactionProvider().rollback( xid );
                 log.warn( "Failed" );
                 log.warn( String.format( "op: %s\nfilter: %s\nops: [%s]", operation.name(), filter, String.join( ";", operations ) ) );
                 log.warn( e.getMessage() );
-                throw new RuntimeException( e.getMessage(), e );
+                throw new GenericRuntimeException( e.getMessage(), e );
             }
         }
 
@@ -456,7 +494,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
             long changes = 0;
             switch ( operation ) {
                 case INSERT:
-                    if ( dataContext.getParameterValues().size() != 0 ) {
+                    if ( !dataContext.getParameterValues().isEmpty() ) {
                         assert operations.size() == 1;
                         // prepared
                         MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
@@ -473,7 +511,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
                 case UPDATE:
                     assert operations.size() == 1;
                     // we use only update docs
-                    if ( dataContext.getParameterValues().size() != 0 ) {
+                    if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared we use document update not pipeline
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
                         MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
@@ -522,7 +560,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
                     break;
 
                 case DELETE:
-                    if ( dataContext.getParameterValues().size() != 0 ) {
+                    if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared
                         MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext );
                         List<? extends WriteModel<Document>> filters;
@@ -550,7 +588,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
                     break;
 
                 case MERGE:
-                    throw new RuntimeException( "MERGE IS NOT SUPPORTED" );
+                    throw new GenericRuntimeException( "MERGE IS NOT SUPPORTED" );
             }
             return changes;
 

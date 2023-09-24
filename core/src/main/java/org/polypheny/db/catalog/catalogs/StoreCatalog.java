@@ -66,12 +66,12 @@ public abstract class StoreCatalog {
     public StoreCatalog(
             long adapterId,
             @Deserialize("namespace") Map<Long, Namespace> namespaces,
-            @Deserialize("tables") Map<Long, ? extends PhysicalEntity> entities,
+            @Deserialize("physicals") Map<Long, ? extends PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, ? extends AllocationEntity> allocations,
             @Deserialize("allocRelations") Map<Long, Set<Long>> allocToPhysicals ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
-        this.physicals = new ConcurrentHashMap<>( entities );
+        this.physicals = new ConcurrentHashMap<>( physicals );
         this.allocations = new ConcurrentHashMap<>( allocations );
         this.allocToPhysicals = new ConcurrentHashMap<>( allocToPhysicals );
     }

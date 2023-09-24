@@ -90,7 +90,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.schema.types.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlFunction;
@@ -1005,8 +1005,8 @@ public class JdbcRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final RelModify<?> modify = call.alg( 0 );
-            if ( modify.getEntity().unwrap( JdbcEntity.class ) != null ) {
-                JdbcEntity table = modify.getEntity().unwrap( JdbcEntity.class );
+            if ( modify.getEntity().unwrap( JdbcTable.class ) != null ) {
+                JdbcTable table = modify.getEntity().unwrap( JdbcTable.class );
                 return out.getJdbcSchema() == table.getSchema();
             }
             return false;
@@ -1016,7 +1016,7 @@ public class JdbcRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
+            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 return null;
             }
@@ -1024,7 +1024,7 @@ public class JdbcRules {
             return new JdbcTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity().unwrap( JdbcEntity.class ),
+                    modify.getEntity().unwrap( JdbcTable.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),
@@ -1038,7 +1038,7 @@ public class JdbcRules {
     /**
      * Table-modification operator implemented in JDBC convention.
      */
-    public static class JdbcTableModify extends RelModify<JdbcEntity> implements JdbcAlg {
+    public static class JdbcTableModify extends RelModify<JdbcTable> implements JdbcAlg {
 
         private final Expression expression;
 
@@ -1046,7 +1046,7 @@ public class JdbcRules {
         public JdbcTableModify(
                 AlgOptCluster cluster,
                 AlgTraitSet traitSet,
-                JdbcEntity table,
+                JdbcTable table,
                 AlgNode input,
                 Operation operation,
                 List<String> updateColumnList,
@@ -1055,7 +1055,7 @@ public class JdbcRules {
             super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
             assert input.getConvention() instanceof JdbcConvention;
             assert getConvention() instanceof JdbcConvention;
-            final ModifiableEntity modifiableTable = table.unwrap( ModifiableEntity.class );
+            final ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
             if ( modifiableTable == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }

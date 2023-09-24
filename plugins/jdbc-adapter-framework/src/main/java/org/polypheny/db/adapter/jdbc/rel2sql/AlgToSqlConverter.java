@@ -46,7 +46,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.adapter.jdbc.JdbcEntity;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.JoinConditionType;
@@ -453,7 +453,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcEntity.class ) );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ) );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -466,7 +466,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getEntity().unwrap( JdbcEntity.class ),
+                                modify.getEntity().unwrap( JdbcTable.class ),
                                 modify.getInput().getRowType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -475,7 +475,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().unwrap( JdbcEntity.class ), modify.getUpdateColumnList() ),
+                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ), modify.getUpdateColumnList() ),
                         exprList( context, modify.getSourceExpressionList() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),
@@ -518,7 +518,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
-    private SqlNodeList physicalIdentifierList( JdbcEntity entity, List<String> columnNames ) {
+    private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
         return new SqlNodeList( entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).collect( Collectors.toList() ), POS );
     }
 
@@ -660,7 +660,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     }
 
 
-    public abstract SqlIdentifier getPhysicalTableName( JdbcEntity tableName );
+    public abstract SqlIdentifier getPhysicalTableName( JdbcTable tableName );
 
 
     /**
@@ -691,7 +691,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
 
         @Override
-        public SqlIdentifier getPhysicalTableName( JdbcEntity placement ) {
+        public SqlIdentifier getPhysicalTableName( JdbcTable placement ) {
             return new SqlIdentifier( placement.name, POS );
         }
 
