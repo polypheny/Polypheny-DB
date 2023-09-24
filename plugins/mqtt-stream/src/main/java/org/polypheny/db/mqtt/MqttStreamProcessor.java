@@ -43,14 +43,13 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
     private final Statement statement;
 
 
-    public MqttStreamProcessor( MqttMessage mqttMessage, String filterQuery, Statement statement ) {
-        super( mqttMessage.getMessage() );
-        this.filterQuery = filterQuery;
+    public MqttStreamProcessor( FilteringMqttMessage filteringMqttMessage, Statement statement ) {
+        super( filteringMqttMessage.getMessage() );
+        this.filterQuery = filteringMqttMessage.getQuery();
         this.statement = statement;
     }
 
 
-    //TODO: in Tutorial schreiben, was allgemein für Strings gilt
     public boolean applyFilter() {
         AlgRoot root = processMqlQuery();
         List<List<Object>> res = executeAndTransformPolyAlg( root, statement );
@@ -79,9 +78,9 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
         } else if ( isNumber( msg ) ) {
             double value = Double.parseDouble( msg );
             msgDoc = new BsonDocument( "$$ROOT", new BsonDouble( value ) );
-        } else if ( isBoolean( msg ) ) {
+        /*} else if ( isBoolean( msg ) ) {
             boolean value = Boolean.parseBoolean( msg );
-            msgDoc = new BsonDocument( "$$ROOT", new BsonBoolean( value ) );
+            msgDoc = new BsonDocument( "$$ROOT", new BsonBoolean( value ) );*/
         } else {
             // msg is String
             msgDoc = new BsonDocument( "$$ROOT", new BsonString( msg ) );

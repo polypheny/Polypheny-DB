@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamServer;
+import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamClient;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -48,7 +48,7 @@ public class MqttStreamClientTest {
     static Map<String, String> initialSettings = new HashMap<>();
     static Map<String, String> changedSettings = new HashMap<>();
 
-    MqttStreamServer client;
+    MqttStreamClient client;
 
 
     @BeforeClass
@@ -75,7 +75,7 @@ public class MqttStreamClientTest {
 
         QueryInterface iface = QueryInterfaceManager.getInstance().getQueryInterface( "mqtt" );
 
-        client = new MqttStreamServer(
+        client = new MqttStreamClient(
                 transactionManager,
                 null,
                 iface.getQueryInterfaceId(),
@@ -89,11 +89,6 @@ public class MqttStreamClientTest {
         //changedSettings.put( "namespaceType", "DOCUMENT");
         changedSettings.put( "topics", "" );
         changedSettings.put( "filterQuery", "" );
-    }
-
-
-    @Test
-    public void UITest() { // TODO: UI komponenten testen
     }
 
 
@@ -275,6 +270,11 @@ public class MqttStreamClientTest {
         MqttUserPropertiesImplBuilder.Default defaultProperties = new Default();
         Mqtt5Publish message = new MqttPublish( MqttTopicImpl.of( "topic1" ), ByteBuffer.wrap( "payload".getBytes() ), MqttQos.AT_LEAST_ONCE, false, 10, null, null, null, null, defaultProperties.build(), null );
         client.processMsg( message );
+        //TODO: was prüfe ich hier????
+        // ob die zwei Maps richtig gestzt wurden.
+        String[] messageInQueue = client.getMessageQueue().peek();
+        assertEquals( "topic1",  messageInQueue[0] );
+        assertEquals( "payload",  messageInQueue[1] );
     }
 
 }

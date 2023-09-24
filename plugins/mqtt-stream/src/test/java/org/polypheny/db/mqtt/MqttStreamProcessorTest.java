@@ -42,9 +42,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":10}";
-
         MqttMessage mqttMessage = new MqttMessage( "10", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue(streamProcessor.applyFilter());
 
     }
@@ -54,10 +54,10 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":10}";
-
-        MqttMessage mqttMessage1 = new MqttMessage( "15", "button/battery" );
-        MqttStreamProcessor streamProcessor1 = new MqttStreamProcessor( mqttMessage1, filterQuery, st );
-        assertFalse(streamProcessor1.applyFilter());
+        MqttMessage mqttMessage = new MqttMessage(  "15", "button/battery" );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
+        assertFalse(streamProcessor.applyFilter());
 
     }
 
@@ -67,10 +67,10 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":\"shouldMatch\"}";
-
-        MqttMessage mqttMessage2 = new MqttMessage( "shouldMatch", "button/battery" );
-        MqttStreamProcessor streamProcessor2 = new MqttStreamProcessor( mqttMessage2, filterQuery, st );
-        assertTrue(streamProcessor2.applyFilter());
+        MqttMessage mqttMessage = new MqttMessage(  "shouldMatch", "button/battery" );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
+        assertTrue(streamProcessor.applyFilter());
 
     }
 
@@ -80,8 +80,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":\"shouldNot\"}";
-        MqttMessage mqttMessage2 = new MqttMessage( "shouldNotMatch", "button/battery" );
-        MqttStreamProcessor streamProcessor2 = new MqttStreamProcessor( mqttMessage2, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage( "shouldNotMatch", "button/battery" );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor2 = new MqttStreamProcessor( filteringMqttMessage, st );
         assertFalse(streamProcessor2.applyFilter());
     }
 
@@ -92,7 +93,8 @@ public class MqttStreamProcessorTest {
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":10}";
         MqttMessage mqttMessage = new MqttMessage( "[10]", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter() );
     }
 
@@ -103,7 +105,8 @@ public class MqttStreamProcessorTest {
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":[10]}";
         MqttMessage mqttMessage = new MqttMessage( "[10]", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter() );
     }
 
@@ -113,8 +116,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":10}";
-        MqttMessage mqttMessage = new MqttMessage( "[15, 14]", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage( "[15, 14]", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage(mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertFalse( streamProcessor.applyFilter());
     }
 
@@ -123,17 +127,19 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":true}";
-        MqttMessage mqttMessage = new MqttMessage( "true", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
-        assertFalse( streamProcessor.applyFilter());
+        MqttMessage mqttMessage = new MqttMessage("true", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
+        assertTrue( streamProcessor.applyFilter());
     }
     @Test
     public void filterTestForBooleanMessageFalse() {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"$$ROOT\":true}";
-        MqttMessage mqttMessage = new MqttMessage( "false", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage("false", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertFalse( streamProcessor.applyFilter());
     }
 
@@ -143,8 +149,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"count\":10}";
-        MqttMessage mqttMessage = new MqttMessage( "{\"count\":10}", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage( "{\"count\":10}", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage(mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter());
     }
 
@@ -154,8 +161,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"array\":10}";
-        MqttMessage mqttMessage = new MqttMessage( "{\"array\":[10]}", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage( "{\"array\":[10]}", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage(mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter());
     }
 
@@ -165,8 +173,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"content\":\"online\"}";
-        MqttMessage mqttMessage = new MqttMessage( "{\"content\":\"online\"}", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage("{\"content\":\"online\"}", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter());
     }
 
@@ -175,8 +184,9 @@ public class MqttStreamProcessorTest {
         Transaction transaction = TestHelper.getInstance().getTransaction();
         Statement st = transaction.createStatement();
         String filterQuery = "{\"content\":\"online\"}";
-        MqttMessage mqttMessage = new MqttMessage( "{\"content\":\"online\"}", "button/battery" );
-        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, st );
+        MqttMessage mqttMessage = new MqttMessage( "{\"content\":\"online\"}", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage(mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
         assertTrue( streamProcessor.applyFilter());
     }
 

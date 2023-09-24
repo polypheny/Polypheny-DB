@@ -16,8 +16,20 @@
 
 package org.polypheny.db.mqtt;
 
-public class PublishingMqttMessage {
+import lombok.Getter;
 
-    MqttMessage msg;
+public class FilteringMqttMessage {
+    private MqttMessage mqttMessage;
+    @Getter
+    private String query;
+    public FilteringMqttMessage( MqttMessage mqttMessage, String query ) {
+        this.mqttMessage = mqttMessage;
+        this.query = query;
+    }
+
+
+    public String getMessage() {
+        return mqttMessage.getMessage();
+    }
 
 }

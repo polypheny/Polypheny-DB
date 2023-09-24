@@ -19,7 +19,6 @@ package org.polypheny.db.mqtt;
 
 import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
 import java.io.File;
@@ -103,19 +102,19 @@ public class MqttStreamPlugin extends Plugin {
         mqttDefaultSettings.put( "commonCollection", "false" );
         mqttDefaultSettings.put( "commonCollectionName", "" );
         mqttDefaultSettings.put( "Query Interface Name", "mqtt" );
-        QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamServer.class, mqttDefaultSettings );
+        QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamClient.class, mqttDefaultSettings );
     }
 
 
     @Override
     public void stop() {
-        QueryInterfaceManager.removeInterfaceType( MqttStreamServer.class );
+        QueryInterfaceManager.removeInterfaceType( MqttStreamClient.class );
     }
 
 
     @Slf4j
     @Extension
-    public static class MqttStreamServer extends QueryInterface {
+    public static class MqttStreamClient extends QueryInterface {
 
         @SuppressWarnings("WeakerAccess")
         public static final String INTERFACE_NAME = "MQTT Interface";
@@ -167,7 +166,7 @@ public class MqttStreamPlugin extends Plugin {
         private final MonitoringPage monitoringPage;
 
 
-        public MqttStreamServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        public MqttStreamClient( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
             super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
             // Add information page
             this.monitoringPage = new MonitoringPage();
@@ -228,6 +227,7 @@ public class MqttStreamPlugin extends Plugin {
                         .identifier( getUniqueName() )
                         .serverHost( brokerAddress )
                         .serverPort( brokerPort )
+                        .automaticReconnectWithDefaultConfig()
                         .sslConfig()
                         //TODO: delete or enter password from GUI password thinghere and in method
                         .keyManagerFactory( SslHelper.createKeyManagerFactory( "polyphenyClient.crt", "polyphenyClient.key", "" ) )
@@ -239,6 +239,7 @@ public class MqttStreamPlugin extends Plugin {
                         .identifier( getUniqueName() )
                         .serverHost( brokerAddress )
                         .serverPort( brokerPort )
+                        .automaticReconnectWithDefaultConfig()
                         .buildAsync();
             }
 
@@ -571,8 +572,8 @@ public class MqttStreamPlugin extends Plugin {
 
             String topic = subMsg.getTopic().toString();
             String message = extractPayload( subMsg );
-            MqttMessage mqttMessage = new MqttMessage( message, topic );
             addMessageToQueue( topic, message );
+            MqttMessage mqttMessage = new MqttMessage( message, topic );
 
             String wildcardTopic = "";
             if ( !topicsMap.containsKey( topic ) ) {
@@ -584,36 +585,38 @@ public class MqttStreamPlugin extends Plugin {
 
             if ( this.filterMap.containsKey( topic ) ) {
                 String filterQuery = this.filterMap.get( topic );
-                MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, statement );
+                FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+                MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, statement );
                 // false is returned when a message should not be stored in DB
                 if ( streamProcessor.applyFilter() ) {
-                    insert( mqttMessage, transaction );
+                    insertInEntity( mqttMessage, transaction );
                 }
             } else if ( !wildcardTopic.isEmpty() && this.filterMap.containsKey( wildcardTopic ) ) {
                 String filterQuery = this.filterMap.get( wildcardTopic );
-                MqttStreamProcessor streamProcessor = new MqttStreamProcessor( mqttMessage, filterQuery, statement );
+                FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage( mqttMessage, filterQuery );
+                MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, statement );
                 if ( streamProcessor.applyFilter() ) {
-                    insert( mqttMessage, transaction );
+                    insertInEntity( mqttMessage, transaction );
                 }
             } else {
-                insert( mqttMessage, transaction );
+                insertInEntity( mqttMessage, transaction );
             }
         }
 
 
-        private void insert( MqttMessage mqttMessage, Transaction transaction ) {
-            ReceivedMqttMessage receivedMqttMessage;
+        private void insertInEntity( MqttMessage mqttMessage, Transaction transaction ) {
+            StoringMqttMessage storingMqttMessage;
             synchronized ( settingsLock ) {
                 if ( !this.commonCollection.get() ) {
                     String collectionToBeSaved;
                     collectionToBeSaved = mqttMessage.getTopic().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
-                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, collectionToBeSaved );
+                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, collectionToBeSaved );
                 } else {
-                    receivedMqttMessage = new ReceivedMqttMessage( mqttMessage, this.namespaceName, getNamespaceId( this.namespaceName, this.namespaceType ), this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.commonCollectionName );
+                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.commonCollectionName );
                 }
             }
             StreamCapture streamCapture = new StreamCapture( transaction );
-            streamCapture.insert( receivedMqttMessage );
+            streamCapture.insert( storingMqttMessage );
         }
 
 
@@ -694,9 +697,13 @@ public class MqttStreamPlugin extends Plugin {
             }
             try {
                 List<DataStore> dataStores = new ArrayList<>();
-                //TODO: StreamCollection einbinden
-                DdlManager.getInstance().createCollection( namespaceID, collectionName, true,   //only creates collection if it does not already exist.
-                        dataStores.size() == 0 ? null : dataStores, PlacementType.MANUAL, statement );
+                DdlManager.getInstance().createCollection(
+                        namespaceID,
+                        collectionName,
+                        true,   //only creates collection if it does not already exist.
+                        dataStores.size() == 0 ? null : dataStores,
+                        PlacementType.MANUAL,
+                        statement );
                 transaction.commit();
             } catch ( EntityAlreadyExistsException | TransactionException e ) {
                 throw new RuntimeException( "Error while creating a new collection:", e );
@@ -935,19 +942,18 @@ public class MqttStreamPlugin extends Plugin {
 
                 informationGroupPub = new InformationGroup( informationPage, "Publish a message" ).setOrder( 3 );
                 im.addGroup( informationGroupPub );
-                msgButton = new InformationAction( informationGroupPub, "Send a msg", ( parameters ) -> {
-                    String end = "Msg was published!";
+                msgButton = new InformationAction( informationGroupPub, "Publish", ( parameters ) -> {
+                    String end = "Message was published!";
                     try {
                         client.publishWith()
                                 .topic( parameters.get( "topic" ) )
-                                .payload( parameters.get( "msg" ).getBytes() )
-                                .qos( MqttQos.AT_LEAST_ONCE )
+                                .payload( parameters.get( "payload" ).getBytes() )
                                 .send();
                     } catch ( IllegalArgumentException e ) {
                         throw new RuntimeException( e );
                     }
                     return end;
-                } ).withParameters( "topic", "msg" );
+                } ).withParameters( "topic", "payload" );
                 im.registerInformation( msgButton );
 
                 // Reconnection button

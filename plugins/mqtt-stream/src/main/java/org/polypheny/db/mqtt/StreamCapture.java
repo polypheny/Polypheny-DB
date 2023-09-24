@@ -18,8 +18,13 @@ package org.polypheny.db.mqtt;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
+import org.bson.BsonInt32;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -36,7 +41,7 @@ public class StreamCapture {
 
     Transaction transaction;
     PolyphenyHomeDirManager homeDirManager;
-    ReceivedMqttMessage receivedMqttMessage;
+    StoringMqttMessage storingMqttMessage;
 
 
     StreamCapture( final Transaction transaction ) {
@@ -44,23 +49,40 @@ public class StreamCapture {
     }
 
 
-    public void insert( ReceivedMqttMessage receivedMqttMessage ) {
-        this.receivedMqttMessage = receivedMqttMessage;
+    public void insert( StoringMqttMessage storingMqttMessage ) {
+        this.storingMqttMessage = storingMqttMessage;
         insertMessage();
     }
 
 
     private void insertMessage() {
-        String sqlCollectionName = this.receivedMqttMessage.getNamespaceName() + "." + this.receivedMqttMessage.getCollectionName();
+        String sqlCollectionName = this.storingMqttMessage.getNamespaceName() + "." + this.storingMqttMessage.getEntityName();
         Statement statement = transaction.createStatement();
 
         // Builder which allows to construct the algebra tree which is equivalent to query and is executed
         AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
 
         BsonDocument document = new BsonDocument();
-        document.put( "source", new BsonString( this.receivedMqttMessage.getUniqueNameOfInterface() ) );
-        document.put( "topic", new BsonString( this.receivedMqttMessage.getTopic() ) );
-        document.put( "content", new BsonString( this.receivedMqttMessage.getMessage() ) );
+        document.put( "source", new BsonString( this.storingMqttMessage.getUniqueNameOfInterface() ) );
+        document.put( "topic", new BsonString( this.storingMqttMessage.getTopic() ) );
+        String msg = this.storingMqttMessage.getMessage();
+        BsonValue value;
+        if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
+            value = BsonDocument.parse( msg );
+        } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
+            BsonArray bsonArray = new BsonArray();
+            msg = msg.replace( "[", "" ).replace( "]", "" );
+            String[] msglist = msg.split( "," );
+            for ( String stringValue : msglist ) {
+                stringValue = stringValue.trim();
+                bsonArray.add( getBsonValue( stringValue ) );
+            }
+            value = bsonArray;
+        } else {
+            // msg is a single value
+            value = getBsonValue( msg );
+        }
+        document.put( "payload", value );
 
         AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
 
@@ -73,6 +95,51 @@ public class StreamCapture {
             throw new RuntimeException( e );
         }
     }
+
+
+    /**
+     * turns one single value into the corresponding BsonValue
+     * @param value value that has to be casted as String
+     * @return
+     */
+    protected BsonValue getBsonValue(String value) {
+        if ( isInteger( value ) ) {
+            return new BsonInt32(Integer.parseInt( value ) );
+        } else if ( isDouble( value ) ) {
+            return new BsonDouble(Double.parseDouble( value ) );
+        } else if ( isBoolean( value ) ) {
+            return new BsonBoolean( Boolean.parseBoolean( value ) );
+        } else {
+            return new BsonString( value );
+        }
+    }
+
+
+    public boolean isDouble( String value ) {
+        try {
+            Double.parseDouble( value );
+        } catch ( NumberFormatException e ) {
+            return false;
+        }
+        return true;
+    }
+
+
+    protected boolean isInteger( String value ) {
+        try {
+            int intNumber = Integer.parseInt( value );
+            double doubleNumber = Double.parseDouble( value );
+            return intNumber == doubleNumber;
+        } catch ( NumberFormatException e ) {
+            return false;
+        }
+    }
+
+
+    public boolean isBoolean( String value ) {
+        return value.equals( "true" ) || value.equals( "false" );
+    }
+
 
 
     List<List<Object>> executeAndTransformPolyAlg( AlgRoot algRoot, Statement statement, final Context ctx ) {
