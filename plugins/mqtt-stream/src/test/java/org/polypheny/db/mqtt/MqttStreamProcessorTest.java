@@ -190,5 +190,17 @@ public class MqttStreamProcessorTest {
         assertTrue( streamProcessor.applyFilter());
     }
 
+//TODO: remove this test:
+    @Test
+    public void nestedDoctest() {
+        Transaction transaction = TestHelper.getInstance().getTransaction();
+        Statement st = transaction.createStatement();
+        String filterQuery = "{\"mqtt.status\":\"online\"}";
+        MqttMessage mqttMessage = new MqttMessage( "{\"mqtt\":{\"status\":\"online\"}}", "button/battery");
+        FilteringMqttMessage filteringMqttMessage = new FilteringMqttMessage(mqttMessage, filterQuery );
+        MqttStreamProcessor streamProcessor = new MqttStreamProcessor( filteringMqttMessage, st );
+        assertTrue( streamProcessor.applyFilter());
+    }
+
 
 }

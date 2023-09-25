@@ -78,9 +78,9 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
         } else if ( isNumber( msg ) ) {
             double value = Double.parseDouble( msg );
             msgDoc = new BsonDocument( "$$ROOT", new BsonDouble( value ) );
-        /*} else if ( isBoolean( msg ) ) {
+        } else if ( isBoolean( msg ) ) {
             boolean value = Boolean.parseBoolean( msg );
-            msgDoc = new BsonDocument( "$$ROOT", new BsonBoolean( value ) );*/
+            msgDoc = new BsonDocument( "$$ROOT", new BsonBoolean( value ) );
         } else {
             // msg is String
             msgDoc = new BsonDocument( "$$ROOT", new BsonString( msg ) );
