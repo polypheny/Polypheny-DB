@@ -23,22 +23,21 @@ import java.util.Iterator;
 /**
  * Iterator that returns at most {@code limit} rows from an underlying {@link Iterator}.
  *
- * @param <E> element type
  */
-public class LimitIterator<E> implements Iterator<E> {
+public class LimitIterator<E> implements Iterator<E[]> {
 
-    private final Iterator<E> iterator;
+    private final Iterator<E[]> iterator;
     private final long limit;
     int i = 0;
 
 
-    private LimitIterator( Iterator<E> iterator, long limit ) {
+    private LimitIterator( Iterator<E[]> iterator, long limit ) {
         this.iterator = iterator;
         this.limit = limit;
     }
 
 
-    public static <E> Iterator<E> of( Iterator<E> iterator, long limit ) {
+    public static <E> Iterator<E[]> of( Iterator<E[]> iterator, long limit ) {
         if ( limit <= 0 ) {
             return iterator;
         }
@@ -53,7 +52,7 @@ public class LimitIterator<E> implements Iterator<E> {
 
 
     @Override
-    public E next() {
+    public E[] next() {
         ++i;
         return iterator.next();
     }

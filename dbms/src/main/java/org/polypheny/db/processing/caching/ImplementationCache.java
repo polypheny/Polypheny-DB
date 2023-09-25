@@ -35,12 +35,13 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class ImplementationCache {
 
     public static final ImplementationCache INSTANCE = new ImplementationCache();
 
-    private final Cache<String, PreparedResult> implementationCache;
+    private final Cache<String, PreparedResult<PolyValue>> implementationCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
@@ -56,8 +57,8 @@ public class ImplementationCache {
     }
 
 
-    public PreparedResult getIfPresent( AlgNode parameterizedNode ) {
-        PreparedResult preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
+    public PreparedResult<PolyValue> getIfPresent( AlgNode parameterizedNode ) {
+        PreparedResult<PolyValue> preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
         if ( preparedResult == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -67,7 +68,7 @@ public class ImplementationCache {
     }
 
 
-    public void put( AlgNode parameterizedNode, PreparedResult preparedResult ) {
+    public void put( AlgNode parameterizedNode, PreparedResult<PolyValue> preparedResult ) {
         implementationCache.put( parameterizedNode.algCompareString(), preparedResult );
     }
 

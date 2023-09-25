@@ -152,10 +152,10 @@ public class LanguageCrud {
 
         ExtendedQueryParameters parameters = new ExtendedQueryParameters( namespaceId );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
-        PolyImplementation<PolyGraph> polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
-        ResultIterator<PolyGraph> iterator = polyImplementation.execute( statement, 1 );
-        List<List<PolyGraph>> res = iterator.getRows();
+        ResultIterator iterator = polyImplementation.execute( statement, 1 );
+        List<List<PolyValue>> res = iterator.getRows();
 
         try {
             iterator.close();
@@ -164,7 +164,7 @@ public class LanguageCrud {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
-        return res.get( 0 ).get( 0 );
+        return res.get( 0 ).get( 0 ).asGraph();
     }
 
 
@@ -190,7 +190,7 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result<?, ?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, final boolean noLimit ) {
+    public static Result<?, ?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
         Catalog catalog = Catalog.getInstance();
 
         if ( language == QueryLanguage.from( "mongo" ) ) {
@@ -199,7 +199,7 @@ public class LanguageCrud {
             return getGraphResult( statement, language, request, query, implementation, transaction, noLimit );
         }
 
-        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<List<PolyValue>> rows = iterator.getRows();
         try {
             iterator.close();
@@ -259,9 +259,9 @@ public class LanguageCrud {
     }
 
 
-    private static GraphResult getGraphResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
+    private static GraphResult getGraphResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
 
-        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue[]> data = iterator.getArrayRows();
         try {
             iterator.close();
@@ -281,9 +281,9 @@ public class LanguageCrud {
     }
 
 
-    private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation<PolyValue> implementation, Transaction transaction, boolean noLimit ) {
+    private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
 
-        ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
         List<PolyValue> data = iterator.getSingleRows();
         try {
             iterator.close();

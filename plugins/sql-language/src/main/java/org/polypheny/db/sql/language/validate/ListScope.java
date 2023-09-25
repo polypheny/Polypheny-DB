@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.MonikerType;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -102,10 +103,10 @@ public abstract class ListScope extends DelegatingScope {
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
             final CatalogEntity table = child.namespace.getTable();
             if ( table != null ) {
-                LogicalEntity entity = getEntity( names );
-                if ( entity != null
-                        && entity.name.equals( table.name )
-                        && entity.namespaceId == table.namespaceId ) {
+                Optional<? extends LogicalEntity> optionalEntity = getEntity( names );
+                if ( optionalEntity.isPresent()
+                        && optionalEntity.get().name.equals( table.name )
+                        && optionalEntity.get().namespaceId == table.namespaceId ) {
                     return child;
                 }
             }
@@ -114,11 +115,11 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
-    private LogicalEntity getEntity( List<String> names ) {
+    private Optional<? extends LogicalEntity> getEntity( List<String> names ) {
         if ( names.size() == 2 ) {
-            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
+            return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
         } else if ( names.size() == 1 ) {
-            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) ).orElseThrow();
+            return validator.snapshot.rel().getTable( Catalog.defaultNamespaceId, names.get( 0 ) );
         } else {
             throw new GenericRuntimeException( "Table is not known" );
         }
@@ -169,7 +170,7 @@ public abstract class ListScope extends DelegatingScope {
                 map.put( child.name, child );
             }
         }
-        if ( map.size() == 0 ) {
+        if ( map.isEmpty() ) {
             return parent.findQualifyingTableNames( columnName, ctx, nameMatcher );
         }
         return map;

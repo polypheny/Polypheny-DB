@@ -36,7 +36,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -124,7 +123,7 @@ public class PigLanguagePlugin extends PolyPlugin {
                 statement.getOverviewDuration().stop( "Translation" );
             }
 
-            PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             Result<?, ?> result = LanguageCrud.getResult( language, statement, request, query, polyImplementation, transaction, request.noLimit );
 

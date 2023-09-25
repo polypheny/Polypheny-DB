@@ -27,7 +27,6 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
@@ -59,6 +58,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -225,7 +225,7 @@ public class MongoRules {
             return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
         }
         RexCall names = (RexCall) call.operands.get( 1 );
-        if ( names.operands.size() == 0 ) {
+        if ( names.operands.isEmpty() ) {
             return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() ) );
         }
 
@@ -243,7 +243,7 @@ public class MongoRules {
      */
     static class RexToMongoTranslator extends RexVisitorImpl<String> {
 
-        private final JavaTypeFactory typeFactory;
+        private final AlgDataTypeFactory typeFactory;
         private final List<String> inFields;
 
         static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
@@ -292,7 +292,7 @@ public class MongoRules {
         private final Implementor implementor;
 
 
-        protected RexToMongoTranslator( JavaTypeFactory typeFactory, List<String> inFields, Implementor implementor ) {
+        protected RexToMongoTranslator( AlgDataTypeFactory typeFactory, List<String> inFields, Implementor implementor ) {
             super( true );
             this.implementor = implementor;
             this.typeFactory = typeFactory;

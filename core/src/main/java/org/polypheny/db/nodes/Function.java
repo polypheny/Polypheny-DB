@@ -30,6 +30,7 @@ public interface Function extends Operator {
     @Nonnull
     FunctionCategory getFunctionCategory();
 
+    @Getter
     @AllArgsConstructor
     enum FunctionType {
         COUNT( true ),
@@ -38,7 +39,6 @@ public interface Function extends Operator {
         CAST( false ),
         OTHER( false );
 
-        @Getter
         private final boolean isAgg;
 
     }

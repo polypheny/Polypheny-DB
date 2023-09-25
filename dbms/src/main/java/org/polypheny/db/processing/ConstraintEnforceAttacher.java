@@ -648,7 +648,7 @@ public class ConstraintEnforceAttacher {
                     QueryProcessor processor = statement.getQueryProcessor();
                     List<EnforcementInformation> infos = ConstraintEnforceAttacher
                             .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
-                    List<PolyImplementation<?>> results = infos
+                    List<PolyImplementation> results = infos
                             .stream()
                             .map( s -> processor.prepareQuery( AlgRoot.of( s.getControl(), Kind.SELECT ), false ) )
                             .collect( Collectors.toList() );

@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,17 +32,26 @@ public abstract class Information {
 
     /**
      * The id needs to be unique for every Information object.
+     * -- GETTER --
+     *  Get the id of this Information object.
+     *
+     * @return id of this Information object
+
      */
+    @Getter
+    @JsonSerialize
     private final String id;
 
     /**
      * The field type is used by Gson and is needed for the frontend.
      */
+    @JsonSerialize
     String type;
 
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
      */
+    @JsonSerialize
     private final String groupId;
 
     /**
@@ -51,6 +61,7 @@ public abstract class Information {
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     @Getter
     @Setter
+    @JsonSerialize
     private int uiOrder;
 
     /**
@@ -70,16 +81,6 @@ public abstract class Information {
         this.id = id;
         this.groupId = groupId;
         this.type = this.getClass().getSimpleName();
-    }
-
-
-    /**
-     * Get the id of this Information object.
-     *
-     * @return id of this Information object
-     */
-    public String getId() {
-        return id;
     }
 
 

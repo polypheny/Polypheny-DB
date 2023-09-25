@@ -327,7 +327,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                     Expressions.return_(
                             null,
                             Expressions.call(
-                                    BuiltInMethod.SINGLETON_ENUMERABLE.method,
+                                    BuiltInMethod.SINGLETON_ARRAY_ENUMERABLE.method,
                                     Expressions.call(
                                             childExp,
                                             BuiltInMethod.AGGREGATE.method,

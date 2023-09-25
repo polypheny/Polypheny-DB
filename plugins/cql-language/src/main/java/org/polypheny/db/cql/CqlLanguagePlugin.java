@@ -39,7 +39,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -130,7 +129,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
                 statement.getOverviewDuration().start( "Translation" );
             }
 
-            PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( algRoot, true );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Execution" );

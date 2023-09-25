@@ -52,6 +52,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -735,7 +736,7 @@ public class RexToLixTranslator {
      *
      * @throws AlwaysNull if literal is null but {@code nullAs} is {@link RexImpTable.NullAs#NOT_POSSIBLE}.
      */
-    public static Expression translateLiteral( RexLiteral literal, AlgDataType type, JavaTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
+    public static Expression translateLiteral( RexLiteral literal, AlgDataType type, AlgDataTypeFactory typeFactory, RexImpTable.NullAs nullAs ) {
         if ( literal.isNull() ) {
             switch ( nullAs ) {
                 case TRUE:

@@ -107,7 +107,7 @@ public class ExploreQueryProcessor {
 
 
     private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
-        PolyImplementation<PolyValue> result;
+        PolyImplementation result;
         try {
             result = processQuery( statement, sqlSelect );
         } catch ( Throwable t ) {
@@ -154,8 +154,8 @@ public class ExploreQueryProcessor {
     }
 
 
-    private PolyImplementation<PolyValue> processQuery( Statement statement, String sql ) {
-        PolyImplementation<PolyValue> result;
+    private PolyImplementation processQuery( Statement statement, String sql ) {
+        PolyImplementation result;
         Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );

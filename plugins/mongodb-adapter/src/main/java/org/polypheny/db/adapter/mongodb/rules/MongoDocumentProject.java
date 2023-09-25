@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentProject;
@@ -53,7 +52,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         List<Pair<String, String>> projects = new ArrayList<>();
 
-        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
+        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
         includes.forEach( ( n, p ) -> projects.add( Pair.of( n, p.accept( translator ) ) ) );
         excludes.forEach( n -> projects.add( Pair.of( n, "1" ) ) );
 

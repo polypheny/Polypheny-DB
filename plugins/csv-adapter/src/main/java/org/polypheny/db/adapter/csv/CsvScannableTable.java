@@ -73,7 +73,7 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                return new CsvEnumerator<>( source, cancelFlag, false, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
+                return new CsvEnumerator( source, cancelFlag, false, null, new CsvEnumerator.ArrayRowConverter( fieldTypes, fields ) );
             }
         };
     }

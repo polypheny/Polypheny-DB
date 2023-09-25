@@ -274,6 +274,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     public PolyphenyDbPrepareImpl() {
     }
 
+
     @Override
     public void executeDdl( Context context, Node node ) {
         if ( node instanceof ExecutableStatement ) {
@@ -291,6 +292,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     protected AlgOptCluster createCluster( AlgOptPlanner planner, RexBuilder rexBuilder, AlgTraitSet traitSet, Snapshot snapshot ) {
         return AlgOptCluster.create( planner, rexBuilder, traitSet, snapshot );
     }
+
 
     /**
      * Creates a query planner and initializes it with a default set of rules.
@@ -351,7 +353,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
         return planner;
     }
-
 
 
     private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, AlgDataType type, AlgDataType fieldType, List<String> origins ) {
@@ -472,7 +473,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     }
 
 
-
     /**
      * Executes a prepare action.
      */
@@ -489,7 +489,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     /**
      * Holds state for the process of preparing a SQL statement.
      */
-    public static class PolyphenyDbPreparingStmt extends Prepare<Object> {
+    public static class PolyphenyDbPreparingStmt extends Prepare<PolyValue> {
 
         protected final AlgOptPlanner planner;
         protected final RexBuilder rexBuilder;
@@ -525,7 +525,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected void init( Class runtimeContextClass ) {
+        protected void init( Class<?> runtimeContextClass ) {
         }
 
 
@@ -556,16 +556,16 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        protected PreparedResult createPreparedExplanation( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
+        protected PreparedResult<PolyValue> createPreparedExplanation( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
             return new PolyphenyDbPreparedExplain( resultType, parameterRowType, root, format, detailLevel );
         }
 
 
         @Override
-        protected PreparedResult implement( AlgRoot root ) {
+        protected PreparedResult<PolyValue> implement( AlgRoot root ) {
             AlgDataType resultType = root.alg.getRowType();
             boolean isDml = root.kind.belongsTo( Kind.DML );
-            final Bindable bindable;
+            final Bindable<PolyValue[]> bindable;
             final String generatedCode;
             if ( resultConvention == BindableConvention.INSTANCE ) {
                 bindable = Interpreters.bindable( root.alg );
@@ -591,7 +591,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     CatalogReader.THREAD_LOCAL.set( snapshot );
                     final Conformance conformance = context.config().conformance();
                     internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
-                    Pair<Bindable<PolyValue>, String> implementationPair = EnumerableInterpretable.toBindable(
+                    Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
                             internalParameters,
                             enumerable,
                             prefer,
@@ -628,7 +628,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
                 @Override
-                public Bindable<Object> getBindable( CursorFactory cursorFactory ) {
+                public Bindable<PolyValue[]> getBindable( CursorFactory cursorFactory ) {
                     return bindable;
                 }
 
@@ -654,17 +654,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
         @Override
-        public Bindable<Object> getBindable( final CursorFactory cursorFactory ) {
+        public Bindable<PolyValue[]> getBindable( final CursorFactory cursorFactory ) {
             final String explanation = getCode();
-            return dataContext -> {
-                switch ( cursorFactory.style ) {
-                    case ARRAY:
-                        return Linq4j.singletonEnumerable( new String[]{ explanation } );
-                    case OBJECT:
-                    default:
-                        return Linq4j.singletonEnumerable( explanation );
-                }
-            };
+            return dataContext -> Linq4j.singletonEnumerable( new PolyValue[]{ PolyString.of( explanation ) } );
         }
 
     }

@@ -39,13 +39,13 @@ import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
-import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -94,11 +94,11 @@ public class MongoFilter extends Filter implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         // to not break the existing functionality for now we have to handle it this way
         Translator translator;
-        if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
+        /*if ( implementor.getStaticRowType() != null && implementor.getStaticRowType() instanceof MongoRowType ) {
             translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), (MongoRowType) implementor.getStaticRowType(), implementor );
-        } else {
-            translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), implementor );
-        }
+        } else {*/
+        translator = new Translator( MongoRules.mongoFieldNames( getRowType() ), getRowType(), implementor );
+        //}
         translator.translateMatch( condition, implementor );
     }
 
@@ -110,7 +110,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         final JsonBuilder builder = new JsonBuilder();
         private final List<String> fieldNames;
-        private final MongoRowType rowType;
+        private final AlgDataType rowType;
         private final List<BsonDocument> ors = new ArrayList<>();
         private final GridFSBucket bucket;
         private final BsonDocument preProjections = new BsonDocument();
@@ -125,7 +125,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        Translator( List<String> fieldNames, MongoRowType rowType, Implementor implementor ) {
+        Translator( List<String> fieldNames, AlgDataType rowType, Implementor implementor ) {
             this.builder.setMongo( true );
             this.fieldNames = fieldNames;
             this.rowType = rowType;
@@ -141,7 +141,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 implementor.add( null, MongoAlg.Implementor.toJson( new BsonDocument( "$match", getFilter( value ) ) ) );
             }
 
-            if ( preProjections.size() != 0 ) {
+            if ( !preProjections.isEmpty() ) {
                 implementor.preProjections.add( preProjections );
             }
         }
@@ -179,7 +179,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
         private BsonDocument asConditionDocument( Map<String, List<BsonValue>> map ) {
-            if ( map.size() == 0 ) {
+            if ( map.isEmpty() ) {
                 return new BsonDocument();
             }
             BsonDocument doc = new BsonDocument();
@@ -193,7 +193,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     ands.addAll( entry.getValue().stream().map( e -> new BsonDocument( entry.getKey(), e ) ).collect( Collectors.toList() ) );
                 }
             }
-            if ( ands.size() != 0 ) {
+            if ( !ands.isEmpty() ) {
                 doc.put( "$and", new BsonArray( ands ) );
             }
             return doc;
@@ -1217,8 +1217,8 @@ public class MongoFilter extends Filter implements MongoAlg {
             // DML (and also DDL) have to use the physical name, as they do not allow
             // to use projections beforehand
             if ( implementor.isDML() ) {
-                if ( rowType != null && rowType.getId( name ) != null ) {
-                    name = rowType.getPhysicalName( name, implementor );
+                if ( rowType != null && rowType.getFieldList().get( input.getIndex() ) != null ) {
+                    name = rowType.getFieldList().get( input.getIndex() ).getPhysicalName();
                 }
                 return name;
             }

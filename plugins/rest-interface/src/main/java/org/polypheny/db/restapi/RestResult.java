@@ -29,10 +29,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,6 +48,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -59,7 +58,7 @@ import org.polypheny.db.util.Pair;
 public class RestResult {
 
     private final Kind kind;
-    private final Iterator<PolyValue> iterator;
+    private final Iterator<PolyValue[]> iterator;
     private final AlgDataType dataType;
     List<ColumnMetaData> columns;
     private List<Map<String, Object>> result;
@@ -72,7 +71,7 @@ public class RestResult {
     ZipOutputStream zipOut;
 
 
-    public RestResult( Kind Kind, Iterator<PolyValue> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
+    public RestResult( Kind Kind, Iterator<PolyValue[]> iterator, AlgDataType dataType, List<ColumnMetaData> columns ) {
         this.kind = Kind;
         this.iterator = iterator;
         this.dataType = dataType;
@@ -91,22 +90,19 @@ public class RestResult {
 
 
     private void transformDML() {
-        Object object;
+        PolyValue[] object;
         int rowsChanged = -1;
         while ( iterator.hasNext() ) {
             object = iterator.next();
             int num;
             if ( object != null && object.getClass().isArray() ) {
-                PolyValue[] o = (PolyValue[]) object;
-                num = o[0].asNumber().intValue();
-            } else if ( object != null ) {
-                num = ((PolyValue) object).asNumber().intValue();
+                num = object[0].asNumber().intValue();
             } else {
-                throw new RuntimeException( "Result is null" );
+                throw new GenericRuntimeException( "Result is null" );
             }
             // Check if num is equal for all stores
             if ( rowsChanged != -1 && rowsChanged != num ) {
-                throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
+                throw new GenericRuntimeException( "The number of changed rows is not equal for all stores!" );
             }
             rowsChanged = num;
         }
@@ -124,12 +120,8 @@ public class RestResult {
         List<Map<String, Object>> result = new ArrayList<>();
         while ( iterator.hasNext() ) {
             Object next = iterator.next();
-            PolyValue[] row;
-            if ( next.getClass().isArray() ) {
-                row = (PolyValue[]) next;
-            } else {
-                row = new PolyValue[]{ (PolyValue) next };
-            }
+            PolyValue[] row = (PolyValue[]) next;
+
             HashMap<String, Object> temp = new HashMap<>();
             int i = 0;
             for ( AlgDataTypeField type : dataType.getFieldList() ) {

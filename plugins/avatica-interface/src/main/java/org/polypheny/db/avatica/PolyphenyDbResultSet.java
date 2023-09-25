@@ -75,9 +75,9 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
         } else {
             columnMetaDataList = ImmutableList.of( ColumnMetaData.dummy( elementType, false ) );
         }
-        final PolyphenyDbSignature<?> signature = (PolyphenyDbSignature<?>) this.signature;
-        final PolyphenyDbSignature<Object> newSignature =
-                new PolyphenyDbSignature<>(
+        final PolyphenyDbSignature signature = (PolyphenyDbSignature) this.signature;
+        final PolyphenyDbSignature newSignature =
+                new PolyphenyDbSignature(
                         signature.sql,
                         signature.parameters,
                         signature.internalParameters,
@@ -108,9 +108,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
 
 
     // Do not make public
-    <T> PolyphenyDbSignature<T> getSignature() {
-        //noinspection unchecked
-        return (PolyphenyDbSignature<T>) signature;
+    PolyphenyDbSignature getSignature() {
+        return (PolyphenyDbSignature) signature;
     }
 
 }

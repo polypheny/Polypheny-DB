@@ -83,7 +83,7 @@ public class PhysTypeImpl implements PhysType {
         if ( optimize ) {
             format = format.optimize( rowType );
         }
-        final Type javaRowClass = format.javaRowClass( typeFactory, rowType );
+        final Type javaRowClass = JavaRowFormat.ARRAY.javaRowClass( typeFactory, rowType );//format.javaRowClass( typeFactory, rowType );
         return new PhysTypeImpl( typeFactory, rowType, javaRowClass, format );
     }
 

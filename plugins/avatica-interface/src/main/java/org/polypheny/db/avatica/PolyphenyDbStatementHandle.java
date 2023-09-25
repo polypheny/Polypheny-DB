@@ -31,8 +31,8 @@ public class PolyphenyDbStatementHandle {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
-    private volatile transient Iterator<Object> openResultSet;
-    private volatile transient PolyphenyDbSignature<?> signature;
+    private volatile transient Iterator<Object[]> openResultSet;
+    private volatile transient PolyphenyDbSignature signature;
     @Setter
     private volatile transient String preparedQuery;
     @Setter
@@ -51,7 +51,7 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized void setOpenResultSet( Iterator<Object> result ) {
+    public synchronized void setOpenResultSet( Iterator<Object[]> result ) {
         if ( this.openResultSet != null ) {
             //  this.openResultSet.close();
         }
@@ -59,7 +59,7 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized void setSignature( PolyphenyDbSignature<?> signature ) {
+    public synchronized void setSignature( PolyphenyDbSignature signature ) {
         this.signature = signature;
         this.openResultSet = null;
         executionStopWatch.reset();

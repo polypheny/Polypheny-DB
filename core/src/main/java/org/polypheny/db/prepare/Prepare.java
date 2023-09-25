@@ -81,6 +81,7 @@ import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.TryThreadLocal;
 import org.polypheny.db.util.trace.PolyphenyDbTimingTracer;
@@ -306,7 +307,7 @@ public abstract class Prepare<T> {
     /**
      * PreparedExplanation is a PreparedResult for an EXPLAIN PLAN statement. It's always good to have an explanation prepared.
      */
-    public abstract static class PreparedExplain implements PreparedResult<Object> {
+    public abstract static class PreparedExplain implements PreparedResult<PolyValue> {
 
         private final AlgDataType rowType;
         private final AlgDataType parameterRowType;
@@ -392,7 +393,7 @@ public abstract class Prepare<T> {
          * @param cursorFactory How to map values into a cursor
          * @return producer of rows resulting from execution
          */
-        Bindable<T> getBindable( Meta.CursorFactory cursorFactory );
+        Bindable<T[]> getBindable( Meta.CursorFactory cursorFactory );
 
     }
 

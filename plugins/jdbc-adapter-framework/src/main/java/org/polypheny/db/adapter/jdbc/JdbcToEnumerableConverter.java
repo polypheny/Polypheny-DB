@@ -185,29 +185,29 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             calendar_ = null;
         }
 
-        if ( fieldCount == 1 ) {
+        /*if ( fieldCount == 1 ) {
             final ParameterExpression value_ = Expressions.parameter( PolyValue.class, builder.newName( "value" ) );
             builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
             generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy, jdbcConvention.dialect );
             builder.add( Expressions.return_( null, value_ ) );
-        } else {
-            final Expression values_ = builder.append(
-                    "values",
-                    Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
-            for ( int i = 0; i < fieldCount; i++ ) {
-                generateGet(
-                        implementor,
-                        physType,
-                        builder,
-                        resultSet_,
-                        i,
-                        Expressions.arrayIndex( values_, Expressions.constant( i ) ),
-                        calendar_,
-                        calendarPolicy,
-                        jdbcConvention.dialect );
-            }
-            builder.add( Expressions.return_( null, values_ ) );
+        } else {*/
+        final Expression values_ = builder.append(
+                "values",
+                Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
+        for ( int i = 0; i < fieldCount; i++ ) {
+            generateGet(
+                    implementor,
+                    physType,
+                    builder,
+                    resultSet_,
+                    i,
+                    Expressions.arrayIndex( values_, Expressions.constant( i ) ),
+                    calendar_,
+                    calendarPolicy,
+                    jdbcConvention.dialect );
         }
+        builder.add( Expressions.return_( null, values_ ) );
+        //}
         final ParameterExpression e_ = Expressions.parameter( SQLException.class, builder.newName( "e" ) );
         final Expression rowBuilderFactory_ =
                 builder0.append(

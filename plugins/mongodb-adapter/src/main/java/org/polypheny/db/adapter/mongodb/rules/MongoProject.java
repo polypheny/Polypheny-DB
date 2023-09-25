@@ -26,7 +26,6 @@ import lombok.Getter;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
@@ -74,7 +73,7 @@ public class MongoProject extends Project implements MongoAlg {
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
 
-        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
+        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
         final List<String> items = new ArrayList<>();
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();

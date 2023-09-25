@@ -154,12 +154,12 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeColStat( Statement statement, AlgNode node, QueryResult queryResult ) throws QueryExecutionException {
-        PolyImplementation<PolyValue> implementation;
+        PolyImplementation implementation;
         List<List<PolyValue>> rows;
 
         try {
             implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
-            ResultIterator<PolyValue> iterator = implementation.execute( statement, getPageSize() );
+            ResultIterator iterator = implementation.execute( statement, getPageSize() );
             rows = iterator.getRows();
             iterator.close();
         } catch ( Throwable t ) {

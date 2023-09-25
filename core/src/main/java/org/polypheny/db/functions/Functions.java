@@ -868,8 +868,6 @@ public class Functions {
         }
         return b0.equals( b1 );
     }*/
-
-
     public static PolyBoolean eq( PolyNumber b0, PolyNumber b1 ) {
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.FALSE;
@@ -924,7 +922,6 @@ public class Functions {
     public static PolyBoolean ne( PolyValue b0, PolyValue b1 ) {
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
-
 
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (at least one operand has ANY type, including String; neither may be null).
@@ -4024,6 +4021,12 @@ public class Functions {
                     + '}';
         }
 
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> singletonEnumerable( Object value ) {
+        return Linq4j.singletonEnumerable( new PolyValue[]{ (PolyValue) value } );
     }
 
 

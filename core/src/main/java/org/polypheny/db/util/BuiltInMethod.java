@@ -210,6 +210,7 @@ public enum BuiltInMethod {
     SKIP( ExtendedEnumerable.class, "skip", int.class ),
     TAKE( ExtendedEnumerable.class, "take", int.class ),
     SINGLETON_ENUMERABLE( Linq4j.class, "singletonEnumerable", Object.class ),
+    SINGLETON_ARRAY_ENUMERABLE( Functions.class, "singletonEnumerable", PolyValue.class ),
     EMPTY_ENUMERABLE( Linq4j.class, "emptyEnumerable" ),
     NULLS_COMPARATOR( org.apache.calcite.linq4j.function.Functions.class, "nullsComparator", boolean.class, boolean.class ),
     ARRAY_COMPARER( org.apache.calcite.linq4j.function.Functions.class, "arrayComparer" ),

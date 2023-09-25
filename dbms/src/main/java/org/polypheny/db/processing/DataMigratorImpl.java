@@ -120,19 +120,19 @@ public class DataMigratorImpl implements DataMigrator {
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
-        PolyImplementation<Object> result = statement.getQueryProcessor().prepareQuery(
+        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
                 algRoot,
                 algRoot.alg.getCluster().getTypeFactory().builder().build(),
                 true,
                 false,
                 false );
 
-        final Enumerable<Object> enumerable = result.enumerable( statement.getDataContext() );
+        final Enumerable<PolyValue[]> enumerable = result.enumerable( statement.getDataContext() );
 
-        Iterator<Object> sourceIterator = enumerable.iterator();
+        Iterator<PolyValue[]> sourceIterator = enumerable.iterator();
 
         if ( sourceIterator.hasNext() ) {
-            PolyGraph graph = (PolyGraph) sourceIterator.next();
+            PolyGraph graph = sourceIterator.next()[0].asGraph();
 
             if ( graph.getEdges().isEmpty() && graph.getNodes().isEmpty() ) {
                 // nothing to copy
@@ -156,9 +156,9 @@ public class DataMigratorImpl implements DataMigrator {
                     false,
                     false );
 
-            final Enumerable<Object> modifyEnumerable = result.enumerable( statement.getDataContext() );
+            final Enumerable<PolyValue[]> modifyEnumerable = result.enumerable( statement.getDataContext() );
 
-            Iterator<Object> modifyIterator = modifyEnumerable.iterator();
+            Iterator<PolyValue[]> modifyIterator = modifyEnumerable.iterator();
             if ( modifyIterator.hasNext() ) {
                 modifyIterator.next();
             }
@@ -185,16 +185,16 @@ public class DataMigratorImpl implements DataMigrator {
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
-        PolyImplementation<PolyValue> result = statement.getQueryProcessor().prepareQuery(
+        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
                 algRoot,
                 algRoot.alg.getCluster().getTypeFactory().builder().build(),
                 true,
                 false,
                 false );
 
-        final Enumerable<PolyValue> enumerable = result.enumerable( statement.getDataContext() );
+        final Enumerable<PolyValue[]> enumerable = result.enumerable( statement.getDataContext() );
 
-        Iterator<PolyValue> sourceIterator = enumerable.iterator();
+        Iterator<PolyValue[]> sourceIterator = enumerable.iterator();
 
         if ( sourceIterator.hasNext() ) {
             // we have a new statement
@@ -224,10 +224,10 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private LogicalDocumentValues getLogicalDocValues( AlgBuilder builder, Iterator<PolyValue> iterator ) {
+    private LogicalDocumentValues getLogicalDocValues( AlgBuilder builder, Iterator<PolyValue[]> iterator ) {
         List<PolyDocument> documents = new ArrayList<>();
 
-        iterator.forEachRemaining( e -> documents.add( e.asDocument() ) );
+        iterator.forEachRemaining( e -> documents.add( e[0].asDocument() ) );
 
         return new LogicalDocumentValues( builder.getCluster(), builder.getCluster().traitSet(), documents );
     }
@@ -319,7 +319,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void executeQuery( List<AllocationColumn> selectedColumns, AlgRoot sourceAlg, Statement sourceStatement, Statement targetStatement, AlgRoot targetAlg, boolean isMaterializedView, boolean doesSubstituteOrderBy ) {
         try {
-            PolyImplementation<PolyValue> implementation;
+            PolyImplementation implementation;
             if ( isMaterializedView ) {
                 implementation = sourceStatement.getQueryProcessor().prepareQuery(
                         sourceAlg,
@@ -358,7 +358,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             int i = 0;
             do {
-                ResultIterator<PolyValue> iter = implementation.execute( sourceStatement, batchSize );
+                ResultIterator iter = implementation.execute( sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getRows();
                 iter.close();
                 if ( rows.isEmpty() ) {
@@ -630,9 +630,9 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyImplementation<Object> result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<PolyValue[]> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            Iterator<PolyValue[]> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
@@ -649,7 +649,7 @@ public class DataMigratorImpl implements DataMigrator {
             while ( sourceIterator.hasNext() ) {
                 List<List<PolyValue>> rows = MetaImpl.collect(
                         result.getCursorFactory(),
-                        LimitIterator.of( sourceIterator, batchSize ),
+                        (Iterable<Object>) LimitIterator.of( sourceIterator, batchSize ),
                         new ArrayList<>() ).stream().map( o -> o.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
                 Map<Long, List<PolyValue>> values = new HashMap<>();
                 for ( List<PolyValue> list : rows ) {
@@ -727,7 +727,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyImplementation<PolyValue> result = source.sourceStatement.getQueryProcessor().prepareQuery( source.sourceAlg, source.sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            PolyImplementation result = source.sourceStatement.getQueryProcessor().prepareQuery( source.sourceAlg, source.sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
             //final Enumerable<PolyValue> enumerable = result.enumerable( source.sourceStatement.getDataContext() );
 
             /*Map<Long, Integer> resultColMapping = new HashMap<>();
@@ -755,7 +755,7 @@ public class DataMigratorImpl implements DataMigrator {
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
             do {
-                ResultIterator<PolyValue> iter = result.execute( source.sourceStatement, batchSize );
+                ResultIterator iter = result.execute( source.sourceStatement, batchSize );
                 List<List<PolyValue>> rows = iter.getRows();//MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
                 iter.close();
                 if ( rows.isEmpty() ) {
@@ -936,9 +936,9 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyImplementation<Object> result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
-            final Enumerable<Object> enumerable = result.enumerable( sourceStatement.getDataContext() );
-            Iterator<Object> sourceIterator = enumerable.iterator();
+            PolyImplementation result = sourceStatement.getQueryProcessor().prepareQuery( sourceAlg, sourceAlg.alg.getCluster().getTypeFactory().builder().build(), true, false, false );
+            final Enumerable<PolyValue[]> enumerable = result.enumerable( sourceStatement.getDataContext() );
+            Iterator<PolyValue[]> sourceIterator = enumerable.iterator();
 
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
@@ -963,7 +963,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<PolyValue>> rows = MetaImpl.collect( result.getCursorFactory(), LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
+                List<List<PolyValue>> rows = MetaImpl.collect( result.getCursorFactory(), (Iterable<Object>) LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() ).stream().map( r -> r.stream().map( e -> (PolyValue) e ).collect( Collectors.toList() ) ).collect( Collectors.toList() );
 
                 Map<Long, Map<Long, List<PolyValue>>> partitionValues = new HashMap<>();
 

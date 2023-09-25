@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
@@ -65,15 +66,14 @@ import org.polypheny.db.util.Source;
 /**
  * Enumerator that reads from a CSV file.
  *
- * @param <E> Row type
  */
-class CsvEnumerator<E> implements Enumerator<E> {
+class CsvEnumerator implements Enumerator<PolyValue[]> {
 
     private final CSVReader reader;
     private final String[] filterValues;
     private final AtomicBoolean cancelFlag;
-    private final RowConverter<E> rowConverter;
-    private E current;
+    private final RowConverter<PolyValue[]> rowConverter;
+    private PolyValue[] current;
 
     private static final FastDateFormat TIME_FORMAT_DATE;
     private static final FastDateFormat TIME_FORMAT_TIME;
@@ -100,11 +100,11 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
     CsvEnumerator( Source source, AtomicBoolean cancelFlag, List<CsvFieldType> fieldTypes, int[] fields ) {
         //noinspection unchecked
-        this( source, cancelFlag, false, null, (RowConverter<E>) converter( fieldTypes, fields ) );
+        this( source, cancelFlag, false, null, (RowConverter<PolyValue[]>) converter( fieldTypes, fields ) );
     }
 
 
-    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<E> rowConverter ) {
+    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<PolyValue[]> rowConverter ) {
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
@@ -199,7 +199,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
 
 
     @Override
-    public E current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -218,7 +218,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                         try {
                             Thread.sleep( CsvStreamReader.DEFAULT_MONITOR_DELAY );
                         } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                         continue;
                     }
@@ -240,7 +240,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 return true;
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

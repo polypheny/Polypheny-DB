@@ -17,9 +17,7 @@
 package org.polypheny.db.adapter.mongodb.rules;
 
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.bson.BsonElement;
@@ -30,8 +28,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -47,7 +44,6 @@ import org.polypheny.db.util.Pair;
  */
 public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
 
-    final AlgDataType projectRowType;
 
 
     /**
@@ -56,11 +52,9 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
      * @param cluster Cluster
      * @param traitSet Traits
      * @param table Table
-     * @param projectRowType Fields and types to project; null to project raw row
      */
-    public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table, AlgDataType projectRowType ) {
+    public MongoScan( AlgOptCluster cluster, AlgTraitSet traitSet, MongoEntity table ) {
         super( cluster, traitSet, table );
-        this.projectRowType = projectRowType;
 
         assert getConvention() == CONVENTION;
     }
@@ -75,14 +69,14 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
 
     @Override
     public AlgDataType deriveRowType() {
-        return projectRowType != null ? projectRowType : super.deriveRowType();
+        return super.deriveRowType();
     }
 
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
         // scans with a small project list are cheaper
-        final float f = projectRowType == null ? 1f : (float) projectRowType.getFieldCount() / 100f;
+        final float f = getRowType().getFieldCount() / 100f;
         return super.computeSelfCost( planner, mq ).multiplyBy( .1 * f );
     }
 
@@ -100,13 +94,12 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
         implementor.entity = entity;
         //implementor.setStaticRowType( (AlgRecordType) rowType );
         //implementor.physicalMapper.addAll( rowType.getFieldNames() );
-        Map<String, String> logicalPhysicalMapping = new HashMap<>();
 
-        Map<String, ? extends PhysicalField> fields = entity.mongoNamespace.getStore().storeCatalog.getFields( entity.allocationId ).stream().collect( Collectors.toMap( f -> f.logicalName, f -> f ) );
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
-            logicalPhysicalMapping.put( field.getName(), fields.get( field.getName() ).name );
+        if ( implementor.isDML() ) {
+            implementor.setStaticRowType( (AlgRecordType) rowType );
+            return;
         }
-        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( logicalPhysicalMapping.entrySet().stream().map( p -> new BsonElement( p.getKey(), new BsonString( "$" + p.getValue() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFieldList().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
     }
 
 }

@@ -2584,7 +2584,7 @@ public class Crud implements InformationObserver {
         AlgRoot root = new AlgRoot( result, result.getRowType(), Kind.SELECT, fields, collation );
 
         // Prepare
-        PolyImplementation<PolyValue> polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
+        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( root, true );
 
         if ( request.createView ) {
 
@@ -2682,7 +2682,7 @@ public class Crud implements InformationObserver {
 
         List<List<PolyValue>> rows;
         try {
-            ResultIterator<PolyValue> iterator = polyImplementation.execute( statement, getPageSize() );
+            ResultIterator iterator = polyImplementation.execute( statement, getPageSize() );
             rows = iterator.getRows();
             iterator.close();
         } catch ( Exception e ) {
@@ -2996,14 +2996,14 @@ public class Crud implements InformationObserver {
 
 
     public static RelationalResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
-        PolyImplementation<PolyValue> implementation;
+        PolyImplementation implementation;
         List<List<PolyValue>> rows;
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
             implementation = crud.processQuery( statement, sqlSelect, isAnalyze );
-            ResultIterator<PolyValue> iterator = implementation.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
+            ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
             rows = iterator.getRows();
             iterator.close();
             hasMoreRows = implementation.hasMoreRows();
@@ -3265,8 +3265,8 @@ public class Crud implements InformationObserver {
     }
 
 
-    private <T> PolyImplementation<T> processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyImplementation<T> implementation;
+    private PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation implementation;
         if ( isAnalyze ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
@@ -3304,7 +3304,7 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyImplementation<?> implementation;
+        PolyImplementation implementation;
 
         try {
             implementation = processQuery( statement, sqlUpdate, transaction.isAnalyze() );

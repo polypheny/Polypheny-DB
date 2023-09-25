@@ -21,7 +21,6 @@ import static org.reflections.Reflections.log;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -64,23 +63,23 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 
 
 @Getter
-public class PolyImplementation<T> {
+public class PolyImplementation {
 
     public final AlgDataType rowType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private Bindable<T> bindable;
+    private Bindable<PolyValue[]> bindable;
     private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
     private List<ColumnMetaData> columns;
-    private final PreparedResult<T> preparedResult;
+    private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
 
     @Accessors(fluent = true)
     private final boolean isDDL;
-    private Iterator<T> iterator;
+    private Iterator<PolyValue[]> iterator;
     private boolean isOpen;
     private StatementEvent statementEvent;
     private int batch;
@@ -103,7 +102,7 @@ public class PolyImplementation<T> {
             @Nullable AlgDataType rowType,
             NamespaceType namespaceType,
             ExecutionTimeMonitor executionTimeMonitor,
-            @Nullable PreparedResult<T> preparedResult,
+            @Nullable PreparedResult<PolyValue> preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
@@ -121,12 +120,12 @@ public class PolyImplementation<T> {
     }
 
 
-    public Enumerable<T> enumerable( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
         return enumerable( getBindable(), dataContext );
     }
 
 
-    public static <T> Enumerable<T> enumerable( Bindable<T> bindable, DataContext dataContext ) {
+    public static Enumerable<PolyValue[]> enumerable( Bindable<PolyValue[]> bindable, DataContext dataContext ) {
         return bindable.bind( dataContext );
     }
 
@@ -166,7 +165,7 @@ public class PolyImplementation<T> {
     }
 
 
-    public Bindable<T> getBindable() {
+    public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
             return null;
         }
@@ -185,6 +184,7 @@ public class PolyImplementation<T> {
         }
         return iterator.hasNext();
     }
+
 
     public List<ColumnMetaData> getColumns() {
         if ( columns != null ) {
@@ -215,18 +215,18 @@ public class PolyImplementation<T> {
     }
 
 
-    public ResultIterator<T> execute( Statement statement ) {
+    public ResultIterator execute( Statement statement ) {
         return execute( statement, -1, false, false, false );
     }
 
 
-    public ResultIterator<T> execute( Statement statement, int batch ) {
+    public ResultIterator execute( Statement statement, int batch ) {
         return execute( statement, batch, false, false, false );
     }
 
 
-    public ResultIterator<T> execute( Statement statement, int batch, boolean isAnalyzed, boolean isTimed, boolean isIndex ) {
-        return new ResultIterator<>(
+    public ResultIterator execute( Statement statement, int batch, boolean isAnalyzed, boolean isTimed, boolean isIndex ) {
+        return new ResultIterator(
                 createIterator( getBindable(), statement, isAnalyzed ),
                 statement,
                 batch,
@@ -238,10 +238,7 @@ public class PolyImplementation<T> {
     }
 
 
-
-
-
-    private Iterator<T> createIterator( Bindable<T> bindable, Statement statement, boolean isAnalyzed ) {
+    private Iterator<PolyValue[]> createIterator( Bindable<PolyValue[]> bindable, Statement statement, boolean isAnalyzed ) {
         if ( iterator != null ) {
             return this.iterator;
         }
@@ -249,7 +246,7 @@ public class PolyImplementation<T> {
         if ( isAnalyzed ) {
             statement.getOverviewDuration().start( "Execution" );
         }
-        final Enumerable<T> enumerable = enumerable( bindable, statement.getDataContext() );
+        final Enumerable<PolyValue[]> enumerable = enumerable( bindable, statement.getDataContext() );
 
         if ( isAnalyzed ) {
             statement.getOverviewDuration().stop( "Execution" );
@@ -365,10 +362,10 @@ public class PolyImplementation<T> {
     }
 
 
-    public static class ResultIterator<T> implements AutoCloseable {
+    public static class ResultIterator implements AutoCloseable {
 
 
-        private final Iterator<T> iterator;
+        private final Iterator<PolyValue[]> iterator;
         private final int batch;
         private final ExecutionTimeMonitor executionTimeMonitor;
         private final boolean isIndex;
@@ -378,7 +375,7 @@ public class PolyImplementation<T> {
         private final StatementEvent statementEvent;
 
 
-        private ResultIterator( Iterator<T> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
+        private ResultIterator( Iterator<PolyValue[]> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
             this.iterator = iterator;
             this.batch = batch;
             this.isIndex = isIndex;
@@ -389,7 +386,7 @@ public class PolyImplementation<T> {
         }
 
 
-        public List<List<T>> getRows() {
+        public List<List<PolyValue>> getRows() {
 
             StopWatch stopWatch = null;
             try {
@@ -397,10 +394,10 @@ public class PolyImplementation<T> {
                     stopWatch = new StopWatch();
                     stopWatch.start();
                 }
-                List<List<T>> res = new ArrayList<>();
+                List<List<PolyValue>> res = new ArrayList<>();
                 int i = 0;
                 while ( i++ < batch && iterator.hasNext() ) {
-                    res.add( rowType.getFieldCount() == 1 ? Collections.singletonList( iterator.next() ) : Lists.newArrayList( (T[]) iterator.next() ) );
+                    res.add( Lists.newArrayList( iterator.next() ) );
                 }
 
                 //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
@@ -428,27 +425,25 @@ public class PolyImplementation<T> {
         }
 
 
-        public List<List<T>> getAllRowsAndClose() {
-            List<List<T>> result = getRows();
+        public List<List<PolyValue>> getAllRowsAndClose() {
+            List<List<PolyValue>> result = getRows();
             try {
                 close();
             } catch ( Exception e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             return result;
         }
 
 
-        public List<T> getSingleRows() {
-
+        public List<PolyValue> getSingleRows() {
             return getRows( null );
-
         }
 
 
         @NotNull
-        private <D> List<D> getRows( @Nullable Function<T, D> transformer ) {
-            final Iterable<T> iterable = () -> iterator;
+        private <D> List<D> getRows( @Nullable Function<PolyValue[], D> transformer ) {
+            final Iterable<PolyValue[]> iterable = () -> iterator;
 
             if ( transformer == null ) {
                 return (List<D>) StreamSupport
@@ -464,7 +459,7 @@ public class PolyImplementation<T> {
 
         public List<PolyValue[]> getArrayRows() {
 
-            return getRows( rowType.getFieldCount() == 1 ? e -> new PolyValue[]{ (PolyValue) e } : null );
+            return getRows( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
 
         }
 

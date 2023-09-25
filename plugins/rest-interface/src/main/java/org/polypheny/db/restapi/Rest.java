@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollation;
@@ -553,11 +554,11 @@ public class Rest {
         RestResult restResult;
         try {
             // Prepare
-            PolyImplementation<PolyValue> result = statement.getQueryProcessor().prepareQuery( algRoot, true );
+            PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, true );
             log.debug( "AlgRoot was prepared." );
 
-            final Iterable<PolyValue> iterable = result.enumerable( statement.getDataContext() );
-            Iterator<PolyValue> iterator = iterable.iterator();
+            final Enumerable<PolyValue[]> iterable = result.enumerable( statement.getDataContext() );
+            Iterator<PolyValue[]> iterator = iterable.iterator();
             restResult = new RestResult( algRoot.kind, iterator, result.rowType, result.getColumns() );
             restResult.transform();
             long executionTime = restResult.getExecutionTime();

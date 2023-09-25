@@ -44,6 +44,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
 
@@ -70,13 +71,13 @@ public class CsvTranslatableTable extends CsvTable implements TranslatableEntity
      *
      * Called from generated code.
      */
-    public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
+    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
-                return new CsvEnumerator<>( source, cancelFlag, fieldTypes, fields );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new CsvEnumerator( source, cancelFlag, fieldTypes, fields );
             }
         };
     }

@@ -150,7 +150,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         final AlgOptCluster cluster = context.getCluster();
-        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this, null );
+        return new MongoScan( cluster, traitSet.replace( MongoAlg.CONVENTION ), this );
     }
 
 
@@ -166,15 +166,15 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
      * @param tupleType List of fields to project; or null to return map
      * @return Enumerator of results
      */
-    private Enumerable<PolyValue> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, MongoTupleType tupleType ) {
+    private Enumerable<PolyValue[]> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, MongoTupleType tupleType ) {
         final MongoCollection<Document> collection = mongoDb.getCollection( physical.name );
         final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
         final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
-        final Function1<Document, PolyValue> getter = MongoEnumerator.getter( tupleType );
+        final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<PolyValue> enumerator() {
+            public Enumerator<PolyValue[]> enumerator() {
                 final FindIterable<Document> cursor = collection.find( filter ).projection( project );
                 return new MongoEnumerator( cursor.iterator(), getter, table.getMongoNamespace().getBucket() );
             }
@@ -199,7 +199,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
      * @param parameterValues the values pre-ordered
      * @return Enumerator of results
      */
-    public Enumerable<PolyValue> aggregate(
+    public Enumerable<PolyValue[]> aggregate(
             DataContext dataContext,
             ClientSession session,
             final MongoDatabase mongoDb,
@@ -233,7 +233,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
             list.add( 0, getPhysicalProjections( logicalCols, logical.getColumnNames(), logical.fieldIds ) );
         }*/
 
-        final Function1<Document, PolyValue> getter = MongoEnumerator.getter( tupleType );
+        final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
         if ( log.isDebugEnabled() ) {
             log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
@@ -246,7 +246,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<PolyValue> enumerator() {
+            public Enumerator<PolyValue[]> enumerator() {
                 final Iterator<Document> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
@@ -423,7 +423,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
+        public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
             ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ) );
 
@@ -454,7 +454,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
          * @see MongoMethod#MONGO_QUERYABLE_FIND
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue> find( String filterJson, String projectJson, MongoTupleType tupleType ) {
+        public Enumerable<PolyValue[]> find( String filterJson, String projectJson, MongoTupleType tupleType ) {
             return getEntity().find( getMongoDb(), getEntity(), filterJson, projectJson, tupleType );
         }
 

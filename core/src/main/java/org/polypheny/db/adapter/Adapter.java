@@ -319,7 +319,7 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
      * it is responsible for handling regenerating the connection if the Docker changes demand it
      */
     protected void resetDockerConnection() {
-        throw new RuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
+        throw new GenericRuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 
 

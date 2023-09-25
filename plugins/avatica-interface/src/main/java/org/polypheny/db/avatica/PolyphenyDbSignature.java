@@ -39,16 +39,16 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
  * The result of preparing a query. It gives the Avatica driver framework the information it needs to create a prepared statement,
  * or to execute a statement directly, without an explicit prepare step.
  *
- * @param <T> element type
  */
 @Getter
-public class PolyphenyDbSignature<T> extends Meta.Signature {
+public class PolyphenyDbSignature extends Meta.Signature {
 
     @JsonIgnore
     public final AlgDataType rowType;
@@ -57,7 +57,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     @JsonIgnore
     private final List<AlgCollation> collationList;
     private final long maxRowCount;
-    private final Bindable<T> bindable;
+    private final Bindable<PolyValue[]> bindable;
     private final NamespaceType namespaceType;
     private final ExecutionTimeMonitor executionTimeMonitor;
 
@@ -72,7 +72,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             PolyphenyDbSchema rootSchema,
             List<AlgCollation> collationList,
             long maxRowCount,
-            Bindable<T> bindable,
+            Bindable<PolyValue[]> bindable,
             StatementType statementType,
             ExecutionTimeMonitor executionTimeMonitor,
             NamespaceType namespaceType ) {
@@ -87,7 +87,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
-    public static <T> PolyphenyDbSignature<T> from( PolyImplementation<T> prepareQuery ) {
+    public static PolyphenyDbSignature from( PolyImplementation prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
             for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
@@ -103,7 +103,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
                                 field.getName() ) );
             }
         }
-        return new PolyphenyDbSignature<>(
+        return new PolyphenyDbSignature(
                 "",
                 parameters,
                 new HashMap<>(),
@@ -121,7 +121,7 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     }
 
 
-    public Enumerable<T> enumerable( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
         return PolyImplementation.enumerable( bindable, dataContext );
     }
 

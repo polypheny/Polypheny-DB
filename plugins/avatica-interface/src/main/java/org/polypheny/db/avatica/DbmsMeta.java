@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -202,9 +203,9 @@ public class DbmsMeta implements ProtobufMeta {
             Map<String, Object> internalParameters,
             List<ColumnMetaData> columns,
             CursorFactory cursorFactory,
-            final Frame firstFrame ) {
-        final PolyphenyDbSignature<Object> signature =
-                new PolyphenyDbSignature<>(
+            final Iterable<PolyValue[]> firstFrame ) {
+        final PolyphenyDbSignature signature =
+                new PolyphenyDbSignature(
                         "",
                         ImmutableList.of(),
                         internalParameters,
@@ -219,11 +220,12 @@ public class DbmsMeta implements ProtobufMeta {
                         new ExecutionTimeMonitor(),
                         NamespaceType.RELATIONAL ) {
                     @Override
-                    public Enumerable<Object> enumerable( DataContext dataContext ) {
-                        return Linq4j.asEnumerable( firstFrame.rows );
+                    public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
+                        return Linq4j.asEnumerable( firstFrame );
                     }
                 };
-        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, firstFrame );
+        // changed with th branch
+        return MetaResultSet.create( ch.id, statementHandle.id, true, signature, Meta.Frame.create( 0, false, StreamSupport.stream( firstFrame.spliterator(), false ).collect( Collectors.toList() ) ) );
     }
 
 
@@ -245,9 +247,9 @@ public class DbmsMeta implements ProtobufMeta {
             //fieldNames.add( fieldName );
         }
         //noinspection unchecked
-        final Iterable<Object> iterable = (Iterable<Object>) enumerable;
+        final Iterable<PolyValue[]> iterable = (Iterable<PolyValue[]>) enumerable;
         //return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.record( clazz, fields, fieldNames ), new Frame( 0, true, iterable ) );
-        return createMetaResultSet( ch, statementHandle, Collections.emptyMap(), columns, CursorFactory.LIST, new Frame( 0, true, iterable ) );
+        return createMetaResultSet( ch, statementHandle, new HashMap<>(), columns, CursorFactory.LIST, iterable );
     }
 
 
@@ -1006,7 +1008,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
-            PolyphenyDbSignature<?> signature = new PolyphenyDbSignature<>(
+            PolyphenyDbSignature signature = new PolyphenyDbSignature(
                     sql,
                     avaticaParameters,
                     ImmutableMap.of(),
@@ -1136,10 +1138,10 @@ public class DbmsMeta implements ProtobufMeta {
 
             final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
-            final PolyphenyDbSignature<?> signature = statementHandle.getSignature();
-            final Iterator<Object> iterator;
+            final PolyphenyDbSignature signature = statementHandle.getSignature();
+            final Iterator<Object[]> iterator;
             if ( statementHandle.getOpenResultSet() == null ) {
-                final Iterable<Object> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
+                final Iterable<Object[]> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
                 statementHandle.setOpenResultSet( iterator );
                 statementHandle.getExecutionStopWatch().start();
@@ -1147,7 +1149,7 @@ public class DbmsMeta implements ProtobufMeta {
                 iterator = statementHandle.getOpenResultSet();
                 statementHandle.getExecutionStopWatch().resume();
             }
-            final List<?> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+            final List<?> rows = MetaImpl.collect( signature.cursorFactory, (Iterable<Object>) LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
             @SuppressWarnings("unchecked")
@@ -1168,10 +1170,8 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Iterable<Object> createIterable( DataContext dataContext, PolyphenyDbSignature<?> signature ) {
-        //noinspection unchecked
-        final PolyphenyDbSignature<Object> polyphenyDbSignature = (PolyphenyDbSignature<Object>) signature;
-        return externalize( polyphenyDbSignature.enumerable( dataContext ), polyphenyDbSignature.rowType );
+    private Iterable<Object[]> createIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
+        return externalize( signature.enumerable( dataContext ), signature.rowType );
     }
 
 
@@ -1352,7 +1352,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
 
-        PolyphenyDbSignature<?> signature;
+        PolyphenyDbSignature signature;
         if ( parsed.isA( Kind.DDL ) ) {
             signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, NamespaceType.RELATIONAL ) ) );
         } else {
@@ -1372,27 +1372,24 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Enumerable<Object> externalize( Enumerable<Object> enumerable, AlgDataType rowType ) {
+    private Enumerable<Object[]> externalize( Enumerable<PolyValue[]> enumerable, AlgDataType rowType ) {
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
+            public Enumerator<Object[]> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
                     transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType(), true ), field.getType().isNullable() ) );
                 }
 
-                if ( rowType.getFieldCount() > 1 ) {
-                    return Linq4j.transform( enumerable.enumerator(), row -> {
-                        Object[] objects = new Object[((Object[]) row).length];
-                        for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                            if ( ((PolyValue[]) row)[i] != null ) {
-                                objects[i] = transform.get( i ).apply( ((PolyValue[]) row)[i] );
-                            }
+                return Linq4j.transform( enumerable.enumerator(), row -> {
+                    Object[] objects = new Object[row.length];
+                    for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
+                        if ( ((PolyValue[]) row)[i] != null ) {
+                            objects[i] = transform.get( i ).apply( row[i] );
                         }
-                        return objects;
-                    } );
-                }
-                return Linq4j.transform( enumerable.enumerator(), row -> transform.get( 0 ).apply( (PolyValue) row ) );
+                    }
+                    return objects;
+                } );
             }
         };
     }

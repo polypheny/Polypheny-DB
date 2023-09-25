@@ -99,10 +99,10 @@ public abstract class Index {
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
-        final PolyImplementation<PolyValue> implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        final PolyImplementation implementation = processor.prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
         // Execute query
 
-        ResultIterator<PolyValue> iterator = implementation.execute( statement, 1, true, false, true );
+        ResultIterator iterator = implementation.execute( statement, 1, true, false, true );
         final List<List<PolyValue>> rows = iterator.getAllRowsAndClose();
 
         final List<Pair<List<PolyValue>, List<PolyValue>>> kv = new ArrayList<>( rows.size() );

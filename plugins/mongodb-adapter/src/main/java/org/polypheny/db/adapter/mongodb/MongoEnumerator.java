@@ -50,8 +50,8 @@ import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyInteger;
-import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -59,12 +59,12 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Enumerator that reads from a MongoDB collection.
  */
-class MongoEnumerator implements Enumerator<PolyValue> {
+class MongoEnumerator implements Enumerator<PolyValue[]> {
 
     protected final Iterator<Document> cursor;
-    protected final Function1<Document, PolyValue> getter;
+    protected final Function1<Document, PolyValue[]> getter;
     protected final GridFSBucket bucket;
-    protected PolyValue current;
+    protected PolyValue[] current;
 
 
     /**
@@ -73,7 +73,7 @@ class MongoEnumerator implements Enumerator<PolyValue> {
      * @param cursor Mongo iterator (usually a {@link com.mongodb.ServerCursor})
      * @param getter Converts an object into a list of fields
      */
-    MongoEnumerator( Iterator<Document> cursor, Function1<Document, PolyValue> getter, GridFSBucket bucket ) {
+    MongoEnumerator( Iterator<Document> cursor, Function1<Document, PolyValue[]> getter, GridFSBucket bucket ) {
         this.cursor = cursor;
         this.getter = getter;
         this.bucket = bucket;
@@ -81,7 +81,7 @@ class MongoEnumerator implements Enumerator<PolyValue> {
 
 
     @Override
-    public PolyValue current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -210,7 +210,7 @@ class MongoEnumerator implements Enumerator<PolyValue> {
     /**
      *
      */
-    static Function1<Document, PolyValue> listGetter( final MongoTupleType type ) {
+    static Function1<Document, PolyValue[]> listGetter( final MongoTupleType type ) {
         /*return a0 -> {
             PolyValue[] objects = new PolyValue[fields.size()];
             for ( int i = 0; i < fields.size(); i++ ) {
@@ -232,21 +232,22 @@ class MongoEnumerator implements Enumerator<PolyValue> {
         return e -> {
             BsonDocument doc = e.toBsonDocument();
 
-            return PolyList.of( trans.stream().map( t -> t.apply( doc ) ).toArray( PolyValue[]::new ) );
+            return trans.stream().map( t -> t.apply( doc ) ).toArray( PolyValue[]::new );
         };
     }
 
 
-    static Function1<Document, PolyValue> getter( MongoTupleType tupleType ) {
+    static Function1<Document, PolyValue[]> getter( MongoTupleType tupleType ) {
         return tupleType == null
                 ? mapGetter()
-                : tupleType.size() == 1
-                        ? singletonGetter( tupleType.subs.get( 0 ) )
-                        : listGetter( tupleType );
+                : listGetter( tupleType );
     }
 
 
     private static PolyValue convert( BsonValue o, MongoTupleType type ) {
+        if ( o == null || o.isNull() ) {
+            return new PolyNull();
+        }
         switch ( type.type ) {
             case BIGINT:
                 return PolyLong.of( o.asNumber().longValue() );
