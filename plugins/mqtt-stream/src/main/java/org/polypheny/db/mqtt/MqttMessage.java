@@ -21,15 +21,20 @@ import org.polypheny.db.stream.StreamMessage;
 
 public class MqttMessage implements StreamMessage {
 
-    @Getter
-    final String message;
+
+    final String payload;
     @Getter
     final String topic;
 
 
-    public MqttMessage( String message, String topic ) {
-        this.message = message;
+    public MqttMessage( String payload, String topic ) {
+        this.payload = payload;
         this.topic = topic;
+    }
+
+
+    public String getMessage() {
+        return this.payload;
     }
 
 }
