@@ -40,34 +40,35 @@ import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyCollections.PolyMap;
-import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.graph.PolyEdge;
 import org.polypheny.db.schema.graph.PolyGraph;
-import org.polypheny.db.schema.graph.PolyNode;
 import org.polypheny.db.schema.graph.QueryableGraph;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.types.ModifiableGraph;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Graph entity in the Neo4j representation.
  */
-public class NeoGraph extends PhysicalGraph implements TranslatableEntity, ModifiableEntity {
+public class NeoGraph extends PhysicalGraph implements TranslatableEntity, ModifiableGraph {
 
     public final TransactionProvider transactionProvider;
     public final Driver db;
@@ -94,15 +95,14 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
      * @param operation the modify operation
      */
     @Override
-    public LpgModify<CatalogEntity> toModificationAlg(
+    public Modify<?> toModificationAlg(
             AlgOptCluster cluster,
             AlgTraitSet traits,
             CatalogEntity physicalEntity,
             AlgNode child,
             Operation operation,
-            List<String> targets,
+            List<PolyString> targets,
             List<? extends RexNode> sources ) {
-        NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,
                 traits.replace( Convention.NONE ),

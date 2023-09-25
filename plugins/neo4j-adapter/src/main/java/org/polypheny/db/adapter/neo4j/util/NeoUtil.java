@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.neo4j.util;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -49,14 +48,15 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.runtime.PolyCollections.PolyList;
-import org.polypheny.db.schema.ModelTrait;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
@@ -171,12 +171,12 @@ public interface NeoUtil {
         }
 
         return PolyPath.create(
-                nodes.stream().map( n -> Pair.of( (String) null, n ) ).collect( Collectors.toList() ),
-                edges.stream().map( e -> Pair.of( (String) null, e ) ).collect( Collectors.toList() ) );
+                nodes.stream().map( n -> Pair.of( (PolyString) null, n ) ).collect( Collectors.toList() ),
+                edges.stream().map( e -> Pair.of( (PolyString) null, e ) ).collect( Collectors.toList() ) );
     }
 
     static PolyNode asPolyNode( Node node ) {
-        Map<String, Comparable<?>> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ) );
+        Map<String, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ) );
         String id = map.remove( "_id" ).toString();
         List<String> labels = new ArrayList<>();
         node.labels().forEach( e -> {
@@ -189,27 +189,27 @@ public interface NeoUtil {
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<String, Comparable<?>> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ) );
+        Map<String, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ) );
         String id = map.remove( "_id" ).toString();
         String sourceId = map.remove( "__sourceId__" ).toString();
         String targetId = map.remove( "__targetId__" ).toString();
         return new PolyEdge( id, new PolyDictionary( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT, null );
     }
 
-    static Comparable<?> getComparableOrString( Value e ) {
+    static PolyValue getComparableOrString( Value e ) {
         if ( e.isNull() ) {
             return null;
         }
         Object obj = e.asObject();
         if ( obj instanceof List<?> ) {
-            return new PolyList<>( (List<Comparable<?>>) obj );
+            return new PolyList<>( (List<PolyValue>) obj );
         }
 
-        if ( obj instanceof Comparable<?> ) {
-            return (Comparable<?>) obj;
+        if ( obj instanceof PolyValue ) {
+            return (PolyValue) obj;
         }
 
-        return e.toString();
+        return e;
     }
 
     static Function1<Record, Object> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {
@@ -264,16 +264,16 @@ public interface NeoUtil {
         if ( ob == null ) {
             return null;
         }
-        switch ( literal.getTypeName() ) {
+        switch ( literal.getPolyType() ) {
             case BOOLEAN:
-                return literal.getValueAs( Boolean.class ).toString();
+                return literal.value.asBoolean().toString();
             case TINYINT:
             case SMALLINT:
             case INTEGER:
             case DATE:
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
-                return literal.getValueAs( Integer.class ).toString();
+                return literal.value.asNumber().toString();
             case BIGINT:
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
@@ -301,11 +301,11 @@ public interface NeoUtil {
                 if ( isLiteral ) {
                     return "'" + literal.getValueAs( String.class ) + "'";
                 }
-                return literal.getValueAs( String.class );
+                return literal.value.asString().value;
             case MAP:
             case DOCUMENT:
             case ARRAY:
-                return literal.getValueAs( String.class );
+                return literal.value.asList().toString());
             case BINARY:
             case VARBINARY:
             case FILE:

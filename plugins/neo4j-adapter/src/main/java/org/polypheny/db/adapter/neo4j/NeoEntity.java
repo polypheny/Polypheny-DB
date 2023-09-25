@@ -34,15 +34,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoScan;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -51,13 +49,15 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.QueryableEntity;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.types.ModifiableTable;
+import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
-public class NeoEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity {
+public class NeoEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable {
 
 
     private final AlgDataType rowType;

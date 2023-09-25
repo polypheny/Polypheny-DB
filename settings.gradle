@@ -34,7 +34,7 @@ include 'plugins:http-interface'
 
 // adapters plugins
 include 'plugins:hsqldb-adapter'
-//include 'plugins:neo4j-adapter'
+include 'plugins:neo4j-adapter'
 //include 'plugins:cottontail-adapter'
 //include 'plugins:ethereum-adapter'
 //include 'plugins:cassandra-adapter'
