@@ -16,12 +16,9 @@
 
 package org.polypheny.db.protointerface;
 
-import com.google.common.collect.ImmutableBiMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
@@ -30,12 +27,11 @@ import org.polypheny.db.type.entity.PolyValue;
 public class NamedValueProcessor {
 
     // matches tags such as :name
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!')(:[\\w]*)(?!')" );
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!'):([\\w]*)(?!')" );
     private static final String REPLACEMENT_CHARACTER = "?";
     @Getter
     private String processedQuery;
-    @Getter
-    private ImmutableBiMap<String, Integer> namedIndexes;
+    private final List<String> replacements = new ArrayList<>();
 
 
     public NamedValueProcessor( String statement ) {
@@ -43,28 +39,31 @@ public class NamedValueProcessor {
     }
 
 
-    public void processStatement( String statement ) {
-        HashMap<String, Integer> indexByName = new HashMap<>();
-        AtomicInteger valueIndex = new AtomicInteger();
+    private void processStatement( String statement ) {
         Matcher matcher = PLACEHOLDER_PATTERN.matcher( statement );
         if ( !matcher.find() ) {
             this.processedQuery = statement;
+            return;
         }
         StringBuilder stringBuilder = new StringBuilder();
-        String currentGroup = matcher.group( 1 );
         do {
+            replacements.add( matcher.group( 1 ) );
             matcher.appendReplacement( stringBuilder, REPLACEMENT_CHARACTER );
-            indexByName.put( currentGroup, valueIndex.getAndIncrement() );
         } while ( matcher.find() );
         matcher.appendTail( stringBuilder );
         this.processedQuery = stringBuilder.toString();
-        this.namedIndexes = ImmutableBiMap.copyOf( indexByName );
     }
 
 
     public List<PolyValue> transformValueMap( Map<String, PolyValue> values ) {
         List<PolyValue> image = new ArrayList<>();
-        values.forEach( ( key, value ) -> image.set( namedIndexes.get( key ), value ) );
+        for ( String placeholder : replacements ) {
+            PolyValue value = values.get( placeholder );
+            if ( value == null ) {
+                throw new RuntimeException( "Missing named parameter: " + placeholder );
+            }
+            image.add( values.get( placeholder ) );
+        }
         return image;
     }
 

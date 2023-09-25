@@ -64,11 +64,8 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
                 statement = client.getCurrentOrCreateNewTransaction().createStatement();
             }
             List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
-            long index = 0;
-            for ( PolyValue value : valueList ) {
-                if ( value != null ) {
-                    statement.getDataContext().addParameterValues( index++, null, List.of( value ) );
-                }
+            for ( int i = 0; i < valueList.size(); i++ ) {
+                statement.getDataContext().addParameterValues( i, null, List.of( valueList.get( i ) ) );
             }
             StatementProcessor.implement( this );
             return StatementProcessor.executeAndGetResult( this, fetchSize );
