@@ -62,7 +62,7 @@ public class NamedValueProcessor {
             if ( value == null ) {
                 throw new RuntimeException( "Missing named parameter: " + placeholder );
             }
-            image.add( values.get( placeholder ) );
+            image.add( value );
         }
         return image;
     }
