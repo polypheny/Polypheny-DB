@@ -40,7 +40,7 @@ public interface RelationalTransformable {
 
 
     static Modify<?> getModify( CatalogEntity entity, AlgNode alg, Operation operation ) {
-        return entity.unwrap( ModifiableTable.class ).toModificationAlg( alg.getCluster(), alg.getTraitSet(), entity, alg, operation, null, null );
+        return entity.unwrap( ModifiableTable.class ).toModificationTable( alg.getCluster(), alg.getTraitSet(), entity, alg, operation, null, null );
     }
 
 }

@@ -96,7 +96,6 @@ import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.ModifiableCollection;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.QueryableEntity;
-import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.PolyLong;
@@ -111,7 +110,7 @@ import org.polypheny.db.util.Util;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Value
-public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ScannableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
+public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
 
     @Getter
     public MongoNamespace mongoNamespace;
@@ -289,15 +288,14 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
 
     @Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             CatalogEntity table,
             AlgNode child,
             Operation operation,
             List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList
-    ) {
+            List<? extends RexNode> sourceExpressionList ) {
         mongoNamespace.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
                 cluster.traitSetOf( Convention.NONE ),
@@ -310,10 +308,10 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
 
     @Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationCollection(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity entity,
+            CatalogEntity collection,
             AlgNode child,
             Operation operation,
             Map<String, ? extends RexNode> updates,
@@ -322,7 +320,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
         mongoNamespace.getConvention().register( cluster.getPlanner() );
         return new LogicalDocumentModify(
                 cluster.traitSetOf( Convention.NONE ),
-                entity,
+                collection,
                 child,
                 operation,
                 updates,
@@ -360,21 +358,15 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, S
 
 
     @Override
-    public <T> MongoQueryable<T> asQueryable( DataContext dataContext, Snapshot snapshot ) {
+    public MongoQueryable<PolyValue[]> asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new MongoQueryable<>( dataContext, snapshot, this );
-    }
-
-
-    @Override
-    public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
-        return null;
     }
 
 
 
 
     /*@Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationGraph(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
             CatalogEntity entity,

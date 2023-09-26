@@ -17,12 +17,11 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 
-import java.util.function.Predicate;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -33,7 +32,7 @@ public class CottontailToEnumerableConverterRule extends ConverterRule {
     public CottontailToEnumerableConverterRule( CottontailConvention in, AlgBuilderFactory algBuilderFactory ) {
         super(
                 AlgNode.class,
-                (Predicate<AlgNode>) r -> true,
+                r -> true,
                 in,
                 EnumerableConvention.INSTANCE,
                 algBuilderFactory,

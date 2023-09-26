@@ -50,11 +50,10 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 /**
  * Abstract base class for a rule which converts from one calling convention to another without changing semantics.
  */
+@Getter
 public abstract class ConverterRule extends AlgOptRule {
 
-    @Getter
     private final AlgTrait<?> inTrait;
-    @Getter
     private final AlgTrait<?> outTrait;
 
 

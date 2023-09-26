@@ -36,11 +36,11 @@ public class NeoConvention extends Convention.Impl {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : NeoRules.RULES ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
 
         for ( AlgOptRule rule : NeoGraphRules.RULES ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
     }
 

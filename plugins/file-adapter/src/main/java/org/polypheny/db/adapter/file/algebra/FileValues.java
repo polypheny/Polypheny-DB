@@ -64,7 +64,7 @@ public class FileValues extends Values implements FileAlg {
             Value[] row = new Value[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                row[i] = new Value( i, literal.getValueForFileAdapter(), false );
+                row[i] = new Value( i, literal.value, false );
                 i++;
             }
             implementor.addInsertValue( row );

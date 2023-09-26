@@ -34,11 +34,10 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.PolyString;
 
 
+@Getter
 public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
-    @Getter
     protected final List<? extends RexNode> projects;
-    @Getter
     protected final List<PolyString> names;
 
 

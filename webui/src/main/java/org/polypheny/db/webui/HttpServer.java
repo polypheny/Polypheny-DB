@@ -225,7 +225,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateMaterialized", crud::updateMaterialized );
 
-        webuiServer.post( "/addColumn", crud::addColumn );
+        webuiServer.post( "/createColumn", crud::addColumn );
 
         webuiServer.post( "/dropColumn", crud::dropColumn );
 

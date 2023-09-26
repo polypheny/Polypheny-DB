@@ -133,4 +133,9 @@ public class RelStoreCatalog extends StoreCatalog {
         columns.remove( Pair.of( allocId, columnId ) );
     }
 
+
+    public List<PhysicalColumn> getColumns( long allocId ) {
+        return columns.values().stream().filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+    }
+
 }

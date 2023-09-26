@@ -27,6 +27,5 @@ public interface FileSchema {
 
     File getRootDir();
 
-    int getAdapterId();
 
 }

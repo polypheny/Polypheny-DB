@@ -78,25 +78,26 @@ public class DocumentScanDelegate implements Scannable {
 
     @Override
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        scannable.createGraph( context, logical, allocation );
+        Scannable.createGraphSubstitute( scannable, context, logical, allocation );
     }
 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-        scannable.dropGraph( context, allocation );
+        Scannable.dropGraphSubstitute( scannable, context, allocation );
     }
 
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        scannable.createCollection( context, logical, allocation );
+        Scannable.createCollectionSubstitute( scannable, context, logical, allocation );
     }
 
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-        scannable.dropCollection( context, allocation );
+        Scannable.dropCollectionSubstitute( scannable, context, allocation );
     }
+
 
 }

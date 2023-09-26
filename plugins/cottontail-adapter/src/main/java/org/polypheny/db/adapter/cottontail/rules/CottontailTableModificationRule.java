@@ -28,7 +28,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.ModifiableEntity;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -39,7 +39,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
     }
 
 
-    private static boolean supports( RelModify modify ) {
+    private static boolean supports( RelModify<?> modify ) {
         return !modify.isInsert() || !UnsupportedFromInsertShuttle.contains( modify );
     }
 
@@ -60,9 +60,9 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final RelModify modify = (RelModify) alg;
+        final RelModify<?> modify = (RelModify<?>) alg;
 
-        final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
+        final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
         if ( modifiableTable == null ) {
             return null;

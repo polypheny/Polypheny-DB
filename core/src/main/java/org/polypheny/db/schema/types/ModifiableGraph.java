@@ -28,10 +28,10 @@ import org.polypheny.db.type.entity.PolyString;
 
 public interface ModifiableGraph extends Typed {
 
-    Modify<?> toModificationAlg(
+    Modify<?> toModificationGraph(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity physicalEntity,
+            CatalogEntity entity,
             AlgNode child,
             Operation operation,
             List<PolyString> targets,

@@ -16,59 +16,52 @@
 
 package org.polypheny.db.adapter;
 
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.core.lpg.LpgModify;
-import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
+import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.tools.AlgBuilder;
 
-public class DocumentModifyDelegate extends DocumentScanDelegate implements Modifiable {
+public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable {
+
 
     private final Modifiable modifiable;
 
 
-    public DocumentModifyDelegate( Modifiable modifiable, DocStoreCatalog catalog ) {
+    public GraphModifyDelegate( Modifiable modifiable, GraphStoreCatalog catalog ) {
         super( modifiable, catalog );
         this.modifiable = modifiable;
     }
 
 
     @Override
-    public AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
-        return null;
-    }
-
-
-    @Override
     public void addColumn( Context context, long allocId, LogicalColumn column ) {
-        modifiable.addColumn( context, allocId, column );
+        throw new GenericRuntimeException( "Should be overwritten." );
     }
 
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        modifiable.dropColumn( context, allocId, columnId );
+        throw new GenericRuntimeException( "Should be overwritten." );
     }
 
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        return modifiable.addIndex( context, index, allocation );
+        throw new GenericRuntimeException( "Should be overwritten." );
     }
 
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        modifiable.dropIndex( context, index, allocId );
+        throw new GenericRuntimeException( "Should be overwritten." );
     }
 
 
     @Override
     public void updateColumnType( Context context, long allocId, LogicalColumn column ) {
-        modifiable.updateColumnType( context, allocId, column );
+        throw new GenericRuntimeException( "Should be overwritten." );
     }
 
 }

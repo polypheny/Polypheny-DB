@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -192,7 +193,7 @@ public final class Schemas {
     /**
      * Returns a {@link Queryable}, given a fully-qualified table name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Class<E> clazz, String... names ) {
+    public static Queryable<PolyValue[]> queryable( DataContext root, Class<PolyValue> clazz, String... names ) {
         return queryable( root, Arrays.asList( names ) );
     }
 
@@ -200,7 +201,7 @@ public final class Schemas {
     /**
      * Returns a {@link Queryable}, given a fully-qualified table name as an iterable.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Iterable<? extends String> names ) {
+    public static Queryable<PolyValue[]> queryable( DataContext root, Iterable<? extends String> names ) {
         Snapshot snapshot = root.getSnapshot();
 
         return queryable( root, snapshot, names.iterator().next() );
@@ -208,17 +209,18 @@ public final class Schemas {
     }
 
 
-    public static <E> Enumerable<Row<E>> queryableRow( DataContext root, Class<Object> clazz, List<String> names ) {
+    public static Enumerable<Row<PolyValue>> queryableRow( DataContext root, Class<Object> clazz, List<String> names ) {
         Snapshot snapshot = root.getSnapshot();
 
-        return queryable( root, snapshot, names.iterator().next() );
+        throw new NotImplementedException();
+        //return queryable( root, snapshot, names.iterator().next() );
     }
 
 
     /**
      * Returns a {@link Queryable}, given a schema and entity name.
      */
-    public static <E> Queryable<E> queryable( DataContext root, Snapshot snapshot, String entityName ) {
+    public static Queryable<PolyValue[]> queryable( DataContext root, Snapshot snapshot, String entityName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         LogicalTable table = snapshot.rel().getTable( null, entityName ).orElseThrow();
         return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot );

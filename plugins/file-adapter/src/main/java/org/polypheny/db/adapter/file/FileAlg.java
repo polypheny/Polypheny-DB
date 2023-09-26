@@ -97,7 +97,7 @@ public interface FileAlg extends AlgNode {
                 int i = 0;
                 List<Integer> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
-                    int index = new ArrayList<>( getFileTable().getColumnNames().values() ).indexOf( columnNames.get( i ) );
+                    int index = new ArrayList<>( getFileTable().getColumnIdNames().values() ).indexOf( columnNames.get( i ) );
                     update.setColumnReference( index );
                     mapping.add( index );
                     i++;
@@ -111,7 +111,7 @@ public interface FileAlg extends AlgNode {
          * For multi-store inserts, it may be necessary to project the insert values
          */
         private void projectInsertValues( final List<Integer> mapping ) {
-            if ( insertValues.size() > 0 && insertValues.get( 0 ).length > mapping.size() ) {
+            if ( !insertValues.isEmpty() && insertValues.get( 0 ).length > mapping.size() ) {
                 for ( int i = 0; i < insertValues.size(); i++ ) {
                     Value[] values = insertValues.get( i );
                     Value[] projected = new Value[mapping.size()];
@@ -129,7 +129,7 @@ public interface FileAlg extends AlgNode {
             if ( projectionMapping != null ) {
                 return projectionMapping.toArray( new Integer[0] );
             }
-            if ( project.size() == 0 ) {
+            if ( project.isEmpty() ) {
                 return null;
             } else {
                 Integer[] projectionMapping = new Integer[project.size()];
@@ -138,7 +138,7 @@ public interface FileAlg extends AlgNode {
                     if ( ithProject.contains( "." ) ) {
                         ithProject = ithProject.substring( ithProject.lastIndexOf( "." ) + 1 );
                     }
-                    int indexOf = new ArrayList<>( fileTable.getColumnNames().values() ).indexOf( ithProject );
+                    int indexOf = new ArrayList<>( fileTable.getColumnIdNames().values() ).indexOf( ithProject );
                     if ( indexOf == -1 ) {
                         throw new RuntimeException( "Could not perform the projection." );
                     }

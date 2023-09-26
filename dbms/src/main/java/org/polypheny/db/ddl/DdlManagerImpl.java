@@ -3147,7 +3147,7 @@ public class DdlManagerImpl extends DdlManager {
 
         /*for ( DataStore s : stores ) {
             AllocationEntity allocation = catalog.getSnapshot().alloc().getEntity( s.getAdapterId(), tableId );
-            catalog.getAllocRel( namespaceId ).addColumn(
+            catalog.getAllocRel( namespaceId ).createColumn(
                     allocation.id,
                     addedColumnId,
                     placementType,

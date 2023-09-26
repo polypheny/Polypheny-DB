@@ -26,6 +26,7 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -34,19 +35,27 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
+@Value
 public class PolySymbol extends PolyValue {
 
     public Enum<?> value;
+    public Object object;
 
 
-    public PolySymbol( Enum<?> value ) {
+    public PolySymbol( Enum<?> value, Object o ) {
         super( PolyType.SYMBOL );
         this.value = value;
+        this.object = o;
     }
 
 
     public static PolySymbol of( Enum<?> value ) {
-        return new PolySymbol( value );
+        return new PolySymbol( value, null );
+    }
+
+
+    public static PolySymbol of( Object value ) {
+        return new PolySymbol( null, value );
     }
 
 

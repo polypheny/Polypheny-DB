@@ -100,17 +100,17 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     public JdbcTable(
             JdbcSchema jdbcSchema,
-            PhysicalTable table,
+            PhysicalTable physical,
             @NonNull TableType jdbcTableType ) {
         super(
-                table.id,
-                table.allocationId,
-                table.name,
-                table.columns,
-                table.namespaceId,
-                table.namespaceName,
-                table.adapterId );
-        this.table = table;
+                physical.id,
+                physical.allocationId,
+                physical.name,
+                physical.columns,
+                physical.namespaceId,
+                physical.namespaceName,
+                physical.adapterId );
+        this.table = physical;
         this.jdbcSchema = jdbcSchema;
         this.jdbcTableType = jdbcTableType;
     }
@@ -185,7 +185,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot ) {
+    public Queryable<PolyValue[]> asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new JdbcEntityQueryable<>( dataContext, snapshot, this );
     }
 
@@ -202,7 +202,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
             CatalogEntity table,

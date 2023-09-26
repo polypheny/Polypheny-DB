@@ -35,13 +35,8 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.adapter.file.Value;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 
@@ -57,11 +52,11 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     private final FileConvention convention;
 
 
-    public QfsSchema( long id, Snapshot snapshot, String schemaName, Qfs source ) {
+    public QfsSchema( long id, String schemaName, Qfs source ) {
         super( id );
         this.schemaName = schemaName;
         this.source = source;
-        final Expression expression = Schemas.subSchemaExpression( snapshot, schemaName, QfsSchema.class );
+        final Expression expression = null;//Schemas.subSchemaExpression( snapshot, schemaName, QfsSchema.class );
         this.convention = new QfsConvention( schemaName, expression, this );
     }
 
@@ -72,27 +67,21 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     }
 
 
-    @Override
-    public int getAdapterId() {
-        return source.getAdapterId();
-    }
-
-
-    public FileTranslatableEntity createFileTable( LogicalTable logicalTable, AllocationTable allocationTable ) {
+    public FileTranslatableEntity createFileTable( PhysicalTable table ) {
 
         List<Long> pkIds;
-        if ( logicalTable.primaryKey != null ) {
+       /*if ( table.primaryKey != null ) {
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( logicalTable.primaryKey );
             pkIds = primaryKey.columnIds;
-        } else {
-            pkIds = new ArrayList<>();
-        }
-        FileTranslatableEntity table = new FileTranslatableEntity(
+        } else {*/
+        pkIds = new ArrayList<>();
+        //}
+        FileTranslatableEntity file = new FileTranslatableEntity(
                 this,
-                logicalTable, allocationTable,
+                table,
                 pkIds );
-        tableMap.put( logicalTable.name + "_" + allocationTable.name, table );
-        return table;
+        tableMap.put( table.name + "_" + table.allocationId, file );
+        return file;
     }
 
 
@@ -102,7 +91,7 @@ public class QfsSchema extends AbstractNamespace implements FileSchema, Schema {
     @SuppressWarnings("unused")
     public static Enumerable<Object[]> execute(
             final Operation operation,
-            final Integer adapterId,
+            final Long adapterId,
             final Long partitionId,
             final DataContext dataContext,
             final String path,

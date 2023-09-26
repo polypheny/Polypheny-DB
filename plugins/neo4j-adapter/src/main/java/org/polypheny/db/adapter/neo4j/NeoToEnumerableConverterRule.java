@@ -16,10 +16,10 @@
 
 package org.polypheny.db.adapter.neo4j;
 
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.tools.AlgBuilderFactory;
 

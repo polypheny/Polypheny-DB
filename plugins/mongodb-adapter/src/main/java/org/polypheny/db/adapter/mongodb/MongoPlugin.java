@@ -129,7 +129,7 @@ public class MongoPlugin extends PolyPlugin {
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
     public static class MongoStore extends DataStore<DocStoreCatalog> {
 
-        private String DEFAULT_DATABASE;
+        private final String DEFAULT_DATABASE = "public";
 
         @Delegate(excludes = Exclude.class)
         private final DocumentModifyDelegate delegate;
@@ -204,7 +204,7 @@ public class MongoPlugin extends PolyPlugin {
 
                 this.client = MongoClients.create( mongoSettings );
             } else {
-                throw new GenericRuntimeException( "Unknown deploy mode: " + deployMode.name() );
+                throw new GenericRuntimeException( "Not supported deploy mode: " + deployMode.name() );
             }
 
             addInformationPhysicalNames();
@@ -309,20 +309,33 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void createCollection( Context context, LogicalCollection collection, AllocationCollection allocation ) {
+        public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
             commitAll();
             String name = getPhysicalTableName( allocation.id, adapterId );
-            /*if ( this.currentNamespace == null ) {
-                createNewSchema( null, catalogCollection.getNamespaceName(), catalogCollection.namespaceId );
-            }*/
+
             if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
                 updateNamespace( DEFAULT_DATABASE, allocation.namespaceId );
                 storeCatalog.addNamespace( allocation.namespaceId, currentNamespace );
             }
 
-            //String physicalCollectionName = getPhysicalTableName( catalogCollection.id, adapterId );
+            PhysicalCollection physical = storeCatalog.createCollection(
+                    logical.getNamespaceName(),
+                    name,
+                    logical,
+                    allocation );
+
             this.currentNamespace.database.createCollection( name );
 
+            this.storeCatalog.addPhysical( allocation, this.currentNamespace.createEntity( physical, List.of() ) );
+
+        }
+
+
+        @Override
+        public void refreshCollection( long allocId ) {
+            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
+            List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
+            storeCatalog.replacePhysical( this.currentNamespace.createEntity( physical, fields ) );
         }
 
 
@@ -355,7 +368,7 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
             String physicalName = getPhysicalColumnName( logicalColumn );
             // updates all columns with this field if a default value is provided
-            PhysicalColumn column = storeCatalog.addColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
+            storeCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
 
             Document field;
             if ( logicalColumn.defaultValue != null ) {
@@ -422,26 +435,26 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
+        public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
             commitAll();
             PhysicalTable physical = storeCatalog.fromAllocation( allocation.id, PhysicalTable.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            IndexTypes type = IndexTypes.valueOf( logicalIndex.method.toUpperCase( Locale.ROOT ) );
+            IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
 
-            String physicalIndexName = getPhysicalIndexName( logicalIndex );
+            String physicalIndexName = getPhysicalIndexName( index );
 
             switch ( type ) {
                 case SINGLE:
-                    List<String> columns = logicalIndex.key.getColumnNames();
+                    List<String> columns = index.key.getColumnNames();
                     if ( columns.size() > 1 ) {
                         throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                     }
-                    addCompositeIndex( logicalIndex, columns, physical, physicalIndexName );
+                    addCompositeIndex( index, columns, physical, physicalIndexName );
                     break;
 
                 case DEFAULT:
                 case COMPOUND:
-                    addCompositeIndex( logicalIndex, logicalIndex.key.getColumnNames(), physical, physicalIndexName );
+                    addCompositeIndex( index, index.key.getColumnNames(), physical, physicalIndexName );
                     break;
 /*
             case MULTIKEY:
@@ -454,6 +467,17 @@ public class MongoPlugin extends PolyPlugin {
             }
 
             return physicalIndexName;
+        }
+
+
+        @Override
+        public void dropIndex( Context context, LogicalIndex index, long allocId ) {
+            commitAll();
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+            this.currentNamespace.database.getCollection( physical.name ).dropIndex( index.physicalName + "_" + allocId );
+
         }
 
 
@@ -479,7 +503,7 @@ public class MongoPlugin extends PolyPlugin {
 
         @Override
         public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
-            PhysicalColumn column = storeCatalog.updateColumnType( allocId, newCol );
+            storeCatalog.updateColumnType( allocId, newCol );
             PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
 
             BsonDocument filter = new BsonDocument();
@@ -569,7 +593,7 @@ public class MongoPlugin extends PolyPlugin {
             if ( collection.unwrap( ModifiableTable.class ) == null ) {
                 return null;
             }
-            return collection.unwrap( ModifiableTable.class ).toModificationAlg(
+            return collection.unwrap( ModifiableTable.class ).toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     collection,
@@ -607,14 +631,6 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
             storeCatalog.replacePhysical( currentNamespace.createEntity( physical, fields ) );
-        }
-
-
-        @Override
-        public void refreshCollection( long allocId ) {
-            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
-            List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
-            storeCatalog.replacePhysical( this.currentNamespace.createEntity( physical, fields ) );
         }
 
 
@@ -662,6 +678,8 @@ public class MongoPlugin extends PolyPlugin {
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 
         String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
+
+        void dropIndex( Context context, LogicalIndex index, long allocId );
 
     }
 

@@ -16,17 +16,19 @@
 
 package org.polypheny.db.adapter.neo4j;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
@@ -39,33 +41,41 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.QueryableEntity;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
 import org.polypheny.db.schema.types.ModifiableTable;
+import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 /**
  * Relational Neo4j representation of a {@link org.polypheny.db.schema.PolyphenyDbSchema} entity
  */
-public class NeoEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable {
+public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
 
     private final AlgDataType rowType;
+    private final List<? extends PhysicalField> fields;
+
+    private final NeoNamespace namespace;
 
 
-    protected NeoEntity( PhysicalTable table ) {
-        super( table );
-        this.rowType = getRowType();
+    protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
+        super( physical.id, physical.allocationId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        this.rowType = physical.getRowType();
+        this.fields = fields;
+        this.namespace = namespace;
     }
 
 
@@ -83,7 +93,7 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
      * @param operation the operation type
      */
     @Override
-    public Modify<CatalogEntity> toModificationAlg(
+    public Modify<CatalogEntity> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
             CatalogEntity physical,
@@ -103,24 +113,53 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
     }
 
 
-    public static class NeoQueryable<T> extends AbstractTableQueryable<T> {
+    @Override
+    public AlgDataType getRowType() {
+        return rowType;
+    }
 
-        @Getter
-        private final NeoEntity entity;
-        private final NeoSchema namespace;
+
+    @Override
+    public Serializable[] getParameterArray() {
+        return new Serializable[0];
+    }
+
+
+    @Override
+    public Expression asExpression() {
+        return Expressions.call(
+                Expressions.convert_(
+                        Expressions.call(
+                                Expressions.call(
+                                        namespace.store.getCatalogAsExpression(),
+                                        "getPhysical", Expressions.constant( id ) ),
+                                "unwrap", Expressions.constant( NeoEntity.class ) ),
+                        NeoEntity.class ),
+                "asQueryable",
+                DataContext.ROOT,
+                Catalog.SNAPSHOT_EXPRESSION );
+    }
+
+
+    @Override
+    public NeoQueryable asQueryable( DataContext dataContext, Snapshot snapshot ) {
+        return new NeoQueryable( dataContext, snapshot, this );
+    }
+
+
+    public static class NeoQueryable extends AbstractEntityQueryable<PolyValue[], NeoEntity> {
+
         private final AlgDataType rowType;
 
 
-        public NeoQueryable( DataContext dataContext, SchemaPlus schema, QueryableEntity table, String tableName ) {
-            super( dataContext, schema, table, tableName );
-            this.entity = (NeoEntity) table;
-            this.namespace = schema.unwrap( NeoSchema.class );
+        public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoEntity entity ) {
+            super( dataContext, snapshot, entity );
             this.rowType = entity.rowType;
         }
 
 
         @Override
-        public Enumerator<T> enumerator() {
+        public Enumerator<PolyValue[]> enumerator() {
             return execute(
                     String.format( "MATCH (n:%s) RETURN %s", entity.name, buildAllQuery() ),
                     getTypes(),
@@ -156,28 +195,28 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
          * @param prepared mapping of parameters and their components if they are collections
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
             Transaction trx = getTrx();
 
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( namespace.store );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( entity.namespace.store );
 
             List<Result> results = new ArrayList<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
                 results.add( trx.run( query, toParameters( dataContext.getParameterValues().get( 0 ), prepared ) ) );
-            } else if ( dataContext.getParameterValues().size() > 0 ) {
-                for ( Map<Long, Object> value : dataContext.getParameterValues() ) {
+            } else if ( !dataContext.getParameterValues().isEmpty() ) {
+                for ( Map<Long, PolyValue> value : dataContext.getParameterValues() ) {
                     results.add( trx.run( query, toParameters( value, prepared ) ) );
                 }
             } else {
                 results.add( trx.run( query ) );
             }
 
-            Function1<Record, T> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types, componentTypes );
 
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<T> enumerator() {
-                    return new NeoEnumerator<>( results, getter );
+                public Enumerator<PolyValue[]> enumerator() {
+                    return new NeoEnumerator( results, getter );
                 }
             };
         }
@@ -189,9 +228,9 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
          * @param values the values to execute the query with
          * @param parameterTypes the types of the attached values
          */
-        private Map<String, Object> toParameters( Map<Long, Object> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
+        private Map<String, Object> toParameters( Map<Long, PolyValue> values, Map<Long, Pair<PolyType, PolyType>> parameterTypes ) {
             Map<String, Object> parameters = new HashMap<>();
-            for ( Entry<Long, Object> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
+            for ( Entry<Long, PolyValue> entry : values.entrySet().stream().filter( e -> parameterTypes.containsKey( e.getKey() ) ).collect( Collectors.toList() ) ) {
                 parameters.put(
                         NeoUtil.asParameter( entry.getKey(), false ),
                         NeoUtil.fixParameterValue( entry.getValue(), parameterTypes.get( entry.getKey() ) ) );
@@ -200,14 +239,13 @@ public class NeoEntity extends PhysicalTable implements TranslatableEntity, Modi
         }
 
 
-        static <T> Function1<Record, T> getter( List<PolyType> types, List<PolyType> componentTypes ) {
-            //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, componentTypes );
+        static Function1<Record, PolyValue[]> getter( List<PolyType> types, List<PolyType> componentTypes ) {
+            return NeoUtil.getTypesFunction( types, componentTypes );
         }
 
 
         private Transaction getTrx() {
-            return namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
+            return entity.namespace.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
         }
 
     }

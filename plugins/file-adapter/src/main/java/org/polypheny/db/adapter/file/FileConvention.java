@@ -51,7 +51,7 @@ public class FileConvention extends Convention.Impl {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : FileRules.rules( this, FileMethod.EXECUTE.method, fileSchema ) ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
     }
 

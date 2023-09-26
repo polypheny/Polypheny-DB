@@ -27,8 +27,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 
@@ -51,14 +50,14 @@ public class QfsEnumerator<E> implements Enumerator<E> {
         try {
             this.iterator = Files.walk( root.toPath() ).filter( file -> !file.toFile().isHidden() ).iterator();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Unable to query the file system", e );
+            throw new GenericRuntimeException( "Unable to query the file system", e );
         }
 
         List<String> columns = new ArrayList<>();
         List<PolyType> columnTypes = new ArrayList<>();
         this.projectionMapping = projectionMapping;
 
-        if ( condition == null && this.projectionMapping != null ) {
+        /*if ( condition == null && this.projectionMapping != null ) {
             for ( int projection : this.projectionMapping ) {
                 long colId = columnIds[projection];
                 CatalogColumn col = Catalog.getInstance().getColumn( colId );
@@ -71,7 +70,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
                 columns.add( col.name );
                 columnTypes.add( col.type );
             }
-        }
+        }*/ // todo
         this.columns = columns;
         this.columnTypes = columnTypes.toArray( new PolyType[0] );
         this.condition = condition;

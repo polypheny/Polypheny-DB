@@ -18,34 +18,31 @@ package org.polypheny.db.adapter.cottontail;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.refactor.ModifiableEntity;
-import org.polypheny.db.catalog.refactor.QueryableEntity;
-import org.polypheny.db.catalog.refactor.TranslatableEntity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.schema.impl.AbstractEntityQueryable;
+import org.polypheny.db.schema.types.ModifiableTable;
+import org.polypheny.db.schema.types.QueryableEntity;
+import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
@@ -55,12 +52,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 
 
-public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableEntity, QueryableEntity {
+public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
-    private final LogicalTable logical;
-    private final AllocationTable allocation;
+    private final PhysicalTable table;
     private AlgProtoDataType protoRowType;
-    private CottontailSchema cottontailSchema;
+    private CottontailSchema cottontailNamespace;
 
     @Getter
     private EntityName entityName;
@@ -75,21 +71,24 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     protected CottontailEntity(
-            CottontailSchema cottontailSchema,
+            CottontailSchema cottontailNamespace,
             String physicalSchemaName,
-            LogicalTable logical,
-            AllocationTable allocation ) {
-        super( allocation );
+            PhysicalTable physical ) {
+        super( physical.id,
+                physical.allocationId,
+                physical.name,
+                physical.columns,
+                physical.namespaceId,
+                physical.namespaceName,
+                physical.adapterId );
 
-        this.cottontailSchema = cottontailSchema;
+        this.cottontailNamespace = cottontailNamespace;
+        this.table = physical;
 
-        this.logicalColumnNames = logical.getColumnNames();
+        this.logicalColumnNames = physical.getLogicalNames();
         this.physicalSchemaName = physicalSchemaName;
-        this.physicalTableName = CottontailNameUtil.createPhysicalTableName( logical.id, allocation.id );
-        this.physicalColumnNames = allocation.placements.stream().map( p -> CottontailNameUtil.createPhysicalColumnName( p.columnId ) ).collect( Collectors.toList() );
-
-        this.logical = logical;
-        this.allocation = allocation;
+        this.physicalTableName = physical.name;
+        this.physicalColumnNames = physical.getColumnNames();
 
         this.entityName = EntityName.newBuilder()
                 .setName( this.physicalTableName )
@@ -110,16 +109,15 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationTable(
             AlgOptCluster cluster,
-            AlgTraitSet traitSet,
+            AlgTraitSet algTraits,
             CatalogEntity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList
-    ) {
-        this.cottontailSchema.getConvention().register( cluster.getPlanner() );
+            List<? extends RexNode> sourceExpressionList ) {
+        this.cottontailNamespace.getConvention().register( cluster.getPlanner() );
         return new LogicalRelModify(
                 cluster.traitSetOf( Convention.NONE ),
                 table,
@@ -131,19 +129,19 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public Queryable<Object[]> asQueryable( DataContext dataContext, Snapshot snapshot, long entityId ) {
+    public Queryable<PolyValue[]> asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new CottontailTableQueryable( dataContext, snapshot, this );
     }
 
 
     @Override
     public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return new CottontailScan( context.getCluster(), this, traitSet, this.cottontailSchema.getConvention() );
+        return new CottontailScan( context.getCluster(), this, traitSet, this.cottontailNamespace.getConvention() );
     }
 
 
     public CottontailConvention getUnderlyingConvention() {
-        return this.cottontailSchema.getConvention();
+        return this.cottontailNamespace.getConvention();
     }
 
 
@@ -153,7 +151,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     }
 
 
-    private static class CottontailTableQueryable extends AbstractTableQueryable<Object[], CottontailEntity> {
+    private static class CottontailTableQueryable extends AbstractEntityQueryable<PolyValue[], CottontailEntity> {
 
         public CottontailTableQueryable( DataContext dataContext, Snapshot snapshot, CottontailEntity physicalTable ) {
             super( dataContext, snapshot, physicalTable );
@@ -161,10 +159,10 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
         @Override
-        public Enumerator enumerator() {
+        public Enumerator<PolyValue[]> enumerator() {
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
-            final CottontailEntity cottontailTable = (CottontailEntity) this.table;
-            final long txId = cottontailTable.cottontailSchema.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
+            final CottontailEntity cottontailTable = entity;
+            final long txId = cottontailTable.cottontailNamespace.getWrapper().beginOrContinue( this.dataContext.getStatement().getTransaction() );
             final Query query = Query.newBuilder()
                     .setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( cottontailTable.entityName ) ).build() )
                     .build();
@@ -173,7 +171,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                     .setQuery( query )
                     .build();
             return new CottontailQueryEnumerable(
-                    cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
+                    cottontailTable.cottontailNamespace.getWrapper().query( queryMessage ),
                     new CottontailQueryEnumerable.RowTypeParser( cottontailTable.getRowType(), cottontailTable.physicalColumnNames )
             ).enumerator();
         }

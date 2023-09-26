@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -191,12 +192,12 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      */
     public Pair<String, String> getAllQueries() {
         String nodes = String.join( "\n", List.of(
-                match_( node_( "n", labels_( graph.mappingLabel ) ) ).build(),
+                match_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ) ).build(),
                 return_( distinct_( literal_( "n" ) ) ).build()
         ) );
         String edges = String.join(
                 "\n",
-                match_( path_( node_( "n", labels_( graph.mappingLabel ) ), edge_( "r" ), node_( "m" ) ) ).build(),
+                match_( path_( node_( PolyString.of( "n" ), labels_( PolyString.of( graph.mappingLabel ) ) ), edge_( "r" ), node_( "m" ) ) ).build(),
                 return_( distinct_( literal_( "r" ) ) ).build() );
 
         return Pair.of( nodes, edges );

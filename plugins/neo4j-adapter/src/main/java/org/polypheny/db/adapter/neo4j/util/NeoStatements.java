@@ -27,13 +27,16 @@ import lombok.Getter;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement.ElementType;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.runtime.PolyCollections.PolyDictionary;
-import org.polypheny.db.schema.graph.GraphObject;
-import org.polypheny.db.schema.graph.PolyEdge;
-import org.polypheny.db.schema.graph.PolyEdge.EdgeDirection;
-import org.polypheny.db.schema.graph.PolyNode;
-import org.polypheny.db.schema.graph.PolyPath;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphObject;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 
 /**
  * Helper classes, which are used to create cypher queries with a object representation.
@@ -211,7 +214,7 @@ public interface NeoStatements {
 
     class NodeStatement extends ElementStatement {
 
-        private final String identifier;
+        private final PolyString identifier;
         private final LabelsStatement labels;
         private final ListStatement<?> properties;
 
@@ -219,8 +222,8 @@ public interface NeoStatements {
         private final ElementType type = ElementType.NODE;
 
 
-        protected NodeStatement( String identifier, LabelsStatement labels, ListStatement<?> properties ) {
-            this.identifier = identifier == null ? "" : identifier;
+        protected NodeStatement( PolyString identifier, LabelsStatement labels, ListStatement<?> properties ) {
+            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
             this.labels = labels;
             this.properties = properties;
         }
@@ -235,28 +238,32 @@ public interface NeoStatements {
     }
 
 
-    static NodeStatement node_( String identifier, LabelsStatement labels, PropertyStatement... properties ) {
+    static NodeStatement node_( PolyString identifier, LabelsStatement labels, PropertyStatement... properties ) {
         return new NodeStatement( identifier, labels, list_( Arrays.asList( properties ), "{", "}" ) );
     }
 
-    static NodeStatement node_( String identifier, LabelsStatement labels, List<PropertyStatement> properties ) {
+    static NodeStatement node_( PolyString identifier, LabelsStatement labels, List<PropertyStatement> properties ) {
         return new NodeStatement( identifier, labels, list_( properties, "{", "}" ) );
     }
 
-    static NodeStatement node_( String identifier ) {
+    static NodeStatement node_( PolyString identifier ) {
         return node_( identifier, labels_(), List.of() );
     }
 
-    static NodeStatement node_( PolyNode node, String mappingLabel, boolean addId ) {
+    static NodeStatement node_( String identifier ) {
+        return node_( PolyString.of( identifier ), labels_(), List.of() );
+    }
+
+    static NodeStatement node_( PolyNode node, PolyString mappingLabel, boolean addId ) {
         List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
         if ( addId ) {
-            statements.add( property_( "_id", string_( (node.id) ) ) );
+            statements.add( property_( PolyString.of( "_id" ), string_( (node.id) ) ) );
         }
-        List<String> labels = new ArrayList<>( node.labels );
+        List<PolyString> labels = PolyList.copyOf( node.labels );
         if ( mappingLabel != null ) {
             labels.add( mappingLabel );
         }
-        String defIdentifier = node.getVariableName();
+        PolyString defIdentifier = node.getVariableName();
 
         return node_( defIdentifier, labels_( labels ), statements );
     }
@@ -264,18 +271,18 @@ public interface NeoStatements {
 
     class EdgeStatement extends ElementStatement {
 
-        private final String identifier;
+        private final PolyString identifier;
         private final LabelsStatement label;
         private final ListStatement<PropertyStatement> properties;
         private final EdgeDirection direction;
-        private final String range;
+        private final PolyString range;
 
         @Getter
         private final ElementType type = ElementType.EDGE;
 
 
-        protected EdgeStatement( @Nullable String identifier, String range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-            this.identifier = identifier == null ? "" : identifier;
+        protected EdgeStatement( @Nullable PolyString identifier, PolyString range, LabelsStatement labelsStatement, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+            this.identifier = identifier == null ? PolyString.of( "" ) : identifier;
             assert labelsStatement.labels.size() <= 1 : "Edges only allow one label.";
             this.label = labelsStatement;
             this.properties = properties;
@@ -298,37 +305,37 @@ public interface NeoStatements {
 
     }
 
-    static EdgeStatement edge_( @Nullable String identifier, String range, List<String> labels, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+    static EdgeStatement edge_( @Nullable PolyString identifier, PolyString range, List<PolyString> labels, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
         return new EdgeStatement( identifier, range, labels_( labels ), properties, direction );
     }
 
-    static EdgeStatement edge_( @Nullable String identifier, String label, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
-        return new EdgeStatement( identifier, "", labels_( label ), properties, direction );
+    static EdgeStatement edge_( @Nullable PolyString identifier, String label, ListStatement<PropertyStatement> properties, EdgeDirection direction ) {
+        return new EdgeStatement( identifier, PolyString.of( "" ), labels_( PolyString.of( label ) ), properties, direction );
     }
 
     static EdgeStatement edge_( @Nullable String identifier ) {
-        return new EdgeStatement( identifier, "", labels_(), list_( List.of() ), EdgeDirection.NONE );
+        return new EdgeStatement( PolyString.of( identifier ), PolyString.of( "" ), labels_(), list_( List.of() ), EdgeDirection.NONE );
     }
 
     static EdgeStatement edge_( PolyEdge edge, boolean addId ) {
         List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
         if ( addId ) {
-            props.add( property_( "_id", string_( edge.id ) ) );
-            props.add( property_( "__sourceId__", string_( edge.source ) ) );
-            props.add( property_( "__targetId__", string_( edge.target ) ) );
+            props.add( property_( PolyString.of( "_id" ), string_( edge.id ) ) );
+            props.add( property_( PolyString.of( "__sourceId__" ), string_( edge.source ) ) );
+            props.add( property_( PolyString.of( "__targetId__" ), string_( edge.target ) ) );
         }
-        String defIdentifier = edge.getVariableName();
+        PolyString defIdentifier = edge.getVariableName();
 
-        return edge_( defIdentifier, edge.getRangeDescriptor(), edge.labels, list_( props, "{", "}" ), edge.direction );
+        return edge_( defIdentifier, PolyString.of( edge.getRangeDescriptor() ), edge.labels, list_( props, "{", "}" ), edge.direction );
     }
 
     class PathStatement extends NeoStatement {
 
         private final List<ElementStatement> pathElements;
-        private final String identifier;
+        private final PolyString identifier;
 
 
-        protected PathStatement( String identifier, List<ElementStatement> pathElements ) {
+        protected PathStatement( PolyString identifier, List<ElementStatement> pathElements ) {
             super( null );
             this.pathElements = fixPath( pathElements );
             this.identifier = identifier;
@@ -342,7 +349,7 @@ public interface NeoStatements {
                 switch ( element.getType() ) {
                     case EDGE:
                         if ( lastType != ElementType.NODE ) {
-                            paths.add( node_( null ) );
+                            paths.add( node_( (String) null ) );
                         }
                         break;
                     case NODE:
@@ -360,7 +367,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            String namedPath = identifier == null || identifier.contains( "$" ) ? "" : String.format( "%s = ", identifier );
+            String namedPath = identifier == null || identifier.value.contains( "$" ) ? "" : String.format( "%s = ", identifier );
             return namedPath + pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
         }
 
@@ -375,7 +382,7 @@ public interface NeoStatements {
     }
 
 
-    static PathStatement path_( @Nullable String identifier, PolyPath path, @Nullable String mappingLabel, boolean addId ) {
+    static PathStatement path_( @Nullable PolyString identifier, PolyPath path, @Nullable PolyString mappingLabel, boolean addId ) {
         int i = 0;
         List<ElementStatement> elements = new ArrayList<>();
         for ( GraphObject object : path.getPath() ) {
@@ -385,7 +392,7 @@ public interface NeoStatements {
             i++;
         }
 
-        String name = path.getVariableName() == null ? identifier : path.getVariableName();
+        PolyString name = path.getVariableName() == null ? identifier : path.getVariableName();
 
         return new PathStatement( name, elements );
     }
@@ -393,11 +400,11 @@ public interface NeoStatements {
 
     class PropertyStatement extends NeoStatement {
 
-        private final String key;
+        private final PolyString key;
         private final NeoStatement value;
 
 
-        protected PropertyStatement( String key, NeoStatement value ) {
+        protected PropertyStatement( PolyString key, NeoStatement value ) {
             super( null );
             this.key = key;
             this.value = value;
@@ -412,13 +419,17 @@ public interface NeoStatements {
 
     }
 
-    static PropertyStatement property_( String key, NeoStatement value ) {
+    static PropertyStatement property_( PolyString key, NeoStatement value ) {
         return new PropertyStatement( key, value );
+    }
+
+    static PropertyStatement property_( String key, NeoStatement value ) {
+        return new PropertyStatement( PolyString.of( key ), value );
     }
 
     static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
-        for ( Entry<String, Object> entry : properties.entrySet() ) {
+        for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
             props.add( property_( entry.getKey(), _literalOrString( entry.getValue() ) ) );
         }
         return props;
@@ -436,10 +447,10 @@ public interface NeoStatements {
 
     class LabelsStatement extends NeoStatement {
 
-        private final List<String> labels;
+        private final List<PolyString> labels;
 
 
-        protected LabelsStatement( List<String> labels ) {
+        protected LabelsStatement( List<PolyString> labels ) {
             super( null );
             this.labels = labels;
         }
@@ -453,11 +464,11 @@ public interface NeoStatements {
 
     }
 
-    static LabelsStatement labels_( String... labels ) {
+    static LabelsStatement labels_( PolyString... labels ) {
         return new LabelsStatement( Arrays.asList( labels ) );
     }
 
-    static LabelsStatement labels_( List<String> labels ) {
+    static LabelsStatement labels_( List<PolyString> labels ) {
         return new LabelsStatement( labels );
     }
 

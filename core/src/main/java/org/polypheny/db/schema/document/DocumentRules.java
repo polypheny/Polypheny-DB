@@ -57,9 +57,9 @@ public class DocumentRules {
     }
 
 
+    @Getter
     public static class DocUpdateVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         boolean containsUpdate = false;
 
 
@@ -112,10 +112,10 @@ public class DocumentRules {
     /**
      * Visitor, which returns false if any RexCall, which handles the Document model was traversed
      */
+    @Getter
     private static class DocumentVisitor extends RexVisitorImpl<Void> {
 
         @Accessors(fluent = true)
-        @Getter
         private boolean containsDocument = false;
 
 

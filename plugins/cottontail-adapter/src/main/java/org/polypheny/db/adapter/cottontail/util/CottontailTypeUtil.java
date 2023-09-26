@@ -40,7 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -239,19 +239,20 @@ public class CottontailTypeUtil {
                     constantExpression = Expressions.constant( rexLiteral.getValueAs( Short.class ) );
                     break;
                 case DECIMAL:
-                    BigDecimal bigDecimal = rexLiteral.getValueAs( BigDecimal.class );
+                    BigDecimal bigDecimal = rexLiteral.value.asNumber().BigDecimalValue();
                     constantExpression = Expressions.constant( (bigDecimal != null) ? bigDecimal.toString() : null );
                     break;
                 case VARBINARY:
+                    constantExpression = Expressions.constant( rexLiteral.value.asBinary().value.toBase64String() );
                 case BINARY:
                 case FILE:
                 case AUDIO:
                 case IMAGE:
                 case VIDEO:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( ByteString.class ).toBase64String() );
+                    constantExpression = Expressions.constant( rexLiteral.value.asBlob().as64String() );
                     break;
                 default:
-                    throw new RuntimeException( "Type " + rexLiteral.getTypeName() + " is not supported by the cottontail adapter." );
+                    throw new RuntimeException( "Type " + rexLiteral.type + " is not supported by the cottontail adapter." );
             }
         }
 
@@ -618,8 +619,8 @@ public class CottontailTypeUtil {
      * @return {@link Expression}
      */
     private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
-        if ( node instanceof RexInputRef ) {
-            RexInputRef inputRef = (RexInputRef) node;
+        if ( node instanceof RexIndexRef ) {
+            RexIndexRef inputRef = (RexIndexRef) node;
             return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;

@@ -27,11 +27,25 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
 
 @Slf4j
-public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
+public class CottontailQueryEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     /**
      * The {@link TupleIterator} backing this {@link CottontailQueryEnumerable}.
@@ -41,22 +55,22 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
     /**
      * The {@link RowTypeParser} backing this {@link CottontailQueryEnumerable}.
      */
-    private final Function1<Tuple, Object[]> parser;
+    private final Function1<Tuple, PolyValue[]> parser;
 
 
-    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, Object[]> rowParser ) {
+    public CottontailQueryEnumerable( TupleIterator iterator, Function1<Tuple, PolyValue[]> rowParser ) {
         this.tupleIterator = iterator;
         this.parser = rowParser;
     }
 
 
     @Override
-    public Enumerator<Object> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         return new CottontailQueryResultEnumerator();
     }
 
 
-    private class CottontailQueryResultEnumerator implements Enumerator<Object> {
+    private class CottontailQueryResultEnumerator implements Enumerator<PolyValue[]> {
 
         /**
          * The current {@link Tuple} this {@link CottontailQueryEnumerable} is pointing to.
@@ -65,13 +79,8 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
 
         @Override
-        public Object current() {
-            final Object[] results = CottontailQueryEnumerable.this.parser.apply( this.tuple );
-            if ( results.length == 1 ) {
-                return results[0];
-            } else {
-                return results;
-            }
+        public PolyValue[] current() {
+            return CottontailQueryEnumerable.this.parser.apply( this.tuple );
         }
 
 
@@ -104,7 +113,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
     }
 
 
-    public static class RowTypeParser implements Function1<Tuple, Object[]> {
+    public static class RowTypeParser implements Function1<Tuple, PolyValue[]> {
 
         private final AlgDataType rowType;
         private final List<String> physicalColumnNames;
@@ -117,8 +126,8 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
 
 
         @Override
-        public Object[] apply( Tuple a0 ) {
-            final Object[] returnValue = new Object[this.physicalColumnNames.size()];
+        public PolyValue[] apply( Tuple a0 ) {
+            final PolyValue[] returnValue = new PolyValue[this.physicalColumnNames.size()];
             final List<AlgDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {
                 final AlgDataType type = fieldList.get( i ).getType();
@@ -136,35 +145,41 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<Object> {
          * @param type The {@link AlgDataType} expected by Polypheny-DB
          * @return Converted value as {@link Object}
          */
-        private Object parseSingleField( Object data, AlgDataType type ) {
+        private PolyValue parseSingleField( Object data, AlgDataType type ) {
             switch ( type.getPolyType() ) {
                 case BOOLEAN:
+                    return PolyBoolean.of( (Boolean) data );
                 case INTEGER:
+                    return PolyInteger.of( (Number) data );
                 case BIGINT:
+                    return PolyLong.of( (Number) data );
                 case FLOAT:
                 case REAL:
+                    return PolyFloat.of( (Number) data );
                 case DOUBLE:
+                    return PolyDouble.of( (Number) data );
                 case CHAR:
                 case VARCHAR:
+                    return PolyString.of( (String) data );
                 case NULL:
-                    return data; /* Pass through, no conversion needed. */
+                    return PolyNull.NULL; /* Pass through, no conversion needed. */
                 case TINYINT:
-                    return Linq4JFixer.getTinyIntData( data );
+                    return PolyInteger.of( Linq4JFixer.getTinyIntData( data ) );
                 case SMALLINT:
-                    return Linq4JFixer.getSmallIntData( data );
+                    return PolyInteger.of( Linq4JFixer.getSmallIntData( data ) );
                 case JSON:
-                    return Linq4JFixer.getStringData( data );
+                    return PolyDocument.parse( Linq4JFixer.getStringData( data ) );
                 case DECIMAL:
-                    return Linq4JFixer.getDecimalData( data );
+                    return PolyBigDecimal.of( Linq4JFixer.getDecimalData( data ) );
                 case DATE:
-                    return Linq4JFixer.getDateData( data );
+                    return PolyDate.of( Linq4JFixer.getDateData( data ) );
                 case TIME:
-                    return Linq4JFixer.getTimeData( data );
+                    return PolyTime.of( Linq4JFixer.getTimeData( data ) );
                 case TIMESTAMP:
-                    return Linq4JFixer.getTimestampData( data );
+                    return PolyTimeStamp.of( Linq4JFixer.getTimestampData( data ) );
                 case BINARY:
                 case VARBINARY:
-                    return Linq4JFixer.getBinaryData( data );
+                    return PolyBinary.of( Linq4JFixer.getBinaryData( data ) );
                 case ARRAY:
                     ArrayType arrayType = (ArrayType) type;
                     if ( arrayType.getDimension() == 1 && CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( arrayType.getComponentType().getPolyType() ) ) {

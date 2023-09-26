@@ -27,7 +27,7 @@ import org.polypheny.db.rex.RexNode;
 
 public interface ModifiableTable extends Typed {
 
-    Modify<?> toModificationAlg(
+    Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
             CatalogEntity physicalEntity,

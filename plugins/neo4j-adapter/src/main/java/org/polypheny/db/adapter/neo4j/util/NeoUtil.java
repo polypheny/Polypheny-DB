@@ -17,25 +17,23 @@
 package org.polypheny.db.adapter.neo4j.util;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 
-import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
@@ -48,25 +46,37 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
-import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public interface NeoUtil {
 
-    static Function1<Value, Object> getTypeFunction( PolyType type, PolyType componentType ) {
-        Function1<Value, Object> getter = getUnnullableTypeFunction( type, componentType );
+    static Function1<Value, PolyValue> getTypeFunction( PolyType type, PolyType componentType ) {
+        Function1<Value, PolyValue> getter = getUnnullableTypeFunction( type, componentType );
         return o -> {
             if ( o.isNull() ) {
                 return null;
@@ -78,33 +88,34 @@ public interface NeoUtil {
         };
     }
 
-    static Function1<Value, Object> getUnnullableTypeFunction( PolyType type, PolyType componentType ) {
+    static Function1<Value, PolyValue> getUnnullableTypeFunction( PolyType type, PolyType componentType ) {
 
         switch ( type ) {
             case NULL:
-                return o -> null;
+                return o -> PolyNull.NULL;
             case BOOLEAN:
-                return Value::asBoolean;
+                return value -> PolyBoolean.of( value.asBoolean() );
             case TINYINT:
-                return v -> (byte) v.asInt();
             case SMALLINT:
-                return v -> (short) v.asInt();
             case INTEGER:
+                return v -> PolyInteger.of( v.asInt() );
             case DATE:
+                return v -> PolyDate.of( v.asInt() );
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
-                return Value::asInt;
+                return v -> PolyTime.of( v.asInt() );
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                return v -> PolyTimeStamp.of( v.asLong() );
             case BIGINT:
-                return Value::asLong;
+                return v -> PolyBigDecimal.of( v.asLong() );
             case DECIMAL:
-                return e -> BigDecimal.valueOf( e.asDouble() );
+                return v -> PolyBigDecimal.of( v.asDouble() );
             case FLOAT:
             case REAL:
-                return e -> (float) e.asDouble();
+                return v -> PolyFloat.of( v.asDouble() );
             case DOUBLE:
-                return Value::asDouble;
+                return v -> PolyDouble.of( v.asDouble() );
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -121,30 +132,28 @@ public interface NeoUtil {
                 break;
             case CHAR:
             case VARCHAR:
-                return ( o ) -> {
-                    if ( o instanceof StringValue ) {
-                        return o.asString();
-                    }
-
-                    return o.toString();
-                };
+                return v -> PolyString.of( v.toString() );
             case BINARY:
             case VARBINARY:
+                return v -> PolyBinary.of( v.asByteArray() );
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                return Value::asByteArray;
+                return v -> PolyBlob.of( v.asByteArray() );
             case ANY:
             case SYMBOL:
-                return Value::asObject;
+                return v -> PolySymbol.of( v.asObject() );
             case ARRAY:
-                Function1<Value, Object> componentFunc = getTypeFunction( componentType, componentType );
-                return el -> el.asList( componentFunc::apply );
+                Function1<Value, PolyValue> componentFunc = getTypeFunction( componentType, componentType );
+                return el -> PolyList.of( el.asList( componentFunc::apply ) );
             case MAP:
+                return value -> PolyString.of( value.asString() );
             case DOCUMENT:
             case JSON:
-                return Value::asString;
+                return value -> {
+                    return PolyDocument.deserialize( value.asString() );
+                };
             case GRAPH:
                 return null;
             case NODE:
@@ -176,12 +185,12 @@ public interface NeoUtil {
     }
 
     static PolyNode asPolyNode( Node node ) {
-        Map<String, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ) );
-        String id = map.remove( "_id" ).toString();
-        List<String> labels = new ArrayList<>();
+        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        PolyString id = map.remove( PolyString.of( "_id" ) ).asString();
+        List<PolyString> labels = new ArrayList<>();
         node.labels().forEach( e -> {
             if ( !e.startsWith( "__namespace" ) && !e.endsWith( "__" ) ) {
-                labels.add( e );
+                labels.add( PolyString.of( e ) );
             }
         } );
         return new PolyNode( id, new PolyDictionary( map ), labels, null );
@@ -189,11 +198,11 @@ public interface NeoUtil {
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<String, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ) );
-        String id = map.remove( "_id" ).toString();
-        String sourceId = map.remove( "__sourceId__" ).toString();
-        String targetId = map.remove( "__targetId__" ).toString();
-        return new PolyEdge( id, new PolyDictionary( map ), List.of( relationship.type() ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT, null );
+        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        String id = map.remove( PolyString.of( "_id" ) ).toString();
+        String sourceId = map.remove( PolyString.of( "__sourceId__" ) ).toString();
+        String targetId = map.remove( PolyString.of( "__targetId__" ) ).toString();
+        return new PolyEdge( PolyString.of( id ), new PolyDictionary( map ), List.of( PolyString.of( relationship.type() ) ), PolyString.of( sourceId ), PolyString.of( targetId ), EdgeDirection.LEFT_TO_RIGHT, null );
     }
 
     static PolyValue getComparableOrString( Value e ) {
@@ -209,26 +218,29 @@ public interface NeoUtil {
             return (PolyValue) obj;
         }
 
-        return e;
+        return asPolyValue( e );
     }
 
-    static Function1<Record, Object> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {
+    static PolyValue asPolyValue( Value value ) {
+        return PolyString.of( value.asString() );
+    }
+
+    static Function1<Record, PolyValue[]> getTypesFunction( List<PolyType> types, List<PolyType> componentTypes ) {
         int i = 0;
-        List<Function1<Value, Object>> functions = new ArrayList<>();
+        List<Function1<Value, PolyValue>> functions = new ArrayList<>();
         for ( PolyType type : types ) {
             functions.add( getTypeFunction( type, componentTypes.get( i ) ) );
             i++;
         }
         if ( functions.size() == 1 ) {
             // SCALAR
-            return o -> functions.get( 0 ).apply( o.get( 0 ) );
+            return o -> new PolyValue[]{ functions.get( 0 ).apply( o.get( 0 ) ) };
         }
 
         // ARRAY
         return o -> Pair.zip( o.fields(), functions ).stream()
                 .map( e -> e.right.apply( e.left.value() ) )
-                .collect( Collectors.toList() )
-                .toArray();
+                .toArray( PolyValue[]::new );
     }
 
     static String asParameter( long key, boolean withDollar ) {
@@ -299,52 +311,42 @@ public interface NeoUtil {
             case CHAR:
             case VARCHAR:
                 if ( isLiteral ) {
-                    return "'" + literal.getValueAs( String.class ) + "'";
+                    return "'" + literal.value.asString() + "'";
                 }
                 return literal.value.asString().value;
             case MAP:
             case DOCUMENT:
             case ARRAY:
-                return literal.value.asList().toString());
+                return literal.value.asList().toString();
             case BINARY:
             case VARBINARY:
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                return Arrays.toString( literal.getValueAs( byte[].class ) );
+                return Arrays.toString( literal.value.asBlob().asByteArray() );
             case NULL:
                 return null;
             case GRAPH:
+            case PATH:
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+            case JSON:
                 break;
             case NODE:
-                PolyNode node = literal.getValueAs( PolyNode.class );
+                PolyNode node = literal.value.asNode();
                 if ( node.isVariable() ) {
                     return node_( node, null, false ).build();
                 }
-                return node_( node, mappingLabel, isLiteral ).build();
+                return node_( node, PolyString.of( mappingLabel ), isLiteral ).build();
             case EDGE:
-                return edge_( literal.getValueAs( PolyEdge.class ), isLiteral ).build();
-            case PATH:
-                break;
-            case DISTINCT:
-                break;
-            case STRUCTURED:
-                break;
-            case ROW:
-                break;
-            case OTHER:
-                break;
-            case CURSOR:
-                break;
-            case COLUMN_LIST:
-                break;
-            case DYNAMIC_STAR:
-                break;
-            case GEOMETRY:
-                break;
-            case JSON:
-                break;
+                return edge_( literal.value.asEdge(), isLiteral ).build();
             case SYMBOL:
                 return literal.getValue().toString();
         }
@@ -557,43 +559,45 @@ public interface NeoUtil {
         return visitor.supports && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() );
     }
 
-    static Object fixParameterValue( Object value, Pair<PolyType, PolyType> type ) {
-        if ( value instanceof BigDecimal ) {
-            return ((BigDecimal) value).doubleValue();
+    static Object fixParameterValue( PolyValue value, Pair<PolyType, PolyType> type ) {
+        if ( value == null ) {
+            return null;
         }
-        if ( value instanceof List ) {
-            return new PolyList<>( ((List<Object>) value).stream().map( v -> (Comparable<?>) fixParameterValue( v, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList() ) );
-        }
-
         if ( type == null ) {
             return value;
         }
 
-        if ( value == null ) {
-            return null;
+        if ( value.isNumber() ) {
+            return value.asNumber().doubleValue();
         }
+        if ( value.isList() ) {
+            return value.asList().value.stream().map( e -> fixParameterValue( e, Pair.of( type.right, type.right ) ) ).collect( Collectors.toList() );
+        }
+
         switch ( type.left ) {
             case DATE:
-                if ( value instanceof Date ) {
-                    return ((Date) value).toLocalDate().toEpochDay();
-                } else if ( value instanceof Integer ) {
-                    return value;
-                }
-                return ((DateString) value).getDaysSinceEpoch();
+                return value.asTemporal().getDaysSinceEpoch();
             case TIME:
-                return handleFixTime( value );
+                return value.asTemporal().getMilliSinceEpoch();//handleFixTime( value );
             case TIMESTAMP:
-                if ( value instanceof Long ) {
+                /*if ( value instanceof Long ) {
                     return value;
                 } else if ( value instanceof java.sql.Timestamp ) {
                     int offset = Calendar.getInstance().getTimeZone().getRawOffset();
                     return ((Timestamp) value).getTime() + offset;
                 }
-                return ((TimestampString) value).getMillisSinceEpoch();
+                return ((TimestampString) value).getMillisSinceEpoch();*/
+                return value.asTemporal().getMilliSinceEpoch();
             case DOCUMENT:
-                return value.toString();
+                return value.asDocument().toJson();//.toString();
+            case INTEGER:
+                return value.asNumber().intValue();
+            case BIGINT:
+                return value.asNumber().longValue();
+            case VARCHAR:
+                return value.asString().value;
         }
-        return value;
+        throw new NotImplementedException();
     }
 
     private static long handleFixTime( Object value ) {

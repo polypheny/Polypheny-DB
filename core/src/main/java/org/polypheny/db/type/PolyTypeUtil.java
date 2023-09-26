@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -62,6 +63,15 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.NumberUtil;
@@ -1317,33 +1327,36 @@ public abstract class PolyTypeUtil {
      * @param polyType PolyType to know how to convert the string
      * @return The converted object
      */
-    public static Object stringToObject( final String s, final PolyType polyType ) {
-        if ( s == null || s.equals( "" ) ) {
+    public static PolyValue stringToObject( final String s, final PolyType polyType ) {
+        if ( s == null || s.isEmpty() ) {
             return null;
         }
         Gson gson = new Gson();
         switch ( polyType ) {
             case BOOLEAN:
-                return gson.fromJson( s, Boolean.class );
+                return PolyBoolean.of( gson.fromJson( s, Boolean.class ) );
             case TINYINT:
             case SMALLINT:
             case INTEGER:
+                return PolyInteger.of( Integer.parseInt( s ) );
             case TIME:
+                return PolyTime.of( Integer.parseInt( s ) );
             case DATE:
-                return Integer.parseInt( s );
+                return PolyDate.of( Integer.parseInt( s ) );
             case TIMESTAMP:
+                return PolyTimeStamp.of( Long.parseLong( s ) );
             case BIGINT:
-                return Long.parseLong( s );
+                return PolyLong.of( Long.parseLong( s ) );
             case DOUBLE:
-                return Double.parseDouble( s );
+                return PolyDouble.of( Double.parseDouble( s ) );
             case REAL:
             case FLOAT:
-                return Float.parseFloat( s );
+                return PolyFloat.of( Float.parseFloat( s ) );
             case DECIMAL:
-                return new BigDecimal( s );
+                return PolyBigDecimal.of( new BigDecimal( s ) );
             //case ARRAY:
             default:
-                return s;
+                throw new NotImplementedException();
         }
     }
 

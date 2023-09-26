@@ -26,10 +26,6 @@ import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
-import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileConvention;
@@ -38,7 +34,12 @@ import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.PhysType;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -83,9 +84,9 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         List<Expression> columnIds = new ArrayList<>();
         List<Expression> columnTypes = new ArrayList<>();
-        for ( long id : fileImplementor.getFileTable().columnIds ) {
-            columnIds.add( Expressions.constant( id, Long.class ) );
-            columnTypes.add( Expressions.constant( fileImplementor.getFileTable().getColumnTypeMap().get( id ), PolyType.class ) );
+        for ( PhysicalColumn column : fileImplementor.getFileTable().columns ) {
+            columnIds.add( Expressions.constant( column.id, Long.class ) );
+            columnTypes.add( Expressions.constant( fileImplementor.getFileTable().getColumnTypeMap().get( column.id ), PolyType.class ) );
         }
 
         Expression _insertValues = Expressions.constant( null );
@@ -120,7 +121,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             enumeratorMethod,
                             Expressions.constant( fileImplementor.getOperation() ),
                             Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
-                            Expressions.constant( fileImplementor.getFileTable().allocation.id ),
+                            Expressions.constant( fileImplementor.getFileTable().allocationId ),
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -137,7 +138,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             FileMethod.EXECUTE_MODIFY.method,
                             Expressions.constant( fileImplementor.getOperation() ),
                             Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
-                            Expressions.constant( fileImplementor.getFileTable().allocation.id ),
+                            Expressions.constant( fileImplementor.getFileTable().allocationId ),
                             DataContext.ROOT,
                             Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),

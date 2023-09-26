@@ -100,18 +100,18 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation ) {
+    public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
         // List<AllocationColumn> ccps = context.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogIndex.key.tableId );
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         // partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = getPhysicalIndexName( logicalIndex.key.tableId, logicalIndex.id );
+        String physicalIndexName = getPhysicalIndexName( index.key.tableId, index.id );
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
         // for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
 
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
-        if ( logicalIndex.unique ) {
+        if ( index.unique ) {
             builder.append( "UNIQUE INDEX " );
         } else {
             builder.append( "INDEX " );
@@ -125,7 +125,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
         builder.append( "(" );
         boolean first = true;
-        for ( long columnId : logicalIndex.key.columnIds ) {
+        for ( long columnId : index.key.columnIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -141,13 +141,13 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex logicalIndex, long allocId ) {
+    public void dropIndex( Context context, LogicalIndex index, long allocId ) {
 
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
 
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( logicalIndex.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
         executeUpdate( builder, context );
 
     }

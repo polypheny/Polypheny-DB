@@ -30,17 +30,17 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public class FileScan extends RelScan implements FileAlg {
+public class FileScan extends RelScan<FileTranslatableEntity> implements FileAlg {
 
     private final FileTranslatableEntity fileTable;
 
 
     public FileScan( AlgOptCluster cluster, CatalogEntity table, FileTranslatableEntity fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
-        super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), table );
+        super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), fileTable );
         this.fileTable = fileTable;
     }
 

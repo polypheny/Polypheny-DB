@@ -18,6 +18,9 @@ package org.polypheny.db.adapter;
 
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -28,11 +31,17 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 
 public interface Scannable {
+
+    static void dropCollectionSubstitute( Scannable scannable, Context context, AllocationCollection allocation ) {
+        scannable.dropCollection( context, allocation );
+    }
 
     default AlgNode getRelScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
@@ -42,6 +51,19 @@ public interface Scannable {
     default AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
         return builder.lpgScan( entity ).build();
+    }
+
+    static AlgNode getGraphScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
+        builder.clear();
+        List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocId );
+        builder.scan( physicals.get( 0 ) );//node
+        builder.scan( physicals.get( 1 ) );//node Props
+        builder.scan( physicals.get( 2 ) );//edge
+        builder.scan( physicals.get( 3 ) );//edge Props
+
+        builder.transform( ModelTrait.GRAPH, GraphType.of(), false );
+
+        return builder.build();
     }
 
     default AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
@@ -68,15 +90,36 @@ public interface Scannable {
         }
     }
 
+    static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
+        builder.clear();
+        PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class );
+        builder.scan( table );
+        AlgDataType rowType = DocumentType.ofId();
+        builder.transform( ModelTrait.DOCUMENT, rowType, false );
+        return builder.build();
+    }
+
     void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     void refreshTable( long allocId );
 
     void refreshGraph( long allocId );
 
+    static void refreshGraphSubstitute( Scannable scannable, long allocId ) {
+        List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocId );
+        scannable.refreshTable( physicals.get( 0 ).allocationId );
+        scannable.refreshTable( physicals.get( 1 ).allocationId );
+        scannable.refreshTable( physicals.get( 2 ).allocationId );
+        scannable.refreshTable( physicals.get( 3 ).allocationId );
+    }
+
     void refreshCollection( long allocId );
 
     StoreCatalog getCatalog();
+
+    static void refreshCollectionSubstitution( Scannable scannable, long allocId ) {
+        scannable.refreshTable( scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).allocationId );
+    }
 
     void dropTable( Context context, long allocId );
 
@@ -87,6 +130,10 @@ public interface Scannable {
      */
     void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
 
+    static void createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        scannable.createGraph( context, logical, allocation );
+    }
+
     /**
      * Default method for dropping an existing graph on the {@link DataStore}.
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
@@ -94,12 +141,20 @@ public interface Scannable {
      */
     void dropGraph( Context context, AllocationGraph allocation );
 
+    static void dropGraphSubstitute( Scannable scannable, Context context, AllocationGraph allocation ) {
+        scannable.dropGraph( context, allocation );
+    }
+
     /**
      * Default method for creating a new collection on the {@link DataStore}.
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
     void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
+
+    static void createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        scannable.createCollection( context, logical, allocation );
+    }
 
     /**
      * Default method for dropping an existing collection on the {@link DataStore}.

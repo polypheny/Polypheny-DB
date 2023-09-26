@@ -20,6 +20,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -48,7 +54,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Byte}.
      * @return {@link Byte}
      */
-    public static Object getTinyIntData( Object data ) {
+    public static Byte getTinyIntData( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -62,7 +68,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Short}.
      * @return {@link Short}
      */
-    public static Object getSmallIntData( Object data ) {
+    public static Short getSmallIntData( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -90,7 +96,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link BigDecimal}
      */
-    public static Object getDecimalData( Object data ) {
+    public static BigDecimal getDecimalData( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -104,7 +110,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link ByteString}
      */
-    public static Object getBinaryData( Object data ) {
+    public static byte[] getBinaryData( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -118,11 +124,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
-    public static Object getTimeData( Object data ) {
+    public static Integer getTimeData( Object data ) {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return data;
+        return (Integer) data;
     }
 
 
@@ -132,11 +138,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
-    public static Object getDateData( Object data ) {
+    public static Integer getDateData( Object data ) {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return data;
+        return (Integer) data;
     }
 
 
@@ -146,7 +152,7 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link java.util.Date}.
      * @return {@link Integer}
      */
-    public static Object getTimestampData( Object data ) {
+    public static Long getTimestampData( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -154,19 +160,19 @@ public class Linq4JFixer {
     }
 
 
-    public static Object getBoolVector( Object data ) {
+    public static PolyList<PolyBoolean> getBoolVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Boolean> list = new ArrayList<>( ((boolean[]) data).length );
+        final List<PolyBoolean> list = new ArrayList<>( ((boolean[]) data).length );
         for ( boolean v : ((boolean[]) data) ) {
-            list.add( v );
+            list.add( PolyBoolean.of( v ) );
         }
-        return list;
+        return PolyList.of( list );
     }
 
 
-    public static Object getTinyIntVector( Object data ) {
+    public static List<Byte> getTinyIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -178,7 +184,7 @@ public class Linq4JFixer {
     }
 
 
-    public static Object getSmallIntVector( Object data ) {
+    public static List<Short> getSmallIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
@@ -190,51 +196,51 @@ public class Linq4JFixer {
     }
 
 
-    public static Object getIntVector( Object data ) {
+    public static PolyList<PolyInteger> getIntVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Integer> list = new ArrayList<>( ((int[]) data).length );
+        final List<PolyInteger> list = new ArrayList<>( ((int[]) data).length );
         for ( int v : ((int[]) data) ) {
-            list.add( v );
+            list.add( PolyInteger.of( v ) );
         }
-        return list;
+        return PolyList.of( list );
     }
 
 
-    public static Object getLongVector( Object data ) {
+    public static PolyList<PolyLong> getLongVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Long> list = new ArrayList<>( ((long[]) data).length );
+        final List<PolyLong> list = new ArrayList<>( ((long[]) data).length );
         for ( long v : ((long[]) data) ) {
-            list.add( v );
+            list.add( PolyLong.of( v ) );
         }
-        return list;
+        return PolyList.of( list );
     }
 
 
-    public static Object getFloatVector( Object data ) {
+    public static PolyList<PolyFloat> getFloatVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Float> list = new ArrayList<>( ((float[]) data).length );
+        final List<PolyFloat> list = new ArrayList<>( ((float[]) data).length );
         for ( float v : ((float[]) data) ) {
-            list.add( v );
+            list.add( PolyFloat.of( v ) );
         }
-        return list;
+        return PolyList.of( list );
     }
 
 
-    public static Object getDoubleVector( Object data ) {
+    public static PolyList<PolyDouble> getDoubleVector( Object data ) {
         if ( data == null ) {
             return null;
         }
-        final List<Double> list = new ArrayList<>( ((double[]) data).length );
+        final List<PolyDouble> list = new ArrayList<>( ((double[]) data).length );
         for ( double v : ((double[]) data) ) {
-            list.add( v );
+            list.add( PolyDouble.of( v ) );
         }
-        return list;
+        return PolyList.of( list );
     }
 
 

@@ -21,8 +21,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -70,7 +70,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
-import org.polypheny.db.webui.models.results.RelationalResult;
 
 
 @Slf4j
@@ -364,7 +363,7 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
+        static ObjectMapper mapper = new ObjectMapper();
 
 
         private MongoConnection() {
@@ -383,7 +382,7 @@ public class TestHelper {
 
         private static DocResult getBody( HttpResponse<String> res ) {
             try {
-                DocResult[] result = gson.fromJson( res.getBody(), DocResult[].class );
+                DocResult[] result = mapper.readValue( res.getBody(), DocResult[].class );
                 if ( result.length == 1 ) {
                     if ( result[0].error != null ) {
                         throw new RuntimeException( result[0].error );
@@ -395,7 +394,7 @@ public class TestHelper {
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
 
-            } catch ( JsonSyntaxException e ) {
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();
                 throw new RuntimeException( "This cannot happen" );
@@ -490,7 +489,7 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static Gson gson = new GsonBuilder().registerTypeAdapter( RelationalResult.class, RelationalResult.getSerializer() ).create();
+        static ObjectMapper mapper = new ObjectMapper();
 
 
         public static GraphResult executeGetResponse( String query ) {
@@ -505,16 +504,16 @@ public class TestHelper {
 
         private static GraphResult getBody( HttpResponse<String> res ) {
             try {
-                GraphResult[] result = gson.fromJson( res.getBody(), GraphResult[].class );
+                GraphResult[] result = mapper.readValue( res.getBody(), GraphResult[].class );
                 if ( result.length == 1 ) {
-                    return gson.fromJson( res.getBody(), GraphResult[].class )[0];
+                    return mapper.readValue( res.getBody(), GraphResult[].class )[0];
                 } else if ( result.length == 0 ) {
                     return GraphResult.builder().build();
                 }
                 fail( "There was more than one result in the response!" );
                 throw new RuntimeException( "This cannot happen" );
 
-            } catch ( JsonSyntaxException e ) {
+            } catch ( JsonSyntaxException | JsonProcessingException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );
                 fail();
                 throw new RuntimeException( "This cannot happen" );

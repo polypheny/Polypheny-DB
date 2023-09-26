@@ -228,17 +228,17 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public String addIndex( Context context, LogicalIndex catalogIndex, AllocationTable allocation ) {
+    public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
         // List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
         // partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
 
-        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+        String physicalIndexName = getPhysicalIndexName( index.key.tableId, index.id );
         PhysicalTable physical = storeCatalog.fromAllocation( allocation.id );
 
         //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
-        if ( catalogIndex.unique ) {
+        if ( index.unique ) {
             builder.append( "UNIQUE INDEX " );
         } else {
                 builder.append( "INDEX " );
@@ -251,7 +251,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( physical.name ) );
 
             builder.append( " USING " );
-            switch ( catalogIndex.method ) {
+        switch ( index.method ) {
                 case "btree":
                 case "btree_unique":
                     builder.append( "btree" );
@@ -271,7 +271,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
             builder.append( "(" );
             boolean first = true;
-        for ( long columnId : catalogIndex.key.columnIds ) {
+        for ( long columnId : index.key.columnIds ) {
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -288,12 +288,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
+    public void dropIndex( Context context, LogicalIndex index, long allocId ) {
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
         //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP INDEX " );
-        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName + "_" + table.id ) );
+        builder.append( dialect.quoteIdentifier( index.physicalName + "_" + table.id ) );
         executeUpdate( builder, context );
         // }
     }

@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.TimeString;
@@ -53,12 +54,6 @@ public class FileModifier extends FileEnumerator {
             final Condition condition ) {
         super( operation, rootPath, partitionId, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
         this.insertValues = insertValues;
-    }
-
-
-    @Override
-    public Object current() {
-        return current;
     }
 
 
@@ -100,7 +95,7 @@ public class FileModifier extends FileEnumerator {
                         write( newFile, value );
                     }
                 }
-                current = Long.valueOf( insertPosition );
+                current = new PolyLong[]{ PolyLong.of( Long.valueOf( insertPosition ) ) };
                 inserted = true;
                 return true;
             }

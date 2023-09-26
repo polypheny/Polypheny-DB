@@ -26,18 +26,17 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyLong;
 
 
 public class FileTableModify extends RelModify<FileTranslatableEntity> implements FileAlg {
@@ -89,13 +88,13 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 int i = 0;
                 for ( RexNode src : getSourceExpressionList() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).value, false ) );
                     } else if ( src instanceof RexDynamicParam ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( Value.fromArrayRexCall( (RexCall) src ) );
                     } else {
-                        throw new RuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
+                        throw new GenericRuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
                     }
                     i++;
                 }
@@ -120,7 +119,7 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 implementor.setOperation( FileImplementor.Operation.DELETE );
                 break;
             default:
-                throw new RuntimeException( "The File adapter does not support " + operation + "operations." );
+                throw new GenericRuntimeException( "The File adapter does not support " + operation + "operations." );
         }
     }
 

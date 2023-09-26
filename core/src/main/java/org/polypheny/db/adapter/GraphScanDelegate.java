@@ -16,10 +16,8 @@
 
 package org.polypheny.db.adapter;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -27,26 +25,17 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.tools.AlgBuilder;
 
-@AllArgsConstructor
-public class RelationalScanDelegate implements Scannable {
+public class GraphScanDelegate implements Scannable {
 
-    public final Scannable scannable;
-
+    protected final Scannable scannable;
     @Getter
-    public final RelStoreCatalog catalog;
+    protected final GraphStoreCatalog catalog;
 
 
-    @Override
-    public AlgNode getGraphScan( long allocId, AlgBuilder builder ) {
-        return Scannable.getGraphScanSubstitute( scannable, allocId, builder );
-    }
-
-
-    @Override
-    public AlgNode getDocumentScan( long allocId, AlgBuilder builder ) {
-        return Scannable.getDocumentScanSubstitute( scannable, allocId, builder );
+    public GraphScanDelegate( Scannable scannable, GraphStoreCatalog catalog ) {
+        this.scannable = scannable;
+        this.catalog = catalog;
     }
 
 
@@ -64,7 +53,7 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public void refreshGraph( long allocId ) {
-        Scannable.refreshGraphSubstitute( scannable, allocId );
+        scannable.refreshGraph( allocId );
     }
 
 
@@ -82,13 +71,13 @@ public class RelationalScanDelegate implements Scannable {
 
     @Override
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        Scannable.createGraphSubstitute( scannable, context, logical, allocation );
+        scannable.createGraph( context, logical, allocation );
     }
 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-        Scannable.dropGraphSubstitute( scannable, context, allocation );
+        scannable.dropGraph( context, allocation );
     }
 
 

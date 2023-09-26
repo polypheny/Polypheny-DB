@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
@@ -53,7 +54,7 @@ public class NeoScan extends RelScan<NeoEntity> implements NeoRelAlg {
 
         implementor.setEntity( entity );
 
-        implementor.add( match_( node_( entity.name, labels_( entity.name ) ) ) );
+        implementor.add( match_( node_( PolyString.of( entity.name ), labels_( PolyString.of( entity.name ) ) ) ) );
 
         if ( !implementor.isDml() ) {
             List<NeoStatement> mapping = entity

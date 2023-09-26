@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.file;
 
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import java.io.BufferedReader;
@@ -34,70 +33,70 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.RelationalModifyDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
-;
 
-public class FilePlugin extends Plugin {
+public class FilePlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "FILE";
+    public static final String ADAPTER_NAME = "File";
+    private long id;
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public FilePlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public FilePlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "embedded"
-        );
-
-        Adapter.addAdapter( FileStore.class, ADAPTER_NAME, settings );
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( FileStore.class, ADAPTER_NAME, FileStore::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( FileStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( this.id );
     }
 
 
@@ -106,8 +105,12 @@ public class FilePlugin extends Plugin {
     @AdapterProperties(
             name = "File",
             description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
-            usedModes = DeployMode.EMBEDDED)
-    public static class FileStore extends DataStore {
+            usedModes = DeployMode.EMBEDDED,
+            defaultMode = DeployMode.EMBEDDED)
+    public static class FileStore extends DataStore<RelStoreCatalog> {
+
+        @Delegate(excludes = Exclude.class)
+        private final RelationalModifyDelegate delegate;
 
         // Standards
         public static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -121,7 +124,8 @@ public class FilePlugin extends Plugin {
 
         @Getter
         private final File rootDir;
-        private FileStoreSchema currentSchema;
+        @Getter
+        private FileStoreSchema currentNamespace;
 
         private final File WAL; // A folder containing the write ahead log
 
@@ -129,8 +133,8 @@ public class FilePlugin extends Plugin {
         private final List<PolyType> unsupportedTypes = ImmutableList.of( PolyType.ARRAY, PolyType.MAP );
 
 
-        public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true );
+        public FileStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
+            super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
             PolyphenyHomeDirManager fileManager = PolyphenyHomeDirManager.getInstance();
             File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
 
@@ -140,6 +144,8 @@ public class FilePlugin extends Plugin {
 
             trxRecovery();
             setInformationPage();
+
+            this.delegate = new RelationalModifyDelegate( this, storeCatalog );
         }
 
 
@@ -175,124 +181,119 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( Snapshot snapshot, String name, long id ) {
-            // it might be worth it to check why createNewSchema is called multiple times with different names
-            if ( currentSchema == null ) {
-                currentSchema = new FileStoreSchema( id, snapshot, name, this );
+        public void updateNamespace( String name, long id ) {
+            if ( currentNamespace == null ) {
+                currentNamespace = new FileStoreSchema( id, name, this );
             }
         }
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
-            return currentSchema.createFileTable( logical, allocationTable );
+        public void refreshTable( long allocId ) {
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+            storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
         }
 
 
         @Override
-        public Namespace getCurrentSchema() {
-            return currentSchema;
-        }
-
-
-        @Override
-        public PhysicalTable createPhysicalTable( Context context, LogicalTable logicalTable, AllocationTable allocationTable ) {
+        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            String physicalTableName = getPhysicalTableName( allocationWrapper.table.id );
 
-            for ( Long colId : logicalTable.fieldIds ) {
-                File newColumnFolder = getColumnFolder( colId, allocationTable.id );
+            PhysicalTable table = storeCatalog.createTable(
+                    logical.table.getNamespaceName(),
+                    physicalTableName,
+                    allocationWrapper.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalColumnName( c.columnId, allocationWrapper.table.id ) ) ),
+                    logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                    allocationWrapper );
+
+            for ( LogicalColumn col : logical.columns ) {
+                File newColumnFolder = getColumnFolder( col.id, allocationWrapper.table.id );
                 if ( !newColumnFolder.mkdir() ) {
-                    throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
+                    throw new GenericRuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
                 }
             }
 
-            return this.currentSchema.createFileTable( logicalTable, allocationTable );
+            refreshTable( allocationWrapper.table.id );
+        }
+
+
+        private String getPhysicalTableName( long id ) {
+            return "tab" + id;
         }
 
 
         @Override
-        public void dropTable( Context context, LogicalTable catalogTable, List<Long> partitionIds ) {
+        public void dropTable( Context context, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             // TODO check if it is on this store?
 
-            for ( long partitionId : partitionIds ) {
-                catalog.deletePartitionPlacement( getAdapterId(), partitionId );
-                for ( Long colId : catalogTable.fieldIds ) {
-                    File f = getColumnFolder( colId, partitionId );
-                    try {
-                        FileUtils.deleteDirectory( f );
-                    } catch ( IOException e ) {
-                        throw new RuntimeException( "Could not drop table " + colId, e );
-                    }
-                }
-            }
-        }
-
-
-        @Override
-        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
-            context.getStatement().getTransaction().registerInvolvedAdapter( this );
-
-            CatalogColumnPlacement ccp = null;
-            for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapterPerTable( getAdapterId(), catalogTable.id ) ) {
-                // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
-                if ( p.columnId != catalogColumn.id ) {
-                    ccp = p;
-                    break;
-                }
-            }
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( ccp.adapterId, catalogTable.id ) ) {
-                File newColumnFolder = getColumnFolder( catalogColumn.id, partitionPlacement.partitionId );
-                if ( !newColumnFolder.mkdir() ) {
-                    throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
-                }
-
-                // Add default values
-                if ( catalogColumn.defaultValue != null ) {
-                    try {
-                        CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                        File primaryKeyDir = new File( rootDir, getPhysicalColumnName( primaryKey.columnIds.get( 0 ), partitionPlacement.partitionId ) );
-                        for ( File entry : primaryKeyDir.listFiles() ) {
-                            FileModifier.write( new File( newColumnFolder, entry.getName() ), catalogColumn.defaultValue.value );
-                        }
-                    } catch ( IOException e ) {
-                        throw new RuntimeException( "Caught exception while inserting default values", e );
-                    }
-                }
-            }
-
-            catalog.updateColumnPlacementPhysicalNames(
-                    getAdapterId(),
-                    catalogColumn.id,
-                    currentSchema.getSchemaName(),
-                    "unused",
-                    false );
-        }
-
-
-        @Override
-        public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-            context.getStatement().getTransaction().registerInvolvedAdapter( this );
-
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-                File columnFile = getColumnFolder( columnPlacement.columnId, partitionPlacement.partitionId );
+            PhysicalTable table = storeCatalog.fromAllocation( allocId );
+            for ( Long colId : table.getColumnIds() ) {
+                File f = getColumnFolder( colId, allocId );
                 try {
-                    FileUtils.deleteDirectory( columnFile );
+                    FileUtils.deleteDirectory( f );
                 } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not delete column folder", e );
+                    throw new GenericRuntimeException( "Could not drop table " + colId, e );
                 }
             }
+
+            storeCatalog.removePhysical( allocId );
+
         }
 
 
         @Override
-        public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
-            throw new RuntimeException( "File adapter does not support adding indexes" );
+        public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+
+            PhysicalTable table = storeCatalog.fromAllocation( allocId );
+            PhysicalColumn column = storeCatalog.addColumn( getPhysicalColumnName( logicalColumn.id, allocId ), allocId, table.columns.size() - 1, logicalColumn );
+
+            File newColumnFolder = getColumnFolder( column.id, allocId );
+            if ( !newColumnFolder.mkdir() ) {
+                throw new GenericRuntimeException( "Could not create column folder " + newColumnFolder.getName() );
+            }
+
+            // Add default values
+            if ( column.defaultValue != null ) {
+                try {
+                    //CatalogPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( );
+                    File primaryKeyDir = new File( rootDir, getPhysicalColumnName( column.id, allocId ) );
+                    for ( File entry : Objects.requireNonNull( primaryKeyDir.listFiles() ) ) {
+                        FileModifier.write( new File( newColumnFolder, entry.getName() ), logicalColumn.defaultValue.value );
+                    }
+                } catch ( IOException e ) {
+                    throw new GenericRuntimeException( "Caught exception while inserting default values", e );
+                }
+            }
+
         }
 
 
         @Override
-        public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        public void dropColumn( Context context, long allocId, long columnId ) {
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            storeCatalog.dropColumn( allocId, columnId );
+            File columnFile = getColumnFolder( columnId, allocId );
+            try {
+                FileUtils.deleteDirectory( columnFile );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not delete column folder", e );
+            }
+
+        }
+
+
+        @Override
+        public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
+            throw new GenericRuntimeException( "File adapter does not support adding indexes" );
+        }
+
+
+        @Override
+        public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
             throw new RuntimeException( "File adapter does not support dropping indexes" );
         }
 
@@ -437,45 +438,45 @@ public class FilePlugin extends Plugin {
 
 
         @Override
-        public void truncate( Context context, LogicalTable table ) {
+        public void truncate( Context context, long allocId ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
-                FileTranslatableEntity fileTable = (FileTranslatableEntity) currentSchema.getEntity( table.name + "_" + partitionPlacement.partitionId );
-                try {
-                    for ( long id : fileTable.columnIds ) {
-                        File columnFolder = getColumnFolder( id, fileTable.allocation.id );
-                        FileUtils.cleanDirectory( columnFolder );
-                    }
-                } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not truncate file table", e );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+            FileTranslatableEntity fileTable = (FileTranslatableEntity) currentNamespace.getEntity( physical.name + "_" + allocId );
+            try {
+                for ( PhysicalColumn column : fileTable.columns ) {
+                    File columnFolder = getColumnFolder( column.id, allocId );
+                    FileUtils.cleanDirectory( columnFolder );
                 }
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not truncate file table", e );
             }
+
         }
 
 
         @Override
-        public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn, PolyType oldType ) {
+        public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
             throw new RuntimeException( "File adapter does not support updating column types!" );
         }
 
 
         @Override
-        public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        public List<IndexMethodModel> getAvailableIndexMethods() {
             return new ArrayList<>();
         }
 
 
         @Override
-        public AvailableIndexMethod getDefaultIndexMethod() {
-            throw new RuntimeException( "File adapter does not support adding indexes" );
+        public IndexMethodModel getDefaultIndexMethod() {
+            throw new GenericRuntimeException( "File adapter does not support adding indexes" );
         }
 
 
         @Override
         public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable ) {
             // TODO: Check if this is correct and ind better approach
-            List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
+            List<Long> pkIds = Catalog.snapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow().columnIds;
             return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
         }
 
@@ -512,6 +513,28 @@ public class FilePlugin extends Plugin {
         public File getColumnFolder( final long columnId, final long partitionId ) {
             return new File( rootDir, getPhysicalColumnName( columnId, partitionId ) );
         }
+
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void dropIndex( Context context, LogicalIndex catalogIndex, long allocId );
+
+        String addIndex( Context context, LogicalIndex index, AllocationTable allocation );
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
 
     }
 

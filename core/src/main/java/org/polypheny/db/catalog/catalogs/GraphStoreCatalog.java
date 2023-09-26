@@ -28,34 +28,34 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Pair;
 
-public class DocStoreCatalog extends StoreCatalog {
+public class GraphStoreCatalog extends StoreCatalog {
 
     @Serialize
-    ConcurrentMap<Pair<Long, Long>, PhysicalColumn> fields; // allocId, columnId
+    ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, columnId
 
 
-    public DocStoreCatalog( long adapterId ) {
+    public GraphStoreCatalog( long adapterId ) {
         this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
     }
 
 
-    public DocStoreCatalog(
+    public GraphStoreCatalog(
             @Deserialize("adapterId") long adapterId,
             @Deserialize("namespaces") Map<Long, Namespace> namespaces,
             @Deserialize("physicals") Map<Long, ? extends PhysicalEntity> physicals,
@@ -67,8 +67,39 @@ public class DocStoreCatalog extends StoreCatalog {
     }
 
 
-    public <T extends PhysicalEntity> T fromAllocation( long id, Class<T> clazz ) {
+    public PhysicalTable createTable(
+            String namespaceName,
+            String tableName,
+            Map<Long, String> columnNames,
+            LogicalTable logical,
+            Map<Long, LogicalColumn> logicalColumns,
+            AllocationTableWrapper wrapper ) {
+        AllocationTable allocation = wrapper.table;
+        List<AllocationColumn> columns = wrapper.columns;
+        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        long physicalId = IdBuilder.getInstance().getNewPhysicalId();
+        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        pColumns.forEach( this::addColumn );
+        addPhysical( allocation, table );
+        return table;
+    }
+
+
+    public <E extends PhysicalEntity> E fromAllocation( long id, Class<E> clazz ) {
         return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz );
+    }
+
+
+    public PhysicalGraph createGraph( String name, LogicalGraph logical, AllocationGraph allocation ) {
+        long physicalId = IdBuilder.getInstance().getNewPhysicalId();
+        PhysicalGraph physical = new PhysicalGraph( physicalId, allocation.id, name, logical.entityType, adapterId );
+        addPhysical( allocation, physical );
+        return physical;
+    }
+
+
+    public List<? extends PhysicalField> getFields( long allocId ) {
+        return fields.values().stream().filter( f -> f.allocId == allocId ).collect( Collectors.toList() );
     }
 
 
@@ -92,62 +123,8 @@ public class DocStoreCatalog extends StoreCatalog {
     }
 
 
-    public PhysicalColumn getColumn( long columnId, long allocId ) {
-        return fields.get( Pair.of( allocId, columnId ) );
-    }
-
-
-    public List<? extends PhysicalField> getFields( long allocId ) {
-        return fields.values().stream().filter( f -> f.allocId == allocId ).collect( Collectors.toList() );
-    }
-
-
-    public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) );
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
-        pColumns.remove( column );
-        addPhysical( getAlloc( allocId ), table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
-        fields.remove( Pair.of( allocId, columnId ) );
-    }
-
-
-    public PhysicalColumn updateColumnType( long allocId, LogicalColumn newCol ) {
-        PhysicalColumn old = getColumn( newCol.id, allocId );
-        PhysicalColumn column = new PhysicalColumn( old.name, newCol.tableId, allocId, old.adapterId, old.position, newCol );
-        PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
-        List<PhysicalColumn> pColumn = new ArrayList<>( table.columns );
-        pColumn.remove( old );
-        pColumn.add( column );
-        addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( pColumn ) ).build() );
-
-        return column;
-    }
-
-
-    public PhysicalTable createTable(
-            String namespaceName,
-            String tableName,
-            Map<Long, String> columnNames,
-            LogicalTable logical,
-            Map<Long, LogicalColumn> logicalColumns,
-            AllocationTableWrapper wrapper ) {
-        AllocationTable allocation = wrapper.table;
-        List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
-        long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
-        pColumns.forEach( this::addColumn );
-        addPhysical( allocation, table );
-        return table;
-    }
-
-
-    public PhysicalCollection createCollection( String namespaceName, String name, LogicalCollection logical, AllocationCollection allocation ) {
-        long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalCollection collection = new PhysicalCollection( physicalId, logical.id, allocation.id, logical.namespaceId, name, namespaceName, logical.entityType, adapterId );
-        addPhysical( allocation, collection );
-        return collection;
+    public PhysicalField getField( long fieldId, long allocId ) {
+        return fields.get( Pair.of( allocId, fieldId ) );
     }
 
 }

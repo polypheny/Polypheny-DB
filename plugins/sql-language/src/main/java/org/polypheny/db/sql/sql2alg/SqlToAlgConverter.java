@@ -2888,7 +2888,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private AlgNode createModify( CatalogEntity targetTable, AlgNode source ) {
         final ModifiableTable modifiableTable = targetTable.unwrap( ModifiableTable.class );
         if ( modifiableTable != null && modifiableTable == targetTable.unwrap( Entity.class ) ) {
-            return modifiableTable.toModificationAlg(
+            return modifiableTable.toModificationTable(
                     cluster,
                     source.getTraitSet(),
                     targetTable,

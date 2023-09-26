@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.neo4j.rules;
 
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.neo4j.NeoConvention;
+import org.polypheny.db.adapter.neo4j.NeoEntity;
 import org.polypheny.db.adapter.neo4j.NeoToEnumerableConverterRule;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoFilter;
 import org.polypheny.db.adapter.neo4j.rules.relational.NeoModify;
@@ -29,11 +30,12 @@ import org.polypheny.db.algebra.UnsupportedFromInsertShuttle;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Filter;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.types.ModifiableTable;
 
 public interface NeoRules {
 
@@ -77,12 +79,21 @@ public interface NeoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            RelModify modify = (RelModify) alg;
+            RelModify<?> modify = (RelModify<?>) alg;
+
+            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( modifiableTable == null ) {
+                return null;
+            }
+            NeoEntity mongo = modify.getEntity().unwrap( NeoEntity.class );
+            if ( mongo == null ) {
+                return null;
+            }
+
             return new NeoModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
-                    modify.getEntity(),
-                    modify.getCatalogReader(),
+                    modify.getEntity().unwrap( NeoEntity.class ),
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
                     modify.getOperation(),
                     modify.getUpdateColumnList(),

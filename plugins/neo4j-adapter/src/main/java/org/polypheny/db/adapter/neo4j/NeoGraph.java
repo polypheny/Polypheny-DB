@@ -31,6 +31,8 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
@@ -44,46 +46,54 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
-import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyCollections.PolyMap;
-import org.polypheny.db.schema.graph.PolyGraph;
-import org.polypheny.db.schema.graph.QueryableGraph;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.types.ModifiableGraph;
+import org.polypheny.db.schema.types.ModifiableTable;
+import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Graph entity in the Neo4j representation.
  */
-public class NeoGraph extends PhysicalGraph implements TranslatableEntity, ModifiableGraph {
+public class NeoGraph extends PhysicalGraph implements TranslatableEntity, ModifiableTable, ModifiableGraph, QueryableEntity {
 
     public final TransactionProvider transactionProvider;
     public final Driver db;
     public final String mappingLabel;
     public final Neo4jStore store;
-    public final PhysicalGraph allocation;
+
+    public List<? extends PhysicalField> fields;
 
 
-    public NeoGraph( PhysicalGraph graph, TransactionProvider transactionProvider, Driver db, String mappingLabel, Neo4jStore store ) {
-        super( graph.id, graph.name, graph.entityType, graph.namespaceType );
-        this.allocation = graph;
+    public NeoGraph( PhysicalEntity physical, List<? extends PhysicalField> fields, TransactionProvider transactionProvider, Driver db, String mappingLabel, Neo4jStore store ) {
+        super( physical.id, physical.allocationId, physical.name, physical.entityType, physical.adapterId );
         this.transactionProvider = transactionProvider;
         this.db = db;
         this.mappingLabel = mappingLabel;
         this.store = store;
+        this.fields = fields;
     }
 
 
@@ -95,18 +105,41 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
      * @param operation the modify operation
      */
     @Override
-    public Modify<?> toModificationAlg(
+    public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity physicalEntity,
+            CatalogEntity table,
+            AlgNode child,
+            Operation operation,
+            List<String> targets,
+            List<? extends RexNode> sources ) {
+        NeoConvention.INSTANCE.register( cluster.getPlanner() );
+        return new LogicalRelModify(
+                cluster,
+                traits.replace( Convention.NONE ),
+                table,
+                child,
+                operation,
+                targets,
+                sources,
+                false );
+    }
+
+
+    @Override
+    public Modify<?> toModificationGraph(
+            AlgOptCluster cluster,
+            AlgTraitSet traits,
+            CatalogEntity graph,
             AlgNode child,
             Operation operation,
             List<PolyString> targets,
             List<? extends RexNode> sources ) {
+        NeoConvention.INSTANCE.register( cluster.getPlanner() );
         return new LogicalLpgModify(
                 cluster,
                 traits.replace( Convention.NONE ),
-                physicalEntity,
+                graph,
                 child,
                 operation,
                 targets,
@@ -127,21 +160,43 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     }
 
 
-    public static class NeoQueryable<T> extends AbstractQueryable<T> {
+    @Override
+    public Expression asExpression() {
+        return Expressions.call(
+                Expressions.convert_(
+                        Expressions.call(
+                                Expressions.call(
+                                        store.getCatalogAsExpression(),
+                                        "getPhysical", Expressions.constant( id ) ),
+                                "unwrap", Expressions.constant( NeoGraph.class ) ),
+                        NeoGraph.class ),
+                "asQueryable",
+                DataContext.ROOT,
+                Catalog.SNAPSHOT_EXPRESSION );
+    }
+
+
+    @Override
+    public NeoQueryable asQueryable( DataContext dataContext, Snapshot snapshot ) {
+        return new NeoQueryable( dataContext, snapshot, this );
+    }
+
+
+    public static class NeoQueryable extends AbstractQueryable<PolyValue[]> {
 
 
         private final NeoGraph graph;
         private final DataContext dataContext;
 
 
-        public NeoQueryable( DataContext dataContext, QueryableGraph graph ) {
+        public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoGraph graph ) {
             this.dataContext = dataContext;
-            this.graph = (NeoGraph) graph;
+            this.graph = graph;
         }
 
 
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<T> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
+        public Enumerable<PolyValue[]> execute( String query, List<PolyType> types, List<PolyType> componentTypes, Map<Long, Pair<PolyType, PolyType>> prepared ) {
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
@@ -149,12 +204,12 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             List<Result> results = new ArrayList<>();
             results.add( trx.run( query ) );
 
-            Function1<Record, T> getter = NeoQueryable.getter( types, componentTypes );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types, componentTypes );
 
             return new AbstractEnumerable<>() {
                 @Override
-                public Enumerator<T> enumerator() {
-                    return new NeoEnumerator<>( results, getter );
+                public Enumerator<PolyValue[]> enumerator() {
+                    return new NeoEnumerator( results, getter );
                 }
             };
         }
@@ -168,17 +223,16 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          * @return the result as enumerable
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<T> executeAll( String nodes, String edges ) {
+        public Enumerable<PolyValue[]> executeAll( String nodes, String edges ) {
             commit();
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
 
-            Map<String, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode() ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
-            Map<String, PolyEdge> polyEdges = trx.run( edges ).list().stream().map( e -> NeoUtil.asPolyEdge( e.get( 0 ).asRelationship() ) ).collect( Collectors.toMap( e -> e.id, e -> e ) );
+            Map<PolyString, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode() ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
+            Map<PolyString, PolyEdge> polyEdges = trx.run( edges ).list().stream().map( e -> NeoUtil.asPolyEdge( e.get( 0 ).asRelationship() ) ).collect( Collectors.toMap( e -> e.id, e -> e ) );
 
-            //noinspection unchecked
-            return (Enumerable<T>) Linq4j.singletonEnumerable( new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) );
+            return Functions.singletonEnumerable( new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) );
         }
 
 
@@ -230,22 +284,17 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
         @Override
-        public Iterator<T> iterator() {
+        public @NotNull Iterator<PolyValue[]> iterator() {
             return Linq4j.enumeratorIterator( enumerator() );
         }
 
 
         @Override
-        public Enumerator<T> enumerator() {
+        public Enumerator<PolyValue[]> enumerator() {
             return null;
         }
 
     }
 
-
-    @Override
-    public AlgDataType getRowType() {
-        return null;
-    }
 
 }

@@ -23,7 +23,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableEntity;
@@ -36,6 +35,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
@@ -44,11 +44,11 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
-import org.polypheny.db.schema.ModifiableEntity;
 import org.polypheny.db.schema.document.DocumentRules;
+import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
@@ -79,7 +79,7 @@ public class FileRules {
         }
 
 
-        private static boolean supports( RelModify node ) {
+        private static boolean supports( RelModify<?> node ) {
             if ( node.getSourceExpressionList() != null ) {
                 return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressionList() );
             }
@@ -89,7 +89,7 @@ public class FileRules {
 
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            final RelModify modify = call.alg( 0 );
+            final RelModify<?> modify = call.alg( 0 );
             if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
@@ -108,7 +108,7 @@ public class FileRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableEntity modifiableTable = modify.getEntity().unwrap( ModifiableEntity.class );
+            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
             if ( modifiableTable == null ) {
                 log.warn( "Returning null during conversion" );
@@ -180,7 +180,7 @@ public class FileRules {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
                 boolean isSelect = true;
                 for ( RexNode node : ((LogicalProject) call.alg( 0 )).getProjects() ) {
-                    if ( node instanceof RexInputRef ) {
+                    if ( node instanceof RexIndexRef ) {
                         continue;
                     }
                     isSelect = false;
@@ -272,7 +272,11 @@ public class FileRules {
         public AlgNode convert( AlgNode alg ) {
             final Union union = (Union) alg;
             final AlgTraitSet traitSet = union.getTraitSet().replace( convention );
-            return new FileUnion( union.getCluster(), traitSet, AlgOptRule.convertList( union.getInputs(), convention ), union.all );
+            return new FileUnion(
+                    union.getCluster(),
+                    traitSet,
+                    AlgOptRule.convertList( union.getInputs(), convention ),
+                    union.all );
         }
 
     }
@@ -295,7 +299,7 @@ public class FileRules {
          */
         @Override
         public boolean matches( AlgOptRuleCall call ) {
-            return call.alg( 0 ).getInput( 0 ).getConvention() == convention;
+            return true;//call.alg( 0 ).getInput( 0 ).getConvention() == convention;
         }
 
 
@@ -303,7 +307,11 @@ public class FileRules {
         public AlgNode convert( AlgNode alg ) {
             final Filter filter = (Filter) alg;
             final AlgTraitSet traitSet = filter.getTraitSet().replace( convention );
-            return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
+            return new FileFilter(
+                    filter.getCluster(),
+                    traitSet,
+                    convert( filter.getInput(), filter.getInput().getTraitSet().replace( convention ) ),
+                    filter.getCondition() );
         }
 
 
@@ -321,9 +329,9 @@ public class FileRules {
     }
 
 
+    @Getter
     private static class CheckingFunctionVisitor extends RexVisitorImpl<Void> {
 
-        @Getter
         @Accessors(fluent = true)
         private boolean containsFunction = false;
 

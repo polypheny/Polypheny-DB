@@ -33,10 +33,11 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -101,12 +102,12 @@ public class Condition {
 
 
     private void assignRexNode( final RexNode rexNode ) {
-        if ( rexNode instanceof RexInputRef ) {
-            this.columnReference = ((RexInputRef) rexNode).getIndex();
+        if ( rexNode instanceof RexIndexRef ) {
+            this.columnReference = ((RexIndexRef) rexNode).getIndex();
         } else if ( rexNode instanceof RexDynamicParam ) {
             this.literalIndex = ((RexDynamicParam) rexNode).getIndex();
         } else if ( rexNode instanceof RexLiteral ) {
-            this.literal = ((RexLiteral) rexNode).getValueForFileCondition();
+            this.literal = FileUtil.toObject( ((RexLiteral) rexNode).value );
         }
     }
 

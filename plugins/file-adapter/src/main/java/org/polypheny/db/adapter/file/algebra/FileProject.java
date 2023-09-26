@@ -29,15 +29,19 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public class FileProject extends Project implements FileAlg {
@@ -70,8 +74,8 @@ public class FileProject extends Project implements FileAlg {
             boolean containsInputRefs = false;
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
-                    row[i] = new Value( i, ((RexLiteral) node).getValueForFileAdapter(), false );
-                } else if ( node instanceof RexInputRef ) {
+                    row[i] = new Value( i, ((RexLiteral) node).value, false );
+                } else if ( node instanceof RexIndexRef ) {
                     if ( containsInputRefs ) {
                         continue;
                     }
@@ -79,15 +83,15 @@ public class FileProject extends Project implements FileAlg {
                     implementor.visitChild( 0, getInput() );
                 } else if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;
-                    ArrayList<Object> arrayValues = new ArrayList<>();
+                    List<PolyValue> arrayValues = new ArrayList<>();
                     for ( RexNode node1 : call.getOperands() ) {
-                        arrayValues.add( ((RexLiteral) node1).getValueForFileCondition() );
+                        arrayValues.add( ((RexLiteral) node1).value );
                     }
-                    row[i] = new Value( i, gson.toJson( arrayValues ), false );
+                    row[i] = new Value( i, PolyList.of( arrayValues ), false );
                 } else if ( node instanceof RexDynamicParam ) {
-                    row[i] = new Value( i, ((RexDynamicParam) node).getIndex(), true );
+                    row[i] = new Value( i, PolyLong.of( ((RexDynamicParam) node).getIndex() ), true );
                 } else {
-                    throw new RuntimeException( "Could not implement " + node.getClass().getSimpleName() + " " + node.toString() );
+                    throw new GenericRuntimeException( "Could not implement " + node.getClass().getSimpleName() + " " + node );
                 }
                 i++;
             }
@@ -106,8 +110,8 @@ public class FileProject extends Project implements FileAlg {
         List<Integer> mapping = new ArrayList<>();
         boolean inputRefsOnly = true;
         for ( RexNode e : exps ) {
-            if ( e instanceof RexInputRef ) {
-                mapping.add( Long.valueOf( ((RexInputRef) e).getIndex() ).intValue() );
+            if ( e instanceof RexIndexRef ) {
+                mapping.add( Long.valueOf( ((RexIndexRef) e).getIndex() ).intValue() );
             } else {
                 inputRefsOnly = false;
                 break;

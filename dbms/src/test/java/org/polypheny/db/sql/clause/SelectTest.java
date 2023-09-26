@@ -42,6 +42,7 @@ import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -214,11 +215,11 @@ public class SelectTest {
         AlgBuilder builder = AlgBuilder.create( statement );
 
         AlgNode scan = builder.scan( "public", "TableC" ).build();
-        PolyImplementation<Object> impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
+        PolyImplementation impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
-        ResultIterator<Object> iter = impl.execute( statement, 2 );
-        List<List<Object>> first = iter.getRows();
-        List<List<Object>> others = iter.getRows();
+        ResultIterator iter = impl.execute( statement, 2 );
+        List<List<PolyValue>> first = iter.getRows();
+        List<List<PolyValue>> others = iter.getRows();
 
         assertEquals( 2, first.size() );
         assertEquals( 1, others.size() );

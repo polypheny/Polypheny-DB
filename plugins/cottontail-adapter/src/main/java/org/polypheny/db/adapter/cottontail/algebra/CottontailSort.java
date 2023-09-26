@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.cottontail.algebra;
 
+import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,7 +48,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc;
 public class CottontailSort extends Sort implements CottontailAlg {
 
     public CottontailSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-        super( cluster, traits, child, collation, offset, fetch );
+        super( cluster, traits, child, collation, null, offset, fetch );
     }
 
 
@@ -67,14 +68,14 @@ public class CottontailSort extends Sort implements CottontailAlg {
         if ( this.offset != null ) {
             context.offsetBuilder = numberBuilderBuilder( this.offset );
         }
-        if ( this.collation != null && this.collation.getFieldCollations().size() > 0 ) {
+        if ( this.collation != null && !this.collation.getFieldCollations().isEmpty() ) {
             context.sortMap = sortMapBuilder( this.collation, context, getRowType().getFieldNames() );
         }
     }
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
         return new CottontailSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
 

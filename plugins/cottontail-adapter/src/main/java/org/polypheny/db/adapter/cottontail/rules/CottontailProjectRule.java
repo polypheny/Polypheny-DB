@@ -33,7 +33,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentRules;
@@ -67,7 +67,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
         List<RexNode> projects = project.getProjects();
         for ( RexNode e : projects ) {
-            if ( e instanceof RexInputRef ) {
+            if ( e instanceof RexIndexRef ) {
                 containsInputRefs = true;
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof ArrayValueConstructor)) ) {
                 containsValueProjects = true;

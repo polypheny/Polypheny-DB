@@ -24,16 +24,16 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.enumerable.EnumUtils;
-import org.polypheny.db.adapter.enumerable.EnumerableAlg;
-import org.polypheny.db.adapter.enumerable.EnumerableAlgImplementor;
-import org.polypheny.db.adapter.enumerable.JavaRowFormat;
-import org.polypheny.db.adapter.enumerable.PhysType;
-import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.neo4j.NeoGraph.NeoQueryable;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
+import org.polypheny.db.algebra.enumerable.EnumUtils;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.JavaRowFormat;
+import org.polypheny.db.algebra.enumerable.PhysType;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -41,9 +41,9 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.schema.ModelTrait;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -113,7 +113,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                                         Expressions.constant( graphImplementor.getGraph().name, String.class ) ), SchemaPlus.class ) ), NeoQueryable.class ) );
 
         Expression enumerable;
-        if ( graphImplementor.isAll() && rowType.getFieldCount() == 1 && rowType.getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+        /*if ( graphImplementor.isAll() && rowType.getFieldCount() == 1 && rowType.getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
             Pair<String, String> queries = graphImplementor.getAllQueries();
 
             enumerable = blockBuilder.append(
@@ -122,7 +122,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                             graph,
                             NeoMethod.GRAPH_ALL.method, Expressions.constant( queries.left ), Expressions.constant( queries.right ) ) );
 
-        } else {
+        } else {*/
             final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
 
             final Expression arrayFields = getFields( blockBuilder, rowType, NeoUtil::getComponentTypeOrParent );
@@ -136,7 +136,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
                     Expressions.call(
                             graph,
                             NeoMethod.GRAPH_EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
-        }
+        //}
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );
 
@@ -162,7 +162,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
         // PhysType is Enumerable Adapter class that maps SQL types (getRowType) with physical Java types (getJavaTypes())
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
-        final Expression table = blockBuilder.append( "table", neoImplementor.getTable().getExpression( NeoEntity.NeoQueryable.class ) );
+        final Expression entity = blockBuilder.append( "entity", neoImplementor.getEntity().asExpression( NeoEntity.NeoQueryable.class ) );
 
         final Expression fields = getFields( blockBuilder, rowType, AlgDataType::getPolyType );
 
@@ -175,7 +175,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
         final Expression enumerable = blockBuilder.append(
                 blockBuilder.newName( "enumerable" ),
                 Expressions.call(
-                        table,
+                        entity,
                         NeoMethod.EXECUTE.method, Expressions.constant( query ), fields, arrayFields, parameterClasses ) );
 
         blockBuilder.add( Expressions.return_( null, enumerable ) );

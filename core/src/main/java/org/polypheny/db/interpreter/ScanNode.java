@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -129,7 +130,7 @@ public class ScanNode implements Node {
 
         final Enumerable<Row<PolyValue>> rowEnumerable;
         if ( elementType instanceof Class ) {
-            final Queryable<PolyValue> queryable = Schemas.queryable( root, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
+            final Queryable<PolyValue[]> queryable = Schemas.queryable( root, List.of( Catalog.getInstance().getSnapshot().getNamespace( alg.entity.namespaceId ).orElseThrow().name, alg.entity.name ) );
             ImmutableList.Builder<Field> fieldBuilder = ImmutableList.builder();
             Class<?> type = (Class<?>) elementType;
             for ( Field field : type.getFields() ) {
@@ -145,7 +146,7 @@ public class ScanNode implements Node {
                     try {
                         values[i] = (PolyValue) field.get( o );
                     } catch ( IllegalAccessException e ) {
-                        throw new RuntimeException( e );
+                        throw new GenericRuntimeException( e );
                     }
                 }
                 return new Row<>( values, PolyValue.class );

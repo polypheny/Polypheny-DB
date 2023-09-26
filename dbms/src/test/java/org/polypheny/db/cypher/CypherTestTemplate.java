@@ -123,7 +123,7 @@ public class CypherTestTemplate {
 
 
     protected boolean containsNodes( GraphResult res, boolean exclusive, TestObject... nodes ) {
-        if ( res.getHeader().size() == 1 && res.getHeader().get( 0 ).dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "node" ) ) {
             return contains( res.getData(), exclusive, 0, PolyNode.class, nodes );
         }
         throw new UnsupportedOperationException();
@@ -131,7 +131,7 @@ public class CypherTestTemplate {
 
 
     protected boolean containsEdges( GraphResult res, boolean exclusive, TestEdge... edges ) {
-        if ( res.getHeader().size() == 1 && res.getHeader().get( 0 ).dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
+        if ( res.getHeader().length == 1 && res.getHeader()[0].dataType.toLowerCase( Locale.ROOT ).contains( "edge" ) ) {
             return contains( res.getData(), exclusive, 0, PolyEdge.class, edges );
         }
         throw new UnsupportedOperationException();
@@ -165,7 +165,7 @@ public class CypherTestTemplate {
 
         boolean correct = true;
         if ( name != null ) {
-            correct = actual.getHeader().get( index ).name.equals( name );
+            correct = actual.getHeader()[index].name.equals( name );
         }
 
         boolean contains = correct;
@@ -274,9 +274,9 @@ public class CypherTestTemplate {
 
 
     protected boolean is( GraphResult res, Type type, int index ) {
-        assert res.getHeader().size() >= index;
+        assert res.getHeader().length >= index;
 
-        return res.getHeader().get( index ).dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
+        return res.getHeader()[index].dataType.toLowerCase( Locale.ROOT ).contains( type.getTypeName() );
     }
 
 

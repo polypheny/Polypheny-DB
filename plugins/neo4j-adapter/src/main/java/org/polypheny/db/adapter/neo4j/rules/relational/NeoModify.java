@@ -24,7 +24,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexNode;
 
 public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
@@ -40,15 +39,14 @@ public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
      * @param cluster Cluster this relational expression belongs to
      * @param traitSet Traits of this relational expression
      * @param table Target table to modify
-     * @param catalogReader accessor to the table metadata.
      * @param input Sub-query or filter condition
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
      * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public NeoModify( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity table, CatalogReader catalogReader, AlgNode input, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        super( cluster, traitSet, table, catalogReader, input, operation, updateColumnList, sourceExpressionList, flattened );
+    public NeoModify( AlgOptCluster cluster, AlgTraitSet traitSet, NeoEntity table, AlgNode input, Operation operation, List<String> updateColumnList, List<? extends RexNode> sourceExpressionList, boolean flattened ) {
+        super( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
 
@@ -102,7 +100,6 @@ public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
                 inputs.get( 0 ).getCluster(),
                 traitSet,
                 entity,
-                catalogReader,
                 inputs.get( 0 ),
                 getOperation(),
                 getUpdateColumnList(),

@@ -260,13 +260,13 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public String addIndex( Context context, LogicalIndex catalogIndex, AllocationTable allocation ) {
+    public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
         throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 
 
     @Override
-    public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
+    public void dropIndex( Context context, LogicalIndex index, long allocId ) {
         throw new RuntimeException( "MonetDB adapter does not support dropping indexes" );
     }
 

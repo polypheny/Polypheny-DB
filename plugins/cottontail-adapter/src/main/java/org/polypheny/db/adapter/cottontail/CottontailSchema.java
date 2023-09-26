@@ -25,12 +25,11 @@ import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
-import org.polypheny.db.catalog.Snapshot;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.SchemaVersion;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
@@ -92,12 +91,11 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
 
     public static CottontailSchema create(
             Long id,
-            Snapshot snapshot,
             String name,
             CottontailWrapper wrapper,
             CottontailStore cottontailStore
     ) {
-        final Expression expression = Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
+        final Expression expression = null;//Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
         return new CottontailSchema( id, wrapper, convention, cottontailStore, name );
     }
@@ -126,10 +124,9 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
                 this.name );
     }
 
-
     @Override
-    public Expression getExpression( Snapshot snapshot, String name ) {
-        return Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
+    public Expression getExpression( Snapshot snapshot, long id ) {
+        return null;
     }
 
 

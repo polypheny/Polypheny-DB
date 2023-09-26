@@ -16,19 +16,33 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import java.util.function.Predicate;
 import org.polypheny.db.adapter.neo4j.NeoConvention;
+import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoToEnumerableConverterRule;
-import org.polypheny.db.adapter.neo4j.rules.graph.*;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgAggregate;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgFilter;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgMatch;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgSort;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgUnwind;
+import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoSupportVisitor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.lpg.*;
+import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.core.lpg.LpgFilter;
+import org.polypheny.db.algebra.core.lpg.LpgMatch;
+import org.polypheny.db.algebra.core.lpg.LpgModify;
+import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.core.lpg.LpgSort;
+import org.polypheny.db.algebra.core.lpg.LpgUnwind;
+import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
-
-import java.util.function.Predicate;
 
 public interface NeoGraphRules {
 
@@ -70,11 +84,11 @@ public interface NeoGraphRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            LpgModify modify = (LpgModify) alg;
+            LpgModify<NeoGraph> modify = (LpgModify<NeoGraph>) alg;
             return new NeoLpgModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
-                    modify.getGraph(),
+                    modify.getEntity(),
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
                     modify.operation,
                     modify.ids,

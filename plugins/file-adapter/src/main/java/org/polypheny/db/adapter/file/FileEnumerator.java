@@ -42,16 +42,20 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 
 
 @Slf4j
-public class FileEnumerator implements Enumerator<Object> {
+public class FileEnumerator implements Enumerator<PolyValue[]> {
 
-    Object current;
+    PolyValue[] current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
     final File[] fileList;
@@ -102,7 +106,7 @@ public class FileEnumerator implements Enumerator<Object> {
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
             //fix to make sure current is never null
-            current = Long.valueOf( 0L );
+            current = new PolyLong[]{ PolyLong.of( Long.valueOf( 0L ) ) };
         }
         this.dataContext = dataContext;
         this.condition = condition;
@@ -170,7 +174,7 @@ public class FileEnumerator implements Enumerator<Object> {
 
 
     @Override
-    public Object current() {
+    public PolyValue[] current() {
         return current;
     }
 
@@ -207,7 +211,7 @@ public class FileEnumerator implements Enumerator<Object> {
                     }
                 }
                 File currentFile = fileList[fileListPosition];
-                Object curr;
+                PolyValue[] curr;
 
                 if ( condition != null ) {
                     Object pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
@@ -226,19 +230,19 @@ public class FileEnumerator implements Enumerator<Object> {
                         //if a PK lookup did not match at all
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = Long.valueOf( 0L );
+                                current = new PolyLong[]{ PolyLong.of( Long.valueOf( 0L ) ) };
                                 return true;
                             }
                             return false;
                         }
                         currentFile = lookupFile;
-                        current = Long.valueOf( 1L );
+                        current = new PolyLong[]{ PolyLong.of( Long.valueOf( 1L ) ) };
                     } else {
                         curr = fileToRow( currentFile );
                         //todo
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = Long.valueOf( updateDeleteCount );
+                                current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
                                 return true;
                             }
                             return false;
@@ -259,11 +263,11 @@ public class FileEnumerator implements Enumerator<Object> {
                 if ( operation == Operation.SELECT ) {
                     //project only if necessary (if a projection and condition is given)
                     if ( projectionMapping != null && condition != null ) {
-                        curr = project( curr );
+                        curr = project( curr, columnTypes );
                     }
-                    Object[] o = (Object[]) curr;
+                    PolyValue[] o = curr;
                     if ( o.length == 1 ) {
-                        current = o[0];
+                        current = o;
                     } else {
                         // If all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
@@ -284,7 +288,7 @@ public class FileEnumerator implements Enumerator<Object> {
                         }
                     }
                     updateDeleteCount++;
-                    current = Long.valueOf( updateDeleteCount );
+                    current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
                     fileListPosition++;
                     //continue;
                 } else if ( operation == Operation.UPDATE ) {
@@ -345,7 +349,7 @@ public class FileEnumerator implements Enumerator<Object> {
                     }
 
                     updateDeleteCount++;
-                    current = Long.valueOf( updateDeleteCount );
+                    current = new PolyLong[]{ PolyLong.of( Long.valueOf( updateDeleteCount ) ) };
                     fileListPosition++;
                     //continue;
                 } else {
@@ -365,23 +369,23 @@ public class FileEnumerator implements Enumerator<Object> {
      * @return Null if the file does not exists (in case of a PK lookup) or the row as an array of objects.
      */
     @Nullable
-    private Object fileToRow( final File currentFile ) throws IOException {
-        Object[] curr = new Object[numOfCols];
+    private PolyValue[] fileToRow( final File currentFile ) throws IOException {
+        PolyValue[] curr = new PolyValue[numOfCols];
         int i = 0;
         boolean allNull = true;
         for ( File colFolder : columnFolders ) {
             File f = new File( colFolder, currentFile.getName() );
             String s = null;
-            byte[] encoded = null;
+            PolyBlob encoded = null;
             Byte[] encoded2 = null;
             if ( f.exists() ) {
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
-                        encoded = Files.readAllBytes( f.toPath() );
+                        encoded = PolyBlob.of( Files.readAllBytes( f.toPath() ) );
                     }
                 } else {
-                    s = new String( Files.readAllBytes( f.toPath() ), FileStore.CHARSET );
-                    if ( s.equals( "" ) ) {
+                    s = Files.readString( f.toPath(), FileStore.CHARSET );
+                    if ( s.isEmpty() ) {
                         curr[i] = null;
                         i++;
                         continue;
@@ -402,7 +406,7 @@ public class FileEnumerator implements Enumerator<Object> {
                         Files.createLink( hardLink.toPath(), f.toPath() );
                     }
                     //curr[i] = f;
-                    curr[i] = hardLink;
+                    curr[i] = PolyBlob.of( hardLink );
                 }
             } else {
                 curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
@@ -413,10 +417,10 @@ public class FileEnumerator implements Enumerator<Object> {
     }
 
 
-    private Object project( final Object o1 ) {
-        Object[] o = (Object[]) o1;
+    private PolyValue[] project( final Object o1, PolyType[] columnTypes ) {
+        PolyValue[] o = Pair.zip( ((Object[]) o1), columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( (String) p.left, p.right ) ).toArray( PolyValue[]::new );
         assert (projectionMapping != null);
-        Object[] out = new Object[projectionMapping.length];
+        PolyValue[] out = new PolyValue[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
             out[i] = o[projectionMapping[i]];
         }

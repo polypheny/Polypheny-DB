@@ -21,6 +21,7 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.orderBy_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.skip_;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 
 public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
@@ -44,7 +46,7 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgSort}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
     public NeoLpgSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
@@ -53,7 +55,7 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
 
     @Override
-    public Sort copy( AlgTraitSet traitSet, AlgNode input, AlgCollation collation, RexNode offset, RexNode fetch ) {
+    public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
         return new NeoLpgSort( input.getCluster(), traitSet, input, collation, offset, fetch );
     }
 
@@ -76,13 +78,14 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
         }
 
         if ( offset != null ) {
-            implementor.add( skip_( ((RexLiteral) offset).getValueAs( Integer.class ) ) );
+            implementor.add( skip_( ((RexLiteral) offset).value.asNumber().intValue() ) );
         }
 
         if ( fetch != null ) {
-            implementor.add( limit_( ((RexLiteral) fetch).getValueAs( Integer.class ) ) );
+            implementor.add( limit_( ((RexLiteral) fetch).value.asNumber().intValue() ) );
         }
 
     }
+
 
 }

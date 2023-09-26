@@ -18,7 +18,6 @@ package org.polypheny.db.adapter.file;
 
 
 import com.google.gson.Gson;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -27,12 +26,16 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -45,8 +48,8 @@ public class Value {
     @Getter
     @Setter
     private Integer columnReference;
-    private Object literal;
-    private Long literalIndex;
+    private PolyValue literal;
+    private PolyValue literalIndex;
     private static final Gson gson = new Gson();
 
 
@@ -57,10 +60,10 @@ public class Value {
      * @param literalOrIndex Either a literal or a literalIndex. The third parameter {@code isLiteralIndex} specifies if it is a literal or a literalIndex
      * @param isLiteralIndex True if the second parameter is a literalIndex. In this case, it has to be a Long
      */
-    public Value( final Integer columnReference, final Object literalOrIndex, final boolean isLiteralIndex ) {
+    public Value( final Integer columnReference, final PolyValue literalOrIndex, final boolean isLiteralIndex ) {
         this.columnReference = columnReference;
         if ( isLiteralIndex ) {
-            this.literalIndex = (Long) literalOrIndex;
+            this.literalIndex = literalOrIndex;
         } else {
             this.literal = literalOrIndex;
         }
@@ -73,10 +76,10 @@ public class Value {
      * @param context Data context
      * @param i Index to retrieve the value from the ith parameterValues (needed for batch inserts)
      */
-    public Object getValue( final DataContext context, final int i ) {
+    public PolyValue getValue( final DataContext context, final int i ) {
         //don't switch the two if conditions, because a literal assignment can be "null"
         if ( literalIndex != null ) {
-            return context.getParameterValues().get( i ).get( literalIndex );
+            return context.getParameterValues().get( i ).get( literalIndex.asNumber().LongValue() );
         } else {
             return literal;
         }
@@ -86,17 +89,17 @@ public class Value {
     Expression getExpression() {
         if ( literal != null ) {
             Expression literalExpression;
-            if ( literal instanceof Long ) {
+            /*if ( literal ) {
                 // this is a fix, else linq4j will submit an integer that is too long
                 literalExpression = Expressions.constant( literal, Long.class );
             } else if ( literal instanceof BigDecimal ) {
                 literalExpression = Expressions.constant( literal.toString() );
             } else {
                 literalExpression = Expressions.constant( literal );
-            }
-            return Expressions.new_( Value.class, Expressions.constant( columnReference ), literalExpression, Expressions.constant( false ) );
+            }*/
+            return Expressions.new_( Value.class, Expressions.constant( columnReference ), literal.asExpression(), Expressions.constant( false ) );
         } else {
-            return Expressions.new_( Value.class, Expressions.constant( columnReference ), Expressions.constant( literalIndex, Long.class ), Expressions.constant( true ) );
+            return Expressions.new_( Value.class, Expressions.constant( columnReference ), literalIndex.asExpression(), Expressions.constant( true ) );
         }
     }
 
@@ -114,26 +117,26 @@ public class Value {
         List<Value> valueList = new ArrayList<>();
         int offset;
         boolean noCheck;
-        if ( exps.size() == implementor.getFileTable().columnIds.size() ) {
+        if ( exps.size() == implementor.getFileTable().columns.size() ) {
             noCheck = true;
             offset = 0;
         } else {
             noCheck = false;
-            offset = implementor.getFileTable().columnIds.size();
+            offset = implementor.getFileTable().columns.size();
         }
-        for ( int i = offset; i < implementor.getFileTable().columnIds.size() + offset; i++ ) {
+        for ( int i = offset; i < implementor.getFileTable().columns.size() + offset; i++ ) {
             if ( noCheck || exps.size() > i ) {
                 RexNode lit = exps.get( i );
                 if ( lit instanceof RexLiteral ) {
-                    valueList.add( new Value( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
+                    valueList.add( new Value( null, ((RexLiteral) lit).value, false ) );
                 } else if ( lit instanceof RexDynamicParam ) {
-                    valueList.add( new Value( null, ((RexDynamicParam) lit).getIndex(), true ) );
-                } else if ( lit instanceof RexInputRef ) {
-                    valueList.add( new Value( ((RexInputRef) lit).getIndex(), null, false ) );
+                    valueList.add( new Value( null, PolyLong.of( ((RexDynamicParam) lit).getIndex() ), true ) );
+                } else if ( lit instanceof RexIndexRef ) {
+                    valueList.add( new Value( ((RexIndexRef) lit).getIndex(), null, false ) );
                 } else if ( lit instanceof RexCall && lit.getType().getPolyType() == PolyType.ARRAY ) {
                     valueList.add( fromArrayRexCall( (RexCall) lit ) );
                 } else {
-                    throw new RuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit.toString() );
+                    throw new GenericRuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit );
                 }
             }
         }
@@ -142,11 +145,11 @@ public class Value {
 
 
     public static Value fromArrayRexCall( final RexCall call ) {
-        List<Object> arrayValues = new ArrayList<>();
+        List<PolyValue> arrayValues = new ArrayList<>();
         for ( RexNode node : call.getOperands() ) {
-            arrayValues.add( ((RexLiteral) node).getValueForFileCondition() );
+            arrayValues.add( ((RexLiteral) node).value );
         }
-        return new Value( null, gson.toJson( arrayValues ), false );
+        return new Value( null, PolyList.of( arrayValues ), false );
     }
 
 }

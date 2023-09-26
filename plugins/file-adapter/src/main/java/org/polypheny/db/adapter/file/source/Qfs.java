@@ -32,20 +32,26 @@ import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
-import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -57,18 +63,20 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @Slf4j
 @AdapterProperties(
         name = "QFS",
-        description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.",
-        usedModes = DeployMode.EMBEDDED)
+        description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.", usedModes = DeployMode.EMBEDDED,
+        defaultMode = DeployMode.EMBEDDED)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
-public class Qfs extends DataSource {
+public class Qfs extends DataSource<RelStoreCatalog> {
 
     @Getter
     private File rootDir;
-    private QfsSchema currentSchema;
+
+    @Getter
+    private QfsSchema currentNamespace;
 
 
-    public Qfs( int adapterId, String uniqueName, Map<String, String> settings ) {
-        super( adapterId, uniqueName, settings, true );
+    public Qfs( long adapterId, String uniqueName, Map<String, String> settings ) {
+        super( adapterId, uniqueName, settings, true, new RelStoreCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
     }
@@ -77,32 +85,81 @@ public class Qfs extends DataSource {
     private void init( final Map<String, String> settings ) {
         rootDir = new File( settings.get( "rootDir" ) );
         if ( !rootDir.exists() ) {
-            throw new RuntimeException( "The specified root dir does not exist!" );
+            throw new GenericRuntimeException( "The specified root dir does not exist!" );
         }
     }
 
 
     @Override
-    public void createNewSchema( Snapshot snapshot, String name, long id ) {
-        currentSchema = new QfsSchema( id, snapshot, name, this );
+    public void updateNamespace( String name, long id ) {
+        currentNamespace = new QfsSchema( id, name, this );
     }
 
 
     @Override
-    public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocation ) {
-        return currentSchema.createFileTable( logical, allocation );
+    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        //Todo
     }
 
 
     @Override
-    public Namespace getCurrentSchema() {
-        return currentSchema;
+    public void refreshTable( long allocId ) {
+        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
+        storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
     }
 
 
     @Override
-    public void truncate( Context context, LogicalTable table ) {
-        throw new RuntimeException( "QFS does not support truncate" );
+    public void refreshGraph( long allocId ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void refreshCollection( long allocId ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public StoreCatalog getCatalog() {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void dropTable( Context context, long allocId ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void dropGraph( Context context, AllocationGraph allocation ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void dropCollection( Context context, AllocationCollection allocation ) {
+        throw new NotImplementedException();//Todo
+    }
+
+
+    @Override
+    public void truncate( Context context, long allocId ) {
+        throw new GenericRuntimeException( "QFS does not support truncate" );
     }
 
 

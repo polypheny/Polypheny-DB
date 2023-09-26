@@ -39,7 +39,7 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlDistanceFunction;
@@ -127,8 +127,8 @@ public class CottontailProject extends Project implements CottontailAlg {
         for ( Pair<RexNode, String> pair : namedProjects ) {
             final String name = pair.right.toLowerCase();
             final Expression exp;
-            if ( pair.left instanceof RexInputRef ) {
-                exp = Expressions.constant( physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() ) );
+            if ( pair.left instanceof RexIndexRef ) {
+                exp = Expressions.constant( physicalColumnNames.get( ((RexIndexRef) pair.left).getIndex() ) );
             } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
                 exp = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, name ); /* Map to function. */
             } else {

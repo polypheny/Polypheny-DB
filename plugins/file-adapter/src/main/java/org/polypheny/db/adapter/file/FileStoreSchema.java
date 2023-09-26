@@ -31,36 +31,29 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
+import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
+@Getter
 public class FileStoreSchema extends AbstractNamespace implements FileSchema, Schema {
 
-    @Getter
     private final String schemaName;
-    @Getter
     private final Map<String, CatalogEntity> tables = new HashMap<>();
-    @Getter
     private final FileStore store;
-    @Getter
     private final FileConvention convention;
 
 
-    public FileStoreSchema( long id, Snapshot snapshot, String schemaName, FileStore store ) {
+    public FileStoreSchema( long id, String schemaName, FileStore store ) {
         super( id );
         this.schemaName = schemaName;
         this.store = store;
-        final Expression expression = Schemas.subSchemaExpression( snapshot, schemaName, FileStoreSchema.class );
+        final Expression expression = null;
         this.convention = new FileConvention( schemaName, expression, this );
     }
 
@@ -72,25 +65,17 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
 
 
     @Override
-    public int getAdapterId() {
+    public Long getAdapterId() {
         return store.getAdapterId();
     }
 
 
-    public PhysicalTable createFileTable(
-            LogicalTable logicalTable,
-            AllocationTable allocationTable ) {
+    public FileTranslatableEntity createFileTable( PhysicalTable table ) {
         List<Long> pkIds;
-        if ( logicalTable.primaryKey != null ) {
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( logicalTable.primaryKey );
-            pkIds = primaryKey.columnIds;
-        } else {
-            pkIds = new ArrayList<>();
-        }
+        pkIds = new ArrayList<>();// todo dl
         return new FileTranslatableEntity(
                 this,
-                logicalTable,
-                allocationTable,
+                table,
                 pkIds );
     }
 
@@ -100,10 +85,11 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
      * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object> execute(
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> execute(
             final Operation operation,
-            final Integer adapterId,
-            final Long partitionId,
+            final Long adapterId,
+            final Long allocId,
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
@@ -113,10 +99,10 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
             final Condition condition,
             final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
-                return new FileEnumerator( operation, path, partitionId, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new FileEnumerator( operation, path, allocId, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
             }
         };
     }
@@ -127,10 +113,11 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
      * Executes INSERT operations
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.algebra.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object> executeModify(
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> executeModify(
             final Operation operation,
-            final Integer adapterId,
-            final Long partitionId,
+            final Long adapterId,
+            final Long allocId,
             final DataContext dataContext,
             final String path,
             final Long[] columnIds,
@@ -145,12 +132,12 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
         List<Object[]> rows = new ArrayList<>();
         List<Object> row = new ArrayList<>();
         int i = 0;
-        if ( dataContext.getParameterValues().size() > 0 ) {
-            for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
+        if ( !dataContext.getParameterValues().isEmpty() ) {
+            for ( Map<Long, PolyValue> map : dataContext.getParameterValues() ) {
                 row.clear();
                 //insertValues[] has length 1 if the dataContext is set
                 for ( Value values : ((Value[]) insertValues[0]) ) {
-                    row.add( values.getValue( dataContext, i ) );
+                    row.add( FileUtil.fromValue( values.getValue( dataContext, i ) ) );
                 }
                 rows.add( row.toArray( new Object[0] ) );
                 i++;
@@ -168,10 +155,10 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
         }
         insert = rows.toArray( new Object[0] );
 
-        return new AbstractEnumerable<Object>() {
+        return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
-                return new FileModifier( operation, path, partitionId, columnIds, columnTypes, pkIds, dataContext, insert, condition );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new FileModifier( operation, path, allocId, columnIds, columnTypes, pkIds, dataContext, insert, condition );
             }
         };
     }

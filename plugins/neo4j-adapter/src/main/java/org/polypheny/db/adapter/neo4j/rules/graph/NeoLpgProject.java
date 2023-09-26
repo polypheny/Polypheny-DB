@@ -34,6 +34,8 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
 
@@ -41,10 +43,10 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgProject}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link ModelTrait#GRAPH}
      * @param input Input algebraic expression
      */
-    public NeoLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<String> names, List<? extends RexNode> projects ) {
+    public NeoLpgProject( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, List<PolyString> names, List<? extends RexNode> projects ) {
         super( cluster, traits, input, projects, names );
     }
 
@@ -60,7 +62,7 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
             for ( RexNode project : getProjects() ) {
                 Translator translator = new Translator( getRowType(), implementor.getLast().getRowType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
                 String name = project.accept( translator );
-                if ( names.get( i ) != null && !name.equals( names.get( i ) ) && !names.get( i ).contains( "." ) ) {
+                if ( names.get( i ) != null && !name.equals( names.get( i ).value ) && !names.get( i ).value.contains( "." ) ) {
                     statements.add( as_( literal_( project.accept( translator ) ), literal_( names.get( i ) ) ) );
                 } else {
                     statements.add( literal_( project.accept( translator ) ) );

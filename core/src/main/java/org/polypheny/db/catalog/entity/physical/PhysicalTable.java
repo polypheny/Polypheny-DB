@@ -88,4 +88,19 @@ public class PhysicalTable extends PhysicalEntity {
         return Expressions.call( Expressions.convert_( Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "get" ), StoreCatalog.class ), "getPhysical", Expressions.constant( id ) );
     }
 
+
+    public List<String> getColumnNames() {
+        return columns.stream().map( c -> c.name ).collect( Collectors.toList() );
+    }
+
+
+    public List<String> getLogicalNames() {
+        return columns.stream().map( c -> c.logicalName ).collect( Collectors.toList() );
+    }
+
+
+    public List<Long> getColumnIds() {
+        return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+    }
+
 }

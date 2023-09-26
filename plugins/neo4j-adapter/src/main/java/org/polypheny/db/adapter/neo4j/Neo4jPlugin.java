@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.neo4j;
 import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,16 +26,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.tree.Expression;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
@@ -45,78 +43,72 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
+import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.GraphModifyDelegate;
+import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Snapshot;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.docker.DockerContainer;
-import org.polypheny.db.docker.DockerContainer.HostAndPort;
+import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.docker.DockerContainer;
+import org.polypheny.db.docker.DockerContainer.HostAndPort;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.PasswordGenerator;
 
 
-public class Neo4jPlugin extends Plugin {
+public class Neo4jPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "NEO4J";
+    public static final String ADAPTER_NAME = "Neo4j";
+    private long id;
 
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public Neo4jPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public Neo4jPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        ImmutableMap<String, String> settings = ImmutableMap.of(
-                "persistent", "true",
-                "mode", "docker",
-                "instanceId", "0",
-                "type", "neo4j" );
-
-        Adapter.addAdapter( Neo4jStore.class, ADAPTER_NAME, settings );
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( Neo4jStore.class, ADAPTER_NAME, Neo4jStore::new );
     }
 
 
     @Override
     public void stop() {
-        Adapter.removeAdapter( Neo4jStore.class, ADAPTER_NAME );
+        AdapterManager.removeAdapterTemplate( id );
     }
 
 
-    public static String getPhysicalEntityName( long namespaceId, long entityId, long partitionId ) {
-        return format( "n_%d_entity_%d_%d", namespaceId, entityId, partitionId );
+    public static String getPhysicalEntityName( long namespaceId, long allocId ) {
+        return format( "n_%d_entity_%d_", namespaceId, allocId );
     }
 
 
@@ -144,13 +136,14 @@ public class Neo4jPlugin extends Plugin {
     @AdapterProperties(
             name = "Neo4j",
             description = "Neo4j is a graph-model based database system. It stores data in a graph structure which consists of nodes and edges.",
-            usedModes = { DeployMode.DOCKER },
-            supportedNamespaceTypes = { NamespaceType.GRAPH, NamespaceType.RELATIONAL })
+            usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
+            defaultMode = DeployMode.DOCKER)
     @Extension
-    public static class Neo4jStore extends DataStore {
+    public static class Neo4jStore extends DataStore<GraphStoreCatalog> {
 
-        @Getter
-        private final List<PolyType> unsupportedTypes = ImmutableList.of();
+        private final String DEFAULT_DATABASE = "public";
+        @Delegate(excludes = Exclude.class)
+        private final GraphModifyDelegate delegate;
 
         private int port;
         private final String user;
@@ -160,7 +153,7 @@ public class Neo4jPlugin extends Plugin {
         private final String pass;
         private final AuthToken auth;
         @Getter
-        private NeoSchema currentSchema;
+        private NeoNamespace currentNamespace;
 
         @Getter
         private NeoGraph currentGraph;
@@ -169,8 +162,8 @@ public class Neo4jPlugin extends Plugin {
         private String host;
 
 
-        public Neo4jStore( int adapterId, String uniqueName, Map<String, String> adapterSettings ) {
-            super( adapterId, uniqueName, adapterSettings, true );
+        public Neo4jStore( long adapterId, String uniqueName, Map<String, String> adapterSettings ) {
+            super( adapterId, uniqueName, adapterSettings, true, new GraphStoreCatalog( adapterId ) );
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
@@ -182,40 +175,50 @@ public class Neo4jPlugin extends Plugin {
             }
             this.auth = AuthTokens.basic( this.user, this.pass );
 
-            if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
-                int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
-                DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
-                        .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
-                try {
-                    this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
-                            .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
-                            .createAndStart();
-                } catch ( IOException e ) {
-                    throw new RuntimeException( e );
-                }
+            if ( deployMode == DeployMode.DOCKER ) {
 
-                if ( !container.waitTillStarted( this::testConnection, 100000 ) ) {
-                    container.destroy();
-                    throw new RuntimeException( "Failed to create neo4j container" );
+                if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
+                    int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
+                    DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
+                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                    try {
+                        this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
+                                .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
+                                .createAndStart();
+                    } catch ( IOException e ) {
+                        throw new GenericRuntimeException( e );
+                    }
+
+                    if ( !container.waitTillStarted( this::testConnection, 100000 ) ) {
+                        container.destroy();
+                        throw new GenericRuntimeException( "Failed to create neo4j container" );
+                    }
+                    this.deploymentId = container.getContainerId();
+                    settings.put( "deploymentId", deploymentId );
+                    updateSettings( settings );
+                } else {
+                    deploymentId = settings.get( "deploymentId" );
+                    DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works
+                    container = DockerContainer.getContainerByUUID( deploymentId )
+                            .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
+                    if ( !testConnection() ) {
+                        throw new GenericRuntimeException( "Could not connect to container" );
+                    }
                 }
-                this.deploymentId = container.getContainerId();
-                settings.put( "deploymentId", deploymentId );
-                updateSettings( settings );
+            } else if ( deployMode == DeployMode.REMOTE ) {
+                this.host = settings.get( "host" );
+                this.port = Integer.parseInt( settings.get( "port" ) );
+                this.container = null;
+
             } else {
-                deploymentId = settings.get( "deploymentId" );
-                DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works
-                container = DockerContainer.getContainerByUUID( deploymentId )
-                        .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
-                if ( !testConnection() ) {
-                    throw new RuntimeException( "Could not connect to container" );
-                }
+                throw new GenericRuntimeException( "Not supported deploy mode: " + deployMode.name() );
             }
 
             if ( this.db == null ) {
                 try {
                     this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
                 } catch ( URISyntaxException e ) {
-                    throw new RuntimeException( "Error while restoring the Neo4j database." );
+                    throw new GenericRuntimeException( "Error while restoring the Neo4j database." );
                 }
             }
 
@@ -224,6 +227,8 @@ public class Neo4jPlugin extends Plugin {
 
             addInformationPhysicalNames();
             enableInformationPage();
+
+            this.delegate = new GraphModifyDelegate( this, storeCatalog );
         }
 
 
@@ -257,41 +262,6 @@ public class Neo4jPlugin extends Plugin {
         }
 
 
-        @Override
-        public List<NamespaceType> getSupportedSchemaType() {
-            return ImmutableList.of( NamespaceType.RELATIONAL, NamespaceType.GRAPH );
-        }
-
-
-        @Override
-        public PhysicalTable createPhysicalTable( Context context, LogicalTable combinedTable, AllocationTable allocationTable ) {
-            Catalog catalog = Catalog.getInstance();
-
-            if ( this.currentSchema == null ) {
-                createNewSchema( null, combinedTable.getNamespaceName(), combinedTable.namespaceId );
-            }
-
-            for ( long partitionId : partitionIds ) {
-                String physicalTableName = getPhysicalEntityName( combinedTable.namespaceId, combinedTable.id, partitionId );
-
-                catalog.updatePartitionPlacementPhysicalNames(
-                        getAdapterId(),
-                        partitionId,
-                        combinedTable.getNamespaceName(),
-                        physicalTableName );
-
-                for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapterPerTable( getAdapterId(), combinedTable.id ) ) {
-                    catalog.updateColumnPlacementPhysicalNames(
-                            getAdapterId(),
-                            placement.columnId,
-                            combinedTable.getNamespaceName(),
-                            physicalTableName,
-                            true );
-                }
-            }
-        }
-
-
         public void executeDdlTrx( PolyXid xid, List<String> queries ) {
             Transaction trx = transactionProvider.getDdlTransaction();
             try {
@@ -302,7 +272,7 @@ public class Neo4jPlugin extends Plugin {
                 transactionProvider.commitDdlTransaction();
             } catch ( Neo4jException e ) {
                 transactionProvider.rollbackDdlTransaction();
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 
@@ -313,50 +283,60 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void dropTable( Context context, LogicalTable combinedTable, List<Long> partitionIds ) {
-            Catalog catalog = Catalog.getInstance();
-            context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            List<CatalogPartitionPlacement> partitionPlacements = partitionIds.stream()
-                    .map( id -> catalog.getPartitionPlacement( getAdapterId(), id ) )
-                    .collect( Collectors.toList() );
-
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                catalog.deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-                executeDdlTrx(
-                        context.getStatement().getTransaction().getXid(),
-                        format( "MATCH (n:%s) DELETE n", partitionPlacement.physicalTableName ) );
+        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            if ( this.currentNamespace == null ) {
+                updateNamespace( DEFAULT_DATABASE, allocation.table.id );
+                storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
             }
+
+            String physicalName = getPhysicalEntityName( logical.table.namespaceId, allocation.table.id );
+
+            PhysicalTable physical = storeCatalog.createTable(
+                    logical.getTable().getNamespaceName(),
+                    physicalName,
+                    allocation.columns.stream().collect( Collectors.toMap( c -> c.columnId, c -> getPhysicalFieldName( c.columnId ) ) ),
+                    logical.table,
+                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                    allocation );
+
+            this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns, currentNamespace ) );
+
         }
 
 
         @Override
-        public void addColumn( Context context, LogicalTable catalogTable, CatalogColumn catalogColumn ) {
+        public void refreshTable( long allocId ) {
+            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
+            List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
+            storeCatalog.replacePhysical( currentNamespace.createEntity( physical, fields, this.currentNamespace ) );
+        }
+
+
+        @Override
+        public void dropTable( Context context, long allocId ) {
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+
+            executeDdlTrx(
+                    context.getStatement().getTransaction().getXid(),
+                    format( "MATCH (n:%s) DELETE n", physical.name ) );
+        }
+
+
+        @Override
+        public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            Catalog catalog = Catalog.getInstance();
-            List<CatalogPartitionPlacement> partitionPlacements = catalogTable
-                    .partitionProperty
-                    .partitionIds
-                    .stream()
-                    .map( id -> catalog.getPartitionPlacement( getAdapterId(), id ) )
-                    .collect( Collectors.toList() );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            String physicalName = getPhysicalFieldName( logicalColumn.id );
+            storeCatalog.createColumn( physicalName, allocId, physical.columns.size() - 1, logicalColumn );
 
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                if ( catalogColumn.defaultValue != null ) {
-                    executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
-                            "MATCH (n:%s) SET n += {%s:%s}",
-                            getPhysicalEntityName( catalogColumn.schemaId, catalogColumn.tableId, partitionPlacement.partitionId ),
-                            getPhysicalFieldName( catalogColumn.id ),
-                            getDefaultAsNeo( catalogColumn.defaultValue, catalogColumn.type ) ) );
-                }
-
-                // Add physical name to placement
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        catalogColumn.id,
-                        currentSchema.physicalName,
-                        getPhysicalFieldName( catalogColumn.id ),
-                        false );
+            if ( logicalColumn.defaultValue != null ) {
+                executeDdlTrx( context.getStatement().getTransaction().getXid(), format(
+                        "MATCH (n:%s) SET n += {%s:%s}",
+                        getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
+                        getPhysicalFieldName( logicalColumn.id ),
+                        getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
             }
         }
 
@@ -398,88 +378,79 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( columnPlacement.adapterId, columnPlacement.tableId ) ) {
-                context.getStatement().getTransaction().registerInvolvedAdapter( this );
-                executeDdlTrx(
-                        context.getStatement().getTransaction().getXid(),
-                        format( "MATCH (n:%s) REMOVE n.%s", partitionPlacement.physicalTableName, columnPlacement.physicalColumnName ) );
-            }
+        public void dropColumn( Context context, long allocId, long columnId ) {
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            executeDdlTrx(
+                    context.getStatement().getTransaction().getXid(),
+                    format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
         }
 
 
         @Override
-        public void addIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
             Catalog catalog = Catalog.getInstance();
+            PhysicalTable physical = storeCatalog.fromAllocation( allocation.id, PhysicalTable.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            IndexTypes type = IndexTypes.valueOf( catalogIndex.method.toUpperCase( Locale.ROOT ) );
-            List<Long> columns = catalogIndex.key.columnIds;
+            IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
+            List<Long> columns = index.key.columnIds;
 
-            List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-            partitionIds.forEach( id -> partitionPlacements.add( catalog.getPartitionPlacement( getAdapterId(), id ) ) );
+            String physicalIndexName = "idx" + index.key.tableId + "_" + index.id;
 
-            String physicalIndexName = "idx" + catalogIndex.key.tableId + "_" + catalogIndex.id;
-
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                switch ( type ) {
-                    case DEFAULT:
-                    case COMPOSITE:
-                        addCompositeIndex(
-                                context.getStatement().getTransaction().getXid(),
-                                catalogIndex,
-                                columns,
-                                partitionPlacement,
-                                physicalIndexName );
-                        break;
-                }
+            switch ( type ) {
+                case DEFAULT:
+                case COMPOSITE:
+                    addCompositeIndex(
+                            context.getStatement().getTransaction().getXid(),
+                            index,
+                            columns,
+                            physical,
+                            physicalIndexName );
+                    break;
             }
 
-            Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+            return physicalIndexName;
         }
 
 
-        private void addCompositeIndex( PolyXid xid, CatalogIndex catalogIndex, List<Long> columnIds, CatalogPartitionPlacement partitionPlacement, String physicalIndexName ) {
+        private void addCompositeIndex( PolyXid xid, LogicalIndex index, List<Long> columnIds, PhysicalTable physical, String physicalIndexName ) {
             String fields = columnIds.stream()
                     .map( id -> format( "n.%s", getPhysicalFieldName( id ) ) )
                     .collect( Collectors.joining( ", " ) );
             executeDdlTrx( xid, format(
                     "CREATE INDEX %s FOR (n:%s) on (%s)",
-                    physicalIndexName + "_" + partitionPlacement.partitionId,
-                    getPhysicalEntityName( catalogIndex.key.schemaId, catalogIndex.key.tableId, partitionPlacement.partitionId ),
+                    physicalIndexName + "_" + physical.id,
+                    getPhysicalEntityName( index.key.namespaceId, physical.id ),
                     fields ) );
         }
 
 
         @Override
-        public void dropIndex( Context context, CatalogIndex catalogIndex, List<Long> partitionIds ) {
+        public void dropIndex( Context context, LogicalIndex index, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            List<CatalogPartitionPlacement> partitionPlacements = partitionIds
-                    .stream()
-                    .map( id -> catalog.getPartitionPlacement( getAdapterId(), id ) )
-                    .collect( Collectors.toList() );
 
-            for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-                executeDdlTrx(
-                        context.getStatement().getTransaction().getXid(),
-                        format( "DROP INDEX %s", catalogIndex.physicalName + "_" + partitionPlacement.partitionId ) );
-            }
+            executeDdlTrx(
+                    context.getStatement().getTransaction().getXid(),
+                    format( "DROP INDEX %s", index.physicalName + "_" + allocId ) );
+
         }
 
 
         @Override
-        public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
+        public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             // empty on purpose, all string?
         }
 
 
         @Override
-        public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        public List<IndexMethodModel> getAvailableIndexMethods() {
             return Arrays.stream( IndexTypes.values() ).map( IndexTypes::asMethod ).collect( Collectors.toList() );
         }
 
 
         @Override
-        public AvailableIndexMethod getDefaultIndexMethod() {
+        public IndexMethodModel getDefaultIndexMethod() {
             return IndexTypes.COMPOSITE.asMethod();
         }
 
@@ -491,72 +462,54 @@ public class Neo4jPlugin extends Plugin {
 
 
         @Override
-        public void createNewSchema( SchemaPlus rootSchema, String name ) {
-            final Expression expression = Schemas.subSchemaExpression( rootSchema, name, NeoNamespace.class );
-            String namespaceName;
-            String[] splits = name.split( "_" );
-            if ( splits.length == 3 ) {
-                namespaceName = splits[1];
-            } else if ( splits.length > 3 ) {
-                namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - 1 ) );
-                int i = 1;
-                while ( catalog.getSchemas( Catalog.defaultDatabaseId, new Pattern( namespaceName ) ).isEmpty() || i > splits.length + 1 ) {
-                    namespaceName = String.join( "_", Arrays.asList( splits ).subList( 1, splits.length - i ) );
-                    i++;
-                }
-            } else {
-                throw new RuntimeException( "Error while generating new namespace" );
-            }
-
-            try {
-                this.currentSchema = new NeoNamespace(
-                        db,
-                        expression,
-                        transactionProvider,
-                        this,
-                        Catalog.getInstance().getSchema( Catalog.defaultDatabaseId, namespaceName ).id );
-            } catch ( UnknownSchemaException e ) {
-                throw new RuntimeException( "Error while generating new namespace" );
-            }
+        public void updateNamespace( String name, long id ) {
+            this.currentNamespace = new NeoNamespace(
+                    db,
+                    transactionProvider,
+                    this,
+                    id );
         }
 
 
         @Override
-        public PhysicalTable createAdapterTable( LogicalTable logical, AllocationTable allocationTable ) {
-            return this.currentSchema.createTable( allocationTable );
-        }
-
-
-        @Override
-        public void truncate( Context context, LogicalTable table ) {
+        public void truncate( Context context, long allocId ) {
             transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            for ( CatalogPartitionPlacement partitionPlacement : catalog.getPartitionPlacementsByTableOnAdapter( getAdapterId(), table.id ) ) {
-                executeDdlTrx(
-                        context.getStatement().getTransaction().getXid(),
-                        format( "MATCH (n:%s) DETACH DELETE n", partitionPlacement.physicalTableName ) );
-            }
-        }
 
-
-        @Override
-        public void createGraph( Context context, LogicalGraph graphDatabase ) {
-            catalog.updateGraphPlacementPhysicalNames( graphDatabase.id, getAdapterId(), getPhysicalGraphName( graphDatabase.id ) );
-        }
-
-
-        @Override
-        public void dropGraph( Context context, CatalogGraphPlacement graphPlacement ) {
-            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),
-                    format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( graphPlacement.graphId ) ) );
+                    format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
+
         }
 
 
         @Override
-        public void createGraphNamespace( PhysicalGraph graph ) {
-            this.currentGraph = new NeoGraph( graph, this.transactionProvider, this.db, getMappingLabel( graph.id ), this );
+        public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+            String mappingLabel = getMappingLabel( allocation.id );
+            PhysicalGraph physical = storeCatalog.createGraph(
+                    getPhysicalGraphName( allocation.id ),
+                    logical,
+                    allocation );
+
+            this.storeCatalog.addPhysical( allocation, new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+        }
+
+
+        @Override
+        public void refreshGraph( long allocId ) {
+            PhysicalGraph physical = storeCatalog.fromAllocation( allocId, PhysicalGraph.class );
+            storeCatalog.replacePhysical( new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+        }
+
+
+        @Override
+        public void dropGraph( Context context, AllocationGraph allocation ) {
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
+            PhysicalGraph physical = storeCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
+            executeDdlTrx(
+                    context.getStatement().getTransaction().getXid(),
+                    format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
         }
 
 
@@ -600,9 +553,37 @@ public class Neo4jPlugin extends Plugin {
         COMPOSITE;
 
 
-        public AvailableIndexMethod asMethod() {
-            return new AvailableIndexMethod( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
+        public IndexMethodModel asMethod() {
+            return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
         }
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void refreshGraph( long allocId );
+
+        void dropGraph( Context context, AllocationGraph allocation );
+
+        void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
+
+        void dropIndex( Context context, LogicalIndex index, long allocId );
+
     }
 
 }

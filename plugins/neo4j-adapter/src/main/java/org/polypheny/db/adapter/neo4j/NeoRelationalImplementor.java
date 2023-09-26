@@ -61,6 +61,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
 
@@ -189,7 +190,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             }
             String name = entity.name;
 
-            nodes.add( NeoStatements.node_( name + nodeI, NeoStatements.labels_( name ), props ) );
+            nodes.add( node_( PolyString.of( name + nodeI ), NeoStatements.labels_( PolyString.of( name ) ), props ) );
             nodeI++;
         }
 
@@ -234,7 +235,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         }
         String name = entity.name;
 
-        return create_( node_( name, labels_( name ), properties ) );
+        return create_( node_( PolyString.of( name ), labels_( PolyString.of( name ) ), properties ) );
     }
 
 

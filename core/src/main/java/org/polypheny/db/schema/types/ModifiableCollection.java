@@ -28,10 +28,10 @@ import org.polypheny.db.rex.RexNode;
 
 public interface ModifiableCollection extends Typed {
 
-    Modify<?> toModificationAlg(
+    Modify<?> toModificationCollection(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity physicalEntity,
+            CatalogEntity collection,
             AlgNode child,
             Operation operation,
             Map<String, ? extends RexNode> updates,

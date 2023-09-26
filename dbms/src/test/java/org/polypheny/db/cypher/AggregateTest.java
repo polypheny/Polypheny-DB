@@ -76,7 +76,7 @@ public class AggregateTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_2 );
 
         GraphResult res = execute( "MATCH (n) RETURN n.name, count(*) AS c" );
-        assert res.getHeader().get( 1 ).name.equals( "c" );
+        assert res.getHeader()[1].name.equals( "c" );
 
         containsRows( res, true, false,
                 Row.of( TestLiteral.from( "Max" ), TestLiteral.from( 3 ) ),

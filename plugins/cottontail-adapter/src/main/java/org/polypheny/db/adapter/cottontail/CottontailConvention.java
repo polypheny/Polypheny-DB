@@ -53,7 +53,7 @@ public class CottontailConvention extends Convention.Impl {
     @Override
     public void register( AlgOptPlanner planner ) {
         for ( AlgOptRule rule : CottontailRules.rules( this ) ) {
-            planner.addRule( rule );
+            planner.addRuleDuringRuntime( rule );
         }
     }
 
