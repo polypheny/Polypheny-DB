@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.excel;
+package org.polypheny.db.adapter.ethereum;
+
 
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.poi.ss.usermodel.Cell;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
 
+
 /**
- * Type of a field in a Excel file.
- * <p>
- * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}. But specifying the field type in the header row makes it easier to write SQL.
+ * Type of Blockchain field.
  */
-public enum ExcelFieldType {
+public enum EthereumFieldType {
     STRING( String.class, "string" ),
     BOOLEAN( Primitive.BOOLEAN ),
     BYTE( Primitive.BYTE ),
@@ -43,55 +42,61 @@ public enum ExcelFieldType {
     TIME( java.sql.Time.class, "time" ),
     TIMESTAMP( java.sql.Timestamp.class, "timestamp" );
 
-    private final Class clazz;
-    private final String simpleName;
-
-    private static final Map<String, ExcelFieldType> MAP = new HashMap<>();
+    private static final Map<String, EthereumFieldType> MAP = new HashMap<>();
 
 
     static {
-        for ( ExcelFieldType value : values() ) {
+        for ( EthereumFieldType value : values() ) {
             MAP.put( value.simpleName, value );
         }
     }
 
 
-    ExcelFieldType( Primitive primitive ) {
+    private final Class clazz;
+    private final String simpleName;
+
+
+    EthereumFieldType( Primitive primitive ) {
         this( primitive.boxClass, primitive.primitiveClass.getSimpleName() );
     }
 
 
-    ExcelFieldType( Class clazz, String simpleName ) {
+    EthereumFieldType( Class clazz, String simpleName ) {
         this.clazz = clazz;
         this.simpleName = simpleName;
     }
 
 
-    public static ExcelFieldType getExcelFieldType( PolyType type ) {
+    public static EthereumFieldType getBlockchainFieldType( PolyType type ) {
         switch ( type ) {
             case BOOLEAN:
-                return ExcelFieldType.BOOLEAN;
+                return EthereumFieldType.BOOLEAN;
             case VARBINARY:
-                return ExcelFieldType.BYTE;
+                return EthereumFieldType.BYTE;
             case INTEGER:
-                return ExcelFieldType.INT;
+                return EthereumFieldType.INT;
             case BIGINT:
-                return ExcelFieldType.LONG;
+                return EthereumFieldType.LONG;
             case REAL:
-                return ExcelFieldType.FLOAT;
+                return EthereumFieldType.FLOAT;
             case DOUBLE:
-                return ExcelFieldType.DOUBLE;
+                return EthereumFieldType.DOUBLE;
             case VARCHAR:
-                return ExcelFieldType.STRING;
+                return EthereumFieldType.STRING;
             case DATE:
-                return ExcelFieldType.DATE;
+                return EthereumFieldType.DATE;
             case TIME:
-                return ExcelFieldType.TIME;
+                return EthereumFieldType.TIME;
             case TIMESTAMP:
-                return ExcelFieldType.TIMESTAMP;
+                return EthereumFieldType.TIMESTAMP;
             default:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
         }
+    }
+
+
+    public static EthereumFieldType of( String typeString ) {
+        return MAP.get( typeString );
     }
 
 
@@ -99,15 +104,5 @@ public enum ExcelFieldType {
         AlgDataType javaType = typeFactory.createJavaType( clazz );
         AlgDataType sqlType = typeFactory.createPolyType( javaType.getPolyType() );
         return typeFactory.createTypeWithNullability( sqlType, true );
-    }
-
-
-    public static ExcelFieldType of( String typeString ) {
-        return MAP.get( typeString );
-    }
-
-
-    public static ExcelFieldType of( Cell cell ) {
-        return MAP.get( cell );
     }
 }

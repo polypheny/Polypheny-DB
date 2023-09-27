@@ -371,6 +371,7 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
     }
 
 
+    @SuppressWarnings("unused")
     private interface Excludes {
 
         void refreshTable( long allocId );

@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter.monetdb;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.monetdb.sources.MonetdbSource;
 import org.polypheny.db.adapter.monetdb.stores.MonetdbStore;
@@ -44,12 +42,6 @@ public class MonetdbPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "instanceId", "0",
-                "maxConnections", "25"
-        );
-
         this.storeId = AdapterManager.addAdapterTemplate( MonetdbStore.class, ADAPTER_NAME, MonetdbStore::new );
         this.sourcId = AdapterManager.addAdapterTemplate( MonetdbSource.class, ADAPTER_NAME, MonetdbSource::new );
     }

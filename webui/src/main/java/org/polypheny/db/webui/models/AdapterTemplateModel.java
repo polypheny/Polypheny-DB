@@ -23,6 +23,7 @@ import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSetting.AdapterSettingType;
+import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.java.AdapterTemplate;
@@ -74,11 +75,13 @@ public class AdapterTemplateModel {
         public boolean required;
         public boolean canBeNull;
         public AdapterSettingType type;
+        public List<String> options;
 
 
-        public AdapterSettingsModel( AdapterSettingType type, String name, String defaultValue, String description, List<DeploySetting> appliesTo, boolean required, boolean canBeNull ) {
+        public AdapterSettingsModel( AdapterSettingType type, String name, String defaultValue, String description, List<DeploySetting> appliesTo, List<String> options, boolean required, boolean canBeNull ) {
             this.type = type;
             this.name = name;
+            this.options = options;
             this.defaultValue = defaultValue;
             this.description = description;
             this.appliesTo = appliesTo;
@@ -94,6 +97,7 @@ public class AdapterTemplateModel {
                     setting.defaultValue,
                     setting.description,
                     setting.appliesTo,
+                    setting.type == AdapterSettingType.LIST ? ((AbstractAdapterSettingList) setting).options : null,
                     setting.required,
                     setting.canBeNull );
         }

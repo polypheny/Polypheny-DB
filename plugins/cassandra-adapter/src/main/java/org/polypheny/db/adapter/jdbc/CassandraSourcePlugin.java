@@ -37,10 +37,10 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
-public class MysqlSourcePlugin extends PolyPlugin {
+public class CassandraSourcePlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "MySQL";
+    public static final String ADAPTER_NAME = "Cassandra";
     private long id;
 
 
@@ -48,14 +48,14 @@ public class MysqlSourcePlugin extends PolyPlugin {
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to be successfully loaded by manager.
      */
-    public MysqlSourcePlugin( PluginContext context ) {
+    public CassandraSourcePlugin( PluginContext context ) {
         super( context );
     }
 
 
     @Override
     public void afterCatalogInit() {
-        this.id = AdapterManager.addAdapterTemplate( MysqlSource.class, ADAPTER_NAME, MysqlSource::new );
+        this.id = AdapterManager.addAdapterTemplate( CassandraSource.class, ADAPTER_NAME, CassandraSource::new );
     }
 
 
@@ -67,14 +67,14 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
     @Slf4j
     @AdapterProperties(
-            name = "MySQL",
-            description = "Data source adapter for the relational database systems MariaDB and MySQL.",
+            name = "Cassandra",
+            description = "Data source adapter for the database system cassandra.",
             usedModes = DeployMode.REMOTE,
             defaultMode = DeployMode.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
-            description = "Hostname or IP address of the remote MariaDB / MySQL instance.")
+            description = "Hostname or IP address of the remote Cassandra instance.")
     @AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
-            description = "JDBC port number on the remote MariaDB / MySQL instance.")
+            description = "JDBC port number on the remote Cassandra instance.")
     @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
             description = "Name of the database to connect to.")
     @AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
@@ -87,9 +87,9 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Which level of transaction isolation should be used.")
     @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
-    public static class MysqlSource extends AbstractJdbcSource {
+    public static class CassandraSource extends AbstractJdbcSource {
 
-        public MysqlSource( long storeId, String uniqueName, final Map<String, String> settings ) {
+        public CassandraSource( long storeId, String uniqueName, final Map<String, String> settings ) {
             super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
         }
 
@@ -103,7 +103,6 @@ public class MysqlSourcePlugin extends PolyPlugin {
             }
             storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
         }
-
 
         @Override
         public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
@@ -136,7 +135,7 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
         @Override
         protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-            return String.format( "jdbc:mysql://%s:%d/%s", dbHostname, dbPort, dbName );
+            return String.format( "jdbc:cassandra://%s:%d/%s", dbHostname, dbPort, dbName );
         }
 
 

@@ -23,7 +23,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 public class ExcelPlugin extends PolyPlugin {
 
 
-    public static final String ADAPTER_NAME = "EXCEL";
+    public static final String ADAPTER_NAME = "Excel";
 
 
     /**

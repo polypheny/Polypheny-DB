@@ -38,11 +38,6 @@ public class ExcelTable extends PhysicalTable {
     /**
      * Creates a ExcelTable.
      */
-    ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
-        this( table, source, protoRowType, fieldTypes, fields, excelSource, "" );
-    }
-
-
     ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
         super( table.id,
                 table.allocationId,

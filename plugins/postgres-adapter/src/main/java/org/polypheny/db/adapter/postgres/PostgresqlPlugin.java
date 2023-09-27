@@ -16,8 +16,6 @@
 
 package org.polypheny.db.adapter.postgres;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
 import org.polypheny.db.adapter.postgres.store.PostgresqlStore;
@@ -43,11 +41,6 @@ public class PostgresqlPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        Map<String, String> settings = ImmutableMap.of(
-                "mode", "docker",
-                "maxConnections", "25"
-        );
-
         this.storeId = AdapterManager.addAdapterTemplate( PostgresqlStore.class, ADAPTER_NAME, PostgresqlStore::new );
         this.sourceId = AdapterManager.addAdapterTemplate( PostgresqlSource.class, ADAPTER_NAME, PostgresqlSource::new );
     }

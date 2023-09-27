@@ -17,8 +17,6 @@
 package org.polypheny.db.adapter.csv;
 
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
@@ -38,14 +36,8 @@ public class CsvPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        Map<String, String> defaults = ImmutableMap.of(
-                "mode", "embedded",
-                "method", "upload",
-                "directory", "classpath://hr",
-                "maxStringLength", "255"
-        );
 
-        this.id = AdapterManager.addAdapterTemplate( CsvSource.class, "Csv", CsvSource::new );
+        this.id = AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", CsvSource::new );
     }
 
 
