@@ -18,6 +18,7 @@ package org.polypheny.db.mqtt;
 
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
+
 //TODO: javadoc
 public class StoringMqttMessage {
 
@@ -40,6 +41,7 @@ public class StoringMqttMessage {
     @Getter
     private final String entityName;
 
+
     public StoringMqttMessage( MqttMessage msg, String namespaceName, NamespaceType namespaceType, String uniqueNameOfInterface, long databaseId, int userId, String entityName ) {
         this.msg = msg;
         this.namespaceName = namespaceName;
@@ -54,6 +56,7 @@ public class StoringMqttMessage {
     public String getMessage() {
         return this.msg.getMessage();
     }
+
 
     public String getTopic() {
         return this.msg.getTopic();

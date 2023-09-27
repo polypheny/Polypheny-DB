@@ -620,12 +620,12 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private static String extractPayload( Mqtt5Publish subMsg ) {
+        protected static String extractPayload( Mqtt5Publish subMsg ) {
             return new String( subMsg.getPayloadAsBytes(), Charset.defaultCharset() );
         }
 
 
-        private String getWildcardTopic( String topic ) {
+        protected String getWildcardTopic( String topic ) {
             for ( String t : topicsMap.keySet() ) {
                 //multilevel wildcard
                 if ( t.contains( "#" ) && topic.startsWith( t.substring( 0, t.indexOf( "#" ) ) ) ) {
@@ -641,7 +641,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private void addMessageToQueue( String topic, String message ) {
+        protected void addMessageToQueue( String topic, String message ) {
             if ( this.messageQueue.size() >= 20 ) {
                 this.messageQueue.poll();
                 this.messageQueue.add( new String[]{ topic, message } );

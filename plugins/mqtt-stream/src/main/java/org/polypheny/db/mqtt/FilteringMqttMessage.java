@@ -19,9 +19,12 @@ package org.polypheny.db.mqtt;
 import lombok.Getter;
 
 public class FilteringMqttMessage {
+
     private MqttMessage mqttMessage;
     @Getter
     private String query;
+
+
     public FilteringMqttMessage( MqttMessage mqttMessage, String query ) {
         this.mqttMessage = mqttMessage;
         this.query = query;

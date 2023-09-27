@@ -20,17 +20,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
-import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder;
-import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder.Default;
-import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -103,42 +97,52 @@ public class MqttStreamClientTest {
 
     @Test
     public void saveSimpleQueryTest() {
-        changedSettings.replace( "filterQuery", "topic1:{key1:value1}" );
+        changedSettings.replace( "filterQuery", "topic1:{\"key1\":\"value1\"}" );
         client.updateSettings( changedSettings );
         Map<String, String> expected = new HashMap<>( 1 );
-        expected.put( "topic1", "{key1:value1}" );
+        expected.put( "topic1", "{\"key1\":\"value1\"}" );
+        assertEquals( expected, client.getFilterMap() );
+    }
+
+
+    @Test
+    public void saveQueryToExistingTopicTest() {
+        changedSettings.replace( "filterQuery", "topic1:{\"key1\":\"value2\"}" );
+        client.updateSettings( changedSettings );
+        Map<String, String> expected = new HashMap<>( 1 );
+        expected.put( "topic1", "{\"key1\":\"value2\"}" );
         assertEquals( expected, client.getFilterMap() );
     }
 
 
     @Test
     public void saveQueryWithArrayTest() {
-        changedSettings.replace( "filterQuery", "topic1:{key1:[1, 2, 3]}" );
+        changedSettings.replace( "filterQuery", "topic1:{\"key1\":[1, 2, 3]}" );
         client.updateSettings( changedSettings );
         Map<String, String> expected = new HashMap<>( 1 );
-        expected.put( "topic1", "{key1:[1, 2, 3]}" );
+        expected.put( "topic1", "{\"key1\":[1, 2, 3]}" );
         assertEquals( expected, client.getFilterMap() );
     }
 
 
     @Test
     public void saveTwoSimpleQueryTest() {
-        changedSettings.replace( "filterQuery", "topic1:{key1:value1}, topic2:{key2:value2}" );
+        changedSettings.replace( "filterQuery", "topic1:{\"key1\":\"value1\"}, topic2:{\"key2\":\"value2\"}" );
         client.updateSettings( changedSettings );
         Map<String, String> expected = new HashMap<>( 2 );
-        expected.put( "topic1", "{key1:value1}" );
-        expected.put( "topic2", "{key2:value2}" );
+        expected.put( "topic1", "{\"key1\":\"value1\"}" );
+        expected.put( "topic2", "{\"key2\":\"value2\"}" );
         assertEquals( expected, client.getFilterMap() );
     }
 
 
     @Test
     public void saveNestedQueryTest() {
-        changedSettings.replace( "filterQuery", "topic1:{key1:{$lt:3}}, topic2:{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
+        changedSettings.replace( "filterQuery", "topic1:{\"key1\":{$lt:3}}, topic2:{$or:[\"key2\":{$lt:3}, \"key2\":{$gt:5}]}" );
         client.updateSettings( changedSettings );
         Map<String, String> expected = new HashMap<>( 2 );
-        expected.put( "topic1", "{key1:{$lt:3}}" );
-        expected.put( "topic2", "{$or:[key2:{$lt:3}, key2:{$gt:5}]}" );
+        expected.put( "topic1", "{\"key1\":{$lt:3}}" );
+        expected.put( "topic2", "{$or:[\"key2\":{$lt:3}, \"key2\":{$gt:5}]}" );
         assertEquals( expected, client.getFilterMap() );
     }
 
@@ -170,9 +174,26 @@ public class MqttStreamClientTest {
 
 
     @Test
-    public void reloadSettingsTopicTest() {
-        //TODO with broker
-        //TODO: with wildcards
+    public void addFirstMessageToQueueTest() {
+        ConcurrentLinkedQueue<String[]> msgQueueBefore = client.getMessageQueue();
+        assertEquals( 0, msgQueueBefore.size() );
+        client.addMessageToQueue( "topic1", "payload1" );
+        ConcurrentLinkedQueue<String[]> msgQueueAfter = client.getMessageQueue();
+        assertEquals( 1, msgQueueAfter.size() );
+        String[] expected = { "topic1", "payload1" };
+        assertEquals( expected, msgQueueAfter.poll() );
+    }
+
+
+    @Test
+    public void addTwentyOneMessagesToQueueTest() {
+        for ( int i = 0; i < 22; i++ ) {
+            client.addMessageToQueue( "topic1", String.valueOf( i ) );
+        }
+        ConcurrentLinkedQueue<String[]> msgQueueAfter = client.getMessageQueue();
+        assertEquals( 20, msgQueueAfter.size() );
+        String[] expected = { "topic1", String.valueOf( 2 ) };
+        assertEquals( expected, msgQueueAfter.poll() );
     }
 
 
@@ -264,17 +285,5 @@ public class MqttStreamClientTest {
         assertTrue( client.getCommonCollection().get() );
     }
 
-
-    @Test
-    public void processMsgTest() {
-        MqttUserPropertiesImplBuilder.Default defaultProperties = new Default();
-        Mqtt5Publish message = new MqttPublish( MqttTopicImpl.of( "topic1" ), ByteBuffer.wrap( "payload".getBytes() ), MqttQos.AT_LEAST_ONCE, false, 10, null, null, null, null, defaultProperties.build(), null );
-        client.processMsg( message );
-        //TODO: was prüfe ich hier????
-        // ob die zwei Maps richtig gestzt wurden.
-        String[] messageInQueue = client.getMessageQueue().peek();
-        assertEquals( "topic1",  messageInQueue[0] );
-        assertEquals( "payload",  messageInQueue[1] );
-    }
 
 }

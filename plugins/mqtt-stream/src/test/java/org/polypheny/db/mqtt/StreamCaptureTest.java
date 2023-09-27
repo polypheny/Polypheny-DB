@@ -18,18 +18,12 @@ package org.polypheny.db.mqtt;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.reflections.Reflections.log;
 
-import com.hivemq.client.internal.mqtt.datatypes.MqttTopicImpl;
-import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder;
-import com.hivemq.client.internal.mqtt.datatypes.MqttUserPropertiesImplBuilder.Default;
-import com.hivemq.client.internal.mqtt.message.publish.MqttPublish;
-import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
@@ -40,9 +34,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.exceptions.EntityAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
@@ -56,52 +48,142 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
-import org.polypheny.db.transaction.TransactionManager;
 
 public class StreamCaptureTest {
 
-    static TransactionManager transactionManager;
-    static Transaction transaction;
-    static Statement statement;
     static StreamCapture capture;
-
+    static Transaction transaction;
     static long namespaceId;
+
+
     @BeforeClass
     public static void init() {
         TestHelper testHelper = TestHelper.getInstance();
-        transactionManager = testHelper.getTransactionManager();
         transaction = testHelper.getTransaction();
-        statement = transaction.createStatement();
         capture = new StreamCapture( transaction );
-        namespaceId = Helper.createNamespace("testspace", NamespaceType.DOCUMENT);
+        namespaceId = Helper.createNamespace( "testspace", NamespaceType.DOCUMENT );
         Helper.createCollection();
     }
 
 
-
-
-
-
-
-
     @Test
-    public void numberTest() {
+    public void insertIntTest() {
         MqttMessage msg = new MqttMessage( "25", "testTopic" );
         StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
-        BsonDocument doc = Helper.filter( "{\"payload\":25}" ).get( 0 );
-        assertEquals( "testTopic", doc.get( "topic" ).asString().getValue() );
-        assertEquals( 25, doc.get( "payload" ).asNumber().intValue() );
-        assertEquals( "streamCaptureTest", doc.get( "source" ).asString().getValue() );
+        // getting content with index 0 because there will only be one document matching to this query
+        BsonDocument result = Helper.filter( "{\"payload\":25}" ).get( 0 );
+        System.out.println( "int Test" );
+        System.out.println( result.toString() );
+
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        assertEquals( 25, result.get( "payload" ).asInt32().intValue() );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
     }
 
+
     @Test
-    public void intTest() {
-        assertTrue(capture.isInteger( "1" ));
+    public void insertDoubleTest() {
+        MqttMessage msg = new MqttMessage( "25.54", "testTopic" );
+        StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
+        capture.insert( storingmsg );
+        BsonDocument result = Helper.filter( "{\"payload\":25.54}" ).get( 0 );
+        System.out.println( "double Test" );
+        System.out.println( result.toString() );
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        assertEquals( 25.54, result.get( "payload" ).asDouble().getValue(), 0.1 );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
+    }
+
+
+    @Test
+    public void insertStringTest() {
+        MqttMessage msg = new MqttMessage( "String", "testTopic" );
+        StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
+        capture.insert( storingmsg );
+        BsonDocument result = Helper.filter( "{\"payload\":\"String\"}" ).get( 0 );
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        assertEquals( "String", result.get( "payload" ).asString().getValue() );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
+    }
+
+
+    @Test
+    public void insertBooleanTest() {
+        MqttMessage msg = new MqttMessage( "true", "testTopic" );
+        StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
+        capture.insert( storingmsg );
+        BsonDocument result = Helper.filter( "{\"payload\":true}" ).get( 0 );
+        System.out.println( "bool Test" );
+        System.out.println( result.toString() );
+        List<String> collection = Helper.scanCollection();
+
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        assertEquals( true, result.get( "payload" ).asBoolean().getValue() );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
+    }
+
+
+    @Test
+    public void insertJsonTest() {
+        MqttMessage msg = new MqttMessage( "{\"key1\":\"value1\", \"key2\":true, \"key3\":3}", "testTopic" );
+        StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
+        capture.insert( storingmsg );
+        BsonDocument result = Helper.filter( "{\"payload.key1\":\"value1\"}" ).get( 0 );
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
+        assertEquals( "value1", result.get( "payload" ).asDocument().get( "key1" ).asString().getValue() );
+        assertEquals( true, result.get( "payload" ).asDocument().get( "key2" ).asBoolean().getValue() );
+        assertEquals( 3, result.get( "payload" ).asDocument().get( "key3" ).asInt32().getValue() );
+
+    }
+
+
+    @Test
+    public void insertArrayTest() {
+        MqttMessage msg = new MqttMessage( "[1, 2, 3]", "testTopic" );
+        StoringMqttMessage storingmsg = new StoringMqttMessage( msg, "testspace", NamespaceType.DOCUMENT, "streamCaptureTest", Catalog.defaultDatabaseId, Catalog.defaultUserId, "testCollection" );
+        //StreamCapture capture = new StreamCapture( transaction );
+        capture.insert( storingmsg );
+        BsonDocument result = Helper.filter( "{\"payload\":[1, 2, 3]}" ).get( 0 );
+        assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
+        BsonArray expectedPayload = new BsonArray();
+        expectedPayload.add( 0, new BsonInt32( 1 ) );
+        expectedPayload.add( 1, new BsonInt32( 2 ) );
+        expectedPayload.add( 2, new BsonInt32( 3 ) );
+        assertEquals( expectedPayload, result.get( "payload" ).asArray() );
+        assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
+    }
+
+
+    @Test
+    public void isIntTest() {
+        //StreamCapture capture = new StreamCapture( transaction );
+        assertTrue( capture.isInteger( "1" ) );
+    }
+
+
+    @Test
+    public void isDoubleTest() {
+        //StreamCapture capture = new StreamCapture( transaction );
+        assertTrue( capture.isDouble( "1.0" ) );
+    }
+
+
+    @Test
+    public void isBooleanTest() {
+        //StreamCapture capture = new StreamCapture( transaction );
+        assertTrue( capture.isBoolean( "false" ) );
     }
 
 
     private static class Helper {
+
         private static long createNamespace( String namespaceName, NamespaceType namespaceType ) {
             Catalog catalog = Catalog.getInstance();
             long id = catalog.addNamespace( namespaceName, Catalog.defaultDatabaseId, Catalog.defaultUserId, namespaceType );
@@ -132,6 +214,7 @@ public class StreamCaptureTest {
         }
 
 
+        //TODO: StreamCapture capture
         private static List<String> scanCollection() {
             String sqlCollectionName = "testSpace" + "." + "testCollection";
             Statement statement = transaction.createStatement();
@@ -149,8 +232,10 @@ public class StreamCaptureTest {
         }
 
 
-        private static List<BsonDocument> filter(String query) {
-            QueryParameters parameters = new MqlQueryParameters( query, "testSpace", NamespaceType.DOCUMENT );
+        //TODO StreamCapture capture
+        private static List<BsonDocument> filter( String query ) {
+            Statement statement = transaction.createStatement();
+            QueryParameters parameters = new MqlQueryParameters( String.format( "db.%s.find(%s)", "testCollection", query ), "testSpace", NamespaceType.DOCUMENT );
             AlgBuilder algBuilder = AlgBuilder.create( statement );
             Processor mqlProcessor = transaction.getProcessor( QueryLanguage.from( "mongo" ) );
             PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
@@ -169,16 +254,14 @@ public class StreamCaptureTest {
 
             List<BsonDocument> listOfMessage = new ArrayList<>();
             for ( String documentString : result ) {
-                BsonDocument doc = BsonDocument.parse(documentString);
+                BsonDocument doc = BsonDocument.parse( documentString );
                 listOfMessage.add( doc );
             }
             return listOfMessage;
         }
 
 
-
     }
-
 
 
 }

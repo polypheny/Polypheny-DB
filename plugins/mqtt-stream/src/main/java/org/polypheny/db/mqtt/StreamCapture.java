@@ -99,14 +99,15 @@ public class StreamCapture {
 
     /**
      * turns one single value into the corresponding BsonValue
+     *
      * @param value value that has to be casted as String
      * @return
      */
-    protected BsonValue getBsonValue(String value) {
+    protected BsonValue getBsonValue( String value ) {
         if ( isInteger( value ) ) {
-            return new BsonInt32(Integer.parseInt( value ) );
+            return new BsonInt32( Integer.parseInt( value ) );
         } else if ( isDouble( value ) ) {
-            return new BsonDouble(Double.parseDouble( value ) );
+            return new BsonDouble( Double.parseDouble( value ) );
         } else if ( isBoolean( value ) ) {
             return new BsonBoolean( Boolean.parseBoolean( value ) );
         } else {
@@ -125,7 +126,7 @@ public class StreamCapture {
     }
 
 
-    protected boolean isInteger( String value ) {
+    public boolean isInteger( String value ) {
         try {
             int intNumber = Integer.parseInt( value );
             double doubleNumber = Double.parseDouble( value );
@@ -141,11 +142,9 @@ public class StreamCapture {
     }
 
 
-
     List<List<Object>> executeAndTransformPolyAlg( AlgRoot algRoot, Statement statement, final Context ctx ) {
 
         try {
-            // Prepare
             PolyImplementation result = statement.getQueryProcessor().prepareQuery( algRoot, false );
             log.debug( "AlgRoot was prepared." );
 
