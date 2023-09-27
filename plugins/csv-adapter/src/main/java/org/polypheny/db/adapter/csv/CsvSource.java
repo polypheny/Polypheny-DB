@@ -48,6 +48,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -262,7 +263,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
                     position++;
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
 
             exportedColumnCache.put( physicalTableName, list );

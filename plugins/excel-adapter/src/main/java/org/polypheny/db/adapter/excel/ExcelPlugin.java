@@ -16,33 +16,29 @@
 
 package org.polypheny.db.adapter.excel;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.plugins.PluginContext;
+import org.polypheny.db.plugins.PolyPlugin;
 
-public class ExcelPlugin extends Plugin {
+public class ExcelPlugin extends PolyPlugin {
+
+
+    public static final String ADAPTER_NAME = "EXCEL";
+
 
     /**
      * Constructor to be used by plugin manager for plugin instantiation.
      * Your plugins have to provide constructor with this exact signature to
      * be successfully loaded by manager.
      */
-    public ExcelPlugin( PluginWrapper wrapper ) {
-        super( wrapper );
+    public ExcelPlugin( PluginContext context ) {
+        super( context );
     }
 
 
     @Override
-    public void start() {
-        Map<String, String> settings = ImmutableMap.of(
-                "sheetName", "Sheet1",
-                "directory", "classpath://hr",
-                "maxStringLength", "255"
-        );
-
-        Adapter.addAdapter( ExcelSource.class, "EXCEL", settings );
+    public void afterCatalogInit() {
+        AdapterManager.addAdapterTemplate( ExcelSource.class, ADAPTER_NAME, ExcelSource::new );
     }
 
 }

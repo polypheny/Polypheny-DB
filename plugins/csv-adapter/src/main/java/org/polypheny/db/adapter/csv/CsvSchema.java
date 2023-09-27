@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -101,12 +102,11 @@ public class CsvSchema extends AbstractNamespace implements Schema {
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
         } catch ( MalformedURLException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        CsvTable csvTable = createTable( id, source, table, fieldTypes, fields, csvSource );
 
-        return csvTable;
+        return createTable( id, source, table, fieldTypes, fields, csvSource );
     }
 
 

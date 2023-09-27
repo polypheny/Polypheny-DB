@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.googlesheet;
 
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,28 +23,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.plan.AlgOptTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.schema.QueryableTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.TranslatableTable;
-import org.polypheny.db.schema.impl.AbstractTable;
+import org.polypheny.db.schema.types.TranslatableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Base table class based on individual Google Sheets.
  */
-public class GoogleSheetTable extends AbstractTable implements QueryableTable, TranslatableTable {
+public class GoogleSheetTable extends PhysicalTable implements TranslatableEntity {
 
     protected final URL sheetsUrl;
     protected final int querySize;
@@ -57,6 +54,7 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
 
 
     public GoogleSheetTable(
+            PhysicalTable table,
             URL sheetsUrl,
             int querySize,
             String tableName,
@@ -64,6 +62,13 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
             int[] fields,
             GoogleSheetSource googleSheetSource,
             List<GoogleSheetFieldType> fieldTypes ) {
+        super( table.id,
+                table.allocationId,
+                table.name,
+                table.columns,
+                table.namespaceId,
+                table.namespaceName,
+                table.adapterId );
         this.sheetsUrl = sheetsUrl;
         this.querySize = querySize;
         this.tableName = tableName;
@@ -94,12 +99,12 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
     /**
      * Returns an enumerator over a given projection
      */
-    public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
+    public Enumerable<PolyValue[]> project( final DataContext dataContext, final int[] fields ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( googleSheetSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object> enumerator() {
+            public Enumerator<PolyValue[]> enumerator() {
                 return new GoogleSheetEnumerator<>( sheetsUrl, querySize, tableName, cancelFlag, fieldTypes, fields, googleSheetSource );
             }
         };
@@ -107,27 +112,20 @@ public class GoogleSheetTable extends AbstractTable implements QueryableTable, T
 
 
     @Override
-    public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public Type getElementType() {
-        return Object[].class;
-    }
-
-
-    @Override
-    public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-        return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-    }
-
-
-    @Override
-    public AlgNode toAlg( AlgOptTable.ToAlgContext context, AlgOptTable algOptTable, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
         // Request all fields.
-        return new GoogleSheetTableScanProject( context.getCluster(), algOptTable, this, fields );
+        return new GoogleSheetTableScanProject( context.getCluster(), this, this, fields );
+    }
+
+
+    public Expression getExpression() {
+        return Expressions.convert_(
+                Expressions.call(
+                        Expressions.call(
+                                googleSheetSource.getCatalogAsExpression(),
+                                "getPhysical", Expressions.constant( id ) ),
+                        "unwrap", Expressions.constant( GoogleSheetTable.class ) ),
+                GoogleSheetTable.class );
     }
 
 }

@@ -23,10 +23,12 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.schema.ScannableTable;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Source;
 
-public class ExcelScannableTable extends ExcelTable implements ScannableTable {
+public class ExcelScannableTable extends ExcelTable implements ScannableEntity {
 
     private final String sheet;
 
@@ -34,14 +36,13 @@ public class ExcelScannableTable extends ExcelTable implements ScannableTable {
     /**
      * Creates a ExcelScannableTable.
      */
-    protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId );
-        this.sheet = "";
+    protected ExcelScannableTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
+        this( table, source, protoRowType, fieldTypes, fields, excelSource, "" );
     }
 
 
-    protected ExcelScannableTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
-        super( source, protoRowType, fieldTypes, fields, excelSource, tableId, sheet );
+    protected ExcelScannableTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
+        super( table, source, protoRowType, fieldTypes, fields, excelSource, sheet );
         this.sheet = sheet;
     }
 
@@ -52,13 +53,13 @@ public class ExcelScannableTable extends ExcelTable implements ScannableTable {
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext dataContext ) {
+    public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<Object[]>() {
+        return new AbstractEnumerable<PolyValue[]>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
-                return new ExcelEnumerator<>( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
+            public Enumerator<PolyValue[]> enumerator() {
+                return new ExcelEnumerator( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );
             }
         };
     }

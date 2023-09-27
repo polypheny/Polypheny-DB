@@ -22,9 +22,10 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.util.Source;
 
-public class ExcelTable extends AbstractTable {
+public class ExcelTable extends PhysicalTable {
 
     protected final Source source;
     protected final AlgProtoDataType protoRowType;
@@ -37,24 +38,24 @@ public class ExcelTable extends AbstractTable {
     /**
      * Creates a ExcelTable.
      */
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        this.source = source;
-        this.protoRowType = protoRowType;
-        this.fieldTypes = fieldTypes;
-        this.fields = fields;
-        this.excelSource = excelSource;
-        this.tableId = tableId;
-        this.sheet = "";
+    ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
+        this( table, source, protoRowType, fieldTypes, fields, excelSource, "" );
     }
 
 
-    ExcelTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId, String sheet ) {
+    ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
+        super( table.id,
+                table.allocationId,
+                table.name,
+                table.columns,
+                table.namespaceId,
+                table.namespaceName,
+                table.adapterId );
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
         this.fields = fields;
         this.excelSource = excelSource;
-        this.tableId = tableId;
         this.sheet = sheet;
     }
 
@@ -64,7 +65,7 @@ public class ExcelTable extends AbstractTable {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );
         }
-        if ( this.sheet.equals( "" ) ) {
+        if ( this.sheet.isEmpty() ) {
             if ( fieldTypes == null ) {
                 fieldTypes = new ArrayList<>();
                 return ExcelEnumerator.deduceRowType( (JavaTypeFactory) typeFactory, source, fieldTypes );

@@ -28,20 +28,18 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
 
-public class ExcelSchema extends AbstractSchema {
+public class ExcelNamespace extends AbstractNamespace implements Schema {
 
     private final URL directoryUrl;
     private final ExcelTable.Flavor flavor;
@@ -54,83 +52,71 @@ public class ExcelSchema extends AbstractSchema {
      *
      * @param directoryUrl Directory that holds {@code .Excel} files
      */
-    public ExcelSchema( URL directoryUrl, ExcelTable.Flavor flavor ) {
-        super();
-        this.directoryUrl = directoryUrl;
-        this.flavor = flavor;
-        this.sheet = "";
+    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor ) {
+        this( id, directoryUrl, flavor, "" );
     }
 
 
-    public ExcelSchema( URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
-        super();
+    public ExcelNamespace( long id, URL directoryUrl, ExcelTable.Flavor flavor, String sheet ) {
+        super( id );
         this.directoryUrl = directoryUrl;
         this.flavor = flavor;
         this.sheet = sheet;
     }
 
 
-    public Table createExcelTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, ExcelSource excelSource, CatalogPartitionPlacement partitionPlacement ) {
+    public ExcelTable createExcelTable( PhysicalTable table, ExcelSource excelSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<ExcelFieldType> fieldTypes = new LinkedList<>();
-        List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+        List<Integer> fieldIds = new ArrayList<>( table.columns.size() );
+        for ( PhysicalColumn catalogColumn : table.columns ) {
             AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            fieldInfo.add( catalogColumn.logicalName, catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( ExcelFieldType.getExcelFieldType( catalogColumn.type ) );
-            fieldIds.add( (int) placement.physicalPosition );
+            fieldIds.add( catalogColumn.position );
         }
 
-        String excelFileName = Catalog
-                .getInstance()
-                .getColumnPlacementsOnAdapterPerTable( excelSource.getAdapterId(), catalogTable.id ).iterator().next()
-                .physicalSchemaName;
+        String excelFileName = excelSource.sheetName;
 
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, excelFileName ) );
         } catch ( MalformedURLException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        ExcelTable table = createTable( source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource, catalogTable.id );
-        tableMap.put( catalogTable.name + "_" + partitionPlacement.partitionId, table );
-        return table;
+        ExcelTable physical = createTable( table, source, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, excelSource );
+        tableMap.put( physical.name + "_" + physical.allocationId, physical );
+        return physical;
 
     }
 
-
-    @Override
-    public Map<String, Table> getTableMap() {
-        return new HashMap<>( tableMap );
-    }
 
 
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private ExcelTable createTable( Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, Long tableId ) {
-        if ( this.sheet.equals( "" ) ) {
+    private ExcelTable createTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource ) {
+        if ( this.sheet.isEmpty() ) {
             switch ( flavor ) {
                 case TRANSLATABLE:
-                    return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                    return new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
                 case SCANNABLE:
-                    return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                    return new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
                 case FILTERABLE:
-                    return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId );
+                    return new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource );
                 default:
                     throw new AssertionError( "Unknown flavor " + this.flavor );
             }
         } else {
             switch ( flavor ) {
                 case TRANSLATABLE:
-                    return new ExcelTranslatableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
+                    return new ExcelTranslatableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
                 case SCANNABLE:
-                    return new ExcelScannableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
+                    return new ExcelScannableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
                 case FILTERABLE:
-                    return new ExcelFilterableTable( source, protoRowType, fieldTypes, fields, excelSource, tableId, this.sheet );
+                    return new ExcelFilterableTable( table, source, protoRowType, fieldTypes, fields, excelSource, this.sheet );
                 default:
                     throw new AssertionError( "Unknown flavor " + this.flavor );
             }

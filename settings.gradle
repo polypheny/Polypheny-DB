@@ -13,7 +13,6 @@ include 'plugins'
 
 // catalog
 // include 'plugins:mapdb-catalog'
-// include 'plugins:poly-catalog'
 
 include 'plugins:mapdb-monitoring'
 
@@ -44,8 +43,8 @@ include 'plugins:postgres-adapter'
 include 'plugins:monetdb-adapter'
 include 'plugins:mongodb-adapter'
 include 'plugins:file-adapter'
-//include 'plugins:google-sheet-adapter'
-//include 'plugins:excel-adapter'
+include 'plugins:google-sheet-adapter'
+include 'plugins:excel-adapter'
 
 // other plugins
 include 'plugins:explore-by-example'

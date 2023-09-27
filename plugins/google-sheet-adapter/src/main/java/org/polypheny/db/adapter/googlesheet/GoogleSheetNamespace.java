@@ -22,16 +22,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.schema.impl.AbstractSchema;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.schema.Namespace.Schema;
+import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
@@ -40,10 +39,12 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a Google Sheet URL. Each table in the schema is a sheet in the URL.
  */
-public class GoogleSheetSchema extends AbstractSchema {
+public class GoogleSheetNamespace extends AbstractNamespace implements Schema {
 
     private final URL sheetsURL;
     private final int querySize;
+    @Getter
+    private final GoogleSheetSource source;
     private Map<String, GoogleSheetTable> tableMap = new HashMap<>();
 
 
@@ -53,39 +54,34 @@ public class GoogleSheetSchema extends AbstractSchema {
      * @param sheetsURL - the url of the Google Sheet
      * @param querySize - the size of each query while scanning
      */
-    public GoogleSheetSchema( URL sheetsURL, int querySize ) {
+    public GoogleSheetNamespace( long id, URL sheetsURL, int querySize, GoogleSheetSource source ) {
+        super( id );
         this.sheetsURL = sheetsURL;
         this.querySize = querySize;
+        this.source = source;
     }
 
 
-    public Table createGoogleSheetTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, GoogleSheetSource googleSheetSource ) {
+    public PhysicalTable createGoogleSheetTable( PhysicalTable table, GoogleSheetSource googleSheetSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<GoogleSheetFieldType> fieldTypes = new LinkedList<>();
-        List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
+        List<Integer> fieldIds = new ArrayList<>( table.columns.size() );
 
-        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            fieldTypes.add( GoogleSheetFieldType.getGoogleSheetFieldType( catalogColumn.type ) );
-            fieldIds.add( (int) placement.physicalPosition );
+        for ( PhysicalColumn column : table.columns ) {
+            AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
+            fieldInfo.add( column.logicalName, column.name, sqlType ).nullable( column.nullable );
+            fieldTypes.add( GoogleSheetFieldType.getGoogleSheetFieldType( column.type ) );
+            fieldIds.add( column.position );
         }
 
         String tableName = googleSheetSource.sheet;
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
         // build table and return later based on what you need for the table
-        GoogleSheetTable table = new GoogleSheetTable( sheetsURL, querySize, tableName, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes );
-        tableMap.put( catalogTable.name, table );
+        GoogleSheetTable physical = new GoogleSheetTable( table, sheetsURL, querySize, tableName, AlgDataTypeImpl.proto( fieldInfo.build() ), fields, googleSheetSource, fieldTypes );
+        tableMap.put( physical.name, physical );
         return table;
-    }
-
-
-    @Override
-    public Map<String, Table> getTableMap() {
-        return new HashMap<>( tableMap );
     }
 
 
