@@ -60,6 +60,16 @@ sourceSets {
     }
 }
 
+task mqttTests(type: Test) {
+    description = 'Runs MQTT client tests.'
+    group = 'verification'
+    useJUnit {
+        includeCategories 'org.polypheny.db.mqtt.MqttClientBrokerTest'
+    }
+    shouldRunAfter(tasks.named('test'))
+}
+mqttTests.dependsOn(testClasses)
+
 compileJava {
     dependsOn(":config:processResources")
     dependsOn(":core:processResources")
