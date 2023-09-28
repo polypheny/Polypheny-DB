@@ -138,6 +138,7 @@ public class MqttStreamPlugin extends Plugin {
         private final String brokerAddress;
         @Getter
         private final int brokerPort;
+        @Getter
         private Map<String, AtomicLong> topicsMap = new ConcurrentHashMap<>();
         /**
          * Contains the predicates that determines whether a message is inserted.
