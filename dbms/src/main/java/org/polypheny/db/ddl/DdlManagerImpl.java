@@ -1483,7 +1483,7 @@ public class DdlManagerImpl extends DdlManager {
         List<AllocationColumn> allocationColumns = catalog.getSnapshot().alloc().getColumns( placement.id );
         List<LogicalColumn> columns = allocationColumns.stream().map( c -> catalog.getSnapshot().rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
 
-        if ( addedPartitions.size() > 0 ) {
+        if ( !addedPartitions.isEmpty() ) {
             // Need to create partitionPlacements first in order to trigger schema creation on PolySchemaBuilder
             for ( long partitionId : addedPartitions ) {
                 /*catalog.getAllocRel( table.namespaceId ).add(

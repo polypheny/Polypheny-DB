@@ -16,6 +16,9 @@
 
 package org.polypheny.db.webui.models.requests;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class RequestModel {
 
     /**
@@ -24,5 +27,14 @@ public class RequestModel {
     public String type;
 
     public String payload;
+    public String source;
+
+
+    @JsonCreator
+    public RequestModel( @JsonProperty("type") String type, @JsonProperty("payload") String payload, @JsonProperty("source") String source ) {
+        this.type = type;
+        this.payload = payload;
+        this.source = source;
+    }
 
 }

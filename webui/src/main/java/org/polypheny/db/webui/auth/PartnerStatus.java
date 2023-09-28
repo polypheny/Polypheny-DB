@@ -16,25 +16,25 @@
 
 package org.polypheny.db.webui.auth;
 
+import io.javalin.websocket.WsMessageContext;
 import java.util.UUID;
 import lombok.Getter;
-import org.eclipse.jetty.websocket.api.Session;
 
 @Getter
 public class PartnerStatus {
 
     public final UUID id;
-    private final Session session;
+    private final WsMessageContext context;
 
 
-    public PartnerStatus( UUID id, Session session ) {
+    public PartnerStatus( UUID id, WsMessageContext context ) {
         this.id = id;
-        this.session = session;
+        this.context = context;
     }
 
 
-    public PartnerStatus( Session session ) {
-        this( UUID.randomUUID(), session );
+    public PartnerStatus( WsMessageContext context ) {
+        this( UUID.randomUUID(), context );
     }
 
 }

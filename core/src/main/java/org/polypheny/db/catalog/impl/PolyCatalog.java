@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,8 +99,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
 
-    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
     @Getter
     private Snapshot snapshot;
     private String backup;
@@ -170,7 +167,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // update with newly generated physical entities
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
-        this.listeners.firePropertyChange( "snapshot", null, null );
+        this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
     }
 
 

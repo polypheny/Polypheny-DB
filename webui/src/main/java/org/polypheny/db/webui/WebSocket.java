@@ -40,6 +40,7 @@ import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.RegisterRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.RequestModel;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -135,7 +136,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 ctx.send( results );
                 break;
             case "RegisterRequest":
-                RelAlgRequest registerRequest = ctx.messageAsClass( RelAlgRequest.class );
+                RegisterRequest registerRequest = ctx.messageAsClass( RegisterRequest.class );
                 crud.authCrud.register( registerRequest, ctx );
                 break;
             case "RelAlgRequest":

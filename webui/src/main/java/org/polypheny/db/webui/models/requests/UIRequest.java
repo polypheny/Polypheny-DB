@@ -17,16 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import org.polypheny.db.webui.models.SortState;
 
 
@@ -76,156 +67,9 @@ public class UIRequest extends RequestModel {
 
 
     public UIRequest() {
+        super( null, null, null );
         // empty on purpose
     }
 
-
-    private UIRequest( JsonReader in ) throws IOException {
-        while ( in.peek() != JsonToken.NULL ) {
-            switch ( in.nextName() ) {
-                case "requestType":
-                    type = in.nextString();
-                    break;
-                case "entityId":
-                    entityId = in.nextLong();
-                    break;
-                case "currentPage":
-                    currentPage = in.nextInt();
-                    break;
-                case "data":
-                    data = stringMapAdapter.read( in );
-                    break;
-                case "filter":
-                    filter = stringMapAdapter.read( in );
-                    break;
-                case "sortState":
-                    sortState = sortStateMapAdapter.read( in );
-                    break;
-                case "noLimit":
-                    noLimit = in.nextBoolean();
-                    break;
-                case "selectInterval":
-                    selectInterval = in.nextString();
-                    break;
-                default:
-                    throw new RuntimeException( "Error while deserializing UIRequest." );
-            }
-        }
-    }
-
-
-    static BiConsumer<JsonWriter, String> stringSerializer = ( out, val ) -> {
-        try {
-            out.value( val );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Error while serializing string." );
-        }
-    };
-
-    static BiConsumer<JsonWriter, SortState> sortSerializer = ( out, val ) -> {
-        try {
-            SortState.getSerializer().write( out, val );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Error while serializing sort." );
-        }
-    };
-
-    static final TypeAdapter<Map<String, String>> stringMapAdapter = getMapTypeAdapter( stringSerializer, ( e ) -> {
-        try {
-            return e.nextString();
-        } catch ( IOException ex ) {
-            throw new RuntimeException( "Error while deserializing string." );
-        }
-    } );
-    static final TypeAdapter<Map<String, SortState>> sortStateMapAdapter = getMapTypeAdapter( sortSerializer, ( e ) -> {
-        try {
-            return SortState.getSerializer().read( e );
-        } catch ( IOException ex ) {
-            throw new RuntimeException( "Error while deserializing string." );
-        }
-    } );
-
-
-    public static TypeAdapter<UIRequest> getSerializer() {
-        return new TypeAdapter<>() {
-            @Override
-            public void write( JsonWriter out, UIRequest value ) throws IOException {
-                if ( value == null ) {
-                    out.nullValue();
-                    return;
-                }
-                out.beginObject();
-                out.name( "requestType" );
-                out.value( value.type );
-                out.name( "tableId" );
-                out.value( value.entityId );
-                out.name( "currentPage" );
-                out.value( value.currentPage );
-                out.name( "data" );
-                stringMapAdapter.write( out, value.data );
-                out.name( "filter" );
-                stringMapAdapter.write( out, value.filter );
-                out.name( "sortState" );
-                sortStateMapAdapter.write( out, value.sortState );
-                out.name( "noLimit" );
-                out.value( value.noLimit );
-                out.name( "selectInterval" );
-                out.value( value.selectInterval );
-                out.endObject();
-            }
-
-
-            @Override
-            public UIRequest read( JsonReader in ) throws IOException {
-                if ( in.peek() == JsonToken.NULL ) {
-                    in.nextNull();
-                    return null;
-                }
-                in.beginObject();
-                UIRequest request = new UIRequest( in );
-                in.endObject();
-                return request;
-            }
-        };
-    }
-
-
-    private static <E> TypeAdapter<Map<String, E>> getMapTypeAdapter( BiConsumer<JsonWriter, E> valSerializer, Function<JsonReader, E> valDeserializer ) {
-        return new TypeAdapter<>() {
-            @Override
-            public void write( JsonWriter out, Map<String, E> value ) throws IOException {
-                if ( value == null ) {
-                    out.nullValue();
-                    return;
-                }
-                out.beginObject();
-                for ( Entry<String, E> entry : value.entrySet() ) {
-                    out.beginObject();
-                    out.name( entry.getKey() );
-                    valSerializer.accept( out, entry.getValue() );
-                    out.endObject();
-                }
-                out.endObject();
-            }
-
-
-            @Override
-            public Map<String, E> read( JsonReader in ) throws IOException {
-                if ( in.peek() == JsonToken.NULL ) {
-                    in.nextNull();
-                    return null;
-                }
-                Map<String, E> map = new HashMap<>();
-                in.beginObject();
-                while ( in.peek() != JsonToken.END_OBJECT ) {
-                    in.beginObject();
-                    map.put( in.nextName(), valDeserializer.apply( in ) );
-                    in.endObject();
-                }
-                in.endObject();
-                return map;
-            }
-        };
-    }
 
 }

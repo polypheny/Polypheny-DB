@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.requests.RegisterRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
 
 @Slf4j
 public class AuthCrud {
@@ -39,13 +38,15 @@ public class AuthCrud {
     }
 
 
-    public void register( RelAlgRequest registerRequest, WsMessageContext context ) {
-        String id = context.queryParam( "source" );
-        if ( id != null ) {
+    public void register( RegisterRequest registerRequest, WsMessageContext context ) {
+        String id = registerRequest.source;
+        if ( id != null && partners.containsKey( UUID.fromString( id ) ) ) {
             log.warn( "Partner " + id + " already registered" );
+            context.send( new RegisterRequest( id ) );
             return;
         }
-        PartnerStatus status = new PartnerStatus( context.session );
+
+        PartnerStatus status = new PartnerStatus( context );
         log.warn( "New partner with id " + status.id + " registered" );
         partners.put( status.id, status );
         context.send( new RegisterRequest( status.id.toString() ) );
@@ -63,6 +64,9 @@ public class AuthCrud {
 
 
     public <E> void broadcast( E msg ) {
+        for ( PartnerStatus status : partners.values() ) {
+            status.getContext().send( msg );
+        }
         //partners.values().forEach( p -> HttpServer.getInstance().getWebSocketHandler(). );
     }
 

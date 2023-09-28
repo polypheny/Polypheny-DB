@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.requests;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
@@ -23,6 +24,9 @@ import lombok.Value;
 @Value
 public class RegisterRequest extends RequestModel {
 
-    public String source;
+
+    public RegisterRequest( @JsonProperty("source") String source ) {
+        super( "RegisterRequest", null, source );
+    }
 
 }
