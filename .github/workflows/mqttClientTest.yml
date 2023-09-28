@@ -25,7 +25,7 @@ jobs:
             -   name: Start Mosquitto broker in docker container
                 uses: namoshek/mosquitto-github-action@v1
                 with:
-                    version: '5'
+                    version: '1.6'
                     ports: '1883:1883'
                     container-name: 'mqttBroker'
 
