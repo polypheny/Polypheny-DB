@@ -41,6 +41,7 @@ import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
+import org.polypheny.db.webui.models.requests.RequestModel;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
@@ -100,9 +101,9 @@ public class WebSocket implements Consumer<WsConfig> {
         //close analyzers of a previous query that was sent over the same socket.
         Crud.cleanupOldSession( queryAnalyzers, ctx.getSessionId() );
 
-        UIRequest request = ctx.messageAsClass( UIRequest.class );
+        RequestModel request = ctx.messageAsClass( RequestModel.class );
         Set<String> xIds = new HashSet<>();
-        switch ( request.requestType ) {
+        switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
                 PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceId, crud.getTransactionManager() );
@@ -133,11 +134,14 @@ public class WebSocket implements Consumer<WsConfig> {
                 }
                 ctx.send( results );
                 break;
-
+            case "RegisterRequest":
+                RelAlgRequest registerRequest = ctx.messageAsClass( RelAlgRequest.class );
+                crud.authCrud.register( registerRequest, ctx );
+                break;
             case "RelAlgRequest":
             case "EntityRequest":
                 Result<?, ?> result = null;
-                if ( request.requestType.equals( "RelAlgRequest" ) ) {
+                if ( request.type.equals( "RelAlgRequest" ) ) {
                     RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
                     try {
                         result = crud.executeAlg( relAlgRequest, ctx.session );
@@ -189,7 +193,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 ctx.send( result );
                 break;
             default:
-                throw new GenericRuntimeException( "Unexpected WebSocket request: " + request.requestType );
+                throw new GenericRuntimeException( "Unexpected WebSocket request: " + request.type );
         }
         queryAnalyzers.put( ctx.getSessionId(), xIds );
     }

@@ -39,6 +39,7 @@ import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
@@ -107,6 +108,8 @@ public class HttpServer implements Runnable {
 
 
     private static HttpServer INSTANCE = null;
+    @Getter
+    private WebSocket webSocketHandler;
 
 
     public static HttpServer getInstance() {
@@ -149,8 +152,8 @@ public class HttpServer implements Runnable {
                 Catalog.defaultUserId,
                 Catalog.defaultNamespaceId );
 
-        WebSocket webSocketHandler = new WebSocket( crud );
-        webSockets( server, webSocketHandler );
+        this.webSocketHandler = new WebSocket( crud );
+        webSockets( server, this.webSocketHandler );
 
         // Get modified index.html
         server.get( "/", ctx -> {
@@ -194,6 +197,8 @@ public class HttpServer implements Runnable {
      */
     private void crudRoutes( Javalin webuiServer, Crud crud ) {
         attachCatalogMetaRoutes( webuiServer, crud );
+
+        attachPartnerRoutes( webuiServer, crud );
 
         webuiServer.post( "/anyQuery", LanguageCrud::anyQuery );
 
@@ -355,6 +360,11 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
+    }
+
+
+    private void attachPartnerRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.get( "/auth/deregister", crud.authCrud::deregister );
     }
 
 

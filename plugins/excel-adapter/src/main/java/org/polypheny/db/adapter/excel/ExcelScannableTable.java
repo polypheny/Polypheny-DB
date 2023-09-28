@@ -56,7 +56,7 @@ public class ExcelScannableTable extends ExcelTable implements ScannableEntity {
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( excelSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
-        return new AbstractEnumerable<PolyValue[]>() {
+        return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 return new ExcelEnumerator( source, cancelFlag, false, null, new ExcelEnumerator.ArrayRowConverter( fieldTypes, fields ), sheet );

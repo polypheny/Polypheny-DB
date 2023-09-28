@@ -31,6 +31,8 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Part;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -169,6 +171,7 @@ import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.webui.auth.AuthCrud;
 import org.polypheny.db.webui.crud.CatalogCrud;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.crud.StatisticCrud;
@@ -194,6 +197,7 @@ import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
 import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
+import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
@@ -213,7 +217,7 @@ import org.polypheny.db.webui.models.results.ResultType;
 
 @Getter
 @Slf4j
-public class Crud implements InformationObserver {
+public class Crud implements InformationObserver, PropertyChangeListener {
 
     private static final Gson gson = new Gson();
     private final TransactionManager transactionManager;
@@ -226,6 +230,9 @@ public class Crud implements InformationObserver {
     public final StatisticCrud statisticCrud;
 
     public final CatalogCrud catalogCrud;
+    public final AuthCrud authCrud;
+
+
     private final Catalog catalog = Catalog.getInstance();
 
 
@@ -241,6 +248,9 @@ public class Crud implements InformationObserver {
         this.languageCrud = new LanguageCrud( this );
         this.statisticCrud = new StatisticCrud( this );
         this.catalogCrud = new CatalogCrud( this );
+        this.authCrud = new AuthCrud( this );
+
+        Catalog.getInstance().addObserver( this );
     }
 
 
@@ -3669,6 +3679,13 @@ public class Crud implements InformationObserver {
                 .stream()
                 .map( PluginStatus::from )
                 .collect( Collectors.toList() ) );
+    }
+
+
+    @Override
+    public void propertyChange( PropertyChangeEvent evt ) {
+        log.warn( "changed" );
+        authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
     }
 
 

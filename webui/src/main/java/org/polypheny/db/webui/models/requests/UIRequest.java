@@ -33,13 +33,8 @@ import org.polypheny.db.webui.models.SortState;
 /**
  * Required to parse a request coming from the UI using Gson
  */
-public class UIRequest {
+public class UIRequest extends RequestModel {
 
-
-    /**
-     * ExpressionType of a request, e.g. QueryRequest or RelAlgRequest
-     */
-    public String requestType;
 
     /**
      * The name of the table the data should be fetched from
@@ -89,7 +84,7 @@ public class UIRequest {
         while ( in.peek() != JsonToken.NULL ) {
             switch ( in.nextName() ) {
                 case "requestType":
-                    requestType = in.nextString();
+                    type = in.nextString();
                     break;
                 case "entityId":
                     entityId = in.nextLong();
@@ -117,7 +112,6 @@ public class UIRequest {
             }
         }
     }
-
 
 
     static BiConsumer<JsonWriter, String> stringSerializer = ( out, val ) -> {
@@ -162,7 +156,7 @@ public class UIRequest {
                 }
                 out.beginObject();
                 out.name( "requestType" );
-                out.value( value.requestType );
+                out.value( value.type );
                 out.name( "tableId" );
                 out.value( value.entityId );
                 out.name( "currentPage" );

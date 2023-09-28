@@ -170,6 +170,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // update with newly generated physical entities
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
+        this.listeners.firePropertyChange( "snapshot", null, null );
     }
 
 
