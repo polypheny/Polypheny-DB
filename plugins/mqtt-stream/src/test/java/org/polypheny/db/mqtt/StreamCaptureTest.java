@@ -74,8 +74,6 @@ public class StreamCaptureTest {
         capture.insert( storingmsg );
         // getting content with index 0 because there will only be one document matching to this query
         BsonDocument result = Helper.filter( "{\"payload\":25}" ).get( 0 );
-        System.out.println( "int Test" );
-        System.out.println( result.toString() );
 
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
         assertEquals( 25, result.get( "payload" ).asInt32().intValue() );
@@ -90,8 +88,7 @@ public class StreamCaptureTest {
         //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
         BsonDocument result = Helper.filter( "{\"payload\":25.54}" ).get( 0 );
-        System.out.println( "double Test" );
-        System.out.println( result.toString() );
+
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
         assertEquals( 25.54, result.get( "payload" ).asDouble().getValue(), 0.1 );
         assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
@@ -118,8 +115,6 @@ public class StreamCaptureTest {
         //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
         BsonDocument result = Helper.filter( "{\"payload\":true}" ).get( 0 );
-        System.out.println( "bool Test" );
-        System.out.println( result.toString() );
         List<String> collection = Helper.scanCollection();
 
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
@@ -151,6 +146,7 @@ public class StreamCaptureTest {
         //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
         BsonDocument result = Helper.filter( "{\"payload\":[1, 2, 3]}" ).get( 0 );
+        List<String> collection = Helper.scanCollection();
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
         BsonArray expectedPayload = new BsonArray();
         expectedPayload.add( 0, new BsonInt32( 1 ) );
@@ -170,14 +166,12 @@ public class StreamCaptureTest {
 
     @Test
     public void isDoubleTest() {
-        //StreamCapture capture = new StreamCapture( transaction );
         assertTrue( capture.isDouble( "1.0" ) );
     }
 
 
     @Test
     public void isBooleanTest() {
-        //StreamCapture capture = new StreamCapture( transaction );
         assertTrue( capture.isBoolean( "false" ) );
     }
 
@@ -214,7 +208,6 @@ public class StreamCaptureTest {
         }
 
 
-        //TODO: StreamCapture capture
         private static List<String> scanCollection() {
             String sqlCollectionName = "testSpace" + "." + "testCollection";
             Statement statement = transaction.createStatement();
@@ -232,7 +225,6 @@ public class StreamCaptureTest {
         }
 
 
-        //TODO StreamCapture capture
         private static List<BsonDocument> filter( String query ) {
             Statement statement = transaction.createStatement();
             QueryParameters parameters = new MqlQueryParameters( String.format( "db.%s.find(%s)", "testCollection", query ), "testSpace", NamespaceType.DOCUMENT );
