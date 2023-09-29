@@ -19,13 +19,13 @@ package org.polypheny.db.catalog.impl.logical;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.beans.PropertyChangeSupport;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
-import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
@@ -61,13 +61,16 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
         this.logicalNamespace = logicalNamespace;
         this.collections = new ConcurrentHashMap<>( collections );
 
+        listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
     }
 
 
-    @NonFinal
-    @Builder.Default
-    boolean openChanges = false;
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
 
+
+    public void change() {
+        listeners.firePropertyChange( "change", null, null );
+    }
 
     @Override
     public PolySerializable copy() {
@@ -80,6 +83,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
         long id = idBuilder.getNewLogicalId();
         LogicalCollection collection = new LogicalCollection( id, name, logicalNamespace.id, entity, modifiable );
         collections.put( id, collection );
+        change();
         return collection;
     }
 
@@ -87,6 +91,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     @Override
     public void deleteCollection( long id ) {
         collections.remove( id );
+        change();
     }
 
 
@@ -94,6 +99,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     public void renameCollection( LogicalCollection collection, String newName ) {
         LogicalCollection newCollection = collection.toBuilder().name( newName ).build();
         collections.put( newCollection.id, newCollection );
+        change();
     }
 
 

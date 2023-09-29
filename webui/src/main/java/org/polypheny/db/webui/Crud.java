@@ -3684,7 +3684,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
-        log.warn( "changed" );
         authCrud.broadcast( SnapshotModel.from( Catalog.snapshot() ) );
     }
 

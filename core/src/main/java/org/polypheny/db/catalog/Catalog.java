@@ -93,6 +93,8 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void updateSnapshot();
 
+    public abstract void change();
+
     public abstract void commit();
 
     public abstract void rollback();
@@ -275,6 +277,9 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract void removeAdapterTemplate( long templateId );
 
 
+    public abstract PropertyChangeListener getChangeListener();
 
+
+    public abstract void restore();
 
 }

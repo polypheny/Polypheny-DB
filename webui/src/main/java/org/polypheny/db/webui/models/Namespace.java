@@ -17,6 +17,8 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -28,16 +30,23 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @Getter
 public class Namespace {
 
+    @JsonSerialize
     private String name;
+    @JsonSerialize
     private NamespaceType type;
+    @JsonSerialize
     private final String store;
 
     // fields for creation
+    @JsonSerialize
     private boolean create;
+    @JsonSerialize
     private String authorization;
 
     // fields for deletion
+    @JsonSerialize
     private boolean drop;
+    @JsonSerialize
     private boolean cascade;
 
 
@@ -47,7 +56,7 @@ public class Namespace {
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Namespace( final String name, final NamespaceType type, @Nullable final String store ) {
+    public Namespace( final @JsonProperty("name") String name, @JsonProperty("type") final NamespaceType type, @JsonProperty("store") @Nullable final String store ) {
         this.name = name;
         this.type = type;
 

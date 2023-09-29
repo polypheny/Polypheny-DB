@@ -20,11 +20,13 @@ import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -98,15 +100,22 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<Long, StoreCatalog> storeCatalogs;
 
     private final IdBuilder idBuilder = IdBuilder.getInstance();
+    private final Persister persister;
 
     @Getter
     private Snapshot snapshot;
     private String backup;
 
+    private final AtomicBoolean dirty = new AtomicBoolean( false );
+
+    @Getter
+    PropertyChangeListener changeListener = evt -> {
+        dirty.set( true );
+    };
+
 
     public PolyCatalog() {
-        this(
-                new HashMap<>(),
+        this( new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
@@ -129,13 +138,17 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.interfaces = new ConcurrentHashMap<>( interfaces );
         this.adapterTemplates = new ConcurrentHashMap<>();
         this.storeCatalogs = new ConcurrentHashMap<>();
-        updateSnapshot();
+
+        this.persister = new Persister();
+
+
     }
 
 
     @Override
     public void init() {
         //new DefaultInserter();
+        updateSnapshot();
     }
 
 
@@ -167,7 +180,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // update with newly generated physical entities
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
+
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
+        this.dirty.set( false );
     }
 
 
@@ -187,17 +202,25 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    private void change() {
+    @Override
+    public void change() {
         // empty for now
-        updateSnapshot();
+        this.dirty.set( true );
     }
 
 
-    public void commit() {
+    public synchronized void commit() {
+        if ( !this.dirty.get() ) {
+            log.debug( "Nothing changed" );
+            return;
+        }
+
         log.debug( "commit" );
         this.backup = serialize();
 
         updateSnapshot();
+        persister.write( backup );
+        this.dirty.set( false );
     }
 
 
@@ -374,6 +397,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
         adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, mode, settings ) );
+        change();
         return id;
     }
 
@@ -384,12 +408,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             return;
         }
         adapters.put( adapterId, adapters.get( adapterId ).toBuilder().settings( ImmutableMap.copyOf( newSettings ) ).build() );
+        change();
     }
 
 
     @Override
     public void deleteAdapter( long id ) {
         adapters.remove( id );
+        change();
     }
 
 
@@ -399,7 +425,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         interfaces.put( id, new CatalogQueryInterface( id, uniqueName, clazz, settings ) );
 
-        updateSnapshot();
+        change();
         return id;
     }
 
@@ -407,6 +433,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void deleteQueryInterface( long id ) {
         interfaces.remove( id );
+        change();
     }
 
 
@@ -414,6 +441,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         long id = idBuilder.getNewAdapterTemplateId();
         adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, description, deployer ) );
+        change();
         return id;
     }
 
@@ -421,6 +449,18 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void removeAdapterTemplate( long templateId ) {
         adapterTemplates.remove( templateId );
+        change();
+    }
+
+
+    @Override
+    public void restore() {
+        this.backup = persister.read();
+        if ( this.backup == null ) {
+            log.warn( "No file found to restore" );
+            return;
+        }
+        rollback();
     }
 
 

@@ -29,10 +29,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
@@ -208,16 +210,7 @@ public class Qfs extends DataSource<RelStoreCatalog> {
         int numberOfWhitelistEntries = 0;
         File whitelistFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "config" );
         File whitelist = new File( whitelistFolder, "whitelist.config" );
-        String path = whitelist.getAbsolutePath();
-        if ( !whitelist.exists() ) {
-            try ( FileWriter fw = new FileWriter( whitelist ); PrintWriter pw = new PrintWriter( fw ) ) {
-                pw.println( "# A list of allowed directories for the Query File System (QFS) data source adapter" );
-                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is listed here or is a subdirectory of a directory listed here." );
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Could not write QFS whitelist file " + path, e );
-            }
-            throw new RuntimeException( "The QFS whitelist did not exist. A new one was generated. Make sure to add at least one entry to the whitelist before deploying a QFS data source. The whitelist is located in " + path );
-        }
+        String path = getString( whitelist );
         try ( FileInputStream fis = new FileInputStream( whitelist ); BufferedReader br = new BufferedReader( new InputStreamReader( fis ) ) ) {
             String line;
             while ( (line = br.readLine()) != null ) {
@@ -238,14 +231,30 @@ public class Qfs extends DataSource<RelStoreCatalog> {
                 }
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not read QFS whitelist. A whitelist must be present and contain at least one entry. It must be located in " + path, e );
+            throw new GenericRuntimeException( "Could not read QFS whitelist. A whitelist must be present and contain at least one entry. It must be located in " + path, e );
         }
         if ( numberOfWhitelistEntries == 0 ) {
-            throw new RuntimeException( "The QFS whitelist must contain at least one entry. The file can be edited in " + path );
+            throw new GenericRuntimeException( "The QFS whitelist must contain at least one entry. The file can be edited in " + path );
         }
         if ( !allowed ) {
-            throw new RuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
+            throw new GenericRuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
         }
+    }
+
+
+    @NotNull
+    private static String getString( File whitelist ) {
+        String path = whitelist.getAbsolutePath();
+        if ( !whitelist.exists() ) {
+            try ( FileWriter fw = new FileWriter( whitelist ); PrintWriter pw = new PrintWriter( fw ) ) {
+                pw.println( "# A list of allowed directories for the Query File System (QFS) data source adapter" );
+                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is listed here or is a subdirectory of a directory listed here." );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Could not write QFS whitelist file " + path, e );
+            }
+            throw new GenericRuntimeException( "The QFS whitelist did not exist. A new one was generated. Make sure to add at least one entry to the whitelist before deploying a QFS data source. The whitelist is located in " + path );
+        }
+        return path;
     }
 
 
@@ -341,21 +350,28 @@ public class Qfs extends DataSource<RelStoreCatalog> {
             im.addGroup( group );
             informationGroups.add( group );
 
-            InformationTable table = new InformationTable(
-                    group,
-                    Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
-            for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
-                        exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.primary ? "✔" : ""
-                );
-            }
+            InformationTable table = getInformationTable( entry, group );
             im.registerInformation( table );
             informationElements.add( table );
         }
+    }
+
+
+    @NotNull
+    private static InformationTable getInformationTable( Entry<String, List<ExportedColumn>> entry, InformationGroup group ) {
+        InformationTable table = new InformationTable(
+                group,
+                Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
+        for ( ExportedColumn exportedColumn : entry.getValue() ) {
+            table.addRow(
+                    exportedColumn.physicalPosition,
+                    exportedColumn.name,
+                    exportedColumn.getDisplayType(),
+                    exportedColumn.nullable ? "✔" : "",
+                    exportedColumn.primary ? "✔" : ""
+            );
+        }
+        return table;
     }
 
 }

@@ -19,11 +19,13 @@ package org.polypheny.db.catalog.impl.allocation;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Value;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -72,6 +74,15 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
         this.collections = new ConcurrentHashMap<>( collections );
         this.placements = new ConcurrentHashMap<>( placements );
         this.partitions = new ConcurrentHashMap<>( partitions );
+        listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
+    }
+
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+    public void change() {
+        listeners.firePropertyChange( "change", null, null );
     }
 
 

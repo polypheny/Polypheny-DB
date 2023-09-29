@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.impl.allocation;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -109,6 +111,15 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         this.partitions = new ConcurrentHashMap<>( partitions );
         this.properties = new ConcurrentHashMap<>( properties );
         this.placements = new ConcurrentHashMap<>( placements );
+        listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
+    }
+
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+    public void change() {
+        listeners.firePropertyChange( "change", null, null );
     }
 
 

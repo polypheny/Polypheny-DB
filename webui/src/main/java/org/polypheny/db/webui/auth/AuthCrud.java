@@ -30,7 +30,7 @@ public class AuthCrud {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final Crud crud;
-    private final ConcurrentHashMap<UUID, PartnerStatus> partners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PartnerConnection> partners = new ConcurrentHashMap<>();
 
 
     public AuthCrud( Crud crud ) {
@@ -40,13 +40,19 @@ public class AuthCrud {
 
     public void register( RegisterRequest registerRequest, WsMessageContext context ) {
         String id = registerRequest.source;
-        if ( id != null && partners.containsKey( UUID.fromString( id ) ) ) {
+        if ( id != null ) {
             log.warn( "Partner " + id + " already registered" );
+            if ( partners.containsKey( UUID.fromString( id ) ) ) {
+                partners.get( UUID.fromString( id ) ).addContext( context );
+            } else {
+                partners.put( UUID.fromString( id ), new PartnerConnection( UUID.fromString( id ), context ) );
+            }
+
             context.send( new RegisterRequest( id ) );
             return;
         }
 
-        PartnerStatus status = new PartnerStatus( context );
+        PartnerConnection status = new PartnerConnection( context );
         log.warn( "New partner with id " + status.id + " registered" );
         partners.put( status.id, status );
         context.send( new RegisterRequest( status.id.toString() ) );
@@ -64,10 +70,9 @@ public class AuthCrud {
 
 
     public <E> void broadcast( E msg ) {
-        for ( PartnerStatus status : partners.values() ) {
-            status.getContext().send( msg );
+        for ( PartnerConnection connection : partners.values() ) {
+            connection.broadcast( msg );
         }
-        //partners.values().forEach( p -> HttpServer.getInstance().getWebSocketHandler(). );
     }
 
 }

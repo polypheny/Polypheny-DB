@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
         GraphCatalog.class })
 public interface LogicalCatalog {
 
+
     LogicalCatalog withLogicalNamespace( LogicalNamespace namespace );
 
     LogicalNamespace getLogicalNamespace();

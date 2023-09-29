@@ -470,7 +470,7 @@ public class PolyphenyDb {
 
         Catalog.getInstance().updateSnapshot();
 
-        restoreDefaults( authenticator, catalog );
+        restore( authenticator, catalog );
 
         // Add tracker, which rechecks constraints after enabling
         ConstraintTracker tracker = new ConstraintTracker( transactionManager );
@@ -525,16 +525,24 @@ public class PolyphenyDb {
     }
 
 
-    private void restoreDefaults( Authenticator authenticator, Catalog catalog ) {
+    private void restore( Authenticator authenticator, Catalog catalog ) {
         Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
         Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         PolyPluginManager.startUp( transactionManager, authenticator );
-        catalog.updateSnapshot();
-        DefaultInserter.restoreData( DdlManager.getInstance() );
-        DefaultInserter.restoreInterfacesIfNecessary();
+
+        if ( !resetCatalog ) {
+            Catalog.getInstance().restore();
+        }
+        restoreDefaults( catalog );
+
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
         // AdapterManager.getInstance().restoreAdapters();
 
+        commitRestore();
+    }
+
+
+    private void commitRestore() {
         Transaction trx = null;
         try {
             trx = transactionManager.startTransaction(
@@ -542,8 +550,6 @@ public class PolyphenyDb {
                     Catalog.defaultNamespaceId,
                     false,
                     "Catalog Startup" );
-            Catalog.getInstance().restoreColumnAllocations( trx );
-            Catalog.getInstance().restoreViews( trx );
             trx.commit();
         } catch ( TransactionException e ) {
             try {
@@ -553,6 +559,13 @@ public class PolyphenyDb {
             }
             throw new GenericRuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
+    }
+
+
+    private static void restoreDefaults( Catalog catalog ) {
+        catalog.updateSnapshot();
+        DefaultInserter.restoreData( DdlManager.getInstance() );
+        DefaultInserter.restoreInterfacesIfNecessary();
     }
 
 

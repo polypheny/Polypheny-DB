@@ -19,13 +19,13 @@ package org.polypheny.db.catalog.impl.logical;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import java.beans.PropertyChangeSupport;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
-import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
@@ -49,11 +49,6 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     public ConcurrentHashMap<Long, LogicalGraph> graphs;
 
 
-    @NonFinal
-    @Builder.Default
-    boolean openChanges = false;
-
-
     public GraphCatalog( LogicalNamespace logicalNamespace ) {
         this( logicalNamespace, new ConcurrentHashMap<>() );
     }
@@ -67,6 +62,15 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
         // already add only graph
         addGraph( logicalNamespace.id, logicalNamespace.name, true );
+        listeners.addPropertyChangeListener( Catalog.getInstance().getChangeListener() );
+    }
+
+
+    PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+
+
+    public void change() {
+        listeners.firePropertyChange( "change", null, null );
     }
 
 
@@ -84,13 +88,13 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
 
     @Override
     public void addGraphAlias( long graphId, String alias, boolean ifNotExists ) {
-
+        change();
     }
 
 
     @Override
     public void removeGraphAlias( long graphId, String alias, boolean ifExists ) {
-
+        change();
     }
 
 
@@ -98,6 +102,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     public LogicalGraph addGraph( long id, String name, boolean modifiable ) {
         LogicalGraph graph = new LogicalGraph( id, name, modifiable, logicalNamespace.caseSensitive );
         graphs.put( id, graph );
+        change();
         return graph;
     }
 
@@ -105,6 +110,7 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     @Override
     public void deleteGraph( long id ) {
         graphs.remove( id );
+        change();
     }
 
 }
