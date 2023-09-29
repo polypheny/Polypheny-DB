@@ -99,8 +99,8 @@ public class MqttStreamPlugin extends Plugin {
         mqttDefaultSettings.put( "Tsl/SslConnection", "false" );
         mqttDefaultSettings.put( "namespace", "default" );
         mqttDefaultSettings.put( "namespaceType", "DOCUMENT" );
-        mqttDefaultSettings.put( "commonCollection", "false" );
-        mqttDefaultSettings.put( "commonCollectionName", "" );
+        mqttDefaultSettings.put( "catchAllEntity", "false" );
+        mqttDefaultSettings.put( "catchAllEntityName", "" );
         mqttDefaultSettings.put( "Query Interface Name", "mqtt" );
         QueryInterfaceManager.addInterfaceType( "mqtt", MqttStreamClient.class, mqttDefaultSettings );
     }
@@ -128,8 +128,8 @@ public class MqttStreamPlugin extends Plugin {
                 // "RELATIONAL", "GRAPH" types are not supported yet.
                 new QueryInterfaceSettingList( "namespaceType", false, true, false,
                         new ArrayList<>( List.of( "DOCUMENT" ) ) ),
-                new QueryInterfaceSettingList( "commonCollection", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
-                new QueryInterfaceSettingString( "commonCollectionName", true, false, true, null ),
+                new QueryInterfaceSettingList( "catchAllEntity", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
+                new QueryInterfaceSettingString( "catchAllEntityName", true, false, true, null ),
                 new QueryInterfaceSettingString( "topics", false, true, true, null ),
                 new QueryInterfaceSettingString( "filterQuery", true, false, true, "" ),
                 new QueryInterfaceSettingList( "Tsl/SslConnection", false, true, false, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ) );
@@ -138,13 +138,13 @@ public class MqttStreamPlugin extends Plugin {
         private final String brokerAddress;
         @Getter
         private final int brokerPort;
+        /**
+         * topicsMap: Contains all subscribed topics as the key and the received number of messages with this topic.
+         */
         @Getter
         private Map<String, AtomicLong> topicsMap = new ConcurrentHashMap<>();
         /**
-         * Contains the predicates that determines whether a message is inserted.
-         * The Predicates are applied to the message in form of a filter and if this query returns true,the message will
-         * be inserted. If there is no predicate for a topic, then all messages are saved.
-         * If there are several queries for the topic of the message, they are comma seperated.
+         * filterMap: Contains the filter query for a topic. The key is the topic.
          */
         @Getter
         private Map<String, String> filterMap = new ConcurrentHashMap<>();
@@ -156,13 +156,12 @@ public class MqttStreamPlugin extends Plugin {
         @Getter
         private NamespaceType namespaceType;
         @Getter
-        private AtomicBoolean commonCollection;
+        private AtomicBoolean catchAllEntity;
         @Getter
-        private String commonCollectionName;
+        private String catchAllEntityName;
         private final long databaseId;
         private final int userId;
         private final boolean ssl; // todo this.
-        boolean createCommonCollection = false;
         private final Object settingsLock = new Object();
         private final MonitoringPage monitoringPage;
 
@@ -187,26 +186,25 @@ public class MqttStreamPlugin extends Plugin {
             this.namespaceName = name;
             this.namespaceType = type;
 
-            this.commonCollection = new AtomicBoolean( Boolean.parseBoolean( settings.get( "commonCollection" ) ) );
-            this.commonCollectionName = settings.get( "commonCollectionName" ) == null ?
-                    settings.get( "commonCollectionName" ) : settings.get( "commonCollectionName" )
+            this.catchAllEntity = new AtomicBoolean( Boolean.parseBoolean( settings.get( "catchAllEntity" ) ) );
+            this.catchAllEntityName = settings.get( "catchAllEntityName" ) == null ?
+                    settings.get( "catchAllEntityName" ) : settings.get( "catchAllEntityName" )
                     .trim()
                     .replace( '#', '_' )
                     .replace( '+', '_' )
                     .replace( '/', '_' );
-            if ( this.commonCollection.get() ) {
-                if ( this.commonCollectionName == null || this.commonCollectionName.isEmpty() || this.commonCollectionName.isBlank() ) {
-                    throw new NullPointerException( "commonCollection is set to true but no valid collection name was given! Please enter a collection name." );
-                } else if ( !collectionExists( this.commonCollectionName ) ) {
-                    this.createCommonCollection = true;
-                    createStreamCollection( this.commonCollectionName );
+            if ( this.catchAllEntity.get() ) {
+                if ( this.catchAllEntityName == null || this.catchAllEntityName.isEmpty() || this.catchAllEntityName.isBlank() ) {
+                    throw new NullPointerException( "catchAllEntity is set to true but no valid collection name was given! Please enter a collection name." );
+                } else if ( !collectionExists( this.catchAllEntityName ) ) {
+                    createStreamCollection( this.catchAllEntityName );
                 }
             } else if ( settings.get( "topics" ) != null ) {
                 for ( String topic : toList( settings.get( "topics" ) ) ) {
                     topic = topic.replace( '#', '_' )
                             .replace( '+', '_' )
                             .replace( '/', '_' );
-                    if ( !this.commonCollection.get() && !collectionExists( topic ) ) {
+                    if ( !this.catchAllEntity.get() && !collectionExists( topic ) ) {
                         createStreamCollection( topic );
                     }
                 }
@@ -417,33 +415,33 @@ public class MqttStreamPlugin extends Plugin {
                                 }
                             }
                             break;
-                        case "commonCollection":
-                            this.commonCollection.set( Boolean.parseBoolean( this.getCurrentSettings().get( "commonCollection" ) ) );
+                        case "catchAllEntity":
+                            this.catchAllEntity.set( Boolean.parseBoolean( this.getCurrentSettings().get( "catchAllEntity" ) ) );
                             createAllCollections();
                             break;
-                        case "commonCollectionName":
-                            String newCommonCollectionName = this.getCurrentSettings().get( "commonCollectionName" ).trim();
-                            newCommonCollectionName = newCommonCollectionName == null ? null : newCommonCollectionName.trim().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+                        case "catchAllEntityName":
+                            String newcatchAllEntityName = this.getCurrentSettings().get( "catchAllEntityName" ).trim();
+                            newcatchAllEntityName = newcatchAllEntityName == null ? null : newcatchAllEntityName.trim().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
                             boolean mode;
-                            if ( updatedSettings.contains( "commonCollection" ) ) {
-                                mode = Boolean.parseBoolean( this.getCurrentSettings().get( "commonCollection" ) );
+                            if ( updatedSettings.contains( "catchAllEntity" ) ) {
+                                mode = Boolean.parseBoolean( this.getCurrentSettings().get( "catchAllEntity" ) );
                             } else {
-                                mode = this.commonCollection.get();
+                                mode = this.catchAllEntity.get();
                             }
                             if ( mode ) {
-                                if ( !(newCommonCollectionName.equals( "null" ) || newCommonCollectionName.isEmpty() || newCommonCollectionName.isBlank()) ) {
-                                    if ( !collectionExists( newCommonCollectionName ) ) {
-                                        createStreamCollection( this.commonCollectionName );
+                                if ( !(newcatchAllEntityName.equals( "null" ) || newcatchAllEntityName.isEmpty() || newcatchAllEntityName.isBlank()) ) {
+                                    if ( !collectionExists( newcatchAllEntityName ) ) {
+                                        createStreamCollection( this.catchAllEntityName );
                                     }
-                                    this.commonCollectionName = newCommonCollectionName;
+                                    this.catchAllEntityName = newcatchAllEntityName;
                                     createAllCollections();
                                 } else {
-                                    this.settings.put( "commonCollectionName", this.commonCollectionName );
-                                    throw new NullPointerException( "commonCollection is set to FALSE but no valid collection name was given! Please enter a collection name." );
+                                    this.settings.put( "catchAllEntityName", this.catchAllEntityName );
+                                    throw new NullPointerException( "catchAllEntity is set to FALSE but no valid collection name was given! Please enter a collection name." );
                                 }
 
                             } else {
-                                this.commonCollectionName = newCommonCollectionName;
+                                this.catchAllEntityName = newcatchAllEntityName;
                             }
                             break;
                         case "filterQuery":
@@ -469,7 +467,7 @@ public class MqttStreamPlugin extends Plugin {
          *
          * @param topic the topic the client should subscribe to.
          */
-        protected void subscribe( String topic ) {
+        private void subscribe( String topic ) {
             client.subscribeWith().topicFilter( topic )
                     .callback( this::processMsg )
                     .send()
@@ -506,7 +504,7 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        protected void unsubscribe( String topic ) {
+        private void unsubscribe( String topic ) {
             client.unsubscribeWith().topicFilter( topic ).send().whenComplete( ( unsub, throwable ) -> {
                 if ( throwable != null ) {
                     synchronized ( settingsLock ) {
@@ -608,12 +606,12 @@ public class MqttStreamPlugin extends Plugin {
         private void insertInEntity( MqttMessage mqttMessage, Transaction transaction ) {
             StoringMqttMessage storingMqttMessage;
             synchronized ( settingsLock ) {
-                if ( !this.commonCollection.get() ) {
+                if ( !this.catchAllEntity.get() ) {
                     String collectionToBeSaved;
                     collectionToBeSaved = mqttMessage.getTopic().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
                     storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, collectionToBeSaved );
                 } else {
-                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.commonCollectionName );
+                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.catchAllEntityName );
                 }
             }
             StreamCapture streamCapture = new StreamCapture( transaction );
@@ -716,23 +714,31 @@ public class MqttStreamPlugin extends Plugin {
 
         private void createAllCollections() {
             synchronized ( settingsLock ) {
-                if ( !this.commonCollection.get() ) {
+                if ( !this.catchAllEntity.get() ) {
                     for ( String t : this.topicsMap.keySet() ) {
                         if ( !collectionExists( t ) ) {
                             createStreamCollection( t );
                         }
                     }
                 } else {
-                    if ( !(this.commonCollectionName == null || this.commonCollectionName.equals( "" ) || this.commonCollectionName.isBlank()) ) {
-                        if ( !collectionExists( this.commonCollectionName ) ) {
-                            createStreamCollection( this.commonCollectionName );
+                    if ( !(this.catchAllEntityName == null || this.catchAllEntityName.equals( "" ) || this.catchAllEntityName.isBlank()) ) {
+                        if ( !collectionExists( this.catchAllEntityName ) ) {
+                            createStreamCollection( this.catchAllEntityName );
                         }
                     } else {
-                        throw new NullPointerException( "commonCollection is set to 'true' but no valid collection name was given! Please enter a collection name." );
+                        throw new NullPointerException( "catchAllEntity is set to 'true' but no valid collection name was given! Please enter a collection name." );
                     }
                 }
             }
 
+        }
+
+
+        protected void publish( String topic, String payload) {
+            client.publishWith()
+                    .topic( topic )
+                    .payload( payload.getBytes() )
+                    .send();
         }
 
 
@@ -945,11 +951,9 @@ public class MqttStreamPlugin extends Plugin {
                 im.addGroup( informationGroupPub );
                 msgButton = new InformationAction( informationGroupPub, "Publish", ( parameters ) -> {
                     String end = "Message was published!";
+
                     try {
-                        client.publishWith()
-                                .topic( parameters.get( "topic" ) )
-                                .payload( parameters.get( "payload" ).getBytes() )
-                                .send();
+                        publish( parameters.get( "topic" ), parameters.get( "payload" ) );
                     } catch ( IllegalArgumentException e ) {
                         throw new RuntimeException( e );
                     }

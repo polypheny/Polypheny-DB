@@ -59,8 +59,8 @@ public class MqttStreamClientTest {
         initialSettings.clear();
         initialSettings.put( "brokerAddress", "localhost" );
         initialSettings.put( "brokerPort", "1883" );
-        initialSettings.put( "commonCollectionName", "testCollection" );
-        initialSettings.put( "commonCollection", "true" );
+        initialSettings.put( "catchAllEntityName", "testCollection" );
+        initialSettings.put( "catchAllEntity", "true" );
         initialSettings.put( "namespace", "testNamespace" );
         initialSettings.put( "namespaceType", "DOCUMENT" );
         initialSettings.put( "topics", "" );
@@ -77,8 +77,8 @@ public class MqttStreamClientTest {
                 initialSettings );
 
         changedSettings.clear();
-        changedSettings.put( "commonCollectionName", "testCollection" );
-        changedSettings.put( "commonCollection", "true" );
+        changedSettings.put( "catchAllEntityName", "testCollection" );
+        changedSettings.put( "catchAllEntity", "true" );
         changedSettings.put( "namespace", "testNamespace" );
         //changedSettings.put( "namespaceType", "DOCUMENT");
         changedSettings.put( "topics", "" );
@@ -225,64 +225,64 @@ public class MqttStreamClientTest {
 
 
     @Test
-    public void reloadSettingsCommonCollectionToFalseTest() {
-        changedSettings.replace( "commonCollection", "false" );
+    public void reloadSettingsCatchAllEntityToFalseTest() {
+        changedSettings.replace( "catchAllEntity", "false" );
         client.updateSettings( changedSettings );
-        assertFalse( client.getCommonCollection().get() );
+        assertFalse( client.getCatchAllEntity().get() );
     }
 
 
     @Test
-    public void reloadSettingsCommonCollectionToTrueTest() {
-        changedSettings.replace( "commonCollection", "true" );
+    public void reloadSettingsCatchAllEntityToTrueTest() {
+        changedSettings.replace( "catchAllEntity", "true" );
         client.updateSettings( changedSettings );
-        assertTrue( client.getCommonCollection().get() );
+        assertTrue( client.getCatchAllEntity().get() );
     }
 
 
     @Test
-    public void reloadSettingsNewCommonCollectionNameTest() {
-        changedSettings.replace( "commonCollectionName", "buttonCollection" );
+    public void reloadSettingsNewCatchAllEntityNameTest() {
+        changedSettings.replace( "catchAllEntityName", "buttonCollection" );
         client.updateSettings( changedSettings );
-        assertEquals( "buttonCollection", client.getCommonCollectionName() );
-        assertTrue( client.getCommonCollection().get() );
+        assertEquals( "buttonCollection", client.getCatchAllEntityName() );
+        assertTrue( client.getCatchAllEntity().get() );
     }
 
 
     @Test
-    public void reloadSettingsExistingCommonCollectionNameTest() {
-        changedSettings.replace( "commonCollectionName", "testCollection" );
+    public void reloadSettingsExistingCatchAllEntityNameTest() {
+        changedSettings.replace( "catchAllEntityName", "testCollection" );
         client.updateSettings( changedSettings );
-        assertEquals( "testCollection", client.getCommonCollectionName() );
-        assertTrue( client.getCommonCollection().get() );
+        assertEquals( "testCollection", client.getCatchAllEntityName() );
+        assertTrue( client.getCatchAllEntity().get() );
     }
 
 
     @Test
-    public void reloadSettingsCommonCollectionAndCommonCollectionNameTest() {
-        // testing special case: commonCollection changed from false to true + commonCollectionName changes
-        changedSettings.replace( "commonCollection", "false" );
+    public void reloadSettingsCatchAllEntityAndCatchAllEntityNameTest() {
+        // testing special case: catchAllEntity changed from false to true + catchAllEntityName changes
+        changedSettings.replace( "catchAllEntity", "false" );
         client.updateSettings( changedSettings );
 
-        changedSettings.replace( "commonCollectionName", "buttonCollection" );
-        changedSettings.replace( "commonCollection", "true" );
+        changedSettings.replace( "catchAllEntityName", "buttonCollection" );
+        changedSettings.replace( "catchAllEntity", "true" );
         client.updateSettings( changedSettings );
-        assertEquals( "buttonCollection", client.getCommonCollectionName() );
-        assertTrue( client.getCommonCollection().get() );
+        assertEquals( "buttonCollection", client.getCatchAllEntityName() );
+        assertTrue( client.getCatchAllEntity().get() );
     }
 
 
     @Test(expected = NullPointerException.class)
-    public void reloadSettingsCommonCollectionAndCommonCollectionNameTest2() {
-        // testing special case: commonCollection changed from false to true + commonCollectionName changes
-        changedSettings.replace( "commonCollection", "false" );
+    public void reloadSettingsCatchAllEntityAndCatchAllEntityNameTest2() {
+        // testing special case: catchAllEntity changed from false to true + catchAllEntityName changes
+        changedSettings.replace( "catchAllEntity", "false" );
         client.updateSettings( changedSettings );
 
-        changedSettings.replace( "commonCollectionName", " " );
-        changedSettings.replace( "commonCollection", "true" );
+        changedSettings.replace( "catchAllEntityName", " " );
+        changedSettings.replace( "catchAllEntity", "true" );
         client.updateSettings( changedSettings );
-        assertEquals( "testCollection", client.getCommonCollectionName() );
-        assertTrue( client.getCommonCollection().get() );
+        assertEquals( "testCollection", client.getCatchAllEntityName() );
+        assertTrue( client.getCatchAllEntity().get() );
     }
 
 
