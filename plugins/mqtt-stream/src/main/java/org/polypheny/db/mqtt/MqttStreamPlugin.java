@@ -21,15 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.message.publish.Mqtt5Publish;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.security.KeyFactory;
-import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManagerFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
@@ -75,7 +65,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 
 public class MqttStreamPlugin extends Plugin {
@@ -131,8 +120,7 @@ public class MqttStreamPlugin extends Plugin {
                 new QueryInterfaceSettingList( "catchAllEntity", false, true, true, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ),
                 new QueryInterfaceSettingString( "catchAllEntityName", true, false, true, null ),
                 new QueryInterfaceSettingString( "topics", false, true, true, null ),
-                new QueryInterfaceSettingString( "filterQuery", true, false, true, "" ),
-                new QueryInterfaceSettingList( "Tsl/SslConnection", false, true, false, new ArrayList<>( List.of( "TRUE", "FALSE" ) ) ) );
+                new QueryInterfaceSettingString( "filterQuery", true, false, true, "" ) );
 
         @Getter
         private final String brokerAddress;
@@ -194,17 +182,17 @@ public class MqttStreamPlugin extends Plugin {
                     .replace( '/', '_' );
             if ( this.catchAllEntity.get() ) {
                 if ( this.catchAllEntityName == null || this.catchAllEntityName.isEmpty() || this.catchAllEntityName.isBlank() ) {
-                    throw new NullPointerException( "catchAllEntity is set to true but no valid collection name was given! Please enter a collection name." );
-                } else if ( !collectionExists( this.catchAllEntityName ) ) {
-                    createStreamCollection( this.catchAllEntityName );
+                    throw new NullPointerException( "catchAllEntity is set to true but no valid entity name was given! Please enter a entity name." );
+                } else if ( !entityExists( this.catchAllEntityName ) ) {
+                    createEntity( this.catchAllEntityName );
                 }
             } else if ( settings.get( "topics" ) != null ) {
                 for ( String topic : toList( settings.get( "topics" ) ) ) {
                     topic = topic.replace( '#', '_' )
                             .replace( '+', '_' )
                             .replace( '/', '_' );
-                    if ( !this.catchAllEntity.get() && !collectionExists( topic ) ) {
-                        createStreamCollection( topic );
+                    if ( !this.catchAllEntity.get() && !entityExists( topic ) ) {
+                        createEntity( topic );
                     }
                 }
             }
@@ -219,12 +207,12 @@ public class MqttStreamPlugin extends Plugin {
         @Override
         public void run() {
 
-                this.client = MqttClient.builder().useMqttVersion5()
-                        .identifier( getUniqueName() )
-                        .serverHost( brokerAddress )
-                        .serverPort( brokerPort )
-                        .automaticReconnectWithDefaultConfig()
-                        .buildAsync();
+            this.client = MqttClient.builder().useMqttVersion5()
+                    .identifier( getUniqueName() )
+                    .serverHost( brokerAddress )
+                    .serverPort( brokerPort )
+                    .automaticReconnectWithDefaultConfig()
+                    .buildAsync();
 
             client.connectWith().send().whenComplete( ( connAck, throwable ) -> {
                 if ( throwable != null ) {
@@ -348,7 +336,7 @@ public class MqttStreamPlugin extends Plugin {
                                         }
                                         this.namespaceName = newNamespaceName;
                                         this.namespaceType = type;
-                                        createAllCollections();
+                                        createAllEntities();
                                     } catch ( RuntimeException e ) {
                                         this.settings.put( "namespace", this.namespaceName );
                                         this.settings.put( "namespaceType", String.valueOf( this.namespaceType ) );
@@ -361,7 +349,7 @@ public class MqttStreamPlugin extends Plugin {
                                         createNamespace( newNamespaceName, this.namespaceType );
                                     }
                                     this.namespaceName = newNamespaceName;
-                                    createAllCollections();
+                                    createAllEntities();
                                 } catch ( RuntimeException e ) {
                                     this.settings.put( "namespace", this.namespaceName );
                                     throw new RuntimeException( e );
@@ -379,7 +367,7 @@ public class MqttStreamPlugin extends Plugin {
                                         }
                                         this.namespaceName = newName;
                                         this.namespaceType = newNamespaceType;
-                                        createAllCollections();
+                                        createAllEntities();
                                     } catch ( RuntimeException e ) {
                                         this.settings.put( "namespace", this.namespaceName );
                                         this.settings.put( "namespaceType", String.valueOf( this.namespaceType ) );
@@ -392,7 +380,7 @@ public class MqttStreamPlugin extends Plugin {
                                         createNamespace( this.namespaceName, newNamespaceType );
                                     }
                                     this.namespaceType = newNamespaceType;
-                                    createAllCollections();
+                                    createAllEntities();
                                 } catch ( RuntimeException e ) {
                                     this.settings.put( "namespaceType", String.valueOf( this.namespaceType ) );
                                     throw new RuntimeException( e );
@@ -401,7 +389,7 @@ public class MqttStreamPlugin extends Plugin {
                             break;
                         case "catchAllEntity":
                             this.catchAllEntity.set( Boolean.parseBoolean( this.getCurrentSettings().get( "catchAllEntity" ) ) );
-                            createAllCollections();
+                            createAllEntities();
                             break;
                         case "catchAllEntityName":
                             String newcatchAllEntityName = this.getCurrentSettings().get( "catchAllEntityName" ).trim();
@@ -414,14 +402,14 @@ public class MqttStreamPlugin extends Plugin {
                             }
                             if ( mode ) {
                                 if ( !(newcatchAllEntityName.equals( "null" ) || newcatchAllEntityName.isEmpty() || newcatchAllEntityName.isBlank()) ) {
-                                    if ( !collectionExists( newcatchAllEntityName ) ) {
-                                        createStreamCollection( this.catchAllEntityName );
+                                    if ( !entityExists( newcatchAllEntityName ) ) {
+                                        createEntity( this.catchAllEntityName );
                                     }
                                     this.catchAllEntityName = newcatchAllEntityName;
-                                    createAllCollections();
+                                    createAllEntities();
                                 } else {
                                     this.settings.put( "catchAllEntityName", this.catchAllEntityName );
-                                    throw new NullPointerException( "catchAllEntity is set to FALSE but no valid collection name was given! Please enter a collection name." );
+                                    throw new NullPointerException( "catchAllEntity is set to FALSE but no valid entity name was given! Please enter a entity name." );
                                 }
 
                             } else {
@@ -591,9 +579,9 @@ public class MqttStreamPlugin extends Plugin {
             StoringMqttMessage storingMqttMessage;
             synchronized ( settingsLock ) {
                 if ( !this.catchAllEntity.get() ) {
-                    String collectionToBeSaved;
-                    collectionToBeSaved = mqttMessage.getTopic().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
-                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, collectionToBeSaved );
+                    String entityName;
+                    entityName = mqttMessage.getTopic().replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+                    storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, entityName );
                 } else {
                     storingMqttMessage = new StoringMqttMessage( mqttMessage, this.namespaceName, this.namespaceType, getUniqueName(), this.databaseId, this.userId, this.catchAllEntityName );
                 }
@@ -655,70 +643,80 @@ public class MqttStreamPlugin extends Plugin {
 
 
         /**
-         * @param collectionName
-         * @return true: collection already exists, false: collection does not exist.
+         * @param entityName
+         * @return true: entity already exists, false: entity does not exist.
          */
-        private boolean collectionExists( String collectionName ) {
-            collectionName = collectionName.replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
-            Catalog catalog = Catalog.getInstance();
-            Pattern pattern = new Pattern( collectionName );
-            List<CatalogCollection> collectionList = null;
-            synchronized ( settingsLock ) {
-                collectionList = catalog.getCollections( getNamespaceId( this.namespaceName, this.namespaceType ), pattern );
-            }
-            return !collectionList.isEmpty();
-        }
-
-
-        private void createStreamCollection( String collectionName ) {
-            collectionName = collectionName.replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
-            Transaction transaction = getTransaction();
-            Statement statement = transaction.createStatement();
-            long namespaceID;
-            synchronized ( settingsLock ) {
-                namespaceID = getNamespaceId( this.namespaceName, this.namespaceType );
-            }
-            try {
-                List<DataStore> dataStores = new ArrayList<>();
-                DdlManager.getInstance().createCollection(
-                        namespaceID,
-                        collectionName,
-                        true,   //only creates collection if it does not already exist.
-                        dataStores.size() == 0 ? null : dataStores,
-                        PlacementType.MANUAL,
-                        statement );
-                transaction.commit();
-            } catch ( EntityAlreadyExistsException | TransactionException e ) {
-                throw new RuntimeException( "Error while creating a new collection:", e );
-            } catch ( UnknownSchemaIdRuntimeException e3 ) {
-                throw new RuntimeException( "New collection could not be created.", e3 );
+        private boolean entityExists( String entityName ) {
+            if ( this.namespaceType == NamespaceType.DOCUMENT ) {
+                String collectionName = entityName.replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+                Catalog catalog = Catalog.getInstance();
+                Pattern pattern = new Pattern( collectionName );
+                List<CatalogCollection> collectionList = null;
+                synchronized ( settingsLock ) {
+                    collectionList = catalog.getCollections( getNamespaceId( this.namespaceName, this.namespaceType ), pattern );
+                }
+                return !collectionList.isEmpty();
+            } else {
+                // handle other namespace types
+                return false;
             }
         }
 
 
-        private void createAllCollections() {
-            synchronized ( settingsLock ) {
-                if ( !this.catchAllEntity.get() ) {
-                    for ( String t : this.topicsMap.keySet() ) {
-                        if ( !collectionExists( t ) ) {
-                            createStreamCollection( t );
-                        }
-                    }
-                } else {
-                    if ( !(this.catchAllEntityName == null || this.catchAllEntityName.equals( "" ) || this.catchAllEntityName.isBlank()) ) {
-                        if ( !collectionExists( this.catchAllEntityName ) ) {
-                            createStreamCollection( this.catchAllEntityName );
-                        }
-                    } else {
-                        throw new NullPointerException( "catchAllEntity is set to 'true' but no valid collection name was given! Please enter a collection name." );
-                    }
+        private void createEntity( String entityName ) {
+            if ( this.namespaceType == NamespaceType.DOCUMENT ) {
+                String collectionName = entityName.replace( '#', '_' ).replace( '+', '_' ).replace( '/', '_' );
+                Transaction transaction = getTransaction();
+                Statement statement = transaction.createStatement();
+                long namespaceID;
+                synchronized ( settingsLock ) {
+                    namespaceID = getNamespaceId( this.namespaceName, this.namespaceType );
+                }
+                try {
+                    List<DataStore> dataStores = new ArrayList<>();
+                    DdlManager.getInstance().createCollection(
+                            namespaceID,
+                            collectionName,
+                            true,   //only creates collection if it does not already exist.
+                            dataStores.size() == 0 ? null : dataStores,
+                            PlacementType.MANUAL,
+                            statement );
+                    transaction.commit();
+                } catch ( EntityAlreadyExistsException | TransactionException e ) {
+                    throw new RuntimeException( "Error while creating a new collection:", e );
+                } catch ( UnknownSchemaIdRuntimeException e3 ) {
+                    throw new RuntimeException( "New collection could not be created.", e3 );
                 }
             }
-
         }
 
 
-        protected void publish( String topic, String payload) {
+        private void createAllEntities() {
+            if ( this.namespaceType == NamespaceType.DOCUMENT ) {
+                synchronized ( settingsLock ) {
+                    if ( !this.catchAllEntity.get() ) {
+                        for ( String t : this.topicsMap.keySet() ) {
+                            if ( !entityExists( t ) ) {
+                                createEntity( t );
+                            }
+                        }
+                    } else {
+                        if ( !(this.catchAllEntityName == null || this.catchAllEntityName.equals( "" ) || this.catchAllEntityName.isBlank()) ) {
+                            if ( !entityExists( this.catchAllEntityName ) ) {
+                                createEntity( this.catchAllEntityName );
+                            }
+                        } else {
+                            throw new NullPointerException( "catchAllEntity is set to 'true' but no valid entity name was given! Please enter a entity name." );
+                        }
+                    }
+                }
+            } else {
+                // handle other namespace types
+            }
+        }
+
+
+        protected void publish( String topic, String payload ) {
             client.publishWith()
                     .topic( topic )
                     .payload( payload.getBytes() )
@@ -745,7 +743,6 @@ public class MqttStreamPlugin extends Plugin {
         public String getInterfaceType() {
             return INTERFACE_NAME;
         }
-
 
 
         private class MonitoringPage {
