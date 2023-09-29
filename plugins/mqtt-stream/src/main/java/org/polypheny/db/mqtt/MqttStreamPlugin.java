@@ -753,11 +753,9 @@ public class MqttStreamPlugin extends Plugin {
             private final InformationGroup informationGroupInfo;
             private final InformationGroup informationGroupReceivedMessages;
             private final InformationGroup informationGroupPub;
-            private final InformationGroup informationGroupReconn;
             private final InformationTable topicsTable;
             private final InformationTable messageTable;
             private final InformationKeyValue brokerKv;
-            private final InformationAction reconnButton;
             private final InformationAction msgButton;
 
 
@@ -797,23 +795,6 @@ public class MqttStreamPlugin extends Plugin {
                 } ).withParameters( "topic", "payload" );
                 im.registerInformation( msgButton );
 
-                // Reconnection button
-                informationGroupReconn = new InformationGroup( informationPage, "Reconnect to broker" ).setOrder( 5 );
-                im.addGroup( informationGroupReconn );
-                reconnButton = new InformationAction( informationGroupReconn, "Reconnect", ( parameters ) -> {
-                    String end = "Reconnecting to broker";
-                    if ( client.getState().toString().equals( "DISCONNECTED" ) ) {
-                        run();
-                        update();
-                    } else {
-                        client.toBlocking().disconnect();
-                        run();
-                        update();
-                    }
-                    return end;
-                } );
-                im.registerInformation( reconnButton );
-
             }
 
 
@@ -852,11 +833,9 @@ public class MqttStreamPlugin extends Plugin {
                 im.removeInformation( brokerKv );
                 im.removeInformation( messageTable );
                 im.removeInformation( msgButton );
-                im.removeInformation( reconnButton );
 
                 im.removeGroup( informationGroupTopics );
                 im.removeGroup( informationGroupInfo );
-                im.removeGroup( informationGroupReconn );
                 im.removeGroup( informationGroupPub );
                 im.removeGroup( informationGroupReceivedMessages );
                 im.removePage( informationPage );

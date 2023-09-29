@@ -33,7 +33,7 @@ public class MqttMessage implements StreamMessage {
     }
 
 
-    public String getMessage() {
+    public String getData() {
         return this.payload;
     }
 

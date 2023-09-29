@@ -170,7 +170,7 @@ public class CypherCharStream implements CharStream {
                     hexval( nextQueryChar() ));
         } catch ( final IOException e ) {
             throw new RuntimeException( e.getMessage() );
-            //throw new RuntimeException( e.getMessage(), queryCursor, queryCursorLine, queryCursorColumn );
+            //throw new RuntimeException( e.getData(), queryCursor, queryCursorLine, queryCursorColumn );
         }
     }
 

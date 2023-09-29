@@ -33,11 +33,8 @@ public class StoringMqttMessage {
     private final long databaseId;
     @Getter
     private final int userId;
-    /**
-     * if MqttStreamClient.collectionPerTopic = TRUE, then collectionName is name of the topic or (if the subscribed topic
-     * has wildcards) the wildcardTopic
-     * if MqttStreamClient.collectionPerTopic = FALSE, then collectionName is the name of the common collection
-     */
+
+    // The name of the entity where the message should be stored in.
     @Getter
     private final String entityName;
 
@@ -54,7 +51,7 @@ public class StoringMqttMessage {
 
 
     public String getMessage() {
-        return this.msg.getMessage();
+        return this.msg.getData();
     }
 
 

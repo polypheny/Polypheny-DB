@@ -32,7 +32,7 @@ public class FilteringMqttMessage {
 
 
     public String getMessage() {
-        return mqttMessage.getMessage();
+        return mqttMessage.getData();
     }
 
 }
