@@ -29,6 +29,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogCollection;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamClient;
@@ -147,6 +153,9 @@ public class MqttStreamClientTest {
     }
 
 
+
+
+
     @Test
     public void toListEmptyTest() {
         List<String> result = client.toList( "" );
@@ -225,18 +234,15 @@ public class MqttStreamClientTest {
 
 
     @Test
-    public void reloadSettingsCatchAllEntityToFalseTest() {
-        changedSettings.replace( "catchAllEntity", "false" );
-        client.updateSettings( changedSettings );
-        assertFalse( client.getCatchAllEntity().get() );
-    }
-
-
-    @Test
     public void reloadSettingsCatchAllEntityToTrueTest() {
         changedSettings.replace( "catchAllEntity", "true" );
         client.updateSettings( changedSettings );
         assertTrue( client.getCatchAllEntity().get() );
+
+        Catalog catalog = Catalog.getInstance();
+        Pattern pattern = new Pattern( client.getCatchAllEntityName() );
+        List<CatalogCollection> collectionList = catalog.getCollections( Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern );
+        assertFalse( collectionList.isEmpty() );
     }
 
 
@@ -246,6 +252,11 @@ public class MqttStreamClientTest {
         client.updateSettings( changedSettings );
         assertEquals( "buttonCollection", client.getCatchAllEntityName() );
         assertTrue( client.getCatchAllEntity().get() );
+
+        Catalog catalog = Catalog.getInstance();
+        Pattern pattern = new Pattern( client.getCatchAllEntityName() );
+        List<CatalogCollection> collectionList = catalog.getCollections( Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern );
+        assertFalse( collectionList.isEmpty() );
     }
 
 
@@ -269,6 +280,11 @@ public class MqttStreamClientTest {
         client.updateSettings( changedSettings );
         assertEquals( "buttonCollection", client.getCatchAllEntityName() );
         assertTrue( client.getCatchAllEntity().get() );
+
+        Catalog catalog = Catalog.getInstance();
+        Pattern pattern = new Pattern( "buttonCollection" );
+        List<CatalogCollection> collectionList = catalog.getCollections( Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern );
+        assertFalse( collectionList.isEmpty() );
     }
 
 
@@ -283,6 +299,24 @@ public class MqttStreamClientTest {
         client.updateSettings( changedSettings );
         assertEquals( "testCollection", client.getCatchAllEntityName() );
         assertTrue( client.getCatchAllEntity().get() );
+    }
+
+    static class Helper {
+        static long getExistingNamespaceId( String namespaceName, NamespaceType namespaceType ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogSchema schema;
+            try {
+                schema = catalog.getSchema( Catalog.defaultDatabaseId, namespaceName );
+            } catch ( UnknownSchemaException e ) {
+                throw new RuntimeException( e );
+            }
+            assert schema != null;
+            if ( schema.namespaceType == namespaceType ) {
+                return schema.id;
+            } else {
+                throw new RuntimeException( "There is already a namespace existing in this database with the given name but of another type. Please change the namespace name or the type." );
+            }
+        }
     }
 
 
