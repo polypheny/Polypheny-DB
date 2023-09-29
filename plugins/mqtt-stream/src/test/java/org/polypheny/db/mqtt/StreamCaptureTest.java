@@ -28,9 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -61,7 +59,7 @@ public class StreamCaptureTest {
         TestHelper testHelper = TestHelper.getInstance();
         transaction = testHelper.getTransaction();
         capture = new StreamCapture( transaction );
-        namespaceId = Helper.createNamespace( "testspace", NamespaceType.DOCUMENT );
+        namespaceId = Helper.createNamespace();
         Helper.createCollection();
     }
 
@@ -115,10 +113,9 @@ public class StreamCaptureTest {
         //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
         BsonDocument result = Helper.filter( "{\"payload\":true}" ).get( 0 );
-        List<String> collection = Helper.scanCollection();
 
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
-        assertEquals( true, result.get( "payload" ).asBoolean().getValue() );
+        assertTrue( result.get( "payload" ).asBoolean().getValue() );
         assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
     }
 
@@ -133,7 +130,7 @@ public class StreamCaptureTest {
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
         assertEquals( "streamCaptureTest", result.get( "source" ).asString().getValue() );
         assertEquals( "value1", result.get( "payload" ).asDocument().get( "key1" ).asString().getValue() );
-        assertEquals( true, result.get( "payload" ).asDocument().get( "key2" ).asBoolean().getValue() );
+        assertTrue( result.get( "payload" ).asDocument().get( "key2" ).asBoolean().getValue() );
         assertEquals( 3, result.get( "payload" ).asDocument().get( "key3" ).asInt32().getValue() );
 
     }
@@ -146,7 +143,6 @@ public class StreamCaptureTest {
         //StreamCapture capture = new StreamCapture( transaction );
         capture.insert( storingmsg );
         BsonDocument result = Helper.filter( "{\"payload\":[1, 2, 3]}" ).get( 0 );
-        List<String> collection = Helper.scanCollection();
         assertEquals( "testTopic", result.get( "topic" ).asString().getValue() );
         BsonArray expectedPayload = new BsonArray();
         expectedPayload.add( 0, new BsonInt32( 1 ) );
@@ -178,9 +174,9 @@ public class StreamCaptureTest {
 
     private static class Helper {
 
-        private static long createNamespace( String namespaceName, NamespaceType namespaceType ) {
+        private static long createNamespace() {
             Catalog catalog = Catalog.getInstance();
-            long id = catalog.addNamespace( namespaceName, Catalog.defaultDatabaseId, Catalog.defaultUserId, namespaceType );
+            long id = catalog.addNamespace( "testspace", Catalog.defaultDatabaseId, Catalog.defaultUserId, NamespaceType.DOCUMENT );
             try {
                 catalog.commit();
                 return id;
@@ -205,23 +201,6 @@ public class StreamCaptureTest {
             } catch ( Exception | TransactionException e ) {
                 throw new RuntimeException( "Error while creating a new collection:", e );
             }
-        }
-
-
-        private static List<String> scanCollection() {
-            String sqlCollectionName = "testSpace" + "." + "testCollection";
-            Statement statement = transaction.createStatement();
-            AlgBuilder builder = AlgBuilder.create( statement );
-
-            AlgNode algNode = builder.docScan( statement, sqlCollectionName ).build();
-
-            AlgRoot root = AlgRoot.of( algNode, Kind.SELECT );
-            List<List<Object>> res = capture.executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
-            List<String> result = new ArrayList<>();
-            for ( List<Object> objectsList : res ) {
-                result.add( objectsList.get( 0 ).toString() );
-            }
-            return result;
         }
 
 
