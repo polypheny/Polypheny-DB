@@ -75,6 +75,7 @@ compileJava {
     dependsOn(":core:processResources")
     dependsOn(":information:processResources")
     dependsOn(":monitoring:processResources")
+    dependsOn(":plugins:mql-language:processResources")
 }
 
 delombok {
