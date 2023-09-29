@@ -29,6 +29,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog.NamespaceType;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -56,43 +57,45 @@ public class StreamCapture {
 
 
     private void insertMessage() {
-        String sqlCollectionName = this.storingMqttMessage.getNamespaceName() + "." + this.storingMqttMessage.getEntityName();
-        Statement statement = transaction.createStatement();
+        if ( this.storingMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
+            String sqlCollectionName = this.storingMqttMessage.getNamespaceName() + "." + this.storingMqttMessage.getEntityName();
+            Statement statement = transaction.createStatement();
 
-        // Builder which allows to construct the algebra tree which is equivalent to query and is executed
-        AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
+            // Builder which allows to construct the algebra tree which is equivalent to query and is executed
+            AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
 
-        BsonDocument document = new BsonDocument();
-        document.put( "source", new BsonString( this.storingMqttMessage.getUniqueNameOfInterface() ) );
-        document.put( "topic", new BsonString( this.storingMqttMessage.getTopic() ) );
-        String msg = this.storingMqttMessage.getMessage();
-        BsonValue value;
-        if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
-            value = BsonDocument.parse( msg );
-        } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
-            BsonArray bsonArray = new BsonArray();
-            msg = msg.replace( "[", "" ).replace( "]", "" );
-            String[] msglist = msg.split( "," );
-            for ( String stringValue : msglist ) {
-                stringValue = stringValue.trim();
-                bsonArray.add( getBsonValue( stringValue ) );
+            BsonDocument document = new BsonDocument();
+            document.put( "source", new BsonString( this.storingMqttMessage.getUniqueNameOfInterface() ) );
+            document.put( "topic", new BsonString( this.storingMqttMessage.getTopic() ) );
+            String msg = this.storingMqttMessage.getMessage();
+            BsonValue value;
+            if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
+                value = BsonDocument.parse( msg );
+            } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
+                BsonArray bsonArray = new BsonArray();
+                msg = msg.replace( "[", "" ).replace( "]", "" );
+                String[] msglist = msg.split( "," );
+                for ( String stringValue : msglist ) {
+                    stringValue = stringValue.trim();
+                    bsonArray.add( getBsonValue( stringValue ) );
+                }
+                value = bsonArray;
+            } else {
+                // msg is a single value
+                value = getBsonValue( msg );
             }
-            value = bsonArray;
-        } else {
-            // msg is a single value
-            value = getBsonValue( msg );
-        }
-        document.put( "payload", value );
+            document.put( "payload", value );
 
-        AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
+            AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
 
-        AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
-        // for inserts and all DML queries only a number is returned
-        List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
+            // for inserts and all DML queries only a number is returned
+            List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( e );
+            }
         }
     }
 
