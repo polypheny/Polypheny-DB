@@ -30,8 +30,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
+import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.mqtt.MqttStreamClientTest.Helper;
 import org.polypheny.db.mqtt.MqttStreamPlugin.MqttStreamClient;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -51,7 +55,7 @@ public class MqttClientBrokerTest {
         transactionManager = testHelper.getTransactionManager();
         transaction = testHelper.getTransaction();
         initialSettings.clear();
-        initialSettings.put( "brokerAddress", "1883" );
+        initialSettings.put( "brokerAddress", "localhost" );
         initialSettings.put( "brokerPort", "1883" );
         initialSettings.put( "catchAllEntityName", "testCollection" );
         initialSettings.put( "catchAllEntity", "true" );
@@ -147,7 +151,7 @@ public class MqttClientBrokerTest {
         assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/battery", "86" } ) );
         assertTrue( client.getMessageQueue().contains( new String[]{ "device1/online", "true" } ) );
         assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements", "[28,76,55 ]" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/info", "{\"wifi\":\"networkName\", \"mqtt\":{\"brokerIp\":\"127.0.0.1\", \"port\":1883}, \"deviceName\":\"device1\"}" } ) );
+        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements/unit", "C" } ) );
     }
 
 
@@ -159,7 +163,7 @@ public class MqttClientBrokerTest {
         assertEquals( 3, client.getTopicsMap().get( "device1/sensor/+" ).intValue() );
         assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/battery", "86" } ) );
         assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements", "[28,76,55 ]" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/info", "{\"wifi\":\"networkName\", \"mqtt\":{\"brokerIp\":\"127.0.0.1\", \"port\":1883}, \"deviceName\":\"device1\"}" } ) );
+        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements/unit", "C" } ) );
     }
 
 
@@ -186,18 +190,49 @@ public class MqttClientBrokerTest {
     }
 
 
-//
-//    subscribe to topic
-//            + wildcards
+    @Test
+    public void reloadSettingsCatchAllEntityToFalseTest() {
 
-//    richtige query für wildcard topic holen
-//    collections werden zu beginn richtig erstellt
-//            catchAllEntity
-//            collectionPerTopic
-//    1 msg handling test -> verify dass methoden aufgerufen werden
+        changedSettings.replace( "topics", "device1/online, device2/+/info, device1/sensor/#" );
+        client.updateSettings( changedSettings );
+        changedSettings.replace( "catchAllEntity", "false" );
+        client.updateSettings( changedSettings );
+        assertFalse( client.getCatchAllEntity().get() );
+
+        Catalog catalog1 = Catalog.getInstance();
+        Pattern pattern1 = new Pattern( "device1_online" );
+        List<CatalogCollection> collectionList1 = catalog1.getCollections( MqttStreamClientTest.Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern1 );
+        assertFalse( collectionList1.isEmpty() );
+
+        Catalog catalog2 = Catalog.getInstance();
+        Pattern pattern2 = new Pattern( "device2___info" );
+        List<CatalogCollection> collectionList2 = catalog2.getCollections( Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern2 );
+        assertFalse( collectionList2.isEmpty() );
+
+        Catalog catalog3 = Catalog.getInstance();
+        Pattern pattern3 = new Pattern( "device1_sensor__" );
+        List<CatalogCollection> collectionList3 = catalog3.getCollections( Helper.getExistingNamespaceId( client.getNamespaceName(), client.getNamespaceType() ), pattern3 );
+        assertFalse( collectionList3.isEmpty() );
+    }
 
 
+    @Test
+    public void getWildcardTopicWithHashtagTest() {
+        changedSettings.replace( "topics", "device1/sensor/#");
+        changedSettings.replace( "filterQuery", "device1/sensor/#:{}" );
+        client.updateSettings( changedSettings );
+        String resultWildcardTopic1 = client.getWildcardTopic( "device1/sensor/measurements/unit" );
+        assertEquals( "device1/sensor/#", resultWildcardTopic1 );
+    }
 
 
+    @Test
+    public void getWildcardTopicWithPlusTest() {
+        changedSettings.replace( "topics", "+/online");
+        changedSettings.replace( "filterQuery", "+/online:{\"$$ROOT\":false}" );
+        client.updateSettings( changedSettings );
+        String resultWildcardTopic = client.getWildcardTopic( "device1/online" );
+        assertEquals( "+/online", resultWildcardTopic );
+    }
 
 }
