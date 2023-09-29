@@ -161,7 +161,6 @@ public class MqttStreamPlugin extends Plugin {
         private String catchAllEntityName;
         private final long databaseId;
         private final int userId;
-        private final boolean ssl; // todo this.
         private final Object settingsLock = new Object();
         private final MonitoringPage monitoringPage;
 
@@ -214,33 +213,18 @@ public class MqttStreamPlugin extends Plugin {
                 saveQueriesInMap( queryString );
             }
 
-            this.ssl = Boolean.parseBoolean( settings.get( "Tsl/SslConnection" ) );
-
         }
 
 
         @Override
         public void run() {
-            if ( ssl ) {
-                this.client = MqttClient.builder().useMqttVersion5()
-                        .identifier( getUniqueName() )
-                        .serverHost( brokerAddress )
-                        .serverPort( brokerPort )
-                        .automaticReconnectWithDefaultConfig()
-                        .sslConfig()
-                        //TODO: delete or enter password from GUI password thinghere and in method
-                        .keyManagerFactory( SslHelper.createKeyManagerFactory( "polyphenyClient.crt", "polyphenyClient.key", "" ) )
-                        .trustManagerFactory( SslHelper.createTrustManagerFactory( "ca.crt" ) )
-                        .applySslConfig()
-                        .buildAsync();
-            } else {
+
                 this.client = MqttClient.builder().useMqttVersion5()
                         .identifier( getUniqueName() )
                         .serverHost( brokerAddress )
                         .serverPort( brokerPort )
                         .automaticReconnectWithDefaultConfig()
                         .buildAsync();
-            }
 
             client.connectWith().send().whenComplete( ( connAck, throwable ) -> {
                 if ( throwable != null ) {
@@ -473,7 +457,7 @@ public class MqttStreamPlugin extends Plugin {
                     .send()
                     .whenComplete( ( subAck, throwable ) -> {
                         if ( throwable != null ) {
-                            //TODO: change settings correctly:
+                            //TODO: change settings correctly: Test this
                             List<String> topicsList = toList( this.getCurrentSettings().get( "topics" ) );
                             StringBuilder stringBuilder = new StringBuilder();
                             for ( String t : topicsList ) {
@@ -763,151 +747,6 @@ public class MqttStreamPlugin extends Plugin {
         }
 
 
-        private static class SslHelper {
-
-            private static KeyFactory getKeyFactoryInstance() {
-                try {
-                    return KeyFactory.getInstance( "RSA" );
-                } catch ( NoSuchAlgorithmException e ) {
-                    throw new RuntimeException( e );
-                }
-            }
-
-
-            private static X509Certificate createX509CertificateFromFile( final String certificateFileName ) {
-                String path = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + certificateFileName;
-                final File file = PolyphenyHomeDirManager.getInstance().getFileIfExists( path );
-                if ( !file.isFile() ) {
-                    throw new RuntimeException( String.format( "The certificate file %s doesn't exist.", certificateFileName ) );
-                }
-                final X509Certificate certificate;
-                try {
-                    final CertificateFactory certificateFactoryX509 = CertificateFactory.getInstance( "X.509" );
-                    final InputStream inputStream = new FileInputStream( file );
-                    certificate = (X509Certificate) certificateFactoryX509.generateCertificate( inputStream );
-                    inputStream.close();
-                } catch ( Exception e ) {
-                    throw new RuntimeException( e );
-                }
-
-                return certificate;
-            }
-
-
-            /*
-                        private PrivateKey createPrivateKeyFromPemFile(final String keyFileName) {
-                            final PrivateKey privateKey;
-                            try {
-                                final PemReader pemReader = new PemReader( new FileReader( keyFileName ) );
-                                final PemObject pemObject = pemReader.readPemObject();
-                                final byte[] pemContent = pemObject.getContent();
-                                pemReader.close();
-                                final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec( pemContent );
-                                final KeyFactory keyFactory = getKeyFactoryInstance();
-                                privateKey = keyFactory.generatePrivate( encodedKeySpec );
-                            } catch ( Exception e ) {
-                                throw new RuntimeException(e);
-                            }
-                            return privateKey;
-                        }
-            */
-            private static KeyManagerFactory createKeyManagerFactory( String clientCertificateFileName, String clientKeyFileName, final String clientKeyPassword ) {
-                final KeyManagerFactory keyManagerFactory;
-                try {
-                    //todo: this.getUniqueName() in path
-                    String clientCrtPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "polyphenyClient.p12";
-                    File crtFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( clientCrtPath );
-                    //final X509Certificate clientCertificate = createX509CertificateFromFile("polyphenyClient.p12");
-                    InputStream crtStream = new FileInputStream( crtFile );
-                    final KeyStore ks = KeyStore.getInstance( "PKCS12" );
-                    ks.load( crtStream, "1234".toCharArray() );
-                    X509Certificate clientCertificate = (X509Certificate) ks.getCertificate( "alias" );
-                    keyManagerFactory = KeyManagerFactory.getInstance( KeyManagerFactory.getDefaultAlgorithm() );
-                    keyManagerFactory.init( ks, "".toCharArray() );
-                    /*
-                    // load client certificate:
-
-
-                    //CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                    //Certificate clientCertificate = cf.generateCertificate( crtStream );
-                    crtStream.close();*/
-
-                    //
-                    //ks.load( null, null );
-                    //Certificate clientCertificate = ks.getCertificate( "alias" );
-
-                    //load client key:
-                    String keyPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "polyphenyClient.key";
-                    File keyFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( keyPath );
-                    InputStream keyStream = new FileInputStream( keyFile );
-                    /*
-                    String key = keyStream.toString();
-                    key = key.replace( "-----BEGIN PRIVATE KEY-----", "" ).replace( "-----END PRIVATE KEY-----", "" );
-
-                     */
-
-
-
-
-                    /*
-
-
-                    // create private key method:------------------------------------------
-                    final PemReader pemReader = new PemReader(new FileReader(keyFile));
-                    final PemObject pemObject = pemReader.readPemObject();
-                    final byte[] pemContent = pemObject.getContent();
-                    pemReader.close();
-                    final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(pemContent);
-                    final KeyFactory keyFactory = getKeyFactoryInstance();
-                    final PrivateKey privateKey = keyFactory.generatePrivate(encodedKeySpec);
-
-                    //---------------------------------------------------------------------
-
-
-                    // create keystore
-                    final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-                    keyStore.load(null, null);
-                    keyStore.setCertificateEntry("certificate", clientCertificate);
-                    keyStore.setKeyEntry("private-key", privateKey,
-                            "".toCharArray(),
-                            new Certificate[] { clientCertificate });
-                    keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                    keyManagerFactory.init(keyStore, "".toCharArray());
-                    */
-                } catch ( Exception e ) {
-                    throw new RuntimeException( e );
-                }
-                return keyManagerFactory;
-            }
-
-
-            private static TrustManagerFactory createTrustManagerFactory( final String caCertificateFileName ) {
-                final TrustManagerFactory trustManagerFactory;
-                try {
-                    // load ca certificate:
-                    //todo: this.getUniqueName() in path
-                    /*
-                    String caPath = "certs" + File.separator + "mqttStreamPlugin" + File.separator + "mosquitto" + File.separator + "ca.crt";
-                    File caFile = PolyphenyHomeDirManager.getInstance().getFileIfExists( caPath );
-                    InputStream ca = new FileInputStream( caFile );
-                    CertificateFactory cf = CertificateFactory.getInstance( "X.509" );
-                    Certificate caCertificate = cf.generateCertificate( ca );
-                    ca.close();
-*/
-                    final X509Certificate caCertificate = (X509Certificate) createX509CertificateFromFile( caCertificateFileName );
-                    final KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-                    trustStore.load( null, null );
-                    trustStore.setCertificateEntry( "ca-certificate", caCertificate );
-                    trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-                    trustManagerFactory.init( trustStore );
-                } catch ( Exception e ) {
-                    throw new RuntimeException( e );
-                }
-                return trustManagerFactory;
-            }
-
-        }
-
 
         private class MonitoringPage {
 
@@ -1007,8 +846,6 @@ public class MqttStreamPlugin extends Plugin {
                 brokerKv.putPair( "Broker version of MQTT", client.getConfig().getMqttVersion() + "" );
                 brokerKv.putPair( "Client state", client.getState() + "" );
                 brokerKv.putPair( "Client identifier", client.getConfig().getClientIdentifier().get() + "" );
-                //TODO: check this after having SSL Configuration.
-                brokerKv.putPair( "SSL configuration", client.getConfig().getSslConfig() + "" );
             }
 
 
