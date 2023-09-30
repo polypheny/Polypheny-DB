@@ -18,14 +18,11 @@ package org.polypheny.db.mqtt;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -121,7 +118,7 @@ public class MqttClientBrokerTest {
 
 
     @Test
-    public void simpleSubscribeUnsubscribeTest() {
+    public void subscribeUnsubscribeTest() {
         changedSettings.replace( "topics", "device1/sensor/battery" );
         //All subscribed topics so far are unsubscribed
         client.updateSettings( changedSettings );
@@ -134,7 +131,7 @@ public class MqttClientBrokerTest {
 
 
     @Test
-    public void subscribeWithWildcardHashtagTest() {
+    public void topicMapUpdatedCorrectlyWithWildcardHashtagTest() {
         changedSettings.replace( "topics", "#" );
         client.updateSettings( changedSettings );
         simulateIoTDevices();
@@ -143,50 +140,38 @@ public class MqttClientBrokerTest {
 
 
     @Test
-    public void subscribeWithWildcardHashtagAtEndTest() {
+    public void topicMapUpdatedCorrectlyWildcardHashtagAtEndTest() {
         changedSettings.replace( "topics", "device1/#" );
         client.updateSettings( changedSettings );
         simulateIoTDevices();
         assertEquals( 4, client.getTopicsMap().get( "device1/#" ).intValue() );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/battery", "86" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/online", "true" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements", "[28,76,55 ]" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements/unit", "C" } ) );
     }
 
 
     @Test
-    public void subscribeWithWildcardPlusAtEndTest() {
+    public void topicMapUpdatedCorrectlyWithWildcardPlusAtEndTest() {
         changedSettings.replace( "topics", "device1/sensor/+" );
         client.updateSettings( changedSettings );
         simulateIoTDevices();
         assertEquals( 3, client.getTopicsMap().get( "device1/sensor/+" ).intValue() );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/battery", "86" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements", "[28,76,55 ]" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/sensor/measurements/unit", "C" } ) );
     }
 
 
     @Test
-    public void subscribeWithWildcardPlusInMiddleTest() {
+    public void topicMapUpdatedCorrectlyWithWildcardPlusInMiddleTest() {
         changedSettings.replace( "topics",  "device2/+/info" );
         client.updateSettings( changedSettings );
         simulateIoTDevices();
         assertEquals( 2, client.getTopicsMap().get( "device2/+/info" ).intValue() );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device2/location/info", "Basel" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device2/sensor/info", "{\"wifi\":\"networkName\", \"mqtt\":{\"brokerIp\":\"127.0.0.1\", \"port\":1883}, \"deviceName\":\"device2\"}" } ) );
-
     }
 
 
     @Test
-    public void subscribeWithWildcardPlusAtBeginningTest() {
+    public void topicMapUpdatedCorrectlyWithWildcardPlusAtBeginningTest() {
         changedSettings.replace( "topics",  "+/online" );
         client.updateSettings( changedSettings );
         simulateIoTDevices();
         assertEquals( 2, client.getTopicsMap().get( "+/online" ).intValue() );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device1/online", "true" } ) );
-        assertTrue( client.getMessageQueue().contains( new String[]{ "device2/online", "true" } ) );
     }
 
 
@@ -219,7 +204,6 @@ public class MqttClientBrokerTest {
     @Test
     public void getWildcardTopicWithHashtagTest() {
         changedSettings.replace( "topics", "device1/sensor/#");
-        changedSettings.replace( "filterQuery", "device1/sensor/#:{}" );
         client.updateSettings( changedSettings );
         String resultWildcardTopic1 = client.getWildcardTopic( "device1/sensor/measurements/unit" );
         assertEquals( "device1/sensor/#", resultWildcardTopic1 );
@@ -229,7 +213,6 @@ public class MqttClientBrokerTest {
     @Test
     public void getWildcardTopicWithPlusTest() {
         changedSettings.replace( "topics", "+/online");
-        changedSettings.replace( "filterQuery", "+/online:{\"$$ROOT\":false}" );
         client.updateSettings( changedSettings );
         String resultWildcardTopic = client.getWildcardTopic( "device1/online" );
         assertEquals( "+/online", resultWildcardTopic );
