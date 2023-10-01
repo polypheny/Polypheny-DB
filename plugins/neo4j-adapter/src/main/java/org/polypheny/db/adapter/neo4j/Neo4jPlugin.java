@@ -305,10 +305,11 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
             storeCatalog.replacePhysical( currentNamespace.createEntity( physical, fields, this.currentNamespace ) );
+            return List.of( physical );
         }
 
 
@@ -497,9 +498,10 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshGraph( long allocId ) {
+        public List<PhysicalEntity> refreshGraph( long allocId ) {
             PhysicalGraph physical = storeCatalog.fromAllocation( allocId, PhysicalGraph.class );
             storeCatalog.replacePhysical( new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+            return List.of( physical );
         }
 
 

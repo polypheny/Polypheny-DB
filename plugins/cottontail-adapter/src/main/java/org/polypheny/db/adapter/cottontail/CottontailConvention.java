@@ -36,7 +36,7 @@ public class CottontailConvention extends Convention.Impl {
 
     @Getter
     @Setter
-    private CottontailSchema cottontailSchema;
+    private CottontailNamespace cottontailNamespace;
 
 
     public CottontailConvention( String name, Expression expression ) {

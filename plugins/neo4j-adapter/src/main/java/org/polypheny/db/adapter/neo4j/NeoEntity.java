@@ -45,6 +45,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
+import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
@@ -144,6 +145,12 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     @Override
     public NeoQueryable asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new NeoQueryable( dataContext, snapshot, this );
+    }
+
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalGraph( id, allocationId, name, adapterId );
     }
 
 

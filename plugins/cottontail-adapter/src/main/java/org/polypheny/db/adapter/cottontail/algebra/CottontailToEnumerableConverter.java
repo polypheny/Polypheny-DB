@@ -26,7 +26,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailSchema;
+import org.polypheny.db.adapter.cottontail.CottontailNamespace;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailEnumerableFactory;
@@ -135,7 +135,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.filterBuilder ), // WHERE
                                 DataContext.ROOT,
                                 rowBuilder_,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
                         ) );
                 break;
 
@@ -149,7 +149,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.valuesHashMapList,
                                     DataContext.ROOT,
-                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
                             )
                     );
                 } else {
@@ -161,7 +161,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.preparedValuesMapBuilder,
                                     DataContext.ROOT,
-                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
                             )
                     );
                 }
@@ -177,7 +177,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 cottontailContext.preparedValuesMapBuilder,
                                 DataContext.ROOT,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
                         )
                 );
                 break;
@@ -191,7 +191,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 DataContext.ROOT,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
                         )
                 );
                 break;
@@ -201,7 +201,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         }
 
         list.add( Expressions.statement( Expressions.call(
-                Schemas.unwrap( convention.expression, CottontailSchema.class ),
+                Schemas.unwrap( convention.expression, CottontailNamespace.class ),
                 "registerStore",
                 DataContext.ROOT ) ) );
 

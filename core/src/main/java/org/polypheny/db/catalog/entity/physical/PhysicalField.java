@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -31,13 +32,18 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @Value
 @SuperBuilder(toBuilder = true)
 @NonFinal
-public class PhysicalField extends CatalogEntity {
+@SerializeClass(subclasses = PhysicalColumn.class)
+public abstract class PhysicalField extends CatalogEntity {
 
+    @Serialize
     public long adapterId;
+
     @Serialize
     public long entityId;
+
     @Serialize
     public String logicalName;
+
     @Serialize
     public long allocId;
 

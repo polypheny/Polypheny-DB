@@ -17,16 +17,19 @@
 package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Value;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -41,28 +44,32 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class DocStoreCatalog extends StoreCatalog {
 
+    @Getter
+    public BinarySerializer<DocStoreCatalog> serializer = PolySerializable.buildSerializer( DocStoreCatalog.class );
+
     @Serialize
-    ConcurrentMap<Pair<Long, Long>, PhysicalColumn> fields; // allocId, columnId
+    public ConcurrentMap<Pair<Long, Long>, PhysicalColumn> fields; // allocId, columnId
 
 
     public DocStoreCatalog( long adapterId ) {
-        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
     public DocStoreCatalog(
             @Deserialize("adapterId") long adapterId,
-            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
-            @Deserialize("physicals") Map<Long, ? extends PhysicalEntity> physicals,
-            @Deserialize("allocations") Map<Long, ? extends AllocationEntity> allocations,
+            @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
+            @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
             @Deserialize("fields") Map<Pair<Long, Long>, PhysicalColumn> fields,
-            @Deserialize("allocRelations") Map<Long, Set<Long>> allocRelations ) {
-        super( adapterId, namespaces, physicals, allocations, allocRelations );
+            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals ) {
+        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals );
         this.fields = new ConcurrentHashMap<>( fields );
     }
 
@@ -145,9 +152,15 @@ public class DocStoreCatalog extends StoreCatalog {
 
     public PhysicalCollection createCollection( String namespaceName, String name, LogicalCollection logical, AllocationCollection allocation ) {
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalCollection collection = new PhysicalCollection( physicalId, logical.id, allocation.id, logical.namespaceId, name, namespaceName, logical.entityType, adapterId );
+        PhysicalCollection collection = new PhysicalCollection( physicalId, allocation.id, logical.namespaceId, name, namespaceName, adapterId );
         addPhysical( allocation, collection );
         return collection;
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), DocStoreCatalog.class );
     }
 
 }

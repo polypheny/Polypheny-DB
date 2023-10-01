@@ -56,6 +56,7 @@ import org.polypheny.db.adapter.googlesheet.util.PolyphenyTokenStoreFactory;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -347,16 +348,15 @@ public class GoogleSheetSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void refreshTable( long allocId ) {
+    public List<PhysicalEntity> refreshTable( long allocId ) {
         PhysicalTable table = storeCatalog.getTable( allocId );
         if ( table == null ) {
             log.warn( "todo" );
-            return;
+            throw new GenericRuntimeException( "Could no find physical" );
         }
         storeCatalog.replacePhysical( currentNamespace.createGoogleSheetTable( table, this ) );
+        return List.of( table );
     }
-
-
 
 
     @Override

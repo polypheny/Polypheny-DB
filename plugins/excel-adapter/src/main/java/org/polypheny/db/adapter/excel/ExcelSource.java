@@ -53,6 +53,7 @@ import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
@@ -131,6 +132,7 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
         currentNamespace = new ExcelNamespace( id, excelDir, Flavor.SCANNABLE, this.sheetName );
     }
 
+
     @Override
     public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         storeCatalog.createTable(
@@ -144,13 +146,14 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void refreshTable( long allocId ) {
+    public List<PhysicalEntity> refreshTable( long allocId ) {
         PhysicalTable table = storeCatalog.getTable( allocId );
         if ( table == null ) {
             log.warn( "todo" );
-            return;
+            throw new GenericRuntimeException( "Could not find physicals" );
         }
         storeCatalog.replacePhysical( currentNamespace.createExcelTable( table, this ) );
+        return List.of( table );
     }
 
 

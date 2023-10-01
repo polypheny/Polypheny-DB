@@ -231,9 +231,8 @@ public class AdapterManager {
     /**
      * Restores adapters from catalog
      */
-    public void restoreAdapters() {
+    public void restoreAdapters( List<CatalogAdapter> adapters ) {
         try {
-            List<CatalogAdapter> adapters = Catalog.getInstance().getSnapshot().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
                 Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
                 Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );

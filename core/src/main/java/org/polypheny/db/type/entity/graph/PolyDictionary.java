@@ -30,7 +30,7 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.def.SimpleSerializerDef;
+import io.activej.serializer.SimpleSerializerDef;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;

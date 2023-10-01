@@ -24,9 +24,10 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
+import org.polypheny.db.schema.Wrapper;
 
 @SerializeClass(subclasses = { PolyAllocDocCatalog.class, PolyAllocGraphCatalog.class, PolyAllocRelCatalog.class })
-public interface AllocationCatalog {
+public interface AllocationCatalog extends Wrapper {
 
     LogicalNamespace getNamespace();
 

@@ -18,12 +18,14 @@ package org.polypheny.db.catalog.entity.physical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -44,27 +46,41 @@ public class PhysicalColumn extends PhysicalField {
     public PolyType type;
 
     @Serialize
+    @SerializeNullable
+    @Nullable
     public PolyType collectionsType;
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public Integer length; // JDBC length or precision depending on type
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public Integer scale; // decimal digits
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public Integer dimension;
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public Integer cardinality;
 
     @Serialize
     public boolean nullable;
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public Collation collation;
 
     @Serialize
+    @Nullable
+    @SerializeNullable
     public CatalogDefaultValue defaultValue;
 
 

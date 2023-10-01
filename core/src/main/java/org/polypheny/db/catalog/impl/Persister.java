@@ -18,14 +18,12 @@ package org.polypheny.db.catalog.impl;
 
 import com.drew.lang.Charsets;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
@@ -57,7 +55,7 @@ public class Persister {
     public synchronized void write( String data ) {
         service.execute( () -> {
             try {
-                BufferedWriter writer = new BufferedWriter( new FileWriter( backup, Charsets.ISO_8859_1 ) );
+                FileWriter writer = new FileWriter( backup, Charsets.ISO_8859_1 );
                 writer.write( data );
                 writer.flush();
                 writer.close();
@@ -69,15 +67,20 @@ public class Persister {
 
 
     public synchronized String read() {
-        String data;
+        //String data;
+        StringBuilder data = new StringBuilder();
         try {
             BufferedReader reader = new BufferedReader( new FileReader( backup, Charsets.ISO_8859_1 ) );
-            data = reader.lines().collect( Collectors.joining() );
+
+            int c;
+            while ( ((c = reader.read()) != -1) ) {
+                data.append( (char) c );
+            }
             reader.close();
         } catch ( IOException e ) {
             throw new GenericRuntimeException( e );
         }
-        return data;
+        return data.toString();
     }
 
 }

@@ -34,9 +34,9 @@ public class CsvPlugin extends PolyPlugin {
         super( context );
     }
 
+
     @Override
     public void afterCatalogInit() {
-
         this.id = AdapterManager.addAdapterTemplate( CsvSource.class, "CSV", CsvSource::new );
     }
 

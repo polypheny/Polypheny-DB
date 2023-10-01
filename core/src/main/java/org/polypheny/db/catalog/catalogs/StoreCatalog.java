@@ -17,10 +17,9 @@
 package org.polypheny.db.catalog.catalogs;
 
 
-import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,37 +37,43 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.type.PolySerializable;
 
 @Value
 @NonFinal
 @Slf4j
-public abstract class StoreCatalog {
+@SerializeClass(subclasses = { DocStoreCatalog.class, RelStoreCatalog.class, GraphStoreCatalog.class })
+public abstract class StoreCatalog implements PolySerializable {
+
+    IdBuilder idBuilder = IdBuilder.getInstance();
 
     @Serialize
     public long adapterId;
-    IdBuilder idBuilder = IdBuilder.getInstance();
+
+    @Serialize
     public ConcurrentMap<Long, Namespace> namespaces;
-    @Serialize
-    ConcurrentMap<Long, PhysicalEntity> physicals;
 
     @Serialize
-    ConcurrentMap<Long, AllocationEntity> allocations;
+    public ConcurrentMap<Long, PhysicalEntity> physicals;
 
-    ConcurrentMap<Long, Set<Long>> allocToPhysicals;
+    @Serialize
+    public ConcurrentMap<Long, AllocationEntity> allocations;
+
+    @Serialize
+    public ConcurrentMap<Long, Set<Long>> allocToPhysicals;
 
 
-    public StoreCatalog(
-            @Deserialize("adapterId") long adapterId ) {
-        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+    public StoreCatalog( long adapterId ) {
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
     public StoreCatalog(
             long adapterId,
-            @Deserialize("namespace") Map<Long, Namespace> namespaces,
-            @Deserialize("physicals") Map<Long, ? extends PhysicalEntity> physicals,
-            @Deserialize("allocations") Map<Long, ? extends AllocationEntity> allocations,
-            @Deserialize("allocRelations") Map<Long, Set<Long>> allocToPhysicals ) {
+            Map<Long, Namespace> namespaces,
+            Map<Long, PhysicalEntity> physicals,
+            Map<Long, AllocationEntity> allocations,
+            Map<Long, Set<Long>> allocToPhysicals ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
         this.physicals = new ConcurrentHashMap<>( physicals );

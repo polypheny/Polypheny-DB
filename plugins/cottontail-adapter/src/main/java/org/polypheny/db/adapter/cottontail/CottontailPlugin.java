@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PluginContext;
@@ -145,7 +146,7 @@ public class CottontailPlugin extends PolyPlugin {
         private final Engine engine;
 
         @Getter
-        private CottontailSchema currentNamespace;
+        private CottontailNamespace currentNamespace;
         @Expose(serialize = false, deserialize = false)
         private final transient CottontailWrapper wrapper;
 
@@ -202,17 +203,18 @@ public class CottontailPlugin extends PolyPlugin {
 
         @Override
         public void updateNamespace( String name, long id ) {
-            this.currentNamespace = CottontailSchema.create( id, name, this.wrapper, this );
+            this.currentNamespace = CottontailNamespace.create( id, name, this.wrapper, this );
         }
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId );
             storeCatalog.replacePhysical( new CottontailEntity(
                     this.currentNamespace,
                     this.dbName,
                     physical ) );
+            return List.of( physical );
         }
 
 

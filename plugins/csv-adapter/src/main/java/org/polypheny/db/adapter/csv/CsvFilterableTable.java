@@ -65,11 +65,6 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
     }
 
 
-    public String toString() {
-        return "CsvFilterableTable";
-    }
-
-
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext, List<RexNode> filters ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );

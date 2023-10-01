@@ -17,16 +17,18 @@
 package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +40,9 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.schema.Namespace;
+import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
 @EqualsAndHashCode(callSuper = true)
@@ -48,23 +51,25 @@ import org.polypheny.db.util.Pair;
 @NonFinal
 public class RelStoreCatalog extends StoreCatalog {
 
+    @Getter
+    public BinarySerializer<GraphStoreCatalog> serializer = PolySerializable.buildSerializer( GraphStoreCatalog.class );
 
     @Serialize
-    ConcurrentMap<Pair<Long, Long>, PhysicalColumn> columns; // allocId, columnId
+    public ConcurrentMap<Pair<Long, Long>, PhysicalColumn> columns; // allocId, columnId
 
 
     public RelStoreCatalog( long adapterId ) {
-        this( adapterId, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
     public RelStoreCatalog(
             @Deserialize("adapterId") long adapterId,
-            @Deserialize("namespaces") Map<Long, Namespace> namespaces,
-            @Deserialize("tables") Map<Long, PhysicalTable> tables,
+            @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
+            @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
             @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
-            @Deserialize("allocRelations") Map<Long, Pair<AllocationEntity, List<Long>>> allocRelations ) {
-        super( adapterId, namespaces, tables, Map.of(), Map.of() );
+            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals ) {
+        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals );
         this.columns = new ConcurrentHashMap<>( columns );
     }
 
@@ -136,6 +141,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
     public List<PhysicalColumn> getColumns( long allocId ) {
         return columns.values().stream().filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public PolySerializable copy() {
+        return PolySerializable.deserialize( serialize(), RelStoreCatalog.class );
     }
 
 }

@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog.entity.physical;
 
 import com.google.common.collect.ImmutableList;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
@@ -42,17 +44,18 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 public class PhysicalTable extends PhysicalEntity {
 
 
+    @Serialize
     public ImmutableList<PhysicalColumn> columns;
 
 
     public PhysicalTable(
-            long id,
-            long allocationId,
-            String name,
-            List<PhysicalColumn> columns,
-            long namespaceId,
-            String namespaceName,
-            long adapterId ) {
+            @Deserialize("id") long id,
+            @Deserialize("allocationId") long allocationId,
+            @Deserialize("name") String name,
+            @Deserialize("columns") List<PhysicalColumn> columns,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("namespaceName") String namespaceName,
+            @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
         this.columns = ImmutableList.copyOf( columns );
     }
@@ -101,6 +104,12 @@ public class PhysicalTable extends PhysicalEntity {
 
     public List<Long> getColumnIds() {
         return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalTable( id, allocationId, name, columns, namespaceId, namespaceName, adapterId );
     }
 
 }

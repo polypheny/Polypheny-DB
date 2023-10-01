@@ -468,8 +468,6 @@ public class PolyphenyDb {
 
         PolyPluginManager.initAfterTransaction( transactionManager );
 
-        Catalog.getInstance().updateSnapshot();
-
         restore( authenticator, catalog );
 
         // Add tracker, which rechecks constraints after enabling
@@ -526,17 +524,18 @@ public class PolyphenyDb {
 
 
     private void restore( Authenticator authenticator, Catalog catalog ) {
-        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
-        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         PolyPluginManager.startUp( transactionManager, authenticator );
 
         if ( !resetCatalog ) {
             Catalog.getInstance().restore();
         }
+        Catalog.getInstance().updateSnapshot();
+
+        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
         restoreDefaults( catalog );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-        // AdapterManager.getInstance().restoreAdapters();
 
         commitRestore();
     }

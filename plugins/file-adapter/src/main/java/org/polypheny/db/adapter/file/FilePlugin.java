@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGraph;
@@ -189,9 +190,10 @@ public class FilePlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId );
             storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
+            return List.of( physical );
         }
 
 

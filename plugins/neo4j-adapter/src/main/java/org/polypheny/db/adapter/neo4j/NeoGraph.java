@@ -88,7 +88,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     public NeoGraph( PhysicalEntity physical, List<? extends PhysicalField> fields, TransactionProvider transactionProvider, Driver db, String mappingLabel, Neo4jStore store ) {
-        super( physical.id, physical.allocationId, physical.name, physical.entityType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.name, physical.adapterId );
         this.transactionProvider = transactionProvider;
         this.db = db;
         this.mappingLabel = mappingLabel;

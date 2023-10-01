@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -37,6 +38,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -174,9 +176,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void refreshTable( long allocId ) {
+    public List<PhysicalEntity> refreshTable( long allocId ) {
         PhysicalTable physical = storeCatalog.fromAllocation( allocId );
         storeCatalog.addPhysical( storeCatalog.getAlloc( allocId ), this.currentJdbcSchema.createJdbcTable( storeCatalog, physical ) );
+        return List.of( physical );
     }
 
 
@@ -467,6 +470,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     }
 
 
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        storeCatalog.addPhysical( alloc, entities.get( 0 ) );
+    }
+
+
     public abstract String getDefaultPhysicalSchemaName();
 
 
@@ -484,6 +493,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
 
     }
 

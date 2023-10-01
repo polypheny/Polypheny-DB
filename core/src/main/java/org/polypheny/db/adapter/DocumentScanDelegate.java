@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -49,24 +50,38 @@ public class DocumentScanDelegate implements Scannable {
 
 
     @Override
-    public void refreshTable( long allocId ) {
-        scannable.refreshTable( allocId );
+    public List<PhysicalEntity> refreshTable( long allocId ) {
+        return scannable.refreshTable( allocId );
     }
 
 
     @Override
-    public void refreshGraph( long allocId ) {
-        List<PhysicalEntity> physicals = catalog.getPhysicalsFromAllocs( allocId );
-        scannable.refreshTable( physicals.get( 0 ).allocationId );
-        scannable.refreshTable( physicals.get( 1 ).allocationId );
-        scannable.refreshTable( physicals.get( 2 ).allocationId );
-        scannable.refreshTable( physicals.get( 3 ).allocationId );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        scannable.restoreTable( alloc, entities );
     }
 
 
     @Override
-    public void refreshCollection( long allocId ) {
-        scannable.refreshCollection( allocId );
+    public List<PhysicalEntity> refreshGraph( long allocId ) {
+        return Scannable.refreshGraphSubstitute( scannable, allocId );
+    }
+
+
+    @Override
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
+        Scannable.restoreGraphSubstitute( scannable, alloc, entities );
+    }
+
+
+    @Override
+    public List<PhysicalEntity> refreshCollection( long allocId ) {
+        return scannable.refreshCollection( allocId );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
+
     }
 
 
@@ -90,7 +105,7 @@ public class DocumentScanDelegate implements Scannable {
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        Scannable.createCollectionSubstitute( scannable, context, logical, allocation );
+        scannable.createCollection( context, logical, allocation );
     }
 
 

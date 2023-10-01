@@ -21,12 +21,12 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -53,6 +53,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
@@ -72,8 +73,9 @@ import org.polypheny.db.type.PolySerializable;
 @Slf4j
 public class PolyCatalog extends Catalog implements PolySerializable {
 
-    @Getter
-    public final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+
+    private static BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+
 
     @Serialize
     public final Map<Long, LogicalCatalog> logicalCatalogs;
@@ -99,6 +101,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Getter
     public final Map<Long, StoreCatalog> storeCatalogs;
 
+    @Serialize
+    public final Map<Long, AdapterRestore> adapterRestore;
+
     private final IdBuilder idBuilder = IdBuilder.getInstance();
     private final Persister persister;
 
@@ -115,11 +120,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public PolyCatalog() {
-        this( new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>() );
+        this(
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of() );
 
     }
 
@@ -128,6 +135,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("users") Map<Long, CatalogUser> users,
             @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
+            @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
 
@@ -138,6 +146,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.interfaces = new ConcurrentHashMap<>( interfaces );
         this.adapterTemplates = new ConcurrentHashMap<>();
         this.storeCatalogs = new ConcurrentHashMap<>();
+        this.adapterRestore = new ConcurrentHashMap<>( adapterRestore );
 
         this.persister = new Persister();
 
@@ -158,29 +167,34 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // update all except physicals, so information can be accessed
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
+
+        Map<Long, AdapterRestore> adapterRestore = adapters.values().stream().collect( Collectors.toMap( a -> a.id, a -> new AdapterRestore( a.id ) ) );
         // generate new physical entities, atm only relational
-        this.allocationCatalogs.forEach( ( k, v ) -> {
-            if ( v.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
-                ((AllocationRelationalCatalog) v).getTables().forEach( ( id, table ) -> {
+        for ( AllocationCatalog catalog : this.allocationCatalogs.values() ) {
+            if ( catalog.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
+                catalog.unwrap( AllocationRelationalCatalog.class ).getTables().forEach( ( id, table ) -> {
                     addNamespaceIfNecessary( table );
-                    AdapterManager.getInstance().getAdapter( table.adapterId ).refreshTable( table.id );
+                    adapterRestore.get( table.adapterId ).addPhysicals( table, AdapterManager.getInstance().getAdapter( table.adapterId ).refreshTable( table.id ) );
                 } );
-            } else if ( v.getNamespace().namespaceType == NamespaceType.DOCUMENT ) {
-                ((AllocationDocumentCatalog) v).getCollections().forEach( ( id, collection ) -> {
+            } else if ( catalog.getNamespace().namespaceType == NamespaceType.DOCUMENT ) {
+                catalog.unwrap( AllocationDocumentCatalog.class ).getCollections().forEach( ( id, collection ) -> {
                     addNamespaceIfNecessary( collection );
-                    AdapterManager.getInstance().getAdapter( collection.adapterId ).refreshCollection( collection.id );
+                    adapterRestore.get( collection.adapterId ).addPhysicals( collection, AdapterManager.getInstance().getAdapter( collection.adapterId ).refreshCollection( collection.id ) );
                 } );
-            } else if ( v.getNamespace().namespaceType == NamespaceType.GRAPH ) {
-                ((AllocationGraphCatalog) v).getGraphs().forEach( ( id, graph ) -> {
+            } else if ( catalog.getNamespace().namespaceType == NamespaceType.GRAPH ) {
+                catalog.unwrap( AllocationGraphCatalog.class ).getGraphs().forEach( ( id, graph ) -> {
                     addNamespaceIfNecessary( graph );
-                    AdapterManager.getInstance().getAdapter( graph.adapterId ).refreshGraph( graph.id );
+                    adapterRestore.get( graph.adapterId ).addPhysicals( graph, AdapterManager.getInstance().getAdapter( graph.adapterId ).refreshGraph( graph.id ) );
                 } );
             }
-        } );
+        }
 
-        // update with newly generated physical entities
-        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
-
+        synchronized ( this ) {
+            this.adapterRestore.clear();
+            this.adapterRestore.putAll( adapterRestore );
+            // update with newly generated physical entities
+            this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
+        }
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
         this.dirty.set( false );
     }
@@ -225,6 +239,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public void rollback() {
+        restoreLastState();
+
+        log.debug( "rollback" );
+
+        updateSnapshot();
+
+    }
+
+
+    private void restoreLastState() {
         PolyCatalog old = PolySerializable.deserialize( backup, getSerializer() );
 
         users.clear();
@@ -237,17 +261,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         adapters.putAll( old.adapters );
         interfaces.clear();
         interfaces.putAll( old.interfaces );
-
-        log.debug( "rollback" );
-
-        updateSnapshot();
-
+        adapterRestore.clear();
+        adapterRestore.putAll( old.adapterRestore );
     }
 
 
     private void validateNamespaceType( long id, NamespaceType type ) {
         if ( logicalCatalogs.get( id ).getLogicalNamespace().namespaceType != type ) {
-            throw new RuntimeException( "error while retrieving catalog" );
+            throw new GenericRuntimeException( "error while retrieving catalog" );
         }
     }
 
@@ -460,7 +481,18 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             log.warn( "No file found to restore" );
             return;
         }
-        rollback();
+        // set old state;
+        restoreLastState();
+        // only for templates
+        this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, Map.of(), Map.of() );
+        AdapterManager.getInstance().restoreAdapters( List.copyOf( adapters.values() ) );
+
+        adapterRestore.forEach( ( id, restore ) -> {
+            Adapter<?> adapter = AdapterManager.getInstance().getAdapter( id );
+            restore.activate( adapter );
+        } );
+
+        updateSnapshot();
     }
 
 
@@ -473,6 +505,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void clear() {
         log.error( "clearing" );
+    }
+
+
+    @Override
+    public BinarySerializer<PolyCatalog> getSerializer() {
+        return serializer;
     }
 
 

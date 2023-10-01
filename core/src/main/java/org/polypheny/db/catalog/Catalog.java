@@ -83,7 +83,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public static Catalog getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "Catalog was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "Catalog was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }

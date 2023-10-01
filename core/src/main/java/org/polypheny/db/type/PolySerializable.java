@@ -19,7 +19,7 @@ package org.polypheny.db.type;
 import com.drew.lang.Charsets;
 import io.activej.codegen.DefiningClassLoader;
 import io.activej.serializer.BinarySerializer;
-import io.activej.serializer.SerializerFactory;
+import io.activej.serializer.SerializerBuilder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +33,9 @@ public interface PolySerializable {
     DefiningClassLoader CLASS_LOADER = DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() == null ? ClassLoader.getPlatformClassLoader() : PolyPluginManager.getMainClassLoader() );
 
     static <C extends Class<T>, T> BinarySerializer<T> buildSerializer( C clazz ) {
-        return SerializerFactory.builder().build().create( CLASS_LOADER, clazz );
+        return SerializerBuilder
+                .create( CLASS_LOADER )
+                .build( clazz );
     }
 
     Map<Class<?>, BinarySerializer<?>> cache = new HashMap<>();

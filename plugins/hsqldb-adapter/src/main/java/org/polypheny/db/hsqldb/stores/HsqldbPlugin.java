@@ -16,8 +16,6 @@
 
 package org.polypheny.db.hsqldb.stores;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
@@ -40,15 +38,6 @@ public class HsqldbPlugin extends PolyPlugin {
 
     @Override
     public void afterCatalogInit() {
-        Map<String, String> defaults = ImmutableMap.copyOf( Map.of(
-                "type", "Memory",
-                "mode", "embedded",
-                "tableType", "Memory",
-                "maxConnections", "25",
-                "trxControlMode", "mvcc",
-                "trxIsolationLevel", "read_committed"
-        ) );
-
         this.id = AdapterManager.addAdapterTemplate( HsqldbStore.class, ADAPTER_NAME, HsqldbStore::new );
     }
 

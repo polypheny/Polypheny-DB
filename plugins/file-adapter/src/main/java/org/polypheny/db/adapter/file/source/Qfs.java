@@ -32,21 +32,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
@@ -70,6 +68,9 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 @AdapterSettingString(name = "rootDir", defaultValue = "")
 public class Qfs extends DataSource<RelStoreCatalog> {
 
+    @Delegate(excludes = Exclude.class)
+    private RelationalScanDelegate delegate;
+
     @Getter
     private File rootDir;
 
@@ -81,6 +82,7 @@ public class Qfs extends DataSource<RelStoreCatalog> {
         super( adapterId, uniqueName, settings, true, new RelStoreCatalog( adapterId ) );
         init( settings );
         registerInformationPage( uniqueName );
+        this.delegate = new RelationalScanDelegate( this, storeCatalog );
     }
 
 
@@ -105,56 +107,16 @@ public class Qfs extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void refreshTable( long allocId ) {
+    public List<PhysicalEntity> refreshTable( long allocId ) {
         PhysicalTable physical = storeCatalog.fromAllocation( allocId );
         storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
+        return List.of( physical );
     }
 
-
-    @Override
-    public void refreshGraph( long allocId ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public void refreshCollection( long allocId ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public StoreCatalog getCatalog() {
-        throw new NotImplementedException();//Todo
-    }
 
 
     @Override
     public void dropTable( Context context, long allocId ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public void dropGraph( Context context, AllocationGraph allocation ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        throw new NotImplementedException();//Todo
-    }
-
-
-    @Override
-    public void dropCollection( Context context, AllocationCollection allocation ) {
         throw new NotImplementedException();//Todo
     }
 
@@ -372,6 +334,18 @@ public class Qfs extends DataSource<RelStoreCatalog> {
             );
         }
         return table;
+    }
+
+
+    @SuppressWarnings("UnnecessaryModifier")
+    public static interface Exclude {
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+        List<PhysicalEntity> refreshTable( long allocId );
+
+        void dropTable( Context context, long allocId );
+
     }
 
 }

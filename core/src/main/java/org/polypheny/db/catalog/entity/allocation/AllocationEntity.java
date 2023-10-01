@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import io.activej.serializer.annotations.SerializeVarLength;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -33,6 +34,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @NonFinal
 @Slf4j
 @SuperBuilder
+@SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
 public abstract class AllocationEntity extends CatalogEntity {
 
     @Serialize

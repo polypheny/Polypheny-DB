@@ -16,6 +16,8 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
+import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeClass;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -28,10 +30,16 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @Value
 @NonFinal
 @SuperBuilder(toBuilder = true)
+@SerializeClass(subclasses = { PhysicalTable.class, PhysicalGraph.class, PhysicalCollection.class })
 public abstract class PhysicalEntity extends CatalogEntity {
 
+    @Serialize
     public String namespaceName;
+
+    @Serialize
     public long adapterId;
+
+    @Serialize
     public long allocationId;
 
 
@@ -48,5 +56,7 @@ public abstract class PhysicalEntity extends CatalogEntity {
         return State.PHYSICAL;
     }
 
+
+    public abstract PhysicalEntity normalize();
 
 }

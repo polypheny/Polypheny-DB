@@ -61,10 +61,6 @@ public class CsvScannableTable extends CsvTable implements ScannableEntity {
     }
 
 
-    public String toString() {
-        return "CsvScannableTable";
-    }
-
 
     @Override
     public Enumerable<PolyValue[]> scan( DataContext dataContext ) {

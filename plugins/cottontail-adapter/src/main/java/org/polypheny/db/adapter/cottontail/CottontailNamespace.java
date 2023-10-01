@@ -34,7 +34,7 @@ import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
 
-public class CottontailSchema extends AbstractNamespace implements Schema {
+public class CottontailNamespace extends AbstractNamespace implements Schema {
 
     @Getter
     private final CottontailConvention convention;
@@ -53,7 +53,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
     private final CottontailWrapper wrapper;
 
 
-    private CottontailSchema(
+    private CottontailNamespace(
             long id,
             @NonNull CottontailWrapper wrapper,
             CottontailConvention convention,
@@ -72,7 +72,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public CottontailSchema(
+    public CottontailNamespace(
             long id,
             CottontailWrapper wrapper,
             CottontailConvention convention,
@@ -89,7 +89,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public static CottontailSchema create(
+    public static CottontailNamespace create(
             Long id,
             String name,
             CottontailWrapper wrapper,
@@ -97,7 +97,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
     ) {
         final Expression expression = null;//Schemas.subSchemaExpression( snapshot, name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
-        return new CottontailSchema( id, wrapper, convention, cottontailStore, name );
+        return new CottontailNamespace( id, wrapper, convention, cottontailStore, name );
     }
 
 
@@ -114,7 +114,7 @@ public class CottontailSchema extends AbstractNamespace implements Schema {
 
     @Override
     public Namespace snapshot( SchemaVersion version ) {
-        return new CottontailSchema(
+        return new CottontailNamespace(
                 this.id,
                 this.wrapper,
                 this.convention,

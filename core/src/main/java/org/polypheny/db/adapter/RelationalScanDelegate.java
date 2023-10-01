@@ -16,16 +16,19 @@
 
 package org.polypheny.db.adapter;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
 
@@ -57,20 +60,38 @@ public class RelationalScanDelegate implements Scannable {
 
 
     @Override
-    public void refreshTable( long allocId ) {
-        scannable.refreshTable( allocId );
+    public List<PhysicalEntity> refreshTable( long allocId ) {
+        return scannable.refreshTable( allocId );
     }
 
 
     @Override
-    public void refreshGraph( long allocId ) {
-        Scannable.refreshGraphSubstitute( scannable, allocId );
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        scannable.restoreTable( alloc, entities );
     }
 
 
     @Override
-    public void refreshCollection( long allocId ) {
-        Scannable.refreshCollectionSubstitution( scannable, allocId );
+    public List<PhysicalEntity> refreshGraph( long allocId ) {
+        return Scannable.refreshGraphSubstitute( scannable, allocId );
+    }
+
+
+    @Override
+    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
+        Scannable.restoreGraphSubstitute( scannable, alloc, entities );
+    }
+
+
+    @Override
+    public List<PhysicalEntity> refreshCollection( long allocId ) {
+        return Scannable.refreshCollectionSubstitution( scannable, allocId );
+    }
+
+
+    @Override
+    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
+        Scannable.restoreCollectionSubstitute( scannable, alloc, entities );
     }
 
 

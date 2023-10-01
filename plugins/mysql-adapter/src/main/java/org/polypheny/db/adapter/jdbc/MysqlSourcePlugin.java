@@ -31,7 +31,9 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
@@ -95,13 +97,14 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalTable table = storeCatalog.getTable( allocId );
             if ( table == null ) {
                 log.warn( "todo" );
-                return;
+                throw new GenericRuntimeException( "Could not find physical" );
             }
             storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
+            return List.of( table );
         }
 
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
+import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -23,7 +24,6 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -31,7 +31,11 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class PhysicalGraph extends PhysicalEntity {
 
-    public PhysicalGraph( long id, long allocationId, String name, EntityType type, long adapterId ) {
+    public PhysicalGraph(
+            @Deserialize("id") long id,
+            @Deserialize("allocationId") long allocationId,
+            @Deserialize("name") String name,
+            @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, name, id, name, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
@@ -47,5 +51,10 @@ public class PhysicalGraph extends PhysicalEntity {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalGraph", Expressions.constant( id ) );
     }
 
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalGraph( id, allocationId, name, adapterId );
+    }
 
 }

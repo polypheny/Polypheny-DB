@@ -332,10 +332,11 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshCollection( long allocId ) {
+        public List<PhysicalEntity> refreshCollection( long allocId ) {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
             storeCatalog.replacePhysical( this.currentNamespace.createEntity( physical, fields ) );
+            return List.of( physical );
         }
 
 
@@ -627,10 +628,11 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
             storeCatalog.replacePhysical( currentNamespace.createEntity( physical, fields ) );
+            return List.of( physical );
         }
 
 

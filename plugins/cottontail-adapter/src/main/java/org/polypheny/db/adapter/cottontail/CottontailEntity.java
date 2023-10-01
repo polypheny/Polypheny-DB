@@ -56,7 +56,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
     private final PhysicalTable table;
     private AlgProtoDataType protoRowType;
-    private CottontailSchema cottontailNamespace;
+    private CottontailNamespace cottontailNamespace;
 
     @Getter
     private EntityName entityName;
@@ -71,7 +71,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     protected CottontailEntity(
-            CottontailSchema cottontailNamespace,
+            CottontailNamespace cottontailNamespace,
             String physicalSchemaName,
             PhysicalTable physical ) {
         super( physical.id,

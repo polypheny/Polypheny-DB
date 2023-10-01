@@ -83,6 +83,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -360,6 +361,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     @Override
     public MongoQueryable<PolyValue[]> asQueryable( DataContext dataContext, Snapshot snapshot ) {
         return new MongoQueryable<>( dataContext, snapshot, this );
+    }
+
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalCollection( id, allocationId, namespaceId, name, namespaceName, adapterId );
     }
 
 

@@ -61,10 +61,6 @@ public class CsvTranslatableTable extends CsvTable implements TranslatableEntity
     }
 
 
-    public String toString() {
-        return "CsvTranslatableTable";
-    }
-
 
     /**
      * Returns an enumerable over a given projection of the fields.

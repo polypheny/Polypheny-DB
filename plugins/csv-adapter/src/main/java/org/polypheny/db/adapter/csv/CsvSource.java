@@ -45,8 +45,10 @@ import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
@@ -125,13 +127,20 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void refreshTable( long allocId ) {
+    public List<PhysicalEntity> refreshTable( long allocId ) {
         PhysicalTable table = storeCatalog.getTable( allocId );
         if ( table == null ) {
             log.warn( "todo" );
-            return;
+            throw new GenericRuntimeException( "physical not found" );
         }
         storeCatalog.replacePhysical( currentNamespace.createCsvTable( table.id, table, this ) );
+        return List.of( table );
+    }
+
+
+    @Override
+    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
+        storeCatalog.addPhysical( alloc, entities.get( 0 ) );
     }
 
 
@@ -360,6 +369,8 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
         void refreshTable( long allocId );
 
         void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
 
     }
 

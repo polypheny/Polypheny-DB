@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.physical;
 
+import io.activej.serializer.annotations.Deserialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -23,7 +24,6 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -31,7 +31,13 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 public class PhysicalCollection extends PhysicalEntity {
 
-    public PhysicalCollection( long id, long logicalId, long allocationId, long namespaceId, String name, String namespaceName, EntityType type, long adapterId ) {
+    public PhysicalCollection(
+            @Deserialize("id") long id,
+            @Deserialize("allocationId") long allocationId,
+            @Deserialize("namespaceId") long namespaceId,
+            @Deserialize("name") String name,
+            @Deserialize("namespaceName") String namespaceName,
+            @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.DOCUMENT, adapterId );
     }
 
@@ -47,5 +53,10 @@ public class PhysicalCollection extends PhysicalEntity {
         return Expressions.call( Catalog.CATALOG_EXPRESSION, "getPhysicalCollection", Expressions.constant( id ) );
     }
 
+
+    @Override
+    public PhysicalEntity normalize() {
+        return new PhysicalCollection( id, allocationId, namespaceId, name, namespaceName, adapterId );
+    }
 
 }

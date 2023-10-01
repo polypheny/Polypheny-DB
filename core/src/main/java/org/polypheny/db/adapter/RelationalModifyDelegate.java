@@ -99,7 +99,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        Modifiable.createGraphSubstitute( modifiable, context, logical, allocation );
+        Scannable.createGraphSubstitute( modifiable, context, logical, allocation );
     }
 
 
@@ -111,7 +111,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        PhysicalTable physical = Modifiable.createSubstitution( modifiable, context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
+        PhysicalTable physical = Scannable.createSubstitutionTable( modifiable, context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
         catalog.addPhysical( allocation, physical );
     }
 

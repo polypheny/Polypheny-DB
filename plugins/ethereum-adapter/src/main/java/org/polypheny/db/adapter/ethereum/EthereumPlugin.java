@@ -39,6 +39,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
@@ -146,13 +147,14 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         @Override
-        public void refreshTable( long allocId ) {
+        public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalTable table = storeCatalog.getTable( allocId );
             if ( table == null ) {
                 log.warn( "todo" );
-                return;
+                throw new GenericRuntimeException( "Could not find physical" );
             }
             storeCatalog.replacePhysical( currentNamespace.createBlockchainTable( table, this ) );
+            return List.of( table );
         }
 
 

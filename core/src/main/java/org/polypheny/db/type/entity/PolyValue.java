@@ -28,11 +28,11 @@ import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
-import io.activej.serializer.SerializerFactory;
+import io.activej.serializer.SerializerBuilder;
+import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
-import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Optional;
@@ -125,7 +125,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     // used internally to serialize into binary format
-    public static BinarySerializer<PolyValue> serializer = SerializerFactory.builder()
+    public static BinarySerializer<PolyValue> serializer = SerializerBuilder.create( CLASS_LOADER )
             .with( PolyInteger.class, ctx -> new PolyIntegerSerializerDef() )
             .with( PolyValue.class, ctx -> new PolyValueSerializerDef() )
             .with( PolyString.class, ctx -> new PolyStringSerializerDef() )
@@ -139,8 +139,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyNode.class, ctx -> new PolyNodeSerializerDef() )
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
-            .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() ).build()
-            .create( PolySerializable.CLASS_LOADER, PolyValue.class );
+            .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
+            .build( PolyValue.class );
 
     // used to serialize to Json
     public static final GsonBuilder GSON_BUILDER = new GsonBuilder()

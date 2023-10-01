@@ -34,13 +34,12 @@
 package org.polypheny.db.adapter.csv;
 
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.type.PolyType;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -48,7 +47,7 @@ import java.util.Map;
  *
  * Usually, and unless specified explicitly in the header row, a field is of type {@link #STRING}. But specifying the field type in the header row makes it easier to write SQL.
  */
-enum CsvFieldType {
+public enum CsvFieldType {
     STRING( String.class, "string" ),
     BOOLEAN( Primitive.BOOLEAN ),
     BYTE( Primitive.BYTE ),
