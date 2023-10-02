@@ -7,6 +7,7 @@ import "document_frame.proto";
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "StatementResponses";
+option go_package = "polypheny.com/protos";
 
 package polypheny.protointerface;
 

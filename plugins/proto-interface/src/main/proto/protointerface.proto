@@ -15,6 +15,7 @@ import "transactions_responses.proto";
 option java_multiple_files = true;
 option java_package = "org.polypheny.db.protointerface.proto";
 option java_outer_classname = "ProtoInterfaceProto";
+option go_package = "polypheny.com/protos";
 
 package polypheny.protointerface;
 
