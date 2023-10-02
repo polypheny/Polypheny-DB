@@ -74,7 +74,7 @@ import org.polypheny.db.type.PolySerializable;
 public class PolyCatalog extends Catalog implements PolySerializable {
 
 
-    private static BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+    private static final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
 
     @Serialize

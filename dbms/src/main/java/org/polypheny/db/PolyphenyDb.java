@@ -568,7 +568,7 @@ public class PolyphenyDb {
 
     private static void restoreDefaults( Catalog catalog ) {
         catalog.updateSnapshot();
-        DefaultInserter.restoreData( DdlManager.getInstance() );
+        DefaultInserter.resetData( DdlManager.getInstance() );
         DefaultInserter.restoreInterfacesIfNecessary();
     }
 

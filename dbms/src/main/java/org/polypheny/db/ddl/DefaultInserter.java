@@ -32,14 +32,17 @@ public class DefaultInserter {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    public static void restoreData( DdlManager ddlManager ) {
+    public static void resetData( DdlManager ddlManager ) {
         final Catalog catalog = Catalog.getInstance();
         restoreUsers( catalog );
 
         //////////////
         // init schema
 
-        catalog.addNamespace( "public", NamespaceType.getDefault(), false );
+        if ( catalog.getSnapshot().getNamespace( "public" ).isEmpty() ) {
+            catalog.addNamespace( "public", NamespaceType.getDefault(), false );
+        }
+
 
         //////////////
         // init adapters

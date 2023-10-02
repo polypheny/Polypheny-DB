@@ -97,6 +97,8 @@ public class HttpServer implements Runnable {
             } ) );
         } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
+        this.crud = new Crud( this.transactionManager );
+
         this.webSocketHandler = new WebSocket( crud );
         webSockets( server, this.webSocketHandler );
 
@@ -110,8 +112,6 @@ public class HttpServer implements Runnable {
                 ctx.result( "Error: Could not find index.html" );
             }
         } );
-
-        this.crud = new Crud( this.transactionManager );
 
         attachRoutes( server, crud );
 

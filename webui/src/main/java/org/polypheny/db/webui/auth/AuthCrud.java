@@ -30,7 +30,7 @@ public class AuthCrud {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final Crud crud;
-    private final ConcurrentHashMap<UUID, PartnerConnection> partners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PartnerConnection> connections = new ConcurrentHashMap<>();
 
 
     public AuthCrud( Crud crud ) {
@@ -42,10 +42,10 @@ public class AuthCrud {
         String id = registerRequest.source;
         if ( id != null ) {
             log.warn( "Partner " + id + " already registered" );
-            if ( partners.containsKey( UUID.fromString( id ) ) ) {
-                partners.get( UUID.fromString( id ) ).addContext( context );
+            if ( connections.containsKey( UUID.fromString( id ) ) ) {
+                connections.get( UUID.fromString( id ) ).addContext( context );
             } else {
-                partners.put( UUID.fromString( id ), new PartnerConnection( UUID.fromString( id ), context ) );
+                connections.put( UUID.fromString( id ), new PartnerConnection( UUID.fromString( id ), context ) );
             }
 
             context.send( new RegisterRequest( id ) );
@@ -54,7 +54,7 @@ public class AuthCrud {
 
         PartnerConnection status = new PartnerConnection( context );
         log.warn( "New partner with id " + status.id + " registered" );
-        partners.put( status.id, status );
+        connections.put( status.id, status );
         context.send( new RegisterRequest( status.id.toString() ) );
     }
 
@@ -65,12 +65,12 @@ public class AuthCrud {
             log.warn( "Partner with empty id is not registered" );
             return;
         }
-        partners.remove( UUID.fromString( id ) );
+        connections.remove( UUID.fromString( id ) );
     }
 
 
     public <E> void broadcast( E msg ) {
-        for ( PartnerConnection connection : partners.values() ) {
+        for ( PartnerConnection connection : connections.values() ) {
             connection.broadcast( msg );
         }
     }
