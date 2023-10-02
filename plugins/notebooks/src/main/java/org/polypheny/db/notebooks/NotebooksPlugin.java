@@ -38,9 +38,9 @@ import org.polypheny.db.notebooks.model.JupyterSessionManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.HttpServer.HandlerType;
 
 @Slf4j
 public class NotebooksPlugin extends PolyPlugin {
@@ -239,7 +239,7 @@ public class NotebooksPlugin extends PolyPlugin {
         HttpServer server = HttpServer.getInstance();
         final String PATH = "/notebooks";
 
-        server.addWebsocket( PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
+        server.addWebsocketRoute( PATH + "/webSocket/{kernelId}", new JupyterWebSocket() );
 
         server.addSerializedRoute( PATH + "/contents/<path>", fs::contents, HandlerType.GET );
         server.addSerializedRoute( PATH + "/sessions", proxyOrEmpty( proxy -> proxy::sessions ), HandlerType.GET );

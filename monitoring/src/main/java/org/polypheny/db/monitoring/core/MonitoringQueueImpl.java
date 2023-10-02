@@ -216,9 +216,9 @@ public class MonitoringQueueImpl implements MonitoringQueue {
     }
 
 
+    @Getter
     class MonitoringWorker implements Runnable {
 
-        @Getter
         private final MonitoringEvent event;
 
 

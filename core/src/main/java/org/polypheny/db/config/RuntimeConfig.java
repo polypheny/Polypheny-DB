@@ -85,7 +85,7 @@ public enum RuntimeConfig {
     WEBUI_SERVER_PORT(
             "runtime/webuiServerPort",
             "The port on which the web ui server should listen.",
-            8080,
+            7659,
             ConfigType.INTEGER
     ),
 

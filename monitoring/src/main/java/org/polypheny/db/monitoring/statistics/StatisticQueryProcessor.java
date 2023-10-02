@@ -47,21 +47,19 @@ public class StatisticQueryProcessor {
 
     @Getter
     private final TransactionManager transactionManager;
-    private final long userId;
 
 
     /**
      * LowCostQueries can be used to retrieve short answered queries
      * Idea is to expose a selected list of sql operations with a small list of results and not impact performance
      */
-    public StatisticQueryProcessor( final TransactionManager transactionManager, long userId ) {
+    public StatisticQueryProcessor( final TransactionManager transactionManager ) {
         this.transactionManager = transactionManager;
-        this.userId = userId;
     }
 
 
     public StatisticQueryProcessor( TransactionManager transactionManager, Authenticator authenticator ) {
-        this( transactionManager, Catalog.defaultUserId );
+        this( transactionManager );
     }
 
 
@@ -146,7 +144,6 @@ public class StatisticQueryProcessor {
         }
         return result;
     }
-
 
     // -----------------------------------------------------------------------
     //                                Helper

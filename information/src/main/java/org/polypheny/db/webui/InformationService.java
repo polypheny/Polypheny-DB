@@ -17,16 +17,7 @@
 package org.polypheny.db.webui;
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.google.gson.Gson;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import io.javalin.Javalin;
-import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,55 +33,16 @@ import org.polypheny.db.information.InformationResponse;
  * RESTful server for requesting data from the information manager. It is primarily used by the Polypheny-UI.
  */
 @Slf4j
-public class InformationServer implements InformationObserver {
+public class InformationService implements InformationObserver {
 
-    public static final TypeAdapterFactory throwableTypeAdapterFactory;
-    public static final TypeAdapter<Throwable> throwableTypeAdapter;
+    private static final String PREFIX_TYPE = "/info";
 
+    private static final String PREFIX_VERSION = "/v1";
 
-    static {
-        // Adapter factory, which handles generic throwables
-        throwableTypeAdapterFactory = new TypeAdapterFactory() {
-            @Override
-            public <T> TypeAdapter<T> create( Gson gson, TypeToken<T> type ) {
-                if ( !Throwable.class.isAssignableFrom( type.getRawType() ) ) {
-                    return null;
-                }
-                //noinspection unchecked
-                return (TypeAdapter<T>) throwableTypeAdapter;
-            }
-        };
-        throwableTypeAdapter = new TypeAdapter<>() {
-            @Override
-            public void write( JsonWriter out, Throwable value ) throws IOException {
-                if ( value == null ) {
-                    out.nullValue();
-                    return;
-                }
-                out.beginObject();
-                out.name( "message" );
-                out.value( value.getMessage() );
-                out.endObject();
-            }
+    private static final String PREFIX = PREFIX_TYPE + PREFIX_VERSION;
 
 
-            @Override
-            public Throwable read( JsonReader in ) throws IOException {
-                return new Throwable( in.nextString() );
-            }
-        };
-    }
-
-
-    public InformationServer( final int port ) {
-        Javalin http = Javalin.create( config -> {
-            config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
-            config.staticFiles.add( "webapp" );
-            config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
-                mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-            } ) );
-        } ).start( port );
-
+    public InformationService( final Javalin http ) {
         // Needs to be called before defining routes!
         webSockets( http );
 
@@ -102,7 +54,7 @@ public class InformationServer implements InformationObserver {
 
     private void webSockets( final Javalin http ) {
         // Websockets need to be defined before the post/get requests
-        http.ws( "/informationWebSocket", new InformationWebSocket() );
+        http.ws( "/info", new InformationWebSocket() );
     }
 
 
@@ -110,9 +62,9 @@ public class InformationServer implements InformationObserver {
         InformationManager im = InformationManager.getInstance();
         im.observe( this );
 
-        http.get( "/getPageList", ctx -> ctx.result( im.getPageList() ) );
+        http.get( PREFIX + "/getPageList", ctx -> ctx.result( im.getPageList() ) );
 
-        http.post( "/getPage", ctx -> {
+        http.post( PREFIX + "/getPage", ctx -> {
             //input: req: {pageId: "page1"}
             try {
                 InformationPage page = im.getPage( ctx.body() );
@@ -129,7 +81,7 @@ public class InformationServer implements InformationObserver {
             }
         } );
 
-        http.post( "/executeAction", ctx -> {
+        http.post( PREFIX + "/executeAction", ctx -> {
             try {
                 InformationAction action = ctx.bodyAsClass( InformationAction.class );
                 String msg = im.getInformation( action.getId() ).unwrap( InformationAction.class ).executeAction( action.getParameters() );
@@ -141,7 +93,7 @@ public class InformationServer implements InformationObserver {
             }
         } );
 
-        http.post( "/refreshPage", ctx -> {
+        http.post( PREFIX + "/refreshPage", ctx -> {
             // Refresh not necessary, since getPage already triggers a refresh
             try {
                 im.getPage( ctx.body() );
@@ -151,7 +103,7 @@ public class InformationServer implements InformationObserver {
             ctx.result( "" );
         } );
 
-        http.post( "/refreshGroup", ctx -> {
+        http.post( PREFIX + "/refreshGroup", ctx -> {
             try {
                 im.getGroup( ctx.body() ).refresh();
             } catch ( Exception e ) {

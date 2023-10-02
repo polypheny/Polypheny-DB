@@ -23,8 +23,8 @@ import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.processing.TransactionExtension;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.webui.ConfigService.HandlerType;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.HttpServer.HandlerType;
 
 public class ExploreByExamplePlugin extends PolyPlugin {
 

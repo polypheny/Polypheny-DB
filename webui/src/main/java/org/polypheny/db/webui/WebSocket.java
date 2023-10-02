@@ -121,9 +121,8 @@ public class WebSocket implements Consumer<WsConfig> {
                         ctx.session,
                         queryRequest,
                         crud.getTransactionManager(),
-                        crud.getUserId(),
-                        crud.getNamespaceId()
-                );
+                        Catalog.defaultUserId,
+                        Catalog.defaultNamespaceId );
 
                 for ( Result<?, ?> result : results ) {
                     if ( !(result instanceof RelationalResult) ) {

@@ -80,9 +80,9 @@ import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
-import org.polypheny.db.webui.ConfigServer;
+import org.polypheny.db.webui.ConfigService;
 import org.polypheny.db.webui.HttpServer;
-import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.InformationService;
 import org.polypheny.db.webui.UiTestingConfigPage;
 import org.polypheny.db.webui.UiTestingMonitoringPage;
 
@@ -362,9 +362,14 @@ public class PolyphenyDb {
         final ShutdownHelper sh = new ShutdownHelper();
         // shutdownHookId = addShutdownHook( "Component Terminator", sh );
 
+        // Start Polypheny-UI
+        final Authenticator authenticator = new AuthenticatorImpl();
+        final HttpServer server = startHttpServer( authenticator, transactionManager );
+
         // Start config server and information server
-        new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
-        new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
+
+        new ConfigService( server.getServer() );
+        new InformationService( server.getServer() );
 
         try {
             new JavaInformation();
@@ -397,9 +402,6 @@ public class PolyphenyDb {
 
         // Startup and restore catalog
         Catalog catalog = startCatalog();
-
-
-        final Authenticator authenticator = new AuthenticatorImpl();
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
@@ -434,16 +436,6 @@ public class PolyphenyDb {
 
         // Initialize MaterializedViewManager
         MaterializedViewManager.setAndGetInstance( new MaterializedViewManagerImpl( transactionManager ) );
-
-        // Start Polypheny-UI
-        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
-        Thread polyphenyUiThread = new Thread( httpServer );
-        polyphenyUiThread.start();
-        try {
-            polyphenyUiThread.join();
-        } catch ( InterruptedException e ) {
-            log.warn( "Interrupted on join()", e );
-        }
 
         // Initialize DDL Manager
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
@@ -505,6 +497,19 @@ public class PolyphenyDb {
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
         }
+    }
+
+
+    private HttpServer startHttpServer( Authenticator authenticator, TransactionManager transactionManager ) {
+        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
+        Thread polyphenyUiThread = new Thread( httpServer );
+        polyphenyUiThread.start();
+        try {
+            polyphenyUiThread.join();
+        } catch ( InterruptedException e ) {
+            log.warn( "Interrupted on join()", e );
+        }
+        return httpServer;
     }
 
 

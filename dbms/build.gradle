@@ -41,6 +41,7 @@ dependencies {
 
     ////// SLF4J
     implementation group: 'org.pf4j', name: 'pf4j', version: pf4j_version // Apache 2.0
+    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT

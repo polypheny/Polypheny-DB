@@ -91,7 +91,7 @@ public class LanguageCrud {
     public static void anyQuery( Context ctx ) {
         QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
         QueryLanguage language = QueryLanguage.from( request.language );
-        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId() ).get( 0 );
+        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId ).get( 0 );
         ctx.json( result );
     }
 

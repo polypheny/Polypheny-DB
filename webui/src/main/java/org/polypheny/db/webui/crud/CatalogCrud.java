@@ -43,8 +43,6 @@ public class CatalogCrud {
 
     private static Crud crud;
 
-    private final Catalog catalog = Catalog.getInstance();
-
 
     public CatalogCrud( Crud crud ) {
         CatalogCrud.crud = crud;
@@ -53,7 +51,7 @@ public class CatalogCrud {
 
     public void getNamespaces( Context context ) {
         NamespaceRequest request = context.bodyAsClass( NamespaceRequest.class );
-        List<NamespaceModel> namespaces = catalog
+        List<NamespaceModel> namespaces = Catalog.getInstance()
                 .getSnapshot()
                 .getNamespaces( request.pattern != null ? Pattern.of( request.pattern ) : null )
                 .stream().map( NamespaceModel::from ).collect( Collectors.toList() );
@@ -62,9 +60,8 @@ public class CatalogCrud {
 
 
     public void getTypeNamespaces( final Context ctx ) {
-        ctx.json( catalog
-                .getSnapshot().
-                getNamespaces( null )
+        ctx.json( Catalog.snapshot()
+                .getNamespaces( null )
                 .stream()
                 .collect( Collectors.toMap( LogicalNamespace::getName, LogicalNamespace::getNamespaceType ) ) );
     }
@@ -79,7 +76,7 @@ public class CatalogCrud {
             ctx.json( new ArrayList<>() );
         }
 
-        List<LogicalNamespace> namespaces = catalog.getSnapshot().getNamespaces( null );
+        List<LogicalNamespace> namespaces = Catalog.snapshot().getNamespaces( null );
         // remove unwanted namespaces
         namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
         for ( LogicalNamespace namespace : namespaces ) {
@@ -108,7 +105,7 @@ public class CatalogCrud {
 
     private void attachDocumentTreeElements( LogicalNamespace namespace, SchemaTreeRequest request, SidebarElement schemaTree ) {
         List<SidebarElement> collectionTree = new ArrayList<>();
-        List<LogicalCollection> collections = catalog.getSnapshot().doc().getCollections( namespace.id, null );
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( namespace.id, null );
         for ( LogicalCollection collection : collections ) {
             SidebarElement tableElement = attachCollectionElement( namespace, request, collection );
 
@@ -149,7 +146,7 @@ public class CatalogCrud {
 
     private void attachTreeElements( LogicalNamespace namespace, SchemaTreeRequest request, SidebarElement schemaTree ) {
         List<SidebarElement> collectionTree = new ArrayList<>();
-        List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( namespace.id, null );
+        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( namespace.id, null );
         for ( LogicalTable table : tables ) {
             String icon = "fa fa-table";
             if ( table.entityType == EntityType.SOURCE ) {
@@ -163,7 +160,7 @@ public class CatalogCrud {
 
             SidebarElement tableElement = new SidebarElement( namespace.name + "." + table.name, table.name, namespace.namespaceType, request.routerLinkRoot, icon );
             if ( request.depth > 2 ) {
-                List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
+                List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
                 for ( LogicalColumn column : columns ) {
                     tableElement.addChild( new SidebarElement( namespace.name + "." + table.name + "." + column.name, column.name, namespace.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                 }
@@ -209,7 +206,7 @@ public class CatalogCrud {
 
 
     public void getCurrentSnapshot( Context context ) {
-        context.json( catalog.getSnapshot().id() );
+        context.json( Catalog.snapshot().id() );
     }
 
 

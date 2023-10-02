@@ -245,7 +245,7 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
      * Removes all information objects defined in this adapter from the InformationManager
      */
     public void removeInformationPage() {
-        if ( informationElements.size() > 0 ) {
+        if ( !informationElements.isEmpty() ) {
             InformationManager im = InformationManager.getInstance();
             im.removeInformation( informationElements.toArray( new Information[0] ) );
             informationGroups.forEach( im::removeGroup );

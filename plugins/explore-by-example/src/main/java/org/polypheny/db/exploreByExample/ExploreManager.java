@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.models.RelationalExploreResult;
 import org.polypheny.db.exploreByExample.models.RelationalExploreResult.RelationalExploreResultBuilder;
@@ -303,7 +304,7 @@ public class ExploreManager {
             return;
         }
 
-        Transaction transaction = Crud.getTransaction( queryExplorationRequest.analyze, true, crud.getTransactionManager(), crud.getUserId(), crud.getNamespaceId(), "Explore-by-Example" );
+        Transaction transaction = Crud.getTransaction( queryExplorationRequest.analyze, true, crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId, "Explore-by-Example" );
         Statement statement = transaction.createStatement();
         try {
             String query = explore.getSqlStatement();

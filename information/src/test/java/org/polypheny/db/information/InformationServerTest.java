@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
-import org.polypheny.db.webui.InformationServer;
+import org.polypheny.db.webui.InformationService;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.OSProcess;
@@ -40,7 +40,7 @@ public class InformationServerTest {
 
 
     public static void main( String[] args ) {
-        InformationServer s = new InformationServer( 8082 );
+        InformationService s = new InformationService( null );
         demoData();
     }
 

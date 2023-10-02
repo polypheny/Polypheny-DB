@@ -17,21 +17,16 @@
 package org.polypheny.db.webui;
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
-import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.bundled.CorsPluginConfig;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigManager;
@@ -42,22 +37,19 @@ import org.polypheny.db.config.Feedback;
  * RESTful server used by the Web UI to interact with the Config Manager.
  */
 @Slf4j
-public class ConfigServer implements ConfigListener {
+public class ConfigService implements ConfigListener {
 
-    private static final Gson gson = new Gson();
+    private static final String PREFIX_TYPE = "/config";
+
+    private static final String PREFIX_VERSION = "/v1";
+
+    private static final String PREFIX = PREFIX_TYPE + PREFIX_VERSION;
+
+    ObjectMapper mapper = new ObjectMapper();
 
 
-    public ConfigServer( final int port ) {
-
-        Javalin http = Javalin.create( config -> {
-            config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
-            config.staticFiles.add( "webapp" );
-            config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
-                mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-            } ) );
-        } ).start( port );
-
-        http.ws( "/configWebSocket", new ConfigWebsocket() );
+    public ConfigService( final Javalin http ) {
+        http.ws( "/config", new ConfigWebsocket() );
         configRoutes( http );
     }
 
@@ -68,13 +60,12 @@ public class ConfigServer implements ConfigListener {
      */
     private void configRoutes( final Javalin http ) {
         String type = "application/json";
-        Gson gson = new Gson();
         ConfigManager cm = ConfigManager.getInstance();
 
-        http.get( "/getPageList", ctx -> ctx.result( cm.getWebUiPageList() ) );
+        http.get( PREFIX + "/getPageList", ctx -> ctx.result( cm.getWebUiPageList() ) );
 
         // get Ui of certain page
-        http.post( "/getPage", ctx -> {
+        http.post( PREFIX + "/getPage", ctx -> {
             //input: req: {pageId: 123}
             try {
                 ctx.result( cm.getPage( ctx.body() ) );
@@ -85,11 +76,11 @@ public class ConfigServer implements ConfigListener {
         } );
 
         // Save changes from WebUi
-        http.post( "/updateConfigs", ctx -> {
+        http.post( PREFIX + "/updateConfigs", ctx -> {
             log.trace( ctx.body() );
-            Type clazzType = new TypeToken<Map<String, Object>>() {
-            }.getType();
-            Map<String, Object> changes = gson.fromJson( ctx.body(), clazzType );
+            TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
+            };
+            Map<String, Object> changes = mapper.convertValue( ctx.body(), typeRef );
             StringBuilder feedback = new StringBuilder();
             boolean allValid = true;
             for ( Map.Entry<String, Object> entry : changes.entrySet() ) {
@@ -140,16 +131,22 @@ public class ConfigServer implements ConfigListener {
                         break;
                     case "ConfigClazzList":
                     case "ConfigEnumList":
-                        if ( !c.parseStringAndSetValue( gson.toJson( entry.getValue(), ArrayList.class ) ) ) {
+                        try {
+                            if ( !c.parseStringAndSetValue( mapper.writeValueAsString( entry.getValue() ) ) ) {
+                                allValid = false;
+                                appendError( feedback, entry, c );
+                            }
+                        } catch ( JsonProcessingException e ) {
                             allValid = false;
                             appendError( feedback, entry, c );
                         }
+
                         break;
                     case "ConfigList":
                         Feedback res = c.setConfigObjectList( (List<Object>) entry.getValue(), c.getTemplateClass() );
                         if ( !res.successful ) {
                             allValid = false;
-                            if ( res.message.trim().equals( "" ) ) {
+                            if ( res.message.trim().isEmpty() ) {
                                 appendError( feedback, entry, c );
                             } else {
                                 feedback.append( "Could not set " )
@@ -188,9 +185,8 @@ public class ConfigServer implements ConfigListener {
 
     @Override
     public void onConfigChange( final Config c ) {
-        Gson gson = new Gson();
         try {
-            ConfigWebsocket.broadcast( gson.toJson( c ) );
+            ConfigWebsocket.broadcast( mapper.writeValueAsString( c ) );
         } catch ( IOException e ) {
             log.error( "Caught exception!", e );
         }
@@ -200,6 +196,23 @@ public class ConfigServer implements ConfigListener {
     @Override
     public void restart( final Config c ) {
 
+    }
+
+
+    @FunctionalInterface
+    public interface Consumer3<One, Two, Three> {
+
+        void apply( One one, Two two, Three three );
+
+    }
+
+
+    public enum HandlerType {
+        POST,
+        GET,
+        PUT,
+        DELETE,
+        PATCH
     }
 
 }

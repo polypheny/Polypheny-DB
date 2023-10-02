@@ -19,6 +19,7 @@ package org.polypheny.db.catalog;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +60,9 @@ public abstract class Catalog implements ExtensionPoint {
     public static String defaultNamespaceName = "public";
     public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
+
+    protected static List<Runnable> afterInit = new ArrayList<>();
+
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
     private static Catalog INSTANCE = null;
@@ -86,6 +90,11 @@ public abstract class Catalog implements ExtensionPoint {
             throw new GenericRuntimeException( "Catalog was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
+    }
+
+
+    public static void afterInit( Runnable action ) {
+        afterInit.add( action );
     }
 
 

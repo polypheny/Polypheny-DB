@@ -21,14 +21,14 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import org.polypheny.db.webui.ConfigServer;
+import org.polypheny.db.webui.ConfigService;
 
 
 public class ConfigServerTest {
 
 
     public static void main( String[] args ) {
-        ConfigServer s = new ConfigServer( 8081 );
+        ConfigService s = new ConfigService( null );
         demoData( s );
     }
 
@@ -36,7 +36,7 @@ public class ConfigServerTest {
     /**
      * Test data
      */
-    private static void demoData( ConfigServer s ) {
+    private static void demoData( ConfigService s ) {
         System.out.println( "demoData()" );
 
         ConfigManager cm = ConfigManager.getInstance();
@@ -145,17 +145,27 @@ public class ConfigServerTest {
 
     }
 
+
     private static class TestClass {
+
         int a;
+
     }
+
+
     private static class FooImplementation extends TestClass {
+
         int b;
+
     }
+
+
     private static class BarImplementation extends TestClass {
 
         int c;
 
     }
+
 
     private enum TestEnum {
         A, B, C

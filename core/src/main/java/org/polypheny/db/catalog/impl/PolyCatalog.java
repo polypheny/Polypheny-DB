@@ -150,7 +150,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         this.persister = new Persister();
 
-
     }
 
 
@@ -158,6 +157,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public void init() {
         //new DefaultInserter();
         updateSnapshot();
+
+        Catalog.afterInit.forEach( Runnable::run );
     }
 
 

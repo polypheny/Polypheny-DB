@@ -16,7 +16,6 @@
 
 package org.polypheny.db.webui.crud;
 
-import com.google.gson.Gson;
 import io.javalin.http.Context;
 import java.sql.Timestamp;
 import java.util.List;
@@ -47,7 +46,6 @@ public class StatisticCrud {
     private static Crud crud;
     @Getter
     private boolean activeTracking = false;
-    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
 
 
     public StatisticCrud( Crud crud ) {
@@ -87,16 +85,16 @@ public class StatisticCrud {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         LogicalTable table = Catalog.getInstance().getSnapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        ctx.json( statisticsManager.getTableStatistic( table.namespaceId, table.id ) );
+        ctx.json( StatisticsManager.getInstance().getTableStatistic( table.namespaceId, table.id ) );
     }
 
 
     /**
      * Return all available statistics to the client
      */
-    public void getStatistics( final Context ctx, Gson gsonExpose ) {
+    public void getStatistics( final Context ctx ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            ctx.result( gsonExpose.toJson( statisticsManager.getQualifiedStatisticMap() ) );
+            ctx.json( StatisticsManager.getInstance().getQualifiedStatisticMap() );
         } else {
             ctx.json( new ConcurrentHashMap<>() );
         }
@@ -107,7 +105,7 @@ public class StatisticCrud {
      * General information for the UI dashboard.
      */
     public void getDashboardInformation( Context ctx ) {
-        ctx.json( statisticsManager.getDashboardInformation() );
+        ctx.json( StatisticsManager.getInstance().getDashboardInformation() );
     }
 
 
