@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.NotNull;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter;
@@ -47,6 +48,7 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
 
 public abstract class Catalog implements ExtensionPoint {
@@ -150,20 +152,10 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     /**
-     * Restores all interfaces if none are present
-     */
-    public abstract void restoreInterfacesIfNecessary();
-
-    /**
      * Validates that all columns have a valid placement,
      * else deletes them.
      */
     public abstract void validateColumns();
-
-    /**
-     * Restores all columnPlacements in the dedicated store
-     */
-    public abstract void restoreColumnAllocations( Transaction transaction );
 
     /**
      * On restart, all AlgNodes used in views and materialized views need to be recreated.
@@ -256,6 +248,14 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
 
 
+    public abstract void addInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
+
+    public abstract void removeInterfaceTemplate( String name );
+
+    @NotNull
+    public abstract Map<String, QueryInterfaceTemplate> getInterfaceTemplates();
+
+
     public abstract void close();
 
     public abstract void clear();
@@ -290,5 +290,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract void restore();
+
 
 }

@@ -76,7 +76,7 @@ public class AdapterManager {
     }
 
 
-    public static AdapterTemplate getAdapterType( String name, AdapterType adapterType ) {
+    public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
         return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow();
     }
 

@@ -528,12 +528,13 @@ public class TestHelper {
         private final static String dbHost = "localhost";
         private final static int port = 20591;
 
-        private final Connection conn;
+        @Getter
+        private final Connection connection;
 
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
-                Class.forName( "org.polypheny.jdbc.Driver" );
+                Class<?> driver = Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
@@ -544,20 +545,15 @@ public class TestHelper {
             props.setProperty( "user", "pa" );
             props.setProperty( "serialization", "PROTOBUF" );
 
-            conn = DriverManager.getConnection( url, props );
-            conn.setAutoCommit( autoCommit );
-        }
-
-
-        public Connection getConnection() {
-            return conn;
+            connection = DriverManager.getConnection( url, props );
+            connection.setAutoCommit( autoCommit );
         }
 
 
         @Override
         public void close() throws SQLException {
-            conn.commit();
-            conn.close();
+            connection.commit();
+            connection.close();
         }
 
     }

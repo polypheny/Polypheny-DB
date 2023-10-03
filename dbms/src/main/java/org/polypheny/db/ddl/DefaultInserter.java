@@ -22,11 +22,13 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceType;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Deterministic
 public class DefaultInserter {
+
+
+    public static final String DEFAULT_NAMESPACE = "public";
 
 
     /**
@@ -39,10 +41,9 @@ public class DefaultInserter {
         //////////////
         // init schema
 
-        if ( catalog.getSnapshot().getNamespace( "public" ).isEmpty() ) {
+        if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
             catalog.addNamespace( "public", NamespaceType.getDefault(), false );
         }
-
 
         //////////////
         // init adapters
@@ -51,12 +52,6 @@ public class DefaultInserter {
 
         catalog.commit();
 
-    }
-
-
-    public static void restoreInterfaces() {
-        restoreAvatica();
-        restoreInterfacesIfNecessary();
     }
 
 
@@ -94,7 +89,7 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        QueryInterfaceManager.getREGISTER().values().forEach( i -> Catalog.getInstance().addQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().addQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
         Catalog.getInstance().commit();
 
     }
@@ -104,7 +99,7 @@ public class DefaultInserter {
         if ( Catalog.snapshot().getQueryInterface( "avatica" ).isPresent() ) {
             return;
         }
-        QueryInterfaceType avatica = QueryInterfaceManager.getREGISTER().get( "AvaticaInterface" );
+        QueryInterfaceTemplate avatica = Catalog.snapshot().getInterfaceTemplate( "AvaticaInterface" ).orElseThrow();
         Catalog.getInstance().addQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
     }
 

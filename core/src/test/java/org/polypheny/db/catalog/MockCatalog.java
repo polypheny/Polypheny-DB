@@ -157,11 +157,6 @@ public abstract class MockCatalog extends Catalog {
     }
 
 
-    @Override
-    public void restoreColumnAllocations( Transaction transaction ) {
-        throw new NotImplementedException();
-    }
-
 
     @Override
     public Map<Long, AlgNode> getNodeInfo() {
@@ -256,12 +251,6 @@ public abstract class MockCatalog extends Catalog {
 
     @Override
     public void clear() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void restoreInterfacesIfNecessary() {
         throw new NotImplementedException();
     }
 

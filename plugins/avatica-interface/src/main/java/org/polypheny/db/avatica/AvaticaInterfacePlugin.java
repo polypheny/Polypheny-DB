@@ -33,6 +33,7 @@ import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
 import org.pf4j.Extension;
 import org.polypheny.db.StatusService;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -54,7 +55,7 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         // Add JDBC interface
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20591" );
@@ -100,7 +101,7 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
             port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
 
             meta = new DbmsMeta( transactionManager, authenticator, uniqueName );
@@ -112,7 +113,7 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
             try {
                 httpServerDispatcher = new HttpServerDispatcher( port, handler );
             } catch ( Exception e ) {
-                throw new RuntimeException( "Exception while starting " + INTERFACE_NAME, e );
+                throw new GenericRuntimeException( "Exception while starting " + INTERFACE_NAME, e );
             }
 
         }

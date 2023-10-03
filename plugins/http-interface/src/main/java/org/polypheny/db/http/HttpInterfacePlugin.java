@@ -68,8 +68,9 @@ public class HttpInterfacePlugin extends PolyPlugin {
     }
 
 
+
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         // Add HTTP interface
         Map<String, String> httpSettings = new HashMap<>();
         httpSettings.put( "port", "13137" );

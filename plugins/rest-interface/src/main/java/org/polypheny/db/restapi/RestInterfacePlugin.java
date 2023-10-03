@@ -46,7 +46,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.pf4j.Extension;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -85,8 +84,9 @@ public class RestInterfacePlugin extends PolyPlugin {
     }
 
 
+
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         // Add REST interface
         Map<String, String> restSettings = new HashMap<>();
         restSettings.put( "port", "8089" );

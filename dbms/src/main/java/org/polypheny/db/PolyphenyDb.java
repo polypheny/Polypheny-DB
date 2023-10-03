@@ -52,7 +52,6 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.AutoDocker;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -238,7 +237,7 @@ public class PolyphenyDb {
             for ( File item : backupFolder.listFiles() ) {
                 if ( phdm.checkIfExists( "_test_backup/" + item.getName() ) ) {
                     if ( !item.renameTo( new File( phdm.getRootPath(), item.getName() ) ) ) {
-                        throw new RuntimeException( "Unable to restore the Polypheny folder." );
+                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
                     }
                 }
             }
@@ -260,7 +259,7 @@ public class PolyphenyDb {
         // Backup content of Polypheny folder
         if ( testMode || memoryCatalog ) {
             if ( phdm.checkIfExists( "_test_backup" ) ) {
-                throw new RuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
+                throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
             File backupFolder = phdm.registerNewFolder( "_test_backup" );
             for ( File item : phdm.getRootPath().listFiles() ) {
@@ -268,7 +267,7 @@ public class PolyphenyDb {
                     continue;
                 }
                 if ( !item.renameTo( new File( backupFolder, item.getName() ) ) ) {
-                    throw new RuntimeException( "Unable to backup the Polypheny folder." );
+                    throw new GenericRuntimeException( "Unable to backup the Polypheny folder." );
                 }
             }
             log.info( "Restoring the Polypheny folder." );
@@ -290,7 +289,7 @@ public class PolyphenyDb {
             try ( FileOutputStream out = new FileOutputStream( f ) ) {
                 out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Failed to store UUID " + e );
+                throw new GenericRuntimeException( "Failed to store UUID " + e );
             }
 
             uuid = id.toString();
@@ -300,7 +299,7 @@ public class PolyphenyDb {
             try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
                 uuid = UUID.fromString( in.readLine() ).toString();
             } catch ( IOException e ) {
-                throw new RuntimeException( "Failed to load UUID " + e );
+                throw new GenericRuntimeException( "Failed to load UUID " + e );
             }
         }
 
@@ -382,7 +381,7 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        if ( AutoDocker.getInstance().isAvailable() ) {
+        if ( false && AutoDocker.getInstance().isAvailable() ) {
             if ( testMode ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
@@ -407,7 +406,7 @@ public class PolyphenyDb {
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
         // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
+        //DockerManager.getInstance();
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );
@@ -531,7 +530,7 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog ) {
+        if ( !resetCatalog && !testMode ) {
             Catalog.getInstance().restore();
         }
         Catalog.getInstance().updateSnapshot();

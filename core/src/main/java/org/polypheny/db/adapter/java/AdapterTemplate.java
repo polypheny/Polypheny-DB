@@ -67,7 +67,7 @@ public class AdapterTemplate {
 
 
     public static AdapterTemplate fromString( String adapterName, AdapterType adapterType ) {
-        return AdapterManager.getAdapterType( adapterName, adapterType );
+        return AdapterManager.getAdapterTemplate( adapterName, adapterType );
     }
 
 

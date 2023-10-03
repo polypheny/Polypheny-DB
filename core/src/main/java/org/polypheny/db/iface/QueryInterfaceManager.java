@@ -29,10 +29,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
@@ -46,9 +44,6 @@ import org.polypheny.db.transaction.TransactionManager;
 public class QueryInterfaceManager {
 
     private static QueryInterfaceManager INSTANCE;
-
-    @Getter
-    private static final Map<String, QueryInterfaceType> REGISTER = new ConcurrentHashMap<>();
 
     private final Map<Long, QueryInterface> interfaceById = new HashMap<>();
     private final Map<String, QueryInterface> interfaceByName = new HashMap<>();
@@ -84,7 +79,8 @@ public class QueryInterfaceManager {
 
 
     public static void addInterfaceType( String interfaceName, Class<? extends QueryInterface> clazz, Map<String, String> defaultSettings ) {
-        REGISTER.put( clazz.getSimpleName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
+        Catalog.getInstance().addInterfaceTemplate( clazz.getSimpleName(), new QueryInterfaceTemplate( clazz, interfaceName, defaultSettings ) );
+        //REGISTER.put( clazz.getSimpleName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
     }
 
 
@@ -94,7 +90,7 @@ public class QueryInterfaceManager {
                 throw new RuntimeException( "Cannot remove the interface type, there is still a interface active." );
             }
         }
-        REGISTER.remove( clazz.getSimpleName() );
+        Catalog.getInstance().removeInterfaceTemplate( clazz.getSimpleName() );
     }
 
 
@@ -111,7 +107,7 @@ public class QueryInterfaceManager {
     public List<QueryInterfaceInformation> getAvailableQueryInterfaceTypes() {
         List<QueryInterfaceInformation> result = new LinkedList<>();
         try {
-            for ( Class<? extends QueryInterface> clazz : REGISTER.values().stream().map( v -> v.clazz ).collect( Collectors.toList() ) ) {
+            for ( Class<? extends QueryInterface> clazz : Catalog.snapshot().getInterfaceTemplates().stream().map( v -> v.clazz ).collect( Collectors.toList() ) ) {
                 // Exclude abstract classes
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "INTERFACE_NAME" ).get( null );
@@ -121,7 +117,7 @@ public class QueryInterfaceManager {
                 }
             }
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving list of available query interface types.", e );
+            throw new GenericRuntimeException( "Something went wrong while retrieving list of available query interface types.", e );
         }
         return result;
     }
@@ -136,7 +132,7 @@ public class QueryInterfaceManager {
             for ( CatalogQueryInterface iface : interfaces ) {
                 String[] split = iface.clazz.split( "\\$" );
                 split = split[split.length - 1].split( "\\." );
-                Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
+                Class<?> clazz = Catalog.snapshot().getInterfaceTemplate( split[split.length - 1] ).orElseThrow().clazz;
                 Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
                 QueryInterface instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, iface.id, iface.name, iface.settings );
 
@@ -169,7 +165,7 @@ public class QueryInterfaceManager {
         try {
             String[] split = clazzName.split( "\\$" );
             split = split[split.length - 1].split( "\\." );
-            Class<?> clazz = REGISTER.get( split[split.length - 1] ).clazz;
+            Class<?> clazz = Catalog.snapshot().getInterfaceTemplate( split[split.length - 1] ).orElseThrow().clazz;
             Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
             ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
@@ -259,7 +255,7 @@ public class QueryInterfaceManager {
 
 
     @AllArgsConstructor
-    public static class QueryInterfaceType {
+    public static class QueryInterfaceTemplate {
 
         public Class<? extends QueryInterface> clazz;
         public String interfaceName;

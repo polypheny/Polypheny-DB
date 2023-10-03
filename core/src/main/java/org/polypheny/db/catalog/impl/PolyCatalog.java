@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 
@@ -73,8 +74,8 @@ import org.polypheny.db.type.PolySerializable;
 @Slf4j
 public class PolyCatalog extends Catalog implements PolySerializable {
 
-
-    private static final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+    @Getter
+    private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
 
 
     @Serialize
@@ -97,6 +98,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
     public final Map<Long, AdapterTemplate> adapterTemplates;
+
+    @Getter
+    public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
 
     @Getter
     public final Map<Long, StoreCatalog> storeCatalogs;
@@ -138,15 +142,18 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
-
+        // persistent data
         this.users = new ConcurrentHashMap<>( users );
         this.logicalCatalogs = new ConcurrentHashMap<>( logicalCatalogs );
         this.allocationCatalogs = new ConcurrentHashMap<>( allocationCatalogs );
         this.adapters = new ConcurrentHashMap<>( adapters );
         this.interfaces = new ConcurrentHashMap<>( interfaces );
+        this.adapterRestore = new ConcurrentHashMap<>( adapterRestore );
+
+        // temporary data
         this.adapterTemplates = new ConcurrentHashMap<>();
         this.storeCatalogs = new ConcurrentHashMap<>();
-        this.adapterRestore = new ConcurrentHashMap<>( adapterRestore );
+        this.interfaceTemplates = new ConcurrentHashMap<>();
 
         this.persister = new Persister();
 
@@ -337,21 +344,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     @Deprecated
-    public void restoreInterfacesIfNecessary() {
-
-    }
-
-
-    @Override
-    @Deprecated
     public void validateColumns() {
-
-    }
-
-
-    @Override
-    @Deprecated
-    public void restoreColumnAllocations( Transaction transaction ) {
 
     }
 
@@ -469,6 +462,20 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
+    public void addInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
+        interfaceTemplates.put( name, queryInterfaceTemplate );
+        change();
+    }
+
+
+    @Override
+    public void removeInterfaceTemplate( String name ) {
+        interfaceTemplates.remove( name );
+        change();
+    }
+
+
+    @Override
     public void removeAdapterTemplate( long templateId ) {
         adapterTemplates.remove( templateId );
         change();
@@ -506,12 +513,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void clear() {
         log.error( "clearing" );
-    }
-
-
-    @Override
-    public BinarySerializer<PolyCatalog> getSerializer() {
-        return serializer;
     }
 
 

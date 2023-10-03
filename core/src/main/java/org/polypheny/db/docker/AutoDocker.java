@@ -198,30 +198,30 @@ public final class AutoDocker {
         int retries = 0;
         while ( true ) {
             String handshakeStatus = HandshakeManager.getInstance().getHandshake( "localhost" ).get( "status" );
-            if ( !handshakeStatus.equals( "FAILED" ) && !handshakeStatus.equals( "SUCCESS" ) ) {
-                if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
-                    InspectExecResponse s = client.inspectExecCmd( execId ).exec();
-                    if ( s.getExitCodeLong() != null ) {
-                        // 137 seems to be the code of an OOM kill, this happens often during tests, so try again
-                        if ( s.getExitCodeLong() == 137 && retries < 3 ) {
-                            retries += 1;
-                            updateStatus( "Handshake process killed, retry " + retries + " of 3" );
-                            execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
-                            continue;
-                        }
-                        updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
-                        break;
-                    }
-                    HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
-                }
-                try {
-                    TimeUnit.SECONDS.sleep( 1 );
-                } catch ( InterruptedException e ) {
-                    // no problem
-                }
-            } else {
+            if ( handshakeStatus.equals( "FAILED" ) || handshakeStatus.equals( "SUCCESS" ) ) {
                 break;
             }
+            if ( handshakeStatus.equals( "NOT_RUNNING" ) ) {
+                InspectExecResponse s = client.inspectExecCmd( execId ).exec();
+                if ( s.getExitCodeLong() != null ) {
+                    // 137 seems to be the code of an OOM kill, this happens often during tests, so try again
+                    if ( s.getExitCodeLong() == 137 && retries < 3 ) {
+                        retries += 1;
+                        updateStatus( "Handshake process killed, retry " + retries + " of 3" );
+                        execId = createAndStartHandshakeCommand( client, maybeUuid.get() );
+                        continue;
+                    }
+                    updateStatus( "Command failed with exit code " + s.getExitCodeLong() );
+                    break;
+                }
+                HandshakeManager.getInstance().restartOrGetHandshake( "localhost" );
+            }
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                // no problem
+            }
+
         }
     }
 

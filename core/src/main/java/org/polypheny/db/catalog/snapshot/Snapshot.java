@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.nodes.Identifier;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.NameMatcher;
@@ -121,6 +122,7 @@ public interface Snapshot extends OperatorTable {
      *
      * @return List of query interfaces
      */
+    @NotNull
     List<CatalogQueryInterface> getQueryInterfaces();
 
     /**
@@ -129,6 +131,7 @@ public interface Snapshot extends OperatorTable {
      * @param uniqueName The unique name of the query interface
      * @return The CatalogQueryInterface
      */
+    @NotNull
     Optional<CatalogQueryInterface> getQueryInterface( String uniqueName );
 
     /**
@@ -137,7 +140,11 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the query interface
      * @return The CatalogQueryInterface
      */
+    @NotNull
     Optional<CatalogQueryInterface> getQueryInterface( long id );
+
+    @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
+
 
 
     List<LogicalTable> getTablesForPeriodicProcessing();
@@ -165,6 +172,8 @@ public interface Snapshot extends OperatorTable {
     Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType );
 
     List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType );
+
+    List<QueryInterfaceTemplate> getInterfaceTemplates();
 
 
     LogicalRelSnapshot rel();

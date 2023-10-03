@@ -2243,7 +2243,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( a.settings.containsKey( "method" ) ) {
             method = ConnectionMethod.valueOf( a.settings.get( "method" ).getValue().toUpperCase() );
         }
-        AdapterTemplate adapter = AdapterManager.getAdapterType( a.adapterName, a.type );
+        AdapterTemplate adapter = AdapterManager.getAdapterTemplate( a.adapterName, a.type );
         Map<String, AbstractAdapterSetting> allSettings = adapter.settings.stream().collect( Collectors.toMap( e -> e.name, e -> e ) );
 
         for ( AdapterSettingValueModel entry : a.settings.values() ) {

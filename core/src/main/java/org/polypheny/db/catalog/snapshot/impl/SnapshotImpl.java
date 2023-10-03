@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Value
 @Accessors(fluent = true)
@@ -51,16 +52,19 @@ public class SnapshotImpl implements Snapshot {
     LogicalDocSnapshot doc;
     LogicalGraphSnapshot graph;
     AllocSnapshot alloc;
+
     @Getter
     long id;
+
     ImmutableMap<Long, CatalogUser> users;
 
     ImmutableMap<String, CatalogUser> userNames;
     ImmutableMap<Long, CatalogQueryInterface> interfaces;
+    ImmutableMap<String, QueryInterfaceTemplate> interfaceTemplates;
 
     ImmutableMap<String, CatalogQueryInterface> interfaceNames;
     ImmutableMap<Long, CatalogAdapter> adapters;
-    ImmutableMap<Long, AdapterTemplate> templates;
+    ImmutableMap<Long, AdapterTemplate> adapterTemplates;
 
     ImmutableMap<String, CatalogAdapter> adapterNames;
 
@@ -85,9 +89,10 @@ public class SnapshotImpl implements Snapshot {
         this.userNames = ImmutableMap.copyOf( users.values().stream().collect( Collectors.toMap( u -> u.name, u -> u ) ) );
         this.interfaces = ImmutableMap.copyOf( catalog.getInterfaces() );
         this.interfaceNames = ImmutableMap.copyOf( interfaces.values().stream().collect( Collectors.toMap( i -> i.name, i -> i ) ) );
+        this.interfaceTemplates = ImmutableMap.copyOf( catalog.getInterfaceTemplates() );
         this.adapters = ImmutableMap.copyOf( catalog.getAdapters() );
         this.adapterNames = ImmutableMap.copyOf( adapters.values().stream().collect( Collectors.toMap( a -> a.uniqueName, a -> a ) ) );
-        this.templates = ImmutableMap.copyOf( catalog.getAdapterTemplates().values().stream().collect( Collectors.toMap( t -> t.id, t -> t ) ) );
+        this.adapterTemplates = ImmutableMap.copyOf( catalog.getAdapterTemplates().values().stream().collect( Collectors.toMap( t -> t.id, t -> t ) ) );
     }
 
 
@@ -154,20 +159,26 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public List<CatalogQueryInterface> getQueryInterfaces() {
+    public @NotNull List<CatalogQueryInterface> getQueryInterfaces() {
         return interfaces.values().asList();
     }
 
 
     @Override
-    public Optional<CatalogQueryInterface> getQueryInterface( String uniqueName ) {
+    public @NotNull Optional<CatalogQueryInterface> getQueryInterface( String uniqueName ) {
         return Optional.ofNullable( interfaceNames.get( uniqueName ) );
     }
 
 
     @Override
-    public Optional<CatalogQueryInterface> getQueryInterface( long id ) {
+    public @NotNull Optional<CatalogQueryInterface> getQueryInterface( long id ) {
         return Optional.ofNullable( interfaces.get( id ) );
+    }
+
+
+    @Override
+    public @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name ) {
+        return Optional.ofNullable( interfaceTemplates.get( name ) );
     }
 
 
@@ -179,13 +190,13 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public Optional<AdapterTemplate> getAdapterTemplate( long templateId ) {
-        return Optional.ofNullable( templates.get( templateId ) );
+        return Optional.ofNullable( adapterTemplates.get( templateId ) );
     }
 
 
     @Override
     public @NotNull List<AdapterTemplate> getAdapterTemplates() {
-        return List.copyOf( templates.values() );
+        return List.copyOf( adapterTemplates.values() );
     }
 
 
@@ -205,13 +216,19 @@ public class SnapshotImpl implements Snapshot {
 
     @Override
     public Optional<AdapterTemplate> getAdapterTemplate( String name, AdapterType adapterType ) {
-        return templates.values().stream().filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType ).findAny();
+        return adapterTemplates.values().stream().filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType ).findAny();
     }
 
 
     @Override
     public List<AdapterTemplate> getAdapterTemplates( AdapterType adapterType ) {
-        return templates.values().stream().filter( t -> t.adapterType == adapterType ).collect( Collectors.toList() );
+        return adapterTemplates.values().stream().filter( t -> t.adapterType == adapterType ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<QueryInterfaceTemplate> getInterfaceTemplates() {
+        return List.copyOf( interfaceTemplates.values() );
     }
 
 

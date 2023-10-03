@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.PolyphenyHandshakeClient.State;
@@ -49,7 +50,7 @@ public final class HandshakeManager {
         // TODO: add more validation/sanity checks
         String newHostname = hostname.strip();
         if ( newHostname.isEmpty() ) {
-            throw new RuntimeException( "invalid hostname \"" + newHostname + "\"" );
+            throw new GenericRuntimeException( "invalid hostname \"" + newHostname + "\"" );
         }
         return newHostname;
     }
@@ -71,7 +72,7 @@ public final class HandshakeManager {
                 }
                 return h.serializeHandshake();
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
@@ -82,13 +83,13 @@ public final class HandshakeManager {
         synchronized ( this ) {
             Handshake h = handshakes.get( hostname );
             if ( h == null ) {
-                throw new RuntimeException( "No handshake for hostname " + hostname );
+                throw new GenericRuntimeException( "No handshake for hostname " + hostname );
             }
             try {
                 h.startOrRestart();
                 return h.serializeHandshake();
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
