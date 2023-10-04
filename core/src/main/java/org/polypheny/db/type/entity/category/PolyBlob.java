@@ -16,7 +16,7 @@
 
 package org.polypheny.db.type.entity.category;
 
-import com.datastax.oss.driver.shaded.guava.common.io.ByteStreams;
+import com.google.common.io.ByteStreams;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;

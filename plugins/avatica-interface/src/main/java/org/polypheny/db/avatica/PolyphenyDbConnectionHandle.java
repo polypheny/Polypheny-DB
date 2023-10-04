@@ -47,6 +47,7 @@ public class PolyphenyDbConnectionHandle {
     private final CatalogDatabase database;
     private final LogicalNamespace namespace;
 
+    @Getter
     private final ConnectionId connectionId;
     private Transaction currentTransaction;
     private PolyphenyDbResultSet currentOpenResultSet;
@@ -77,11 +78,6 @@ public class PolyphenyDbConnectionHandle {
         this.database = database;
         this.namespace = namespace;
         this.transactionManager = transactionManager;
-    }
-
-
-    public ConnectionId getConnectionId() {
-        return connectionId;
     }
 
 

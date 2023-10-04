@@ -54,8 +54,14 @@ dependencies {
     implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
     implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
 
-    api(group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) { exclude(module: "guava") } // Apache 2.0
-    api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) { exclude(module: "protobuf-java") } // Apache 2.0
+    api(group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) {
+        exclude(module: 'guava')
+        exclude(module: 'avatica-core')
+    } // Apache 2.0
+    api(group: "org.polypheny.avatica", name: "avatica-core", version: avatica_core_version) {
+        exclude(module: "protobuf-java")
+        exclude group: 'org.apache.calcite', module: 'avatica-core'
+    } // Apache 2.0
 
     implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
 
@@ -70,9 +76,9 @@ dependencies {
     implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
 
     // uses config internally...
-    implementation(group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version) { // Apache 2.0
+    /*implementation(group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version) { // Apache 2.0
         exclude group: "com.github.spotbugs"
-    }
+    }*/
 
     api group: 'io.activej', name: 'activej-serializer', version: activej_serializer_version // Apache 2.0
 
@@ -155,7 +161,6 @@ javadoc {
     // exclude "fmpp/sql/javacc/**"
     // exclude "fmpp/mql/javacc/**"
 }
-
 
 
 /**
