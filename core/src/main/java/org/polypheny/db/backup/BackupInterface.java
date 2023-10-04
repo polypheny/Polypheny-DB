@@ -16,26 +16,19 @@
 
 package org.polypheny.db.backup;
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
-//import org.polypheny.db.util.background.BackgroundTaskHandle;
 
 
 public class BackupInterface {
 
 
-    public static final BackupInterface INSTANCE = new BackupInterface();
-
-    //private final ConcurrentHashMap<String, BackgroundTaskHandle> tasks = new ConcurrentHashMap<>();
-    public static BackupInterface init() {
-        int lol = 1;
-        return INSTANCE;
-    }
+    private static BackupInterface INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
-    //private InformationTable overviewTable;
 
 
-    private BackupInterface() {
+    public BackupInterface() {
         informationPage = new InformationPage( "Backup Tasks" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
@@ -44,58 +37,15 @@ public class BackupInterface {
         im.addPage( informationPage );
         im.addGroup( informationGroupOverview );
 
-        /*
-        overviewTable = new InformationTable(
-                informationGroupOverview,
-                Arrays.asList( "Class", "Description", " Scheduling Type", "Priority", "Average Time", "Max Time" ) );
-        im.registerInformation( overviewTable );
-
-        BackupInterface.BackgroundTaskInfo backgroundTaskInfo = new BackgroundTaskInfo();
-        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-        exec.scheduleAtFixedRate( backgroundTaskInfo, 0, 5, TimeUnit.SECONDS );
-
-         */
     }
 
-    /*
-    public String registerTask( BackupInterface task, String description, BackupInterface.TaskPriority priority, BackupInterface.TaskSchedulingType schedulingType ) {
-        String id = UUID.randomUUID().toString();
-        tasks.put( id, new BackgroundTaskHandle( id, task, description, priority, schedulingType ) );
-        return id;
-    }
-
-     */
-
-    /*
-    public void removeBackgroundTask( String id ) {
-        if ( tasks.containsKey( id ) ) {
-            tasks.get( id ).stop();
-            tasks.remove( id );
-        } else {
-            throw new RuntimeException( "There is no tasks with this id: " + id );
+    public static BackupInterface setAndGetInstance( BackupInterface backupInterface ) {
+        if ( INSTANCE != null ) {
+            throw new GenericRuntimeException( "Setting the BackupInterface, when already set is not permitted." );
         }
+        INSTANCE = backupInterface;
+        return INSTANCE;
     }
 
-     */
-
-
-    private class BackgroundTaskInfo implements Runnable {
-
-        @Override
-        public void run() {
-            //overviewTable.reset();
-            /*
-            for ( BackgroundTaskHandle handle : tasks.values() ) {
-                overviewTable.addRow(
-                        handle.getTask().getClass().getSimpleName(),
-                        handle.getDescription(),
-                        handle.getSchedulingType().name(),
-                        handle.getPriority().name(),
-                        String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms", "" + handle.getMaxExecTime() + " ms" );
-            }
-
-             */
-        }
-    }
 
 }

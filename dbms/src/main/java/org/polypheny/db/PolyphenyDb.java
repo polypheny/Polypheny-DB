@@ -403,7 +403,8 @@ public class PolyphenyDb {
         // Startup and restore catalog
         Catalog catalog = startCatalog();
 
-        BackupInterface backupInterface = BackupInterface.init();
+        // Start backup management
+        BackupInterface backupInterface = BackupInterface.setAndGetInstance( new BackupInterface() );
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
