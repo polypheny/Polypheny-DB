@@ -16,20 +16,16 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.lang.reflect.Type;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -47,10 +43,13 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 @Slf4j
 public class PolyBigDecimal extends PolyNumber {
 
+    @JsonProperty
+    @Serialize
+    @SerializeNullable
     public BigDecimal value;
 
 
-    public PolyBigDecimal( BigDecimal value ) {
+    public PolyBigDecimal( @JsonProperty @Deserialize("value") BigDecimal value ) {
         super( PolyType.DECIMAL );
         this.value = value;
     }
@@ -245,21 +244,5 @@ public class PolyBigDecimal extends PolyNumber {
 
     }
 
-
-    public static class PolyBigDecimalSerializer implements JsonDeserializer<PolyBigDecimal>, JsonSerializer<PolyBigDecimal> {
-
-
-        @Override
-        public PolyBigDecimal deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyBigDecimal.of( json.getAsBigDecimal() );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyBigDecimal src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
-        }
-
-    }
 
 }

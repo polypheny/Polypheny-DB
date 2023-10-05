@@ -231,7 +231,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJsonOrNull() ) ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }

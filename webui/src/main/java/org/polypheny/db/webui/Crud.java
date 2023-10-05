@@ -3108,7 +3108,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         temp[counter] = f.getName();
                         TemporalFileManager.addFile( transaction.getXid().toString(), f );
                     } else {
-                        temp[counter] = o.toJson();
+                        temp[counter] = o.toJsonOrNull();
                     }
                     /*switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":

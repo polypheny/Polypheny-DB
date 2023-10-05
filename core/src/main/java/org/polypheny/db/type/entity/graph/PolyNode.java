@@ -16,20 +16,12 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -154,30 +146,5 @@ public class PolyNode extends GraphPropertyHolder {
 
     }
 
-
-    public static class PolyNodeSerializer implements JsonSerializer<PolyNode>, JsonDeserializer<PolyNode> {
-
-        @Override
-        public JsonElement serialize( PolyNode src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty( "id", src.id.value );
-            jsonObject.add( "properties", context.serialize( src.properties ) );
-            jsonObject.add( "labels", context.serialize( src.labels ) );
-            jsonObject.add( "var", context.serialize( src.variableName ) );
-            return jsonObject;
-        }
-
-
-        @Override
-        public PolyNode deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
-            PolyDictionary props = context.deserialize( jsonObject.get( "properties" ), PolyDictionary.class );
-            List<PolyString> labels = context.deserialize( jsonObject.get( "labels" ), PolyList.class );
-            PolyString var = context.deserialize( jsonObject.get( "var" ), PolyString.class );
-            return new PolyNode( id, props, labels, var );
-        }
-
-    }
 
 }

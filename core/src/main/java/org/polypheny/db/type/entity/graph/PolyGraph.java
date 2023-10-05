@@ -17,13 +17,6 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.google.common.collect.Lists;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.annotations.Expose;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -31,7 +24,6 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -356,30 +348,6 @@ public class PolyGraph extends GraphObject {
                     throw new NotImplementedException();
                 }
             };
-        }
-
-    }
-
-
-    public static class PolyGraphSerializer implements JsonSerializer<PolyGraph>, JsonDeserializer<PolyGraph> {
-
-        @Override
-        public JsonElement serialize( PolyGraph src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty( "id", src.id.value );
-            jsonObject.add( "nodes", context.serialize( src.nodes ) );
-            jsonObject.add( "edges", context.serialize( src.edges ) );
-            return jsonObject;
-        }
-
-
-        @Override
-        public PolyGraph deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
-            PolyMap<PolyString, PolyNode> nodes = context.deserialize( jsonObject.get( "nodes" ), PolyMap.class );
-            PolyMap<PolyString, PolyEdge> edges = context.deserialize( jsonObject.get( "edges" ), PolyMap.class );
-            return new PolyGraph( id, nodes, edges );
         }
 
     }

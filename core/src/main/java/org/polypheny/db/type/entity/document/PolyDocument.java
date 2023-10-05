@@ -16,15 +16,6 @@
 
 package org.polypheny.db.type.entity.document;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -32,7 +23,6 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -130,35 +120,5 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
         return "{" + map.entrySet().stream().map( e -> String.format( "%s:%s", e.getKey(), e.getValue() ) ).collect( Collectors.joining( "," ) ) + "}";
     }
 
-
-    @Override
-    public String toJson() {
-        return "{" + map.entrySet().stream().map( e -> String.format( (e.getValue() != null && !e.getValue().isNull() && e.getValue().isString() ? "\"%s\":\"%s\"" : "\"%s\":%s"), e.getKey().toJson(), e.getValue() == null ? JsonNull.INSTANCE.toString() : e.getValue().toJson() ) ).collect( Collectors.joining( "," ) ) + "}";
-    }
-
-
-    public static class PolyDocumentSerializer implements JsonSerializer<PolyDocument>, JsonDeserializer<PolyDocument> {
-
-        @Override
-        public PolyDocument deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject object = json.getAsJsonObject();
-            Map<PolyString, PolyValue> map = new HashMap<>();
-            for ( Entry<String, JsonElement> entry : object.entrySet() ) {
-                map.put( PolyString.of( entry.getKey() ), context.deserialize( entry.getValue(), PolyValue.class ) );
-            }
-            return new PolyDocument( map );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyDocument src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject object = new JsonObject();
-            for ( Entry<PolyString, PolyValue> entry : src.map.entrySet() ) {
-                object.add( entry.getKey().toString(), entry.getValue().isString() ? new JsonPrimitive( entry.getValue().asString().value ) : context.serialize( entry.getValue(), PolyValue.class ) );
-            }
-            return object;
-        }
-
-    }
 
 }

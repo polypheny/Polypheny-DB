@@ -963,10 +963,10 @@ public class DbmsMeta implements ProtobufMeta {
         final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
-                log.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
+                log.trace( "createExternalIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
             }
 
-            log.error( "[NOT IMPLEMENTED YET] createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
+            log.error( "[NOT IMPLEMENTED YET] createExternalIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
             return null;
         }
     }
@@ -1136,12 +1136,12 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
             }
 
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyphenyDbStatementHandle<Object> statementHandle = getPolyphenyDbStatementHandle( h );
 
             final PolyphenyDbSignature signature = statementHandle.getSignature();
-            final Iterator<Object[]> iterator;
+            final Iterator<Object> iterator;
             if ( statementHandle.getOpenResultSet() == null ) {
-                final Iterable<Object[]> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
+                final Iterable<Object> iterable = createExternalIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
                 statementHandle.setOpenResultSet( iterator );
                 statementHandle.getExecutionStopWatch().start();
@@ -1149,11 +1149,11 @@ public class DbmsMeta implements ProtobufMeta {
                 iterator = statementHandle.getOpenResultSet();
                 statementHandle.getExecutionStopWatch().resume();
             }
-            final List<?> rows = MetaImpl.collect( signature.cursorFactory, (Iterable<Object>) LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+
+            final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
             statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
-            @SuppressWarnings("unchecked")
-            List<Object> rows1 = (List<Object>) rows;
+
             if ( done ) {
                 statementHandle.getExecutionStopWatch().stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( statementHandle.getExecutionStopWatch().getNanoTime() );
@@ -1165,12 +1165,12 @@ public class DbmsMeta implements ProtobufMeta {
                     log.error( "Exception while closing result iterator", e );
                 }
             }
-            return new Meta.Frame( offset, done, rows1 );
+            return new Meta.Frame( offset, done, rows );
         }
     }
 
 
-    private Iterable<Object[]> createIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
+    private Iterable<Object> createExternalIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
         return externalize( signature.enumerable( dataContext ), signature.rowType );
     }
 
@@ -1372,21 +1372,26 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Enumerable<Object[]> externalize( Enumerable<PolyValue[]> enumerable, AlgDataType rowType ) {
+    private Enumerable<Object> externalize( Enumerable<PolyValue[]> enumerable, AlgDataType rowType ) {
         return new AbstractEnumerable<>() {
             @Override
-            public Enumerator<Object[]> enumerator() {
+            public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
                 for ( AlgDataTypeField field : rowType.getFieldList() ) {
                     transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType(), true ), field.getType().isNullable() ) );
                 }
+                boolean isSingle = rowType.getFieldCount() == 1;
 
                 return Linq4j.transform( enumerable.enumerator(), row -> {
+                    if ( isSingle ) {
+                        return transform.get( 0 ).apply( row[0] );
+                    }
+
                     Object[] objects = new Object[row.length];
                     for ( int i = 0, rowLength = objects.length; i < rowLength; i++ ) {
-                        if ( ((PolyValue[]) row)[i] != null ) {
-                            objects[i] = transform.get( i ).apply( row[i] );
-                        }
+                        //if ( ((PolyValue[]) row)[i] != null ) {
+                        objects[i] = transform.get( i ).apply( row[i] );
+                        //}
                     }
                     return objects;
                 } );
@@ -1608,8 +1613,8 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyphenyDbStatementHandle getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle statement;
+    private PolyphenyDbStatementHandle<Object> getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
+        final PolyphenyDbStatementHandle<Object> statement;
         if ( openStatements.containsKey( h.connectionId + "::" + h.id ) ) {
             statement = openStatements.get( h.connectionId + "::" + h.id );
         } else {

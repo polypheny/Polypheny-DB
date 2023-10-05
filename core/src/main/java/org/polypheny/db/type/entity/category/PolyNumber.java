@@ -179,9 +179,4 @@ public abstract class PolyNumber extends PolyValue {
     public abstract PolyNumber negate();
 
 
-    @Override
-    public String toJson() {
-        return BigDecimalValue() == null ? null : BigDecimalValue().toEngineeringString();
-    }
-
 }

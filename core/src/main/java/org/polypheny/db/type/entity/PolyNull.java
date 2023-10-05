@@ -16,20 +16,12 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Map;
 import lombok.NonNull;
@@ -63,12 +55,6 @@ public class PolyNull extends PolyValue {
     @Override
     public int compareTo( @NotNull PolyValue o ) {
         return o.isNull() ? 0 : -1;
-    }
-
-
-    @Override
-    public String toJson() {
-        return "null";
     }
 
 
@@ -387,20 +373,5 @@ public class PolyNull extends PolyValue {
 
     }
 
-
-    public static class PolyNullSerializer implements JsonDeserializer<PolyNull>, JsonSerializer<PolyNull> {
-
-        @Override
-        public PolyNull deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyNull.NULL;
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyNull src, Type typeOfSrc, JsonSerializationContext context ) {
-            return JsonNull.INSTANCE;
-        }
-
-    }
 
 }

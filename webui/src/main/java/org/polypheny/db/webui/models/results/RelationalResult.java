@@ -89,7 +89,6 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         return new RelationalResultBuilderImpl();
     }
 
-
     public String toJson() {
         Gson gson = new Gson();
         return gson.toJson( this );

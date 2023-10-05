@@ -16,14 +16,6 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -96,29 +88,5 @@ public class PolyInterval extends PolyValue {
         return null;
     }
 
-
-    public static class PolyIntervalSerializer implements JsonSerializer<PolyInterval>, JsonDeserializer<PolyInterval> {
-
-
-        public static final String DATA = "data";
-        public static final String QUALIFIER = "qualifier";
-
-
-        @Override
-        public PolyInterval deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject object = json.getAsJsonObject();
-            return PolyInterval.of( object.get( DATA ).getAsBigDecimal(), context.deserialize( object.get( QUALIFIER ), IntervalQualifier.class ) );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyInterval src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject object = new JsonObject();
-            object.add( QUALIFIER, context.serialize( src.qualifier ) );
-            object.addProperty( DATA, src.value );
-            return object;
-        }
-
-    }
 
 }

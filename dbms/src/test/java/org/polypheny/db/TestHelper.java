@@ -534,7 +534,7 @@ public class TestHelper {
 
         public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
-                Class<?> driver = Class.forName( "org.polypheny.jdbc.Driver" );
+                Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }

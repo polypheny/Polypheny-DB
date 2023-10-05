@@ -16,14 +16,6 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;
@@ -204,37 +196,6 @@ public class PolyEdge extends GraphPropertyHolder {
                 '}';
     }
 
-
-    public static class PolyEdgeSerializer implements JsonSerializer<PolyEdge>, JsonDeserializer<PolyEdge> {
-
-        @Override
-        public PolyEdge deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            PolyString id = PolyString.of( jsonObject.get( "id" ).getAsString() );
-            PolyDictionary props = context.deserialize( jsonObject.get( "properties" ), PolyDictionary.class );
-            List<PolyString> labels = context.deserialize( jsonObject.get( "labels" ), PolyList.class );
-            PolyString source = PolyString.of( jsonObject.get( "source" ).getAsString() );
-            PolyString target = PolyString.of( jsonObject.get( "target" ).getAsString() );
-            EdgeDirection dir = EdgeDirection.valueOf( jsonObject.get( "direction" ).getAsString() );
-            PolyString var = context.deserialize( jsonObject.get( "var" ), PolyString.class );
-            return new PolyEdge( id, props, labels, source, target, dir, var );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyEdge src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty( "id", src.id.value );
-            jsonObject.add( "properties", context.serialize( src.properties ) );
-            jsonObject.add( "labels", context.serialize( src.labels ) );
-            jsonObject.addProperty( "source", src.source.value );
-            jsonObject.addProperty( "target", src.target.value );
-            jsonObject.addProperty( "direction", src.direction.name() );
-            jsonObject.add( "var", context.serialize( src.variableName ) );
-            return jsonObject;
-        }
-
-    }
 
 
 }
