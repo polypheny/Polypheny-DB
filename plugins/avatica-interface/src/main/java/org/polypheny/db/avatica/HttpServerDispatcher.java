@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -88,7 +89,7 @@ public class HttpServerDispatcher {
         jettyServer.start();
 
         if ( port != connector.getLocalPort() ) {
-            throw new Exception( "HTTP Dispatcher was not started on the specified port. It would have listended on " + port );
+            throw new GenericRuntimeException( "HTTP Dispatcher was not started on the specified port. It would have listended on " + port );
         }
 
         String host = connector.getHost();
@@ -98,7 +99,7 @@ public class HttpServerDispatcher {
             try {
                 host = InetAddress.getLocalHost().getHostName();
             } catch ( UnknownHostException e ) {
-                throw new Exception( e );
+                throw new GenericRuntimeException( e );
             }
         }
         handler.setServerRpcMetadata( new Service.RpcMetadataResponse( String.format( Locale.ROOT, "%s:%d", host, port ) ) );

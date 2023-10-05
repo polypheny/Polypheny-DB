@@ -19,11 +19,11 @@ package org.polypheny.db.webui;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.bundled.CorsPluginConfig;
+import io.javalin.plugin.json.JavalinJackson;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -86,6 +86,19 @@ public class HttpServer implements Runnable {
         long maxRequestSize = 1_000_000L * maxSizeMB;
 
         this.server = Javalin.create( config -> {
+            config.jsonMapper( new JavalinJackson( new ObjectMapper() {
+                {
+                    setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                    configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                    configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+                    writerWithDefaultPrettyPrinter();
+                }
+            } ) );
+            config.enableCorsForAllOrigins();
+            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+
+        /*this.server = Javalin.create( config -> { // todo dl enable, when we removed avatica and can finally bump javalin
             config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
             config.staticFiles.add( "webapp" );
             config.http.maxRequestSize = maxRequestSize;
@@ -95,7 +108,7 @@ public class HttpServer implements Runnable {
                 mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
                 mapper.writerWithDefaultPrettyPrinter();
             } ) );
-        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );*/
 
         this.crud = new Crud( this.transactionManager );
 
@@ -429,7 +442,6 @@ public class HttpServer implements Runnable {
     public void removeRoute( String route, HandlerType type ) {
         addRoute( route, ( ctx, crud ) -> null, Object.class, type );
     }
-
 
 
 }

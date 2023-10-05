@@ -41,7 +41,7 @@ dependencies {
 
     ////// SLF4J
     implementation group: 'org.pf4j', name: 'pf4j', version: pf4j_version // Apache 2.0
-    implementation group: "io.javalin", name: "javalin", version: javalin_version // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version)// Apache 2.0
 
     implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
     implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
@@ -53,8 +53,6 @@ dependencies {
     implementation group: "io.grpc", name: "grpc-all", version: cottontaildb_grpc_version
 
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.4' // Apache 2.0
-
-    testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")

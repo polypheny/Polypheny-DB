@@ -20,7 +20,6 @@ package org.polypheny.db.restapi;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import io.javalin.http.Context;
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -36,6 +35,7 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
@@ -112,12 +112,12 @@ public class RequestParser {
      * @throws UnauthorizedAccessException thrown if no authorization provided or invalid credentials
      */
     public CatalogUser parseBasicAuthentication( Context ctx ) throws UnauthorizedAccessException {
-        if ( ctx.req().getHeader( "Authorization" ) == null ) {
-            log.debug( "No Authorization header for request id: {}.", ctx.req().getSession().getId() );
+        if ( ctx.req.getHeader( "Authorization" ) == null ) {
+            log.debug( "No Authorization header for request id: {}.", ctx.req.getSession().getId() );
             throw new UnauthorizedAccessException( "No Basic Authorization sent by user." );
         }
 
-        final String basicAuthHeader = ctx.req().getHeader( "Authorization" );
+        final String basicAuthHeader = ctx.req.getHeader( "Authorization" );
 
         final Pair<String, String> decoded = decodeBasicAuthorization( basicAuthHeader );
 
@@ -164,7 +164,7 @@ public class RequestParser {
 
     public ResourcePostRequest parsePostResourceRequest( Context ctx, String resourceName, Gson gson ) throws ParserException {
         List<LogicalTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req() ), tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, PolyValue>>> values = this.parseValues( ctx, gson, nameMapping );
 
@@ -186,10 +186,10 @@ public class RequestParser {
         // TODO js: make sure it's only a single resource
         List<LogicalTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req() ), tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( ctx.req ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( getFilterMap( ctx.req() ), nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( ctx.req ), nameMapping );
 
         List<List<Pair<RequestColumn, PolyValue>>> values = this.parseValues( ctx, gson, nameMapping );
 

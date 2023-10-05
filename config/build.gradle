@@ -2,7 +2,9 @@ group "org.polypheny"
 
 
 dependencies {
-    implementation group: "io.javalin", name: "javalin", version: javalin_version  // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+        exclude group: 'org.eclipse.jetty', module: 'jetty-server'
+    }// Apache 2.0
 
     implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
 
