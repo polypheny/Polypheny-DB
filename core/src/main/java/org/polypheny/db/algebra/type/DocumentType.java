@@ -16,7 +16,7 @@
 
 package org.polypheny.db.algebra.type;
 
-import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
+import com.google.common.collect.Streams;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;

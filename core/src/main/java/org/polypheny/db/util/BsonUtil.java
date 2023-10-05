@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDecimal128;
@@ -881,7 +881,7 @@ public class BsonUtil {
             case MAX_KEY:
                 break;
         }
-        throw new NotImplementedException( "Not considered: " + input.getBsonType() );
+        throw new org.apache.commons.lang3.NotImplementedException( "Not considered: " + input.getBsonType() );
     }
 
 }
