@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 
@@ -25,15 +26,16 @@ import java.util.UUID;
  */
 public class InformationProgress extends Information {
 
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @JsonProperty
     private String label;
-    @SuppressWarnings({ "unused" })
+    @JsonProperty
     private int value;
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @JsonProperty
     private ProgressColor color = ProgressColor.DYNAMIC;
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @JsonProperty
     private int min = 0;
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+
+    @JsonProperty
     private int max = 100;
 
 

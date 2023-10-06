@@ -39,7 +39,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new GenericRuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "StatisticsManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }

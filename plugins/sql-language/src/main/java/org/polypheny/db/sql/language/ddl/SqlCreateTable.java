@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
@@ -204,7 +205,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             namespaceId = snapshot.getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             tableName = name.names.get( 0 );
         } else {
-            throw new RuntimeException( "Invalid table name: " + name );
+            throw new GenericRuntimeException( "Invalid table name: " + name );
         }
 
         List<DataStore<?>> stores = store != null ? ImmutableList.of( getDataStoreInstance( store ) ) : null;
@@ -248,7 +249,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             }
 
         } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

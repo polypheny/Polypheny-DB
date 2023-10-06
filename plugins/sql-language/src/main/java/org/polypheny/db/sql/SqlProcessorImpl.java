@@ -364,7 +364,7 @@ public class SqlProcessorImpl extends Processor {
 
 
     private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
-        LogicalTable catalogTable;
+        LogicalTable table;
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
@@ -377,8 +377,7 @@ public class SqlProcessorImpl extends Processor {
             namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).orElseThrow().id;
             tableOldName = tableName.names.get( 0 );
         }
-        catalogTable = snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow();
-        return catalogTable;
+        return snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow( () -> new GenericRuntimeException( "Could not find table with name " + tableName.names ) );
     }
 
 

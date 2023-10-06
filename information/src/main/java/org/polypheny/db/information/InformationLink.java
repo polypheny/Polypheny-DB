@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 
@@ -25,7 +26,10 @@ import java.util.UUID;
  */
 public class InformationLink extends Information {
 
+    @JsonProperty
     private String label;
+
+    @JsonProperty
     private String[] routerLink;
 
 

@@ -202,16 +202,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     @Override
     public PolyImplementation prepareQuery( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubquery, boolean withMonitoring ) {
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
+            attachQueryPlans( logicalRoot );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -235,6 +226,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         return selectedPlan.left;
+    }
+
+
+    private void attachQueryPlans( AlgRoot logicalRoot ) {
+        InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
+        InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
+        page.fullWidth();
+        InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
+        queryAnalyzer.addPage( page );
+        queryAnalyzer.addGroup( group );
+        InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                group,
+                AlgOptUtil.dumpPlan( "Logical Query Plan", logicalRoot.alg, ExplainFormat.JSON, ExplainLevel.ALL_ATTRIBUTES ) );
+        queryAnalyzer.registerInformation( informationQueryPlan );
     }
 
 
