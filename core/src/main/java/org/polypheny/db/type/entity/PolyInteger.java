@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -32,6 +33,7 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -49,6 +51,12 @@ public class PolyInteger extends PolyNumber {
     public PolyInteger( @JsonProperty @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER );
         this.value = value;
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : String.valueOf( value );
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -94,6 +95,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @Override
     public Expression asExpression() {
         return Expressions.call( PolyList.class, "ofExpression", value.stream().map( e -> e == null ? Expressions.constant( null ) : e.asExpression() ).collect( Collectors.toList() ) );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : "[" + value.stream().map( e -> e.isString() ? e.asString().toQuotedJson() : e.toJson() ).collect( Collectors.joining( "," ) ) + "]";
     }
 
 

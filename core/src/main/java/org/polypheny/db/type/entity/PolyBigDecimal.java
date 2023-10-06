@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -35,6 +36,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -82,6 +84,12 @@ public class PolyBigDecimal extends PolyNumber {
 
     public static PolyBigDecimal ofNullable( Number value, int precision, int scale ) {
         return value == null ? null : of( value, precision, scale );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : value.toString();
     }
 
 

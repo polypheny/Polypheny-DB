@@ -109,7 +109,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
     public ClassDeclaration implementRoot( EnumerableAlg rootAlg, EnumerableAlg.Prefer prefer ) {
         EnumerableAlg.Result result = rootAlg.implement( this, prefer );
         if ( Objects.requireNonNull( prefer ) == Prefer.ARRAY ) {
-            if ( result.physType.getFormat() == JavaRowFormat.ARRAY && rootAlg.getRowType().getFieldCount() == 1 ) {
+            if ( false && result.physType.getFormat() == JavaRowFormat.ARRAY /*&& rootAlg.getRowType().getFieldCount() == 1 dl we want this*/ ) {
                 BlockBuilder bb = new BlockBuilder();
                 Expression e = null;
                 for ( Statement statement : result.block.statements ) {
@@ -423,7 +423,7 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
 
     public EnumerableAlg.Result result( PhysType physType, BlockStatement block ) {
-        return new EnumerableAlg.Result( block, physType, ((PhysTypeImpl) physType).format );
+        return new EnumerableAlg.Result( block, physType, JavaRowFormat.ARRAY );
     }
 
 

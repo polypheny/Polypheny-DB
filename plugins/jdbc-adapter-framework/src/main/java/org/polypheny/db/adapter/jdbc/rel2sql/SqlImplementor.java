@@ -577,7 +577,7 @@ public abstract class SqlImplementor {
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
                             } else {
                                 // atm arrays in adapter which do not support arrays are compared in their serialized form, this should be changed todo dl
-                                return SqlLiteral.createCharString( literal.value.toJsonOrNull(), POS );
+                                return SqlLiteral.createCharString( literal.value.toTypedJson(), POS );
                             }
                         case GRAPH:
                             // node or edge

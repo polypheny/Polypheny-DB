@@ -80,7 +80,7 @@ public class PhysTypeImpl implements PhysType {
 
 
     public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format, boolean optimize ) {
-        if ( optimize ) {
+        if ( false && optimize ) { // we always want arrays
             format = format.optimize( rowType );
         }
         final Type javaRowClass = JavaRowFormat.ARRAY.javaRowClass( typeFactory, rowType );//format.javaRowClass( typeFactory, rowType );
@@ -504,7 +504,7 @@ public class PhysTypeImpl implements PhysType {
                         Function1.class,
                         Expressions.field( null, BuiltInMethod.COMPARABLE_EMPTY_LIST.field ),
                         v1 );
-            case 1:
+            /*case 1:
                 int field0 = fields.get( 0 );
 
                 // new Function1<Employee, Res> {
@@ -514,7 +514,7 @@ public class PhysTypeImpl implements PhysType {
                 // }
                 Class<?> returnType = fieldClasses.get( field0 );
                 Expression fieldReference = Types.castIfNecessary( returnType, fieldReference( v1, field0 ) );
-                return Expressions.lambda( Function1.class, fieldReference, v1 );
+                return Expressions.lambda( Function1.class, fieldReference, v1 );*/
             default:
                 // new Function1<Employee, List> {
                 //    public List apply(Employee v1) {

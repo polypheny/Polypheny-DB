@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -33,6 +34,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
@@ -67,6 +69,12 @@ public class PolyBoolean extends PolyValue {
 
     public static PolyBoolean of( boolean value ) {
         return new PolyBoolean( value );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : String.valueOf( value );
     }
 
 

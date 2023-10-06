@@ -109,7 +109,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
                 PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceId, crud.getTransactionManager() );
 
-                ctx.send( graph.toJsonOrNull() );
+                ctx.send( graph.toJson() );
 
                 break;
             case "QueryRequest":

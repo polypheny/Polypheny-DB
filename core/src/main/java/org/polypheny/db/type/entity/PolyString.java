@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonToken;
 import com.google.common.base.Charsets;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -74,6 +75,17 @@ public class PolyString extends PolyValue {
 
     public static PolyString ofNullable( String value ) {
         return of( value );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : value;
+    }
+
+
+    public @Nullable String toQuotedJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : "\"" + value + "\"";
     }
 
 
@@ -182,7 +194,6 @@ public class PolyString extends PolyValue {
         }
 
     }
-
 
 
     @Override

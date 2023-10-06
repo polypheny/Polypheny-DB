@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -49,6 +50,12 @@ public class PolyNull extends PolyValue {
 
     public PolyNull() {
         super( PolyType.NULL );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return JsonToken.VALUE_NULL.asString();
     }
 
 

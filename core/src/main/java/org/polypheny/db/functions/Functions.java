@@ -3195,7 +3195,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.readJsonOrNull( stringValue, PolyList.class ).asList();
+        return PolyValue.fromTypedJson( stringValue, PolyList.class ).asList();
     }
 
 
@@ -4027,7 +4027,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> singletonEnumerable( Object value ) {
-        return Linq4j.singletonEnumerable( new PolyValue[]{ (PolyValue) value } );
+        return Linq4j.singletonEnumerable( (PolyValue[]) value );
     }
 
 

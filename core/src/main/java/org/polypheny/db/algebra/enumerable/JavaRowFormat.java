@@ -94,12 +94,12 @@ public enum JavaRowFormat {
         @Override
         public Expression record( Type javaRowClass, List<Expression> expressions ) {
             assert expressions.size() == 1;
-
+            return Expressions.newArrayInit( PolyValue.class, expressions );
             /*if ( !TypeUtils.isAssignable( javaRowClass, PolyValue.class ) ) {
                 return Expressions.call( PolyLong.class, "of", expressions.get( 0 ) );
             }*/
 
-            return expressions.get( 0 );
+            //return expressions.get( 0 );
         }
 
 

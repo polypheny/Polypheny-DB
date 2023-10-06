@@ -589,7 +589,7 @@ public interface NeoUtil {
                 return ((TimestampString) value).getMillisSinceEpoch();*/
                 return value.asTemporal().getMilliSinceEpoch();
             case DOCUMENT:
-                return value.asDocument().toJsonOrNull();//.toString();
+                return value.asDocument().toTypedJson();//.toString();
             case INTEGER:
                 return value.asNumber().intValue();
             case BIGINT:

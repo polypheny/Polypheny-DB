@@ -17,15 +17,19 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -64,6 +68,7 @@ import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
+import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -124,12 +129,22 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
+            .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .build( PolyValue.class );
 
 
-    public static final ObjectMapper JSON_WRAPPER = new ObjectMapper();/*.registerModule( new SimpleModule()
-            .addDeserializer( PolyValue.class, new PolyDeserializer( PolyValue.class ) )
-            .addSerializer( PolyValue.class, new PolySerializer( PolyValue.class ) ) );*/
+    public static final ObjectMapper JSON_WRAPPER = new ObjectMapper() {
+        {
+            setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            writerWithDefaultPrettyPrinter();
+            registerModule( new SimpleModule()
+                    .addDeserializer( PolyValue.class, new PolyDeserializer( PolyValue.class ) )
+                    .addSerializer( PolyValue.class, new PolySerializer( PolyValue.class ) ) );
+        }
+    };
+
 
     public static final ObjectMapper JSON_RAW = new ObjectMapper();
 
@@ -215,21 +230,33 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public String toJsonOrNull() {
+    @Nullable
+    public String toTypedJson() {
         try {
             return JSON_WRAPPER.writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
-            log.warn( "error on serializing json" );
+            log.warn( "Error on serializing typed JSON." );
             return null;
         }
     }
 
 
-    public static <E extends PolyValue> E readJsonOrNull( String value, Class<E> clazz ) {
+    @Nullable
+    public static <E extends PolyValue> E fromTypedJson( String value, Class<E> clazz ) {
         try {
             return JSON_WRAPPER.readValue( value, clazz );
         } catch ( JsonProcessingException e ) {
-            log.warn( "error on deserialize json" );
+            log.warn( "Error on deserialize typed JSON." );
+            return null;
+        }
+    }
+
+
+    public String toJson() {
+        try {
+            return JSON_RAW.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on deserialize JSON." );
             return null;
         }
     }

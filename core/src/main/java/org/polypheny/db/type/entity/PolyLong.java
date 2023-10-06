@@ -16,6 +16,13 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
+import io.activej.serializer.BinaryInput;
+import io.activej.serializer.BinaryOutput;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.CompatibilityLevel;
+import io.activej.serializer.CorruptedDataException;
+import io.activej.serializer.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -25,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
@@ -74,6 +82,12 @@ public class PolyLong extends PolyNumber {
         }
 
         throw new GenericRuntimeException( String.format( "%s does not support conversion to %s.", value, value.type ) );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : String.valueOf( value );
     }
 
 
@@ -196,7 +210,6 @@ public class PolyLong extends PolyNumber {
     }
 
 
-
     @Override
     public int hashCode() {
         return Objects.hash( super.hashCode(), value );
@@ -206,6 +219,36 @@ public class PolyLong extends PolyNumber {
     @Override
     public String toString() {
         return value.toString();
+    }
+
+
+    public static class PolyLongSerializerDef extends SimpleSerializerDef<PolyLong> {
+
+        @Override
+        protected BinarySerializer<PolyLong> createSerializer( int version, CompatibilityLevel compatibilityLevel ) {
+            return new BinarySerializer<>() {
+                @Override
+                public void encode( BinaryOutput out, PolyLong item ) {
+                    if ( item.value == null ) {
+                        out.writeBoolean( true );
+                    } else {
+                        out.writeBoolean( false );
+                        out.writeLong( item.value );
+                    }
+                }
+
+
+                @Override
+                public PolyLong decode( BinaryInput in ) throws CorruptedDataException {
+                    boolean isNull = in.readBoolean();
+                    if ( !isNull ) {
+                        return null;
+                    }
+                    return PolyLong.of( in.readLong() );
+                }
+            };
+        }
+
     }
 
 }

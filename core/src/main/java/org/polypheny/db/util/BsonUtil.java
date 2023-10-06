@@ -310,7 +310,7 @@ public class BsonUtil {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
                 return ( o ) -> new BsonArray( o.asList().stream().map( transformer ).collect( Collectors.toList() ) );
             case DOCUMENT:
-                return o -> BsonDocument.parse( o.asDocument().toJsonOrNull() );
+                return o -> BsonDocument.parse( o.asDocument().toTypedJson() );
             case CHAR:
             case VARCHAR:
             default:
@@ -343,7 +343,7 @@ public class BsonUtil {
 
 
     private static BsonValue handleDocument( PolyValue obj ) {
-        return BsonDocument.parse( obj.asDocument().toJsonOrNull() );
+        return BsonDocument.parse( obj.asDocument().toTypedJson() );
     }
 
 
