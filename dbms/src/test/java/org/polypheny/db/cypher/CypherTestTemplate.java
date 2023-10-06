@@ -19,18 +19,12 @@ package org.polypheny.db.cypher;
 import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
@@ -41,14 +35,9 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.graph.GraphObject.GraphObjectType;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
-import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
@@ -240,11 +229,12 @@ public class CypherTestTemplate {
     }
 
 
+    @SneakyThrows
     private <T extends GraphPropertyHolder> boolean contains( String[][] actual, boolean exclusive, int index, Class<T> clazz, TestObject[] expected ) {
         List<T> parsed = new ArrayList<>();
 
         for ( String[] entry : actual ) {
-            parsed.add( PolyValue.GSON.fromJson( entry[index], clazz ) );
+            parsed.add( PolyValue.JSON_WRAPPER.readValue( entry[index], clazz ) );
         }
 
         assert !exclusive || parsed.size() == expected.length;
@@ -362,69 +352,6 @@ public class CypherTestTemplate {
 
     }
 
-
-    public static class GraphObjectAdapter extends TypeAdapter<GraphPropertyHolder> {
-
-
-        @Override
-        public void write( JsonWriter out, GraphPropertyHolder value ) throws IOException {
-            throw new RemoteException( "Test adapter does not need to write." );
-        }
-
-
-        @Override
-        public GraphPropertyHolder read( JsonReader in ) throws IOException {
-            PolyString id = null;
-            Map<PolyString, PolyValue> properties = null;
-            GraphObjectType type = null;
-            PolyString source = null;
-            PolyString target = null;
-            PolyList<PolyString> labels = null;
-            EdgeDirection direction = null;
-
-            in.beginObject();
-
-            while ( in.peek() != JsonToken.END_OBJECT ) {
-                String name = in.nextName();
-                switch ( name ) {
-                    case "id":
-                        id = PolyString.of( in.nextString() );
-                        break;
-                    case "properties":
-                        properties = PolyValue.GSON.fromJson( in, Map.class );
-                        break;
-                    case "type":
-                        type = GraphObjectType.valueOf( in.nextString() );
-                        break;
-                    case "source":
-                        source = PolyString.of( in.nextString() );
-                        break;
-                    case "target":
-                        target = PolyString.of( in.nextString() );
-                        break;
-                    case "labels":
-                        labels = PolyValue.GSON.fromJson( in, List.class );
-                        break;
-                    case "direction":
-                        direction = EdgeDirection.valueOf( in.nextString() );
-                        break;
-                    default:
-                        throw new RuntimeException( format( "Was not able to parse : %s GraphObject.", name ) );
-
-                }
-            }
-            in.endObject();
-
-            if ( type == GraphObjectType.EDGE ) {
-                return new PolyEdge( id, new PolyDictionary( properties ), labels, source, target, direction, null );
-            } else if ( type == GraphObjectType.NODE ) {
-                return new PolyNode( id, new PolyDictionary( properties ), labels, null );
-            } else {
-                throw new RuntimeException( "Was not able to parse GraphObject." );
-            }
-        }
-
-    }
 
 
 }

@@ -16,13 +16,6 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -31,7 +24,6 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import lombok.EqualsAndHashCode;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -183,22 +175,6 @@ public class PolyDouble extends PolyNumber {
                     return new PolyDouble( d == null ? null : Double.valueOf( d ) );
                 }
             };
-        }
-
-    }
-
-
-    public static class PolyDoubleSerializer implements JsonDeserializer<PolyDouble>, JsonSerializer<PolyDouble> {
-
-        @Override
-        public PolyDouble deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyDouble.of( json.getAsDouble() );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyDouble src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
         }
 
     }

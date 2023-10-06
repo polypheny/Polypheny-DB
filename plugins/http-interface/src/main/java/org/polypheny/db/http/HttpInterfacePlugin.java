@@ -18,12 +18,14 @@ package org.polypheny.db.http;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonSyntaxException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import io.javalin.json.JavalinJackson;
-import io.javalin.plugin.bundled.CorsPluginConfig;
+import io.javalin.plugin.json.JavalinJackson;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -39,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -118,7 +121,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
             // Add information page
             monitoringPage = new MonitoringPage();
@@ -127,12 +130,25 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         @Override
         public void run() {
-            server = Javalin.create( config -> {
+            /*server = Javalin.create( config -> {  // todo dl enable, when we removed avatica and can finally bump javalin
                 config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
                 config.staticFiles.add( "webapp" );
                 config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
                     mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
                 } ) );
+            } ).start( port );*/
+
+            this.server = Javalin.create( config -> {
+                config.jsonMapper( new JavalinJackson( new ObjectMapper() {
+                    {
+                        setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                        configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                        configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+                        writerWithDefaultPrettyPrinter();
+                    }
+                } ) );
+                config.enableCorsForAllOrigins();
+                config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
             } ).start( port );
             server.exception( Exception.class, ( e, ctx ) -> {
                 log.warn( "Caught exception in the HTTP interface", e );
@@ -161,7 +177,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
 
         public void anyQuery( QueryLanguage language, final Context ctx ) {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
-            String sessionId = ctx.req().getSession().getId();
+            String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
 
             List<Result<?, ?>> results = LanguageCrud.anyQuery(

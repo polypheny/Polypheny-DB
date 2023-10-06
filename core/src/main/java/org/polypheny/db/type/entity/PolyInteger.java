@@ -16,13 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -31,7 +25,6 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -49,10 +42,11 @@ public class PolyInteger extends PolyNumber {
 
     public static final PolyInteger ZERO = PolyInteger.of( 0 );
     @Serialize
+    @JsonProperty
     public Integer value;
 
 
-    public PolyInteger( @Deserialize("value") Integer value ) {
+    public PolyInteger( @JsonProperty @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER );
         this.value = value;
     }
@@ -237,22 +231,6 @@ public class PolyInteger extends PolyNumber {
                     return new PolyInteger( in.readInt() );
                 }
             };
-        }
-
-    }
-
-
-    public static class PolyIntegerSerializer implements JsonSerializer<PolyInteger>, JsonDeserializer<PolyInteger> {
-
-        @Override
-        public PolyInteger deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyInteger.of( json.getAsInt() );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyInteger src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
         }
 
     }

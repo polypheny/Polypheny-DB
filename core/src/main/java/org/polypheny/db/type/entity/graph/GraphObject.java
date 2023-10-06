@@ -44,10 +44,6 @@ public abstract class GraphObject extends PolyValue {
     }
 
 
-    public String toJson() {
-        return PolyValue.GSON.toJson( this );
-    }
-
 
     public enum GraphObjectType {
         GRAPH,

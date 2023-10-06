@@ -16,22 +16,12 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,8 +35,6 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BuiltInMethod;
 
 public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
-
-    private static Gson gson = new GsonBuilder().serializeNulls().enableComplexMapKeySerialization().create();
 
 
     public PolyDictionary( Map<PolyString, PolyValue> map ) {
@@ -74,7 +62,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
     public static PolyDictionary fromString( String json ) {
-        return gson.fromJson( json, PolyDictionary.class );
+        return PolyValue.readJsonOrNull( json, PolyDictionary.class );
     }
 
 
@@ -109,29 +97,5 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
     }
 
-
-    public static class PolyDictionarySerializer implements JsonSerializer<PolyDictionary>, JsonDeserializer<PolyDictionary> {
-
-        @Override
-        public PolyDictionary deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject object = json.getAsJsonObject();
-            Map<PolyString, PolyValue> map = new HashMap<>();
-            for ( Entry<String, JsonElement> entry : object.entrySet() ) {
-                map.put( PolyString.of( entry.getKey() ), context.deserialize( entry.getValue(), PolyValue.class ) );
-            }
-            return new PolyDictionary( map );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyDictionary src, Type typeOfSrc, JsonSerializationContext context ) {
-            JsonObject object = new JsonObject();
-            for ( Entry<PolyString, PolyValue> entry : src.map.entrySet() ) {
-                object.add( entry.getKey().toString(), context.serialize( entry.getValue(), entry.getValue().getClass() ) );
-            }
-            return object;
-        }
-
-    }
 
 }

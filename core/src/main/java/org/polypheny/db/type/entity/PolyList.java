@@ -16,15 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -32,8 +25,6 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,11 +47,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
 
     @Delegate
-    @Serialize
+    @JsonProperty
+    @JsonSerialize
     public List<E> value;
 
 
-    public PolyList( @Deserialize("value") List<E> value ) {
+    public PolyList( @JsonProperty @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
         this.value = new ArrayList<>( value );
     }
@@ -137,12 +129,6 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
-    @Override
-    public String toJson() {
-        return value == null ? "null" : value.stream().map( e -> e == null ? "null" : e.isString() ? String.format( "\"%s\"", e.asString().value ) : e.toJson() ).collect( Collectors.joining( ",", "[", "]" ) );
-    }
-
-
     public static class PolyListSerializerDef extends SimpleSerializerDef<PolyList<?>> {
 
         @Override
@@ -171,56 +157,5 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     }
 
-
-    public static class PolyListSerializer<E extends PolyValue> implements JsonSerializer<PolyList<E>>, JsonDeserializer<PolyList<E>> {
-
-        private static final String CLASSNAME = "className";
-        private static final String INSTANCE = "instance";
-        private static final String SIZE = "size";
-
-
-        @Override
-        public JsonElement serialize( PolyList<E> src, Type typeOfSrc, JsonSerializationContext context ) {
-            if ( src == null ) {
-                return JsonNull.INSTANCE;
-            }
-
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty( SIZE, src.size() );
-            jsonObject.addProperty( CLASSNAME, src.isEmpty() || src.value.get( 0 ) == null ? PolyValue.class.getName() : src.value.get( 0 ).getClass().getName() );
-            JsonArray jsonArray = new JsonArray();
-            for ( PolyValue entry : src.value ) {
-                if ( entry == null ) {
-                    jsonArray.add( JsonNull.INSTANCE );
-                    continue;
-                }
-                jsonArray.add( context.serialize( entry, entry.getClass() ) );
-            }
-            jsonObject.add( INSTANCE, jsonArray );
-            return jsonObject;
-        }
-
-
-        @Override
-        public PolyList<E> deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            JsonObject jsonObject = json.getAsJsonObject();
-            String className = jsonObject.get( CLASSNAME ).getAsString();
-            int size = jsonObject.get( SIZE ).getAsInt();
-            List<E> list = new ArrayList<>();
-
-            try {
-                Type type = Class.forName( className );
-                JsonArray jsonArray = jsonObject.get( INSTANCE ).getAsJsonArray();
-                for ( JsonElement element : jsonArray ) {
-                    list.add( context.deserialize( element, type ) );
-                }
-            } catch ( ClassNotFoundException e ) {
-                throw new JsonParseException( "Invalid class name: " + className, e );
-            }
-
-            return PolyList.of( list );
-        }
-
-    }
 
 }

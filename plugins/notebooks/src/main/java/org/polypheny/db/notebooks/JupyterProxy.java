@@ -121,7 +121,7 @@ public class JupyterProxy {
             ctx.result( res.body() );
 
         } catch ( JupyterServerException e ) {
-            ctx.status( e.getStatus() ).result( e.getMsg() );
+            ctx.status( e.getStatus().getCode() ).result( e.getMsg() );
         }
     }
 

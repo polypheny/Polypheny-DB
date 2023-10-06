@@ -306,7 +306,7 @@ public class LanguageCrud {
     private static String toJson( @Nullable PolyValue src ) {
         return src == null
                 ? null
-                : src.toJson();
+                : src.toJsonOrNull();
     }
 
 

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.cypher.CypherTestTemplate;
@@ -77,9 +78,10 @@ public class TestGraphObject implements TestObject {
     }
 
 
+    @SneakyThrows
     @Override
     public Object toPoly( String val ) {
-        return PolyValue.GSON.fromJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+        return PolyValue.JSON_WRAPPER.readValue( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 

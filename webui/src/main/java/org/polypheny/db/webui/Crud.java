@@ -27,10 +27,6 @@ import com.google.gson.JsonParseException;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.Part;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -69,6 +65,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
@@ -591,7 +591,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Insert data into a table
      */
-    void insertTuple( final Context ctx ) {
+    void insertTuple( final Context ctx ) throws IOException, ServletException {
         ctx.contentType( "multipart/form-data" );
         initMultipart( ctx );
         String unparsed = ctx.formParam( "entityId" );
@@ -615,7 +615,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             int i = 0;
             for ( LogicalColumn logicalColumn : logicalColumns ) {
                 //part is null if it does not exist
-                Part part = ctx.req().getPart( logicalColumn.name );
+                Part part = ctx.req.getPart( logicalColumn.name );
                 if ( part == null ) {
                     //don't add if default value is set
                     if ( logicalColumn.defaultValue == null ) {
@@ -639,10 +639,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     }
                 }
             }
-        } catch ( IOException | ServletException e ) {
-            log.error( "Could not generate INSERT statement", e );
-            ctx.status( 500 );
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+        } catch ( ServletException e ) {
+            throw new RuntimeException( e );
         }
 
         String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
@@ -952,7 +950,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Map<String, String> oldValues = null;
         long entityId = Long.parseLong( Objects.requireNonNull( ctx.formParam( "entityId" ) ) );
         try {
-            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req.getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
             oldValues = gson.fromJson( _oldValues, Map.class );
         } catch ( IOException | ServletException e ) {
             ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
@@ -967,7 +965,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         int i = 0;
         for ( LogicalColumn logicalColumn : logicalColumns ) {
-            Part part = ctx.req().getPart( logicalColumn.name );
+            Part part = ctx.req.getPart( logicalColumn.name );
             if ( part == null ) {
                 continue;
             }
@@ -1026,7 +1024,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         initMultipart( ctx );
         BatchUpdateRequest request;
 
-        String jsonRequest = new BufferedReader( new InputStreamReader( ctx.req().getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+        String jsonRequest = new BufferedReader( new InputStreamReader( ctx.req.getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
         request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
 
         Transaction transaction = getTransaction();
@@ -1035,7 +1033,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         try {
             for ( Update update : request.updates ) {
                 statement = transaction.createStatement();
-                String query = update.getQuery( request.tableId, statement, ctx.req() );
+                String query = update.getQuery( request.tableId, statement, ctx.req );
                 totalRows += executeSqlUpdate( statement, transaction, query );
             }
             transaction.commit();
@@ -2289,7 +2287,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public void startAccessRequest( Context ctx ) {
         PathAccessRequest request = ctx.bodyAsClass( PathAccessRequest.class );
-        UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req().getSession().getId(), Path.of( request.getDirectoryName() ) );
+        UUID uuid = SecurityManager.getInstance().requestPathAccess( request.getName(), ctx.req.getSession().getId(), Path.of( request.getDirectoryName() ) );
         if ( uuid != null ) {
             ctx.json( uuid );
         } else {
@@ -2897,7 +2895,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
         long fileLength = f.length();
-        String range = ctx.req().getHeader( "Range" );
+        String range = ctx.req.getHeader( "Range" );
         if ( range != null ) {
             long rangeStart = 0;
             long rangeEnd = 0;
@@ -2925,14 +2923,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             try {
                 //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
-                ctx.res().setHeader( "Accept-Ranges", "bytes" );
+                ctx.res.setHeader( "Accept-Ranges", "bytes" );
                 ctx.status( 206 );//partial content
                 int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
-                ctx.res().setHeader( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
+                ctx.res.setHeader( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
 
                 RandomAccessFile raf = new RandomAccessFile( f, "r" );
                 raf.seek( rangeStart );
-                ServletOutputStream os = ctx.res().getOutputStream();
+                ServletOutputStream os = ctx.res.getOutputStream();
                 byte[] buf = new byte[256];
                 while ( len > 0 ) {
                     int read = raf.read( buf, 0, Math.min( buf.length, len ) );
@@ -2947,8 +2945,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         } else {
             if ( sendBack ) {
-                ctx.res().setContentLengthLong( (int) fileLength );
-                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res().getOutputStream() ) {
+                ctx.res.setContentLengthLong( (int) fileLength );
+                try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = ctx.res.getOutputStream() ) {
                     IOUtils.copyLarge( fis, os );
                     os.flush();
                 } catch ( IOException ignored ) {
@@ -2973,8 +2971,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             ctx.status( 500 );
             log.error( "Could not zip directory", e );
         }
-        ctx.res().setContentLengthLong( zipFile.length() );
-        try ( OutputStream os = ctx.res().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
+        ctx.res.setContentLengthLong( zipFile.length() );
+        try ( OutputStream os = ctx.res.getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
             IOUtils.copy( is, os );
         } catch ( IOException e ) {
             log.error( "Could not write zipOutputStream to response", e );
@@ -3110,7 +3108,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         temp[counter] = f.getName();
                         TemporalFileManager.addFile( transaction.getXid().toString(), f );
                     } else {
-                        temp[counter] = o.toJson();
+                        temp[counter] = o.toJsonOrNull();
                     }
                     /*switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":
@@ -3610,13 +3608,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     public void loadPlugins( final Context ctx ) {
         ctx.uploadedFiles( "plugins" ).forEach( file -> {
-            String[] splits = file.filename().split( "/" );
+            String[] splits = file.getFilename().split( "/" );
             String normalizedFileName = splits[splits.length - 1];
             splits = normalizedFileName.split( "\\\\" );
             normalizedFileName = splits[splits.length - 1];
             File f = new File( System.getProperty( "user.home" ), ".polypheny/plugins/" + normalizedFileName );
             try {
-                FileUtils.copyInputStreamToFile( file.content(), f );
+                FileUtils.copyInputStreamToFile( file.getContent(), f );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }

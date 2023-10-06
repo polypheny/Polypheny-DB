@@ -16,15 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Charsets;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -33,7 +26,6 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
-import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
@@ -52,12 +44,13 @@ import org.polypheny.db.type.PolyType;
 public class PolyString extends PolyValue {
 
     @Serialize
+    @JsonProperty
     public String value;
 
     public Charset charset;
 
 
-    public PolyString( @Deserialize("value") String value ) {
+    public PolyString( @JsonProperty @Deserialize("value") String value ) {
         this( value, Charsets.UTF_16 );
     }
 
@@ -140,12 +133,6 @@ public class PolyString extends PolyValue {
 
 
     @Override
-    public String toJson() {
-        return value;
-    }
-
-
-    @Override
     public @NotNull Long deriveByteSize() {
         return (long) (value == null ? 1 : value.getBytes( charset ).length);
     }
@@ -196,21 +183,6 @@ public class PolyString extends PolyValue {
 
     }
 
-
-    public static class PolyStringSerializer implements JsonDeserializer<PolyString>, JsonSerializer<PolyString> {
-
-        @Override
-        public PolyString deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyString.of( json.getAsString() );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyString src, Type typeOfSrc, JsonSerializationContext context ) {
-            return src.value == null ? JsonNull.INSTANCE : new JsonPrimitive( src.value );
-        }
-
-    }
 
 
     @Override

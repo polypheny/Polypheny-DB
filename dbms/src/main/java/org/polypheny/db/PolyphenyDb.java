@@ -53,6 +53,7 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.ddl.DefaultInserter;
 import org.polypheny.db.docker.AutoDocker;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.gui.GuiUtils;
 import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
@@ -382,7 +383,7 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        if ( false && AutoDocker.getInstance().isAvailable() ) {
+        if ( AutoDocker.getInstance().isAvailable() ) {
             if ( testMode ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
@@ -410,7 +411,7 @@ public class PolyphenyDb {
         QueryInterfaceManager.initialize( transactionManager, authenticator );
 
         // Call DockerManager once to remove old containers
-        //DockerManager.getInstance();
+        DockerManager.getInstance();
 
         // Initialize PartitionMangerFactory
         PartitionManagerFactory.setAndGetInstance( new PartitionManagerFactoryImpl() );

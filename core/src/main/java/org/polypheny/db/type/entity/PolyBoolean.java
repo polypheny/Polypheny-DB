@@ -16,13 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -32,7 +26,6 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import java.lang.reflect.Type;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -51,11 +44,12 @@ public class PolyBoolean extends PolyValue {
     public static final PolyBoolean FALSE = PolyBoolean.of( false );
 
     @Serialize
+    @JsonProperty
     @SerializeNullable
     public Boolean value;
 
 
-    public PolyBoolean( @Deserialize("value") Boolean value ) {
+    public PolyBoolean( @JsonProperty @Deserialize("value") Boolean value ) {
         super( PolyType.BOOLEAN );
         this.value = value;
     }
@@ -126,22 +120,6 @@ public class PolyBoolean extends PolyValue {
                     return in.readBoolean() ? PolyBoolean.TRUE : PolyBoolean.FALSE;
                 }
             };
-        }
-
-    }
-
-
-    public static class PolyBooleanSerializer implements JsonSerializer<PolyBoolean>, JsonDeserializer<PolyBoolean> {
-
-        @Override
-        public PolyBoolean deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return PolyBoolean.of( json.getAsBoolean() );
-        }
-
-
-        @Override
-        public JsonElement serialize( PolyBoolean src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.value );
         }
 
     }

@@ -3189,12 +3189,13 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
     public static List<?> reparse( PolyType innerType, Long dimension, String stringValue ) {
         //Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.GSON.fromJson( stringValue, PolyList.class );
+        return PolyValue.readJsonOrNull( stringValue, PolyList.class ).asList();
     }
 
 

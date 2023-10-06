@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.javalin.http.HttpStatus;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
@@ -39,6 +38,8 @@ import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpStatus.Code;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
 
 @Slf4j
@@ -286,9 +287,9 @@ public class JupyterClient {
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "GET failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "GET failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "GET failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "GET failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -311,9 +312,9 @@ public class JupyterClient {
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "POST failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "POST failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "POST failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "POST failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -336,9 +337,9 @@ public class JupyterClient {
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "PUT failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PUT failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "PUT failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PUT failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -361,9 +362,9 @@ public class JupyterClient {
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "PATCH failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PATCH failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "PATCH failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "PATCH failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -385,9 +386,9 @@ public class JupyterClient {
         try {
             return client.send( request, BodyHandlers.ofString() );
         } catch ( IOException e ) {
-            throw new JupyterServerException( "DELETE failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "DELETE failed: Jupyter Server is unavailable", HttpStatus.SERVICE_UNAVAILABLE_503 );
         } catch ( InterruptedException e ) {
-            throw new JupyterServerException( "DELETE failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE );
+            throw new JupyterServerException( "DELETE failed: Thread was interrupted", HttpStatus.SERVICE_UNAVAILABLE_503 );
         }
     }
 
@@ -498,23 +499,22 @@ public class JupyterClient {
     /**
      * A class representing any exception that might occur when a request is sent to the jupyter server.
      */
+    @Getter
     public static class JupyterServerException extends Exception {
 
-        @Getter
         private final String msg;
-        @Getter
-        private final HttpStatus status;
+        private final Code status;
 
 
-        public JupyterServerException( String msg, HttpStatus status ) {
+        public JupyterServerException( String msg, Code status ) {
             this.msg = msg;
-            this.status = Objects.requireNonNullElse( status, HttpStatus.INTERNAL_SERVER_ERROR );
+            this.status = Objects.requireNonNullElse( status, Code.INTERNAL_SERVER_ERROR );
         }
 
 
         public JupyterServerException( String msg, int status ) {
             this.msg = msg;
-            this.status = Objects.requireNonNullElse( HttpStatus.Companion.forStatus( status ), HttpStatus.INTERNAL_SERVER_ERROR );
+            this.status = Objects.requireNonNullElse( HttpStatus.getCode( status ), Code.INTERNAL_SERVER_ERROR );
         }
 
     }

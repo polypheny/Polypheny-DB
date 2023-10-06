@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -89,15 +88,6 @@ public class PolyBlob extends PolyValue {
 
     public static PolyBlob of( InputStream stream ) {
         return new PolyBlob( null, stream );
-    }
-
-
-    @Override
-    public String toJson() {
-        if ( value == null && stream == null ) {
-            return null;
-        }
-        return Arrays.toString( value );
     }
 
 

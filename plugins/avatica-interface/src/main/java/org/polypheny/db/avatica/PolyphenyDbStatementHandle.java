@@ -27,11 +27,11 @@ import org.polypheny.db.transaction.Statement;
  *
  */
 @Getter
-public class PolyphenyDbStatementHandle {
+public class PolyphenyDbStatementHandle<E> {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
-    private volatile transient Iterator<Object[]> openResultSet;
+    private volatile transient Iterator<E> openResultSet;
     private volatile transient PolyphenyDbSignature signature;
     @Setter
     private volatile transient String preparedQuery;
@@ -51,7 +51,7 @@ public class PolyphenyDbStatementHandle {
     }
 
 
-    public synchronized void setOpenResultSet( Iterator<Object[]> result ) {
+    public synchronized void setOpenResultSet( Iterator<E> result ) {
         if ( this.openResultSet != null ) {
             //  this.openResultSet.close();
         }
