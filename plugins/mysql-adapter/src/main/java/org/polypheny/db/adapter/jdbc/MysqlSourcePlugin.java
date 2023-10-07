@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
@@ -97,26 +96,20 @@ public class MysqlSourcePlugin extends PolyPlugin {
 
 
         @Override
-        public List<PhysicalEntity> refreshTable( long allocId ) {
-            PhysicalTable table = storeCatalog.getTable( allocId );
-            if ( table == null ) {
-                log.warn( "todo" );
-                throw new GenericRuntimeException( "Could not find physical" );
-            }
-            storeCatalog.replacePhysical( currentJdbcSchema.createJdbcTable( storeCatalog, table ) );
-            return List.of( table );
-        }
-
-
-        @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            storeCatalog.createTable(
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            PhysicalTable table = storeCatalog.createTable(
                     logical.table.getNamespaceName(),
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                     allocation );
+
+            JdbcTable physical = currentJdbcSchema.createJdbcTable( storeCatalog, table );
+
+            storeCatalog.replacePhysical( physical );
+
+            return List.of( physical );
         }
 
 

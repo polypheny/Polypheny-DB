@@ -91,6 +91,7 @@ class AlgDataTypeHolder {
 
         // This field does not exist in our field list; add it
         AlgDataTypeField newField = new AlgDataTypeFieldImpl(
+                -1L,
                 fieldName,
                 fields.size(),
                 typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), true ) );

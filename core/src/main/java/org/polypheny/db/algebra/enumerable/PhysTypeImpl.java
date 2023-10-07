@@ -83,7 +83,7 @@ public class PhysTypeImpl implements PhysType {
         if ( false && optimize ) { // we always want arrays
             format = format.optimize( rowType );
         }
-        final Type javaRowClass = JavaRowFormat.ARRAY.javaRowClass( typeFactory, rowType );//format.javaRowClass( typeFactory, rowType );
+        final Type javaRowClass = format.javaRowClass( typeFactory, rowType );
         return new PhysTypeImpl( typeFactory, rowType, javaRowClass, format );
     }
 
@@ -93,7 +93,7 @@ public class PhysTypeImpl implements PhysType {
         if ( javaRowClass instanceof Types.RecordType ) {
             final Types.RecordType recordType = (Types.RecordType) javaRowClass;
             for ( Types.RecordField field : recordType.getRecordFields() ) {
-                builder.add( field.getName(), null, typeFactory.createType( field.getType() ) );
+                builder.add( null, field.getName(), null, typeFactory.createType( field.getType() ) );
             }
         }
         AlgDataType rowType = builder.build();
@@ -123,7 +123,7 @@ public class PhysTypeImpl implements PhysType {
         if ( indicator ) {
             final AlgDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
-                builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
+                builder.add( null, "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }
         }
         AlgDataType projectedRowType = builder.build();
@@ -456,7 +456,7 @@ public class PhysTypeImpl implements PhysType {
             return type;
         }
         return typeFactory.builder()
-                .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
+                .add( null, CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
                 .build();
     }
 

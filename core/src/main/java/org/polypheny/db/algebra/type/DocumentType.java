@@ -59,25 +59,25 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     public DocumentType( List<? extends RexNode> ids, List<String> names ) {
-        this( Streams.mapWithIndex( Pair.zip( ids, names ).stream(), ( p, i ) -> new AlgDataTypeFieldImpl( p.getRight(), (int) i, p.getLeft().getType() ) ).collect( Collectors.toList() ) );
+        this( Streams.mapWithIndex( Pair.zip( ids, names ).stream(), ( p, i ) -> new AlgDataTypeFieldImpl( -1L, p.getRight(), (int) i, p.getLeft().getType() ) ).collect( Collectors.toList() ) );
     }
 
 
     public static DocumentType ofId() {
-        return new DocumentType( List.of( new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, new DocumentType( List.of() ) ) ) );
+        return new DocumentType( List.of( new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, new DocumentType( List.of() ) ) ) );
     }
 
 
     public static AlgDataType asRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
-                new AlgDataTypeFieldImpl( DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) )
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) ),
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_DATA, 1, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ) )
         ) );
     }
 
 
     public static AlgDataType ofDoc() {
-        return new DocumentType( List.of( new AlgDataTypeFieldImpl( "d", 0, DocumentType.ofId() ) ) );
+        return new DocumentType( List.of( new AlgDataTypeFieldImpl( -1L, "d", 0, DocumentType.ofId() ) ) );
     }
 
 
@@ -107,6 +107,12 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     @Override
+    public List<Long> getFieldIds() {
+        return fixedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+    }
+
+
+    @Override
     public int getFieldCount() {
         return getFieldList().size();
     }
@@ -119,7 +125,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
         if ( index >= 0 ) {
             return getFieldList().get( index );
         }
-        AlgDataTypeFieldImpl added = new AlgDataTypeFieldImpl( fieldName, getFieldCount(), new DocumentType() );
+        AlgDataTypeFieldImpl added = new AlgDataTypeFieldImpl( -1L, fieldName, getFieldCount(), new DocumentType() );
         fixedFields.add( added );
         computeDigest();
 

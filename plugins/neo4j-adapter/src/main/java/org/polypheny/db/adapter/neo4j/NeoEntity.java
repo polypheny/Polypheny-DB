@@ -73,7 +73,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
-        super( physical.id, physical.allocationId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
         this.rowType = physical.getRowType();
         this.fields = fields;
         this.namespace = namespace;
@@ -150,7 +150,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalGraph( id, allocationId, name, adapterId );
+        return new PhysicalGraph( id, allocationId, logicalId, name, adapterId );
     }
 
 

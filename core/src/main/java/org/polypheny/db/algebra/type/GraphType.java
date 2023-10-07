@@ -46,7 +46,7 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
 
     public static GraphType of() {
-        return new GraphType( List.of( new AlgDataTypeFieldImpl( GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.CHAR, 255 ) ) ) );
+        return new GraphType( List.of( new AlgDataTypeFieldImpl( -1L, GRAPH_ID, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.CHAR, 255 ) ) ) );
     }
 
 
@@ -72,6 +72,12 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
     @Override
     public List<String> getFieldNames() {
         return getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<Long> getFieldIds() {
+        return fixedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
     }
 
 

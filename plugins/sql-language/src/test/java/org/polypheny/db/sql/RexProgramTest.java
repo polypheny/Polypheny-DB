@@ -332,7 +332,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         typeFactory.createPolyType( PolyType.INTEGER ),
                         typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
-        AlgDataType inputRowType = typeFactory.createStructType( types, names );
+        AlgDataType inputRowType = typeFactory.createStructType( , types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
         // $t0 = x
         // $t1 = y
@@ -668,14 +668,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, booleanType )
-                .add( "b", null, booleanType )
-                .add( "c", null, booleanType )
-                .add( "d", null, booleanType )
-                .add( "e", null, booleanType )
-                .add( "f", null, booleanType )
-                .add( "g", null, booleanType )
-                .add( "h", null, intType )
+                .add( null, "a", null, booleanType )
+                .add( null, "b", null, booleanType )
+                .add( null, "c", null, booleanType )
+                .add( null, "d", null, booleanType )
+                .add( null, "e", null, booleanType )
+                .add( null, "f", null, booleanType )
+                .add( null, "g", null, booleanType )
+                .add( null, "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -731,11 +731,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testCnf2() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "x", null, intType )
-                .add( "y", null, intType )
-                .add( "z", null, intType )
-                .add( "a", null, intType )
-                .add( "b", null, intType )
+                .add( null, "x", null, intType )
+                .add( null, "y", null, intType )
+                .add( null, "z", null, intType )
+                .add( null, "a", null, intType )
+                .add( null, "b", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -801,8 +801,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testThresholdCnf() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "x", null, intType )
-                .add( "y", null, intType )
+                .add( null, "x", null, intType )
+                .add( null, "y", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -852,8 +852,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < n; i++ ) {
-            builder.add( "x" + i, null, booleanType )
-                    .add( "y" + i, null, booleanType );
+            builder.add( null, "x" + i, null, booleanType )
+                    .add( null, "y" + i, null, booleanType );
         }
         final AlgDataType rowType3 = builder.build();
         final RexDynamicParam range3 = rexBuilder.makeDynamicParam( rowType3, 0 );
@@ -880,14 +880,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, booleanType )
-                .add( "b", null, booleanType )
-                .add( "c", null, booleanType )
-                .add( "d", null, booleanType )
-                .add( "e", null, booleanType )
-                .add( "f", null, booleanType )
-                .add( "g", null, booleanType )
-                .add( "h", null, intType )
+                .add( null, "a", null, booleanType )
+                .add( null, "b", null, booleanType )
+                .add( null, "c", null, booleanType )
+                .add( null, "d", null, booleanType )
+                .add( null, "e", null, booleanType )
+                .add( null, "f", null, booleanType )
+                .add( null, "g", null, booleanType )
+                .add( null, "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -937,17 +937,17 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType intNullableType = typeFactory.createTypeWithNullability( intType, true );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, booleanType )
-                .add( "b", null, booleanType )
-                .add( "c", null, booleanType )
-                .add( "d", null, booleanType )
-                .add( "e", null, booleanType )
-                .add( "f", null, booleanType )
-                .add( "g", null, booleanType )
-                .add( "h", null, intType )
-                .add( "i", null, intNullableType )
-                .add( "j", null, intType )
-                .add( "k", null, intType )
+                .add( null, "a", null, booleanType )
+                .add( null, "b", null, booleanType )
+                .add( null, "c", null, booleanType )
+                .add( null, "d", null, booleanType )
+                .add( null, "e", null, booleanType )
+                .add( null, "f", null, booleanType )
+                .add( null, "g", null, booleanType )
+                .add( null, "h", null, intType )
+                .add( null, "i", null, intNullableType )
+                .add( null, "j", null, intType )
+                .add( null, "k", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1170,14 +1170,14 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final AlgDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, intType )
-                .add( "b", null, intType )
-                .add( "c", null, booleanType )
-                .add( "d", null, booleanType )
-                .add( "e", null, booleanType )
-                .add( "f", null, booleanType )
-                .add( "g", null, booleanType )
-                .add( "h", null, intType )
+                .add( null, "a", null, intType )
+                .add( null, "b", null, intType )
+                .add( null, "c", null, booleanType )
+                .add( null, "d", null, booleanType )
+                .add( null, "e", null, booleanType )
+                .add( null, "f", null, booleanType )
+                .add( null, "g", null, booleanType )
+                .add( null, "h", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1345,8 +1345,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyAndPush() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, intType )
-                .add( "b", null, intType )
+                .add( null, "a", null, intType )
+                .add( null, "b", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1406,9 +1406,9 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyOrTerms() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, intType ).nullable( false )
-                .add( "b", null, intType ).nullable( true )
-                .add( "c", null, intType ).nullable( true )
+                .add( null, "a", null, intType ).nullable( false )
+                .add( null, "b", null, intType ).nullable( true )
+                .add( null, "c", null, intType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1499,7 +1499,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyUnknown() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, intType ).nullable( true )
+                .add( null, "a", null, intType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -1543,7 +1543,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyAnd3() {
         final AlgDataType boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, boolType ).nullable( true )
+                .add( null, "a", null, boolType ).nullable( true )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );
@@ -2058,11 +2058,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testConstantMap() {
         final AlgDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final AlgDataType rowType = typeFactory.builder()
-                .add( "a", null, intType )
-                .add( "b", null, intType )
-                .add( "c", null, intType )
-                .add( "d", null, intType )
-                .add( "e", null, intType )
+                .add( null, "a", null, intType )
+                .add( null, "b", null, intType )
+                .add( null, "c", null, intType )
+                .add( null, "d", null, intType )
+                .add( null, "e", null, intType )
                 .build();
 
         final RexDynamicParam range = rexBuilder.makeDynamicParam( rowType, 0 );

@@ -48,7 +48,7 @@ public class PolyInteger extends PolyNumber {
     public Integer value;
 
 
-    public PolyInteger( @JsonProperty @Deserialize("value") Integer value ) {
+    public PolyInteger( @JsonProperty("value") @Deserialize("value") Integer value ) {
         super( PolyType.INTEGER );
         this.value = value;
     }

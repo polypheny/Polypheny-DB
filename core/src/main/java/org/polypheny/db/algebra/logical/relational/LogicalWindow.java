@@ -50,6 +50,8 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Window;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -65,7 +67,6 @@ import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -184,7 +185,7 @@ public final class LogicalWindow extends Window {
         // Figure out the type of the inputs to the output program.
         // They are: the inputs to this alg, followed by the outputs of each window.
         final List<Window.RexWinAggCall> flattenedAggCallList = new ArrayList<>();
-        final List<Map.Entry<String, AlgDataType>> fieldList = new ArrayList<>( child.getRowType().getFieldList() );
+        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getRowType().getFieldList() );
         final int offset = fieldList.size();
 
         // Use better field names for agg calls that are projected.
@@ -195,7 +196,7 @@ public final class LogicalWindow extends Window {
                 fieldNames.put( index - offset, outRowType.getFieldNames().get( ref.i ) );
             }
         }
-
+        int j = 0;
         for ( Ord<Group> window : Ord.zip( groups ) ) {
             for ( Ord<RexWinAggCall> over : Ord.zip( window.e.aggCalls ) ) {
                 // Add the k-th over expression of the i-th window to the output of the program.
@@ -203,7 +204,7 @@ public final class LogicalWindow extends Window {
                 if ( name == null || name.startsWith( "$" ) ) {
                     name = "w" + window.i + "$o" + over.i;
                 }
-                fieldList.add( Pair.of( name, over.e.getType() ) );
+                fieldList.add( new AlgDataTypeFieldImpl( -1L, name, j++, over.e.getType() ) );
                 flattenedAggCallList.add( over.e );
             }
         }

@@ -145,13 +145,12 @@ public class RelToSqlConverterStructsTest {
             final AlgDataType cType = typeFactory.createPolyType( PolyType.BIGINT );
             final AlgDataType dType = typeFactory.createPolyType( PolyType.BIGINT );
             final AlgDataType eType = typeFactory.createPolyType( PolyType.BIGINT );
-            final AlgDataType n11Type = typeFactory.createStructType( ImmutableList.of( bType ), ImmutableList.of( "b" ) );
-            final AlgDataType n12Type = typeFactory.createStructType( ImmutableList.of( cType ), ImmutableList.of( "c" ) );
-            final AlgDataType n1Type = typeFactory.createStructType( ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );
-            final AlgDataType n2Type = typeFactory.createStructType( ImmutableList.of( dType ), ImmutableList.of( "d" ) );
-            return typeFactory.createStructType(
-                    ImmutableList.of( aType, n1Type, n2Type, eType ),
-                    ImmutableList.of( "a", "n1", "n2", "e" ) );
+            final AlgDataType n11Type = typeFactory.createStructType( , ImmutableList.of( bType ), ImmutableList.of( "b" ) );
+            final AlgDataType n12Type = typeFactory.createStructType( , ImmutableList.of( cType ), ImmutableList.of( "c" ) );
+            final AlgDataType n1Type = typeFactory.createStructType( , ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );
+            final AlgDataType n2Type = typeFactory.createStructType( , ImmutableList.of( dType ), ImmutableList.of( "d" ) );
+            return typeFactory.createStructType( ,
+                    ImmutableList.of( aType, n1Type, n2Type, eType ), ImmutableList.of( "a", "n1", "n2", "e" ) );
         }
 
 

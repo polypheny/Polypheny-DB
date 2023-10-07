@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -171,38 +170,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void updateSnapshot() {
-        // reset physical catalogs
-
-        // update all except physicals, so information can be accessed
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
 
-        Map<Long, AdapterRestore> adapterRestore = adapters.values().stream().collect( Collectors.toMap( a -> a.id, a -> new AdapterRestore( a.id ) ) );
-        // generate new physical entities, atm only relational
-        for ( AllocationCatalog catalog : this.allocationCatalogs.values() ) {
-            if ( catalog.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
-                catalog.unwrap( AllocationRelationalCatalog.class ).getTables().forEach( ( id, table ) -> {
-                    addNamespaceIfNecessary( table );
-                    adapterRestore.get( table.adapterId ).addPhysicals( table, AdapterManager.getInstance().getAdapter( table.adapterId ).refreshTable( table.id ) );
-                } );
-            } else if ( catalog.getNamespace().namespaceType == NamespaceType.DOCUMENT ) {
-                catalog.unwrap( AllocationDocumentCatalog.class ).getCollections().forEach( ( id, collection ) -> {
-                    addNamespaceIfNecessary( collection );
-                    adapterRestore.get( collection.adapterId ).addPhysicals( collection, AdapterManager.getInstance().getAdapter( collection.adapterId ).refreshCollection( collection.id ) );
-                } );
-            } else if ( catalog.getNamespace().namespaceType == NamespaceType.GRAPH ) {
-                catalog.unwrap( AllocationGraphCatalog.class ).getGraphs().forEach( ( id, graph ) -> {
-                    addNamespaceIfNecessary( graph );
-                    adapterRestore.get( graph.adapterId ).addPhysicals( graph, AdapterManager.getInstance().getAdapter( graph.adapterId ).refreshGraph( graph.id ) );
-                } );
-            }
-        }
-
-        synchronized ( this ) {
-            this.adapterRestore.clear();
-            this.adapterRestore.putAll( adapterRestore );
-            // update with newly generated physical entities
-            this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
-        }
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
     }
 

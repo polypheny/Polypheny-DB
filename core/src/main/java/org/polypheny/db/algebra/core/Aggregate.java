@@ -347,7 +347,7 @@ public abstract class Aggregate extends SingleAlg {
                     name = base + "_" + i++;
                 }
                 containedNames.add( name );
-                builder.add( name, null, booleanType );
+                builder.add( null, name, null, booleanType );
             }
         }
         for ( Ord<AggregateCall> aggCall : Ord.zip( aggCalls ) ) {
@@ -363,7 +363,7 @@ public abstract class Aggregate extends SingleAlg {
                 name = base + "_" + i++;
             }
             containedNames.add( name );
-            builder.add( name, null, aggCall.e.type );
+            builder.add( null, name, null, aggCall.e.type );
         }
         return builder.build();
     }

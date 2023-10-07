@@ -124,7 +124,7 @@ public class CypherExpression extends CypherNode {
         if ( namedNode.right.isA( Kind.LITERAL ) ) {
             ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( (RexLiteral) namedNode.right ) );
 
-            AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( name, 0, namedNode.right.getType() ) ) );
+            AlgRecordType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, name, 0, namedNode.right.getType() ) ) );
             LogicalLpgValues node = LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values );
 
             context.add( node );

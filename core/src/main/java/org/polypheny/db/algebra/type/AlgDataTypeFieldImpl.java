@@ -35,31 +35,35 @@ package org.polypheny.db.algebra.type;
 
 
 import java.io.Serializable;
+import lombok.Value;
 import org.polypheny.db.type.PolyType;
 
 
 /**
  * Default implementation of {@link AlgDataTypeField}.
  */
+@Value
 public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
 
-    private final AlgDataType type;
-    private final String name;
-    private final String physicalName;
-    private final int index;
+    AlgDataType type;
+    String name;
+    String physicalName;
+    int index;
+    Long id;
 
 
     /**
      * Creates a RelDataTypeFieldImpl.
      */
-    public AlgDataTypeFieldImpl( String name, int index, AlgDataType type ) {
-        this( name, null, index, type );
+    public AlgDataTypeFieldImpl( Long id, String name, int index, AlgDataType type ) {
+        this( id, name, null, index, type );
     }
 
 
-    public AlgDataTypeFieldImpl( String name, String physicalName, int index, AlgDataType type ) {
+    public AlgDataTypeFieldImpl( Long id, String name, String physicalName, int index, AlgDataType type ) {
         assert name != null;
         assert type != null;
+        this.id = id;
         this.name = name;
         this.index = index;
         this.type = type;

@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -90,6 +91,10 @@ public class HttpServer implements Runnable {
                 {
                     setSerializationInclusion( JsonInclude.Include.NON_NULL );
                     configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                    setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                            .withIsGetterVisibility( Visibility.NONE )
+                            .withGetterVisibility( Visibility.NONE )
+                            .withSetterVisibility( Visibility.NONE ) );
                     configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
                     writerWithDefaultPrettyPrinter();
                 }

@@ -309,7 +309,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
             commitAll();
             String name = getPhysicalTableName( allocation.id, adapterId );
 
@@ -318,7 +318,7 @@ public class MongoPlugin extends PolyPlugin {
                 storeCatalog.addNamespace( allocation.namespaceId, currentNamespace );
             }
 
-            PhysicalCollection physical = storeCatalog.createCollection(
+            PhysicalCollection table = storeCatalog.createCollection(
                     logical.getNamespaceName(),
                     name,
                     logical,
@@ -326,16 +326,10 @@ public class MongoPlugin extends PolyPlugin {
 
             this.currentNamespace.database.createCollection( name );
 
-            this.storeCatalog.addPhysical( allocation, this.currentNamespace.createEntity( physical, List.of() ) );
+            MongoEntity physical = this.currentNamespace.createEntity( table, List.of() );
 
-        }
+            this.storeCatalog.addPhysical( allocation, physical );
 
-
-        @Override
-        public List<PhysicalEntity> refreshCollection( long allocId ) {
-            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
-            List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
-            storeCatalog.replacePhysical( this.currentNamespace.createEntity( physical, fields ) );
             return List.of( physical );
         }
 
@@ -606,7 +600,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
             commitAll();
 
             if ( this.currentNamespace == null ) {
@@ -624,10 +618,10 @@ public class MongoPlugin extends PolyPlugin {
                     allocation );
 
             this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns ) );
+            return refreshTable( allocation.table.id );
         }
 
 
-        @Override
         public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );

@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.ethereum;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -28,13 +27,11 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.ethereum.EthereumPlugin.EthereumDataSource;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.types.FilterableEntity;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 public class EthereumTable extends PhysicalTable implements FilterableEntity {
 
@@ -56,6 +53,7 @@ public class EthereumTable extends PhysicalTable implements FilterableEntity {
             EthereumDataSource ethereumDataSource ) {
         super( table.id,
                 table.allocationId,
+                table.logicalId,
                 table.name,
                 table.columns,
                 table.namespaceId,
@@ -72,13 +70,7 @@ public class EthereumTable extends PhysicalTable implements FilterableEntity {
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        final List<AlgDataType> types = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
-        for ( AlgDataTypeField field : this.protoRowType.apply( typeFactory ).getFieldList() ) {
-            types.add( field.getType() );
-            names.add( field.getName() );
-        }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFieldList() );
     }
 
 

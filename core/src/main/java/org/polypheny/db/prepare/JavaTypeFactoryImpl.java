@@ -108,7 +108,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             if ( !Modifier.isStatic( field.getModifiers() ) ) {
                 // FIXME: watch out for recursion
                 final Type fieldType = fieldType( field );
-                list.add( new AlgDataTypeFieldImpl( field.getName(), list.size(), createType( fieldType ) ) );
+                list.add( new AlgDataTypeFieldImpl( -1L, field.getName(), list.size(), createType( fieldType ) ) );
             }
         }
         return canonize( new JavaRecordType( list, type ) );
@@ -394,6 +394,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type instanceof AlgRecordType ) {
             return typeFactory.createStructType(
+                    type.getFieldList().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
                     type.getFieldList().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
                     type.getFieldNames() );
         }

@@ -191,7 +191,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         if ( query != null ) {
-            throw new RuntimeException( "Not yet supported" );
+            throw new GenericRuntimeException( "Not yet supported" );
         }
 
         String tableName;

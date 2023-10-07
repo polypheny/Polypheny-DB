@@ -119,7 +119,7 @@ public class PolyTypeUtilTest {
     private AlgDataType struct( AlgDataType... algDataTypes ) {
         final Builder builder = f.typeFactory.builder();
         for ( int i = 0; i < algDataTypes.length; i++ ) {
-            builder.add( "field" + i, null, algDataTypes[i] );
+            builder.add( null, "field" + i, null, algDataTypes[i] );
         }
         return builder.build();
     }

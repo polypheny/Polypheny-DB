@@ -106,7 +106,6 @@ public class PolyNull extends PolyValue {
         return PolyDocument.ofDocument( null );
     }
 
-
     @Override
     public boolean isList() {
         return true;

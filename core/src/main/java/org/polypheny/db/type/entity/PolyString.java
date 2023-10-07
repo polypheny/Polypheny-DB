@@ -51,7 +51,7 @@ public class PolyString extends PolyValue {
     public Charset charset;
 
 
-    public PolyString( @JsonProperty @Deserialize("value") String value ) {
+    public PolyString( @JsonProperty("value") @Deserialize("value") String value ) {
         this( value, Charsets.UTF_16 );
     }
 

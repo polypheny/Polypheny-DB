@@ -62,6 +62,7 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
             final List<Long> pkIds ) {
         super( physical.id,
                 physical.allocationId,
+                physical.logicalId,
                 physical.name,
                 physical.columns,
                 physical.namespaceId,

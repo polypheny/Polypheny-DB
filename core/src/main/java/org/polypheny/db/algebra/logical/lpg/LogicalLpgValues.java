@@ -96,12 +96,12 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
         int i = 0;
         for ( PolyString name : Pair.left( nodes ).stream().filter( Objects::nonNull ).collect( Collectors.toList() ) ) {
-            fields.add( new AlgDataTypeFieldImpl( name.value, i, nodeType ) );
+            fields.add( new AlgDataTypeFieldImpl( -1L, name.value, i, nodeType ) );
             i++;
         }
 
         for ( PolyString name : Pair.left( edges ).stream().filter( s -> s.value != null ).collect( Collectors.toList() ) ) {
-            fields.add( new AlgDataTypeFieldImpl( name.value, i, edgeType ) );
+            fields.add( new AlgDataTypeFieldImpl( -1L, name.value, i, edgeType ) );
             i++;
         }
 

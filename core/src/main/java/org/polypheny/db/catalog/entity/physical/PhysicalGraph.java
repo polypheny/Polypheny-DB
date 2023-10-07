@@ -34,9 +34,10 @@ public class PhysicalGraph extends PhysicalEntity {
     public PhysicalGraph(
             @Deserialize("id") long id,
             @Deserialize("allocationId") long allocationId,
+            @Deserialize("logicalId") long logicalId,
             @Deserialize("name") String name,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, name, id, name, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+        super( id, allocationId, logicalId, name, id, name, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 
@@ -54,7 +55,7 @@ public class PhysicalGraph extends PhysicalEntity {
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalGraph( id, allocationId, name, adapterId );
+        return new PhysicalGraph( id, allocationId, logicalId, name, adapterId );
     }
 
 }

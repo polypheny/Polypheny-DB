@@ -221,7 +221,7 @@ public class AlgJson {
             @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonList = (List<Map<String, Object>>) o;
             final AlgDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map<String, Object> jsonMap : jsonList ) {
-                builder.add( (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
+                builder.add( null, (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
             }
             return builder.build();
         } else {

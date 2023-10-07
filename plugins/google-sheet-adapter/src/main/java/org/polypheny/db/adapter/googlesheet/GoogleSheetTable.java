@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.googlesheet;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -29,14 +28,12 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -64,6 +61,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
             List<GoogleSheetFieldType> fieldTypes ) {
         super( table.id,
                 table.allocationId,
+                table.logicalId,
                 table.name,
                 table.columns,
                 table.namespaceId,
@@ -86,13 +84,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        final List<AlgDataType> types = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
-        for ( AlgDataTypeField field : this.protoRowType.apply( typeFactory ).getFieldList() ) {
-            types.add( field.getType() );
-            names.add( field.getName() );
-        }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFieldList() );
     }
 
 

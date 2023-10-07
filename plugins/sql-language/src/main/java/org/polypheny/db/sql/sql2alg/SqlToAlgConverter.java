@@ -413,8 +413,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList(); // TODO DL readd final
         final AlgDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
-                        Pair.right( validatedFields ),
-                        ValidatorUtil.uniquify(
+                        validatedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                        Pair.right( validatedFields ), ValidatorUtil.uniquify(
                                 Pair.left( validatedFields ),
                                 false ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
@@ -3784,9 +3784,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 final int rexRangeRefLength = leftKeyCount + rightFieldLength;
                 AlgDataType returnType =
                         typeFactory.createStructType(
-                                new AbstractList<Map.Entry<String, AlgDataType>>() {
+                                new AbstractList<>() {
                                     @Override
-                                    public Map.Entry<String, AlgDataType> get( int index ) {
+                                    public AlgDataTypeField get( int index ) {
                                         return join.getRowType()
                                                 .getFieldList()
                                                 .get( origLeftInputCount + index );

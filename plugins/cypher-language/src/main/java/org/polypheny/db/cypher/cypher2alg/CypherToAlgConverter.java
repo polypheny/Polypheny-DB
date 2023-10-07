@@ -657,7 +657,7 @@ public class CypherToAlgConverter {
                 List<AlgDataTypeField> fields = new ArrayList<>();
                 int i = 0;
                 for ( Pair<PolyString, RexNode> nameAndValue : nameAndValues ) {
-                    fields.add( new AlgDataTypeFieldImpl( nameAndValue.left.value, i, nameAndValue.right.getType() ) );
+                    fields.add( new AlgDataTypeFieldImpl( -1L, nameAndValue.left.value, i, nameAndValue.right.getType() ) );
                     i++;
                 }
 

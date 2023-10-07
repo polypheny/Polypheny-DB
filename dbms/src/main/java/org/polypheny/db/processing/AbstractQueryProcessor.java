@@ -403,7 +403,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
             AlgRoot routedRoot = routingPlan.getRoutedRoot();
             AlgRoot parameterizedRoot;
-            if ( statement.getDataContext().getParameterValues().size() == 0
+            if ( statement.getDataContext().getParameterValues().isEmpty()
                     && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
                 Pair<AlgRoot, AlgDataType> parameterized = parameterize( routedRoot, parameterRowType );
                 parameterizedRoot = parameterized.left;
@@ -919,7 +919,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         return super.visit( project );
                     }
                     // TODO: Avoid copying stuff around
-                    final AlgDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
+                    final AlgDataType compositeType = builder.getTypeFactory().createStructType( null, ctypes, columns );
                     final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
                     final LogicalProject rProject = new LogicalProject(
                             replacement.getCluster(),
@@ -976,19 +976,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             for ( Router router : RoutingManager.getInstance().getRouters() ) {
-                try{
+                try {
                     List<RoutedAlgBuilder> builders = router.route( logicalRoot, statement, queryInformation );
                     List<ProposedRoutingPlan> plans = builders.stream()
                             .map( builder -> new ProposedRoutingPlanImpl( builder, logicalRoot, queryInformation.getQueryHash(), router.getClass() ) )
                             .collect( Collectors.toList() );
                     proposedPlans.addAll( plans );
-                } catch ( Throwable e ){
+                } catch ( Throwable e ) {
                     log.warn( String.format( "Router: %s was not able to route the query.", router.getClass().getSimpleName() ) ); // this should not be necessary but some of the routers fail loudly, which makes this necessary todo dl
                 }
-                
+
             }
-            
-            if ( proposedPlans.isEmpty() ){
+
+            if ( proposedPlans.isEmpty() ) {
                 throw new GenericRuntimeException( "No router was able to route the query successfully." );
             }
 
@@ -1110,6 +1110,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // parameterRowType
         AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
+                types.stream().map( t -> 1L ).collect( Collectors.toList() ),
                 types,
                 new AbstractList<>() {
                     @Override

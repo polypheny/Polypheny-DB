@@ -51,7 +51,7 @@ public class PolyBoolean extends PolyValue {
     public Boolean value;
 
 
-    public PolyBoolean( @JsonProperty @Deserialize("value") Boolean value ) {
+    public PolyBoolean( @JsonProperty("value") @Deserialize("value") Boolean value ) {
         super( PolyType.BOOLEAN );
         this.value = value;
     }

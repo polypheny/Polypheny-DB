@@ -135,26 +135,20 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            storeCatalog.createTable(
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+            PhysicalTable table = storeCatalog.createTable(
                     logical.table.getNamespaceName(),
                     logical.table.name,
                     logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                     logical.table,
                     logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                     allocation );
-        }
 
+            EthereumTable physical = currentNamespace.createBlockchainTable( table, this );
 
-        @Override
-        public List<PhysicalEntity> refreshTable( long allocId ) {
-            PhysicalTable table = storeCatalog.getTable( allocId );
-            if ( table == null ) {
-                log.warn( "todo" );
-                throw new GenericRuntimeException( "Could not find physical" );
-            }
-            storeCatalog.replacePhysical( currentNamespace.createBlockchainTable( table, this ) );
-            return List.of( table );
+            storeCatalog.replacePhysical( physical );
+
+            return List.of( physical );
         }
 
 

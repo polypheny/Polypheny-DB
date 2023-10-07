@@ -213,7 +213,7 @@ public class JoinProjectTransposeRule extends AlgOptRule {
         for ( int i = 0; i < nProjExprs; i++ ) {
             projTypes.add( projects.get( i ).left.getType() );
         }
-        AlgDataType projRowType = rexBuilder.getTypeFactory().createStructType( projTypes, Pair.right( projects ) );
+        AlgDataType projRowType = rexBuilder.getTypeFactory().createStructType( null, projTypes, Pair.right( projects ) );
 
         // create the RexPrograms and merge them
         RexProgram bottomProgram =

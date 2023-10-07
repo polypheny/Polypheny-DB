@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -141,7 +142,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
 
     @Override
-    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
         String namespaceName = getDefaultPhysicalSchemaName();
         String tableName = getPhysicalTableName( allocation.id, 0 );
@@ -160,6 +161,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
                 allocationWrapper );
 
         executeCreateTable( context, table );
+
+        JdbcTable physical = this.currentJdbcSchema.createJdbcTable( storeCatalog, table );
+        storeCatalog.replacePhysical( physical );
+        return List.of( physical );
     }
 
 
@@ -172,14 +177,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} on store {}", query.toString(), this.getUniqueName() );
         }
         executeUpdate( query, context );
-    }
-
-
-    @Override
-    public List<PhysicalEntity> refreshTable( long allocId ) {
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
-        storeCatalog.addPhysical( storeCatalog.getAlloc( allocId ), this.currentJdbcSchema.createJdbcTable( storeCatalog, physical ) );
-        return List.of( physical );
     }
 
 

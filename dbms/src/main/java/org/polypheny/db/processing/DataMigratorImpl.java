@@ -238,11 +238,11 @@ public class DataMigratorImpl implements DataMigrator {
         List<AlgDataTypeField> fields = new ArrayList<>();
         int index = 0;
         if ( !graph.getNodes().isEmpty() ) {
-            fields.add( new AlgDataTypeFieldImpl( "n", index, builder.getTypeFactory().createPolyType( PolyType.NODE ) ) );
+            fields.add( new AlgDataTypeFieldImpl( 1L, "n", index, builder.getTypeFactory().createPolyType( PolyType.NODE ) ) );
             index++;
         }
         if ( !graph.getEdges().isEmpty() ) {
-            fields.add( new AlgDataTypeFieldImpl( "e", index, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
+            fields.add( new AlgDataTypeFieldImpl( 1L, "e", index, builder.getTypeFactory().createPolyType( PolyType.EDGE ) ) );
         }
 
         return new LogicalLpgValues( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), graph.getNodes().values(), graph.getEdges().values(), ImmutableList.of(), new AlgRecordType( fields ) );

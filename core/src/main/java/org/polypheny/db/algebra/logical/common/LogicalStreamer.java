@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -95,7 +96,7 @@ public class LogicalStreamer extends Streamer {
 
     private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
-            throw new RuntimeException( "Error while creating Streamer." );
+            throw new GenericRuntimeException( "Error while creating Streamer." );
         }
 
         // add all previous variables e.g. _id, _data(previous), _data(updated)
@@ -157,8 +158,7 @@ public class LogicalStreamer extends Streamer {
                 .map( name -> {
                     int size = modify.getRowType().getFieldList().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam(
-                            modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
+                    return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
                 } ).collect( Collectors.toList() );
     }
 

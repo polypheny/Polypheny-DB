@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
@@ -51,7 +52,8 @@ public class PolyBigDecimal extends PolyNumber {
     public BigDecimal value;
 
 
-    public PolyBigDecimal( @JsonProperty @Deserialize("value") BigDecimal value ) {
+    @JsonCreator
+    public PolyBigDecimal( @JsonProperty("value") @Deserialize("value") BigDecimal value ) {
         super( PolyType.DECIMAL );
         this.value = value;
     }

@@ -143,7 +143,7 @@ public class DocStoreCatalog extends StoreCatalog {
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
         return table;
@@ -152,7 +152,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
     public PhysicalCollection createCollection( String namespaceName, String name, LogicalCollection logical, AllocationCollection allocation ) {
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalCollection collection = new PhysicalCollection( physicalId, allocation.id, logical.namespaceId, name, namespaceName, adapterId );
+        PhysicalCollection collection = new PhysicalCollection( physicalId, allocation.id, logical.id, logical.namespaceId, name, namespaceName, adapterId );
         addPhysical( allocation, collection );
         return collection;
     }

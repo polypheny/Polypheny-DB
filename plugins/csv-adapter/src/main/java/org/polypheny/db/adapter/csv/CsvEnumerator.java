@@ -60,7 +60,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
 
@@ -145,6 +144,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
@@ -177,6 +177,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 }
                 names.add( name );
                 types.add( type );
+                ids.add( null );
                 if ( fieldTypes != null ) {
                     fieldTypes.add( fieldType );
                 }
@@ -188,7 +189,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 

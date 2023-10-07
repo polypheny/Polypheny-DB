@@ -82,7 +82,7 @@ public class AliasNamespace extends AbstractNamespace {
         for ( AlgDataTypeField field : rowType.getFieldList() ) {
             typeList.add( field.getType() );
         }
-        return validator.getTypeFactory().createStructType( typeList, nameList );
+        return validator.getTypeFactory().createStructType( null, typeList, nameList );
     }
 
 

@@ -82,7 +82,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
     }
 
 
-    public PhysicalTable createCsvTable( long id, PhysicalTable table, CsvSource csvSource ) {
+    public CsvTable createCsvTable( long id, PhysicalTable table, CsvSource csvSource ) {
         final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -92,7 +92,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
         for ( PhysicalColumn column : table.getColumns() ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.name, columns.get( column.position - 1 ).physicalColumnName, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, columns.get( column.position - 1 ).physicalColumnName, sqlType ).nullable( column.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );
             fieldIds.add( column.position );
         }

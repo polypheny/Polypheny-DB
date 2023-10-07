@@ -67,11 +67,9 @@ public class Persister {
 
 
     public synchronized String read() {
-        //String data;
         StringBuilder data = new StringBuilder();
         try {
             BufferedReader reader = new BufferedReader( new FileReader( backup, Charsets.ISO_8859_1 ) );
-
             int c;
             while ( ((c = reader.read()) != -1) ) {
                 data.append( (char) c );

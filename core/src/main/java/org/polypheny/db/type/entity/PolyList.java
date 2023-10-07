@@ -16,9 +16,11 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Delegate;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +45,7 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
+@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "copyOf")
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
@@ -49,10 +53,10 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     @Delegate
     @JsonProperty
-    @JsonSerialize
     public List<E> value;
 
 
+    @JsonCreator
     public PolyList( @JsonProperty @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
         this.value = new ArrayList<>( value );
@@ -62,6 +66,18 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @SafeVarargs
     public PolyList( E... value ) {
         this( Arrays.asList( value ) );
+    }
+
+
+    @Override
+    public @Nullable String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writerFor( new TypeReference<PolyList>() {
+            } ).writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return null;
+        }
     }
 
 

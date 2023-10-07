@@ -40,6 +40,7 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
@@ -56,6 +57,7 @@ import org.polypheny.db.util.Util;
 public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily {
 
     protected final List<AlgDataTypeField> fieldList;
+    private final List<Long> ids;
     protected String digest;
 
 
@@ -68,8 +70,10 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
         if ( fieldList != null ) {
             // Create a defensive copy of the list.
             this.fieldList = ImmutableList.copyOf( fieldList );
+            this.ids = fieldList.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
         } else {
             this.fieldList = null;
+            this.ids = null;
         }
     }
 
@@ -108,10 +112,10 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
             }
         }
         // Extra field
-        if ( fieldList.size() > 0 ) {
+        if ( !fieldList.isEmpty() ) {
             final AlgDataTypeField lastField = Iterables.getLast( fieldList );
             if ( lastField.getName().equals( "_extra" ) ) {
-                return new AlgDataTypeFieldImpl( fieldName, -1, lastField.getType() );
+                return new AlgDataTypeFieldImpl( lastField.getId(), fieldName, -1, lastField.getType() );
             }
         }
 
@@ -159,6 +163,12 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     @Override
     public List<String> getFieldNames() {
         return Pair.left( fieldList );
+    }
+
+
+    @Override
+    public List<Long> getFieldIds() {
+        return ids;
     }
 
 

@@ -413,7 +413,7 @@ public class TraitPropagationTest {
                 AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
                 final AlgDataType stringType = typeFactory.createJavaType( String.class );
                 final AlgDataType integerType = typeFactory.createJavaType( Integer.class );
-                this.rowType = typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build();
+                this.rowType = typeFactory.builder().add( null, "s", null, stringType ).add( null, "i", null, integerType ).build();
             }
 
 

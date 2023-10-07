@@ -67,6 +67,8 @@ public interface AlgDataTypeField extends Map.Entry<String, AlgDataType> {
      */
     int getIndex();
 
+    Long getId();
+
     /**
      * Gets the type of this field.
      *

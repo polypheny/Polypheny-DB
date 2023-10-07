@@ -41,8 +41,6 @@ public abstract class PhysicalField extends CatalogEntity {
     @Serialize
     public long entityId;
 
-    @Serialize
-    public String logicalName;
 
     @Serialize
     public long allocId;
@@ -51,14 +49,12 @@ public abstract class PhysicalField extends CatalogEntity {
     public PhysicalField(
             final long id,
             final String name,
-            final String logicalName,
             final long allocId,
             final long entityId,
             final long adapterId,
             final NamespaceType namespaceType,
             final boolean modifiable ) {
         super( id, name, allocId, EntityType.ENTITY, namespaceType, modifiable );
-        this.logicalName = logicalName;
         this.entityId = entityId;
         this.allocId = allocId;
         this.adapterId = adapterId;

@@ -937,7 +937,7 @@ public class RexUtil {
             if ( names == null || (name = names.get( i )) == null ) {
                 name = "$f" + i;
             }
-            builder.add( name, null, exprs.get( i ).getType() );
+            builder.add( null, name, null, exprs.get( i ).getType() );
         }
         return builder.build();
     }

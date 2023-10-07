@@ -474,7 +474,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             if ( argComponentType.isStruct() && !componentType.isStruct() ) {
                 AlgDataType tt =
                         typeFactory.builder()
-                                .add( argComponentType.getFieldList().get( 0 ).getName(), null, componentType )
+                                .add( null, argComponentType.getFieldList().get( 0 ).getName(), null, componentType )
                                 .build();
                 tt = typeFactory.createTypeWithNullability( tt, componentType.isNullable() );
                 boolean isn = type.isNullable();

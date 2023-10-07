@@ -67,48 +67,48 @@ final class Fixture {
         booleanTypeNull = typeFactory.createTypeWithNullability( booleanType, true );
         rectilinearCoordType =
                 typeFactory.builder()
-                        .add( "X", null, intType )
-                        .add( "Y", null, intType )
+                        .add( null, "X", null, intType )
+                        .add( null, "Y", null, intType )
                         .build();
         rectilinearPeekCoordType =
                 typeFactory.builder()
-                        .add( "X", null, intType )
-                        .add( "Y", null, intType )
+                        .add( null, "X", null, intType )
+                        .add( null, "Y", null, intType )
                         .kind( StructKind.PEEK_FIELDS )
                         .build();
         rectilinearPeekNoExpandCoordType =
                 typeFactory.builder()
-                        .add( "M", null, intType )
+                        .add( null, "M", null, intType )
                         .add(
-                                "SUB",
+                                null, "SUB",
                                 null,
                                 typeFactory.builder()
-                                        .add( "A", null, intType )
-                                        .add( "B", null, intType )
+                                        .add( null, "A", null, intType )
+                                        .add( null, "B", null, intType )
                                         .kind( StructKind.PEEK_FIELDS_NO_EXPAND )
                                         .build() )
                         .kind( StructKind.PEEK_FIELDS_NO_EXPAND )
                         .build();
         abRecordType =
                 typeFactory.builder()
-                        .add( "A", null, varchar10Type )
-                        .add( "B", null, varchar10Type )
+                        .add( null, "A", null, varchar10Type )
+                        .add( null, "B", null, varchar10Type )
                         .build();
         skillRecordType =
                 typeFactory.builder()
-                        .add( "TYPE", null, varchar10Type )
-                        .add( "DESC", null, varchar20Type )
-                        .add( "OTHERS", null, abRecordType )
+                        .add( null, "TYPE", null, varchar10Type )
+                        .add( null, "DESC", null, varchar20Type )
+                        .add( null, "OTHERS", null, abRecordType )
                         .build();
         empRecordType =
                 typeFactory.builder()
-                        .add( "EMPNO", null, intType )
-                        .add( "ENAME", null, varchar10Type )
+                        .add( null, "EMPNO", null, intType )
+                        .add( null, "ENAME", null, varchar10Type )
                         .add(
-                                "DETAIL",
+                                null, "DETAIL",
                                 null,
                                 typeFactory.builder()
-                                        .add( "SKILLS", null, typeFactory.createArrayType( skillRecordType, -1 ) )
+                                        .add( null, "SKILLS", null, typeFactory.createArrayType( skillRecordType, -1 ) )
                                         .build() )
                         .build();
         empListType = typeFactory.createArrayType( empRecordType, -1 );
@@ -118,10 +118,10 @@ final class Fixture {
                         //new MockIdentifier( "ADDRESS", ParserPos.ZERO ),
                         false,
                         Arrays.asList(
-                                new AlgDataTypeFieldImpl( "STREET", 0, varchar20Type ),
-                                new AlgDataTypeFieldImpl( "CITY", 1, varchar20Type ),
-                                new AlgDataTypeFieldImpl( "ZIP", 2, intType ),
-                                new AlgDataTypeFieldImpl( "STATE", 3, varchar20Type ) ),
+                                new AlgDataTypeFieldImpl( 1L, "STREET", 0, varchar20Type ),
+                                new AlgDataTypeFieldImpl( 2L, "CITY", 1, varchar20Type ),
+                                new AlgDataTypeFieldImpl( 3L, "ZIP", 2, intType ),
+                                new AlgDataTypeFieldImpl( 4L, "STATE", 3, varchar20Type ) ),
                         AlgDataTypeComparability.NONE );
     }
 

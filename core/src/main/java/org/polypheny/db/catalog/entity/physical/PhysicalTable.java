@@ -51,12 +51,13 @@ public class PhysicalTable extends PhysicalEntity {
     public PhysicalTable(
             @Deserialize("id") long id,
             @Deserialize("allocationId") long allocationId,
+            @Deserialize("logicalId") long logicalId,
             @Deserialize("name") String name,
             @Deserialize("columns") List<PhysicalColumn> columns,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
         this.columns = ImmutableList.copyOf( columns );
     }
 
@@ -72,7 +73,7 @@ public class PhysicalTable extends PhysicalEntity {
 
         for ( PhysicalColumn column : columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
-            fieldInfo.add( column.logicalName, column.name, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, column.name, sqlType ).nullable( column.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() );
@@ -87,7 +88,6 @@ public class PhysicalTable extends PhysicalEntity {
 
     @Override
     public Expression asExpression() {
-        //return Expressions.call( Catalog.PHYSICAL_EXPRESSION, "getPhysicalTable", Expressions.constant( id ) );
         return Expressions.call( Expressions.convert_( Expressions.call( Catalog.PHYSICAL_EXPRESSION.apply( adapterId ), "get" ), StoreCatalog.class ), "getPhysical", Expressions.constant( id ) );
     }
 
@@ -97,10 +97,6 @@ public class PhysicalTable extends PhysicalEntity {
     }
 
 
-    public List<String> getLogicalNames() {
-        return columns.stream().map( c -> c.logicalName ).collect( Collectors.toList() );
-    }
-
 
     public List<Long> getColumnIds() {
         return columns.stream().map( c -> c.id ).collect( Collectors.toList() );
@@ -109,7 +105,7 @@ public class PhysicalTable extends PhysicalEntity {
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalTable( id, allocationId, name, columns, namespaceId, namespaceName, adapterId );
+        return new PhysicalTable( id, allocationId, logicalId, name, columns, namespaceId, namespaceName, adapterId );
     }
 
 }

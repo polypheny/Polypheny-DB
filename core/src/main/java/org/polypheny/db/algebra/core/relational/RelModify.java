@@ -205,7 +205,7 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
                 "." + entity.id + "$" +
                 (getInputs() != null ? getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 getOperation().name() + "$" +
-                (getUpdateColumnList() != null ? String.join( "$", getUpdateColumnList() ) + "$" : "") +
+                (getUpdateColumnList() != null ? getUpdateColumnList().stream().map( c -> "c" ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 (getSourceExpressionList() != null ? getSourceExpressionList().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 isFlattened() + "&";
     }

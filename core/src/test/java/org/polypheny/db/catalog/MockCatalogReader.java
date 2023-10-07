@@ -422,10 +422,9 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         public void onRegister( AlgDataTypeFactory typeFactory ) {
-            rowType = typeFactory.createStructType( kind, Pair.right( columnList ), Pair.left( columnList ) );
+            rowType = typeFactory.createStructType( kind, null, Pair.right( columnList ), Pair.left( columnList ) );
             collationList = deduceMonotonicity( this );
         }
-
 
 
         public void addColumn( String name, AlgDataType type ) {
@@ -491,7 +490,6 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
         public void onRegister( AlgDataTypeFactory typeFactory ) {
             rowType = new DynamicRecordTypeImpl( typeFactory );
         }
-
 
         /**
          * Recreates an immutable rowType, if the table has Dynamic Record Type, when converts table to Rel.

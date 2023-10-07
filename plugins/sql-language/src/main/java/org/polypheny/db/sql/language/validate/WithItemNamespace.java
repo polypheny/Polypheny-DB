@@ -49,7 +49,7 @@ class WithItemNamespace extends AbstractNamespace {
         }
         final Builder builder = validator.getTypeFactory().builder();
         for ( Pair<SqlNode, AlgDataTypeField> pair : Pair.zip( withItem.columnList.getSqlList(), rowType.getFieldList() ) ) {
-            builder.add( ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
+            builder.add( null, ((SqlIdentifier) pair.left).getSimple(), null, pair.right.getType() );
         }
         return builder.build();
     }

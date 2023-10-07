@@ -53,7 +53,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
 class ExcelEnumerator implements Enumerator<PolyValue[]> {
@@ -135,10 +134,12 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
 
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+            ids.add( null );
         }
         try {
             Iterator<Row> rows = openExcel( source, "" );
@@ -148,6 +149,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                 while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
                     names.add( cell.getStringCellValue() );
+                    ids.add( null );
                 }
                 break;
             }
@@ -177,8 +179,9 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
         if ( names.isEmpty() ) {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
+            ids.add( null );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 
@@ -188,10 +191,12 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, String sheetname, List<ExcelFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
 
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+            ids.add( null );
         }
         try {
             Iterator<Row> rows = openExcel( source, sheetname );
@@ -201,6 +206,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                 while ( cellIterator.hasNext() ) {
                     Cell cell = cellIterator.next();
                     names.add( cell.getStringCellValue() );
+                    ids.add( null );
                 }
                 break;
             }
@@ -231,7 +237,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 

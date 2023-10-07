@@ -74,7 +74,7 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
             int index = 0;
             for ( PolyString name : names ) {
                 if ( name != null ) {
-                    fields.add( new AlgDataTypeFieldImpl( name.value, index, projects.get( i ).getType() ) );
+                    fields.add( new AlgDataTypeFieldImpl( -1L, name.value, index, projects.get( i ).getType() ) );
                     index++;
                 }
                 i++;

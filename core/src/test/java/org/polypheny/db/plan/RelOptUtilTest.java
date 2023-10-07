@@ -107,8 +107,8 @@ public class RelOptUtilTest {
                 Util.toLinux( AlgOptUtil.dumpType( t1 ) + "\n" ) );
 
         AlgDataType t2 = typeFactory.builder()
-                .add( "f0", null, t1 )
-                .add( "f1", null, typeFactory.createMultisetType( t1, -1 ) )
+                .add( null, "f0", null, t1 )
+                .add( null, "f1", null, typeFactory.createMultisetType( t1, -1 ) )
                 .build();
         TestUtil.assertEqualsVerbose(
                 TestUtil.fold(

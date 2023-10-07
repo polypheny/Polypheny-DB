@@ -70,11 +70,11 @@ public class ExcelNamespace extends AbstractNamespace implements Schema {
         final AlgDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<ExcelFieldType> fieldTypes = new LinkedList<>();
         List<Integer> fieldIds = new ArrayList<>( table.columns.size() );
-        for ( PhysicalColumn catalogColumn : table.columns ) {
-            AlgDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
-            fieldInfo.add( catalogColumn.logicalName, catalogColumn.name, sqlType ).nullable( catalogColumn.nullable );
-            fieldTypes.add( ExcelFieldType.getExcelFieldType( catalogColumn.type ) );
-            fieldIds.add( catalogColumn.position );
+        for ( PhysicalColumn column : table.columns ) {
+            AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
+            fieldInfo.add( column.id, column.name, column.name, sqlType ).nullable( column.nullable );
+            fieldTypes.add( ExcelFieldType.getExcelFieldType( column.type ) );
+            fieldIds.add( column.position );
         }
 
         String excelFileName = excelSource.sheetName;

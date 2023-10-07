@@ -129,7 +129,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             ImmutableList<RexNode> constExps = ImmutableList.of( substr );
 
             final AlgDataType rowType = typeFactory.builder()
-                    .add( "someStr", null, varchar )
+                    .add( null, "someStr", null, varchar )
                     .build();
 
             final RexExecutable exec = executor.getExecutable( rexBuilder, constExps, rowType );

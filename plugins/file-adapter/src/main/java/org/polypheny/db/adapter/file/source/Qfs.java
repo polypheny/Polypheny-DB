@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.file.FileTranslatableEntity;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
@@ -69,7 +71,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class Qfs extends DataSource<RelStoreCatalog> {
 
     @Delegate(excludes = Exclude.class)
-    private RelationalScanDelegate delegate;
+    private final RelationalScanDelegate delegate;
 
     @Getter
     private File rootDir;
@@ -101,18 +103,19 @@ public class Qfs extends DataSource<RelStoreCatalog> {
 
 
     @Override
-    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
         //Todo
-    }
-
-
-    @Override
-    public List<PhysicalEntity> refreshTable( long allocId ) {
-        PhysicalTable physical = storeCatalog.fromAllocation( allocId );
-        storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
+        PhysicalTable table = storeCatalog.createTable(
+                logical.table.getNamespaceName(),
+                logical.getTable().name,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
+                logical.table,
+                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c ) ),
+                allocation );
+        FileTranslatableEntity physical = currentNamespace.createFileTable( table );
+        storeCatalog.replacePhysical( physical );
         return List.of( physical );
     }
-
 
 
     @Override

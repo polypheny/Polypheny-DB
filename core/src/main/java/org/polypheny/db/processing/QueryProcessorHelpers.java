@@ -53,7 +53,7 @@ public class QueryProcessorHelpers {
             return type;
         }
         // TODO MV: This "null" might be wrong
-        return typeFactory.builder().add( "$0", null, type ).build();
+        return typeFactory.builder().add( null, "$0", null, type ).build();
     }
 
 
