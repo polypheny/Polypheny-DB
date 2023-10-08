@@ -102,13 +102,15 @@ public final class DockerContainer {
         // TODO: When not connected, record these IDs in a list and remove them the next time they are encountered
         getDockerInstance().ifPresent( d -> d.destroyContainer( this ) );
         containers.remove( containerId );
-        proxies.forEach( ( k, v ) -> {
-            try {
-                v.close();
-            } catch ( IOException ignore ) {
-                // ignore
-            }
-        } );
+        synchronized ( this ) {
+            proxies.forEach( ( k, v ) -> {
+                try {
+                    v.close();
+                } catch ( IOException ignore ) {
+                    // ignore
+                }
+            } );
+        }
     }
 
 

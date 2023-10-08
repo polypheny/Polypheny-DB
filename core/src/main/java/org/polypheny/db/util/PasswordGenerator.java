@@ -21,10 +21,12 @@ import java.util.Base64;
 
 public final class PasswordGenerator {
 
-    public static String generatePassword( int bits ) {
-        SecureRandom sr = new SecureRandom();
-        byte[] raw = new byte[1 + bits / 8];
-        sr.nextBytes( raw );
+    private static final SecureRandom secureRandom = new SecureRandom();
+
+
+    public static String generatePassword() {
+        byte[] raw = new byte[32];
+        secureRandom.nextBytes( raw );
         return Base64.getUrlEncoder().encodeToString( raw );
     }
 

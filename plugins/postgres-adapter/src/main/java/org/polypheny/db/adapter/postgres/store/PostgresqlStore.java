@@ -104,7 +104,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
         if ( settings.getOrDefault( "deploymentId", "" ).equals( "" ) ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
-                settings.put( "password", PasswordGenerator.generatePassword( 256 ) );
+                settings.put( "password", PasswordGenerator.generatePassword() );
                 updateSettings( settings );
             }
 
