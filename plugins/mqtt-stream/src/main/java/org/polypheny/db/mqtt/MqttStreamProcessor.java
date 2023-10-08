@@ -53,7 +53,6 @@ public class MqttStreamProcessor extends StreamProcessorImpl {
     public boolean applyFilter() {
         AlgRoot root = processMqlQuery();
         List<List<Object>> res = executeAndTransformPolyAlg( root, statement );
-        log.info( res.toString() );
         return res.size() != 0;
     }
 
