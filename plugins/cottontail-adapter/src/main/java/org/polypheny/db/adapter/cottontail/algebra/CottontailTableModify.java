@@ -88,8 +88,8 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
                 entity,
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 
@@ -160,9 +160,9 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
 
 //        List<Pair<RexNode, String>> namedProjects = getNamedProjects();
 
-        for ( int i = 0; i < getSourceExpressionList().size(); i++ ) {
-            RexNode rexNode = getSourceExpressionList().get( i );
-            final String logicalName = getUpdateColumnList().get( i );
+        for ( int i = 0; i < getSourceExpressions().size(); i++ ) {
+            RexNode rexNode = getSourceExpressions().get( i );
+            final String logicalName = getUpdateColumns().get( i );
             final int actualColumnIndex = logicalColumnNames.indexOf( logicalName );
             final String originalName = physicalColumnNames.get( actualColumnIndex );
 

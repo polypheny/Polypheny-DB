@@ -96,8 +96,8 @@ public interface NeoRules {
                     modify.getEntity().unwrap( NeoEntity.class ),
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
 

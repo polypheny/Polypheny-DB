@@ -57,6 +57,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -323,11 +324,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         List<Expression> expressions = new ArrayList<>();
 
-        ParameterExpression target = Expressions.parameter( Object[].class );
+        ParameterExpression target = Expressions.parameter( PolyValue[].class );
 
         attachDocOnRelational( impl, expressions, target );
 
-        MethodCallExpression res = Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions );
+        Expression res = Expressions.newArrayInit( PolyValue.class, Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions ) );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
@@ -401,7 +402,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     }
 
 
-    private static Result toAbstractEnumerable( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType physType, Expression old, ParameterExpression target, MethodCallExpression transformer, Type enumeratorType ) {
+    private static Result toAbstractEnumerable( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType physType, Expression old, ParameterExpression target, Expression transformer, Type enumeratorType ) {
         BlockStatement block = Expressions.block(
                 Expressions.return_( null,
                         Expressions.call(

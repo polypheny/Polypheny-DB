@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import java.lang.reflect.Field;
@@ -68,6 +67,7 @@ import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -338,7 +338,7 @@ public class TestHelper {
         public static HttpRequest<?> buildQuery( String route, String query, String database ) {
             JsonObject data = new JsonObject();
             data.addProperty( "query", query );
-            data.addProperty( "database", database );
+            data.addProperty( "namespace", database );
 
             return Unirest.post( "{protocol}://{host}:{port}" + route )
                     .header( "Content-ExpressionType", "application/json" )
@@ -363,7 +363,6 @@ public class TestHelper {
 
         public static final String MONGO_PREFIX = "/mongo";
         public static final String MONGO_DB = "test";
-        static ObjectMapper mapper = new ObjectMapper();
 
 
         private MongoConnection() {
@@ -382,7 +381,7 @@ public class TestHelper {
 
         private static DocResult getBody( HttpResponse<String> res ) {
             try {
-                DocResult[] result = mapper.readValue( res.getBody(), DocResult[].class );
+                DocResult[] result = HttpServer.mapper.readValue( res.getBody(), DocResult[].class );
                 if ( result.length == 1 ) {
                     if ( result[0].error != null ) {
                         throw new RuntimeException( result[0].error );
@@ -489,8 +488,6 @@ public class TestHelper {
 
     public static class CypherConnection extends HttpConnection {
 
-        static ObjectMapper mapper = new ObjectMapper();
-
 
         public static GraphResult executeGetResponse( String query ) {
             return getBody( execute( "/cypher", query, "test" ) );
@@ -504,9 +501,9 @@ public class TestHelper {
 
         private static GraphResult getBody( HttpResponse<String> res ) {
             try {
-                GraphResult[] result = mapper.readValue( res.getBody(), GraphResult[].class );
+                GraphResult[] result = HttpServer.mapper.readValue( res.getBody(), GraphResult[].class );
                 if ( result.length == 1 ) {
-                    return mapper.readValue( res.getBody(), GraphResult[].class )[0];
+                    return HttpServer.mapper.readValue( res.getBody(), GraphResult[].class )[0];
                 } else if ( result.length == 0 ) {
                     return GraphResult.builder().build();
                 }

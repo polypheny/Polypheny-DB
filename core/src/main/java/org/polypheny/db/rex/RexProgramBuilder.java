@@ -695,7 +695,7 @@ public class RexProgramBuilder {
         }
         RexProgram mergedProg = progBuilder.getProgram( normalize );
         assert mergedProg.isValid( Litmus.THROW, null );
-        assert mergedProg.getOutputRowType() == topProgram.getOutputRowType();
+        assert Objects.equals( mergedProg.getOutputRowType(), topProgram.getOutputRowType() );
         return mergedProg;
     }
 
@@ -705,7 +705,7 @@ public class RexProgramBuilder {
         final List<RexLocalRef> projectRefList = new ArrayList<>();
         final RexShuttle shuttle = new RegisterOutputShuttle( exprList );
 
-        // For each project, lookup the expr and expand it so it is in terms of bottomCalc's input fields
+        // For each project, lookup the expr and expand it, so it is in terms of bottomCalc's input fields
         for ( RexLocalRef topProject : program.getProjectList() ) {
             final RexNode topExpr = exprList.get( topProject.getIndex() );
             final RexLocalRef expanded = (RexLocalRef) topExpr.accept( shuttle );

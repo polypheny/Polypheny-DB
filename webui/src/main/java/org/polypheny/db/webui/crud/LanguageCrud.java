@@ -144,13 +144,13 @@ public class LanguageCrud {
     }
 
 
-    public static PolyGraph getGraph( Long namespaceId, TransactionManager manager ) {
+    public static PolyGraph getGraph( String namespace, TransactionManager manager ) {
 
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
         Statement statement = transaction.createStatement();
 
-        ExtendedQueryParameters parameters = new ExtendedQueryParameters( namespaceId );
+        ExtendedQueryParameters parameters = new ExtendedQueryParameters( namespace );
         AlgRoot logicalRoot = processor.translate( statement, null, parameters );
         PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
@@ -249,7 +249,7 @@ public class LanguageCrud {
                 .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
                 .namespaceType( implementation.getNamespaceType() )
-                .namespaceId( request.namespaceId )
+                .namespace( request.namespace )
                 .language( language )
                 .affectedTuples( data.size() )
                 .hasMore( hasMoreRows )
@@ -276,7 +276,7 @@ public class LanguageCrud {
                 .language( language )
                 .namespaceType( implementation.getNamespaceType() )
                 .xid( transaction.getXid().toString() )
-                .namespaceId( request.namespaceId )
+                .namespace( request.namespace )
                 .build();
     }
 
@@ -284,7 +284,7 @@ public class LanguageCrud {
     private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
 
         ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-        List<PolyValue> data = iterator.getSingleRows();
+        List<List<PolyValue>> data = iterator.getRows();
         try {
             iterator.close();
         } catch ( Exception e ) {
@@ -293,12 +293,12 @@ public class LanguageCrud {
 
         return DocResult.builder()
                 .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .data( data.stream().map( LanguageCrud::toJson ).toArray( String[]::new ) )
+                .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                 .query( query )
                 .language( language )
                 .xid( transaction.getXid().toString() )
                 .namespaceType( implementation.getNamespaceType() )
-                .namespaceId( request.namespaceId )
+                .namespace( request.namespace )
                 .build();
     }
 

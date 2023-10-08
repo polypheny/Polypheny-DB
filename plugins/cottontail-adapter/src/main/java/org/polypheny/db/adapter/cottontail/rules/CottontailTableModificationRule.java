@@ -78,8 +78,8 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
                 modify.getEntity().unwrap( CottontailEntity.class ),
                 AlgOptRule.convert( modify.getInput(), traitSet ),
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList(),
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions(),
                 modify.isFlattened()
         );
     }

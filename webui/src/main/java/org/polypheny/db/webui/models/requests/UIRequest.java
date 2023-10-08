@@ -32,7 +32,7 @@ public class UIRequest extends RequestModel {
      */
     public Long entityId;
 
-    public Long namespaceId;
+    public String namespace;
 
     /**
      * Information about the pagination,

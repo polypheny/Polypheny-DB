@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -31,6 +32,7 @@ import org.polypheny.db.util.Pair;
 /**
  * A <code>SqlUpdate</code> is a node of a parse tree which represents an UPDATE statement.
  */
+@Getter
 public class SqlUpdate extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "UPDATE", Kind.UPDATE );
@@ -43,14 +45,14 @@ public class SqlUpdate extends SqlCall {
     SqlIdentifier alias;
 
 
-    public SqlUpdate( ParserPos pos, SqlNode targetTable, SqlNodeList targetColumnList, SqlNodeList sourceExpressionList, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias ) {
+    public SqlUpdate( ParserPos pos, SqlNode targetTable, SqlNodeList targetColumns, SqlNodeList sourceExpressions, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias ) {
         super( pos );
         this.targetTable = targetTable;
-        this.targetColumnList = targetColumnList;
-        this.sourceExpressionList = sourceExpressionList;
+        this.targetColumnList = targetColumns;
+        this.sourceExpressionList = sourceExpressions;
         this.condition = condition;
         this.sourceSelect = sourceSelect;
-        assert sourceExpressionList.size() == targetColumnList.size();
+        assert sourceExpressions.size() == targetColumns.size();
         this.alias = alias;
     }
 
@@ -107,60 +109,8 @@ public class SqlUpdate extends SqlCall {
     }
 
 
-    /**
-     * @return the identifier for the target table of the update
-     */
-    public SqlNode getTargetTable() {
-        return targetTable;
-    }
-
-
-    /**
-     * @return the alias for the target table of the update
-     */
-    public SqlIdentifier getAlias() {
-        return alias;
-    }
-
-
     public void setAlias( SqlIdentifier alias ) {
         this.alias = alias;
-    }
-
-
-    /**
-     * @return the list of target column names
-     */
-    public SqlNodeList getTargetColumnList() {
-        return targetColumnList;
-    }
-
-
-    /**
-     * @return the list of source expressions
-     */
-    public SqlNodeList getSourceExpressionList() {
-        return sourceExpressionList;
-    }
-
-
-    /**
-     * Gets the filter condition for rows to be updated.
-     *
-     * @return the condition expression for the data to be updated, or null for all rows in the table
-     */
-    public SqlNode getCondition() {
-        return condition;
-    }
-
-
-    /**
-     * Gets the source SELECT expression for the data to be updated. Returns null before the statement has been expanded by {@code SqlValidatorImpl#performUnconditionalRewrites(SqlNode, boolean)}.
-     *
-     * @return the source SELECT for the data to be updated
-     */
-    public SqlSelect getSourceSelect() {
-        return sourceSelect;
     }
 
 

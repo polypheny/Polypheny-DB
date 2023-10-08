@@ -18,14 +18,23 @@ package org.polypheny.db.util;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 
 @Value(staticConstructor = "of")
 @EqualsAndHashCode
+@NonFinal
 public class Triple<A, B, C> implements Comparable<Triple<A, B, C>> {
 
     public A left;
     public B middle;
     public C right;
+
+
+    public Triple( A left, B middle, C right ) {
+        this.left = left;
+        this.middle = middle;
+        this.right = right;
+    }
 
 
     @Override

@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -89,8 +90,22 @@ public class RexProgram {
      */
     private final RexLocalRef condition;
 
+    /**
+     * -- GETTER --
+     * Returns the type of the input row to the program.
+     *
+     * @return input row type
+     */
+    @Getter
     private final AlgDataType inputRowType;
 
+    /**
+     * -- GETTER --
+     * Returns the type of the output row from this program.
+     *
+     * @return output row type
+     */
+    @Getter
     private final AlgDataType outputRowType;
 
     /**
@@ -317,7 +332,7 @@ public class RexProgram {
      * Creates a program that projects its input fields but with possibly different names for the output fields.
      */
     public static RexProgram createIdentity( AlgDataType rowType, AlgDataType outputRowType ) {
-        if ( rowType != outputRowType && !Pair.right( rowType.getFieldList() ).equals( Pair.right( outputRowType.getFieldList() ) ) ) {
+        if ( rowType != outputRowType && !rowType.getFieldNames().equals( outputRowType.getFieldNames() ) ) {
             throw new IllegalArgumentException( "field type mismatch: " + rowType + " vs. " + outputRowType );
         }
         final List<AlgDataTypeField> fields = rowType.getFieldList();
@@ -333,32 +348,12 @@ public class RexProgram {
 
 
     /**
-     * Returns the type of the input row to the program.
-     *
-     * @return input row type
-     */
-    public AlgDataType getInputRowType() {
-        return inputRowType;
-    }
-
-
-    /**
      * Returns whether this program contains windowed aggregate functions
      *
      * @return whether this program contains windowed aggregate functions
      */
     public boolean containsAggs() {
         return RexOver.containsOver( this );
-    }
-
-
-    /**
-     * Returns the type of the output row from this program.
-     *
-     * @return output row type
-     */
-    public AlgDataType getOutputRowType() {
-        return outputRowType;
     }
 
 
@@ -550,7 +545,7 @@ public class RexProgram {
         for ( int i = 0; i < fieldCount; i++ ) {
             RexLocalRef project = projects.get( i );
             if ( project.index != i ) {
-                assert !fail : "program " + toString() + "' does not project identity for input row type '" + inputRowType + "', field #" + i;
+                assert !fail : "program " + this + "' does not project identity for input row type '" + inputRowType + "', field #" + i;
                 return false;
             }
         }
@@ -688,7 +683,7 @@ public class RexProgram {
     public Set<String> getCorrelVariableNames() {
         final Set<String> paramIdSet = new HashSet<>();
         RexUtil.apply(
-                new RexVisitorImpl<Void>( true ) {
+                new RexVisitorImpl<>( true ) {
                     @Override
                     public Void visitCorrelVariable( RexCorrelVariable correlVariable ) {
                         paramIdSet.add( correlVariable.getName() );

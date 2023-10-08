@@ -40,11 +40,11 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -527,10 +527,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
                 if ( child.nullable ) {
                     for ( int i = before; i < fields.size(); i++ ) {
-                        final Entry<String, AlgDataType> entry = fields.get( i );
-                        final AlgDataType type = entry.getValue();
+                        final AlgDataTypeField entry = fields.get( i );
+                        final AlgDataType type = entry.getType();
                         if ( !type.isNullable() ) {
-                            fields.set( i, new AlgDataTypeFieldImpl( 1L, entry.getKey(), i, typeFactory.createTypeWithNullability( type, true ) ) );
+                            fields.set( i, new AlgDataTypeFieldImpl( entry.getId(), entry.getName(), i, typeFactory.createTypeWithNullability( type, true ) ) );
                         }
                     }
                 }
@@ -4210,13 +4210,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     long targetDimension = ((ArrayType) targetType).getDimension();
                     long sourceDimension = ((ArrayType) sourceType).getMaxDimension();
                     if ( sourceDimension > targetDimension && targetDimension > -1 ) {
-                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey(), sourceDimension, targetDimension ) );
+                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getName(), sourceDimension, targetDimension ) );
                     }
 
                     long targetCardinality = ((ArrayType) targetType).getCardinality();
                     long sourceCardinality = ((ArrayType) sourceType).getMaxCardinality();
                     if ( sourceCardinality > targetCardinality && targetCardinality > -1 ) {
-                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey(), sourceCardinality, targetCardinality ) );
+                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getName(), sourceCardinality, targetCardinality ) );
                     }
                 }
             }
@@ -4409,7 +4409,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private void validateAccess( SqlNode node, CatalogEntity table, AccessEnum requiredAccess ) {
         if ( table != null ) {
             AccessType access = AccessType.ALL;
-            ;
             if ( !access.allowsAccess( requiredAccess ) ) {
                 throw newValidationError( node, RESOURCE.accessNotAllowed( requiredAccess.name(), table.name ) );
             }
@@ -5110,19 +5109,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 } );
         return typeFactory.createStructType(
-                List.of(),
-                types, new AbstractList<>() {
-                    @Override
-                    public String get( int index ) {
-                        return "?" + index;
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return types.size();
-                    }
-                } );
+                types.stream().map( t -> (Long) null ).collect( Collectors.toList() ),
+                types,
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
     }
 
 
@@ -6170,18 +6159,18 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             final List<SqlNode> oldSelectItems = ImmutableList.copyOf( selectItems );
             selectItems.clear();
-            final List<Map.Entry<String, AlgDataType>> oldFields = ImmutableList.copyOf( fields );
+            final List<AlgDataTypeField> oldFields = ImmutableList.copyOf( fields );
             fields.clear();
             for ( ImmutableList<Integer> source : sources ) {
                 final int p0 = source.get( 0 );
-                Map.Entry<String, AlgDataType> field = oldFields.get( p0 );
-                final String name = field.getKey();
-                AlgDataType type = field.getValue();
+                AlgDataTypeField field = oldFields.get( p0 );
+                final String name = field.getName();
+                AlgDataType type = field.getType();
                 SqlNode selectItem = oldSelectItems.get( p0 );
                 for ( int p1 : Util.skip( source ) ) {
-                    final Map.Entry<String, AlgDataType> field1 = oldFields.get( p1 );
+                    final AlgDataTypeField field1 = oldFields.get( p1 );
                     final SqlNode selectItem1 = oldSelectItems.get( p1 );
-                    final AlgDataType type1 = field1.getValue();
+                    final AlgDataType type1 = field1.getType();
                     // output is nullable only if both inputs are
                     final boolean nullable = type.isNullable() && type1.isNullable();
                     final AlgDataType type2 = PolyTypeUtil.leastRestrictiveForComparison( typeFactory, type, type1 );

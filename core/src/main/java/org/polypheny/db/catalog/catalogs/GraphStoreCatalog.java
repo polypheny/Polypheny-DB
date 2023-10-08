@@ -74,6 +74,18 @@ public class GraphStoreCatalog extends StoreCatalog {
     }
 
 
+    @Override
+    public void renameLogicalField( long id, String newFieldName ) {
+        List<PhysicalField> updates = new ArrayList<>();
+        for ( PhysicalField field : fields.values() ) {
+            if ( field.id == id ) {
+                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+            }
+        }
+        updates.forEach( u -> fields.put( Pair.of( u.allocId, u.id ), u ) );
+    }
+
+
     public PhysicalTable createTable(
             String namespaceName,
             String tableName,

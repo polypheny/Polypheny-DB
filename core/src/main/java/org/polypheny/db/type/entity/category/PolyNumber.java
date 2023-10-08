@@ -17,6 +17,7 @@
 package org.polypheny.db.type.entity.category;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
@@ -38,7 +39,7 @@ public abstract class PolyNumber extends PolyValue {
         if ( b0.isApprox() || b1.isApprox() ) {
             return b0.DoubleValue().compareTo( b1.DoubleValue() );
         }
-        return b0.LongValue().compareTo( b1.LongValue() );
+        return Objects.compare( b0.LongValue(), b1.LongValue(), Long::compareTo );
     }
 
 

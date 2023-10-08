@@ -92,7 +92,6 @@ import org.polypheny.db.util.Util;
  */
 public class JdbcTable extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableTable, QueryableEntity {
 
-    private final PhysicalTable table;
     private JdbcSchema jdbcSchema;
 
     private final TableType jdbcTableType;
@@ -111,7 +110,6 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
                 physical.namespaceId,
                 physical.namespaceName,
                 physical.adapterId );
-        this.table = physical;
         this.jdbcSchema = jdbcSchema;
         this.jdbcTableType = jdbcTableType;
     }

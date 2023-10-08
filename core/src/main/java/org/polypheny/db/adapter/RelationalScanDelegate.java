@@ -59,7 +59,6 @@ public class RelationalScanDelegate implements Scannable {
     }
 
 
-
     @Override
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
         scannable.restoreTable( alloc, entities );
@@ -105,6 +104,12 @@ public class RelationalScanDelegate implements Scannable {
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
         Scannable.dropCollectionSubstitute( scannable, context, allocation );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        scannable.renameLogicalColumn( id, newColumnName );
     }
 
 }

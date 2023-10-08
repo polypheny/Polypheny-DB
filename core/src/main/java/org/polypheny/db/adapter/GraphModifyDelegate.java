@@ -16,14 +16,10 @@
 
 package org.polypheny.db.adapter;
 
-import java.util.List;
 import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
-import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
-import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prepare.Context;
 
@@ -68,22 +64,5 @@ public class GraphModifyDelegate extends GraphScanDelegate implements Modifiable
         throw new GenericRuntimeException( "Should be overwritten." );
     }
 
-
-    @Override
-    public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreTable( alloc, entities );
-    }
-
-
-    @Override
-    public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
-        scannable.restoreGraph( alloc, entities );
-    }
-
-
-    @Override
-    public void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities ) {
-        Scannable.restoreCollectionSubstitute( scannable, alloc, entities );
-    }
 
 }

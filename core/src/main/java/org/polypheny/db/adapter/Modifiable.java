@@ -282,8 +282,8 @@ public interface Modifiable extends Scannable {
                 table,
                 modify.getInput(),
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() );
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions() );
     }
 
     default AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {

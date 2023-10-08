@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.ddl.alterview;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -74,13 +75,17 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, view );
+        LogicalTable table = searchEntity( context, view );
 
-        if ( catalogTable.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + catalogTable.name + " is not a View." );
+        if ( table == null ) {
+            throw new GenericRuntimeException( "Could not find view with name %s", String.join( ".", view.names ) );
         }
 
-        DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+        if ( table.entityType != EntityType.VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + table.name + " is not a View." );
+        }
+
+        DdlManager.getInstance().renameColumn( table, columnOldName.getSimple(), columnNewName.getSimple(), statement );
     }
 
 }

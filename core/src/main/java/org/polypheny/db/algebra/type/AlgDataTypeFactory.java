@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.type;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.PolyType;
@@ -378,7 +377,7 @@ public interface AlgDataTypeFactory {
 
 
         @Override
-        public FieldInfoBuilder addAll( Iterable<? extends Map.Entry<String, AlgDataType>> fields ) {
+        public FieldInfoBuilder addAll( Iterable<AlgDataTypeField> fields ) {
             return (FieldInfoBuilder) super.addAll( fields );
         }
 
@@ -527,10 +526,10 @@ public interface AlgDataTypeFactory {
         /**
          * Adds all fields in a collection.
          */
-        public Builder addAll( Iterable<? extends Map.Entry<String, AlgDataType>> fields ) {
-            for ( Map.Entry<String, AlgDataType> field : fields ) {
+        public Builder addAll( Iterable<AlgDataTypeField> fields ) {
+            for ( AlgDataTypeField field : fields ) {
                 // TODO MV: Adding null for physical name
-                add( null, field.getKey(), null, field.getValue() );
+                add( field.getId(), field.getName(), field.getPhysicalName(), field.getType() );
             }
             return this;
         }

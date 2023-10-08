@@ -35,7 +35,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -57,19 +56,14 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
 
 
     /**
-     * The connection to the optimizing session.
-     */
-    protected Prepare.CatalogReader catalogReader;
-
-    /**
      * The table definition.
      */
     @Getter
     private final Operation operation;
     @Getter
-    private final List<String> updateColumnList;
+    private final List<String> updateColumns;
     @Getter
-    private final List<? extends RexNode> sourceExpressionList;
+    private final List<? extends RexNode> sourceExpressions;
     private AlgDataType inputRowType;
     @Getter
     private final boolean flattened;
@@ -88,8 +82,8 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
      * @param table Target table to modify
      * @param input Sub-query or filter condition
      * @param operation Modify operation (INSERT, UPDATE, DELETE)
-     * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
-     * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
+     * @param updateColumns List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
+     * @param sourceExpressions List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
     protected RelModify(
@@ -98,20 +92,20 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
             E table,
             AlgNode input,
             Operation operation,
-            List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList,
+            List<String> updateColumns,
+            List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input );
         this.operation = operation;
-        this.updateColumnList = updateColumnList;
-        this.sourceExpressionList = sourceExpressionList;
+        this.updateColumns = updateColumns;
+        this.sourceExpressions = sourceExpressions;
         if ( operation == Operation.UPDATE ) {
-            Objects.requireNonNull( updateColumnList );
-            Objects.requireNonNull( sourceExpressionList );
-            Preconditions.checkArgument( sourceExpressionList.size() == updateColumnList.size() );
+            Objects.requireNonNull( updateColumns );
+            Objects.requireNonNull( sourceExpressions );
+            Preconditions.checkArgument( sourceExpressions.size() == updateColumns.size() );
         } else {
-            Preconditions.checkArgument( updateColumnList == null );
-            Preconditions.checkArgument( sourceExpressionList == null );
+            Preconditions.checkArgument( updateColumns == null );
+            Preconditions.checkArgument( sourceExpressions == null );
         }
         this.flattened = flattened;
     }
@@ -185,8 +179,8 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
                 .item( "entity", entity.id )
                 .item( "layer", entity.getCatalogType() )
                 .item( "operation", getOperation() )
-                .itemIf( "updateColumnList", updateColumnList, updateColumnList != null )
-                .itemIf( "sourceExpressionList", sourceExpressionList, sourceExpressionList != null )
+                .itemIf( "updateColumns", updateColumns, updateColumns != null )
+                .itemIf( "sourceExpressions", sourceExpressions, sourceExpressions != null )
                 .item( "flattened", flattened );
     }
 
@@ -205,8 +199,8 @@ public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
                 "." + entity.id + "$" +
                 (getInputs() != null ? getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 getOperation().name() + "$" +
-                (getUpdateColumnList() != null ? getUpdateColumnList().stream().map( c -> "c" ).collect( Collectors.joining( "$" ) ) + "$" : "") +
-                (getSourceExpressionList() != null ? getSourceExpressionList().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (getUpdateColumns() != null ? getUpdateColumns().stream().map( c -> "c" ).collect( Collectors.joining( "$" ) ) + "$" : "") +
+                (getSourceExpressions() != null ? getSourceExpressions().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
                 isFlattened() + "&";
     }
 

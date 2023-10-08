@@ -107,8 +107,7 @@ public class CypherToAlgConverter {
 
 
     public AlgRoot convert( CypherNode query, ExtendedQueryParameters parameters, AlgOptCluster cluster ) {
-        long namespaceId;
-        namespaceId = Objects.requireNonNullElseGet( parameters.namespaceId, () -> getNamespaceId( parameters ) );
+        long namespaceId = getNamespaceId( parameters );
 
         LogicalEntity entity = getEntity( namespaceId, parameters );
 
@@ -155,7 +154,7 @@ public class CypherToAlgConverter {
 
 
     private long getNamespaceId( ExtendedQueryParameters parameters ) {
-        return snapshot.getNamespace( parameters.getNamespaceId() ).orElseThrow().id;
+        return snapshot.getNamespace( parameters.namespace ).orElseThrow().id;
     }
 
 

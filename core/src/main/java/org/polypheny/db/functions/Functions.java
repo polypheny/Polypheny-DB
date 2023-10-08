@@ -280,7 +280,7 @@ public class Functions {
 
         List<Map<Long, PolyValue>> values = new ArrayList<>( context.getParameterValues() );
 
-        if ( values.size() == 0 ) {
+        if ( values.isEmpty() ) {
             return baz;
         }
 
@@ -343,7 +343,7 @@ public class Functions {
         List<Object> results = new ArrayList<>();
         Enumerable<Object> executor = executorCall.apply();
         for ( Object o : executor ) {
-            results.add( o );
+            results.add( new PolyValue[]{ (PolyValue) o } );
         }
 
         context.resetParameterValues();
@@ -3195,7 +3195,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.fromTypedJson( stringValue, PolyList.class ).asList();
+        return PolyValue.fromTypedJson( stringValue, PolyList.class );
     }
 
 

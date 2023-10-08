@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language;
 
 import java.util.List;
+import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -36,7 +37,9 @@ public class SqlInsert extends SqlCall {
     public static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "INSERT", Kind.INSERT );
 
     SqlNodeList keywords;
+    @Getter
     SqlNode targetTable;
+    @Getter
     SqlNode source;
     @Setter
     SqlNodeList columnList;
@@ -106,22 +109,6 @@ public class SqlInsert extends SqlCall {
             default:
                 throw new AssertionError( i );
         }
-    }
-
-
-    /**
-     * @return the identifier for the target table of the insertion
-     */
-    public SqlNode getTargetTable() {
-        return targetTable;
-    }
-
-
-    /**
-     * @return the source expression for the data to be inserted
-     */
-    public SqlNode getSource() {
-        return source;
     }
 
 

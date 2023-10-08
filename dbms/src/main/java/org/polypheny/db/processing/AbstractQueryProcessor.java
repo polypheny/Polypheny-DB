@@ -698,9 +698,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 final Pair<RexNode, String> np = originalProject.getNamedProjects().get( i );
                                 nameMap.put( np.right, i );
                                 if ( ltm.isUpdate() || ltm.isMerge() ) {
-                                    int j = ltm.getUpdateColumnList().indexOf( np.right );
+                                    int j = ltm.getUpdateColumns().indexOf( np.right );
                                     if ( j >= 0 ) {
-                                        RexNode newValue = ltm.getSourceExpressionList().get( j );
+                                        RexNode newValue = ltm.getSourceExpressions().get( j );
                                         for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
                                             if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
                                                 newValueMap.put( np.right, k );
@@ -781,7 +781,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 for ( final Index index : indices ) {
                                     if ( ltm.isUpdate() ) {
                                         // Index not affected by this update, skip
-                                        if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                        if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumns()::contains ) ) {
                                             continue;
                                         }
                                     }
@@ -804,7 +804,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             if ( !ltm.isDelete() ) {
                                 for ( final Index index : indices ) {
                                     // Index not affected by this update, skip
-                                    if ( ltm.isUpdate() && index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                    if ( ltm.isUpdate() && index.getColumns().stream().noneMatch( ltm.getUpdateColumns()::contains ) ) {
                                         continue;
                                     }
                                     if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {

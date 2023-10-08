@@ -35,15 +35,18 @@ package org.polypheny.db.algebra.type;
 
 
 import java.io.Serializable;
+import lombok.Getter;
 import lombok.Value;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Triple;
 
 
 /**
  * Default implementation of {@link AlgDataTypeField}.
  */
 @Value
-public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
+@Getter
+public class AlgDataTypeFieldImpl extends Triple<String, Long, AlgDataType> implements AlgDataTypeField, Serializable {
 
     AlgDataType type;
     String name;
@@ -61,6 +64,7 @@ public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
 
 
     public AlgDataTypeFieldImpl( Long id, String name, String physicalName, int index, AlgDataType type ) {
+        super( name, id, type );
         assert name != null;
         assert type != null;
         this.id = id;
@@ -89,55 +93,6 @@ public class AlgDataTypeFieldImpl implements AlgDataTypeField, Serializable {
         return this.index == that.index
                 && this.name.equals( that.name )
                 && this.type.equals( that.type );
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public String getName() {
-        return name;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public String getPhysicalName() {
-        return physicalName;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-
-    // implement RelDataTypeField
-    @Override
-    public AlgDataType getType() {
-        return type;
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public final String getKey() {
-        return getName();
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public final AlgDataType getValue() {
-        return getType();
-    }
-
-
-    // implement Map.Entry
-    @Override
-    public AlgDataType setValue( AlgDataType value ) {
-        throw new UnsupportedOperationException();
     }
 
 

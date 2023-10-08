@@ -121,11 +121,11 @@ public class FileProject extends Project implements FileAlg {
             implementor.project( null, mapping );
         } else {
             for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                if ( field.getKey().startsWith( "EXPR$" ) ) {
+                if ( field.getName().startsWith( "EXPR$" ) ) {
                     //don't set EXPR-columns in FileImplementor
                     return;
                 }
-                fields.add( field.getKey() );
+                fields.add( field.getName() );
             }
             implementor.project( fields, null );
         }

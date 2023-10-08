@@ -410,13 +410,12 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Verify that conversion from SQL to relational algebra did not perturb any type information.
         // (We can't do this if the SQL statement is something like an INSERT which has no
         // validator type information associated with its result, hence the namespace check above.)
-        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList(); // TODO DL readd final
+        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList(); // TODO DL read final
         final AlgDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         validatedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                        Pair.right( validatedFields ), ValidatorUtil.uniquify(
-                                Pair.left( validatedFields ),
-                                false ) );
+                        validatedFields.stream().map( AlgDataTypeField::getType ).collect( Collectors.toList() ),
+                        ValidatorUtil.uniquify( validatedFields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() ), false ) );
         /*int diff = validatedFields.size() - result.getRowType().getFieldList().size();
         if ( diff > 0 ) {
             for ( int i = 0; i < diff; i++ ) {

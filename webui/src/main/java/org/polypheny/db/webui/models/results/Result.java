@@ -41,7 +41,7 @@ public abstract class Result<E, F> {
      */
     public NamespaceType namespaceType;
 
-    public Long namespaceId;
+    public String namespace;
 
     public E[] data;
 
@@ -100,7 +100,7 @@ public abstract class Result<E, F> {
             this.namespaceType = instance.namespaceType;
             this.xid = instance.xid;
             this.error = instance.error;
-            this.namespaceId = instance.namespaceId;
+            this.namespace = instance.namespace;
             this.query = instance.query;
             this.exception = instance.exception;
             this.language$value = instance.language;

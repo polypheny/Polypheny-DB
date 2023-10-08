@@ -74,6 +74,17 @@ public class RelStoreCatalog extends StoreCatalog {
     }
 
 
+    @Override
+    public void renameLogicalField( long id, String newFieldName ) {
+        List<PhysicalColumn> updates = new ArrayList<>();
+        for ( PhysicalColumn field : columns.values() ) {
+            if ( field.id == id ) {
+                updates.add( field.toBuilder().logicalName( newFieldName ).build() );
+            }
+        }
+        updates.forEach( u -> columns.put( Pair.of( u.allocId, u.id ), u ) );
+    }
+
     public void addColumn( PhysicalColumn column ) {
         columns.put( Pair.of( column.allocId, column.id ), column );
     }

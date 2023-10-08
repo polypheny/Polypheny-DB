@@ -107,7 +107,7 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                PolyGraph graph = LanguageCrud.getGraph( graphRequest.namespaceId, crud.getTransactionManager() );
+                PolyGraph graph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager() );
 
                 ctx.send( graph.toJson() );
 
@@ -152,7 +152,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespaceId ).orElseThrow();
+                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElseThrow();
                         switch ( namespace.namespaceType ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );
@@ -161,7 +161,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = LanguageCrud.anyQuery(
                                         QueryLanguage.from( "mongo" ),
                                         ctx.session,
-                                        new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.id ),
+                                        new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.name ),
                                         crud.getTransactionManager(),
                                         Catalog.defaultUserId,
                                         Catalog.defaultNamespaceId
@@ -171,7 +171,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = LanguageCrud.anyQuery(
                                         QueryLanguage.from( "cypher" ),
                                         ctx.session,
-                                        new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.id ),
+                                        new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.name ),
                                         crud.getTransactionManager(),
                                         Catalog.defaultUserId,
                                         Catalog.defaultNamespaceId

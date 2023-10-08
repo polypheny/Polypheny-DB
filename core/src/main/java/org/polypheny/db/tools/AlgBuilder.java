@@ -534,7 +534,7 @@ public class AlgBuilder {
      */
     public RexIndexRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
-        final List<String> fieldNames = Pair.left( frame.relFields() );
+        final List<String> fieldNames = frame.relFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
         int i = fieldNames.indexOf( fieldName );
         if ( i >= 0 ) {
             return field( inputCount, inputOrdinal, i );

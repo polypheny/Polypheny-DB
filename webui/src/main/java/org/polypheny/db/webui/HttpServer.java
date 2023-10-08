@@ -70,8 +70,25 @@ public class HttpServer implements Runnable {
     }
 
 
+    public static final ObjectMapper mapper = new ObjectMapper() {
+        {
+            setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                    .withIsGetterVisibility( Visibility.NONE )
+                    .withGetterVisibility( Visibility.NONE )
+                    .withSetterVisibility( Visibility.NONE ) );
+            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            writerWithDefaultPrettyPrinter();
+        }
+    };
+
     @Getter
-    private Javalin server;
+    private final Javalin server = Javalin.create( config -> {
+        config.jsonMapper( new JavalinJackson( mapper ) );
+        config.enableCorsForAllOrigins();
+        config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+    } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 
 
@@ -85,23 +102,6 @@ public class HttpServer implements Runnable {
     public void run() {
         long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
         long maxRequestSize = 1_000_000L * maxSizeMB;
-
-        this.server = Javalin.create( config -> {
-            config.jsonMapper( new JavalinJackson( new ObjectMapper() {
-                {
-                    setSerializationInclusion( JsonInclude.Include.NON_NULL );
-                    configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                    setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
-                            .withIsGetterVisibility( Visibility.NONE )
-                            .withGetterVisibility( Visibility.NONE )
-                            .withSetterVisibility( Visibility.NONE ) );
-                    configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-                    writerWithDefaultPrettyPrinter();
-                }
-            } ) );
-            config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
-        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         /*this.server = Javalin.create( config -> { // todo dl enable, when we removed avatica and can finally bump javalin
             config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );

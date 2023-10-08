@@ -42,8 +42,8 @@ public class GraphRequest extends QueryRequest {
             @JsonProperty("analyze") boolean analyze,
             @JsonProperty("cache") boolean cache,
             @JsonProperty("language") String language,
-            @JsonProperty("namespaceId") Long namespaceId ) {
-        super( query, analyze, cache, language, namespaceId );
+            @JsonProperty("namespaceId") String namespace ) {
+        super( query, analyze, cache, language, namespace );
         this.nodeIds = nodeIds;
         this.edgeIds = edgeIds;
     }

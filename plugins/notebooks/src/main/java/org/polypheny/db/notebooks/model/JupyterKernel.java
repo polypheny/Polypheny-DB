@@ -177,7 +177,7 @@ public class JupyterKernel {
             return;
         }
         Optional<LogicalNamespace> namespace = Catalog.snapshot().getNamespace( apc.namespace );
-        String result = anyQuery( query, apc.language, namespace.orElseThrow().id );
+        String result = anyQuery( query, apc.language, namespace.orElseThrow().name );
         ByteBuffer request = buildInputReply( result, parentHeader );
         webSocket.sendBinary( request, true );
     }
@@ -244,11 +244,11 @@ public class JupyterKernel {
      *
      * @param query the query to be executed
      * @param language the query language to be used
-     * @param namespaceId the target namespace
+     * @param namespace the target namespace
      * @return the serialized results in JSON format
      */
-    private String anyQuery( String query, String language, long namespaceId ) {
-        QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespaceId );
+    private String anyQuery( String query, String language, String namespace ) {
+        QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace );
         List<Result<?, ?>> results = LanguageCrud.anyQuery(
                 QueryLanguage.from( language ),
                 null,

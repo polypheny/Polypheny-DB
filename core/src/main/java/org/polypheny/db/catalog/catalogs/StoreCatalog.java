@@ -148,4 +148,7 @@ public abstract class StoreCatalog implements PolySerializable {
         physicals.forEach( allocToPhysicals::remove );
     }
 
+
+    public abstract void renameLogicalField( long id, String newFieldName );
+
 }

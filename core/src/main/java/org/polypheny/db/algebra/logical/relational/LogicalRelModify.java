@@ -45,10 +45,10 @@ public final class LogicalRelModify extends RelModify<CatalogEntity> {
             CatalogEntity table,
             AlgNode input,
             Operation operation,
-            List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList,
+            List<String> updateColumns,
+            List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
-        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input, operation, updateColumnList, sourceExpressionList, flattened );
+        super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), table, input, operation, updateColumns, sourceExpressions, flattened );
     }
 
 
@@ -70,19 +70,19 @@ public final class LogicalRelModify extends RelModify<CatalogEntity> {
             CatalogEntity table,
             AlgNode input,
             Operation operation,
-            List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList,
+            List<String> updateColumns,
+            List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalRelModify( cluster, traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalRelModify( cluster, traitSet, table, input, operation, updateColumns, sourceExpressions, flattened );
     }
 
 
     @Override
     public LogicalRelModify copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
-        return (LogicalRelModify) new LogicalRelModify( getCluster(), traitSet, entity, sole( inputs ), getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened() ).streamed( streamed );
+        return (LogicalRelModify) new LogicalRelModify( getCluster(), traitSet, entity, sole( inputs ), getOperation(), getUpdateColumns(), getSourceExpressions(), isFlattened() ).streamed( streamed );
     }
 
 

@@ -260,7 +260,6 @@ public class DdlManagerImpl extends DdlManager {
                 aColumns.add( allocationColumn );
             }
 
-
             buildNamespace( Catalog.defaultNamespaceId, logical, adapter );
             adapter.createTable( null, LogicalTableWrapper.of( logical, columns ), AllocationTableWrapper.of( allocation.unwrap( AllocationTable.class ), aColumns ) );
             catalog.updateSnapshot();
@@ -1684,6 +1683,11 @@ public class DdlManagerImpl extends DdlManager {
 
         catalog.getLogicalRel( table.namespaceId ).renameColumn( logicalColumn.id, newColumnName );
 
+        if ( table.entityType != EntityType.VIEW ) {
+            List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsOfColumn( logicalColumn.id );
+            placements.forEach( p -> AdapterManager.getInstance().getAdapter( p.adapterId ).renameLogicalColumn( logicalColumn.id, newColumnName ) );
+        }
+
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
     }
@@ -1985,9 +1989,9 @@ public class DdlManagerImpl extends DdlManager {
 
         int position = 1;
         for ( AlgDataTypeField alg : fieldList.getFieldList() ) {
-            AlgDataType type = alg.getValue();
+            AlgDataType type = alg.getType();
             if ( alg.getType().getPolyType() == PolyType.ARRAY ) {
-                type = alg.getValue().getComponentType();
+                type = alg.getType().getComponentType();
             }
             String colName = alg.getName();
             if ( projectedColumns != null ) {
@@ -2001,9 +2005,9 @@ public class DdlManagerImpl extends DdlManager {
                             alg.getType().getPolyType(),
                             type.getRawPrecision(),
                             type.getScale(),
-                            alg.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getValue()).getDimension() : -1,
-                            alg.getValue().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getValue()).getCardinality() : -1,
-                            alg.getValue().isNullable() ),
+                            alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getDimension() : -1,
+                            alg.getType().getPolyType() == PolyType.ARRAY ? (int) ((ArrayType) alg.getType()).getCardinality() : -1,
+                            alg.getType().isNullable() ),
                     Collation.getDefaultCollation(),
                     null,
                     position ) );

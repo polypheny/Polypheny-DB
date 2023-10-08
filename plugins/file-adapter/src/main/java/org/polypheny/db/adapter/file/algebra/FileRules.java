@@ -80,8 +80,8 @@ public class FileRules {
 
 
         private static boolean supports( RelModify<?> node ) {
-            if ( node.getSourceExpressionList() != null ) {
-                return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressionList() );
+            if ( node.getSourceExpressions() != null ) {
+                return !UnsupportedRexCallVisitor.containsModelItem( node.getSourceExpressions() );
             }
             return true;
         }
@@ -126,8 +126,8 @@ public class FileRules {
                     modify.getEntity().unwrap( FileTranslatableEntity.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened()
             );
         }

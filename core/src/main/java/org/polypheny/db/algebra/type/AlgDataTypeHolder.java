@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.type;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -104,7 +105,7 @@ class AlgDataTypeHolder {
 
 
     public List<String> getFieldNames() {
-        return Pair.left( fields );
+        return fields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 }

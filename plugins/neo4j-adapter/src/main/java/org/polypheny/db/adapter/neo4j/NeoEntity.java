@@ -65,8 +65,6 @@ import org.polypheny.db.util.Pair;
  */
 public class NeoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
-
-    private final AlgDataType rowType;
     private final List<? extends PhysicalField> fields;
 
     private final NeoNamespace namespace;
@@ -74,7 +72,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
     protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
         super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
-        this.rowType = physical.getRowType();
         this.fields = fields;
         this.namespace = namespace;
     }
@@ -113,11 +110,6 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
         );
     }
 
-
-    @Override
-    public AlgDataType getRowType() {
-        return rowType;
-    }
 
 
     @Override
@@ -161,7 +153,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
         public NeoQueryable( DataContext dataContext, Snapshot snapshot, NeoEntity entity ) {
             super( dataContext, snapshot, entity );
-            this.rowType = entity.rowType;
+            this.rowType = entity.getRowType();
         }
 
 

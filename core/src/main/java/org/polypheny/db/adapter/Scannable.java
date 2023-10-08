@@ -60,17 +60,17 @@ public interface Scannable {
             columns.add( column );
             i++;
         }
-        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
+        AllocationTable allocSubTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
 
         List<AllocationColumn> allocColumns = new ArrayList<>();
         i = 1;
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.placementId, allocTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
             allocColumns.add( alloc );
         }
 
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
-        return scannable.getCatalog().getPhysicalsFromAllocs( allocation.id ).get( 0 ).unwrap( PhysicalTable.class );
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class );
     }
 
     StoreCatalog getCatalog();
@@ -216,5 +216,7 @@ public interface Scannable {
         scannable.dropTable( context, allocation.id );
     }
 
+
+    void renameLogicalColumn( long id, String newColumnName );
 
 }

@@ -106,10 +106,10 @@ public class LogicalStreamer extends Streamer {
 
         AlgNode query = input;
 
-        if ( modify.getUpdateColumnList() != null && modify.getSourceExpressionList() != null ) {
+        if ( modify.getUpdateColumns() != null && modify.getSourceExpressions() != null ) {
             // update and source list are not null
-            update.addAll( modify.getUpdateColumnList() );
-            source.addAll( modify.getSourceExpressionList() );
+            update.addAll( modify.getUpdateColumns() );
+            source.addAll( modify.getSourceExpressions() );
 
             // we project the needed sources out and modify them to fit the prepared
             query = LogicalProject.create( modify.getInput(), source, update );
@@ -132,8 +132,8 @@ public class LogicalStreamer extends Streamer {
                 modify.getEntity(),
                 algBuilder.build(),
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions() == null ? null : createSourceList( modify, rexBuilder ),
                 false ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
@@ -153,7 +153,7 @@ public class LogicalStreamer extends Streamer {
 
 
     private static List<RexNode> createSourceList( RelModify<?> modify, RexBuilder rexBuilder ) {
-        return modify.getUpdateColumnList()
+        return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
                     int size = modify.getRowType().getFieldList().size();

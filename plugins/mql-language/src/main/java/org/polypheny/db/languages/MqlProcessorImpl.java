@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -116,17 +117,15 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
             try {
                 statement.getTransaction().commit();
             } catch ( TransactionException e ) {
-                throw new RuntimeException( "There was a problem auto-generating the needed collection." );
+                throw new GenericRuntimeException( "There was a problem auto-generating the needed collection." );
             }
 
-            throw new RuntimeException( "No collections is used." );
+            throw new GenericRuntimeException( "No collections is used." );
         }
         new MqlCreateCollection(
                 ParserPos.sum( Collections.singletonList( query ) ),
                 ((MqlCollectionStatement) query).getCollection(),
-                null
-        )
-                .execute( statement.getPrepareContext(), statement, parameters );
+                null ).execute( statement.getPrepareContext(), statement, parameters );
         try {
             statement.getTransaction().commit();
             Catalog.getInstance().commit();

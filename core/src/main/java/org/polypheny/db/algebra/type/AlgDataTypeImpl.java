@@ -45,7 +45,6 @@ import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Collation;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -162,7 +161,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
     @Override
     public List<String> getFieldNames() {
-        return Pair.left( fieldList );
+        return fieldList.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 

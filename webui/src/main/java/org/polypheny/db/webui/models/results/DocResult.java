@@ -19,10 +19,12 @@ package org.polypheny.db.webui.models.results;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
+@Jacksonized
 @Value
 public class DocResult extends Result<String, FieldDefinition> {
 

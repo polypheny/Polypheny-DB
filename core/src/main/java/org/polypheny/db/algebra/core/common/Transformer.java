@@ -73,7 +73,7 @@ public class Transformer extends AbstractAlgNode {
         this.rowType = rowType;
         this.isCrossModel = isCrossModel;
         this.names = names;
-        assert names == null || (names.size() == 0 || names.size() == inputs.size()) : "When names are provided they have to match the amount of inputs.";
+        assert names == null || (names.isEmpty() || names.size() == inputs.size()) : "When names are provided they have to match the amount of inputs.";
     }
 
 

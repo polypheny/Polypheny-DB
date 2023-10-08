@@ -236,7 +236,7 @@ public class Cql2RelConverter {
         AlgDataType filtersRowType = baseNode.getRowType();
         List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
         Map<String, AlgDataTypeField> filterMap = new HashMap<>();
-        filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+        filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
 
         filters.traverse( TraversalType.POSTORDER, ( treeNode, nodeType, direction, frame ) -> {
             if ( nodeType == NodeType.DESTINATION_NODE ) {

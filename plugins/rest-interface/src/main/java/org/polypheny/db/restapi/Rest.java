@@ -338,7 +338,7 @@ public class Rest {
             AlgDataType filtersRowType = baseNodeForFilters.getRowType();
             List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
-            filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+            filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
                 for ( Pair<Operator, PolyValue> filterOperationPair : filters.literalFilters.get( column ) ) {

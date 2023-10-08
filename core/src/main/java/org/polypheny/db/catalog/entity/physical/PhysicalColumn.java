@@ -87,6 +87,7 @@ public class PhysicalColumn extends PhysicalField {
     public PhysicalColumn(
             @Deserialize("id") final long id,
             @Deserialize("name") final String name,
+            @Deserialize("logicalName") final String logicalName,
             @Deserialize("allocId") final long allocId,
             @Deserialize("entityId") final long tableId,
             @Deserialize("adapterId") final long adapterId,
@@ -100,7 +101,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
-        super( id, name, allocId, tableId, adapterId, NamespaceType.RELATIONAL, true );
+        super( id, name, logicalName, allocId, tableId, adapterId, NamespaceType.RELATIONAL, true );
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -124,6 +125,7 @@ public class PhysicalColumn extends PhysicalField {
         this(
                 column.id,
                 name,
+                column.name,
                 allocTableId,
                 tableId,
                 adapterId,

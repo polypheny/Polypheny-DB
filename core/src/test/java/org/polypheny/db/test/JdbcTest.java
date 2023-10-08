@@ -23,7 +23,6 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -48,7 +47,6 @@ public class JdbcTest {
         public RelModify<?> toModificationAlg(
                 AlgOptCluster cluster,
                 CatalogEntity entity,
-                Prepare.CatalogReader catalogReader,
                 AlgNode child,
                 RelModify.Operation operation,
                 List<String> updateColumnList,

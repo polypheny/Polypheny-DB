@@ -61,7 +61,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     @JsonCreator
     public RelationalResult(
             @JsonProperty("namespaceType") NamespaceType namespaceType,
-            @JsonProperty("namespaceId") Long namespaceId,
+            @JsonProperty("namespace") String namespace,
             @JsonProperty("data") String[][] data,
             @JsonProperty("UiColumnDefinition") UiColumnDefinition[] header,
             @JsonProperty("exception") Throwable exception,
@@ -77,7 +77,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language ) {
-        super( namespaceType, namespaceId, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
+        super( namespaceType, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
         this.table = table;
         this.tables = tables;
         this.request = request;
