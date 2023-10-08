@@ -17,6 +17,7 @@
 package org.polypheny.db.docker;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.HashMap;
@@ -149,7 +150,8 @@ public final class HandshakeManager {
 
         private boolean guessIfContainerExists() {
             try {
-                Socket s = new Socket( hostname, communicationPort );
+                Socket s = new Socket();
+                s.connect( new InetSocketAddress( hostname, communicationPort ), 5000 );
                 s.close();
                 return true;
             } catch ( IOException ignore ) {

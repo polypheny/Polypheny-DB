@@ -19,6 +19,7 @@ package org.polypheny.db.docker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,8 @@ final class PolyphenyDockerClient {
 
 
     PolyphenyDockerClient( String hostname, int port, PolyphenyKeypair kp, byte[] serverCertificate ) throws IOException {
-        con = new Socket( hostname, port );
+        con = new Socket();
+        con.connect( new InetSocketAddress( hostname, port ), 5000 );
         this.client = new PolyphenyTlsClient( kp, serverCertificate, con.getInputStream(), con.getOutputStream() );
 
         this.in = client.getInputStream().get();
@@ -138,7 +140,7 @@ final class PolyphenyDockerClient {
 
         CreateContainerResponse resp = executeRequest( newRequest().setCreateContainer( ccr ) ).getCreateContainer();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( "Create Container: " + resp.getError() );
         }
         // Assert correct message
@@ -155,7 +157,7 @@ final class PolyphenyDockerClient {
 
         StartContainerResponse resp = executeRequest( newRequest().setStartContainer( cr ) ).getStartContainer();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
@@ -169,7 +171,7 @@ final class PolyphenyDockerClient {
         InspectContainerRequest ir = InspectContainerRequest.newBuilder().setUuid( uuid ).build();
         InspectContainerResponse resp = executeRequest( newRequest().setInspectContainer( ir ) ).getInspectContainer();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
         return resp.getStatus();
@@ -185,7 +187,7 @@ final class PolyphenyDockerClient {
 
         StopContainerResponse resp = executeRequest( newRequest().setStopContainer( cr ) ).getStopContainer();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
@@ -199,7 +201,7 @@ final class PolyphenyDockerClient {
         DeleteContainerRequest dr = DeleteContainerRequest.newBuilder().setUuid( uuid ).build();
         DeleteContainerResponse resp = executeRequest( newRequest().setDeleteContainer( dr ) ).getDeleteContainer();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
@@ -211,7 +213,7 @@ final class PolyphenyDockerClient {
         ListContainersRequest lr = ListContainersRequest.newBuilder().build();
         ListContainersResponse resp = executeRequest( newRequest().setListContainers( lr ) ).getListContainers();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
 
@@ -257,7 +259,7 @@ final class PolyphenyDockerClient {
                 .build();
         ExecuteCommandResponse resp = executeRequest( newRequest().setExecuteCommand( er ) ).getExecuteCommand();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
 
@@ -276,7 +278,7 @@ final class PolyphenyDockerClient {
 
         CreateVolumeResponse resp = executeRequest( newRequest().setCreateVolume( vr ) ).getCreateVolume();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
@@ -291,7 +293,7 @@ final class PolyphenyDockerClient {
 
         DeleteVolumeResponse resp = executeRequest( newRequest().setDeleteVolume( dv ) ).getDeleteVolume();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
@@ -302,7 +304,7 @@ final class PolyphenyDockerClient {
         PingRequest lr = PingRequest.newBuilder().build();
         PingResponse resp = executeRequest( newRequest().setPing( lr ) ).getPing();
 
-        if ( !resp.getError().equals( "" ) ) {
+        if ( !resp.getError().isEmpty() ) {
             throw new IOException( resp.getError() );
         }
     }
