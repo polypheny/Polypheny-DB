@@ -16,6 +16,8 @@
 
 package org.polypheny.db.protointerface.statements;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -25,14 +27,17 @@ import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statementProcessing.StatementProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class PIUnparameterizedStatement extends PIStatement {
 
+    @Getter
     String query;
+    @Getter
     Statement statement;
-    PolyImplementation<PolyValue> implementation;
+    @Setter
+    @Getter
+    PolyImplementation implementation;
 
 
     public PIUnparameterizedStatement( int id, PIClient client, QueryLanguage language, LogicalNamespace namespace, String query ) {
@@ -46,37 +51,13 @@ public class PIUnparameterizedStatement extends PIStatement {
     }
 
 
-    public StatementResult execute(int fetchSize) throws Exception {
+    public StatementResult execute( int fetchSize ) throws Exception {
         statement = client.getCurrentOrCreateNewTransaction().createStatement();
         synchronized ( client ) {
             StatementProcessor.implement( this );
-            return StatementProcessor.executeAndGetResult( this, fetchSize);
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
         }
     }
-
-    @Override
-    public PolyImplementation<PolyValue> getImplementation() {
-        return implementation;
-    }
-
-
-    @Override
-    public void setImplementation( PolyImplementation<PolyValue> implementation ) {
-        this.implementation = implementation;
-    }
-
-
-    @Override
-    public Statement getStatement() {
-        return statement;
-    }
-
-
-    @Override
-    public String getQuery() {
-        return query;
-    }
-
 
     @Override
     public Transaction getTransaction() {

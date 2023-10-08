@@ -16,9 +16,10 @@
 
 package org.polypheny.db.protointerface;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 import lombok.AllArgsConstructor;
-
-import java.util.*;
 
 public class PIClientInfoProperties extends Properties {
     private static final int MAX_STRING_LENGTH = 2147483647;
@@ -56,7 +57,7 @@ public class PIClientInfoProperties extends Properties {
 
 
     @AllArgsConstructor
-    static class ClientInfoPropertiesDefault {
+    public static class ClientInfoPropertiesDefault {
         String key;
         String default_value;
         int maxlength;

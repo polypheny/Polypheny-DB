@@ -19,7 +19,6 @@ package org.polypheny.db.protointerface.statements;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
@@ -33,15 +32,13 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 
+@Getter
 public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
-    @Getter
     protected String query;
-    @Getter
     protected Statement statement;
-    @Getter
     @Setter
-    protected PolyImplementation<PolyValue> implementation;
+    protected PolyImplementation implementation;
 
 
     public PIPreparedIndexedStatement(

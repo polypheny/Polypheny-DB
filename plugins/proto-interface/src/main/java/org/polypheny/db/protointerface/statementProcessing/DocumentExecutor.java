@@ -40,8 +40,9 @@ public class DocumentExecutor extends Executor {
         return namespaceType;
     }
 
+
     @Override
-    StatementResult executeAndGetResult(PIStatement piStatement) throws Exception {
+    StatementResult executeAndGetResult( PIStatement piStatement ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -50,7 +51,7 @@ public class DocumentExecutor extends Executor {
                     9000
             );
         }
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if ( implementation == null ) {
             throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
                     "I9002",
@@ -71,7 +72,7 @@ public class DocumentExecutor extends Executor {
 
 
     @Override
-    StatementResult executeAndGetResult(PIStatement piStatement, int fetchSize ) throws Exception {
+    StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
                     + piStatement.getLanguage().getNamespaceType()
@@ -80,7 +81,7 @@ public class DocumentExecutor extends Executor {
                     9000
             );
         }
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if ( implementation == null ) {
             throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
                     "I9002",
@@ -93,7 +94,7 @@ public class DocumentExecutor extends Executor {
             resultBuilder.setScalar( 1 );
             return resultBuilder.build();
         }
-        piStatement.setIterator(implementation.execute(piStatement.getStatement(), fetchSize ));
+        piStatement.setIterator( implementation.execute( piStatement.getStatement(), fetchSize ) );
         Frame frame = fetch( piStatement, fetchSize );
         resultBuilder.setFrame( frame );
         if ( frame.getIsLast() ) {
@@ -122,15 +123,15 @@ public class DocumentExecutor extends Executor {
                     9001
             );
         }
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if ( implementation == null ) {
             throw new PIServiceException( "Can't fetch form an unexecuted statement.",
                     "I9002",
                     9002
             );
         }
-        ResultIterator<PolyValue> iterator = piStatement.getIterator();
-        if (iterator == null) {
+        ResultIterator iterator = piStatement.getIterator();
+        if ( iterator == null ) {
             throw new PIServiceException( "Can't fetch form an unexecuted statement.",
                     "I9002",
                     9002

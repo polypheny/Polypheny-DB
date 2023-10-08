@@ -61,7 +61,7 @@ public class RelationalExecutor extends Executor {
                     9001
             );
         }
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if (implementation == null) {
             throw new PIServiceException( "Can't retrieve results form an unexecuted statement.",
                     "I9002",
@@ -98,7 +98,7 @@ public class RelationalExecutor extends Executor {
                     9001
             );
         }
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if (implementation == null) {
             throw new PIServiceException( "Can't retrieve results form an unprepared statement.",
                     "I9002",
@@ -138,14 +138,14 @@ public class RelationalExecutor extends Executor {
             );
         }
         StopWatch executionStopWatch = piStatement.getExecutionStopWatch();
-        PolyImplementation<PolyValue> implementation = piStatement.getImplementation();
+        PolyImplementation implementation = piStatement.getImplementation();
         if (implementation == null) {
             throw new PIServiceException( "Can't fetch form an unprepared statement.",
                     "I9002",
                     9002
             );
         }
-        ResultIterator<PolyValue> iterator = piStatement.getIterator();
+        ResultIterator iterator = piStatement.getIterator();
         if (iterator == null) {
             throw new PIServiceException( "Can't fetch form an unexecuted statement.",
                     "I9002",

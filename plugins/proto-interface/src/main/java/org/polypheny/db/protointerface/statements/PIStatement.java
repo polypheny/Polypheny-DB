@@ -16,7 +16,6 @@
 
 package org.polypheny.db.protointerface.statements;
 
-import java.util.Iterator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,23 +27,17 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.entity.PolyValue;
 
+@Getter
 @Slf4j
 public abstract class PIStatement {
 
-    @Getter
     protected final int id;
-    @Getter
     protected final PIClient client;
-    @Getter
     protected final StopWatch executionStopWatch;
-    @Getter
     protected final QueryLanguage language;
-    @Getter
     @Setter
-    private PolyImplementation.ResultIterator<PolyValue> iterator;
-    @Getter
+    private PolyImplementation.ResultIterator iterator;
     protected LogicalNamespace namespace;
 
 
@@ -70,9 +63,10 @@ public abstract class PIStatement {
         }
     }
 
-    public abstract PolyImplementation<PolyValue> getImplementation();
 
-    public abstract void setImplementation( PolyImplementation<PolyValue> implementation );
+    public abstract PolyImplementation getImplementation();
+
+    public abstract void setImplementation( PolyImplementation implementation );
 
     public abstract Statement getStatement();
 

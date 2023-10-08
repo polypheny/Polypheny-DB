@@ -54,19 +54,18 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFile;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
-import org.polypheny.db.type.entity.PolyStream;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyUserDefinedValue;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -208,16 +207,7 @@ public class PolyValueSerializer {
             case AUDIO:
             case FILE:
                 // used by PolyFile
-                if ( polyValue instanceof PolyFile ) {
-                    throw new NotImplementedException( "Serialization of PolyFile not implemented" );
-                    //return serializeAsProtoFile( polyValue.asFile() );
-                }
-                if ( polyValue instanceof PolyStream ) {
-                    throw new NotImplementedException( "Serialization of PolyStream not implemented" );
-                    //return serializeAsProtoStream( polyValue.asStream() );
-                }
-                throw new IllegalArgumentException( "Illegal poly value for poly type FILE." );
-                // used by PolyStream
+                return serializeAsProtoFile( polyValue.asBlob() );
             case DISTINCT:
             case STRUCTURED:
             case ROW:
@@ -385,13 +375,13 @@ public class PolyValueSerializer {
     }
 
 
-    private static ProtoValue serializeAsProtoFile( PolyFile polyFile ) {
+    private static ProtoValue serializeAsProtoFile( PolyBlob polyBlob ) {
         ProtoBinary protoBinary = ProtoBinary.newBuilder()
-                .setBinary( ByteString.copyFrom( polyFile.getValue() ) )
+                .setBinary( ByteString.copyFrom( polyBlob.getValue() ) )
                 .build();
         return ProtoValue.newBuilder()
                 .setBinary( protoBinary )
-                .setType( getType( polyFile ) )
+                .setType( getType( polyBlob ) )
                 .build();
     }
 

@@ -38,7 +38,6 @@ import org.polypheny.db.protointerface.proto.ProtoValue.ProtoValueType;
 import org.polypheny.db.protointerface.proto.StructMeta;
 import org.polypheny.db.protointerface.proto.TypeMeta;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyValue;
 
 public class RelationalMetaRetriever {
 
@@ -66,7 +65,7 @@ public class RelationalMetaRetriever {
     }
 
 
-    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation<PolyValue> polyImplementation ) {
+    public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();

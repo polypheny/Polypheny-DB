@@ -25,6 +25,7 @@ import java.io.IOException;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 
 /**

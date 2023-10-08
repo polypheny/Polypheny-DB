@@ -28,7 +28,6 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 public class SqlImplementer extends StatementImplementer {
@@ -58,7 +57,7 @@ public class SqlImplementer extends StatementImplementer {
             );
         }
         String query = piStatement.getQuery();
-        PolyImplementation<PolyValue> implementation;
+        PolyImplementation implementation;
         Processor queryProcessor = statement.getTransaction().getProcessor( language );
         Node parsedStatement = queryProcessor.parse( query ).get( 0 );
         if ( parsedStatement.isA( Kind.DDL ) ) {

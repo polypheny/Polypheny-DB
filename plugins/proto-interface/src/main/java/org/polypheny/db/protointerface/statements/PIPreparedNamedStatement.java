@@ -37,7 +37,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     protected String query;
     @Getter
     @Setter
-    protected PolyImplementation<PolyValue> implementation;
+    protected PolyImplementation implementation;
     @Getter
     protected Statement statement;
     private final NamedValueProcessor namedValueProcessor;
