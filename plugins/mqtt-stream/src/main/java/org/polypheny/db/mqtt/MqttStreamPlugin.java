@@ -805,8 +805,7 @@ public class MqttStreamPlugin extends Plugin {
                     topicsTable.addRow( "No topic subscriptions" );
                 } else {
                     for ( Entry<String, AtomicLong> t : topicsMap.entrySet() ) {
-                        String filterQuery = filterMap.get( t.getKey() );
-                        topicsTable.addRow( t.getKey(), t.getValue(), filterQuery == null ? "" : filterQuery );
+                        topicsTable.addRow( t.getKey(), t.getValue() );
                     }
                 }
 
