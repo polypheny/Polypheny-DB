@@ -20,11 +20,13 @@ import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 @Value
 @Accessors(chain = true)
 @SuperBuilder
+@Jacksonized
 @NonFinal
 public class FieldDefinition {
 

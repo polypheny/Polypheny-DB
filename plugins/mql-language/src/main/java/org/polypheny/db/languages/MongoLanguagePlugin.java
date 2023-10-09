@@ -172,7 +172,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                     }
                 }
             } catch ( Throwable t ) {
-                LanguageCrud.attachError( transaction, results, query, t );
+                LanguageCrud.attachError( transaction, results, query, NamespaceType.DOCUMENT, t );
                 log.warn( "Error on mql query: " + t.getMessage() );
             }
         }

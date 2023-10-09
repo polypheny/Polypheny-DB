@@ -157,7 +157,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
         } catch ( Throwable t ) {
             LanguageCrud.printLog( t, request );
-            LanguageCrud.attachError( transaction, results, query, t );
+            LanguageCrud.attachError( transaction, results, query, NamespaceType.DOCUMENT, t );
         }
 
         LanguageCrud.commitAndFinish( transaction, queryAnalyzer, results, executionTime );

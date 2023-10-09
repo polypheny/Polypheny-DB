@@ -302,7 +302,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
@@ -318,7 +318,8 @@ public class Functions {
         }
         if ( values.isEmpty() ) {
             // there are no updates to make, we don't execute the right executor
-            return Linq4j.asEnumerable( List.of( PolyInteger.of( 0 ) ) );
+            values.add( new PolyValue[]{ PolyInteger.of( 0 ) } );
+            return Linq4j.asEnumerable( values );
         }
 
         List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
@@ -340,7 +341,7 @@ public class Functions {
             context.addParameterValues( i, algDataTypes.get( i ), vals.get( i ) );
         }
 
-        List<Object> results = new ArrayList<>();
+        List<PolyValue[]> results = new ArrayList<>();
         Enumerable<Object> executor = executorCall.apply();
         for ( Object o : executor ) {
             results.add( new PolyValue[]{ (PolyValue) o } );

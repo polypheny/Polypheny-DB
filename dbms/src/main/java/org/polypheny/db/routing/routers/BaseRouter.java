@@ -273,7 +273,7 @@ public abstract class BaseRouter implements Router {
             return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation );
         }
 
-        throw new RuntimeException( "Error while routing graph query." );
+        throw new GenericRuntimeException( "Error while routing graph query." );
 
     }
 

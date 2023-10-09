@@ -16,17 +16,48 @@
 
 package org.polypheny.db.webui.models.results;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.jackson.Jacksonized;
+import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
-@Jacksonized
 @Value
 public class DocResult extends Result<String, FieldDefinition> {
+
+    public DocResult(
+            @JsonProperty("namespaceType") NamespaceType namespaceType,
+            @JsonProperty("namespace") String namespace,
+            @JsonProperty("data") String[] data,
+            @JsonProperty("header") FieldDefinition[] header,
+            @JsonProperty("exception") Throwable exception,
+            @JsonProperty("query") String query,
+            @JsonProperty("xid") String xid,
+            @JsonProperty("error") String error,
+            @JsonProperty("currentPage") int currentPage,
+            @JsonProperty("highestPage") int highestPage,
+            @JsonProperty("hasMore") boolean hasMore,
+            @JsonProperty("language") QueryLanguage language,
+            @JsonProperty("affectedTuples") int affectedTuples ) {
+        super(
+                namespaceType,
+                namespace,
+                data,
+                header,
+                exception,
+                query,
+                xid,
+                error,
+                currentPage,
+                highestPage,
+                hasMore,
+                language,
+                affectedTuples );
+    }
 
     // public Throwable exception;
 

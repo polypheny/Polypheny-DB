@@ -19,13 +19,14 @@ package org.polypheny.db.webui.models.results;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
@@ -90,8 +91,11 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     }
 
     public String toJson() {
-        Gson gson = new Gson();
-        return gson.toJson( this );
+        try {
+            return HttpServer.mapper.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            return null;
+        }
     }
 
 

@@ -65,7 +65,11 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     @Override
     public @Nullable String toJson() {
         return map == null ? JsonToken.VALUE_NULL.asString() : "{" +
-                map.entrySet().stream().map( e -> e.getKey().toJson() + ":" + (e.getValue().isString() ? e.getValue().asString().toQuotedJson() : e.getValue().toJson()) ).collect( Collectors.joining( "," ) )
+                map.entrySet().stream()
+                        .map( e -> (e.getKey().isString() ? e.getKey().asString().toQuotedJson() : e.getKey().toJson()) + ":" +
+                                (e.getValue().isString()
+                                        ? e.getValue().asString().toQuotedJson()
+                                        : e.getValue().toJson()) ).collect( Collectors.joining( "," ) )
                 + "}";
     }
 

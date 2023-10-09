@@ -46,6 +46,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -173,9 +174,23 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, Throwable t ) {
+    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, NamespaceType model, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        RelationalResult result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+        Result<?, ?> result;
+        switch ( model ) {
+            case RELATIONAL:
+                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                break;
+            case DOCUMENT:
+                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                break;
+            case GRAPH:
+                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                break;
+            default:
+                throw new GenericRuntimeException( "Unknown data model." );
+        }
+
 
         if ( transaction.isActive() ) {
             try {
