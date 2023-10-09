@@ -42,7 +42,7 @@ public class PIPlugin extends PolyPlugin {
 
 
     @Override
-    public void start() {
+    public void afterCatalogInit() {
         Map<String, String> settings = new HashMap<>();
         settings.put( "port", "20590" );
         settings.put( "requires heartbeat", "false" );
