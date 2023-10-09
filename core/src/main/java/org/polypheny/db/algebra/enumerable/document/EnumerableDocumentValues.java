@@ -69,14 +69,14 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
         final List<Expression> expressions = new ArrayList<>();
 
         for ( PolyValue doc : documents ) {
-            expressions.add( doc.asExpression() );
+            expressions.add( Expressions.newArrayInit( PolyDocument.class, doc.asExpression() ) );
         }
         builder.add(
                 Expressions.return_(
                         null,
                         Expressions.call(
                                 BuiltInMethod.AS_ENUMERABLE.method,
-                                Expressions.newArrayInit( Primitive.box( rowClass ), expressions ) ) ) );
+                                Expressions.newArrayInit( Primitive.box( PolyValue.class ), 2, expressions ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

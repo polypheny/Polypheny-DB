@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.Types.ArrayType;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
@@ -381,12 +382,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         for ( AlgDataTypeField field : getRowType().getFieldList() ) {
 
             Expression raw;
+            Expression element = Expressions.convert_( Expressions.arrayIndex( Expressions.convert_( target, new ArrayType( PolyValue.class ) ), Expressions.constant( 0 ) ), PolyDocument.class );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "removeNames", element, EnumUtils.constantArrayList( extract, String.class ) );
                 raw = Expressions.convert_( raw, PolyDocument.class );
             } else {
-                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "get", element, PolyString.of( field.getName() ).asExpression() );
             }
             // serialize
