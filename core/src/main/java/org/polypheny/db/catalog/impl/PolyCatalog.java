@@ -453,7 +453,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void restore() {
         this.backup = persister.read();
-        if ( this.backup == null ) {
+        if ( this.backup == null || this.backup.isEmpty() ) {
             log.warn( "No file found to restore" );
             return;
         }
