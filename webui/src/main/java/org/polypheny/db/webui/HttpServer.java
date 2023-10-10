@@ -221,9 +221,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/dropConstraint", crud::dropConstraint );
 
-        webuiServer.post( "/addPrimaryKey", crud::addPrimaryKey );
+        webuiServer.post( "/createPrimaryKey", crud::addPrimaryKey );
 
-        webuiServer.post( "/addUniqueConstraint", crud::addUniqueConstraint );
+        webuiServer.post( "/createUniqueConstraint", crud::addUniqueConstraint );
 
         webuiServer.post( "/getIndexes", crud::getIndexes );
 
@@ -231,7 +231,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getUml", crud::getUml );
 
-        webuiServer.post( "/addForeignKey", crud::addForeignKey );
+        webuiServer.post( "/createForeignKey", crud::addForeignKey );
 
         webuiServer.post( "/createIndex", crud::createIndex );
 
@@ -279,7 +279,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
-        webuiServer.post( "/addAdapter", crud::addAdapter );
+        webuiServer.post( "/createAdapter", crud::addAdapter );
 
         webuiServer.post( "/pathAccess", crud::startAccessRequest );
 
@@ -287,7 +287,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
 
-        webuiServer.post( "/addQueryInterface", crud::addQueryInterface );
+        webuiServer.post( "/createQueryInterface", crud::addQueryInterface );
 
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings );
 

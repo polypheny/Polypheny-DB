@@ -50,7 +50,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
         if ( graphs.size() != 1 ) {
             throw new RuntimeException( "Error while dropping a graph database alias." );
         }
-        DdlManager.getInstance().removeGraphAlias( graphs.get( 0 ).id, aliasName, ifExists );
+        DdlManager.getInstance().dropGraphAlias( graphs.get( 0 ).id, aliasName, ifExists );
     }
 
 

@@ -95,7 +95,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             }
 
             try {
-                DdlManager.getInstance().removePartitioning( table, statement );
+                DdlManager.getInstance().dropTablePartition( table, statement );
             } catch ( TransactionException e ) {
                 throw new GenericRuntimeException( "Error while merging partitions", e );
             }

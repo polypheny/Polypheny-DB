@@ -520,12 +520,12 @@ public class TestHelper {
     }
 
 
+    @Getter
     public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
         private final static int port = 20591;
 
-        @Getter
         private final Connection connection;
 
 

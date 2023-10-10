@@ -37,12 +37,14 @@ import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import java.lang.reflect.Type;
+import java.sql.Timestamp;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -830,6 +832,52 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         }
 
         throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
+    }
+
+
+    public static PolyValue fromType( Object object, PolyType type ) {
+        switch ( type ) {
+            case BOOLEAN:
+                return PolyBoolean.of( (Boolean) object );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return PolyInteger.of( (Number) object );
+            case BIGINT:
+                return PolyLong.of( (Number) object );
+            case DECIMAL:
+                return PolyBigDecimal.of( object.toString() );
+            case FLOAT:
+            case REAL:
+                return PolyFloat.of( (Number) object );
+            case DOUBLE:
+                return PolyDouble.of( (Number) object );
+            case DATE:
+                if ( object instanceof Number ) {
+                    return PolyDate.of( (Number) object );
+                }
+                throw new NotImplementedException();
+
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Number ) {
+                    return PolyTime.of( (Number) object );
+                }
+                throw new NotImplementedException();
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Timestamp ) {
+                    return PolyTimeStamp.of( (Timestamp) object );
+                }
+                throw new NotImplementedException();
+            case CHAR:
+            case VARCHAR:
+                return PolyString.of( (String) object );
+            case BINARY:
+            case VARBINARY:
+                return PolyBinary.of( (ByteString) object );
+        }
+        throw new NotImplementedException();
     }
 
 

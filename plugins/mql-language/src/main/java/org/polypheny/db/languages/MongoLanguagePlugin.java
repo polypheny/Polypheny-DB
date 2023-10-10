@@ -135,7 +135,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
                 if ( parsed instanceof MqlUseDatabase ) {
                     Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( ((MqlUseDatabase) parsed).getDatabase() );
-                    namespaceId = optionalNamespace.map( logicalNamespace -> logicalNamespace.id ).orElseGet( () -> Catalog.getInstance().addNamespace( ((MqlUseDatabase) parsed).getDatabase(), NamespaceType.DOCUMENT, false ) );
+                    namespaceId = optionalNamespace.map( logicalNamespace -> logicalNamespace.id ).orElseGet( () -> Catalog.getInstance().createNamespace( ((MqlUseDatabase) parsed).getDatabase(), NamespaceType.DOCUMENT, false ) );
                     continue;
                 }
 

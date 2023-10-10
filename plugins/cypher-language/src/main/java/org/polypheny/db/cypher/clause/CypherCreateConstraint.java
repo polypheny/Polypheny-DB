@@ -79,7 +79,7 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
             throw new UnsupportedOperationException( "Only unique constraints are supported at the moment." );
         }
 
-        //DdlManager.getInstance().addConstraint(  );
+        //DdlManager.getInstance().createConstraint(  );
     }
 
 }

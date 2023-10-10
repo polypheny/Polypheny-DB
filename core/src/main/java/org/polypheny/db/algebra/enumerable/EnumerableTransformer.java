@@ -209,7 +209,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         Expression nodesExp = Expressions.call( BuiltInMethod.X_MODEL_MERGE_NODE_COLLECTIONS.method, EnumUtils.expressionList( tableAsNodes ) );
 
-        MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
+        Expression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
 
         Expression body = Expressions.new_(
                 enumeratorType,

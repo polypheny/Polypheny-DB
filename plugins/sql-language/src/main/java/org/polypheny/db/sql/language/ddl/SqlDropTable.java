@@ -59,7 +59,7 @@ public class SqlDropTable extends SqlDropObject {
             }
         }
 
-        DdlManager.getInstance().deleteTable( table, statement );
+        DdlManager.getInstance().dropTable( table, statement );
     }
 
 }

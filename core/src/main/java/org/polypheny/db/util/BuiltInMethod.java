@@ -492,7 +492,8 @@ public enum BuiltInMethod {
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, PolyString.class ),
     X_MODEL_NODE_TO_COLLECTION( CrossModelFunctions.class, "nodesToCollection", Enumerable.class ),
 
-    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class );
+    X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
+    SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class );
 
     private static final String toIntOptional = "toIntOptional";
     public final Method method;

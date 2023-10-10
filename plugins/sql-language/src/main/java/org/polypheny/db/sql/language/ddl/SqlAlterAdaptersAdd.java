@@ -96,7 +96,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         @SuppressWarnings("unchecked")
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
 
-        DdlManager.getInstance().addAdapter(
+        DdlManager.getInstance().createAdapter(
                 removeQuotationMarks( uniqueName.toString() ),
                 removeQuotationMarks( adapterName.toString() ),
                 AdapterType.valueOf( removeQuotationMarks( adapterType.toString().toUpperCase() ) ),

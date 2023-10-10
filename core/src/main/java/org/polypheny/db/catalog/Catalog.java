@@ -33,7 +33,6 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
@@ -49,7 +48,6 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.transaction.Transaction;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -123,9 +121,6 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
-
-    public abstract Map<Long, AlgNode> getNodeInfo();
-
     public abstract <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id );
 
     public abstract void addStoreSnapshot( StoreCatalog snapshot );
@@ -152,25 +147,13 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     /**
-     * Validates that all columns have a valid placement,
-     * else deletes them.
-     */
-    public abstract void validateColumns();
-
-    /**
-     * On restart, all AlgNodes used in views and materialized views need to be recreated.
-     * Depending on the query language, different methods are used.
-     */
-    public abstract void restoreViews( Transaction transaction );
-
-    /**
      * Inserts a new user
      *
      * @param name of the user
      * @param password of the user
      * @return the id of the created user
      */
-    public abstract long addUser( String name, String password );
+    public abstract long createUser( String name, String password );
 
 
     /**
@@ -187,7 +170,7 @@ public abstract class Catalog implements ExtensionPoint {
      *
      * @param id The id of the schema to delete
      */
-    public abstract void deleteNamespace( long id );
+    public abstract void dropNamespace( long id );
 
 
     /**
@@ -198,7 +181,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param caseSensitive
      * @return The id of the inserted schema
      */
-    public abstract long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive );
+    public abstract long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive );
 
     /**
      * Add an adapter
@@ -210,7 +193,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param mode
      * @return The id of the newly added adapter
      */
-    public abstract long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
+    public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
 
     /**
      * Update settings of an adapter
@@ -225,7 +208,7 @@ public abstract class Catalog implements ExtensionPoint {
      *
      * @param id The id of the adapter to delete
      */
-    public abstract void deleteAdapter( long id );
+    public abstract void dropAdapter( long id );
 
 
     /**
@@ -236,21 +219,21 @@ public abstract class Catalog implements ExtensionPoint {
      * @param settings The configuration of the query interface
      * @return The id of the newly added query interface
      */
-    public abstract long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
+    public abstract long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings );
 
     /**
      * Delete a query interface
      *
      * @param id The id of the query interface to delete
      */
-    public abstract void deleteQueryInterface( long id );
+    public abstract void dropQueryInterface( long id );
 
-    public abstract long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
+    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer );
 
 
-    public abstract void addInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
+    public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
 
-    public abstract void removeInterfaceTemplate( String name );
+    public abstract void dropInterfaceTemplate( String name );
 
     @NotNull
     public abstract Map<String, QueryInterfaceTemplate> getInterfaceTemplates();
@@ -283,7 +266,7 @@ public abstract class Catalog implements ExtensionPoint {
     public abstract Map<Long, AdapterTemplate> getAdapterTemplates();
 
 
-    public abstract void removeAdapterTemplate( long templateId );
+    public abstract void dropAdapterTemplate( long templateId );
 
 
     public abstract PropertyChangeListener getChangeListener();

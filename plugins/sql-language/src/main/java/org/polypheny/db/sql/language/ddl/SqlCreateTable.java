@@ -234,7 +234,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
             if ( partitionType != null ) {
                 context.updateSnapshot();
-                DdlManager.getInstance().addPartitioning(
+                DdlManager.getInstance().createTablePartition(
                         PartitionInformation.fromNodeLists(
                                 searchEntity( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),

@@ -17,11 +17,9 @@
 package org.polypheny.db.catalog;
 
 import java.beans.PropertyChangeListener;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
@@ -30,14 +28,10 @@ import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.transaction.Transaction;
 
 
 /**
@@ -140,7 +134,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public long addUser( String name, String password ) {
+    public long createUser( String name, String password ) {
         throw new NotImplementedException();
     }
 
@@ -150,53 +144,8 @@ public abstract class MockCatalog extends Catalog {
         throw new NotImplementedException();
     }
 
-
     @Override
-    public void validateColumns() {
-        throw new NotImplementedException();
-    }
-
-
-
-    @Override
-    public Map<Long, AlgNode> getNodeInfo() {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public void restoreViews( Transaction transaction ) {
-        throw new NotImplementedException();
-    }
-
-
-    private List<CatalogDatabase> getDatabases( Pattern pattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    private CatalogDatabase getDatabase( String databaseName ) {
-        throw new NotImplementedException();
-    }
-
-
-    private CatalogDatabase getDatabase( long databaseId ) {
-        throw new NotImplementedException();
-    }
-
-
-    private List<LogicalNamespace> getSchemas( long databaseId, Pattern schemaNamePattern ) {
-        throw new NotImplementedException();
-    }
-
-
-    private LogicalNamespace getNamespace( long databaseId, String schemaName ) {
-        throw new NotImplementedException();
-    }
-
-
-    @Override
-    public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    public long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         throw new NotImplementedException();
     }
 
@@ -208,13 +157,13 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteNamespace( long id ) {
+    public void dropNamespace( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
+    public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         throw new NotImplementedException();
     }
 
@@ -226,19 +175,19 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public void deleteAdapter( long id ) {
+    public void dropAdapter( long id ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         throw new NotImplementedException();
     }
 
 
     @Override
-    public void deleteQueryInterface( long id ) {
+    public void dropQueryInterface( long id ) {
         throw new NotImplementedException();
     }
 

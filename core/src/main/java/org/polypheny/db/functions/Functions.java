@@ -807,12 +807,13 @@ public class Functions {
     }
 
 
-    public static Enumerable<?> singleSum( Enumerable<?> results ) {
+    @SuppressWarnings("unused")
+    public static Enumerable<?> singleSum( Enumerable<PolyValue[]> results ) {
         long amount = 0;
-        for ( Object result : results ) {
-            amount += ((PolyNumber) result).intValue();
+        for ( PolyValue[] result : results ) {
+            amount += result[0].asNumber().intValue();
         }
-        return Linq4j.singletonEnumerable( PolyLong.of( amount ) );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( amount ) } );
     }
 
 
@@ -3666,6 +3667,17 @@ public class Functions {
 
     public static Object jsonStructuredValueExpression( Object input ) {
         return input;
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> singleToArray( Enumerable<? extends PolyValue> enumerable ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<PolyValue[]> enumerator() {
+                return Linq4j.transform( enumerable.enumerator(), e -> new PolyValue[]{ e } );
+            }
+        };
     }
 
 

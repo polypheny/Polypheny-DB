@@ -34,7 +34,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
@@ -63,7 +62,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 
 
@@ -292,13 +290,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    @Deprecated
-    public Map<Long, AlgNode> getNodeInfo() {
-        return null;
-    }
-
-
-    @Override
     public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
         return Optional.ofNullable( (S) storeCatalogs.get( id ) );
     }
@@ -311,28 +302,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    @Deprecated
-    public void validateColumns() {
-
-    }
-
-
-    @Override
-    @Deprecated
-    public void restoreViews( Transaction transaction ) {
-
-    }
-
-
-    @Override
-    public long addUser( String name, String password ) {
+    public long createUser( String name, String password ) {
         long id = idBuilder.getNewUserId();
         users.put( id, new CatalogUser( id, name, password ) );
         return id;
     }
 
 
-    public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    public long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
         LogicalNamespace namespace = new LogicalNamespace( id, name, namespaceType, caseSensitive );
@@ -369,7 +346,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteNamespace( long id ) {
+    public void dropNamespace( long id ) {
         logicalCatalogs.remove( id );
 
         change();
@@ -377,7 +354,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
+    public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
         adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, mode, settings ) );
         change();
@@ -396,14 +373,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteAdapter( long id ) {
+    public void dropAdapter( long id ) {
         adapters.remove( id );
         change();
     }
 
 
     @Override
-    public long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         long id = idBuilder.getNewInterfaceId();
 
         interfaces.put( id, new CatalogQueryInterface( id, uniqueName, clazz, settings ) );
@@ -414,14 +391,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteQueryInterface( long id ) {
+    public void dropQueryInterface( long id ) {
         interfaces.remove( id );
         change();
     }
 
 
     @Override
-    public long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         long id = idBuilder.getNewAdapterTemplateId();
         adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, description, deployer ) );
         change();
@@ -430,21 +407,21 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void addInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
+    public void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
         interfaceTemplates.put( name, queryInterfaceTemplate );
         change();
     }
 
 
     @Override
-    public void removeInterfaceTemplate( String name ) {
+    public void dropInterfaceTemplate( String name ) {
         interfaceTemplates.remove( name );
         change();
     }
 
 
     @Override
-    public void removeAdapterTemplate( long templateId ) {
+    public void dropAdapterTemplate( long templateId ) {
         adapterTemplates.remove( templateId );
         change();
     }

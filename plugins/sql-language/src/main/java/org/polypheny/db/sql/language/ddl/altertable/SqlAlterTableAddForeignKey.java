@@ -102,7 +102,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         LogicalTable catalogTable = searchEntity( context, table );
         LogicalTable refTable = searchEntity( context, referencesTable );
 
-        DdlManager.getInstance().addForeignKey(
+        DdlManager.getInstance().createForeignKey(
                 catalogTable,
                 refTable,
                 columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),

@@ -59,7 +59,7 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
         if ( graphs.size() != 1 ) {
             throw new RuntimeException( "Error while creating a new graph database alias." );
         }
-        DdlManager.getInstance().addGraphAlias( graphs.get( 0 ).id, aliasName, ifNotExists );
+        DdlManager.getInstance().createGraphAlias( graphs.get( 0 ).id, aliasName, ifNotExists );
     }
 
 

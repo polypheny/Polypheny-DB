@@ -31,7 +31,6 @@ public interface AllocationCatalog extends Wrapper {
 
     LogicalNamespace getNamespace();
 
-
     ConcurrentHashMap<Long, AllocationPartition> getPartitions();
 
     ConcurrentHashMap<Long, AllocationPlacement> getPlacements();

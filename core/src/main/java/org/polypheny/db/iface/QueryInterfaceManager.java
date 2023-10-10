@@ -79,7 +79,7 @@ public class QueryInterfaceManager {
 
 
     public static void addInterfaceType( String interfaceName, Class<? extends QueryInterface> clazz, Map<String, String> defaultSettings ) {
-        Catalog.getInstance().addInterfaceTemplate( clazz.getSimpleName(), new QueryInterfaceTemplate( clazz, interfaceName, defaultSettings ) );
+        Catalog.getInstance().createInterfaceTemplate( clazz.getSimpleName(), new QueryInterfaceTemplate( clazz, interfaceName, defaultSettings ) );
         //REGISTER.put( clazz.getSimpleName(), new QueryInterfaceType( clazz, interfaceName, defaultSettings ) );
     }
 
@@ -90,7 +90,7 @@ public class QueryInterfaceManager {
                 throw new RuntimeException( "Cannot remove the interface type, there is still a interface active." );
             }
         }
-        Catalog.getInstance().removeInterfaceTemplate( clazz.getSimpleName() );
+        Catalog.getInstance().dropInterfaceTemplate( clazz.getSimpleName() );
     }
 
 
@@ -167,7 +167,7 @@ public class QueryInterfaceManager {
             split = split[split.length - 1].split( "\\." );
             Class<?> clazz = Catalog.snapshot().getInterfaceTemplate( split[split.length - 1] ).orElseThrow().clazz;
             Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, long.class, String.class, Map.class );
-            ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
+            ifaceId = catalog.createQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
 
             Thread thread = new Thread( instance );
@@ -184,12 +184,12 @@ public class QueryInterfaceManager {
             interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
         } catch ( InvocationTargetException e ) {
             if ( ifaceId != -1 ) {
-                catalog.deleteQueryInterface( ifaceId );
+                catalog.dropQueryInterface( ifaceId );
             }
             throw new GenericRuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
         } catch ( NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
             if ( ifaceId != -1 ) {
-                catalog.deleteQueryInterface( ifaceId );
+                catalog.dropQueryInterface( ifaceId );
             }
             throw new GenericRuntimeException( "Something went wrong while adding a new query interface!", e );
         }
@@ -213,7 +213,7 @@ public class QueryInterfaceManager {
         interfaceThreadById.remove( catalogQueryInterface.id );
 
         // Delete query interface from catalog
-        catalog.deleteQueryInterface( catalogQueryInterface.id );
+        catalog.dropQueryInterface( catalogQueryInterface.id );
     }
 
 

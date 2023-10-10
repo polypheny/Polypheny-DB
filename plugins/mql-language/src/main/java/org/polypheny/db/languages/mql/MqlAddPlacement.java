@@ -60,7 +60,7 @@ public class MqlAddPlacement extends MqlCollectionStatement implements Executabl
             throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 
-        DdlManager.getInstance().addCollectionAllocation( namespaceId, getCollection(), dataStores, statement );
+        DdlManager.getInstance().createCollectionPlacement( namespaceId, getCollection(), dataStores, statement );
     }
 
 

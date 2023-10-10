@@ -273,8 +273,6 @@ public class Rest {
         AlgDataType tableRowType = table.getRowType();
         List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
 
-//        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
-
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
