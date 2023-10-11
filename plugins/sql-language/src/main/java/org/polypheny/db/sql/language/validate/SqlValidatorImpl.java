@@ -40,11 +40,11 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -67,6 +67,7 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
@@ -358,7 +359,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     @Override
     public SqlNodeList expandStar( SqlNodeList selectList, SqlSelect select, boolean includeSystemVars ) {
         final List<SqlNode> list = new ArrayList<>();
-        final List<Map.Entry<String, AlgDataType>> types = new ArrayList<>();
+        final List<AlgDataTypeField> types = new ArrayList<>();
         for ( int i = 0; i < selectList.size(); i++ ) {
             final SqlNode selectItem = (SqlNode) selectList.get( i );
             final AlgDataType originalType = getValidatedNodeTypeIfKnown( selectItem );
@@ -431,7 +432,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param includeSystemVars If true include system vars in lists
      * @return Whether the node was expanded
      */
-    private boolean expandSelectItem( final SqlNode selectItem, SqlSelect select, AlgDataType targetType, List<SqlNode> selectItems, Set<String> aliases, List<Map.Entry<String, AlgDataType>> fields, final boolean includeSystemVars ) {
+    private boolean expandSelectItem( final SqlNode selectItem, SqlSelect select, AlgDataType targetType, List<SqlNode> selectItems, Set<String> aliases, List<AlgDataTypeField> fields, final boolean includeSystemVars ) {
         final SelectScope scope = (SelectScope) getWhereScope( select );
         if ( expandStar( selectItems, aliases, fields, includeSystemVars, scope, selectItem ) ) {
             return true;
@@ -463,12 +464,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
         final AlgDataType type = deriveType( selectScope, expanded );
         setValidatedNodeType( expanded, type );
-        fields.add( Pair.of( alias, type ) );
+        fields.add( new AlgDataTypeFieldImpl( 1L, alias, 0, type ) );
         return false;
     }
 
 
-    private boolean expandStar( List<SqlNode> selectItems, Set<String> aliases, List<Map.Entry<String, AlgDataType>> fields, boolean includeSystemVars, SelectScope scope, SqlNode node ) {
+    private boolean expandStar( List<SqlNode> selectItems, Set<String> aliases, List<AlgDataTypeField> fields, boolean includeSystemVars, SelectScope scope, SqlNode node ) {
         if ( !(node instanceof SqlIdentifier) ) {
             return false;
         }
@@ -526,10 +527,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
                 if ( child.nullable ) {
                     for ( int i = before; i < fields.size(); i++ ) {
-                        final Entry<String, AlgDataType> entry = fields.get( i );
-                        final AlgDataType type = entry.getValue();
+                        final AlgDataTypeField entry = fields.get( i );
+                        final AlgDataType type = entry.getType();
                         if ( !type.isNullable() ) {
-                            fields.set( i, Pair.of( entry.getKey(), typeFactory.createTypeWithNullability( type, true ) ) );
+                            fields.set( i, new AlgDataTypeFieldImpl( entry.getId(), entry.getName(), i, typeFactory.createTypeWithNullability( type, true ) ) );
                         }
                     }
                 }
@@ -588,7 +589,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private boolean addOrExpandField( List<SqlNode> selectItems, Set<String> aliases, List<Map.Entry<String, AlgDataType>> fields, boolean includeSystemVars, SelectScope scope, SqlIdentifier id, AlgDataTypeField field ) {
+    private boolean addOrExpandField( List<SqlNode> selectItems, Set<String> aliases, List<AlgDataTypeField> fields, boolean includeSystemVars, SelectScope scope, SqlIdentifier id, AlgDataTypeField field ) {
         switch ( field.getType().getStructKind() ) {
             case PEEK_FIELDS:
             case PEEK_FIELDS_DEFAULT:
@@ -1513,7 +1514,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      */
     AlgDataType getTableConstructorRowType( SqlCall values, SqlValidatorScope scope ) {
         final List<Node> rows = values.getOperandList();
-        assert rows.size() >= 1;
+        assert !rows.isEmpty();
         final List<AlgDataType> rowTypes = new ArrayList<>();
         for ( final Node row : rows ) {
             assert row.getKind() == Kind.ROW;
@@ -1521,14 +1522,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             // REVIEW jvs: Once we support single-row queries as rows, need to infer aliases from there.
             final List<String> aliasList = new ArrayList<>();
-            final List<AlgDataType> typeList = new ArrayList<>();
+            final List<AlgDataType> types = new ArrayList<>();
+            final List<Long> ids = new ArrayList<>();
             for ( Ord<Node> column : Ord.zip( rowConstructor.getOperandList() ) ) {
                 final String alias = deriveAlias( (SqlNode) column.e, column.i );
                 aliasList.add( alias );
                 final AlgDataType type = deriveType( scope, column.e );
-                typeList.add( type );
+                types.add( type );
+                ids.add( null );
             }
-            rowTypes.add( typeFactory.createStructType( typeList, aliasList ) );
+            rowTypes.add( typeFactory.createStructType( ids, types, aliasList ) );
         }
         if ( rows.size() == 1 ) {
             // TODO jvs: Get rid of this workaround once leastRestrictive can handle all cases
@@ -1772,13 +1775,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Adds an expression to a select list, ensuring that its alias does not clash with any existing expressions on the list.
      */
-    protected void addToSelectList( List<SqlNode> list, Set<String> aliases, List<Map.Entry<String, AlgDataType>> fieldList, SqlNode exp, SqlValidatorScope scope, final boolean includeSystemVars ) {
+    protected void addToSelectList( List<SqlNode> list, Set<String> aliases, List<AlgDataTypeField> fieldList, SqlNode exp, SqlValidatorScope scope, final boolean includeSystemVars ) {
         String alias = SqlValidatorUtil.getAlias( exp, -1 );
         String uniqueAlias = ValidatorUtil.uniquify( alias, aliases, ValidatorUtil.EXPR_SUGGESTER );
         if ( !alias.equals( uniqueAlias ) ) {
             exp = (SqlNode) SqlValidatorUtil.addAlias( exp, uniqueAlias );
         }
-        fieldList.add( Pair.of( uniqueAlias, deriveType( scope, exp ) ) );
+        fieldList.add( new AlgDataTypeFieldImpl( 1L, uniqueAlias, fieldList.size(), deriveType( scope, exp ) ) );
         list.add( exp );
     }
 
@@ -3891,7 +3894,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final SqlValidatorScope selectScope = getSelectScope( select );
         final List<SqlNode> expandedSelectItems = new ArrayList<>();
         final Set<String> aliases = new HashSet<>();
-        final List<Map.Entry<String, AlgDataType>> fieldList = new ArrayList<>();
+        final List<AlgDataTypeField> fieldList = new ArrayList<>();
 
         for ( int i = 0; i < selectItems.size(); i++ ) {
             Node selectItem = selectItems.get( i );
@@ -3966,7 +3969,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param aliasList built from user or system values
      * @param fieldList Built up entries for each select list entry
      */
-    private void handleScalarSubQuery( SqlSelect parentSelect, SqlSelect selectItem, List<SqlNode> expandedSelectItems, Set<String> aliasList, List<Map.Entry<String, AlgDataType>> fieldList ) {
+    private void handleScalarSubQuery( SqlSelect parentSelect, SqlSelect selectItem, List<SqlNode> expandedSelectItems, Set<String> aliasList, List<AlgDataTypeField> fieldList ) {
         // A scalar sub-query only has one output column.
         if ( 1 != selectItem.getSqlSelectList().size() ) {
             throw newValidationError( selectItem, RESOURCE.onlyScalarSubQueryAllowed() );
@@ -3990,7 +3993,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         AlgDataType nodeType = rec.getFieldList().get( 0 ).getType();
         nodeType = typeFactory.createTypeWithNullability( nodeType, true );
-        fieldList.add( Pair.of( alias, nodeType ) );
+        fieldList.add( new AlgDataTypeFieldImpl( 1L, alias, 0, nodeType ) );
     }
 
 
@@ -4013,10 +4016,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             return baseRowType;
         }
         List<AlgDataTypeField> targetFields = baseRowType.getFieldList();
-        final List<Map.Entry<String, AlgDataType>> fields = new ArrayList<>();
+        final List<AlgDataTypeField> fields = new ArrayList<>();
         if ( append ) {
             for ( AlgDataTypeField targetField : targetFields ) {
-                fields.add( Pair.of( CoreUtil.deriveAliasFromOrdinal( fields.size() ), targetField.getType() ) );
+                fields.add( new AlgDataTypeFieldImpl( 1L, CoreUtil.deriveAliasFromOrdinal( fields.size() ), fields.size(), targetField.getType() ) );
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
@@ -4207,13 +4210,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     long targetDimension = ((ArrayType) targetType).getDimension();
                     long sourceDimension = ((ArrayType) sourceType).getMaxDimension();
                     if ( sourceDimension > targetDimension && targetDimension > -1 ) {
-                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey(), sourceDimension, targetDimension ) );
+                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getName(), sourceDimension, targetDimension ) );
                     }
 
                     long targetCardinality = ((ArrayType) targetType).getCardinality();
                     long sourceCardinality = ((ArrayType) sourceType).getMaxCardinality();
                     if ( sourceCardinality > targetCardinality && targetCardinality > -1 ) {
-                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey(), sourceCardinality, targetCardinality ) );
+                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getName(), sourceCardinality, targetCardinality ) );
                     }
                 }
             }
@@ -4406,7 +4409,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private void validateAccess( SqlNode node, CatalogEntity table, AccessEnum requiredAccess ) {
         if ( table != null ) {
             AccessType access = AccessType.ALL;
-            ;
             if ( !access.allowsAccess( requiredAccess ) ) {
                 throw newValidationError( node, RESOURCE.accessNotAllowed( requiredAccess.name(), table.name ) );
             }
@@ -4674,7 +4676,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 identifier.validate( this, scope );
                 AlgDataType type = deriveType( scope, identifier );
                 String name = identifier.names.get( 1 );
-                typeBuilder.add( name, null, type );
+                typeBuilder.add( null, name, null, type );
             }
         }
 
@@ -4694,7 +4696,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     AlgDataType type = deriveType( scope, identifier );
                     String name = identifier.names.get( 1 );
                     if ( !typeBuilder.nameExists( name ) ) {
-                        typeBuilder.add( name, null, type );
+                        typeBuilder.add( null, name, null, type );
                     }
                 }
             }
@@ -4776,7 +4778,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         List<Map.Entry<String, AlgDataType>> measureColumns = validateMeasure( matchRecognize, scope, allRows );
         for ( Map.Entry<String, AlgDataType> c : measureColumns ) {
             if ( !typeBuilder.nameExists( c.getKey() ) ) {
-                typeBuilder.add( c.getKey(), null, c.getValue() );
+                typeBuilder.add( null, c.getKey(), null, c.getValue() );
             }
         }
 
@@ -5107,19 +5109,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 } );
         return typeFactory.createStructType(
+                types.stream().map( t -> (Long) null ).collect( Collectors.toList() ),
                 types,
-                new AbstractList<String>() {
-                    @Override
-                    public String get( int index ) {
-                        return "?" + index;
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return types.size();
-                    }
-                } );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
     }
 
 
@@ -6160,25 +6152,25 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         /**
          * Moves fields according to the permutation.
          */
-        public void permute( List<SqlNode> selectItems, List<Map.Entry<String, AlgDataType>> fields ) {
+        public void permute( List<SqlNode> selectItems, List<AlgDataTypeField> fields ) {
             if ( trivial ) {
                 return;
             }
 
             final List<SqlNode> oldSelectItems = ImmutableList.copyOf( selectItems );
             selectItems.clear();
-            final List<Map.Entry<String, AlgDataType>> oldFields = ImmutableList.copyOf( fields );
+            final List<AlgDataTypeField> oldFields = ImmutableList.copyOf( fields );
             fields.clear();
             for ( ImmutableList<Integer> source : sources ) {
                 final int p0 = source.get( 0 );
-                Map.Entry<String, AlgDataType> field = oldFields.get( p0 );
-                final String name = field.getKey();
-                AlgDataType type = field.getValue();
+                AlgDataTypeField field = oldFields.get( p0 );
+                final String name = field.getName();
+                AlgDataType type = field.getType();
                 SqlNode selectItem = oldSelectItems.get( p0 );
                 for ( int p1 : Util.skip( source ) ) {
-                    final Map.Entry<String, AlgDataType> field1 = oldFields.get( p1 );
+                    final AlgDataTypeField field1 = oldFields.get( p1 );
                     final SqlNode selectItem1 = oldSelectItems.get( p1 );
-                    final AlgDataType type1 = field1.getValue();
+                    final AlgDataType type1 = field1.getType();
                     // output is nullable only if both inputs are
                     final boolean nullable = type.isNullable() && type1.isNullable();
                     final AlgDataType type2 = PolyTypeUtil.leastRestrictiveForComparison( typeFactory, type, type1 );
@@ -6192,7 +6184,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                                     new SqlIdentifier( name, ParserPos.ZERO ) );
                     type = typeFactory.createTypeWithNullability( type2, nullable );
                 }
-                fields.add( Pair.of( name, type ) );
+                fields.add( new AlgDataTypeFieldImpl( 1L, name, fields.size(), type ) );
                 selectItems.add( selectItem );
             }
         }

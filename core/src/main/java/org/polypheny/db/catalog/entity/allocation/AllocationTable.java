@@ -58,7 +58,7 @@ public class AllocationTable extends AllocationEntity {
         for ( AllocationColumn column : getColumns().stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             LogicalColumn lColumn = Catalog.snapshot().rel().getColumn( column.columnId ).orElseThrow();
             AlgDataType sqlType = column.getAlgDataType();
-            fieldInfo.add( lColumn.name, null, sqlType ).nullable( lColumn.nullable );
+            fieldInfo.add( column.columnId, lColumn.name, lColumn.name, sqlType ).nullable( lColumn.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );

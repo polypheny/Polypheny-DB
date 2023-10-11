@@ -121,7 +121,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
         try {
             if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
-                DdlManager.getInstance().addPolyphenyIndex(
+                DdlManager.getInstance().createPolyphenyIndex(
                         catalogTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
@@ -138,7 +138,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                                 RESOURCE.unknownAdapter( storeName.getSimple() ) );
                     }
                 }
-                DdlManager.getInstance().addIndex(
+                DdlManager.getInstance().createIndex(
                         catalogTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),

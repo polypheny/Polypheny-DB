@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,8 +70,25 @@ public class HttpServer implements Runnable {
     }
 
 
+    public static final ObjectMapper mapper = new ObjectMapper() {
+        {
+            setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                    .withIsGetterVisibility( Visibility.NONE )
+                    .withGetterVisibility( Visibility.NONE )
+                    .withSetterVisibility( Visibility.NONE ) );
+            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            writerWithDefaultPrettyPrinter();
+        }
+    };
+
     @Getter
-    private Javalin server;
+    private final Javalin server = Javalin.create( config -> {
+        config.jsonMapper( new JavalinJackson( mapper ) );
+        config.enableCorsForAllOrigins();
+        config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+    } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     private Crud crud;
 
 
@@ -84,19 +102,6 @@ public class HttpServer implements Runnable {
     public void run() {
         long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
         long maxRequestSize = 1_000_000L * maxSizeMB;
-
-        this.server = Javalin.create( config -> {
-            config.jsonMapper( new JavalinJackson( new ObjectMapper() {
-                {
-                    setSerializationInclusion( JsonInclude.Include.NON_NULL );
-                    configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                    configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-                    writerWithDefaultPrettyPrinter();
-                }
-            } ) );
-            config.enableCorsForAllOrigins();
-            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
-        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
         /*this.server = Javalin.create( config -> { // todo dl enable, when we removed avatica and can finally bump javalin
             config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
@@ -216,9 +221,9 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/dropConstraint", crud::dropConstraint );
 
-        webuiServer.post( "/addPrimaryKey", crud::addPrimaryKey );
+        webuiServer.post( "/createPrimaryKey", crud::addPrimaryKey );
 
-        webuiServer.post( "/addUniqueConstraint", crud::addUniqueConstraint );
+        webuiServer.post( "/createUniqueConstraint", crud::addUniqueConstraint );
 
         webuiServer.post( "/getIndexes", crud::getIndexes );
 
@@ -226,7 +231,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getUml", crud::getUml );
 
-        webuiServer.post( "/addForeignKey", crud::addForeignKey );
+        webuiServer.post( "/createForeignKey", crud::addForeignKey );
 
         webuiServer.post( "/createIndex", crud::createIndex );
 
@@ -274,7 +279,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
 
-        webuiServer.post( "/addAdapter", crud::addAdapter );
+        webuiServer.post( "/createAdapter", crud::addAdapter );
 
         webuiServer.post( "/pathAccess", crud::startAccessRequest );
 
@@ -282,7 +287,7 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
 
-        webuiServer.post( "/addQueryInterface", crud::addQueryInterface );
+        webuiServer.post( "/createQueryInterface", crud::addQueryInterface );
 
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings );
 

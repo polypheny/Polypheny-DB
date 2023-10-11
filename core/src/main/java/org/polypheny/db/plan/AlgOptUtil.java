@@ -212,7 +212,6 @@ public abstract class AlgOptUtil {
     }
 
 
-
     /**
      * Returns a list of variables set by a relational expression or its descendants.
      */
@@ -1407,14 +1406,12 @@ public abstract class AlgOptUtil {
             case UPDATE:
                 return typeFactory.createStructType(
                         ImmutableList.of(
-                                Pair.of(
-                                        AvaticaConnection.ROWCOUNT_COLUMN_NAME,
+                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.ROWCOUNT_COLUMN_NAME, 0,
                                         typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
             case EXPLAIN:
                 return typeFactory.createStructType(
                         ImmutableList.of(
-                                Pair.of(
-                                        AvaticaConnection.PLAN_COLUMN_NAME,
+                                new AlgDataTypeFieldImpl( -1L, AvaticaConnection.PLAN_COLUMN_NAME, 0,
                                         typeFactory.createPolyType( PolyType.VARCHAR, AlgDataType.PRECISION_NOT_SPECIFIED ) ) ) );
             default:
                 throw Util.unexpected( kind );
@@ -2384,7 +2381,7 @@ public abstract class AlgOptUtil {
                         exprList,
                         projectRefList,
                         null,
-                        typeFactory.createStructType( outputTypeList, outputNameList ) );
+                        typeFactory.createStructType( null, outputTypeList, outputNameList ) );
         return LogicalCalc.create( alg, program );
     }
 
@@ -2989,7 +2986,7 @@ public abstract class AlgOptUtil {
         public Void visitCall( RexCall call ) {
             if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
                 RexLiteral literal = (RexLiteral) call.getOperands().get( 1 );
-                extraFields.add( new AlgDataTypeFieldImpl( (String) literal.getValue2(), -1, call.getType() ) );
+                extraFields.add( new AlgDataTypeFieldImpl( -1L, (String) literal.getValue2(), -1, call.getType() ) );
             }
             return super.visitCall( call );
         }

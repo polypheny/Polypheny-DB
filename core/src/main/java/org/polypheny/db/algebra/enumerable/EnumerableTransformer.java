@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.Types.ArrayType;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
@@ -57,6 +58,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -207,7 +209,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         Expression nodesExp = Expressions.call( BuiltInMethod.X_MODEL_MERGE_NODE_COLLECTIONS.method, EnumUtils.expressionList( tableAsNodes ) );
 
-        MethodCallExpression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
+        Expression call = Expressions.call( BuiltInMethod.TO_GRAPH.method, nodesExp, Expressions.call( Linq4j.class, "emptyEnumerable" ) );
 
         Expression body = Expressions.new_(
                 enumeratorType,
@@ -323,11 +325,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         List<Expression> expressions = new ArrayList<>();
 
-        ParameterExpression target = Expressions.parameter( Object[].class );
+        ParameterExpression target = Expressions.parameter( PolyValue[].class );
 
         attachDocOnRelational( impl, expressions, target );
 
-        MethodCallExpression res = Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions );
+        Expression res = Expressions.newArrayInit( PolyValue.class, Expressions.call( RefactorFunctions.class, "mergeDocuments", expressions ) );
 
         Type outputJavaType = physType.getJavaRowType();
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
@@ -380,12 +382,11 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
         for ( AlgDataTypeField field : getRowType().getFieldList() ) {
 
             Expression raw;
+            Expression element = Expressions.convert_( Expressions.arrayIndex( Expressions.convert_( target, new ArrayType( PolyValue.class ) ), Expressions.constant( 0 ) ), PolyDocument.class );
             if ( field.getName().equals( DocumentType.DOCUMENT_DATA ) ) {
-                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "removeNames", element, EnumUtils.constantArrayList( extract, String.class ) );
                 raw = Expressions.convert_( raw, PolyDocument.class );
             } else {
-                UnaryExpression element = Expressions.convert_( target, PolyDocument.class );
                 raw = Expressions.call( RefactorFunctions.class, "get", element, PolyString.of( field.getName() ).asExpression() );
             }
             // serialize
@@ -401,7 +402,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
     }
 
 
-    private static Result toAbstractEnumerable( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType physType, Expression old, ParameterExpression target, MethodCallExpression transformer, Type enumeratorType ) {
+    private static Result toAbstractEnumerable( EnumerableAlgImplementor implementor, BlockBuilder builder, PhysType physType, Expression old, ParameterExpression target, Expression transformer, Type enumeratorType ) {
         BlockStatement block = Expressions.block(
                 Expressions.return_( null,
                         Expressions.call(

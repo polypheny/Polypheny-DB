@@ -34,6 +34,7 @@
 package org.polypheny.db.algebra.rules;
 
 
+import java.util.Objects;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
@@ -83,7 +84,7 @@ public class CalcMergeRule extends AlgOptRule {
                         topCalc.getProgram(),
                         bottomCalc.getProgram(),
                         topCalc.getCluster().getRexBuilder() );
-        assert mergedProgram.getOutputRowType() == topProgram.getOutputRowType();
+        assert Objects.equals( mergedProgram.getOutputRowType(), topProgram.getOutputRowType() );
         final Calc newCalc =
                 topCalc.copy(
                         topCalc.getTraitSet(),

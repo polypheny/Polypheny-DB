@@ -190,15 +190,7 @@ public class FilePlugin extends PolyPlugin {
 
 
         @Override
-        public List<PhysicalEntity> refreshTable( long allocId ) {
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId );
-            storeCatalog.replacePhysical( currentNamespace.createFileTable( physical ) );
-            return List.of( physical );
-        }
-
-
-        @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             String physicalTableName = getPhysicalTableName( allocationWrapper.table.id );
 
@@ -217,7 +209,10 @@ public class FilePlugin extends PolyPlugin {
                 }
             }
 
-            refreshTable( allocationWrapper.table.id );
+            FileTranslatableEntity physical = currentNamespace.createFileTable( table );
+
+            storeCatalog.replacePhysical( physical );
+            return List.of( physical );
         }
 
 

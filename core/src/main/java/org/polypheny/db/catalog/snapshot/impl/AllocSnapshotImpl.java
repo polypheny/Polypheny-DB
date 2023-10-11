@@ -145,6 +145,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.placementsOfColumn = buildPlacementsOfColumn();
 
         this.entityPartitionNameToPartition = buildEntityPartitionNameToPartition();
+
     }
 
 

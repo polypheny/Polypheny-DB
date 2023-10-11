@@ -139,7 +139,7 @@ public class SqlValidatorUtil {
         for ( final Pair<SqlIdentifier, SqlDataTypeSpec> pair : pairs( extendedColumns ) ) {
             final SqlIdentifier identifier = pair.left;
             final SqlDataTypeSpec type = pair.right;
-            extendedFields.add( new AlgDataTypeFieldImpl( identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
+            extendedFields.add( new AlgDataTypeFieldImpl( -1L, identifier.toString(), extendedFieldOffset++, type.deriveType( typeFactory ) ) );
         }
         return extendedFields.build();
     }
@@ -286,7 +286,7 @@ public class SqlValidatorUtil {
             AlgDataTypeField typeField = nameMatcher.field( rowType, id.getSimple() );
 
             if ( typeField == null && isDocument ) {
-                return new AlgDataTypeFieldImpl( id.getSimple(), -1, new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
+                return new AlgDataTypeFieldImpl( -1L, id.getSimple(), -1, new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.JSON, 300 ) );
             }
 
             return typeField;

@@ -36,12 +36,10 @@ package org.polypheny.db.algebra.mutable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.prepare.Prepare;
 import org.polypheny.db.rex.RexNode;
 
 

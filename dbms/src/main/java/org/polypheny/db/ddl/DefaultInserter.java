@@ -42,7 +42,7 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.addNamespace( "public", NamespaceType.getDefault(), false );
+            catalog.createNamespace( "public", NamespaceType.getDefault(), false );
         }
 
         //////////////
@@ -65,19 +65,19 @@ public class DefaultInserter {
 
         // Deploy default storeId
         Map<String, String> defaultStore = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow().getDefaultSettings();
-        ddlManager.addAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
+        ddlManager.createAdapter( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, defaultStore, DeployMode.EMBEDDED );
         // Deploy default CSV view
         Map<String, String> defaultSource = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow().getDefaultSettings();
-        ddlManager.addAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
+        ddlManager.createAdapter( "hr", Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE, defaultSource, DeployMode.REMOTE );
     }
 
 
     private static void restoreUsers( Catalog catalog ) {
         //////////////
         // init users
-        long systemId = catalog.addUser( "system", "" );
+        long systemId = catalog.createUser( "system", "" );
 
-        catalog.addUser( "pa", "" );
+        catalog.createUser( "pa", "" );
 
         Catalog.defaultUserId = systemId;
     }
@@ -89,7 +89,7 @@ public class DefaultInserter {
         if ( !Catalog.getInstance().getInterfaces().isEmpty() ) {
             return;
         }
-        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().addQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
+        Catalog.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceName, i.clazz.getName(), i.defaultSettings ) );
         Catalog.getInstance().commit();
 
     }
@@ -100,7 +100,7 @@ public class DefaultInserter {
             return;
         }
         QueryInterfaceTemplate avatica = Catalog.snapshot().getInterfaceTemplate( "AvaticaInterface" ).orElseThrow();
-        Catalog.getInstance().addQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
+        Catalog.getInstance().createQueryInterface( "avatica", avatica.clazz.getName(), avatica.defaultSettings );
     }
 
 }

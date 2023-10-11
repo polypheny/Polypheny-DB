@@ -27,11 +27,14 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
+import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.dialect.MonetdbSqlDialect;
@@ -108,14 +111,20 @@ public class MonetdbSource extends AbstractJdbcSource {
 
 
     @Override
-    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        storeCatalog.createTable(
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        PhysicalTable table = storeCatalog.createTable(
                 logical.table.getNamespaceName(),
                 logical.table.name,
                 logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
                 logical.table,
                 logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
                 allocation );
+
+        JdbcTable physical = currentJdbcSchema.createJdbcTable( storeCatalog, table );
+
+        storeCatalog.replacePhysical( physical );
+
+        return List.of( physical );
     }
 
 }

@@ -83,7 +83,7 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
             throw new GenericRuntimeException( "Could not create placement of graph as it already exists." );
         }
 
-        DdlManager.getInstance().addGraphAllocation( graphs.get( 0 ).id, dataStores, statement );
+        DdlManager.getInstance().createGraphPlacement( graphs.get( 0 ).id, dataStores, statement );
     }
 
 }

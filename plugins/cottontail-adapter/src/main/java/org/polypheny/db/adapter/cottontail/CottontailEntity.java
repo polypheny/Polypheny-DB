@@ -67,8 +67,6 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     private final String physicalTableName;
     private final List<String> physicalColumnNames;
 
-    private final List<String> logicalColumnNames;
-
 
     protected CottontailEntity(
             CottontailNamespace cottontailNamespace,
@@ -76,6 +74,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
             PhysicalTable physical ) {
         super( physical.id,
                 physical.allocationId,
+                physical.logicalId,
                 physical.name,
                 physical.columns,
                 physical.namespaceId,
@@ -85,7 +84,6 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
         this.cottontailNamespace = cottontailNamespace;
         this.table = physical;
 
-        this.logicalColumnNames = physical.getLogicalNames();
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physical.name;
         this.physicalColumnNames = physical.getColumnNames();
@@ -98,7 +96,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     public String getPhysicalColumnName( String logicalColumnName ) {
-        return this.physicalColumnNames.get( this.logicalColumnNames.indexOf( logicalColumnName ) );
+        return this.physicalColumnNames.get( this.table.columns.indexOf( logicalColumnName ) );
     }
 
 

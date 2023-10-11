@@ -92,7 +92,6 @@ import org.polypheny.db.util.Util;
  */
 public class JdbcTable extends PhysicalTable implements TranslatableEntity, ScannableEntity, ModifiableTable, QueryableEntity {
 
-    private final PhysicalTable table;
     private JdbcSchema jdbcSchema;
 
     private final TableType jdbcTableType;
@@ -105,12 +104,12 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
         super(
                 physical.id,
                 physical.allocationId,
+                physical.logicalId,
                 physical.name,
                 physical.columns,
                 physical.namespaceId,
                 physical.namespaceName,
                 physical.adapterId );
-        this.table = physical;
         this.jdbcSchema = jdbcSchema;
         this.jdbcTableType = jdbcTableType;
     }
@@ -165,11 +164,10 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     public SqlNodeList getNodeList() {
         List<SqlNode> pcnl = Expressions.list();
-        int i = 0;
         for ( PhysicalColumn column : columns ) {
             SqlNode[] operands = new SqlNode[]{
                     new SqlIdentifier( Arrays.asList( namespaceName, name, column.name ), ParserPos.ZERO ),
-                    new SqlIdentifier( Collections.singletonList( column.logicalName ), ParserPos.ZERO )
+                    new SqlIdentifier( Collections.singletonList( column.name ), ParserPos.ZERO )
             };
             pcnl.add( new SqlBasicCall( (SqlOperator) OperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }

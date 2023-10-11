@@ -251,9 +251,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
         LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getSourceExpressionList() != null ) {
+        if ( modify.getSourceExpressions() != null ) {
             newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getSourceExpressionList() ) {
+            for ( RexNode node : modify.getSourceExpressions() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
         }
@@ -273,7 +273,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    AlgDataType type = input.getRowType().getFieldList().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
@@ -301,7 +301,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getEntity(),
                 input,
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
+                modify.getUpdateColumns(),
                 newSourceExpression,
                 modify.isFlattened() );
 
@@ -311,9 +311,9 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     public AlgNode visitAsymmetricModify( LogicalRelModify initial ) {
         LogicalRelModify modify = (LogicalRelModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getSourceExpressionList() != null ) {
+        if ( modify.getSourceExpressions() != null ) {
             newSourceExpression = new ArrayList<>();
-            for ( RexNode node : modify.getSourceExpressionList() ) {
+            for ( RexNode node : modify.getSourceExpressions() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
         }
@@ -337,7 +337,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     } else {
                         idx = idxMapping.get( i );
                     }
-                    AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                    AlgDataType type = input.getRowType().getFieldList().get( i ).getType();
                     if ( firstRow ) {
                         projects.add( new RexDynamicParam( type, idx ) );
                     }
@@ -368,7 +368,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 modify.getEntity(),
                 input,
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
+                modify.getUpdateColumns(),
                 newSourceExpression,
                 modify.isFlattened() );
     }
@@ -406,7 +406,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                     idx = idxMapping.get( i );
                 }
 
-                AlgDataType type = input.getRowType().getFieldList().get( i ).getValue();
+                AlgDataType type = input.getRowType().getFieldList().get( i ).getType();
                 if ( firstRow ) {
                     projects.put( null, null );//new RexDynamicParam( type, idx ) );
                 }

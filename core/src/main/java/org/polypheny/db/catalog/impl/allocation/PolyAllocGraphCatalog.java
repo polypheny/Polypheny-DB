@@ -93,6 +93,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
         long id = idBuilder.getNewAllocId();
         AllocationGraph allocation = new AllocationGraph( id, placementId, partitionId, graph.id, namespace.id, adapterId );
         graphs.put( id, allocation );
+        change();
         return allocation;
     }
 
@@ -100,6 +101,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Override
     public void deleteAllocation( long id ) {
         graphs.remove( id );
+        change();
     }
 
 
@@ -108,6 +110,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
         long id = idBuilder.getNewPlacementId();
         AllocationPlacement placement = new AllocationPlacement( id, graph.id, namespace.id, adapterId );
         placements.put( id, placement );
+        change();
         return placement;
     }
 
@@ -115,6 +118,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Override
     public void removePlacement( long id ) {
         placements.remove( id );
+        change();
     }
 
 
@@ -123,6 +127,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
         long id = idBuilder.getNewPartitionId();
         AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
         partitions.put( id, partition );
+        change();
         return partition;
     }
 
@@ -130,6 +135,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Override
     public void removePartition( long id ) {
         partitions.remove( id );
+        change();
     }
 
 

@@ -283,7 +283,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
             if ( this.currentNamespace == null ) {
                 updateNamespace( DEFAULT_DATABASE, allocation.table.id );
                 storeCatalog.addNamespace( allocation.table.namespaceId, currentNamespace );
@@ -300,11 +300,10 @@ public class Neo4jPlugin extends PolyPlugin {
                     allocation );
 
             this.storeCatalog.addPhysical( allocation.table, this.currentNamespace.createEntity( physical, physical.columns, currentNamespace ) );
-
+            return refreshTable( allocation.table.id );
         }
 
 
-        @Override
         public List<PhysicalEntity> refreshTable( long allocId ) {
             PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
             List<? extends PhysicalField> fields = storeCatalog.getFields( allocId );
@@ -486,7 +485,7 @@ public class Neo4jPlugin extends PolyPlugin {
 
 
         @Override
-        public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
             String mappingLabel = getMappingLabel( allocation.id );
             PhysicalGraph physical = storeCatalog.createGraph(
                     getPhysicalGraphName( allocation.id ),
@@ -494,10 +493,10 @@ public class Neo4jPlugin extends PolyPlugin {
                     allocation );
 
             this.storeCatalog.addPhysical( allocation, new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );
+            return refreshGraph( allocation.id );
         }
 
 
-        @Override
         public List<PhysicalEntity> refreshGraph( long allocId ) {
             PhysicalGraph physical = storeCatalog.fromAllocation( allocId, PhysicalGraph.class );
             storeCatalog.replacePhysical( new NeoGraph( physical, List.of(), this.transactionProvider, this.db, getMappingLabel( physical.id ), this ) );

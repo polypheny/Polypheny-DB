@@ -885,8 +885,8 @@ public class MongoRules {
                     mongo,
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
 

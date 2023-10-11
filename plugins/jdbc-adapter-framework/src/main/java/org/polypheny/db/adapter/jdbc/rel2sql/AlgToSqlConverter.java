@@ -475,8 +475,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ), modify.getUpdateColumnList() ),
-                        exprList( context, modify.getSourceExpressionList() ),
+                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ), modify.getUpdateColumns() ),
+                        exprList( context, modify.getSourceExpressions() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),
                         null );
@@ -526,6 +526,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     /**
      * @see #dispatch
      */
+    @SuppressWarnings("unused")
     public Result visit( Match e ) {
         final AlgNode input = e.getInput();
         final Result x = visitChild( 0, input );

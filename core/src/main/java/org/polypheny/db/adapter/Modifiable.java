@@ -90,7 +90,7 @@ public interface Modifiable extends Scannable {
                 throw new GenericRuntimeException( "Graph insert of non-graph elements is not possible." );
             }
         }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
@@ -111,7 +111,7 @@ public interface Modifiable extends Scannable {
                 throw new GenericRuntimeException( "Graph delete of non-graph elements is not possible." );
             }
         }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
 
@@ -160,7 +160,7 @@ public interface Modifiable extends Scannable {
                 throw new RuntimeException( "Graph insert of non-graph elements is not possible." );
             }
         }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), provider, transformer );
     }
@@ -282,8 +282,8 @@ public interface Modifiable extends Scannable {
                 table,
                 modify.getInput(),
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() );
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions() );
     }
 
     default AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {

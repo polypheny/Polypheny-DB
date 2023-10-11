@@ -556,7 +556,7 @@ public abstract class ReturnTypes {
         AlgDataType componentType = multisetType.getComponentType();
         assert componentType != null : "expected a multiset type: " + multisetType;
         final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        final AlgDataType type = typeFactory.builder().add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
+        final AlgDataType type = typeFactory.builder().add( null, CoreUtil.deriveAliasFromOrdinal( 0 ), null, componentType ).build();
         return typeFactory.createMultisetType( type, -1 );
     };
     /**

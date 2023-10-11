@@ -69,10 +69,12 @@ public interface FileAlg extends AlgNode {
             //intentionally empty
         }
 
+
         public void setColumnNames( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
+
 
         /**
          * A FileProject can directly provide the projectionMapping, a FileModify will provide the columnNames only

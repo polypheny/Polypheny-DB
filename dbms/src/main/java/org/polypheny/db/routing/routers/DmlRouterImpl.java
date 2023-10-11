@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -99,12 +98,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         AlgOptCluster cluster = modify.getCluster();
 
         if ( modify.entity == null ) {
-            throw new RuntimeException( "Unexpected operator!" );
+            throw new GenericRuntimeException( "Unexpected operator!" );
         }
         LogicalTable table = modify.entity.unwrap( LogicalTable.class );
 
         if ( table == null ) {
-            throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+            throw new GenericRuntimeException( "Unexpected table. Only logical tables expected here!" );
         }
 
         List<LogicalColumn> columns = catalog.getSnapshot().rel().getColumns( table.id );
@@ -159,13 +158,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             List<AllocationColumn> placementsOnAdapter = catalog.getSnapshot().alloc().getColumns( pkPlacement.id );
 
             // If this is an update, check whether we need to execute on this storeId at all
-            List<String> updateColumnList = modify.getUpdateColumnList();
-            List<? extends RexNode> sourceExpressionList = modify.getSourceExpressionList();
+            List<String> updateColumnList = modify.getUpdateColumns();
+            List<? extends RexNode> sourceExpressionList = modify.getSourceExpressions();
             if ( placementsOnAdapter.size() != table.getColumnIds().size() ) {
 
                 if ( modify.getOperation() == Operation.UPDATE ) {
-                    updateColumnList = new LinkedList<>( modify.getUpdateColumnList() );
-                    sourceExpressionList = new LinkedList<>( modify.getSourceExpressionList() );
+                    updateColumnList = new ArrayList<>( modify.getUpdateColumns() );
+                    sourceExpressionList = new ArrayList<>( modify.getSourceExpressions() );
                     Iterator<String> updateColumnListIterator = updateColumnList.iterator();
                     Iterator<? extends RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
                     while ( updateColumnListIterator.hasNext() ) {
@@ -181,7 +180,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             sourceExpressionListIterator.remove();
                         }
                     }
-                    if ( updateColumnList.size() == 0 ) {
+                    if ( updateColumnList.isEmpty() ) {
                         continue;
                     }
                 }
@@ -261,7 +260,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     }
 
                     // If WHERE clause has any value for partition column
-                    if ( identifiedPartitionsInFilter.size() > 0 ) {
+                    if ( !identifiedPartitionsInFilter.isEmpty() ) {
 
                         // Partition has been identified in SET
                         if ( identifiedPartitionForSetValue != -1 ) {
@@ -307,7 +306,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         int partitionColumnIndex = -1;
                         Map<Long, Integer> resultColMapping = new HashMap<>();
                         for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
-                            String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getKey();
+                            String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
 
                             // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                             int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
@@ -467,13 +466,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                     }
 
                                     operationWasRewritten = true;
-                                    worstCaseRouting = false;
                                 } else {
                                     partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
                                     identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                                     accessedPartitionList.add( identPart );
-                                    worstCaseRouting = false;
                                 }
+                                worstCaseRouting = false;
                                 break;
                             } else {
                                 // When loop is finished
@@ -581,7 +579,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     @NotNull
     private LogicalRelModify handleSingleModify( LogicalRelModify modify, Statement statement, AllocationEntity allocation ) {
         AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
-        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened() );
+        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumns(), modify.getSourceExpressions(), modify.isFlattened() );
     }
 
 

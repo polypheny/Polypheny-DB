@@ -84,7 +84,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
+        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
     }
 

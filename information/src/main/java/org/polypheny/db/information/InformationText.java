@@ -17,13 +17,15 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import lombok.Getter;
 
 
+@Getter
 public class InformationText extends Information {
 
-    @Getter
+    @JsonProperty
     private String text;
 
 

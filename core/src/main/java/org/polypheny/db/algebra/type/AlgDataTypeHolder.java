@@ -36,6 +36,7 @@ package org.polypheny.db.algebra.type;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -91,6 +92,7 @@ class AlgDataTypeHolder {
 
         // This field does not exist in our field list; add it
         AlgDataTypeField newField = new AlgDataTypeFieldImpl(
+                -1L,
                 fieldName,
                 fields.size(),
                 typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), true ) );
@@ -103,7 +105,7 @@ class AlgDataTypeHolder {
 
 
     public List<String> getFieldNames() {
-        return Pair.left( fields );
+        return fields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 }

@@ -34,9 +34,6 @@
 package org.polypheny.db.algebra.type;
 
 
-import java.util.Map;
-
-
 /**
  * RelDataTypeField represents the definition of a field in a structured {@link AlgDataType}.
  * <p>
@@ -44,7 +41,7 @@ import java.util.Map;
  * In any implementation of this interface, {@link #getKey()} must be equivalent to {@link #getName()} and {@link #getValue()}
  * must be equivalent to {@link #getType()}.
  */
-public interface AlgDataTypeField extends Map.Entry<String, AlgDataType> {
+public interface AlgDataTypeField {
 
     /**
      * Gets the name of this field, which is unique within its containing type.
@@ -66,6 +63,8 @@ public interface AlgDataTypeField extends Map.Entry<String, AlgDataType> {
      * @return 0-based ordinal
      */
     int getIndex();
+
+    Long getId();
 
     /**
      * Gets the type of this field.

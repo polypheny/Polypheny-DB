@@ -62,7 +62,7 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
     public static PolyDictionary fromString( String json ) {
-        return PolyValue.readJsonOrNull( json, PolyDictionary.class );
+        return PolyValue.fromTypedJson( json, PolyDictionary.class );
     }
 
 

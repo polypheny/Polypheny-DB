@@ -37,6 +37,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.volcano.AlgSubset;
@@ -95,7 +96,7 @@ public class LogicalStreamer extends Streamer {
 
     private static LogicalStreamer getLogicalStreamer( RelModify<?> modify, AlgBuilder algBuilder, RexBuilder rexBuilder, AlgNode input ) {
         if ( input == null ) {
-            throw new RuntimeException( "Error while creating Streamer." );
+            throw new GenericRuntimeException( "Error while creating Streamer." );
         }
 
         // add all previous variables e.g. _id, _data(previous), _data(updated)
@@ -105,10 +106,10 @@ public class LogicalStreamer extends Streamer {
 
         AlgNode query = input;
 
-        if ( modify.getUpdateColumnList() != null && modify.getSourceExpressionList() != null ) {
+        if ( modify.getUpdateColumns() != null && modify.getSourceExpressions() != null ) {
             // update and source list are not null
-            update.addAll( modify.getUpdateColumnList() );
-            source.addAll( modify.getSourceExpressionList() );
+            update.addAll( modify.getUpdateColumns() );
+            source.addAll( modify.getSourceExpressions() );
 
             // we project the needed sources out and modify them to fit the prepared
             query = LogicalProject.create( modify.getInput(), source, update );
@@ -131,8 +132,8 @@ public class LogicalStreamer extends Streamer {
                 modify.getEntity(),
                 algBuilder.build(),
                 modify.getOperation(),
-                modify.getUpdateColumnList(),
-                modify.getSourceExpressionList() == null ? null : createSourceList( modify, rexBuilder ),
+                modify.getUpdateColumns(),
+                modify.getSourceExpressions() == null ? null : createSourceList( modify, rexBuilder ),
                 false ).streamed( true );
         return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), query, prepared );
     }
@@ -152,13 +153,12 @@ public class LogicalStreamer extends Streamer {
 
 
     private static List<RexNode> createSourceList( RelModify<?> modify, RexBuilder rexBuilder ) {
-        return modify.getUpdateColumnList()
+        return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
                     int size = modify.getRowType().getFieldList().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam(
-                            modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
+                    return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
                 } ).collect( Collectors.toList() );
     }
 

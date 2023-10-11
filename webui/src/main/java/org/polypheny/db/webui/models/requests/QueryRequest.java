@@ -29,12 +29,12 @@ public class QueryRequest extends UIRequest {
             @JsonProperty("analyze") boolean analyze,
             @JsonProperty("cache") boolean cache,
             @JsonProperty("language") String language,
-            @JsonProperty("namespaceId") Long namespaceId ) {
+            @JsonProperty("namespaceId") String namespace ) {
         this.query = query;
         this.analyze = analyze;
         this.cache = cache;
         this.language = language;
-        this.namespaceId = namespaceId;
+        this.namespace = namespace;
     }
 
 

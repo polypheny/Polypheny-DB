@@ -55,11 +55,23 @@ public class DocStoreCatalog extends StoreCatalog {
     public BinarySerializer<DocStoreCatalog> serializer = PolySerializable.buildSerializer( DocStoreCatalog.class );
 
     @Serialize
-    public ConcurrentMap<Pair<Long, Long>, PhysicalColumn> fields; // allocId, columnId
+    public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, columnId
 
 
     public DocStoreCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
+    }
+
+
+    @Override
+    public void renameLogicalField( long id, String newFieldName ) {
+        List<PhysicalField> updates = new ArrayList<>();
+        for ( PhysicalField field : fields.values() ) {
+            if ( field.id == id ) {
+                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+            }
+        }
+        updates.forEach( u -> fields.put( Pair.of( u.allocId, u.id ), u ) );
     }
 
 
@@ -100,7 +112,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     public PhysicalColumn getColumn( long columnId, long allocId ) {
-        return fields.get( Pair.of( allocId, columnId ) );
+        return fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
     }
 
 
@@ -110,7 +122,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) );
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
         PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
@@ -143,7 +155,7 @@ public class DocStoreCatalog extends StoreCatalog {
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, logicalColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
+        PhysicalTable table = new PhysicalTable( physicalId, allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
         return table;
@@ -152,7 +164,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
     public PhysicalCollection createCollection( String namespaceName, String name, LogicalCollection logical, AllocationCollection allocation ) {
         long physicalId = IdBuilder.getInstance().getNewPhysicalId();
-        PhysicalCollection collection = new PhysicalCollection( physicalId, allocation.id, logical.namespaceId, name, namespaceName, adapterId );
+        PhysicalCollection collection = new PhysicalCollection( physicalId, allocation.id, logical.id, logical.namespaceId, name, namespaceName, adapterId );
         addPhysical( allocation, collection );
         return collection;
     }

@@ -140,7 +140,7 @@ public class PolyPath extends GraphObject {
             }
 
             if ( name != null && name.value != null ) {
-                pathType.add( new AlgDataTypeFieldImpl( name.value, i, type ) );
+                pathType.add( new AlgDataTypeFieldImpl( -1L, name.value, i, type ) );
             }
 
             i++;

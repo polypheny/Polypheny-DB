@@ -362,7 +362,7 @@ public class ConstraintEnforceAttacher {
                 }
                 // Check if update affects this constraint
                 boolean affected = false;
-                for ( final String c : root.getUpdateColumnList() ) {
+                for ( final String c : root.getUpdateColumns() ) {
                     if ( constraint.key.getColumnNames().contains( c ) ) {
                         affected = true;
                         break;
@@ -373,8 +373,8 @@ public class ConstraintEnforceAttacher {
                 }
                 AlgNode input = root.getInput().accept( new DeepCopyShuttle() );
                 Map<String, Integer> nameMap = new HashMap<>();
-                for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
-                    nameMap.put( root.getUpdateColumnList().get( i ), i );
+                for ( int i = 0; i < root.getUpdateColumns().size(); ++i ) {
+                    nameMap.put( root.getUpdateColumns().get( i ), i );
                 }
                 // Enforce uniqueness between updated records and already present records
                 builder.clear();
@@ -386,8 +386,8 @@ public class ConstraintEnforceAttacher {
                     names.add( column );
                 }
                 for ( final String column : constraint.key.getColumnNames() ) {
-                    if ( root.getUpdateColumnList().contains( column ) ) {
-                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                    if ( root.getUpdateColumns().contains( column ) ) {
+                        projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
                         //  Otherwise this would require either some black magic project rewrites or joining against another table scan
@@ -441,8 +441,8 @@ public class ConstraintEnforceAttacher {
                 builder.push( input );
                 projects = new ArrayList<>();
                 for ( final String column : constraint.key.getColumnNames() ) {
-                    if ( root.getUpdateColumnList().contains( column ) ) {
-                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                    if ( root.getUpdateColumns().contains( column ) ) {
+                        projects.add( root.getSourceExpressions().get( nameMap.get( column ) ) );
                     } else {
                         // TODO(s3lph): For now, let's assume that all columns are actually present.
                         //  Otherwise this would require either some black magic project rewrites or joining against another table scan
@@ -483,8 +483,8 @@ public class ConstraintEnforceAttacher {
                     RexNode newValue;
                     int targetIndex;
                     if ( root.isUpdate() ) {
-                        targetIndex = root.getUpdateColumnList().indexOf( columnName );
-                        newValue = root.getSourceExpressionList().get( targetIndex );
+                        targetIndex = root.getUpdateColumns().indexOf( columnName );
+                        newValue = root.getSourceExpressions().get( targetIndex );
                         newValue = new RexShuttle() {
                             @Override
                             public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {

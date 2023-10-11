@@ -208,18 +208,7 @@ public class CottontailPlugin extends PolyPlugin {
 
 
         @Override
-        public List<PhysicalEntity> refreshTable( long allocId ) {
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId );
-            storeCatalog.replacePhysical( new CottontailEntity(
-                    this.currentNamespace,
-                    this.dbName,
-                    physical ) );
-            return List.of( physical );
-        }
-
-
-        @Override
-        public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
+        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             /* Begin or continue Cottontail DB transaction. */
             final long txId = this.wrapper.beginOrContinue( context.getStatement().getTransaction() );
@@ -253,8 +242,7 @@ public class CottontailPlugin extends PolyPlugin {
             if ( !success ) {
                 throw new GenericRuntimeException( "Unable to create table." );
             }
-            refreshTable( allocationWrapper.table.id );
-
+            return List.of( table );
         }
 
 
@@ -376,7 +364,7 @@ public class CottontailPlugin extends PolyPlugin {
             this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
 
             // Update column placement physical table names
-            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
 
         }
 
@@ -438,7 +426,7 @@ public class CottontailPlugin extends PolyPlugin {
                 }
             } );
 
-            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( table.id, table.allocationId, table.logicalId, newPhysicalTableName, pColumns, table.namespaceId, table.namespaceName, table.adapterId ) );
 
             // Delete old table
             this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setMetadata( Metadata.newBuilder().setTransactionId( txId ) ).setEntity( tableEntity ).build() );
@@ -593,7 +581,7 @@ public class CottontailPlugin extends PolyPlugin {
                     .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                     .setEntity( tableEntity ).build() );
 
-            storeCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.adapterId ) );
+            storeCatalog.replacePhysical( new PhysicalTable( physicalTable.id, physicalTable.allocationId, physicalTable.logicalId, newPhysicalTableName, pColumns, physicalTable.namespaceId, physicalTable.namespaceName, physicalTable.adapterId ) );
 
         }
 

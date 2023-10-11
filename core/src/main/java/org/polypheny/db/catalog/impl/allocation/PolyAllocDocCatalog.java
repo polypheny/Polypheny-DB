@@ -101,6 +101,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
         long id = idBuilder.getNewAllocId();
         AllocationCollection allocation = new AllocationCollection( id, placementId, partitionId, collection.id, namespace.id, adapterId );
         collections.put( id, allocation );
+        change();
         return allocation;
     }
 
@@ -108,6 +109,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Override
     public void removeAllocation( long id ) {
         collections.remove( id );
+        change();
     }
 
 
@@ -116,6 +118,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
         long id = idBuilder.getNewPlacementId();
         AllocationPlacement placement = new AllocationPlacement( id, collection.id, namespace.id, adapterId );
         placements.put( placement.id, placement );
+        change();
         return placement;
     }
 
@@ -123,6 +126,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Override
     public void removePlacement( long placementId ) {
         placements.remove( placementId );
+        change();
     }
 
 
@@ -131,6 +135,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
         long id = idBuilder.getNewPartitionId();
         AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
         partitions.put( id, partition );
+        change();
         return partition;
     }
 
@@ -138,6 +143,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Override
     public void removePartition( long partitionId ) {
         partitions.remove( partitionId );
+        change();
     }
 
 

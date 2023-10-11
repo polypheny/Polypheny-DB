@@ -90,7 +90,7 @@ class PlannerTests {
         protected AlgDataType deriveRowType() {
             final AlgDataTypeFactory typeFactory = getCluster().getTypeFactory();
             return typeFactory.builder()
-                    .add( "this", null, typeFactory.createJavaType( Void.TYPE ) )
+                    .add( null, "this", null, typeFactory.createJavaType( Void.TYPE ) )
                     .build();
         }
 

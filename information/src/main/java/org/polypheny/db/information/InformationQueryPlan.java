@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 
@@ -25,7 +26,8 @@ import java.util.UUID;
  */
 public class InformationQueryPlan extends Information {
 
-    private String queryPlan;
+    @JsonProperty
+    public String queryPlan;
 
 
     /**

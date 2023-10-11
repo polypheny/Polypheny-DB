@@ -35,6 +35,10 @@ package org.polypheny.db.piglet;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -50,11 +54,6 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -271,7 +270,7 @@ public class Handler {
     private AlgDataType toType( Ast.Schema schema ) {
         final AlgDataTypeFactory.Builder typeBuilder = builder.getTypeFactory().builder();
         for ( Ast.FieldSchema fieldSchema : schema.fieldSchemaList ) {
-            typeBuilder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
+            typeBuilder.add( null, fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }
         return typeBuilder.build();
     }
@@ -327,7 +326,7 @@ public class Handler {
         final AlgDataTypeFactory typeFactory = builder.getTypeFactory();
         final AlgDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Ast.FieldSchema fieldSchema : type.fieldSchemaList ) {
-            builder.add( fieldSchema.id.value, null, toType( fieldSchema.type ) );
+            builder.add( null, fieldSchema.id.value, null, toType( fieldSchema.type ) );
         }
         return builder.build();
     }

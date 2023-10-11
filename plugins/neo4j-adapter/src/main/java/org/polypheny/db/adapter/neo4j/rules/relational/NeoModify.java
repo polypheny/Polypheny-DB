@@ -102,8 +102,8 @@ public class NeoModify extends RelModify<NeoEntity> implements NeoRelAlg {
                 entity,
                 inputs.get( 0 ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 

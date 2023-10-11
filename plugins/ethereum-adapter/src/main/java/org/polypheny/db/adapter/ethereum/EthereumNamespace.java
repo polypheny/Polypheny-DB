@@ -53,7 +53,7 @@ public class EthereumNamespace extends AbstractNamespace implements Schema {
         List<Integer> fieldIds = new ArrayList<>( table.columns.size() );
         for ( PhysicalColumn column : table.columns ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.logicalName, column.name, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, column.name, sqlType ).nullable( column.nullable );
             fieldTypes.add( EthereumFieldType.getBlockchainFieldType( column.type ) );
             fieldIds.add( column.position );
         }

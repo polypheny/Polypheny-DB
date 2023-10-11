@@ -80,10 +80,10 @@ public class PhysTypeImpl implements PhysType {
 
 
     public static PhysType of( JavaTypeFactory typeFactory, AlgDataType rowType, JavaRowFormat format, boolean optimize ) {
-        if ( optimize ) {
+        if ( false && optimize ) { // we always want arrays
             format = format.optimize( rowType );
         }
-        final Type javaRowClass = JavaRowFormat.ARRAY.javaRowClass( typeFactory, rowType );//format.javaRowClass( typeFactory, rowType );
+        final Type javaRowClass = format.javaRowClass( typeFactory, rowType );
         return new PhysTypeImpl( typeFactory, rowType, javaRowClass, format );
     }
 
@@ -93,7 +93,7 @@ public class PhysTypeImpl implements PhysType {
         if ( javaRowClass instanceof Types.RecordType ) {
             final Types.RecordType recordType = (Types.RecordType) javaRowClass;
             for ( Types.RecordField field : recordType.getRecordFields() ) {
-                builder.add( field.getName(), null, typeFactory.createType( field.getType() ) );
+                builder.add( null, field.getName(), null, typeFactory.createType( field.getType() ) );
             }
         }
         AlgDataType rowType = builder.build();
@@ -123,7 +123,7 @@ public class PhysTypeImpl implements PhysType {
         if ( indicator ) {
             final AlgDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
-                builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
+                builder.add( null, "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }
         }
         AlgDataType projectedRowType = builder.build();
@@ -456,7 +456,7 @@ public class PhysTypeImpl implements PhysType {
             return type;
         }
         return typeFactory.builder()
-                .add( CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
+                .add( null, CoreUtil.deriveAliasFromOrdinal( 0 ), null, type )
                 .build();
     }
 
@@ -504,7 +504,7 @@ public class PhysTypeImpl implements PhysType {
                         Function1.class,
                         Expressions.field( null, BuiltInMethod.COMPARABLE_EMPTY_LIST.field ),
                         v1 );
-            case 1:
+            /*case 1:
                 int field0 = fields.get( 0 );
 
                 // new Function1<Employee, Res> {
@@ -514,7 +514,7 @@ public class PhysTypeImpl implements PhysType {
                 // }
                 Class<?> returnType = fieldClasses.get( field0 );
                 Expression fieldReference = Types.castIfNecessary( returnType, fieldReference( v1, field0 ) );
-                return Expressions.lambda( Function1.class, fieldReference, v1 );
+                return Expressions.lambda( Function1.class, fieldReference, v1 );*/
             default:
                 // new Function1<Employee, List> {
                 //    public List apply(Employee v1) {

@@ -63,7 +63,7 @@ public class AdapterManager {
     public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().addAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
+        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
     }
 
 
@@ -72,7 +72,7 @@ public class AdapterManager {
         if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new RuntimeException( "Adapter is still deployed!" );
         }
-        Catalog.getInstance().removeAdapterTemplate( templateId );
+        Catalog.getInstance().dropAdapterTemplate( templateId );
     }
 
 
@@ -189,7 +189,7 @@ public class AdapterManager {
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().addAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings );
             adapterByName.put( adapter.getUniqueName(), adapter );
@@ -197,7 +197,7 @@ public class AdapterManager {
             return adapter;
 
         } catch ( Exception e ) {
-            Catalog.getInstance().deleteAdapter( adapterId );
+            Catalog.getInstance().dropAdapter( adapterId );
             throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
         }
     }
@@ -224,7 +224,7 @@ public class AdapterManager {
         adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
-        Catalog.getInstance().deleteAdapter( catalogAdapter.id );
+        Catalog.getInstance().dropAdapter( catalogAdapter.id );
     }
 
 

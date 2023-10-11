@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
@@ -64,7 +65,7 @@ public abstract class DdlManager {
      */
     public static DdlManager setAndGetInstance( DdlManager manager ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the DdlManger, when already set is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the DdlManger, when already set is not permitted." );
         }
         INSTANCE = manager;
         return INSTANCE;
@@ -78,7 +79,7 @@ public abstract class DdlManager {
      */
     public static DdlManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "DdlManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "DdlManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }
@@ -103,7 +104,7 @@ public abstract class DdlManager {
      * @param config configuration for the adapter
      * @param mode
      */
-    public abstract void addAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
+    public abstract void createAdapter( String uniqueName, String adapterName, AdapterType adapterType, Map<String, String> config, DeployMode mode );
 
     /**
      * Drop an adapter
@@ -145,7 +146,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void addColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
+    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table
@@ -158,7 +159,7 @@ public abstract class DdlManager {
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void addForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
+    public abstract void createForeignKey( LogicalTable table, LogicalTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete );
 
     /**
      * Adds an index to a table
@@ -171,7 +172,7 @@ public abstract class DdlManager {
      * @param location instance of the data store on which to create the index; if null, default strategy is being used
      * @param statement the initial query statement
      */
-    public abstract void addIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
+    public abstract void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException;
 
     /**
      * Adds an index located in Polypheny to a table
@@ -183,7 +184,7 @@ public abstract class DdlManager {
      * @param isUnique whether the index is unique
      * @param statement the initial query statement
      */
-    public abstract void addPolyphenyIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
+    public abstract void createPolyphenyIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, Statement statement ) throws TransactionException;
 
     /**
      * Adds new column placements to a table
@@ -204,7 +205,7 @@ public abstract class DdlManager {
      * @param columnNames the names of all columns in the primary key
      * @param statement the query statement
      */
-    public abstract void addPrimaryKey( LogicalTable table, List<String> columnNames, Statement statement );
+    public abstract void createPrimaryKey( LogicalTable table, List<String> columnNames, Statement statement );
 
     /**
      * Adds a unique constraint to a table
@@ -213,7 +214,7 @@ public abstract class DdlManager {
      * @param columnNames the names of the columns which are part of the constraint
      * @param constraintName the name of the unique constraint
      */
-    public abstract void addUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
+    public abstract void createUniqueConstraint( LogicalTable table, List<String> columnNames, String constraintName );
 
     /**
      * Drop a specific column in a table
@@ -362,7 +363,7 @@ public abstract class DdlManager {
      * @param store the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
+    public abstract void createColumnPlacement( LogicalTable table, LogicalColumn column, DataStore<?> store, Statement statement );
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
@@ -443,22 +444,22 @@ public abstract class DdlManager {
 
     public abstract void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
 
-    public abstract void addCollectionAllocation( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
+    public abstract void createCollectionPlacement( long namespaceId, String name, List<DataStore<?>> stores, Statement statement );
 
     /**
      * Add new partitions for the column
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartitioning( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException;
+    public abstract void createTablePartition( PartitionInformation partitionInfo, List<DataStore<?>> stores, Statement statement ) throws TransactionException;
 
     /**
      * Removes partitioning from Table
      *
-     * @param catalogTable teh table to be merged
+     * @param table teh table to be merged
      * @param statement the used Statement
      */
-    public abstract void removePartitioning( LogicalTable catalogTable, Statement statement ) throws TransactionException;
+    public abstract void dropTablePartition( LogicalTable table, Statement statement ) throws TransactionException;
 
     /**
      * Adds a new constraint to a table
@@ -469,7 +470,7 @@ public abstract class DdlManager {
      * @param columnIds the ids of the columns for which to create the constraint
      * @param tableId the id of the table
      */
-    public abstract void addConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId );
+    public abstract void createConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId );
 
     /**
      * Drop a NAMESPACE
@@ -486,7 +487,7 @@ public abstract class DdlManager {
      * @param table the table to be dropped
      * @param statement the used statement
      */
-    public abstract void deleteTable( LogicalTable table, Statement statement );
+    public abstract void dropTable( LogicalTable table, Statement statement );
 
     /**
      * Drop View
@@ -533,25 +534,24 @@ public abstract class DdlManager {
      */
     public abstract void refreshView( Statement statement, Long materializedId );
 
-
     public abstract long createGraph( String namespaceName, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, Statement statement );
 
-    public abstract void addGraphAlias( long graphId, String alias, boolean ifNotExists );
+    public abstract void createGraphAlias( long graphId, String alias, boolean ifNotExists );
 
-    public abstract void removeGraphAlias( long graphId, String alias, boolean ifNotExists );
+    public abstract void dropGraphAlias( long graphId, String alias, boolean ifNotExists );
 
 
     public abstract void replaceGraphAlias( long graphId, String oldAlias, String alias );
 
 
-    public abstract long addGraphAllocation( long graphId, List<DataStore<?>> stores, Statement statement );
+    public abstract long createGraphPlacement( long graphId, List<DataStore<?>> stores, Statement statement );
 
-    public abstract void removeGraphAllocation( long graphId, DataStore<?> dataStores, Statement statement );
+    public abstract void dropGraphPlacement( long graphId, DataStore<?> dataStores, Statement statement );
 
 
     public abstract void dropCollection( LogicalCollection catalogCollection, Statement statement );
 
-    public abstract void dropCollectionAllocation( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
+    public abstract void dropCollectionPlacement( long namespaceId, LogicalCollection collection, List<DataStore<?>> dataStores, Statement statement );
 
 
     /**

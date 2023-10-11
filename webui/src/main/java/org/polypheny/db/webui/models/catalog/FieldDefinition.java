@@ -16,21 +16,32 @@
 
 package org.polypheny.db.webui.models.catalog;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 @Value
 @Accessors(chain = true)
 @SuperBuilder
+@Jacksonized
 @NonFinal
 public class FieldDefinition {
 
+    @JsonProperty
     public String name;
     // for both
+    @JsonProperty
     public String dataType; //varchar/int/etc
+
+
+    public FieldDefinition( @JsonProperty("name") String name, @JsonProperty("dataType") String dataType ) {
+        this.name = name;
+        this.dataType = dataType;
+    }
 
 
     public static FieldDefinition of( AlgDataTypeField field ) {

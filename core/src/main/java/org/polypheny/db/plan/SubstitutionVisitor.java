@@ -1656,7 +1656,7 @@ public class SubstitutionVisitor {
             AlgDataType newRowType =
                     cluster.getTypeFactory().builder()
                             .addAll( project.getRowType().getFieldList() )
-                            .add( "condition", null, Util.last( newProjects ).getType() )
+                            .add( null, "condition", null, Util.last( newProjects ).getType() )
                             .build();
             final AlgNode newProject =
                     project.copy(

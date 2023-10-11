@@ -54,7 +54,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -535,7 +534,7 @@ public class AlgBuilder {
      */
     public RexIndexRef field( int inputCount, int inputOrdinal, String fieldName ) {
         final Frame frame = peek_( inputCount, inputOrdinal );
-        final List<String> fieldNames = Pair.left( frame.relFields() );
+        final List<String> fieldNames = frame.relFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
         int i = fieldNames.indexOf( fieldName );
         if ( i >= 0 ) {
             return field( inputCount, inputOrdinal, i );
@@ -1381,11 +1380,11 @@ public class AlgBuilder {
 
 
     public AlgBuilder reorder( AlgDataType target ) {
-        List<String> names = peek().getRowType().getFieldNames();
-        List<String> targetNames = target.getFieldNames();
+        List<Long> ids = peek().getRowType().getFieldIds();
+        List<Long> targetIds = target.getFieldIds();
         List<Integer> mapping = new ArrayList<>();
-        for ( String name : names ) {
-            mapping.add( targetNames.indexOf( name ) );
+        for ( Long id : ids ) {
+            mapping.add( targetIds.indexOf( id ) );
         }
         permute( new Permutation( mapping ) );
 
@@ -1398,12 +1397,6 @@ public class AlgBuilder {
         push( scan );
         return this;
     }
-
-
-    private <K, V> Map<V, K> flip( Map<K, V> map ) {
-        return map.entrySet().stream().collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
-    }
-
 
     /**
      * Creates a {@link RelScan} of the table with a given name.
@@ -1653,7 +1646,7 @@ public class AlgBuilder {
                 } while ( uniqueNameList.contains( name ) );
                 fieldNameList.set( i, name );
             }
-            AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
+            AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, name, i, node.getType() );
             switch ( node.getKind() ) {
                 case INPUT_REF:
                     // preserve alg aliases for INPUT_REF fields
@@ -1774,7 +1767,7 @@ public class AlgBuilder {
             final Values v = (Values) build();
             final AlgDataTypeFactory.Builder b = getTypeFactory().builder();
             for ( Pair<String, AlgDataTypeField> p : Pair.zip( newFieldNames, v.getRowType().getFieldList() ) ) {
-                b.add( p.left, null, p.right.getType() );
+                b.add( null, p.left, null, p.right.getType() );
             }
             return values( v.tuples, b.build() );
         }
@@ -1952,7 +1945,7 @@ public class AlgBuilder {
 
             } else {
                 String name = aggregateFields.get( i ).getName();
-                AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( name, i, node.getType() );
+                AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, name, i, node.getType() );
                 fields.add( new RelField( ImmutableSet.of(), fieldType ) );
             }
             i++;
@@ -1961,7 +1954,7 @@ public class AlgBuilder {
         if ( groupKey_.indicator ) {
             for ( int j = 0; j < groupSet.cardinality(); ++j ) {
                 final AlgDataTypeField field = aggregateFields.get( i );
-                final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( field.getName(), i, field.getType() );
+                final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, field.getName(), i, field.getType() );
                 fields.add( new RelField( ImmutableSet.of(), fieldType ) );
                 i++;
             }
@@ -1969,7 +1962,7 @@ public class AlgBuilder {
         // third, aggregate fields. retain `i' as field index
         for ( int j = 0; j < aggregateCalls.size(); ++j ) {
             final AggregateCall call = aggregateCalls.get( j );
-            final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( aggregateFields.get( i + j ).getName(), i + j, call.getType() );
+            final AlgDataTypeField fieldType = new AlgDataTypeFieldImpl( -1L, aggregateFields.get( i + j ).getName(), i + j, call.getType() );
             fields.add( new RelField( ImmutableSet.of(), fieldType ) );
         }
         stack.push( new Frame( aggregate, fields.build() ) );
@@ -2223,7 +2216,7 @@ public class AlgBuilder {
                             return rowCount;
                         }
                     } );
-            builder.add( name, null, type );
+            builder.add( null, name, null, type );
         }
         final AlgDataType rowType = builder.build();
         return values( tupleList, rowType );
@@ -2625,12 +2618,12 @@ public class AlgBuilder {
 
         final AlgDataTypeFactory.Builder typeBuilder = cluster.getTypeFactory().builder();
         for ( RexNode partitionKey : partitionKeys ) {
-            typeBuilder.add( partitionKey.toString(), null, partitionKey.getType() );
+            typeBuilder.add( null, partitionKey.toString(), null, partitionKey.getType() );
         }
         if ( allRows ) {
             for ( RexNode orderKey : orderKeys ) {
                 if ( !typeBuilder.nameExists( orderKey.toString() ) ) {
-                    typeBuilder.add( orderKey.toString(), null, orderKey.getType() );
+                    typeBuilder.add( null, orderKey.toString(), null, orderKey.getType() );
                 }
             }
 
@@ -2646,7 +2639,7 @@ public class AlgBuilder {
         for ( RexNode measure : measureList ) {
             List<RexNode> operands = ((RexCall) measure).getOperands();
             String alias = operands.get( 1 ).toString();
-            typeBuilder.add( alias, null, operands.get( 0 ).getType() );
+            typeBuilder.add( null, alias, null, operands.get( 0 ).getType() );
             measures.put( alias, operands.get( 0 ) );
         }
 

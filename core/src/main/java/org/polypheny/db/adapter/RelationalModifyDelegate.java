@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.tools.AlgBuilder;
@@ -92,14 +93,14 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
 
     @Override
-    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        modifiable.createTable( context, logical, allocation );
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        return modifiable.createTable( context, logical, allocation );
     }
 
 
     @Override
-    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        Scannable.createGraphSubstitute( modifiable, context, logical, allocation );
+    public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        return Scannable.createGraphSubstitute( modifiable, context, logical, allocation );
     }
 
 
@@ -110,9 +111,11 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
 
     @Override
-    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
+    public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable physical = Scannable.createSubstitutionTable( modifiable, context, logical, allocation, "_doc_", List.of( Triple.of( DocumentType.DOCUMENT_ID, DocumentType.ID_SIZE, PolyType.VARBINARY ), Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARBINARY ) ) );
         catalog.addPhysical( allocation, physical );
+
+        return List.of( physical );
     }
 
 

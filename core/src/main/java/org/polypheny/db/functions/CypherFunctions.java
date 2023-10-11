@@ -90,7 +90,7 @@ public class CypherFunctions {
      * @param edges collection of edges
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyGraph> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
+    public static Enumerable<PolyValue[]> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
         Map<PolyString, PolyNode> ns = new HashMap<>();
         for ( PolyNode node : nodes ) {
             ns.put( node.id, node );
@@ -100,8 +100,9 @@ public class CypherFunctions {
         for ( PolyEdge edge : edges ) {
             es.put( edge.id, edge );
         }
-
-        return Linq4j.asEnumerable( List.of( new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) ) );
+        List<PolyValue[]> values = new ArrayList<>();
+        values.add( new PolyValue[]{ new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) } );
+        return Linq4j.asEnumerable( values );
     }
 
 

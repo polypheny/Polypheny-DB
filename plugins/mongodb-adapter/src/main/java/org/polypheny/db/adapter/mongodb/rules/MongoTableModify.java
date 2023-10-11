@@ -96,8 +96,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
                 getEntity(),
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 
@@ -156,31 +156,31 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         BsonDocument doc = new BsonDocument();
         List<BsonDocument> docDocs = new ArrayList<>();
         GridFSBucket bucket = implementor.getBucket();
-        for ( RexNode el : getSourceExpressionList() ) {
+        for ( RexNode el : getSourceExpressions() ) {
             if ( el.isA( Kind.LITERAL ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
             } else if ( el instanceof RexCall ) {
                 RexCall call = ((RexCall) el);
                 if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
                     doc.append(
-                            rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                            rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                             visitCall( implementor, (RexCall) el, call.op.getKind(), el.getType().getPolyType() ) );
                 } else if ( call.op.getKind().belongsTo( Kind.MQL_KIND ) ) {
                     docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                 } else {
                     doc.append(
-                            rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                            rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                             BsonUtil.getBsonArray( call, bucket ) );
                 }
             } else if ( el.isA( Kind.DYNAMIC_PARAM ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonDynamic( (RexDynamicParam) el ) );
             } else if ( el.isA( Kind.FIELD_ACCESS ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumnList().get( pos ), implementor ),
+                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonString(
                                 "$" + rowType.getPhysicalName(
                                         ((RexFieldAccess) el).getField().getName(), implementor ) ) );
@@ -339,7 +339,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
-                .map( d -> BsonDocument.parse( d.toJsonOrNull() ) )
+                .map( d -> BsonDocument.parse( d.toTypedJson() ) )
                 .collect( Collectors.toList() );
     }
 
@@ -439,26 +439,6 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         Map<Integer, String> map = new HashMap<>();
         map.put( 0, "d" );
         return map;
-    }
-
-
-    private Map<Integer, String> getPhysicalMap( List<AlgDataTypeField> fieldList, LogicalTable table ) {
-        Map<Integer, String> map = new HashMap<>();
-        List<String> names = table.getColumnNames();
-        List<Long> ids = table.getColumnIds();
-        int pos = 0;
-        for ( String name : Pair.left( fieldList ) ) {
-            map.put( pos, MongoStore.getPhysicalColumnName( ids.get( names.indexOf( name ) ) ) );
-            pos++;
-        }
-        return map;
-    }
-
-
-    private String getPhysicalName( MongoProject input, LogicalTable table, int pos ) {
-        String logicalName = input.getRowType().getFieldNames().get( pos );
-        int index = table.getColumnNames().indexOf( logicalName );
-        return MongoStore.getPhysicalColumnName( table.getColumnIds().get( index ) );
     }
 
 

@@ -221,12 +221,12 @@ public abstract class RexProgramBuilderBase {
             AlgDataType nullableType = typeFactory.createTypeWithNullability( k, true );
             Builder builder = typeFactory.builder();
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
-                builder.add( fieldNamePrefix + i, null, nullableType );
+                builder.add( null, fieldNamePrefix + i, null, nullableType );
             }
             String notNullPrefix = "notNull" + Character.toUpperCase( fieldNamePrefix.charAt( 0 ) ) + fieldNamePrefix.substring( 1 );
 
             for ( int i = 0; i < MAX_FIELDS; i++ ) {
-                builder.add( notNullPrefix + i, null, k );
+                builder.add( null, notNullPrefix + i, null, k );
             }
             return rexBuilder.makeDynamicParam( builder.build(), 0 );
         } );

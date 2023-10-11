@@ -105,7 +105,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
             executionTime = System.nanoTime();
 
             Statement statement = transaction.createStatement();
-            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.namespaceId );
+            ExtendedQueryParameters parameters = new ExtendedQueryParameters( query, NamespaceType.GRAPH, request.namespace );
 
             if ( transaction.isAnalyze() ) {
                 statement.getOverviewDuration().start( "Parsing" );
@@ -127,7 +127,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
                             .builder()
                             .affectedTuples( 1 )
                             .query( splits.get( i ) )
-                            .namespaceId( request.namespaceId )
+                            .namespace( request.namespace )
                             .xid( transaction.getXid().toString() )
                             .build();
                     results.add( result );
@@ -157,7 +157,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
 
         } catch ( Throwable t ) {
             LanguageCrud.printLog( t, request );
-            LanguageCrud.attachError( transaction, results, query, t );
+            LanguageCrud.attachError( transaction, results, query, NamespaceType.DOCUMENT, t );
         }
 
         LanguageCrud.commitAndFinish( transaction, queryAnalyzer, results, executionTime );

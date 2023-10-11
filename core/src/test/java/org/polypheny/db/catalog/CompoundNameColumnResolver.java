@@ -17,12 +17,13 @@
 package org.polypheny.db.catalog;
 
 
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -99,7 +100,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 List<Map.Entry<String, Integer>> entries = new ArrayList<>( subMap.entrySet() );
                 entries.sort( ( o1, o2 ) -> o1.getValue() - o2.getValue() );
-                ret.add( new Pair<>( new AlgDataTypeFieldImpl( columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
+                ret.add( new Pair<>( new AlgDataTypeFieldImpl( -1L, columnName, -1, createStructType( rowType, typeFactory, entries ) ), remainder ) );
             }
         }
 
@@ -110,31 +111,9 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
     private static AlgDataType createStructType( final AlgDataType rowType, AlgDataTypeFactory typeFactory, final List<Map.Entry<String, Integer>> entries ) {
         return typeFactory.createStructType(
                 StructKind.PEEK_FIELDS,
-                new AbstractList<AlgDataType>() {
-                    @Override
-                    public AlgDataType get( int index ) {
-                        final int i = entries.get( index ).getValue();
-                        return rowType.getFieldList().get( i ).getType();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return entries.size();
-                    }
-                },
-                new AbstractList<String>() {
-                    @Override
-                    public String get( int index ) {
-                        return entries.get( index ).getKey();
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return entries.size();
-                    }
-                } );
+                rowType.getFieldList().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                entries.stream().map( e -> rowType.getFieldList().get( e.getValue() ).getType() ).collect( Collectors.toList() ),
+                entries.stream().map( Entry::getKey ).collect( Collectors.toList() ) );
     }
 
 }

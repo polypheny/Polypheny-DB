@@ -17,7 +17,7 @@
 package org.polypheny.db.information;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -248,8 +248,12 @@ public class InformationManager {
             counter++;
         }
         Arrays.sort( pages1, Comparator.comparing( InformationPage::getName ) );
-        Gson gson = new Gson();
-        return gson.toJson( pages1, InformationPage[].class );
+
+        try {
+            return Information.mapper.writeValueAsString( pages1 );
+        } catch ( JsonProcessingException e ) {
+            return null;
+        }
     }
 
 

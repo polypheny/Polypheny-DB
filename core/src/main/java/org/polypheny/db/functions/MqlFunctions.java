@@ -177,7 +177,7 @@ public class MqlFunctions {
         PolyString name;
         for ( List<PolyString> split : names ) {
             Iterator<PolyString> iter = split.iterator();
-            check:
+
             while ( iter.hasNext() ) {
                 name = iter.next();
                 if ( doc.containsKey( name ) ) {
@@ -187,7 +187,7 @@ public class MqlFunctions {
                         if ( doc.get( name ).isDocument() ) {
                             doc = doc.get( name ).asDocument();
                         } else {
-                            break check;
+                            break;
                         }
 
                     }

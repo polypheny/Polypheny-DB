@@ -127,7 +127,7 @@ public class Collect extends SingleAlg {
         assert childType.isStruct();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         AlgDataType ret = PolyTypeUtil.createMultisetType( typeFactory, childType, false );
-        ret = typeFactory.builder().add( fieldName, null, ret ).build();
+        ret = typeFactory.builder().add( null, fieldName, null, ret ).build();
         return typeFactory.createTypeWithNullability( ret, false );
     }
 

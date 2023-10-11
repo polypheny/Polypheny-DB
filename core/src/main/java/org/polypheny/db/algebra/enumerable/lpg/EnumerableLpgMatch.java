@@ -28,12 +28,14 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.Types.ArrayType;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -76,17 +78,23 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
         Expression inputEnumerator = builder.append( builder.newName( "enumerator" + System.nanoTime() ), Expressions.call( inputEnumerable, BuiltInMethod.ENUMERABLE_ENUMERATOR.method ), false );
         builder.add( Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ) );
 
-        Expression graph_ = builder.append( builder.newName( "graph" + System.nanoTime() ), Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyGraph.class ), false );
+        Expression graph_ = builder.append(
+                builder.newName( "graph" + System.nanoTime() ),
+                Expressions.convert_(
+                        Expressions.arrayIndex(
+                                Expressions.convert_(
+                                        Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), new ArrayType( PolyValue.class ) ),
+                                Expressions.constant( 0 ) ),
+                        PolyGraph.class ),
+                false );
 
         List<Expression> expressions = new ArrayList<>( matches.size() );
-        for ( RexNode match : matches ) {
-            assert match instanceof RexCall;
-
-            RexCall call = ((RexCall) match);
+        for ( RexCall match : matches ) {
+            assert match != null;
 
             boolean extract = false;
             Method method;
-            switch ( call.op.getOperatorName() ) {
+            switch ( match.op.getOperatorName() ) {
                 case CYPHER_NODE_EXTRACT:
                     extract = true;
                     method = BuiltInMethod.CYPHER_NODE_EXTRACT.method;
@@ -98,14 +106,16 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
                     method = BuiltInMethod.CYPHER_PATH_MATCH.method;
                     break;
                 default:
-                    throw new RuntimeException( "could not translate graph match" );
+                    throw new GenericRuntimeException( "could not translate graph match" );
             }
 
+            Expression expression;
             if ( extract ) {
-                expressions.add( Expressions.call( Types.of( Enumerable.class, typeFactory.getJavaClass( call.type ) ), null, method, List.of( graph_ ) ) );
+                expression = Expressions.call( Types.of( Enumerable.class, typeFactory.getJavaClass( match.type ) ), null, method, List.of( graph_ ) );
             } else {
-                expressions.add( Expressions.call( Types.of( Enumerable.class, typeFactory.getJavaClass( call.type ) ), null, method, List.of( graph_, getPolyElement( call ) ) ) );
+                expression = Expressions.call( Types.of( Enumerable.class, typeFactory.getJavaClass( match.type ) ), null, method, List.of( graph_, getPolyElement( match ) ) );
             }
+            expressions.add( Expressions.call( BuiltInMethod.SINGLE_TO_ARRAY_ENUMERABLE.method, expression ) );
 
         }
         Expression return_;
@@ -137,7 +147,7 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
             return path.asExpression();
         }
 
-        throw new RuntimeException( "Could not generate expression for graph match." );
+        throw new GenericRuntimeException( "Could not generate expression for graph match." );
     }
 
 
@@ -153,37 +163,31 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
     }
 
 
-    public static class MatchEnumerable extends AbstractEnumerable<Object> {
+    public static class MatchEnumerable extends AbstractEnumerable<PolyValue[]> {
 
-        final List<Enumerable<Object>> enumerables;
+        final List<Enumerable<PolyValue[]>> enumerables;
 
 
-        public MatchEnumerable( List<Enumerable<Object>> enumerables ) {
+        public MatchEnumerable( List<Enumerable<PolyValue[]>> enumerables ) {
             this.enumerables = enumerables;
         }
 
 
         @Override
-        public Enumerator<Object> enumerator() {
-            Iterator<Enumerable<Object>> iter = enumerables.iterator();
-            Enumerable<Object> enumerable = iter.next();
+        public Enumerator<PolyValue[]> enumerator() {
+            Iterator<Enumerable<PolyValue[]>> iter = enumerables.iterator();
+            Enumerable<PolyValue[]> enumerable = iter.next();
 
             int i = 0;
             while ( iter.hasNext() ) {
-                if ( i == 0 ) {
-                    enumerable = enumerable.hashJoin(
-                            iter.next(),
-                            a0 -> PolyList.of(),
-                            a0 -> PolyList.of(),
-                            ( a0, a1 ) -> new PolyValue[]{ (PolyValue) a0, (PolyValue) a1 } );
-                } else {
-                    int index = i;
-                    enumerable = enumerable.hashJoin(
-                            iter.next(),
-                            a0 -> PolyList.of(),
-                            a0 -> PolyList.of(),
-                            ( a0, a1 ) -> asObjectArray( (PolyValue[]) a0, (PolyValue) a1, index ) );
-                }
+
+                int index = i;
+                enumerable = enumerable.hashJoin(
+                        iter.next(),
+                        a0 -> PolyList.of(),
+                        a0 -> PolyList.of(),
+                        ( a0, a1 ) -> asObjectArray( a0, a1[0], index ) );
+
                 i++;
             }
 

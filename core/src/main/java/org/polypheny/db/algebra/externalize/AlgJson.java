@@ -96,10 +96,10 @@ public class AlgJson {
                     "org.polypheny.db.adapter.mongodb.",
                     "org.polypheny.db.adapter.mongodb.MongoRules$",
                     "org.polypheny.db.adapter.file.algebra.",
-                    "org.polypheny.db.adapter.enumerable.",
-                    "org.polypheny.db.adapter.enumerable.lpg.",
-                    "org.polypheny.db.adapter.enumerable.document.",
-                    "org.polypheny.db.adapter.enumerable.common.",
+                    "org.polypheny.db.algebra.enumerable.",
+                    "org.polypheny.db.algebra.enumerable.lpg.",
+                    "org.polypheny.db.algebra.enumerable.document.",
+                    "org.polypheny.db.algebra.enumerable.common.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",
                     "org.polypheny.db.adapter.neo4j.",
@@ -221,7 +221,7 @@ public class AlgJson {
             @SuppressWarnings("unchecked") final List<Map<String, Object>> jsonList = (List<Map<String, Object>>) o;
             final AlgDataTypeFactory.Builder builder = typeFactory.builder();
             for ( Map<String, Object> jsonMap : jsonList ) {
-                builder.add( (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
+                builder.add( null, (String) jsonMap.get( "name" ), null, toType( typeFactory, jsonMap ) );
             }
             return builder.build();
         } else {

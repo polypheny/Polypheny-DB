@@ -381,8 +381,8 @@ public abstract class MutableAlgs {
                     input,
                     modify.getEntity(),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
         if ( alg instanceof Sample ) {

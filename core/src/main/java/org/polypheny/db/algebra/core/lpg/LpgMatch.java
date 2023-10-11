@@ -61,7 +61,7 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
         int i = 0;
         for ( RexNode match : matches ) {
-            fields.add( new AlgDataTypeFieldImpl( names.get( i ).value, i, match.getType() ) );
+            fields.add( new AlgDataTypeFieldImpl( -1L, names.get( i ).value, i, match.getType() ) );
             i++;
         }
         return new AlgRecordType( fields );

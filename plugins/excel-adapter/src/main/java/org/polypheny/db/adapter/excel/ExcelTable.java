@@ -41,6 +41,7 @@ public class ExcelTable extends PhysicalTable {
     ExcelTable( PhysicalTable table, Source source, AlgProtoDataType protoRowType, List<ExcelFieldType> fieldTypes, int[] fields, ExcelSource excelSource, String sheet ) {
         super( table.id,
                 table.allocationId,
+                table.logicalId,
                 table.name,
                 table.columns,
                 table.namespaceId,

@@ -273,8 +273,6 @@ public class Rest {
         AlgDataType tableRowType = table.getRowType();
         List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
 
-//        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
-
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
 
@@ -338,7 +336,7 @@ public class Rest {
             AlgDataType filtersRowType = baseNodeForFilters.getRowType();
             List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
-            filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+            filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
             int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
                 for ( Pair<Operator, PolyValue> filterOperationPair : filters.literalFilters.get( column ) ) {

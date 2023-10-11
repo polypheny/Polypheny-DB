@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.EvictingQueue;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,9 +27,9 @@ import java.util.UUID;
 
 public class InformationTable extends InformationHtml {
 
-    @SuppressWarnings({ "unused" })
+    @JsonProperty
     private List<String> labels;
-    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+    @JsonProperty
     private final Queue<List<String>> rows;
 
 

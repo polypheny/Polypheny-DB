@@ -17,13 +17,16 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 
 public class InformationKeyValue extends Information {
 
-    private final HashMap<String, String> keyValuePairs = new HashMap<>();
+    @JsonProperty
+    private final Map<String, String> keyValuePairs = new HashMap<>();
 
 
     /**

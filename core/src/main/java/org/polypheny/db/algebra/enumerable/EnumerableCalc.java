@@ -101,7 +101,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
 
         final Result result = implementor.visitChild( this, 0, child, pref );
 
-        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), pref.prefer( result.format ) );
+        final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), JavaRowFormat.ARRAY );
 
         // final Enumerable<Employee> inputEnumerable = <<child adapter>>;
         // return new Enumerable<IntString>() {

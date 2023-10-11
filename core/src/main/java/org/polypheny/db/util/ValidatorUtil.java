@@ -96,26 +96,27 @@ public class ValidatorUtil {
                 + rightType.getFieldCount()));
         List<String> nameList = new ArrayList<>();
         final List<AlgDataType> typeList = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
 
         // Use a set to keep track of the field names; this is needed to ensure that the contains() call to check for name uniqueness runs in constant time; otherwise, if the number of fields is large, doing a contains() on a list can be expensive.
         final Set<String> uniqueNameList =
                 typeFactory.getTypeSystem().isSchemaCaseSensitive()
                         ? new HashSet<>()
                         : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
-        addFields( systemFieldList, typeList, nameList, uniqueNameList );
-        addFields( leftType.getFieldList(), typeList, nameList, uniqueNameList );
+        addFields( systemFieldList, typeList, nameList, ids, uniqueNameList );
+        addFields( leftType.getFieldList(), typeList, nameList, ids, uniqueNameList );
         if ( rightType != null ) {
-            addFields( rightType.getFieldList(), typeList, nameList, uniqueNameList );
+            addFields( rightType.getFieldList(), typeList, nameList, ids, uniqueNameList );
         }
         if ( fieldNameList != null ) {
             assert fieldNameList.size() == nameList.size();
             nameList = fieldNameList;
         }
-        return typeFactory.createStructType( typeList, nameList );
+        return typeFactory.createStructType( ids, typeList, nameList );
     }
 
 
-    private static void addFields( List<AlgDataTypeField> fieldList, List<AlgDataType> typeList, List<String> nameList, Set<String> uniqueNames ) {
+    private static void addFields( List<AlgDataTypeField> fieldList, List<AlgDataType> typeList, List<String> nameList, List<Long> ids, Set<String> uniqueNames ) {
         for ( AlgDataTypeField field : fieldList ) {
             String name = field.getName();
 
@@ -132,6 +133,7 @@ public class ValidatorUtil {
             nameList.add( name );
             uniqueNames.add( name );
             typeList.add( field.getType() );
+            ids.add( field.getId() );
         }
     }
 

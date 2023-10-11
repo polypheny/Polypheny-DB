@@ -273,7 +273,7 @@ public abstract class BaseRouter implements Router {
             return new LogicalDocumentScan( scan.getCluster(), scan.getTraitSet(), allocation );
         }
 
-        throw new RuntimeException( "Error while routing graph query." );
+        throw new GenericRuntimeException( "Error while routing graph query." );
 
     }
 
@@ -437,7 +437,7 @@ public abstract class BaseRouter implements Router {
         AllocationColumn placement = new ArrayList<>( partitionsColumnsPlacements.values() ).get( 0 ).get( 0 );
         // todo dl: remove after RowType refactor
         if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().namespaceType == NamespaceType.DOCUMENT ) {
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),
                     List.of( node ),

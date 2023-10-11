@@ -106,7 +106,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because '%s' is not a column.", columnName );
         }
 
-        DdlManager.getInstance().addColumnPlacement(
+        DdlManager.getInstance().createColumnPlacement(
                 table,
                 column,
                 store,

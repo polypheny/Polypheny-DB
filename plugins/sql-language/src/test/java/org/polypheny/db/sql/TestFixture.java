@@ -126,18 +126,18 @@ public class TestFixture {
         str = ref( 11, stringDataType );
 
         rowType = typeFactory.builder()
-                .add( "bool", null, this.boolRelDataType )
-                .add( "int", null, intAlgDataType )
-                .add( "dec", null, decRelDataType )
-                .add( "long", null, longRelDataType )
-                .add( "short", null, shortDataType )
-                .add( "byte", null, byteDataType )
-                .add( "float", null, floatDataType )
-                .add( "char", null, charDataType )
-                .add( "date", null, dateDataType )
-                .add( "timestamp", null, timestampDataType )
-                .add( "time", null, timeDataType )
-                .add( "string", null, stringDataType )
+                .add( null, "bool", null, this.boolRelDataType )
+                .add( null, "int", null, intAlgDataType )
+                .add( null, "dec", null, decRelDataType )
+                .add( null, "long", null, longRelDataType )
+                .add( null, "short", null, shortDataType )
+                .add( null, "byte", null, byteDataType )
+                .add( null, "float", null, floatDataType )
+                .add( null, "char", null, charDataType )
+                .add( null, "date", null, dateDataType )
+                .add( null, "timestamp", null, timestampDataType )
+                .add( null, "time", null, timeDataType )
+                .add( null, "string", null, stringDataType )
                 .build();
 
         final Holder<RexExecutorImpl> holder = Holder.of( null );

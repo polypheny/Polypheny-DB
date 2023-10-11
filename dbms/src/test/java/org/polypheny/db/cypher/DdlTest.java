@@ -17,8 +17,7 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -44,15 +43,15 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertNotNull( Catalog.snapshot().getNamespace( graphName ) );
+        assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
 
         execute( "DROP DATABASE " + graphName );
 
-        assertNull( Catalog.snapshot().getNamespace( graphName ) );
+        assertTrue( Catalog.snapshot().getNamespace( graphName ).isEmpty() );
 
         execute( "CREATE DATABASE " + graphName );
 
-        assertNotNull( Catalog.snapshot().getNamespace( graphName ) );
+        assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
 
         execute( "DROP DATABASE " + graphName );
     }

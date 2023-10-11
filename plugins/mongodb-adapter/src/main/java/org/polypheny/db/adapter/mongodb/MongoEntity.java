@@ -80,7 +80,6 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
@@ -123,7 +122,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Getter
     public MongoCollection<Document> collection;
-    public AlgDataType rowType;
     public List<? extends PhysicalField> fields;
 
 
@@ -131,13 +129,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * Creates a MongoTable.
      */
     MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
-        super( physical.id, physical.allocationId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
         this.storeId = physical.adapterId;
         this.collection = namespace.database.getCollection( physical.name );
-        this.rowType = physical.getRowType();
         this.fields = fields;
     }
 
@@ -330,11 +327,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     }
 
 
-    @Override
-    public AlgDataType getRowType() {
-        return this.rowType;
-    }
-
 
     @Override
     public Serializable[] getParameterArray() {
@@ -366,7 +358,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalCollection( id, allocationId, namespaceId, name, namespaceName, adapterId );
+        return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
     }
 
 

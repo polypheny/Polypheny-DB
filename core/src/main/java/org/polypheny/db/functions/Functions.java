@@ -280,7 +280,7 @@ public class Functions {
 
         List<Map<Long, PolyValue>> values = new ArrayList<>( context.getParameterValues() );
 
-        if ( values.size() == 0 ) {
+        if ( values.isEmpty() ) {
             return baz;
         }
 
@@ -302,7 +302,7 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<Object> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
@@ -318,7 +318,8 @@ public class Functions {
         }
         if ( values.isEmpty() ) {
             // there are no updates to make, we don't execute the right executor
-            return Linq4j.asEnumerable( List.of( PolyInteger.of( 0 ) ) );
+            values.add( new PolyValue[]{ PolyInteger.of( 0 ) } );
+            return Linq4j.asEnumerable( values );
         }
 
         List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
@@ -340,10 +341,10 @@ public class Functions {
             context.addParameterValues( i, algDataTypes.get( i ), vals.get( i ) );
         }
 
-        List<Object> results = new ArrayList<>();
+        List<PolyValue[]> results = new ArrayList<>();
         Enumerable<Object> executor = executorCall.apply();
         for ( Object o : executor ) {
-            results.add( o );
+            results.add( new PolyValue[]{ (PolyValue) o } );
         }
 
         context.resetParameterValues();
@@ -806,12 +807,13 @@ public class Functions {
     }
 
 
-    public static Enumerable<?> singleSum( Enumerable<?> results ) {
+    @SuppressWarnings("unused")
+    public static Enumerable<?> singleSum( Enumerable<PolyValue[]> results ) {
         long amount = 0;
-        for ( Object result : results ) {
-            amount += ((PolyNumber) result).intValue();
+        for ( PolyValue[] result : results ) {
+            amount += result[0].asNumber().intValue();
         }
-        return Linq4j.singletonEnumerable( PolyLong.of( amount ) );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( amount ) } );
     }
 
 
@@ -3195,7 +3197,7 @@ public class Functions {
         if ( stringValue == null ) {
             return null;
         }
-        return PolyValue.readJsonOrNull( stringValue, PolyList.class ).asList();
+        return PolyValue.fromTypedJson( stringValue, PolyList.class );
     }
 
 
@@ -3668,6 +3670,17 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> singleToArray( Enumerable<? extends PolyValue> enumerable ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<PolyValue[]> enumerator() {
+                return Linq4j.transform( enumerable.enumerator(), e -> new PolyValue[]{ e } );
+            }
+        };
+    }
+
+
     public static PathContext jsonApiCommonSyntax( Object input, String pathSpec ) {
         try {
             Matcher matcher = JSON_PATH_BASE.matcher( pathSpec );
@@ -4027,7 +4040,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> singletonEnumerable( Object value ) {
-        return Linq4j.singletonEnumerable( new PolyValue[]{ (PolyValue) value } );
+        return Linq4j.singletonEnumerable( (PolyValue[]) value );
     }
 
 

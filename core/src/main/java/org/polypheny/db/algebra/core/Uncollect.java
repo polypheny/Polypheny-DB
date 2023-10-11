@@ -151,8 +151,8 @@ public class Uncollect extends SingleAlg {
 
         for ( AlgDataTypeField field : fields ) {
             if ( field.getType() instanceof MapPolyType ) {
-                builder.add( UnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getKeyType() );
-                builder.add( UnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getValueType() );
+                builder.add( null, UnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getKeyType() );
+                builder.add( null, UnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().unwrap( MapPolyType.class ).getValueType() );
             } else {
                 AlgDataType ret = field.getType().getComponentType();
                 assert null != ret;
@@ -160,7 +160,7 @@ public class Uncollect extends SingleAlg {
                     builder.addAll( ret.getFieldList() );
                 } else {
                     // Element type is not a record. It may be a scalar type, say "INTEGER". Wrap it in a struct type.
-                    builder.add( CoreUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );
+                    builder.add( null, CoreUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );
                 }
             }
         }

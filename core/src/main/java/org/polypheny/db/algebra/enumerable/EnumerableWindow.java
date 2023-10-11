@@ -219,7 +219,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
             final Builder typeBuilder = typeFactory.builder();
             typeBuilder.addAll( inputPhysType.getRowType().getFieldList() );
             for ( AggImpState agg : aggs ) {
-                typeBuilder.add( agg.call.name, null, agg.call.type );
+                typeBuilder.add( null, agg.call.name, null, agg.call.type );
             }
             AlgDataType outputRowType = typeBuilder.build();
             final PhysType outputPhysType = PhysTypeImpl.of( typeFactory, outputRowType, pref.prefer( result.format ) );

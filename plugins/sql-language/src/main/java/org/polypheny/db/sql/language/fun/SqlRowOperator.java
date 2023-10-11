@@ -18,9 +18,10 @@ package org.polypheny.db.sql.language.fun;
 
 
 import java.util.AbstractList;
-import java.util.Map;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.nodes.OperatorBinding;
 import org.polypheny.db.nodes.RowOperator;
 import org.polypheny.db.sql.language.SqlCall;
@@ -31,7 +32,6 @@ import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -66,11 +66,12 @@ public class SqlRowOperator extends SqlSpecialOperator implements RowOperator {
     public AlgDataType inferReturnType( final OperatorBinding opBinding ) {
         // The type of a ROW(e1,e2) expression is a record with the types {e1type,e2type}.  According to the standard, field names are implementation-defined.
         return opBinding.getTypeFactory().createStructType(
-                new AbstractList<Map.Entry<String, AlgDataType>>() {
+                new AbstractList<>() {
                     @Override
-                    public Map.Entry<String, AlgDataType> get( int index ) {
-                        return Pair.of(
+                    public AlgDataTypeField get( int index ) {
+                        return new AlgDataTypeFieldImpl( -1L,
                                 CoreUtil.deriveAliasFromOrdinal( index ),
+                                index,
                                 opBinding.getOperandType( index ) );
                     }
 

@@ -268,7 +268,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             final AlgDataTypeFactory.Builder b = context.getCluster().getTypeFactory().builder();
             for ( AlgDataTypeField field : rowType.getFieldList() ) {
                 if ( strategies.get( field.getIndex() ) != ColumnStrategy.VIRTUAL ) {
-                    b.add( field.getName(), null, field.getType() );
+                    b.add( null, field.getName(), null, field.getType() );
                 }
             }
             final AlgOptEntity algOptEntity =

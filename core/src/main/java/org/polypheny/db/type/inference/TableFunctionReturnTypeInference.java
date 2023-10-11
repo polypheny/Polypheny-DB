@@ -134,7 +134,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 }
             }
         }
-        return opBinding.getTypeFactory().createStructType( expandedOutputTypes, expandedFieldNames );
+        return opBinding.getTypeFactory().createStructType( null, expandedOutputTypes, expandedFieldNames );
     }
 
 

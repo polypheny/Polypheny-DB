@@ -16,17 +16,17 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -36,14 +36,15 @@ import io.activej.serializer.SerializerBuilder;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
-import java.io.IOException;
 import java.lang.reflect.Type;
+import java.sql.Timestamp;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -64,6 +65,7 @@ import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
+import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
 import org.polypheny.db.type.entity.PolyNull.PolyNullSerializerDef;
 import org.polypheny.db.type.entity.PolyString.PolyStringSerializerDef;
 import org.polypheny.db.type.entity.category.PolyBlob;
@@ -105,6 +107,30 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class }) // add on Constructor already exists exception
+@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT, property = "clazz", visible = true) // to allow typed json serialization
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
+        @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
+        @JsonSubTypes.Type(value = PolyNull.class, name = "NULL"),
+        @JsonSubTypes.Type(value = PolyString.class, name = "STRING"),
+        @JsonSubTypes.Type(value = PolyDate.class, name = "DATE"),
+        @JsonSubTypes.Type(value = PolyTime.class, name = "TIME"),
+        @JsonSubTypes.Type(value = PolyDouble.class, name = "DOUBLE"),
+        @JsonSubTypes.Type(value = PolyFloat.class, name = "FLOAT"),
+        @JsonSubTypes.Type(value = PolyLong.class, name = "LONG"),
+        @JsonSubTypes.Type(value = PolyInteger.class, name = "INTEGER"),
+        @JsonSubTypes.Type(value = PolyBoolean.class, name = "BOOLEAN"),
+        @JsonSubTypes.Type(value = PolyTimeStamp.class, name = "TIMESTAMP"),
+        @JsonSubTypes.Type(value = PolyBinary.class, name = "BINARY"),
+        @JsonSubTypes.Type(value = PolyDocument.class, name = "DOCUMENT"),
+        @JsonSubTypes.Type(value = PolySymbol.class, name = "SYMBOL"),
+        @JsonSubTypes.Type(value = PolyMap.class, name = "MAP"),
+        @JsonSubTypes.Type(value = PolyNode.class, name = "NODE"),
+        @JsonSubTypes.Type(value = PolyEdge.class, name = "EDGE"),
+        @JsonSubTypes.Type(value = PolyPath.class, name = "PATH"),
+        @JsonSubTypes.Type(value = PolyDictionary.class, name = "DICTIONARY"),
+        @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV")
+})
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
     @JsonIgnore
@@ -124,17 +150,25 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyNull.class, ctx -> new PolyNullSerializerDef() )
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
+            .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .build( PolyValue.class );
 
 
-    public static final ObjectMapper JSON_WRAPPER = new ObjectMapper();/*.registerModule( new SimpleModule()
-            .addDeserializer( PolyValue.class, new PolyDeserializer( PolyValue.class ) )
-            .addSerializer( PolyValue.class, new PolySerializer( PolyValue.class ) ) );*/
-
-    public static final ObjectMapper JSON_RAW = new ObjectMapper();
-
+    public static final ObjectMapper JSON_WRAPPER = new ObjectMapper() {
+        {
+            setSerializationInclusion( JsonInclude.Include.NON_NULL );
+            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+            setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                    .withIsGetterVisibility( Visibility.NONE )
+                    .withGetterVisibility( Visibility.NONE )
+                    .withSetterVisibility( Visibility.NONE ) );
+            writerWithDefaultPrettyPrinter();
+        }
+    };
 
     @Serialize
+    @JsonIgnore
     public PolyType type;
 
 
@@ -182,13 +216,10 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                                 ? (o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ))
                                 : o.asList().stream().map( elTrans::apply ).collect( Collectors.toList() ).toArray();
             case FILE:
-                return o -> o;
             case IMAGE:
-                return o -> o;
             case AUDIO:
-                return o -> o;
             case VIDEO:
-                return o -> o;
+                return o -> o.asBlob().asByteArray();
             default:
                 throw new org.apache.commons.lang3.NotImplementedException( "meta" );
         }
@@ -215,21 +246,34 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
-    public String toJsonOrNull() {
+    @Nullable
+    public String toTypedJson() {
         try {
             return JSON_WRAPPER.writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
-            log.warn( "error on serializing json" );
+            log.warn( "Error on serializing typed JSON." );
             return null;
         }
     }
 
 
-    public static <E extends PolyValue> E readJsonOrNull( String value, Class<E> clazz ) {
+    @Nullable
+    public static <E extends PolyValue> E fromTypedJson( String value, Class<E> clazz ) {
         try {
             return JSON_WRAPPER.readValue( value, clazz );
         } catch ( JsonProcessingException e ) {
-            log.warn( "error on deserialize json" );
+            log.warn( "Error on deserialize typed JSON." );
+            return null;
+        }
+    }
+
+
+    public String toJson() {
+        // fallback serializer
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on deserialize JSON." );
             return null;
         }
     }
@@ -405,7 +449,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @Override
-    @JsonIgnore
     public <T extends PolySerializable> BinarySerializer<T> getSerializer() {
         return (BinarySerializer<T>) serializer;
     }
@@ -792,6 +835,52 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     }
 
 
+    public static PolyValue fromType( Object object, PolyType type ) {
+        switch ( type ) {
+            case BOOLEAN:
+                return PolyBoolean.of( (Boolean) object );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return PolyInteger.of( (Number) object );
+            case BIGINT:
+                return PolyLong.of( (Number) object );
+            case DECIMAL:
+                return PolyBigDecimal.of( object.toString() );
+            case FLOAT:
+            case REAL:
+                return PolyFloat.of( (Number) object );
+            case DOUBLE:
+                return PolyDouble.of( (Number) object );
+            case DATE:
+                if ( object instanceof Number ) {
+                    return PolyDate.of( (Number) object );
+                }
+                throw new NotImplementedException();
+
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Number ) {
+                    return PolyTime.of( (Number) object );
+                }
+                throw new NotImplementedException();
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Timestamp ) {
+                    return PolyTimeStamp.of( (Timestamp) object );
+                }
+                throw new NotImplementedException();
+            case CHAR:
+            case VARCHAR:
+                return PolyString.of( (String) object );
+            case BINARY:
+            case VARBINARY:
+                return PolyBinary.of( (ByteString) object );
+        }
+        throw new NotImplementedException();
+    }
+
+
     public static class PolyValueSerializerDef extends SimpleSerializerDef<PolyValue> {
 
         @Override
@@ -810,82 +899,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
                     return PolySerializable.deserialize( in.readUTF16(), PolySerializable.buildSerializer( PolyValue.classFrom( type ) ) );
                 }
             };
-        }
-
-    }
-
-
-    public static class PolySerializer extends StdSerializer<PolyValue> {
-
-        private static final String CLASSNAME = "className";
-        private static final String INSTANCE = "instance";
-
-
-        protected PolySerializer( Class<PolyValue> t ) {
-            super( t );
-        }
-
-
-        @Override
-        public void serialize( PolyValue value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            if ( value == null ) {
-                gen.writeNull();
-                return;
-            }
-
-            gen.writeStartObject();
-            gen.writeFieldName( CLASSNAME );
-            gen.writeString( value.getClass().getName() );
-            gen.writeFieldName( INSTANCE );
-            gen.writeRawValue( JSON_RAW.writeValueAsString( value ) );
-            gen.writeEndObject();
-        }
-
-    }
-
-
-    public static class PolyDeserializer extends StdDeserializer<PolyValue> {
-
-        private static final String CLASSNAME = "className";
-        private static final String INSTANCE = "instance";
-
-
-        protected PolyDeserializer( Class<?> vc ) {
-            super( vc );
-        }
-
-
-        @Override
-        public PolyValue deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JsonProcessingException {
-            JsonToken token = p.currentToken();
-            if ( token == JsonToken.VALUE_NULL ) {
-                p.nextValue();
-                return null;
-            }
-
-            String className = null;
-            PolyValue instance = null;
-            String name = p.nextFieldName();
-
-            while ( name != null ) {
-                if ( name.equals( CLASSNAME ) ) {
-                    className = p.nextTextValue();
-                } else if ( name.equals( INSTANCE ) ) {
-                    Class<? extends PolyValue> type;
-                    try {
-                        type = (Class<? extends PolyValue>) Class.forName( className );
-                    } catch ( ClassNotFoundException e ) {
-                        throw new JsonParseException( p, "Invalid class name: " + className, e );
-                    }
-                    instance = JSON_WRAPPER.readValue( p, type );
-                } else {
-                    p.skipChildren();
-                }
-                name = p.nextFieldName();
-            }
-
-            return instance;
-
         }
 
     }

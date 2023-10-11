@@ -32,20 +32,20 @@ public class ExtendedQueryParameters extends QueryParameters {
     public List<String> nodeLabels = new ArrayList<>();
     public List<String> relationshipLabels = new ArrayList<>();
     @NonFinal
-    public Long namespaceId;
+    public String namespace;
     public boolean fullGraph;
 
 
-    public ExtendedQueryParameters( String query, NamespaceType namespaceType, Long namespaceId ) {
+    public ExtendedQueryParameters( String query, NamespaceType namespaceType, String namespace ) {
         super( query, namespaceType );
-        this.namespaceId = namespaceId;
+        this.namespace = namespace;
         this.fullGraph = false;
     }
 
 
-    public ExtendedQueryParameters( Long namespaceId ) {
+    public ExtendedQueryParameters( String namespace ) {
         super( "*", NamespaceType.GRAPH );
-        this.namespaceId = namespaceId;
+        this.namespace = namespace;
         this.fullGraph = true;
     }
 

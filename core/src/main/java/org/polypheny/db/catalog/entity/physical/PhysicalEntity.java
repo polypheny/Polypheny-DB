@@ -42,12 +42,16 @@ public abstract class PhysicalEntity extends CatalogEntity {
     @Serialize
     public long allocationId;
 
+    @Serialize
+    public long logicalId;
 
-    protected PhysicalEntity( long id, long allocationId, String name, long namespaceId, String namespaceName, NamespaceType namespaceType, long adapterId ) {
+
+    protected PhysicalEntity( long id, long allocationId, long logicalId, String name, long namespaceId, String namespaceName, NamespaceType namespaceType, long adapterId ) {
         super( id, name, namespaceId, EntityType.ENTITY, namespaceType, true );
         this.allocationId = allocationId;
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;
+        this.logicalId = logicalId;
     }
 
 

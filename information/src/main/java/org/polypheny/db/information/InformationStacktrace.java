@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 public class InformationStacktrace extends Information {
 
+    @JsonProperty
     private Throwable exception;
 
 

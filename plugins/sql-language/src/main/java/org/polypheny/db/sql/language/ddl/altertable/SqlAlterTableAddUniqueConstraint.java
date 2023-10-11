@@ -91,7 +91,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        DdlManager.getInstance().addUniqueConstraint(
+        DdlManager.getInstance().createUniqueConstraint(
                 catalogTable,
                 columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                 constraintName.getSimple() );

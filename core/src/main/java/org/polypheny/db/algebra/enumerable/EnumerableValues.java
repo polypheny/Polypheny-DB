@@ -113,7 +113,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
                         null,
                         Expressions.call(
                                 BuiltInMethod.AS_ENUMERABLE.method,
-                                Expressions.newArrayInit( Primitive.box( rowClass ), expressions ) ) ) );
+                                Expressions.newArrayInit( Primitive.box( rowClass ), 2, expressions ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

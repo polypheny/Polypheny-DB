@@ -17,8 +17,12 @@
 package org.polypheny.db.information;
 
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,40 +32,39 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 @Slf4j
 public abstract class Information {
 
-    private static Gson gson = new Gson();
+    public static ObjectMapper mapper = new ObjectMapper() {{
+        setSerializationInclusion( JsonInclude.Include.NON_NULL );
+        configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+        configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+        writerWithDefaultPrettyPrinter();
+    }};
 
     /**
      * The id needs to be unique for every Information object.
-     * -- GETTER --
-     *  Get the id of this Information object.
-     *
-     * @return id of this Information object
-
      */
     @Getter
-    @JsonSerialize
+    @JsonProperty
     private final String id;
 
     /**
      * The field type is used by Gson and is needed for the frontend.
      */
-    @JsonSerialize
+    @JsonProperty
     String type;
 
     /**
      * The field informationGroup consists of the id of the InformationGroup to which it belongs.
      */
-    @JsonSerialize
+    @JsonProperty
     private final String groupId;
 
     /**
      * The information object with lowest uiOrder are rendered first, then those with higher number, then those where uiOrder is null.
      * Field required for GSON.
      */
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     @Getter
     @Setter
-    @JsonSerialize
+    @JsonProperty
     private int uiOrder;
 
     /**
@@ -108,7 +111,7 @@ public abstract class Information {
      * Returns the actual implementation of this information element.
      *
      * @param clazz The
-     * @return The unwraped object
+     * @return The unwrapped object
      */
     public <T extends Information> T unwrap( final Class<T> clazz ) {
         if ( clazz.isInstance( this ) ) {
@@ -126,7 +129,12 @@ public abstract class Information {
      * @return object as JSON string
      */
     public String asJson() {
-        return gson.toJson( this );
+        try {
+            return mapper.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing an Information" );
+            return null;
+        }
     }
 
 

@@ -67,7 +67,7 @@ public class CypherUnwind extends CypherClause {
         if ( expression.getType() == ExpressionType.LITERAL && ((CypherLiteral) expression).getLiteralType() == Literal.NULL ) {
             // special case, this is equal to empty list
             AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( variable.getName(), 0, type ) ) );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, variable.getName(), 0, type ) ) );
 
             RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( ComparableList.of(), type, false );
 

@@ -34,11 +34,12 @@ public class PhysicalCollection extends PhysicalEntity {
     public PhysicalCollection(
             @Deserialize("id") long id,
             @Deserialize("allocationId") long allocationId,
+            @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("name") String name,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, name, namespaceId, namespaceName, NamespaceType.DOCUMENT, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, NamespaceType.DOCUMENT, adapterId );
     }
 
 
@@ -56,7 +57,7 @@ public class PhysicalCollection extends PhysicalEntity {
 
     @Override
     public PhysicalEntity normalize() {
-        return new PhysicalCollection( id, allocationId, namespaceId, name, namespaceName, adapterId );
+        return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
     }
 
 }

@@ -57,9 +57,11 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
@@ -69,10 +71,9 @@ import org.polypheny.db.util.Static;
 /**
  * Executes a SQL statement and returns the result as an {@link Enumerable}.
  *
- * @param <T> Element type
  */
 @Slf4j
-public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
+public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
 
     // timestamp do factor in the timezones, which means that 10:00 is 9:00 with
@@ -82,14 +83,14 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
     private final ConnectionHandler connectionHandler;
     private final String sql;
-    private final Function1<ResultSet, Function0<T>> rowBuilderFactory;
+    private final Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory;
     private final PreparedStatementEnricher preparedStatementEnricher;
 
     private Long queryStart;
     private long timeout;
     private boolean timeoutSetFailed;
 
-    private static final Function1<ResultSet, Function0<Object>> AUTO_ROW_BUILDER_FACTORY =
+    private static final Function1<ResultSet, Function0<PolyValue[]>> AUTO_ROW_BUILDER_FACTORY =
             resultSet -> {
                 final ResultSetMetaData metaData;
                 final int columnCount;
@@ -97,14 +98,14 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     metaData = resultSet.getMetaData();
                     columnCount = metaData.getColumnCount();
                 } catch ( SQLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
                 if ( columnCount == 1 ) {
                     return () -> {
                         try {
-                            return resultSet.getObject( 1 );
+                            return new PolyValue[]{ PolyValue.fromType( resultSet.getObject( 1 ), PolyType.getNameForJdbcType( metaData.getColumnType( 0 ) ) ) };
                         } catch ( SQLException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                     };
                 } else {
@@ -126,7 +127,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                             }
                             return list.toArray();
                         } catch ( SQLException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                     };
                 }
@@ -136,7 +137,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private ResultSetEnumerable(
             ConnectionHandler connectionHandler,
             String sql,
-            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory,
             PreparedStatementEnricher preparedStatementEnricher ) {
         this.connectionHandler = connectionHandler;
         this.sql = sql;
@@ -148,7 +149,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private ResultSetEnumerable(
             ConnectionHandler connectionHandler,
             String sql,
-            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+            Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory ) {
         this( connectionHandler, sql, rowBuilderFactory, null );
     }
 
@@ -156,7 +157,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable.
      */
-    public static ResultSetEnumerable<Object> of(
+    public static ResultSetEnumerable of(
             ConnectionHandler connectionHandler,
             String sql ) {
         return of( connectionHandler, sql, AUTO_ROW_BUILDER_FACTORY );
@@ -166,7 +167,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     /**
      * Creates an ResultSetEnumerable that retrieves columns as specific Java types.
      */
-    public static ResultSetEnumerable<Object> of(
+    public static ResultSetEnumerable of(
             ConnectionHandler connectionHandler,
             String sql,
             Primitive[] primitives ) {
@@ -178,11 +179,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Executes a SQL query and returns the results as an enumerator, using a row builder to convert
      * JDBC column values into rows.
      */
-    public static <T> ResultSetEnumerable<T> of(
+    public static ResultSetEnumerable of(
             ConnectionHandler connectionHandler,
             String sql,
-            Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
-        return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory );
+            Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory ) {
+        return new ResultSetEnumerable( connectionHandler, sql, rowBuilderFactory );
     }
 
 
@@ -192,12 +193,12 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * <p>
      * It uses a {@link PreparedStatement} for computing the query result, and that means that it can bind parameters.
      */
-    public static <T> ResultSetEnumerable<T> of(
+    public static ResultSetEnumerable of(
             ConnectionHandler connectionHandler,
             String sql,
-            Function1<ResultSet, Function0<T>> rowBuilderFactory,
+            Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory,
             PreparedStatementEnricher consumer ) {
-        return new ResultSetEnumerable<>( connectionHandler, sql, rowBuilderFactory, consumer );
+        return new ResultSetEnumerable( connectionHandler, sql, rowBuilderFactory, consumer );
     }
 
 
@@ -297,7 +298,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory
                 } else {
-                    preparedStatement.setString( i, value.asList().toJsonOrNull() );
+                    preparedStatement.setString( i, value.asList().toTypedJson() );
                 }
                 break;
             case IMAGE:
@@ -479,7 +480,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
 
     @Override
-    public Enumerator<T> enumerator() {
+    public Enumerator<PolyValue[]> enumerator() {
         if ( preparedStatementEnricher == null ) {
             return enumeratorBasedOnStatement();
         } else {
@@ -512,7 +513,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }*/
 
 
-    private Enumerator<T> enumeratorBasedOnStatement() {
+    private Enumerator<PolyValue[]> enumeratorBasedOnStatement() {
         Statement statement = null;
         try {
             statement = connectionHandler.getStatement();
@@ -520,10 +521,10 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( statement.execute( sql ) ) {
                 final ResultSet resultSet = statement.getResultSet();
                 statement = null;
-                return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
+                return new ResultSetEnumerator( resultSet, rowBuilderFactory );
             } else {
                 int updateCount = statement.getUpdateCount();
-                return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
+                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }
         } catch ( SQLException e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
@@ -533,7 +534,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private Enumerator<T> enumeratorBasedOnPreparedStatement() {
+    private Enumerator<PolyValue[]> enumeratorBasedOnPreparedStatement() {
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = connectionHandler.prepareStatement( sql );
@@ -542,15 +543,15 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 // batch
                 preparedStatement.executeBatch();
                 int updateCount = preparedStatement.getUpdateCount();
-                return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
+                return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             } else {
                 if ( preparedStatement.execute() ) {
                     final ResultSet resultSet = preparedStatement.getResultSet();
                     preparedStatement = null;
-                    return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
+                    return new ResultSetEnumerator( resultSet, rowBuilderFactory );
                 } else {
                     int updateCount = preparedStatement.getUpdateCount();
-                    return Linq4j.singletonEnumerator( (T) PolyLong.of( updateCount ) );
+                    return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
                 }
             }
         } catch ( SQLException e ) {
@@ -599,23 +600,21 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
     /**
      * Implementation of {@link Enumerator} that reads from a {@link ResultSet}.
-     *
-     * @param <T> element type
      */
-    private static class ResultSetEnumerator<T> implements Enumerator<T> {
+    private static class ResultSetEnumerator implements Enumerator<PolyValue[]> {
 
-        private final Function0<T> rowBuilder;
+        private final Function0<PolyValue[]> rowBuilder;
         private ResultSet resultSet;
 
 
-        ResultSetEnumerator( ResultSet resultSet, Function1<ResultSet, Function0<T>> rowBuilderFactory ) {
+        ResultSetEnumerator( ResultSet resultSet, Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory ) {
             this.resultSet = resultSet;
             this.rowBuilder = rowBuilderFactory.apply( resultSet );
         }
 
 
         @Override
-        public T current() {
+        public PolyValue[] current() {
             return rowBuilder.apply();
         }
 
@@ -635,7 +634,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             try {
                 resultSet.beforeFirst();
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 
@@ -664,7 +663,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private static Function1<ResultSet, Function0<Object>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
+    private static Function1<ResultSet, Function0<PolyValue[]>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
         return resultSet -> {
             final ResultSetMetaData metaData;
             final int columnCount;
@@ -672,16 +671,13 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 metaData = resultSet.getMetaData();
                 columnCount = metaData.getColumnCount();
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             assert columnCount == primitives.length;
             if ( columnCount == 1 ) {
                 return () -> {
-                    try {
-                        return resultSet.getObject( 1 );
-                    } catch ( SQLException e ) {
-                        throw new RuntimeException( e );
-                    }
+                    //return metaData.getColumnType( 0 ) resultSet.getObject( 1 );
+                    throw new NotImplementedException();
                 };
             }
             //noinspection unchecked
@@ -693,7 +689,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     }
                     return list.toArray();
                 } catch ( SQLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             };
         };

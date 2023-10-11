@@ -60,8 +60,8 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 entity,
                 AbstractAlgNode.sole( inputs ),
                 getOperation(),
-                getUpdateColumnList(),
-                getSourceExpressionList(),
+                getUpdateColumns(),
+                getSourceExpressions(),
                 isFlattened() );
     }
 
@@ -79,18 +79,18 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
 
         implementor.setFileTable( entity );
         if ( getOperation() == Operation.UPDATE ) {
-            if ( getSourceExpressionList() != null ) {
+            if ( getSourceExpressions() != null ) {
                 if ( implementor.getUpdates() == null ) {
                     implementor.setUpdates( new ArrayList<>() );
                 }
                 implementor.getUpdates().clear();
                 List<Value> values = new ArrayList<>();
                 int i = 0;
-                for ( RexNode src : getSourceExpressionList() ) {
+                for ( RexNode src : getSourceExpressions() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).value, false ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumns().get( i ) ).intValue(), ((RexLiteral) src).value, false ) );
                     } else if ( src instanceof RexDynamicParam ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumnList().get( i ) ).intValue(), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
+                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumns().get( i ) ).intValue(), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( Value.fromArrayRexCall( (RexCall) src ) );
                     } else {
@@ -101,7 +101,7 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 implementor.setUpdates( values );
             }
             //set the columns that should be updated in the projection list
-            implementor.project( this.getUpdateColumnList(), null );
+            implementor.project( this.getUpdateColumns(), null );
         }
     }
 

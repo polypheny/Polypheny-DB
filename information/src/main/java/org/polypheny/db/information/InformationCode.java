@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 
@@ -25,22 +26,10 @@ import java.util.UUID;
  */
 public class InformationCode extends Information {
 
-    @SuppressWarnings("unused")
+    @JsonProperty
     private String code;
-    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
+    @JsonProperty
     private String language;
-
-
-    /**
-     * Constructor
-     *
-     * @param groupId The group this information element belongs to
-     * @param code    Code that should be rendered in an ace editor in the UI
-     */
-    public InformationCode( final String groupId, final String code ) {
-        this( UUID.randomUUID().toString(), groupId, code, "java" );
-    }
-
 
     /**
      * Constructor

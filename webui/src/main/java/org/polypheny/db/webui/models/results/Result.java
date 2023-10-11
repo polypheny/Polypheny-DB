@@ -16,10 +16,15 @@
 
 package org.polypheny.db.webui.models.results;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +46,7 @@ public abstract class Result<E, F> {
      */
     public NamespaceType namespaceType;
 
-    public Long namespaceId;
+    public String namespace;
 
     public E[] data;
 
@@ -79,6 +84,7 @@ public abstract class Result<E, F> {
      * language type of result MQL/SQL/CQL
      */
     @JsonSerialize(using = LanguageSerializer.class)
+    @JsonDeserialize(using = LanguageDeserializer.class)
     @Builder.Default
     public QueryLanguage language = QueryLanguage.from( "sql" );
     /**
@@ -100,7 +106,7 @@ public abstract class Result<E, F> {
             this.namespaceType = instance.namespaceType;
             this.xid = instance.xid;
             this.error = instance.error;
-            this.namespaceId = instance.namespaceId;
+            this.namespace = instance.namespace;
             this.query = instance.query;
             this.exception = instance.exception;
             this.language$value = instance.language;
@@ -116,6 +122,27 @@ public abstract class Result<E, F> {
         @Override
         public void serialize( QueryLanguage value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
             gen.writeString( value.getSerializedName() );
+        }
+
+    }
+
+
+    private static class LanguageDeserializer extends StdDeserializer<QueryLanguage> {
+
+        protected LanguageDeserializer() {
+            super( QueryLanguage.class );
+        }
+
+
+        protected LanguageDeserializer( Class<?> vc ) {
+            super( vc );
+        }
+
+
+        @Override
+        public QueryLanguage deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JacksonException {
+            String lang = ctxt.readValue( p, String.class );
+            return QueryLanguage.from( lang );
         }
 
     }

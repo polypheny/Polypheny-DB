@@ -60,17 +60,17 @@ public interface Scannable {
             columns.add( column );
             i++;
         }
-        AllocationTable allocTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
+        AllocationTable allocSubTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
 
         List<AllocationColumn> allocColumns = new ArrayList<>();
         i = 1;
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocTable.placementId, allocTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
             allocColumns.add( alloc );
         }
 
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocTable, allocColumns ) );
-        return scannable.getCatalog().getPhysicalsFromAllocs( allocation.id ).get( 0 ).unwrap( PhysicalTable.class );
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class );
     }
 
     StoreCatalog getCatalog();
@@ -112,10 +112,12 @@ public interface Scannable {
         return builder.documentScan( entity ).build();
     }
 
-    default void createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
+    default List<List<PhysicalEntity>> createTable( Context context, LogicalTableWrapper logical, List<AllocationTableWrapper> allocations ) {
+        List<List<PhysicalEntity>> entities = new ArrayList<>();
         for ( AllocationTableWrapper allocation : allocations ) {
-            createTable( context, logical, allocation );
+            entities.add( createTable( context, logical, allocation ) );
         }
+        return entities;
     }
 
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
@@ -127,30 +129,11 @@ public interface Scannable {
         return builder.build();
     }
 
-    void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
-
-    List<PhysicalEntity> refreshTable( long allocId );
+    List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities );
 
-    List<PhysicalEntity> refreshGraph( long allocId );
-
-    static List<PhysicalEntity> refreshGraphSubstitute( Scannable scannable, long allocId ) {
-        List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocId );
-        scannable.refreshTable( physicals.get( 0 ).allocationId );
-        scannable.refreshTable( physicals.get( 1 ).allocationId );
-        scannable.refreshTable( physicals.get( 2 ).allocationId );
-        scannable.refreshTable( physicals.get( 3 ).allocationId );
-        return physicals;
-    }
-
     void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities );
-
-    List<PhysicalEntity> refreshCollection( long allocId );
-
-    static List<PhysicalEntity> refreshCollectionSubstitution( Scannable scannable, long allocId ) {
-        return scannable.refreshTable( scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).allocationId );
-    }
 
 
     void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities );
@@ -163,9 +146,9 @@ public interface Scannable {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the LPG data model.
      */
-    void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
+    List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
 
-    static void createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
+    static List<PhysicalEntity> createGraphSubstitute( Scannable scannable, Context context, LogicalGraph logical, AllocationGraph allocation ) {
         PhysicalTable node = createSubstitutionTable( scannable, context, logical, allocation, "_node_", List.of(
                 Triple.of( "id", GraphType.ID_SIZE, PolyType.VARCHAR ),
                 Triple.of( "label", GraphType.LABEL_SIZE, PolyType.VARCHAR ) ) );
@@ -187,6 +170,7 @@ public interface Scannable {
                 Triple.of( "value", GraphType.VALUE_SIZE, PolyType.VARCHAR ) ) );
 
         scannable.getCatalog().addPhysical( allocation, node, nProperties, edge, eProperties );
+        return List.of( node, nProperties, edge, eProperties );
     }
 
     /**
@@ -210,14 +194,15 @@ public interface Scannable {
      * It comes with a substitution methods called by default and should be overwritten if the inheriting {@link DataStore}
      * support the document data model natively.
      */
-    void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
+    List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation );
 
-    static void createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
+    static List<PhysicalEntity> createCollectionSubstitute( Scannable scannable, Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable doc = createSubstitutionTable( scannable, context, logical, allocation, "_doc_", List.of(
                 Triple.of( DocumentType.DOCUMENT_ID, DocumentType.DATA_SIZE, PolyType.VARCHAR ),
                 Triple.of( DocumentType.DOCUMENT_DATA, DocumentType.DATA_SIZE, PolyType.VARCHAR ) ) );
 
         scannable.getCatalog().addPhysical( allocation, doc );
+        return List.of( doc );
     }
 
     /**
@@ -231,5 +216,7 @@ public interface Scannable {
         scannable.dropTable( context, allocation.id );
     }
 
+
+    void renameLogicalColumn( long id, String newColumnName );
 
 }

@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Parameter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -434,7 +435,7 @@ public abstract class ReflectUtil {
                     final Object o = method.invoke( visitor, args );
                     return returnClazz.cast( o );
                 } catch ( IllegalAccessException | InvocationTargetException e ) {
-                    throw new RuntimeException( "While invoking method '" + method + "'", e );
+                    throw new GenericRuntimeException( "While invoking method '" + method + "'", e );
                 }
             }
 

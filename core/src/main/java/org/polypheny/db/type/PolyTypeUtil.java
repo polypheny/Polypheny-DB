@@ -194,7 +194,7 @@ public abstract class PolyTypeUtil {
             if ( fieldName == null ) {
                 fieldName = "ROW_VALUE";
             }
-            type = typeFactory.builder().add( fieldName, null, type ).build();
+            type = typeFactory.builder().add( null, fieldName, null, type ).build();
         }
         return type;
     }
@@ -810,7 +810,7 @@ public abstract class PolyTypeUtil {
             types.add( field.getType() );
             fieldNames.add( field.getName() + "_" + i );
         }
-        return typeFactory.createStructType( types, fieldNames );
+        return typeFactory.createStructType( null, types, fieldNames );
     }
 
 
@@ -829,7 +829,7 @@ public abstract class PolyTypeUtil {
             if ( type.isNullable() ) {
                 indicatorType = typeFactory.createTypeWithNullability( indicatorType, true );
             }
-            AlgDataTypeField nullIndicatorField = new AlgDataTypeFieldImpl( "NULL_VALUE", 0, indicatorType );
+            AlgDataTypeField nullIndicatorField = new AlgDataTypeFieldImpl( -1L, "NULL_VALUE", 0, indicatorType );
             list.add( nullIndicatorField );
             nested = true;
         }
@@ -854,7 +854,7 @@ public abstract class PolyTypeUtil {
                                     flattenRecordType( typeFactory, field.getType().getComponentType(), null ),
                                     -1 );
                 }
-                field = new AlgDataTypeFieldImpl( field.getName(), field.getIndex(), flattenedCollectionType );
+                field = new AlgDataTypeFieldImpl( field.getId(), field.getName(), field.getIndex(), flattenedCollectionType );
                 list.add( field );
             } else {
                 list.add( field );
@@ -985,7 +985,7 @@ public abstract class PolyTypeUtil {
      * @return Struct type with no fields
      */
     public static AlgDataType createEmptyStructType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( ImmutableList.of(), ImmutableList.of() );
+        return typeFactory.createStructType( null, ImmutableList.of(), ImmutableList.of() );
     }
 
 

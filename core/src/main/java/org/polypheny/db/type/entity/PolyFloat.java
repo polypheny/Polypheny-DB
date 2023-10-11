@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -60,6 +61,12 @@ public class PolyFloat extends PolyNumber {
 
     public static PolyFloat ofNullable( Number value ) {
         return value == null ? null : of( value );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return value == null ? JsonToken.VALUE_NULL.asString() : String.valueOf( value );
     }
 
 
@@ -175,7 +182,6 @@ public class PolyFloat extends PolyNumber {
         }
 
     }
-
 
 
     @Override

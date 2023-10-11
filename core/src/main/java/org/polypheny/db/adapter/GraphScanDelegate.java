@@ -43,14 +43,8 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        scannable.createTable( context, logical, allocation );
-    }
-
-
-    @Override
-    public List<PhysicalEntity> refreshTable( long allocId ) {
-        return scannable.refreshTable( allocId );
+    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
+        return scannable.createTable( context, logical, allocation );
     }
 
 
@@ -61,20 +55,8 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public List<PhysicalEntity> refreshGraph( long allocId ) {
-        return scannable.refreshGraph( allocId );
-    }
-
-
-    @Override
     public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities ) {
         scannable.restoreGraph( alloc, entities );
-    }
-
-
-    @Override
-    public List<PhysicalEntity> refreshCollection( long allocId ) {
-        return Scannable.refreshCollectionSubstitution( scannable, allocId );
     }
 
 
@@ -91,8 +73,8 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
-        scannable.createGraph( context, logical, allocation );
+    public List<PhysicalEntity> createGraph( Context context, LogicalGraph logical, AllocationGraph allocation ) {
+        return scannable.createGraph( context, logical, allocation );
     }
 
 
@@ -103,14 +85,20 @@ public class GraphScanDelegate implements Scannable {
 
 
     @Override
-    public void createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        Scannable.createCollectionSubstitute( scannable, context, logical, allocation );
+    public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
+        return Scannable.createCollectionSubstitute( scannable, context, logical, allocation );
     }
 
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
         Scannable.dropCollectionSubstitute( scannable, context, allocation );
+    }
+
+
+    @Override
+    public void renameLogicalColumn( long id, String newColumnName ) {
+        getCatalog().renameLogicalField( id, newColumnName );
     }
 
 }

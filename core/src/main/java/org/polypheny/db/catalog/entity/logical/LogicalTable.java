@@ -36,6 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.schema.ColumnStrategy;
@@ -47,7 +48,6 @@ import org.polypheny.db.schema.ColumnStrategy;
 public class LogicalTable extends LogicalEntity {
 
     private static final long serialVersionUID = 4653390333258552102L;
-
 
     @Serialize
     @SerializeNullable
@@ -64,7 +64,7 @@ public class LogicalTable extends LogicalEntity {
         this.primaryKey = primaryKey;
 
         if ( type == EntityType.ENTITY && !modifiable ) {
-            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+            throw new GenericRuntimeException( "Tables of table type TABLE must be modifiable!" );
         }
     }
 
@@ -96,7 +96,7 @@ public class LogicalTable extends LogicalEntity {
 
         for ( LogicalColumn column : Catalog.getInstance().getSnapshot().rel().getColumns( id ).stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
-            fieldInfo.add( column.name, null, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, null, sqlType ).nullable( column.nullable );
         }
 
         return AlgDataTypeImpl.proto( fieldInfo.build() ).apply( AlgDataTypeFactory.DEFAULT );

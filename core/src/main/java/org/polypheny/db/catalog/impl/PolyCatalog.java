@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -35,7 +34,6 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.Function4;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
@@ -64,7 +62,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolySerializable;
 
 
@@ -171,40 +168,9 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public void updateSnapshot() {
-        // reset physical catalogs
-
-        // update all except physicals, so information can be accessed
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
 
-        Map<Long, AdapterRestore> adapterRestore = adapters.values().stream().collect( Collectors.toMap( a -> a.id, a -> new AdapterRestore( a.id ) ) );
-        // generate new physical entities, atm only relational
-        for ( AllocationCatalog catalog : this.allocationCatalogs.values() ) {
-            if ( catalog.getNamespace().namespaceType == NamespaceType.RELATIONAL ) {
-                catalog.unwrap( AllocationRelationalCatalog.class ).getTables().forEach( ( id, table ) -> {
-                    addNamespaceIfNecessary( table );
-                    adapterRestore.get( table.adapterId ).addPhysicals( table, AdapterManager.getInstance().getAdapter( table.adapterId ).refreshTable( table.id ) );
-                } );
-            } else if ( catalog.getNamespace().namespaceType == NamespaceType.DOCUMENT ) {
-                catalog.unwrap( AllocationDocumentCatalog.class ).getCollections().forEach( ( id, collection ) -> {
-                    addNamespaceIfNecessary( collection );
-                    adapterRestore.get( collection.adapterId ).addPhysicals( collection, AdapterManager.getInstance().getAdapter( collection.adapterId ).refreshCollection( collection.id ) );
-                } );
-            } else if ( catalog.getNamespace().namespaceType == NamespaceType.GRAPH ) {
-                catalog.unwrap( AllocationGraphCatalog.class ).getGraphs().forEach( ( id, graph ) -> {
-                    addNamespaceIfNecessary( graph );
-                    adapterRestore.get( graph.adapterId ).addPhysicals( graph, AdapterManager.getInstance().getAdapter( graph.adapterId ).refreshGraph( graph.id ) );
-                } );
-            }
-        }
-
-        synchronized ( this ) {
-            this.adapterRestore.clear();
-            this.adapterRestore.putAll( adapterRestore );
-            // update with newly generated physical entities
-            this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, logicalCatalogs, allocationCatalogs );
-        }
         this.listeners.firePropertyChange( "snapshot", null, this.snapshot );
-        this.dirty.set( false );
     }
 
 
@@ -324,13 +290,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    @Deprecated
-    public Map<Long, AlgNode> getNodeInfo() {
-        return null;
-    }
-
-
-    @Override
     public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
         return Optional.ofNullable( (S) storeCatalogs.get( id ) );
     }
@@ -343,28 +302,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    @Deprecated
-    public void validateColumns() {
-
-    }
-
-
-    @Override
-    @Deprecated
-    public void restoreViews( Transaction transaction ) {
-
-    }
-
-
-    @Override
-    public long addUser( String name, String password ) {
+    public long createUser( String name, String password ) {
         long id = idBuilder.getNewUserId();
         users.put( id, new CatalogUser( id, name, password ) );
         return id;
     }
 
 
-    public long addNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    public long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
         LogicalNamespace namespace = new LogicalNamespace( id, name, namespaceType, caseSensitive );
@@ -401,7 +346,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteNamespace( long id ) {
+    public void dropNamespace( long id ) {
         logicalCatalogs.remove( id );
 
         change();
@@ -409,7 +354,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public long addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
+    public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
         adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, mode, settings ) );
         change();
@@ -428,14 +373,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteAdapter( long id ) {
+    public void dropAdapter( long id ) {
         adapters.remove( id );
         change();
     }
 
 
     @Override
-    public long addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
+    public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         long id = idBuilder.getNewInterfaceId();
 
         interfaces.put( id, new CatalogQueryInterface( id, uniqueName, clazz, settings ) );
@@ -446,14 +391,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void deleteQueryInterface( long id ) {
+    public void dropQueryInterface( long id ) {
         interfaces.remove( id );
         change();
     }
 
 
     @Override
-    public long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
+    public long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function4<Long, String, Map<String, String>, Adapter<?>> deployer ) {
         long id = idBuilder.getNewAdapterTemplateId();
         adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, description, deployer ) );
         change();
@@ -462,21 +407,21 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public void addInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
+    public void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate ) {
         interfaceTemplates.put( name, queryInterfaceTemplate );
         change();
     }
 
 
     @Override
-    public void removeInterfaceTemplate( String name ) {
+    public void dropInterfaceTemplate( String name ) {
         interfaceTemplates.remove( name );
         change();
     }
 
 
     @Override
-    public void removeAdapterTemplate( long templateId ) {
+    public void dropAdapterTemplate( long templateId ) {
         adapterTemplates.remove( templateId );
         change();
     }
@@ -485,7 +430,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void restore() {
         this.backup = persister.read();
-        if ( this.backup == null ) {
+        if ( this.backup == null || this.backup.isEmpty() ) {
             log.warn( "No file found to restore" );
             return;
         }

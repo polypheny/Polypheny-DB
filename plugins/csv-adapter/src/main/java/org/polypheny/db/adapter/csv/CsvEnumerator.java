@@ -55,24 +55,23 @@ import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
 
 /**
  * Enumerator that reads from a CSV file.
- *
  */
 class CsvEnumerator implements Enumerator<PolyValue[]> {
 
     private final CSVReader reader;
     private final String[] filterValues;
     private final AtomicBoolean cancelFlag;
-    private final RowConverter<PolyValue[]> rowConverter;
+    private final RowConverter<PolyValue> rowConverter;
     private PolyValue[] current;
 
     private static final FastDateFormat TIME_FORMAT_DATE;
@@ -100,11 +99,11 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
 
     CsvEnumerator( Source source, AtomicBoolean cancelFlag, List<CsvFieldType> fieldTypes, int[] fields ) {
         //noinspection unchecked
-        this( source, cancelFlag, false, null, (RowConverter<PolyValue[]>) converter( fieldTypes, fields ) );
+        this( source, cancelFlag, false, null, (RowConverter<PolyValue>) converter( fieldTypes, fields ) );
     }
 
 
-    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<PolyValue[]> rowConverter ) {
+    CsvEnumerator( Source source, AtomicBoolean cancelFlag, boolean stream, String[] filterValues, RowConverter<PolyValue> rowConverter ) {
         this.cancelFlag = cancelFlag;
         this.rowConverter = rowConverter;
         this.filterValues = filterValues;
@@ -145,6 +144,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
     static AlgDataType deduceRowType( JavaTypeFactory typeFactory, Source source, List<CsvFieldType> fieldTypes, Boolean stream ) {
         final List<AlgDataType> types = new ArrayList<>();
         final List<String> names = new ArrayList<>();
+        final List<Long> ids = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
             types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
@@ -177,6 +177,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
                 }
                 names.add( name );
                 types.add( type );
+                ids.add( null );
                 if ( fieldTypes != null ) {
                     fieldTypes.add( fieldType );
                 }
@@ -188,7 +189,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             names.add( "line" );
             types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
-        return typeFactory.createStructType( Pair.zip( names, types ) );
+        return typeFactory.createStructType( ids, types, names );
     }
 
 
@@ -280,78 +281,53 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
      */
     abstract static class RowConverter<E> {
 
-        abstract E convertRow( String[] rows );
+        abstract E[] convertRow( String[] rows );
 
 
         protected PolyValue convert( CsvFieldType fieldType, String string ) {
             if ( fieldType == null ) {
                 return PolyString.of( string );
             }
+            if ( fieldType == CsvFieldType.STRING ) {
+                return PolyString.of( string );
+            }
+            if ( string.isEmpty() ) {
+                return PolyNull.NULL;
+            }
             switch ( fieldType ) {
                 case BOOLEAN:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyBoolean.of( Boolean.parseBoolean( string ) );
                 case BYTE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyInteger.of( Byte.parseByte( string ) );
                 case SHORT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyInteger.of( Short.parseShort( string ) );
                 case INT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyInteger.of( Integer.parseInt( string ) );
                 case LONG:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyLong.of( Long.parseLong( string ) );
                 case FLOAT:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyFloat.of( Float.parseFloat( string ) );
                 case DOUBLE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     return PolyDouble.of( Double.parseDouble( string ) );
                 case DATE:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         return PolyDate.of( TIME_FORMAT_DATE.parse( string ) );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIME:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         Date date = TIME_FORMAT_TIME.parse( string );
                         return PolyTime.of( date.getTime() );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
                 case TIMESTAMP:
-                    if ( string.length() == 0 ) {
-                        return null;
-                    }
                     try {
                         return PolyTimeStamp.of( TIME_FORMAT_TIMESTAMP.parse( string ) );
                     } catch ( ParseException e ) {
-                        return null;
+                        return PolyNull.NULL;
                     }
-                case STRING:
                 default:
                     return PolyString.of( string );
             }
@@ -363,7 +339,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
     /**
      * Array row converter.
      */
-    static class ArrayRowConverter extends RowConverter<PolyValue[]> {
+    static class ArrayRowConverter extends RowConverter<PolyValue> {
 
         private final CsvFieldType[] fieldTypes;
         private final int[] fields;
@@ -434,8 +410,8 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
 
 
         @Override
-        public Object convertRow( String[] strings ) {
-            return convert( fieldType, strings[fieldIndex] );
+        public Object[] convertRow( String[] strings ) {
+            return new PolyValue[]{ convert( fieldType, strings[fieldIndex] ) };
         }
 
     }

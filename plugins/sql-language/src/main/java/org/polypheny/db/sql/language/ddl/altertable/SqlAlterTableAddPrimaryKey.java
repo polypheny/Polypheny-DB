@@ -84,7 +84,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
             throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
         }
 
-        DdlManager.getInstance().addPrimaryKey(
+        DdlManager.getInstance().createPrimaryKey(
                 catalogTable,
                 columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                 statement );

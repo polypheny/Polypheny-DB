@@ -1027,8 +1027,8 @@ public class JdbcRules {
                     modify.getEntity().unwrap( JdbcTable.class ),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
-                    modify.getUpdateColumnList(),
-                    modify.getSourceExpressionList(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
                     modify.isFlattened() );
         }
 
@@ -1039,8 +1039,6 @@ public class JdbcRules {
      * Table-modification operator implemented in JDBC convention.
      */
     public static class JdbcTableModify extends RelModify<JdbcTable> implements JdbcAlg {
-
-        private final Expression expression;
 
 
         public JdbcTableModify(
@@ -1059,7 +1057,7 @@ public class JdbcRules {
             if ( modifiableTable == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }
-            this.expression = table.asExpression( Queryable.class );
+            Expression expression = table.asExpression( Queryable.class );
             if ( expression == null ) {
                 throw new AssertionError(); // TODO: user error in validator
             }
@@ -1081,8 +1079,8 @@ public class JdbcRules {
                     entity,
                     AbstractAlgNode.sole( inputs ),
                     getOperation(),
-                    getUpdateColumnList(),
-                    getSourceExpressionList(),
+                    getUpdateColumns(),
+                    getSourceExpressions(),
                     isFlattened() );
         }
 

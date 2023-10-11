@@ -56,6 +56,7 @@ public abstract class CsvTable extends PhysicalTable {
         super(
                 id,
                 table.allocationId,
+                table.logicalId,
                 table.name,
                 table.columns,
                 table.namespaceId,

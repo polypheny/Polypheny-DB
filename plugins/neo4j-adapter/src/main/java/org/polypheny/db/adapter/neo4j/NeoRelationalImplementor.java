@@ -306,9 +306,9 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
         List<NeoStatement> nodes = new ArrayList<>();
         int i = 0;
-        for ( RexNode node : neoModify.getSourceExpressionList() ) {
+        for ( RexNode node : neoModify.getSourceExpressions() ) {
             Translator translator = new Translator( last.getRowType(), last.getRowType(), mapping, this, null, true );
-            nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumnList().get( i ) ) ), literal_( node.accept( translator ) ) ) );
+            nodes.add( assign_( literal_( mapping.get( neoModify.getUpdateColumns().get( i ) ) ), literal_( node.accept( translator ) ) ) );
             i++;
         }
 

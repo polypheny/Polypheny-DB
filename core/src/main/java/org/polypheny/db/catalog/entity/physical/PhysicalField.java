@@ -58,10 +58,10 @@ public abstract class PhysicalField extends CatalogEntity {
             final NamespaceType namespaceType,
             final boolean modifiable ) {
         super( id, name, allocId, EntityType.ENTITY, namespaceType, modifiable );
-        this.logicalName = logicalName;
         this.entityId = entityId;
         this.allocId = allocId;
         this.adapterId = adapterId;
+        this.logicalName = logicalName;
     }
 
 

@@ -87,7 +87,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
-                .map( d -> BsonDocument.parse( d.toJsonOrNull() ) )
+                .map( d -> BsonDocument.parse( d.toTypedJson() ) )
                 .collect( Collectors.toList() );
     }
 

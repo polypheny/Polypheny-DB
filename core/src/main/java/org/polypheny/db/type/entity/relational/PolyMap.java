@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.relational;
 
+import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -58,6 +59,18 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
     public PolyMap( Map<K, V> map, PolyType type ) {
         super( type );
         this.map = new HashMap<>( map );
+    }
+
+
+    @Override
+    public @Nullable String toJson() {
+        return map == null ? JsonToken.VALUE_NULL.asString() : "{" +
+                map.entrySet().stream()
+                        .map( e -> (e.getKey().isString() ? e.getKey().asString().toQuotedJson() : e.getKey().toJson()) + ":" +
+                                (e.getValue().isString()
+                                        ? e.getValue().asString().toQuotedJson()
+                                        : e.getValue().toJson()) ).collect( Collectors.joining( "," ) )
+                + "}";
     }
 
 
