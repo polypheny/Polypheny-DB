@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
@@ -158,10 +159,11 @@ public class WebSocket implements Consumer<WsConfig> {
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
+                                LogicalCollection collection = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).orElseThrow();
                                 result = LanguageCrud.anyQuery(
                                         QueryLanguage.from( "mongo" ),
                                         ctx.session,
-                                        new QueryRequest( String.format( "db.%s.find({})", namespace.name ), false, false, "mql", namespace.name ),
+                                        new QueryRequest( String.format( "db.%s.find({})", collection.name ), false, false, "mql", namespace.name ),
                                         crud.getTransactionManager(),
                                         Catalog.defaultUserId,
                                         Catalog.defaultNamespaceId

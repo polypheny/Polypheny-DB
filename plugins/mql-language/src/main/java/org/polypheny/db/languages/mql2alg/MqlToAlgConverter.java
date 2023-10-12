@@ -257,7 +257,7 @@ public class MqlToAlgConverter {
         Type kind = query.getMqlKind();
         this.entity = getEntity( query, namespaceId );
         if ( entity == null ) {
-            throw new RuntimeException( "The used collection does not exist." );
+            throw new GenericRuntimeException( "The used collection does not exist." );
         }
 
         AlgNode node;

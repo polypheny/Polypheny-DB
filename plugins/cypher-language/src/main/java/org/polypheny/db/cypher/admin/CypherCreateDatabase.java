@@ -39,7 +39,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
     private final String databaseName;
     private final boolean ifNotExists;
     private final CypherWaitClause wait;
-    private final CypherSimpleEither options;
+    private final CypherSimpleEither<?, ?> options;
     private final String store;
 
 
@@ -49,7 +49,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             CypherSimpleEither<String, CypherParameter> databaseName,
             boolean ifNotExists,
             CypherWaitClause wait,
-            CypherSimpleEither options,
+            CypherSimpleEither<?, ?> options,
             CypherSimpleEither<String, CypherParameter> store ) {
         super( pos );
         this.replace = replace;
@@ -85,7 +85,9 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
                 true,
                 dataStore,
                 ifNotExists,
-                replace, true, statement );
+                replace,
+                true,
+                statement );
     }
 
 
