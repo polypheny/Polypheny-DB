@@ -229,7 +229,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public final AuthCrud authCrud;
 
 
-
     /**
      * Constructor
      *
@@ -245,6 +244,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Catalog.afterInit( () -> Catalog.getInstance().addObserver( this ) );
 
     }
+
 
     /**
      * Closes analyzers and deletes temporary files.
@@ -591,7 +591,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Insert data into a table
      */
-    void insertTuple( final Context ctx ) throws IOException, ServletException {
+    void insertTuple( final Context ctx ) throws IOException {
         ctx.contentType( "multipart/form-data" );
         initMultipart( ctx );
         String unparsed = ctx.formParam( "entityId" );
@@ -2749,6 +2749,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void namespaceRequest( final Context ctx ) {
         Namespace namespace = ctx.bodyAsClass( Namespace.class );
+
+        if ( namespace.getType() == NamespaceType.GRAPH ) {
+            createGraph( namespace, ctx );
+            return;
+        }
+
         Transaction transaction = getTransaction();
 
         NamespaceType type = namespace.getType();
@@ -2757,9 +2763,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         if ( namespace.isCreate() && !namespace.isDrop() ) {
 
             StringBuilder query = new StringBuilder( "CREATE " );
-            if ( namespace.getType() == NamespaceType.DOCUMENT ) {
+            if ( Objects.requireNonNull( namespace.getType() ) == NamespaceType.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
+
             query.append( "NAMESPACE " );
 
             query.append( "\"" ).append( namespace.getName() ).append( "\"" );
@@ -2811,11 +2818,26 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    private void createGraph( Namespace namespace, Context ctx ) {
+        QueryLanguage cypher = QueryLanguage.from( "cypher" );
+        ctx.json(
+                LanguageCrud.anyQuery( cypher, null,
+                        new QueryRequest(
+                                "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore(),
+                                false,
+                                true, "cypher",
+                                namespace.getName() ),
+                        transactionManager,
+                        Catalog.defaultUserId,
+                        Catalog.defaultNamespaceId ).get( 0 ) );
+    }
+
+
     /**
      * Get all supported data types of the DBMS.
      */
     public void getTypeInfo( final Context ctx ) {
-        ctx.json( PolyType.availableTypes().stream().map( t -> PolyTypeModel.from( t ) ).collect( Collectors.toList() ) );
+        ctx.json( PolyType.availableTypes().stream().map( PolyTypeModel::from ).collect( Collectors.toList() ) );
     }
 
 

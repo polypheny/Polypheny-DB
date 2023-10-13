@@ -18,9 +18,10 @@ package org.polypheny.db.webui.models;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import lombok.Value;
+import lombok.experimental.NonFinal;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
@@ -28,26 +29,31 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
  * Model for a namespace of the logical namespace.
  */
 @Getter
+@Value
 public class Namespace {
 
-    @JsonSerialize
-    private String name;
-    @JsonSerialize
-    private NamespaceType type;
-    @JsonSerialize
-    private final String store;
+    @JsonProperty
+    String name;
+    @JsonProperty
+    NamespaceType type;
+    @JsonProperty
+    String store;
 
     // fields for creation
-    @JsonSerialize
-    private boolean create;
-    @JsonSerialize
-    private String authorization;
+    @JsonProperty
+    @NonFinal
+    boolean create;
+    @JsonProperty
+    @NonFinal
+    String authorization;
 
     // fields for deletion
-    @JsonSerialize
-    private boolean drop;
-    @JsonSerialize
-    private boolean cascade;
+    @JsonProperty
+    @NonFinal
+    boolean drop;
+    @JsonProperty
+    @NonFinal
+    boolean cascade;
 
 
     /**
@@ -56,7 +62,10 @@ public class Namespace {
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Namespace( final @JsonProperty("name") String name, @JsonProperty("type") final NamespaceType type, @JsonProperty("store") @Nullable final String store ) {
+    public Namespace(
+            @JsonProperty("name") String name,
+            @JsonProperty("type") final NamespaceType type,
+            @JsonProperty("store") @Nullable final String store ) {
         this.name = name;
         this.type = type;
 

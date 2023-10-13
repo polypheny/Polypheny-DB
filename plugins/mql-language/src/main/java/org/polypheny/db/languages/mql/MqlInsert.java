@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -40,7 +41,7 @@ public class MqlInsert extends MqlCollectionStatement {
         } else if ( values.isArray() ) {
             this.values = values.asArray();
         } else {
-            throw new RuntimeException( "Insert requires either a single document or multiple documents in an array." );
+            throw new GenericRuntimeException( "Insert requires either a single document or multiple documents in an array." );
         }
         this.ordered = getBoolean( options, "ordered" );
     }
