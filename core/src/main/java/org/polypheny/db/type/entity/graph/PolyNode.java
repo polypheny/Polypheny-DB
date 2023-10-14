@@ -68,6 +68,12 @@ public class PolyNode extends GraphPropertyHolder {
     }
 
 
+    @Override
+    public String toJson() {
+        return "{\"id\":" + id.toQuotedJson() + ", \"properties\":" + properties.toJson() + ", \"labels\":" + labels.toJson() + "}";
+    }
+
+
     public boolean isBlank() {
         // MATCH (n) -> true, MATCH (n{name: 'Max'}) -> false, MATCH (n:Person) -> false
         return (properties == null || properties.isEmpty()) && (labels == null || labels.isEmpty());

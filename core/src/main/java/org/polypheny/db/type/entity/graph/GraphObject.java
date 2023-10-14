@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Serialize;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -31,9 +32,11 @@ import org.polypheny.db.type.entity.PolyValue;
 public abstract class GraphObject extends PolyValue {
 
     @Serialize
+    @JsonProperty
     public PolyString id;
 
     @Serialize
+    @JsonProperty
     public PolyString variableName;
 
 
@@ -43,14 +46,5 @@ public abstract class GraphObject extends PolyValue {
         this.variableName = variableName;
     }
 
-
-
-    public enum GraphObjectType {
-        GRAPH,
-        NODE,
-        EDGE,
-        SEGMENT,
-        PATH
-    }
 
 }

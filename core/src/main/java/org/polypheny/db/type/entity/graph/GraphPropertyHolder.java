@@ -16,7 +16,7 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
@@ -30,10 +30,10 @@ import org.polypheny.db.type.entity.PolyValue;
 public abstract class GraphPropertyHolder extends GraphObject {
 
     // every parameter in a PolyValue, which is used during querying needs to be wrapped
-    @JsonSerialize
+    @JsonProperty
     public final PolyDictionary properties;
 
-    @JsonSerialize
+    @JsonProperty
     public final PolyList<PolyString> labels;
 
 

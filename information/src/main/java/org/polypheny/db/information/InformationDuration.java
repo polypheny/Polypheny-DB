@@ -16,6 +16,7 @@
 
 package org.polypheny.db.information;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class InformationDuration extends Information {
     @JsonProperty
     private final boolean isChild = false;
 
-    @JsonProperty
+    @JsonIgnore
     private final InformationGroup group;
     /**
      * Duration in NanoSeconds

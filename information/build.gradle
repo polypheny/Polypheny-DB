@@ -53,6 +53,9 @@ sourceSets {
     }
 }
 
+compileJava {
+    dependsOn(":config:processResources");
+}
 
 /**
  * JARs

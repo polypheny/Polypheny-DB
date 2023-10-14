@@ -321,7 +321,7 @@ public class LanguageCrud {
     private static String toJson( @Nullable PolyValue src ) {
         return src == null
                 ? null
-                : src.toTypedJson();
+                : Catalog.testMode ? src.toTypedJson() : src.toJson();
     }
 
 

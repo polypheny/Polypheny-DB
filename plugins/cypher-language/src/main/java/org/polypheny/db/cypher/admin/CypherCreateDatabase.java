@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
@@ -78,6 +80,10 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
                 throw new RuntimeException( "Error while retrieving placement of graph database." );
             }
             dataStore = List.of( manager.getStore( store ) );
+        }
+
+        if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() ) {
+            throw new GenericRuntimeException( "Namespace does already exist" );
         }
 
         DdlManager.getInstance().createGraph(

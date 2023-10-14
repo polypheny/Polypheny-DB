@@ -302,19 +302,15 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
         boolean single = polyTypes.size() == 1;
 
         List<PolyValue[]> values = new ArrayList<>();
-        for ( Object o : baz ) {
-            if ( single ) {
-                values.add( new PolyValue[]{ (PolyValue) o } );
-            } else {
-                values.add( (PolyValue[]) o );
-            }
+        for ( PolyValue[] o : baz ) {
+            values.add( o );
         }
         if ( values.isEmpty() ) {
             // there are no updates to make, we don't execute the right executor
@@ -342,9 +338,9 @@ public class Functions {
         }
 
         List<PolyValue[]> results = new ArrayList<>();
-        Enumerable<Object> executor = executorCall.apply();
-        for ( Object o : executor ) {
-            results.add( new PolyValue[]{ (PolyValue) o } );
+        Enumerable<PolyValue[]> executor = executorCall.apply();
+        for ( PolyValue[] o : executor ) {
+            results.add( o );
         }
 
         context.resetParameterValues();

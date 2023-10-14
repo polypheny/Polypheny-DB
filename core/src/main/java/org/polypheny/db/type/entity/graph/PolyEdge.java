@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.UUID;
 import lombok.EqualsAndHashCode;
@@ -42,13 +43,17 @@ import org.polypheny.db.util.Pair;
 @Value
 public class PolyEdge extends GraphPropertyHolder {
 
+    @JsonProperty
     public PolyString source;
+    @JsonProperty
     public PolyString target;
+    @JsonProperty
     public EdgeDirection direction;
 
     @Setter
     @NonFinal
     @Accessors(fluent = true)
+    @JsonProperty
     public Pair<Integer, Integer> fromTo;
 
 
@@ -143,6 +148,7 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+
     @Override
     public Expression asExpression() {
         Expression expression =
@@ -162,6 +168,18 @@ public class PolyEdge extends GraphPropertyHolder {
                     Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left ), Expressions.constant( fromTo.right ) ) );
         }
         return expression;
+    }
+
+
+    @Override
+    public String toJson() {
+        return "{\"id\":" + id.toQuotedJson() +
+                ", \"properties\":" + properties.toJson() +
+                ", \"labels\":" + labels.toJson() +
+                ", \"source\":" + source.toQuotedJson() +
+                ", \"target\":" + target.toQuotedJson() +
+                ", \"direction\":\"" + direction.name() + "\"" +
+                "}";
     }
 
 
