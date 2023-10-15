@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -29,7 +30,7 @@ public class QueryRequest extends UIRequest {
             @JsonProperty("analyze") boolean analyze,
             @JsonProperty("cache") boolean cache,
             @JsonProperty("language") String language,
-            @JsonProperty("namespaceId") String namespace ) {
+            @JsonAlias("database") @JsonProperty("namespace") String namespace ) {
         this.query = query;
         this.analyze = analyze;
         this.cache = cache;
