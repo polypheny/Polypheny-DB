@@ -363,7 +363,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        storeCatalog.renameLogicalField( id, newColumnName );
+        storeCatalog.renameLogicalColumn( id, newColumnName );
+        storeCatalog.columns.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
     }
 
 

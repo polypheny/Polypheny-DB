@@ -1297,7 +1297,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             // change type + length
             // TODO: cast if needed
             if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
-                    !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                    !Objects.equals( oldColumn.collectionsType, newColumn.collectionsType ) ||
                     !Objects.equals( oldColumn.precision, newColumn.precision ) ||
                     !Objects.equals( oldColumn.scale, newColumn.scale ) ||
                     !oldColumn.dimension.equals( newColumn.dimension ) ||
@@ -1312,7 +1312,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     query = query + ")";
                 }
                 //collectionType
-                if ( !newColumn.collectionsType.isEmpty() ) {
+                if ( newColumn.collectionsType != null && !newColumn.collectionsType.isEmpty() ) {
                     query = query + " " + request.newColumn.collectionsType;
                     int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
                     int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;

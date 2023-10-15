@@ -149,6 +149,6 @@ public abstract class StoreCatalog implements PolySerializable {
     }
 
 
-    public abstract void renameLogicalField( long id, String newFieldName );
+    public abstract void renameLogicalColumn( long id, String newFieldName );
 
 }

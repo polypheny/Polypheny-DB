@@ -907,7 +907,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
             }
 
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
             Map<Long, List<PolyValue>> values = new HashMap<>();
@@ -918,7 +918,7 @@ public class DbmsMeta implements ProtobufMeta {
                 for ( Common.TypedValue v : list ) {
                     long i = index++;
                     if ( !values.containsKey( i ) ) {
-                        values.put( i, new LinkedList<>() );
+                        values.put( i, new ArrayList<>() );
                     }
                     if ( v.getType() == Common.Rep.ARRAY ) {
                         values.get( i ).add( convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
@@ -1347,7 +1347,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
-        PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+        PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
         Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
