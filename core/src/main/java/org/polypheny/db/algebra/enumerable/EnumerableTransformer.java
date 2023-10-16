@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -104,7 +105,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
             return implementGraph( implementor, pref );
         }
 
-        throw new RuntimeException( "Transformation of the given data models is not yet supported." );
+        throw new GenericRuntimeException( "Transformation of the given data models is not yet supported." );
     }
 
 

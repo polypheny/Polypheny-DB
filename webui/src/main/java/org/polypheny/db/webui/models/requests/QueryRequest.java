@@ -42,21 +42,25 @@ public class QueryRequest extends UIRequest {
     /**
      * A query from the SQL console
      */
+    @JsonProperty
     public String query;
 
     /**
      * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
      */
+    @JsonProperty
     public boolean analyze;
 
     /**
      * TRUE if the query should use the cache
      */
+    @JsonProperty
     public boolean cache;
 
     /**
      * This flag defines which language was used for this query
      */
+    @JsonProperty
     public String language;
 
 

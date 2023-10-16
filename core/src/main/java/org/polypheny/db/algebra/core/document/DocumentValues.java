@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -39,9 +40,9 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
 
+@Getter
 public abstract class DocumentValues extends AbstractAlgNode implements DocumentAlg {
 
-    @Getter
     public final List<PolyDocument> documents;
 
 
@@ -64,7 +65,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
                 doc.put( id, PolyString.of( ObjectId.get().toString() ) );
             } else {
                 if ( doc.get( id ).isString() && doc.get( id ).asString().value.length() > 24 ) {
-                    throw new RuntimeException( "ObjectId was malformed." );
+                    throw new GenericRuntimeException( "ObjectId was malformed." );
                 }
             }
 
@@ -74,23 +75,28 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     }
 
 
+    public boolean isPrepared() {
+        return documents.size() == 1 && documents.get( 0 ).asDocument().size() == 1 && documents.get( 0 ).asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) );
+    }
+
+
     protected static ImmutableList<ImmutableList<RexLiteral>> relationalize( List<PolyDocument> tuples, RexBuilder rexBuilder ) {
         List<ImmutableList<RexLiteral>> normalized = new ArrayList<>();
 
         List<RexLiteral> normalizedTuple = new ArrayList<>();
         for ( PolyDocument tuple : tuples ) {
             PolyString id;
-            if ( tuple.isDocument() && tuple.asDocument().containsKey( PolyString.of( "_id" ) ) ) {
-                PolyString bsonId = tuple.asDocument().get( PolyString.of( "_id" ) ).asString();
+            if ( tuple.isDocument() && tuple.asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) ) ) {
+                PolyString bsonId = tuple.asDocument().get( PolyString.of( DocumentType.DOCUMENT_ID ) ).asString();
                 if ( bsonId.isString() ) {
                     id = bsonId.asString();
                 } else {
-                    throw new RuntimeException( "Error while transforming document to relational values" );
+                    throw new GenericRuntimeException( "Error while transforming document to relational values" );
                 }
 
-                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 0, rexBuilder.makeLiteral( PolyBinary.of( id.serialize().getBytes() ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.ID_SIZE ), PolyType.VARBINARY ) );
                 byte[] parsed = tuple.serialize().getBytes();
-                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, 2024 ), PolyType.VARBINARY ) );
+                normalizedTuple.add( 1, rexBuilder.makeLiteral( PolyBinary.of( parsed ), AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARBINARY, DocumentType.DATA_SIZE ), PolyType.VARBINARY ) );
                 normalized.add( ImmutableList.copyOf( normalizedTuple ) );
             }
         }

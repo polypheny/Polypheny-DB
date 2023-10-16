@@ -451,4 +451,9 @@ public class CrossModelFunctions {
         return value != null ? value.toString() : null;
     }
 
+
+    public static Enumerable<PolyValue[]> enumerableFromContext( DataContext context ) {
+        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).collect( Collectors.toList() ) );
+    }
+
 }

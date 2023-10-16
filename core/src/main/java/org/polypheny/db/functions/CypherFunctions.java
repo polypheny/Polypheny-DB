@@ -90,15 +90,15 @@ public class CypherFunctions {
      * @param edges collection of edges
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> toGraph( Enumerable<PolyNode> nodes, Enumerable<PolyEdge> edges ) {
+    public static Enumerable<PolyValue[]> toGraph( Enumerable<PolyNode[]> nodes, Enumerable<PolyEdge[]> edges ) {
         Map<PolyString, PolyNode> ns = new HashMap<>();
-        for ( PolyNode node : nodes ) {
-            ns.put( node.id, node );
+        for ( PolyNode[] node : nodes ) {
+            ns.put( node[0].id, node[0] );
         }
 
         Map<PolyString, PolyEdge> es = new HashMap<>();
-        for ( PolyEdge edge : edges ) {
-            es.put( edge.id, edge );
+        for ( PolyEdge[] edge : edges ) {
+            es.put( edge[0].id, edge[0] );
         }
         List<PolyValue[]> values = new ArrayList<>();
         values.add( new PolyValue[]{ new PolyGraph( PolyMap.of( ns ), PolyMap.of( es ) ) } );
@@ -112,8 +112,8 @@ public class CypherFunctions {
      * @param edge the normalized edges
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyEdge> toEdge( Enumerable<?> edge ) {
-        List<PolyEdge> edges = new ArrayList<>();
+    public static Enumerable<PolyEdge[]> toEdge( Enumerable<?> edge ) {
+        List<PolyEdge[]> edges = new ArrayList<>();
 
         PolyString oldId = null;
         PolyString oldSourceId = null;
@@ -133,7 +133,7 @@ public class CypherFunctions {
 
             if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null && !oldId.isNull() ) {
-                    edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
+                    edges.add( new PolyEdge[]{ new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) } );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -151,7 +151,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null && !oldId.isNull() ) {
-            edges.add( new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) );
+            edges.add( new PolyEdge[]{ new PolyEdge( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), oldSourceId, oldTargetId, EdgeDirection.LEFT_TO_RIGHT, null ) } );
         }
 
         return Linq4j.asEnumerable( edges );
@@ -164,8 +164,8 @@ public class CypherFunctions {
      * @param node the normalized nodes
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyNode> toNode( Enumerable<?> node ) {
-        List<PolyNode> nodes = new ArrayList<>();
+    public static Enumerable<PolyNode[]> toNode( Enumerable<?> node ) {
+        List<PolyNode[]> nodes = new ArrayList<>();
 
         PolyString oldId = null;
         Set<PolyString> oldLabels = new HashSet<>();
@@ -181,7 +181,7 @@ public class CypherFunctions {
 
             if ( id != null && !id.isNull() && !id.equals( oldId ) ) {
                 if ( oldId != null ) {
-                    nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
+                    nodes.add( new PolyNode[]{ new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) } );
                 }
                 oldId = id;
                 oldLabels = new HashSet<>();
@@ -198,7 +198,7 @@ public class CypherFunctions {
         }
 
         if ( oldId != null && !oldId.isNull() ) {
-            nodes.add( new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) );
+            nodes.add( new PolyNode[]{ new PolyNode( oldId, new PolyDictionary( oldProps ), PolyList.of( oldLabels ), null ) } );
         }
 
         return Linq4j.asEnumerable( nodes );

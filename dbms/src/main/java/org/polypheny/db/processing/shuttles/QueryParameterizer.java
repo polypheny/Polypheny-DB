@@ -376,19 +376,19 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
-        if ( true ) {
+        if ( false ) {
             log.warn( "Disabled for now" );
             return initial;
         }
 
         LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getUpdates() != null ) {
+        //if ( modify.getUpdates() != null ) {
             newSourceExpression = new ArrayList<>();
             for ( RexNode node : modify.getUpdates().values() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
-        }
+        //}
         AlgNode input = modify.getInput();
         if ( input instanceof LogicalDocumentValues ) {
             Map<String, RexNode> projects = new HashMap<>();
