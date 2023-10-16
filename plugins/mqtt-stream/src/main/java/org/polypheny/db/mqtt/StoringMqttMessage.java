@@ -19,7 +19,7 @@ package org.polypheny.db.mqtt;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog.NamespaceType;
 
-//TODO: javadoc
+
 public class StoringMqttMessage {
 
     private final MqttMessage msg;

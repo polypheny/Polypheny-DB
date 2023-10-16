@@ -445,22 +445,6 @@ public class MqttStreamPlugin extends Plugin {
                     .send()
                     .whenComplete( ( subAck, throwable ) -> {
                         if ( throwable != null ) {
-                            //TODO: change settings correctly: Test this
-                            List<String> topicsList = toList( this.getCurrentSettings().get( "topics" ) );
-                            StringBuilder stringBuilder = new StringBuilder();
-                            for ( String t : topicsList ) {
-                                if ( !t.equals( topic ) ) {
-                                    stringBuilder.append( t ).append( "," );
-                                }
-                            }
-                            String topicsString = stringBuilder.toString();
-                            if ( topicsString != null && !topicsString.isBlank() ) {
-                                topicsString = topicsString.substring( 0, topicsString.lastIndexOf( ',' ) );
-                            }
-                            synchronized ( settingsLock ) {
-                                this.settings.put( "topics", topicsString );
-                            }
-                            log.info( "not successful: {}", topic );
                             throw new RuntimeException( String.format( "Subscription was not successful for topic \"%s\" . Please try again.", topic ), throwable );
                         } else {
                             this.topicsMap.put( topic, new AtomicLong( 0 ) );
@@ -598,12 +582,12 @@ public class MqttStreamPlugin extends Plugin {
 
         protected String getWildcardTopic( String topic ) {
             for ( String t : topicsMap.keySet() ) {
-                //multilevel wildcard
+                //check for multilevel wildcard
                 if ( t.contains( "#" ) && topic.startsWith( t.substring( 0, t.indexOf( "#" ) ) ) ) {
                     return t;
 
                 }
-                // single level wildcard
+                // check for single level wildcard
                 if ( t.contains( "+" ) && topic.startsWith( t.substring( 0, t.indexOf( "+" ) ) ) && topic.endsWith( t.substring( t.indexOf( "+" ) + 1 ) ) ) {
                     return t;
                 }
@@ -677,7 +661,7 @@ public class MqttStreamPlugin extends Plugin {
                     DdlManager.getInstance().createCollection(
                             namespaceID,
                             collectionName,
-                            true,   //only creates collection if it does not already exist.
+                            true,
                             dataStores.size() == 0 ? null : dataStores,
                             PlacementType.MANUAL,
                             statement );
@@ -712,6 +696,7 @@ public class MqttStreamPlugin extends Plugin {
                 }
             } else {
                 // handle other namespace types
+                throw new RuntimeException("Other namespace types are not implemented yet");
             }
         }
 

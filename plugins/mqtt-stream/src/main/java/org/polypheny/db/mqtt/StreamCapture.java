@@ -41,7 +41,6 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 public class StreamCapture {
 
     Transaction transaction;
-    PolyphenyHomeDirManager homeDirManager;
     StoringMqttMessage storingMqttMessage;
 
 
@@ -60,36 +59,8 @@ public class StreamCapture {
         if ( this.storingMqttMessage.getNamespaceType() == NamespaceType.DOCUMENT ) {
             String sqlCollectionName = this.storingMqttMessage.getNamespaceName() + "." + this.storingMqttMessage.getEntityName();
             Statement statement = transaction.createStatement();
-
-            // Builder which allows to construct the algebra tree which is equivalent to query and is executed
-            AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
-
-            BsonDocument document = new BsonDocument();
-            document.put( "source", new BsonString( this.storingMqttMessage.getUniqueNameOfInterface() ) );
-            document.put( "topic", new BsonString( this.storingMqttMessage.getTopic() ) );
-            String msg = this.storingMqttMessage.getMessage();
-            BsonValue value;
-            if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
-                value = BsonDocument.parse( msg );
-            } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
-                BsonArray bsonArray = new BsonArray();
-                msg = msg.replace( "[", "" ).replace( "]", "" );
-                String[] msglist = msg.split( "," );
-                for ( String stringValue : msglist ) {
-                    stringValue = stringValue.trim();
-                    bsonArray.add( getBsonValue( stringValue ) );
-                }
-                value = bsonArray;
-            } else {
-                // msg is a single value
-                value = getBsonValue( msg );
-            }
-            document.put( "payload", value );
-
-            AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
-
+            AlgNode algNode = createDocument( statement, sqlCollectionName );
             AlgRoot root = AlgRoot.of( algNode, Kind.INSERT );
-            // for inserts and all DML queries only a number is returned
             List<List<Object>> res = executeAndTransformPolyAlg( root, statement, statement.getPrepareContext() );
             try {
                 transaction.commit();
@@ -100,11 +71,39 @@ public class StreamCapture {
     }
 
 
+    private AlgNode createDocument( Statement statement, String sqlCollectionName) {
+        AlgBuilder builder = AlgBuilder.createDocumentBuilder( statement );
+
+        BsonDocument document = new BsonDocument();
+        document.put( "source", new BsonString( this.storingMqttMessage.getUniqueNameOfInterface() ) );
+        document.put( "topic", new BsonString( this.storingMqttMessage.getTopic() ) );
+        String msg = this.storingMqttMessage.getMessage();
+        BsonValue value;
+        if ( msg.contains( "{" ) && msg.contains( "}" ) ) {
+            value = BsonDocument.parse( msg );
+        } else if ( msg.contains( "[" ) && msg.contains( "]" ) ) {
+            BsonArray bsonArray = new BsonArray();
+            msg = msg.replace( "[", "" ).replace( "]", "" );
+            String[] msglist = msg.split( "," );
+            for ( String stringValue : msglist ) {
+                stringValue = stringValue.trim();
+                bsonArray.add( getBsonValue( stringValue ) );
+            }
+            value = bsonArray;
+        } else {
+            // msg is a single value
+            value = getBsonValue( msg );
+        }
+        document.put( "payload", value );
+
+        AlgNode algNode = builder.docInsert( statement, sqlCollectionName, document ).build();
+        return algNode;
+    }
+
+
     /**
      * turns one single value into the corresponding BsonValue
-     *
      * @param value value that has to be casted as String
-     * @return
      */
     protected BsonValue getBsonValue( String value ) {
         if ( isInteger( value ) ) {
