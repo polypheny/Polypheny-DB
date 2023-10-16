@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.relational;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -48,6 +49,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
     @Delegate
     @Serialize
+    @JsonProperty
     public Map<K, V> map;
 
 

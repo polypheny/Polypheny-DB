@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -48,7 +49,7 @@ public class PolyNode extends GraphPropertyHolder {
     private boolean isVariable = false;
 
 
-    public PolyNode( @NonNull PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
+    public PolyNode( @JsonProperty("properties") @NonNull PolyDictionary properties, @JsonProperty("labels") List<PolyString> labels, @JsonProperty("variableName") PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, variableName );
     }
 

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -37,7 +38,7 @@ import org.polypheny.db.util.BuiltInMethod;
 public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
-    public PolyDictionary( Map<PolyString, PolyValue> map ) {
+    public PolyDictionary( @JsonProperty("map") Map<PolyString, PolyValue> map ) {
         super( map );
     }
 

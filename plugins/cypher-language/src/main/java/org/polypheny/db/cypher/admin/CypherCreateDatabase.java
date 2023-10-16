@@ -70,19 +70,19 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             try {
                 Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
             } catch ( InterruptedException e ) {
-                throw new UnsupportedOperationException( "While waiting to create the database the operation was interrupted." );
+                throw new GenericRuntimeException( "While waiting to create the database the operation was interrupted." );
             }
         }
 
         List<DataStore<?>> dataStore = null;
         if ( store != null ) {
             if ( manager.getStore( store ) == null ) {
-                throw new RuntimeException( "Error while retrieving placement of graph database." );
+                throw new GenericRuntimeException( "Error while retrieving placement of graph database." );
             }
             dataStore = List.of( manager.getStore( store ) );
         }
 
-        if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() ) {
+        if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() && !ifNotExists ) {
             throw new GenericRuntimeException( "Namespace does already exist" );
         }
 

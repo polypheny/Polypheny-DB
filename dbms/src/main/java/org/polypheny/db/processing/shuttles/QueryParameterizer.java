@@ -376,11 +376,6 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
-        if ( false ) {
-            log.warn( "Disabled for now" );
-            return initial;
-        }
-
         LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
         //if ( modify.getUpdates() != null ) {
