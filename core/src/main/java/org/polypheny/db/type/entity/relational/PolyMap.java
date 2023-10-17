@@ -69,9 +69,10 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
         return map == null ? JsonToken.VALUE_NULL.asString() : "{" +
                 map.entrySet().stream()
                         .map( e -> (e.getKey().isString() ? e.getKey().asString().toQuotedJson() : e.getKey().toJson()) + ":" +
-                                (e.getValue().isString()
-                                        ? e.getValue().asString().toQuotedJson()
-                                        : e.getValue().toJson()) ).collect( Collectors.joining( "," ) )
+                                (e.getValue() == null ? JsonToken.VALUE_NULL.asString() :
+                                        (e.getValue().isString()
+                                                ? e.getValue().asString().toQuotedJson()
+                                                : e.getValue().toJson())) ).collect( Collectors.joining( "," ) )
                 + "}";
     }
 

@@ -116,7 +116,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
         AlgNode enumerableAggregate = aggregate.copy( aggregate.getTraitSet().replace( ModelTrait.DOCUMENT ), aggregate.getInputs() );
 
         //RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ) );
-        Map<String, RexNode> docs = enumerableAggregate.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> builder.getRexBuilder().makeInputRef( enumerableAggregate.getRowType(), e.getIndex() ) ) );
+        Map<String, RexNode> docs = enumerableAggregate.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) ) );
 
         call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of() ) );
         // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );
