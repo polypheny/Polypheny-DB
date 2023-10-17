@@ -2845,7 +2845,9 @@ public class DdlManagerImpl extends DdlManager {
             dropTable( table, statement );
         }
 
-        dropGraph( logicalNamespace.id, ifExists, statement );
+        if ( catalog.getSnapshot().graph().getGraph( logicalNamespace.id ).isPresent() ) {
+            dropGraph( logicalNamespace.id, ifExists, statement );
+        }
 
         // Drop schema
         catalog.dropNamespace( logicalNamespace.id );

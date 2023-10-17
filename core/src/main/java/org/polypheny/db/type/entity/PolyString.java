@@ -95,6 +95,9 @@ public class PolyString extends PolyValue {
 
 
     public static PolyString convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
         if ( value instanceof PolyValue ) {
             if ( ((PolyValue) value).isString() ) {
                 return ((PolyValue) value).asString();

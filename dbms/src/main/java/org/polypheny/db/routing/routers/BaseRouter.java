@@ -217,7 +217,7 @@ public abstract class BaseRouter implements Router {
 
     public AlgNode recursiveCopy( AlgNode node ) {
         List<AlgNode> inputs = new LinkedList<>();
-        if ( node.getInputs() != null && node.getInputs().size() > 0 ) {
+        if ( node.getInputs() != null && !node.getInputs().isEmpty() ) {
             for ( AlgNode input : node.getInputs() ) {
                 inputs.add( recursiveCopy( input ) );
             }

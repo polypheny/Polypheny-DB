@@ -50,6 +50,8 @@ import org.polypheny.db.util.Pair;
 @Value(staticConstructor = "copyOf")
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
+    public static final PolyList<?> EMPTY_LIST = new PolyList<>();
+
 
     @Delegate
     @JsonProperty
@@ -72,7 +74,7 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     @Override
     public @Nullable String toTypedJson() {
         try {
-            return JSON_WRAPPER.writerFor( new TypeReference<PolyList>() {
+            return JSON_WRAPPER.writerFor( new TypeReference<PolyList<PolyValue>>() {
             } ).writeValueAsString( this );
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on serializing typed JSON." );

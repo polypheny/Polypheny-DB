@@ -84,8 +84,7 @@ public class RelStoreCatalog extends StoreCatalog {
         }
         for ( PhysicalColumn u : updates ) {
             PhysicalTable table = fromAllocation( u.allocId );
-            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
-            newColumns.remove( u );
+            List<PhysicalColumn> newColumns = table.columns.stream().filter( c -> c.id != id ).collect( Collectors.toList() );
             newColumns.add( u );
             physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
             columns.put( Pair.of( u.allocId, u.id ), u );

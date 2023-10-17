@@ -3086,7 +3086,7 @@ public class Functions {
     @NonDeterministic
     public static long localTimestamp( DataContext root ) {
         // Cast required for JDK 1.6.
-        return (Long) DataContext.Variable.LOCAL_TIMESTAMP.get( root );
+        return DataContext.Variable.LOCAL_TIMESTAMP.get( root );
     }
 
 
@@ -3101,7 +3101,7 @@ public class Functions {
 
     @NonDeterministic
     public static TimeZone timeZone( DataContext root ) {
-        return (TimeZone) DataContext.Variable.TIME_ZONE.get( root );
+        return DataContext.Variable.TIME_ZONE.get( root );
     }
 
 
@@ -3157,6 +3157,7 @@ public class Functions {
     /**
      * As {@link #arrayItem} method, but allows array to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue arrayItemOptional( List<PolyValue> list, PolyNumber item ) {
         if ( list == null ) {
             return null;
@@ -3168,6 +3169,7 @@ public class Functions {
     /**
      * As {@link #mapItem} method, but allows map to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue mapItemOptional( Map<PolyValue, PolyValue> map, PolyValue item ) {
         if ( map == null ) {
             return null;
@@ -3179,6 +3181,7 @@ public class Functions {
     /**
      * As {@link #item} method, but allows object to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue itemOptional( Map<PolyValue, PolyValue> object, PolyValue index ) {
         if ( object == null ) {
             return null;

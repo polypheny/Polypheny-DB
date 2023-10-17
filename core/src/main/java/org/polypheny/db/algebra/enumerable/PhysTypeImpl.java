@@ -25,6 +25,7 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -42,6 +43,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Pair;
@@ -141,7 +144,7 @@ public class PhysTypeImpl implements PhysType {
     public Expression generateSelector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
         // Optimize target format
         switch ( fields.size() ) {
-            case 0:
+            default:
                 targetFormat = JavaRowFormat.LIST;
                 break;
             case 1:
@@ -149,12 +152,12 @@ public class PhysTypeImpl implements PhysType {
                 break;
         }
         final PhysType targetPhysType = project( fields, targetFormat );
-        switch ( format ) {
-            case SCALAR:
-                return Expressions.call( BuiltInMethod.IDENTITY_SELECTOR.method );
-            default:
-                return Expressions.lambda( Function1.class, targetPhysType.record( fieldReferences( parameter, fields ) ), parameter );
+        if ( Objects.requireNonNull( format ) == JavaRowFormat.SCALAR ) {
+            return Expressions.call( BuiltInMethod.IDENTITY_SELECTOR.method );
+        } else if ( fields.size() == 1 ) {
+            return Expressions.lambda( Function1.class, Expressions.arrayIndex( targetPhysType.record( fieldReferences( parameter, fields ) ), Expressions.constant( 0 ) ), parameter );
         }
+        return Expressions.lambda( Function1.class, targetPhysType.record( fieldReferences( parameter, fields ) ), parameter );
     }
 
 
@@ -182,12 +185,12 @@ public class PhysTypeImpl implements PhysType {
     public Pair<Type, List<Expression>> selector( ParameterExpression parameter, List<Integer> fields, JavaRowFormat targetFormat ) {
         // Optimize target format
         switch ( fields.size() ) {
-            case 0:
+            default:
                 targetFormat = JavaRowFormat.LIST;
                 break;
-            case 1:
+            /*case 1:
                 targetFormat = JavaRowFormat.SCALAR;
-                break;
+                break;*/
         }
         final PhysType targetPhysType = project( fields, targetFormat );
         switch ( format ) {
@@ -504,7 +507,7 @@ public class PhysTypeImpl implements PhysType {
                         Function1.class,
                         Expressions.field( null, BuiltInMethod.COMPARABLE_EMPTY_LIST.field ),
                         v1 );
-            /*case 1:
+            case 1:
                 int field0 = fields.get( 0 );
 
                 // new Function1<Employee, Res> {
@@ -514,7 +517,7 @@ public class PhysTypeImpl implements PhysType {
                 // }
                 Class<?> returnType = fieldClasses.get( field0 );
                 Expression fieldReference = Types.castIfNecessary( returnType, fieldReference( v1, field0 ) );
-                return Expressions.lambda( Function1.class, fieldReference, v1 );*/
+                return Expressions.lambda( Function1.class, fieldReference, v1 );
             default:
                 // new Function1<Employee, List> {
                 //    public List apply(Employee v1) {
@@ -522,66 +525,20 @@ public class PhysTypeImpl implements PhysType {
                 //            new Object[] {v1.<fieldN>, v1.<fieldM>});
                 //    }
                 // }
-                Expressions.FluentList<Expression> list = Expressions.list();
+                List<Expression> list = new ArrayList<>();
                 for ( int field : fields ) {
                     list.add( fieldReference( v1, field ) );
                 }
-                switch ( list.size() ) {
-                    case 2:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST2.method,
-                                        list ),
-                                v1 );
-                    case 3:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST3.method,
-                                        list ),
-                                v1 );
-                    case 4:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST4.method,
-                                        list ),
-                                v1 );
-                    case 5:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST5.method,
-                                        list ),
-                                v1 );
-                    case 6:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST6.method,
-                                        list ),
-                                v1 );
-                    default:
-                        return Expressions.lambda(
-                                Function1.class,
-                                Expressions.call(
-                                        List.class,
-                                        null,
-                                        BuiltInMethod.LIST_N.method,
-                                        Expressions.newArrayInit( Comparable.class, list ) ),
-                                v1 );
-                }
+                // todo dl change this later
+                return Expressions.lambda(
+                        Function1.class,
+                        Expressions.call(
+                                PolyList.class,
+                                null,
+                                BuiltInMethod.LIST_N.method,
+                                Expressions.newArrayInit( PolyValue.class, list ) ),
+                        v1 );
+            //}
         }
     }
 

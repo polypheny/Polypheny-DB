@@ -34,6 +34,7 @@ import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.calcite.linq4j.tree.Types.ArrayType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentUnwind;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
@@ -78,7 +79,7 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         final Type enumeratorType = Types.of( Enumerator.class, outputJavaType );
         Type inputJavaType = res.physType.getJavaRowType();
 
-        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
+        ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, PolyValue[].class ), "inputEnumerator" );
 
         Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
 
@@ -91,7 +92,7 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
         BlockBuilder unwindBlock = new BlockBuilder();
 
         // docQueryValue( (PolyValue) enumerable.next(), PolyList[]);
-        Expression fullCurrent = Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyValue.class );
+        Expression fullCurrent = Expressions.arrayIndex( Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), PolyValue[].class ), Expressions.constant( 0 ) );
         value = Expressions.call(
                 BuiltInMethod.MQL_QUERY_VALUE.method,
                 Expressions.convert_( doc_, PolyValue.class ),
@@ -146,7 +147,11 @@ public class EnumerableDocumentUnwind extends DocumentUnwind implements Enumerab
 
         currentBuilder.add( ifNotSet );
         // return mergeDocuments( doc_, Pair(path, list.get(i_)));
-        currentBuilder.add( Expressions.return_( null, Expressions.call( RefactorFunctions.class, "mergeDocuments", doc_, Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( path ), Expressions.call( list_, "get", i_ ) ) ) ) );
+        currentBuilder.add(
+                Expressions.return_( null,
+                        Expressions.newArrayInit( new ArrayType( PolyValue.class ),
+                                Expressions.call( RefactorFunctions.class, "mergeDocuments", doc_,
+                                        Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( path ), Expressions.call( list_, "get", i_ ) ) ) ) ) );
 
         BlockStatement currentBody = currentBuilder.toBlock();
 
