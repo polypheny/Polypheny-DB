@@ -1933,8 +1933,8 @@ public abstract class Catalog implements ExtensionPoint {
         ENTITY( 1 ),
         SOURCE( 2 ),
         VIEW( 3 ),
-        MATERIALIZED_VIEW( 4 ),
-        STREAM(5);
+        MATERIALIZED_VIEW( 4 );
+        //STREAM(5);
 
         private final int id;
 
