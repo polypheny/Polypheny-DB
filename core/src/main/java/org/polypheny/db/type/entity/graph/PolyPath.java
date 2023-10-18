@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -351,7 +352,7 @@ public class PolyPath extends GraphObject {
 
         @Override
         public Expression asExpression() {
-            throw new RuntimeException( "Cannot transform PolyPath." );
+            throw new GenericRuntimeException( "Cannot transform PolyPath." );
         }
 
 

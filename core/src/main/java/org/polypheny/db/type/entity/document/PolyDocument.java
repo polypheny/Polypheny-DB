@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity.document;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -30,6 +32,8 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -66,8 +70,19 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public static PolyDocument parse( String string ) {
-        log.warn( "todo wfwefcw" );
-        return null;
+        throw new GenericRuntimeException( "error on parsing Document" );
+    }
+
+
+    @Override
+    public @Nullable String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writerFor( new TypeReference<PolyDocument>() {
+            } ).writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return null;
+        }
     }
 
 

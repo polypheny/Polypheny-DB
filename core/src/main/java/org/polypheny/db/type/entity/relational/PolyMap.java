@@ -17,7 +17,9 @@
 package org.polypheny.db.type.entity.relational;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -32,6 +34,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Delegate;
 import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +48,7 @@ import org.polypheny.db.util.BuiltInMethod;
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "of")
 @NonFinal
+@Slf4j
 public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue implements Map<K, V> {
 
     @Delegate
@@ -118,6 +122,17 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                                         p.getValue().asExpression() ) ).collect( Collectors.toList() ) ) ) );
     }
 
+
+    @Override
+    public @Nullable String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writerFor( new TypeReference<PolyMap<PolyValue, PolyValue>>() {
+            } ).writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return null;
+        }
+    }
 
     @Override
     public PolySerializable copy() {

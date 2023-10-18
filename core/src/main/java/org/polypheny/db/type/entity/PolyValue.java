@@ -96,6 +96,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyBigDecimal.class,
         PolyTimeStamp.class,
         PolyDocument.class,
+        PolyDictionary.class,
         PolyMap.class,
         PolyList.class,
         PolyGraph.class,

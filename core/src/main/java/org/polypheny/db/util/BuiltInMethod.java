@@ -220,7 +220,7 @@ public enum BuiltInMethod {
     MAP_OF_ENTRIES( ImmutableMap.class, "copyOf", List.class ),
     ARRAY( Functions.class, "array", Object[].class ),
     FLAT_PRODUCT( Functions.class, "flatProduct", int[].class, boolean.class, FlatProductInputType[].class ),
-    LIST_N( PolyList.class, "of", Comparable[].class ),
+    LIST_N( PolyList.class, "ofArray", PolyValue[].class ),
     LIST2( ComparableList.class, "of", Object.class, Object.class ),
     LIST3( ComparableList.class, "of", Object.class, Object.class, Object.class ),
     LIST4( ComparableList.class, "of", Object.class, Object.class, Object.class, Object.class ),

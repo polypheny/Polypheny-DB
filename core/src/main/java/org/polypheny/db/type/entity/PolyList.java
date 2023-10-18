@@ -100,6 +100,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
     }
 
 
+    @SuppressWarnings("unused")
+    public static <E extends PolyValue> PolyList<E> ofArray( E[] values ) {
+        return new PolyList<>( values );
+    }
+
+
     /**
      * Required due to limitation of call, where interfaces lead to errors.
      */
