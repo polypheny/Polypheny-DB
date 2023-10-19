@@ -21,12 +21,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -108,7 +109,7 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class }) // add on Constructor already exists exception
-@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT, property = "clazz", visible = true) // to allow typed json serialization
+@JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
         @JsonSubTypes.Type(value = PolyBigDecimal.class, name = "DECIMAL"),
@@ -155,18 +156,24 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .build( PolyValue.class );
 
 
-    public static final ObjectMapper JSON_WRAPPER = new ObjectMapper() {
-        {
-            setSerializationInclusion( JsonInclude.Include.NON_NULL );
-            configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-            configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-            setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
-                    .withIsGetterVisibility( Visibility.NONE )
-                    .withGetterVisibility( Visibility.NONE )
-                    .withSetterVisibility( Visibility.NONE ) );
-            writerWithDefaultPrettyPrinter();
-        }
-    };
+    public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
+
+            .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
+            .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .configure( MapperFeature.USE_STATIC_TYPING, true )
+            .build();
+
+
+    static {
+        JSON_WRAPPER.setSerializationInclusion( JsonInclude.Include.NON_NULL )
+                .setVisibility( JSON_WRAPPER.getSerializationConfig().getDefaultVisibilityChecker()
+                        .withIsGetterVisibility( Visibility.NONE )
+                        .withGetterVisibility( Visibility.NONE )
+                        .withSetterVisibility( Visibility.NONE ) )
+                .writerWithDefaultPrettyPrinter();
+    }
+
 
     @Serialize
     @JsonIgnore

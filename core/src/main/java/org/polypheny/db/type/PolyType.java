@@ -454,7 +454,7 @@ public enum PolyType {
 
     public static final List<PolyType> JSON_TYPES = combine( DOCUMENT_TYPES, STRING_TYPES );
 
-    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE );
+    public static final List<PolyType> GRAPH_TYPES = ImmutableList.of( GRAPH, ARRAY, NODE, EDGE, PATH );
 
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
 

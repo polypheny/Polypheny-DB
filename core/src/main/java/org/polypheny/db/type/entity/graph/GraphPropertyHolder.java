@@ -17,11 +17,13 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -34,6 +36,7 @@ public abstract class GraphPropertyHolder extends GraphObject {
     public final PolyDictionary properties;
 
     @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
     public final PolyList<PolyString> labels;
 
 

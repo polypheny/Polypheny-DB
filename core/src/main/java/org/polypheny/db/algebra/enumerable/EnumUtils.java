@@ -56,7 +56,6 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgramBuilder;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
@@ -99,7 +98,7 @@ public class EnumUtils {
 
 
     public static Class<?> javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
-        if ( type.isStruct() && type.getFieldCount() == 1 && !PolyTypeFamily.GRAPH.contains( type ) ) {
+        if ( type.isStruct() && type.getFieldCount() == 1 && !PolyType.GRAPH_TYPES.contains( type.getPolyType() ) ) {
             type = type.getFieldList().get( 0 ).getType();
         }
         final Type clazz = typeFactory.getJavaClass( type );

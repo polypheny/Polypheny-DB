@@ -35,6 +35,7 @@ import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestObject;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -61,7 +62,6 @@ public class CypherTestTemplate {
     protected final TestNode HANS = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ) );
     protected final TestNode HANS_AGE = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) );
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
-
 
     @BeforeClass
     public static void start() {
@@ -278,18 +278,18 @@ public class CypherTestTemplate {
     @Getter
     public enum Type {
         NODE( "node", TestNode.class, PolyNode.class ),
-        EDGE( "edge", TestNode.class, PolyNode.class ),
+        EDGE( "edge", TestEdge.class, PolyEdge.class ),
         PATH( "path", TestPath.class, PolyPath.class ),
-        ANY( "any", TestNode.class, PolyNode.class ),
-        STRING( "varchar", TestNode.class, PolyNode.class );
+        ANY( "any", TestNode.class, PolyValue.class ),
+        STRING( "varchar", TestLiteral.class, PolyString.class );
 
 
         private final String typeName;
         private final Class<? extends TestObject> testClass;
-        private final Class<?> polyClass;
+        private final Class<? extends PolyValue> polyClass;
 
 
-        Type( String name, Class<? extends TestObject> testClass, Class<?> polyClass ) {
+        Type( String name, Class<? extends TestObject> testClass, Class<? extends PolyValue> polyClass ) {
             this.typeName = name;
             this.testClass = testClass;
             this.polyClass = polyClass;
@@ -351,7 +351,6 @@ public class CypherTestTemplate {
         }
 
     }
-
 
 
 }

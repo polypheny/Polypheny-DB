@@ -17,14 +17,21 @@
 package org.polypheny.db.type.entity.graph;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,10 +43,12 @@ import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary.PolyDictionaryDeserializer;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BuiltInMethod;
 
 @Slf4j
+@JsonDeserialize(using = PolyDictionaryDeserializer.class)
 public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
 
 
@@ -112,6 +121,31 @@ public class PolyDictionary extends PolyMap<PolyString, PolyValue> {
                 }
             };
         }
+
+    }
+
+
+    static class PolyDictionaryDeserializer extends StdDeserializer<PolyDictionary> {
+
+
+        protected PolyDictionaryDeserializer() {
+            super( PolyDictionary.class );
+        }
+
+
+        @Override
+        public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
+            return deserialize( p, ctxt );
+        }
+
+
+        @Override
+        public PolyDictionary deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            JsonNode node = p.getCodec().readTree( p );
+            PolyMap<PolyString, PolyValue> value = ctxt.readTreeAsValue( node, PolyMap.class );
+            return new PolyDictionary( value );
+        }
+
 
     }
 

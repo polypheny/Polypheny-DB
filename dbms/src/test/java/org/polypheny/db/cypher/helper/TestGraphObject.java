@@ -15,7 +15,6 @@
  */
 
 package org.polypheny.db.cypher.helper;
-
 import static org.polypheny.db.functions.Functions.toBigDecimal;
 
 import java.util.HashMap;
@@ -81,7 +80,7 @@ public class TestGraphObject implements TestObject {
     @SneakyThrows
     @Override
     public Object toPoly( String val ) {
-        return PolyValue.JSON_WRAPPER.readValue( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+        return PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 

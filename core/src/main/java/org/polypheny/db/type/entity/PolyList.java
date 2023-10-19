@@ -17,10 +17,23 @@
 package org.polypheny.db.type.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -28,6 +41,8 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,23 +58,27 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
+import org.polypheny.db.type.entity.PolyList.PolyListSerializer;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Value(staticConstructor = "copyOf")
+@JsonSerialize(using = PolyListSerializer.class)
+@JsonDeserialize(using = PolyListDeserializer.class)
 public class PolyList<E extends PolyValue> extends PolyValue implements List<E> {
 
     public static final PolyList<?> EMPTY_LIST = new PolyList<>();
 
-
     @Delegate
-    @JsonProperty
+    @Serialize
+    @JsonIgnore
     public List<E> value;
 
 
     @JsonCreator
-    public PolyList( @JsonProperty @Deserialize("value") List<E> value ) {
+    public PolyList( @JsonProperty("value") @Deserialize("value") List<E> value ) {
         super( PolyType.ARRAY );
         this.value = new ArrayList<>( value );
     }
@@ -85,6 +104,12 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
     public static <E extends PolyValue> PolyList<E> of( Collection<E> value ) {
         return new PolyList<>( new ArrayList<>( value ) );
+    }
+
+
+    @SafeVarargs
+    public static <E extends PolyValue> PolyList<E> ofElements( E... value ) {
+        return new PolyList<>( value );
     }
 
 
@@ -184,6 +209,68 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
                     return PolyList.of( list );
                 }
             };
+        }
+
+    }
+
+
+    public static class PolyListDeserializer extends StdDeserializer<PolyList<? extends PolyValue>> {
+
+
+        protected PolyListDeserializer() {
+            super( PolyList.class );
+        }
+
+
+        @Override
+        public Object deserializeWithType( JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer ) throws IOException {
+            return deserialize( p, ctxt );
+        }
+
+
+        @Override
+        public PolyList<PolyValue> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            JsonNode node = p.getCodec().readTree( p );
+            List<PolyValue> values = new ArrayList<>();
+            ArrayNode elements = node.withArray( "_es" );
+            for ( JsonNode element : elements ) {
+                PolyValue el = deserializeElement( ctxt, element );
+                values.add( el );
+            }
+            return PolyList.of( values );
+        }
+
+
+        private PolyValue deserializeElement( DeserializationContext ctxt, JsonNode element ) throws IOException {
+            return ctxt.readTreeAsValue( element, PolyValue.class );
+        }
+
+    }
+
+
+    public static class PolyListSerializer extends JsonSerializer<PolyList<PolyValue>> {
+
+        @Override
+        public void serializeWithType( PolyList<PolyValue> value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer ) throws IOException {
+            serialize( value, gen, serializers );
+        }
+
+
+        /**
+         * [{_k:{}, _v{}},{_k:{}, _v{}},...]
+         */
+        @Override
+        public void serialize( PolyList<PolyValue> values, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName( "@class" );
+            gen.writeString( PolyList.class.getCanonicalName() );
+            gen.writeFieldName( "_es" );
+            gen.writeStartArray();
+            for ( PolyValue value : values ) {
+                serializers.findValueSerializer( value.getClass() ).serializeWithType( value, gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( value.getClass() ) ) );
+            }
+            gen.writeEndArray();
+            gen.writeEndObject();
         }
 
     }
