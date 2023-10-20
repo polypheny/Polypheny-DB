@@ -16,7 +16,10 @@
 
 package org.polypheny.db.type.entity.graph;
 
-import com.google.gson.annotations.Expose;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +37,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
@@ -43,11 +47,26 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class PolyPath extends GraphObject {
 
+    @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
     private final PolyList<PolyNode> nodes;
+
+    @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
     private final PolyList<PolyEdge> edges;
+
+    @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
     private final PolyList<PolyString> names;
-    @Expose
+
+    @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
     private final PolyList<GraphPropertyHolder> path;
+
+    @JsonProperty
+    @JsonDeserialize(using = PolyListDeserializer.class)
+
+    @JsonIgnore
     @Getter
     private final PolyList<PolySegment> segments;
 
@@ -57,7 +76,14 @@ public class PolyPath extends GraphObject {
     }
 
 
-    public PolyPath( PolyString id, List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
+    @JsonCreator
+    public PolyPath(
+            @JsonProperty("id") PolyString id,
+            @JsonProperty("nodes") List<PolyNode> nodes,
+            @JsonProperty("edges") List<PolyEdge> edges,
+            @JsonProperty("names") List<PolyString> names,
+            @JsonProperty("path") List<GraphPropertyHolder> path,
+            @JsonProperty("variableName") PolyString variableName ) {
         super( id, PolyType.PATH, variableName );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();

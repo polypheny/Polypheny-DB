@@ -16,10 +16,12 @@
 
 package org.polypheny.db.cypher.helper;
 
+import org.polypheny.db.type.entity.PolyValue;
+
 public interface TestObject {
 
-    boolean matches( Object other, boolean exclusive );
+    boolean matches( PolyValue other, boolean exclusive );
 
-    Object toPoly( String val );
+    PolyValue toPoly( String val );
 
 }

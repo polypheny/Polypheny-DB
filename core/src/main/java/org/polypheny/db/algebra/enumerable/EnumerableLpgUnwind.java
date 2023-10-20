@@ -30,7 +30,9 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Statement;
 import org.apache.calcite.linq4j.tree.Types;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -38,6 +40,7 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -79,7 +82,7 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
         Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), res.block, false );
 
         final ParameterExpression i_ = Expressions.parameter( int.class, "_i" );
-        final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, Object.class ), "_callList" );
+        final ParameterExpression list_ = Expressions.parameter( Types.of( List.class, PolyValue.class ), "_callList" );
         final ParameterExpression unset_ = Expressions.parameter( boolean.class, "_unset" );
 
         BlockStatement moveNextBody;
@@ -89,7 +92,7 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
                 unset_,
                 Expressions.block(
                         Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
-                        Expressions.statement( Expressions.assign( list_, Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Types.of( List.class, Object.class ) ) ) ),
+                        assignNextElement( list_, inputEnumerator ),
                         Expressions.statement( Expressions.assign( i_, Expressions.constant( -1 ) ) ),
                         Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
                 ) );
@@ -120,13 +123,13 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
                 unset_,
                 Expressions.block(
                         //Expressions.statement( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_MOVE_NEXT.method ) ),
-                        Expressions.statement( Expressions.assign( list_, Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Types.of( List.class, Object.class ) ) ) ),
+                        assignNextElement( list_, inputEnumerator ),
                         Expressions.statement( Expressions.assign( i_, Expressions.constant( 0 ) ) ),
                         Expressions.statement( Expressions.assign( unset_, Expressions.constant( false ) ) )
                 ) );
 
         currentBuilder.add( ifNotSet );
-        currentBuilder.add( Expressions.return_( null, Expressions.call( list_, "get", i_ ) ) );
+        currentBuilder.add( Expressions.return_( null, Expressions.newArrayInit( PolyValue.class, Expressions.convert_( Expressions.call( list_, "get", i_ ), PolyValue.class ) ) ) );
 
         BlockStatement currentBody = currentBuilder.toBlock();
 
@@ -172,6 +175,17 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
                                 EnumUtils.NO_EXPRS,
                                 ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    @NotNull
+    private static Statement assignNextElement( ParameterExpression list_, ParameterExpression inputEnumerator ) {
+        return Expressions.statement( Expressions.assign( list_,
+                Expressions.convert_(
+                        Expressions.arrayIndex(
+                                Expressions.convert_( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), Types.of( PolyValue[].class ) ),
+                                Expressions.constant( 0 ) ),
+                        Types.of( List.class, PolyValue.class ) ) ) );
     }
 
 

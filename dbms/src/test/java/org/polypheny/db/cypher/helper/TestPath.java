@@ -41,8 +41,8 @@ public class TestPath implements TestObject {
 
 
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
-        assert other instanceof PolyPath;
+    public boolean matches( PolyValue other, boolean exclusive ) {
+        assert other.isPath();
         PolyPath path = (PolyPath) other;
         List<GraphPropertyHolder> elements = path.getPath();
 
@@ -63,8 +63,8 @@ public class TestPath implements TestObject {
 
     @SneakyThrows
     @Override
-    public Object toPoly( String val ) {
-        return PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
+    public PolyValue toPoly( String val ) {
+        return val == null ? null : PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
 }

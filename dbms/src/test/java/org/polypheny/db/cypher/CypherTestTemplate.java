@@ -63,6 +63,7 @@ public class CypherTestTemplate {
     protected final TestNode HANS_AGE = TestNode.from( List.of( "Person" ), Pair.of( "name", "Hans" ), Pair.of( "age", 31 ) );
     protected final TestNode KIRA = TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ), Pair.of( "age", 3 ), Pair.of( "type", "dog" ) );
 
+
     @BeforeClass
     public static void start() {
         //noinspection ResultOfMethodCallIgnored
@@ -145,10 +146,10 @@ public class CypherTestTemplate {
 
     public boolean containsIn( GraphResult actual, boolean exclusive, int index, @Nullable String name, TestLiteral... expected ) {
         // simple object match
-        List<String> cols = new ArrayList<>();
+        List<PolyValue> cols = new ArrayList<>();
 
         for ( String[] entry : actual.getData() ) {
-            cols.add( entry[index] );
+            cols.add( PolyValue.fromTypedJson( entry[index], PolyValue.class ) );
         }
         assert !exclusive || cols.size() == expected.length;
 
@@ -169,7 +170,7 @@ public class CypherTestTemplate {
 
     public static boolean containsRows( GraphResult actual, boolean exclusive, boolean ordered, Row... rows ) {
         try {
-            List<List<Object>> parsed = new ArrayList<>();
+            List<List<PolyValue>> parsed = new ArrayList<>();
 
             int i = 0;
             for ( Row row : rows ) {
@@ -191,14 +192,14 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesUnorderedRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesUnorderedRows( List<List<PolyValue>> parsed, Row[] rows ) {
 
         List<Integer> used = new ArrayList<>();
         for ( Row row : rows ) {
 
             int i = 0;
             boolean matches = false;
-            for ( List<Object> objects : parsed ) {
+            for ( List<PolyValue> objects : parsed ) {
 
                 if ( !matches && !used.contains( i ) ) {
                     if ( row.matches( objects ) ) {
@@ -218,7 +219,7 @@ public class CypherTestTemplate {
     }
 
 
-    private static boolean matchesExactRows( List<List<Object>> parsed, Row[] rows ) {
+    private static boolean matchesExactRows( List<List<PolyValue>> parsed, Row[] rows ) {
         boolean matches = true;
         int j = 0;
         for ( Row row : rows ) {
@@ -326,8 +327,8 @@ public class CypherTestTemplate {
         }
 
 
-        public List<Object> asList( String[] actual ) {
-            List<Object> res = new ArrayList<>();
+        public List<PolyValue> asList( String[] actual ) {
+            List<PolyValue> res = new ArrayList<>();
             assert this.values.length == actual.length;
 
             int i = 0;
@@ -339,11 +340,11 @@ public class CypherTestTemplate {
         }
 
 
-        public boolean matches( List<Object> objects ) {
+        public boolean matches( List<PolyValue> objects ) {
             int i = 0;
             boolean matches = true;
 
-            for ( Object object : objects ) {
+            for ( PolyValue object : objects ) {
                 matches &= values[i].matches( object, true );
                 i++;
             }

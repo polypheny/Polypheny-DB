@@ -267,6 +267,10 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             gen.writeFieldName( "_es" );
             gen.writeStartArray();
             for ( PolyValue value : values ) {
+                if ( value == null ) {
+                    serializers.findValueSerializer( PolyNull.class ).serializeWithType( PolyNull.NULL, gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( PolyNull.class ) ) );
+                    continue;
+                }
                 serializers.findValueSerializer( value.getClass() ).serializeWithType( value, gen, serializers, serializers.findTypeSerializer( JSON_WRAPPER.constructType( value.getClass() ) ) );
             }
             gen.writeEndArray();

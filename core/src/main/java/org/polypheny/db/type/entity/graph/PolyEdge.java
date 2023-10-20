@@ -57,12 +57,25 @@ public class PolyEdge extends GraphPropertyHolder {
     public Pair<Integer, Integer> fromTo;
 
 
-    public PolyEdge( @NonNull PolyDictionary properties, List<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
+    public PolyEdge(
+            @NonNull PolyDictionary properties,
+            List<PolyString> labels,
+            PolyString source,
+            PolyString target,
+            EdgeDirection direction,
+            PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, source, target, direction, variableName );
     }
 
 
-    public PolyEdge( PolyString id, @NonNull PolyDictionary properties, List<PolyString> labels, PolyString source, PolyString target, EdgeDirection direction, PolyString variableName ) {
+    public PolyEdge(
+            @JsonProperty("id") PolyString id,
+            @JsonProperty("properties") @NonNull PolyDictionary properties,
+            @JsonProperty("labels") List<PolyString> labels,
+            @JsonProperty("source") PolyString source,
+            @JsonProperty("target") PolyString target,
+            @JsonProperty("direction") EdgeDirection direction,
+            @JsonProperty("variableName") PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
         this.source = source;
         this.target = target;

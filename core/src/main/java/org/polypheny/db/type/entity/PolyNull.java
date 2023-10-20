@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -45,6 +46,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class PolyNull extends PolyValue {
 
+    @JsonValue
     public static PolyNull NULL = new PolyNull();
 
 
@@ -105,6 +107,7 @@ public class PolyNull extends PolyValue {
     public @NotNull PolyDocument asDocument() {
         return PolyDocument.ofDocument( null );
     }
+
 
     @Override
     public boolean isList() {
@@ -344,7 +347,6 @@ public class PolyNull extends PolyValue {
     public @NotNull PolyUserDefinedValue asUserDefinedValue() {
         return new PolyUserDefinedValue( null, null );
     }
-
 
 
     @Override

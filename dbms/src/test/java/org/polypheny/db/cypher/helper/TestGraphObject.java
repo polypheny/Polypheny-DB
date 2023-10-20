@@ -71,7 +71,7 @@ public class TestGraphObject implements TestObject {
 
 
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
+    public boolean matches( PolyValue other, boolean exclusive ) {
         assert other instanceof GraphPropertyHolder;
         return matches( (GraphPropertyHolder) other, exclusive, true );
     }
@@ -79,7 +79,7 @@ public class TestGraphObject implements TestObject {
 
     @SneakyThrows
     @Override
-    public Object toPoly( String val ) {
+    public PolyValue toPoly( String val ) {
         return PolyValue.fromTypedJson( val, CypherTestTemplate.Type.from( this ).getPolyClass() );
     }
 
