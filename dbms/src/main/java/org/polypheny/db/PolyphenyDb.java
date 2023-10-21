@@ -419,11 +419,13 @@ public class PolyphenyDb {
                 throw new RuntimeException( "There was no catalog submitted, aborting." );
             }
 
+            log.info( "Searching for Docker" );
             if ( AutoDocker.getInstance().isAvailable() ) {
                 if ( testMode ) {
                     resetDocker = true;
                     Catalog.resetDocker = true;
                 }
+                log.info( "Automatically configuring Docker" );
                 boolean success = AutoDocker.getInstance().doAutoConnect();
                 if ( testMode && !success ) {
                     // AutoDocker does not work in Windows containers
