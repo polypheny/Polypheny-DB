@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyValue;
@@ -179,5 +180,9 @@ public abstract class PolyNumber extends PolyValue {
 
     public abstract PolyNumber negate();
 
+
+    public @Nullable Number NumberValue() {
+        return bigDecimalValue();
+    }
 
 }

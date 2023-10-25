@@ -78,6 +78,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.ControlFlowException;
@@ -1084,6 +1085,10 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyString.class, "convert", operand );
             } else if ( toType == PolyBoolean.class ) {
                 return Expressions.call( PolyBoolean.class, "convert", operand );
+            } else if ( toType == PolyList.class ) {
+                return Expressions.call( PolyList.class, "convert", operand );
+            } else if ( toType == PolyDocument.class ) {
+                return Expressions.call( PolyDocument.class, "convert", operand );
             }
             log.warn( "Converter missing" );
         }

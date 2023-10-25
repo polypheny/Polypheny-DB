@@ -87,7 +87,7 @@ public class PolyBoolean extends PolyValue {
                 return ((PolyValue) value).asBoolean();
             }
         }
-        throw new NotImplementedException( "convert value to boolean" );
+        throw new NotImplementedException( "convert value to Boolean" );
     }
 
 

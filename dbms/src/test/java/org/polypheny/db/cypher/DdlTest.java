@@ -41,7 +41,7 @@ public class DdlTest extends CypherTestTemplate {
     @Test
     public void addGraphTest() {
 
-        execute( "CREATE DATABASE " + graphName );
+        execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
         assertTrue( Catalog.snapshot().getNamespace( graphName ).isPresent() );
 
@@ -61,7 +61,7 @@ public class DdlTest extends CypherTestTemplate {
     public void addPlacementTest() throws SQLException {
         Catalog catalog = Catalog.getInstance();
         try {
-            execute( "CREATE DATABASE " + graphName );
+            execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
@@ -93,7 +93,7 @@ public class DdlTest extends CypherTestTemplate {
         try {
             addStore( "store1" );
 
-            execute( String.format( "CREATE DATABASE %s ON STORE %s", graphName, "store1" ) );
+            execute( String.format( "CREATE DATABASE %s IF NOT EXISTS ON STORE %s ", graphName, "store1" ) );
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
 
@@ -121,7 +121,7 @@ public class DdlTest extends CypherTestTemplate {
         try {
             Catalog catalog = Catalog.getInstance();
 
-            execute( "CREATE DATABASE " + graphName );
+            execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
             LogicalNamespace namespace = catalog.getSnapshot().getNamespace( graphName ).orElseThrow();
             LogicalGraph graph = catalog.getSnapshot().graph().getGraph( namespace.id ).orElseThrow();
@@ -152,7 +152,7 @@ public class DdlTest extends CypherTestTemplate {
     @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
 
-        execute( "CREATE DATABASE " + graphName );
+        execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
         execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2 );
 

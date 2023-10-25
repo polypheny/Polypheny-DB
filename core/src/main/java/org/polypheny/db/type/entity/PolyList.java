@@ -56,6 +56,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
@@ -99,6 +100,21 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
             log.warn( "Error on serializing typed JSON." );
             return null;
         }
+    }
+
+
+    public static PolyList<?> convert( @Nullable Object object ) {
+        if ( object == null ) {
+            return null;
+        }
+
+        if ( object instanceof PolyValue ) {
+            if ( ((PolyValue) object).isList() ) {
+                return ((PolyValue) object).asList();
+            }
+        }
+
+        throw new GenericRuntimeException( "Could not convert List" );
     }
 
 

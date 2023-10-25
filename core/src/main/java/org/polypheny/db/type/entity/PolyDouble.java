@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -77,6 +78,23 @@ public class PolyDouble extends PolyNumber {
         }
 
         return ObjectUtils.compare( value, o.asNumber().DoubleValue() );
+    }
+
+
+    public static PolyDouble convert( @Nullable Object object ) {
+        if ( object == null ) {
+            return null;
+        }
+
+        if ( object instanceof PolyValue ) {
+            if ( ((PolyValue) object).isDouble() ) {
+                return ((PolyValue) object).asDouble();
+            } else if ( ((PolyValue) object).isNumber() ) {
+                return PolyDouble.of( ((PolyValue) object).asNumber().DoubleValue() );
+            }
+        }
+
+        throw new GenericRuntimeException( "Could not convert Integer" );
     }
 
 

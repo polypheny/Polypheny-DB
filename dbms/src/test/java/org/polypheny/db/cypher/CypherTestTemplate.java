@@ -103,8 +103,8 @@ public class CypherTestTemplate {
     }
 
 
-    public static GraphResult execute( String query, String database ) {
-        GraphResult res = CypherConnection.executeGetResponse( query, database );
+    public static GraphResult execute( String query, String namespace ) {
+        GraphResult res = CypherConnection.executeGetResponse( query, namespace );
         if ( res.getError() != null ) {
             fail( res.getError() );
         }

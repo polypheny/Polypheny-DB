@@ -243,7 +243,7 @@ public class MqlToAlgConverter {
         if ( query instanceof MqlCollectionStatement ) {
             return convert( (MqlCollectionStatement) query );
         }
-        throw new RuntimeException( "DML or DQL need a collection" );
+        throw new GenericRuntimeException( "DML or DQL need a collection" );
     }
 
 

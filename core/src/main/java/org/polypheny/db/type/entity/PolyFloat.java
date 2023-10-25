@@ -32,6 +32,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -61,6 +62,23 @@ public class PolyFloat extends PolyNumber {
 
     public static PolyFloat ofNullable( Number value ) {
         return value == null ? null : of( value );
+    }
+
+
+    public static PolyFloat convert( @Nullable Object object ) {
+        if ( object == null ) {
+            return null;
+        }
+
+        if ( object instanceof PolyValue ) {
+            if ( ((PolyValue) object).isFloat() ) {
+                return ((PolyValue) object).asFloat();
+            } else if ( ((PolyValue) object).isNumber() ) {
+                return PolyFloat.ofNullable( ((PolyValue) object).asNumber().FloatValue() );
+            }
+        }
+
+        throw new GenericRuntimeException( "Could not convert Integer" );
     }
 
 

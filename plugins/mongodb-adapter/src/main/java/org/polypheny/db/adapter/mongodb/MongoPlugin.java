@@ -341,7 +341,7 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalCollection collection = storeCatalog.fromAllocation( allocation.id, PhysicalCollection.class );
             this.currentNamespace.database.getCollection( collection.name ).drop();
 
-            storeCatalog.removePhysical( allocation.id );
+            storeCatalog.removeAllocAndPhysical( allocation.id );
         }
 
 
@@ -352,7 +352,7 @@ public class MongoPlugin extends PolyPlugin {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
 
             this.currentNamespace.database.getCollection( physical.name ).drop();
-            storeCatalog.removePhysical( allocId );
+            storeCatalog.removeAllocAndPhysical( allocId );
         }
 
 

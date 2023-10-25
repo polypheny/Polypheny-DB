@@ -236,7 +236,7 @@ public class FilePlugin extends PolyPlugin {
                 }
             }
 
-            storeCatalog.removePhysical( allocId );
+            storeCatalog.removeAllocAndPhysical( allocId );
 
         }
 

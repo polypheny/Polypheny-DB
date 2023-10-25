@@ -101,6 +101,10 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+
         if ( value instanceof PolyNumber ) {
             return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
         } else if ( value instanceof PolyValue ) {

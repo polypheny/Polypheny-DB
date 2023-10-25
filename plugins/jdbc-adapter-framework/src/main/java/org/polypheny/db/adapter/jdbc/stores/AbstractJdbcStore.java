@@ -356,7 +356,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             log.info( "{} from store {}", builder, this.getUniqueName() );
         }
         executeUpdate( builder, context );
-        storeCatalog.removePhysical( allocId );
+        storeCatalog.removeAllocAndPhysical( allocId );
         // }
     }
 
