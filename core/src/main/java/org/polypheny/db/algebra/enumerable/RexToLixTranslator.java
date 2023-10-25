@@ -1089,8 +1089,10 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyList.class, "convert", operand );
             } else if ( toType == PolyDocument.class ) {
                 return Expressions.call( PolyDocument.class, "convert", operand );
+            } else if ( toType == PolyValue.class ) {
+                return Expressions.convert_( operand, toType ); // document
             }
-            log.warn( "Converter missing" );
+            log.warn( "Converter missing " + toType );
         }
 
         return Expressions.convert_( operand, toType );

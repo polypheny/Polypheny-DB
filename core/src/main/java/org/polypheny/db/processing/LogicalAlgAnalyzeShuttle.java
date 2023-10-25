@@ -263,7 +263,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -348,7 +348,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -468,10 +468,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
         // Only if table is partitioned
         log.warn( "todo" );
-        /*if ( Catalog.getInstance().getSnapshot().alloc().isPartitioned( catalogTable.id ) ) {
+        /*if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
+                || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
                     statement,
-                    catalogTable.columns.stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             int scanId = node.getInput( 0 ).getId();

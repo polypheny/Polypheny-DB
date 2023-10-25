@@ -60,10 +60,8 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
-import org.polypheny.db.type.BasicPolyType;
-import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
-import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBigDecimal;
@@ -81,7 +79,6 @@ import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
-import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -211,14 +208,14 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
             return getJavaClass( type.getFieldList().get( 0 ).getType() );
         }
-        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType || type instanceof PathType || type instanceof DocumentType || type instanceof GraphType ) {
+        if ( type instanceof AbstractPolyType || type instanceof DocumentType || type instanceof GraphType ) {
             switch ( type.getPolyType() ) {
                 case JSON:
                 case VARCHAR:
                 case CHAR:
                     return PolyString.class;
                 case DOCUMENT:
-                    return PolyDocument.class;
+                    return PolyValue.class;
                 case DATE:
                     return PolyDate.class;
                 case TIME:
