@@ -19,13 +19,10 @@ package org.polypheny.db.catalog.catalogs;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -47,15 +44,12 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
+@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class DocStoreCatalog extends StoreCatalog {
 
-    @Getter
     public BinarySerializer<DocStoreCatalog> serializer = PolySerializable.buildSerializer( DocStoreCatalog.class );
-
-    @Serialize
-    public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, columnId
 
 
     public DocStoreCatalog( long adapterId ) {
@@ -86,10 +80,9 @@ public class DocStoreCatalog extends StoreCatalog {
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
-            @Deserialize("fields") Map<Pair<Long, Long>, PhysicalColumn> fields,
+            @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields,
             @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals ) {
-        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals );
-        this.fields = new ConcurrentHashMap<>( fields );
+        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
 
 

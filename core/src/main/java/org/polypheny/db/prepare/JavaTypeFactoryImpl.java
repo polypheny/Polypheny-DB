@@ -64,21 +64,18 @@ import org.polypheny.db.type.AbstractPolyType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.type.entity.PolyBigDecimal;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
-import org.polypheny.db.type.entity.PolyDouble;
-import org.polypheny.db.type.entity.PolyFloat;
-import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
-import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
@@ -220,11 +217,16 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return PolyDate.class;
                 case TIME:
                 case TIME_WITH_LOCAL_TIME_ZONE:
-                    return PolyTime.class;
+                    return PolyTemporal.class;
+                case DOUBLE:
+                case FLOAT: // sic
+                case REAL:
+                case SMALLINT:
+                case TINYINT:
+                case DECIMAL:
                 case INTEGER:
-                    return PolyInteger.class;
                 case BIGINT:
-                    return PolyBigDecimal.class;
+                    return PolyNumber.class;
                 case TIMESTAMP:
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                     return PolyTimeStamp.class;
@@ -242,20 +244,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case INTERVAL_MINUTE_SECOND:
                 case INTERVAL_SECOND:
                     return PolyInterval.class;
-                case SMALLINT:
-                    return PolyInteger.class;
-                case TINYINT:
-                    return PolyInteger.class;
-                case DECIMAL:
-                    return PolyBigDecimal.class;
                 case BOOLEAN:
                     return PolyBoolean.class;
-                case DOUBLE:
-                    return PolyDouble.class;
-                case FLOAT: // sic
-                    return PolyFloat.class;
-                case REAL:
-                    return PolyFloat.class;
                 case BINARY:
                 case VARBINARY:
                     return PolyBinary.class;

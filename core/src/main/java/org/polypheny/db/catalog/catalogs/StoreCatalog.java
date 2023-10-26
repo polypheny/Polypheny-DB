@@ -22,6 +22,7 @@ import io.activej.serializer.annotations.SerializeClass;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,9 +36,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.util.Pair;
 
 @Value
 @NonFinal
@@ -62,9 +65,12 @@ public abstract class StoreCatalog implements PolySerializable {
     @Serialize
     public ConcurrentMap<Long, Set<Long>> allocToPhysicals;
 
+    @Serialize
+    public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, fieldId
+
 
     public StoreCatalog( long adapterId ) {
-        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -73,12 +79,14 @@ public abstract class StoreCatalog implements PolySerializable {
             Map<Long, Namespace> namespaces,
             Map<Long, PhysicalEntity> physicals,
             Map<Long, AllocationEntity> allocations,
-            Map<Long, Set<Long>> allocToPhysicals ) {
+            Map<Long, Set<Long>> allocToPhysicals,
+            Map<Pair<Long, Long>, PhysicalField> fields ) {
         this.adapterId = adapterId;
         this.namespaces = new ConcurrentHashMap<>( namespaces );
         this.physicals = new ConcurrentHashMap<>( physicals );
         this.allocations = new ConcurrentHashMap<>( allocations );
         this.allocToPhysicals = new ConcurrentHashMap<>( allocToPhysicals );
+        this.fields = new ConcurrentHashMap<>( fields );
     }
 
 
@@ -154,9 +162,15 @@ public abstract class StoreCatalog implements PolySerializable {
             }
             allocToPhysicals.remove( physical.allocationId );
             allocations.remove( physical.allocationId );
+
+            // remove fields
+            List<PhysicalField> removeFields = fields.entrySet().stream().filter( f -> f.getValue().entityId == physicalId
+                    || f.getKey().getKey() == physical.allocationId ).map( Entry::getValue ).collect( Collectors.toList() );
+            removeFields.forEach( field -> fields.remove( Pair.of( field.allocId, field.id ) ) );
         }
         physicals.forEach( this.physicals::remove );
         physicals.forEach( allocToPhysicals::remove );
+
     }
 
 
