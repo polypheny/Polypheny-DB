@@ -16,7 +16,6 @@
 
 package org.polypheny.db.backup;
 
-import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
 
@@ -37,14 +36,6 @@ public class BackupInterface {
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
         im.addGroup( informationGroupOverview );
-
-        //ToDo (FF): find way to implement button (ideally like the one from notebooks plugin, but couldn't find it yet).
-
-
-        // Invalidate cache
-        //InformationGroup invalidateGroup = new InformationGroup( page, "Reset" ).setOrder( 3 );
-        //im.addGroup( invalidateGroup );
-        //invalidateGroup = informationGroupOverview
 
         InformationText startBackup = new InformationText( informationGroupOverview, "Start the Backup." );
         startBackup.setOrder( 1 );
