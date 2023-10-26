@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -23,6 +25,8 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Objects;
@@ -41,10 +45,12 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 @Value
 public class PolyLong extends PolyNumber {
 
+    @Serialize
     public Long value;
 
 
-    public PolyLong( Long value ) {
+    @JsonCreator
+    public PolyLong( @JsonProperty("value") @Deserialize("value") Long value ) {
         super( PolyType.BIGINT );
         this.value = value;
     }
@@ -192,14 +198,21 @@ public class PolyLong extends PolyNumber {
     }
 
 
-    public static PolyLong convert( PolyValue value ) {
-        if ( value.isNumber() ) {
-            return PolyLong.of( value.asNumber().longValue() );
-        } else if ( value.isTemporal() ) {
-            return PolyLong.of( value.asTemporal().getMilliSinceEpoch() );
-        } else if ( value.isString() ) {
-            return PolyLong.of( Long.parseLong( value.asString().value ) );
+    public static PolyLong convert( Object value ) {
+        if ( value == null ) {
+            return null;
         }
+
+        if ( value instanceof PolyValue ) {
+            if ( ((PolyValue) value).isLong() ) {
+                return PolyLong.of( ((PolyValue) value).asNumber().longValue() );
+            } else if ( ((PolyValue) value).isTemporal() ) {
+                return PolyLong.of( ((PolyValue) value).asTemporal().getMilliSinceEpoch() );
+            } else if ( ((PolyValue) value).isString() ) {
+                return PolyLong.of( Long.parseLong( ((PolyValue) value).asString().value ) );
+            }
+        }
+
         throw new NotImplementedException( "convert " + PolyTimeStamp.class.getSimpleName() );
     }
 

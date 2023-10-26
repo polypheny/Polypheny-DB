@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
@@ -68,16 +70,20 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
             try {
                 Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
             } catch ( InterruptedException e ) {
-                throw new UnsupportedOperationException( "While waiting to create the database the operation was interrupted." );
+                throw new GenericRuntimeException( "While waiting to create the database the operation was interrupted." );
             }
         }
 
         List<DataStore<?>> dataStore = null;
         if ( store != null ) {
             if ( manager.getStore( store ) == null ) {
-                throw new RuntimeException( "Error while retrieving placement of graph database." );
+                throw new GenericRuntimeException( "Error while retrieving placement of graph database." );
             }
             dataStore = List.of( manager.getStore( store ) );
+        }
+
+        if ( Catalog.snapshot().getNamespace( databaseName ).isPresent() && !ifNotExists ) {
+            throw new GenericRuntimeException( "Namespace does already exist" );
         }
 
         DdlManager.getInstance().createGraph(

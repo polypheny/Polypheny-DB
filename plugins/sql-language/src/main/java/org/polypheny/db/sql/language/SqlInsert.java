@@ -42,15 +42,15 @@ public class SqlInsert extends SqlCall {
     @Getter
     SqlNode source;
     @Setter
-    SqlNodeList columnList;
+    SqlNodeList columns;
 
 
-    public SqlInsert( ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columnList ) {
+    public SqlInsert( ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columns ) {
         super( pos );
         this.keywords = keywords;
         this.targetTable = targetTable;
         this.source = source;
-        this.columnList = columnList;
+        this.columns = columns;
         assert keywords != null;
     }
 
@@ -69,13 +69,13 @@ public class SqlInsert extends SqlCall {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( keywords, targetTable, source, columnList );
+        return ImmutableNullableList.of( keywords, targetTable, source, columns );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( keywords, targetTable, source, columnList );
+        return ImmutableNullableList.of( keywords, targetTable, source, columns );
     }
 
 
@@ -104,7 +104,7 @@ public class SqlInsert extends SqlCall {
                 source = (SqlNode) operand;
                 break;
             case 3:
-                columnList = (SqlNodeList) operand;
+                columns = (SqlNodeList) operand;
                 break;
             default:
                 throw new AssertionError( i );
@@ -121,7 +121,7 @@ public class SqlInsert extends SqlCall {
      * @return the list of target column names, or null for all columns in the target table
      */
     public SqlNodeList getTargetColumnList() {
-        return columnList;
+        return columns;
     }
 
 
@@ -145,8 +145,8 @@ public class SqlInsert extends SqlCall {
         final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
         final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
-        if ( columnList != null ) {
-            columnList.unparse( writer, opLeft, opRight );
+        if ( columns != null ) {
+            columns.unparse( writer, opLeft, opRight );
         }
         writer.newlineAndIndent();
         source.unparse( writer, 0, 0 );

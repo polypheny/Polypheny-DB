@@ -4023,7 +4023,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             }
         }
         final Set<Integer> assignedFields = new HashSet<>();
-        final CatalogEntity algOptEntity = null; //table instanceof AlgOptEntity ? ((AlgOptEntity) table) : null; todo dl
         for ( Node node : targetColumnList ) {
             SqlIdentifier id = (SqlIdentifier) node;
             AlgDataTypeField targetField =
@@ -4032,7 +4031,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             typeFactory,
                             id,
                             snapshot,
-                            algOptEntity,
+                            table,
                             allowDynamic );
 
             if ( targetField == null ) {
@@ -4061,10 +4060,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         null,
                         null );
 
-        boolean allowDynamic = false;
-        if ( insert.getSchemaType() == NamespaceType.DOCUMENT ) {
-            allowDynamic = true;
-        }
+        boolean allowDynamic = insert.getSchemaType() == NamespaceType.DOCUMENT;
 
         // INSERT has an optional column name list.  If present then reduce the rowtype to the columns specified.  If not present then the entire target rowtype is used.
         final AlgDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false, allowDynamic );

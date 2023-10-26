@@ -350,7 +350,7 @@ public class SqlProcessorImpl extends Processor {
             }
 
             // Add new column list
-            insert.setColumnList( newColumnList );
+            insert.setColumns( newColumnList );
             // Replace value in parser tree
             for ( int i = 0; i < newValues.length; i++ ) {
                 SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);

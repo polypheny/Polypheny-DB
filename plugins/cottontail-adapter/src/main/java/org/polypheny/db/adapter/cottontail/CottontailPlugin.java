@@ -286,7 +286,7 @@ public class CottontailPlugin extends PolyPlugin {
                     .setMetadata( Metadata.newBuilder().setTransactionId( txId ).build() )
                     .setEntity( tableEntity ).build() );
 
-            storeCatalog.removePhysical( allocId );
+            storeCatalog.removeAllocAndPhysical( allocId );
         }
 
 

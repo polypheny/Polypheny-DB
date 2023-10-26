@@ -64,14 +64,21 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     @Override
-    public void renameLogicalField( long id, String newFieldName ) {
-        List<PhysicalField> updates = new ArrayList<>();
+    public void renameLogicalColumn( long id, String newFieldName ) {
+        List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
                 updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
-        updates.forEach( u -> fields.put( Pair.of( u.allocId, u.id ), u ) );
+        for ( PhysicalColumn u : updates ) {
+            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class );
+            List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
+            newColumns.remove( u );
+            newColumns.add( u );
+            physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
+            fields.put( Pair.of( u.allocId, u.id ), u );
+        }
     }
 
 

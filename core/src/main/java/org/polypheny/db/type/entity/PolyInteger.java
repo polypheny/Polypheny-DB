@@ -60,6 +60,23 @@ public class PolyInteger extends PolyNumber {
     }
 
 
+    public static PolyInteger convert( @Nullable Object object ) {
+        if ( object == null ) {
+            return null;
+        }
+
+        if ( object instanceof PolyValue ) {
+            if ( ((PolyValue) object).isInteger() ) {
+                return ((PolyValue) object).asInteger();
+            } else if ( ((PolyValue) object).isNumber() ) {
+                return PolyInteger.ofNullable( ((PolyValue) object).asNumber().NumberValue() );
+            }
+        }
+
+        throw new GenericRuntimeException( "Could not convert Integer" );
+    }
+
+
     public static PolyInteger of( byte value ) {
         return new PolyInteger( (int) value );
     }

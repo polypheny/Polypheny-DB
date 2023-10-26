@@ -16,19 +16,20 @@
 
 package org.polypheny.db.algebra.enumerable.document;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -64,9 +65,12 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
                         implementor.getTypeFactory(),
                         getRowType(),
                         pref.preferCustom() );
-        final Type rowClass = physType.getJavaRowType();
 
         final List<Expression> expressions = new ArrayList<>();
+
+        if ( isPrepared() ) {
+            return attachPreparedExpression( builder, physType, implementor, pref );
+        }
 
         for ( PolyValue doc : documents ) {
             expressions.add( Expressions.newArrayInit( PolyDocument.class, doc.asExpression() ) );
@@ -77,6 +81,18 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
                         Expressions.call(
                                 BuiltInMethod.AS_ENUMERABLE.method,
                                 Expressions.newArrayInit( Primitive.box( PolyValue.class ), 2, expressions ) ) ) );
+        return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Result attachPreparedExpression( BlockBuilder builder, PhysType physType, EnumerableAlgImplementor implementor, Prefer pref ) {
+
+        builder.add(
+                Expressions.return_(
+                        null,
+                        Expressions.call(
+                                BuiltInMethod.AS_ENUMERABLE.method,
+                                Expressions.call( CrossModelFunctions.class, "enumerableFromContext", DataContext.ROOT ) ) ) );
         return implementor.result( physType, builder.toBlock() );
     }
 

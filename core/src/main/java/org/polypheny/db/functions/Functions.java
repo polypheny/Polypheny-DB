@@ -302,19 +302,15 @@ public class Functions {
 
 
     @SuppressWarnings("unused")
-    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue> baz, final Function0<Enumerable<Object>> executorCall, final List<PolyType> polyTypes ) {
+    public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
         AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         List<AlgDataType> algDataTypes = polyTypes.stream().map( factory::createPolyType ).collect( Collectors.toList() );
 
         boolean single = polyTypes.size() == 1;
 
         List<PolyValue[]> values = new ArrayList<>();
-        for ( Object o : baz ) {
-            if ( single ) {
-                values.add( new PolyValue[]{ (PolyValue) o } );
-            } else {
-                values.add( (PolyValue[]) o );
-            }
+        for ( PolyValue[] o : baz ) {
+            values.add( o );
         }
         if ( values.isEmpty() ) {
             // there are no updates to make, we don't execute the right executor
@@ -342,9 +338,9 @@ public class Functions {
         }
 
         List<PolyValue[]> results = new ArrayList<>();
-        Enumerable<Object> executor = executorCall.apply();
-        for ( Object o : executor ) {
-            results.add( new PolyValue[]{ (PolyValue) o } );
+        Enumerable<PolyValue[]> executor = executorCall.apply();
+        for ( PolyValue[] o : executor ) {
+            results.add( o );
         }
 
         context.resetParameterValues();
@@ -3090,7 +3086,7 @@ public class Functions {
     @NonDeterministic
     public static long localTimestamp( DataContext root ) {
         // Cast required for JDK 1.6.
-        return (Long) DataContext.Variable.LOCAL_TIMESTAMP.get( root );
+        return DataContext.Variable.LOCAL_TIMESTAMP.get( root );
     }
 
 
@@ -3105,7 +3101,7 @@ public class Functions {
 
     @NonDeterministic
     public static TimeZone timeZone( DataContext root ) {
-        return (TimeZone) DataContext.Variable.TIME_ZONE.get( root );
+        return DataContext.Variable.TIME_ZONE.get( root );
     }
 
 
@@ -3161,6 +3157,7 @@ public class Functions {
     /**
      * As {@link #arrayItem} method, but allows array to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue arrayItemOptional( List<PolyValue> list, PolyNumber item ) {
         if ( list == null ) {
             return null;
@@ -3172,6 +3169,7 @@ public class Functions {
     /**
      * As {@link #mapItem} method, but allows map to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue mapItemOptional( Map<PolyValue, PolyValue> map, PolyValue item ) {
         if ( map == null ) {
             return null;
@@ -3183,6 +3181,7 @@ public class Functions {
     /**
      * As {@link #item} method, but allows object to be nullable.
      */
+    @SuppressWarnings("unused")
     public static PolyValue itemOptional( Map<PolyValue, PolyValue> object, PolyValue index ) {
         if ( object == null ) {
             return null;

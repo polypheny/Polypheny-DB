@@ -98,7 +98,7 @@ public class GraphScanDelegate implements Scannable {
 
     @Override
     public void renameLogicalColumn( long id, String newColumnName ) {
-        getCatalog().renameLogicalField( id, newColumnName );
+        getCatalog().renameLogicalColumn( id, newColumnName );
     }
 
 }

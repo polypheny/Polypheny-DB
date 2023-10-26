@@ -907,7 +907,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
             }
 
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
             Map<Long, List<PolyValue>> values = new HashMap<>();
@@ -918,7 +918,7 @@ public class DbmsMeta implements ProtobufMeta {
                 for ( Common.TypedValue v : list ) {
                     long i = index++;
                     if ( !values.containsKey( i ) ) {
-                        values.put( i, new LinkedList<>() );
+                        values.put( i, new ArrayList<>() );
                     }
                     if ( v.getType() == Common.Rep.ARRAY ) {
                         values.get( i ).add( convertList( (List<TypedValue>) TypedValue.fromProto( v ).toLocal() ) );
@@ -1068,7 +1068,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
             }
 
-            PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setPreparedQuery( sql );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, new LinkedList<>(), maxRowsInFirstFrame, connection );
@@ -1210,7 +1210,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
             }
-            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, parameterValues, maxRowsInFirstFrame, connection );
         }
@@ -1218,7 +1218,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+        final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
         long index = 0;
         for ( TypedValue v : parameterValues ) {
@@ -1347,7 +1347,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
-        PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+        PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
         Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
 
         Node parsed = sqlProcessor.parse( sql ).get( 0 );
@@ -1400,7 +1400,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statementHandle, int maxRowsInFirstFrame ) {
+    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle<?> statementHandle, int maxRowsInFirstFrame ) {
         List<MetaResultSet> resultSets;
         if ( statementHandle.getSignature().statementType == StatementType.OTHER_DDL ) {
             MetaResultSet resultSet = MetaResultSet.count( statementHandle.getConnection().getConnectionId().toString(), h.id, 1 );
@@ -1453,10 +1453,10 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
             }
 
-            final PolyphenyDbStatementHandle statement;
+            final PolyphenyDbStatementHandle<?> statement;
 
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle( connection, id );
+            statement = new PolyphenyDbStatementHandle<>( connection, id );
             openStatements.put( ch.id + "::" + id, statement );
 
             StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -1481,7 +1481,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "closeStatement( StatementHandle {} )", statementHandle );
             }
 
-            final PolyphenyDbStatementHandle toClose = openStatements.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
+            final PolyphenyDbStatementHandle<?> toClose = openStatements.remove( statementHandle.connectionId + "::" + statementHandle.id );
             if ( toClose != null ) {
                 if ( toClose.getOpenResultSet() != null && toClose.getOpenResultSet() instanceof AutoCloseable ) {
                     try {
@@ -1594,7 +1594,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             for ( final String key : openStatements.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    PolyphenyDbStatementHandle statementHandle = openStatements.remove( key );
+                    PolyphenyDbStatementHandle<?> statementHandle = openStatements.remove( key );
                     statementHandle.unset();
                 }
             }

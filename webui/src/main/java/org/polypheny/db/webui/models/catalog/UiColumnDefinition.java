@@ -17,11 +17,13 @@
 package org.polypheny.db.webui.models.catalog;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.webui.models.SortState;
 
 
@@ -36,21 +38,34 @@ import org.polypheny.db.webui.models.SortState;
 public class UiColumnDefinition extends FieldDefinition {
 
     // for the Data-Table in the UI
+    @JsonProperty
     public SortState sort;
+    @JsonProperty
     public String filter;
+    @JsonProperty
     public Long id;
 
     // for editing columns
+    @JsonProperty
     public boolean primary;
+    @JsonProperty
     public boolean nullable;
+    @JsonProperty
     public Integer precision;
+    @JsonProperty
     public Integer scale;
+    @JsonProperty
     public String defaultValue;
+    @JsonProperty
     public Integer dimension;
+    @JsonProperty
     public Integer cardinality;
+    @JsonProperty
+    @Nullable
     public String collectionsType;
 
     //for data source columns
+    @JsonProperty
     public String as;
 
 

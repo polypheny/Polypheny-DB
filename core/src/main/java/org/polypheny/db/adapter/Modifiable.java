@@ -253,11 +253,12 @@ public interface Modifiable extends Scannable {
     }
 
     static void dropGraphSubstitute( Modifiable modifiable, long allocation ) {
-        modifiable.getCatalog().removePhysical( allocation );
+        // we can drop the direct link
+        modifiable.getCatalog().removeAllocAndPhysical( allocation );
     }
 
     static void dropCollectionSubstitute( Modifiable modifiable, long allocation ) {
-        modifiable.getCatalog().removePhysical( allocation );
+        modifiable.getCatalog().removeAllocAndPhysical( allocation );
     }
 
     default AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
@@ -391,6 +392,9 @@ public interface Modifiable extends Scannable {
     @NotNull
     static AlgNode getGraphModifySubstitute( Modifiable modifiable, long allocId, LpgModify<?> alg, AlgBuilder builder ) {
         List<PhysicalEntity> physicals = modifiable.getCatalog().getPhysicalsFromAllocs( allocId );
+        if ( physicals == null ) {
+            throw new GenericRuntimeException( "This should not happen" );
+        }
         PhysicalEntity nodesTable = physicals.get( 0 );
         PhysicalEntity nodePropertiesTable = physicals.get( 1 );
         PhysicalEntity edgesTable = physicals.get( 2 );

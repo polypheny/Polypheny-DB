@@ -146,12 +146,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         // Needed for partitioned updates when source partition and target partition are not equal
         // SET Value is the new partition, where clause is the source
         boolean operationWasRewritten = false;
-        List<Map<Long, Object>> tempParamValues = null;
 
-        Map<Long, AlgDataType> types = statement.getDataContext().getParameterTypes();
         List<Map<Long, PolyValue>> allValues = statement.getDataContext().getParameterValues();
 
-        Map<Long, PolyValue> newParameterValues = new HashMap<>();
         for ( AllocationPlacement pkPlacement : pkPlacements ) {
 
             // Get placements on storeId
@@ -273,11 +270,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                 }
                                 worstCaseRouting = false;
                             } else {
-                                throw new RuntimeException( "Updating partition key is not allowed" );
+                                throw new GenericRuntimeException( "Updating partition key is not allowed" );
                             }
                         }// WHERE clause only
                         else {
-                            throw new RuntimeException( "Updating partition key is not allowed" );
+                            throw new GenericRuntimeException( "Updating partition key is not allowed" );
 
                             //Simply execute the UPDATE on all identified partitions
                             //Nothing to do
@@ -285,14 +282,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                         }
                     }// If only SET is specified
                     // Changes the value of partition column of complete table to only reside on one partition
-                    else if ( identifiedPartitionForSetValue != -1 ) {
-
-                        // Data Migrate copy of all other partitions beside the identified on towards the identified one
-                        // Then inject a DELETE statement for all those partitions
-
-                        // Do the update only on the identified partition
-
-                    }// If nothing has been specified
                     //Partition functionality cannot be used --> worstCase --> send query to every partition
                     else {
                         worstCaseRouting = true;
@@ -304,13 +293,11 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     if ( modify.getInput() instanceof LogicalValues ) {
                         // Get fieldList and map columns to index since they could be in arbitrary order
                         int partitionColumnIndex = -1;
-                        Map<Long, Integer> resultColMapping = new HashMap<>();
                         for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
                             String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
 
                             // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                             int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
-                            resultColMapping.put( columnIds.get( columnIndex ), j );
 
                             // Determine location of partitionColumn in fieldList
                             if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
@@ -423,11 +410,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                                         }
 
                                         statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
-                                        statement.getDataContext().setParameterValues( tempValues.get( tempPartitionId ) );
-
-                                        List<Map<Long, Object>> parameterValues = new ArrayList<>();
-                                        parameterValues.add( new HashMap<>( newParameterValues ) );
-                                        parameterValues.get( 0 ).putAll( currentRow );
 
                                         if ( !tempValues.containsKey( tempPartitionId ) ) {
                                             tempValues.put( tempPartitionId, new ArrayList<>() );
@@ -554,18 +536,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
 
-        // Update parameter values (horizontal partitioning)
-        if ( !newParameterValues.isEmpty() ) {
-            statement.getDataContext().resetParameterValues();
-            int idx = 0;
-            for ( Map.Entry<Long, PolyValue> entry : newParameterValues.entrySet() ) {
-                statement.getDataContext().addParameterValues(
-                        entry.getKey(),
-                        statement.getDataContext().getParameterType( idx++ ),
-                        ImmutableList.of( entry.getValue() ) );
-            }
-        }
-
         if ( modifies.size() == 1 ) {
             return modifies.get( 0 );
         } else {
@@ -575,12 +545,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     }
 
-
-    @NotNull
-    private LogicalRelModify handleSingleModify( LogicalRelModify modify, Statement statement, AllocationEntity allocation ) {
-        AlgNode input = buildDmlNew( super.recursiveCopy( modify.getInput( 0 ) ), statement, RoutedAlgBuilder.create( statement, modify.getCluster() ) ).build();
-        return LogicalRelModify.create( allocation, input, modify.getOperation(), modify.getUpdateColumns(), modify.getSourceExpressions(), modify.isFlattened() );
-    }
 
 
     @Override
@@ -786,7 +750,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            return handleLogicalRelScan( builder, table, allocationTable, statement );
+            return handleRelScan( builder, statement, ((LogicalRelScan) node).entity );
         } else if ( node instanceof LogicalDocumentValues ) {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
@@ -811,22 +775,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
         return super.handleGeneric( node, builder );
-    }
-
-
-    private AlgBuilder handleLogicalRelScan( RoutedAlgBuilder builder, LogicalTable table, AllocationEntity allocationTable, Statement statement ) {
-        // Special handling for INSERT INTO foo SELECT * FROM foo2
-        if ( false ) {
-            return handleSelectFromOtherTable( builder, table, statement );
-        }
-
-        builder = super.handleRelScan(
-                builder,
-                statement,
-                allocationTable
-        );
-
-        return builder;
     }
 
 

@@ -139,16 +139,27 @@ public abstract class StoreCatalog implements PolySerializable {
     }
 
 
-    public void removePhysical( long allocId ) {
+    public void removeAllocAndPhysical( long allocId ) {
         allocations.remove( allocId );
         if ( !allocToPhysicals.containsKey( allocId ) ) {
             return;
         }
         Set<Long> physicals = allocToPhysicals.get( allocId );
+        allocToPhysicals.remove( allocId );
+        for ( long physicalId : physicals ) {
+            PhysicalEntity physical = this.physicals.get( physicalId );
+            // we might have created substitution allocations, which we want to remove as well
+            if ( physical == null ) {
+                continue;
+            }
+            allocToPhysicals.remove( physical.allocationId );
+            allocations.remove( physical.allocationId );
+        }
+        physicals.forEach( this.physicals::remove );
         physicals.forEach( allocToPhysicals::remove );
     }
 
 
-    public abstract void renameLogicalField( long id, String newFieldName );
+    public abstract void renameLogicalColumn( long id, String newFieldName );
 
 }

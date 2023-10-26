@@ -64,7 +64,7 @@ public class CrossModelFunctions {
      * @return the result of the modify operation
      */
     @SuppressWarnings("unused")
-    public static Enumerable<?> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
+    public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
         if ( operation == Modify.Operation.DELETE ) {
             return sendDeletes( context, enumerables, order );
         }
@@ -109,7 +109,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( PolyInteger.of( 1 ) );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyInteger.of( 1 ) } );
     }
 
 
@@ -231,7 +231,7 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toTypedJson() ) ).collect( Collectors.toList() ) ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).collect( Collectors.toList() ) ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
@@ -262,7 +262,7 @@ public class CrossModelFunctions {
      * @param enumerables collection of all modify enumerables
      * @param order the order of modify operations
      */
-    private static Enumerable<?> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+    private static Enumerable<PolyValue[]> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         int i = 0;
         Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
@@ -300,7 +300,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( PolyLong.of( values.size() ) );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
 
     }
 
@@ -378,7 +378,7 @@ public class CrossModelFunctions {
      * @param order the types included in the update operation
      * @return the result of the update operation
      */
-    private static Enumerable<?> sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+    private static Enumerable<PolyValue[]> sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         int i = 0;
         Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
@@ -420,7 +420,7 @@ public class CrossModelFunctions {
         context.setParameterValues( List.of( values ) );
         context.setParameterTypes( typeBackup );
 
-        return Linq4j.singletonEnumerable( PolyLong.of( values.size() ) );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
 
     }
 
@@ -449,6 +449,11 @@ public class CrossModelFunctions {
     public static Object docItem( String map, String key ) {
         Object value = PolyDictionary.fromString( map ).getOrDefault( key, null );
         return value != null ? value.toString() : null;
+    }
+
+
+    public static Enumerable<PolyValue[]> enumerableFromContext( DataContext context ) {
+        return Linq4j.asEnumerable( context.getParameterValues().stream().map( e -> e.values().toArray( PolyValue[]::new ) ).collect( Collectors.toList() ) );
     }
 
 }

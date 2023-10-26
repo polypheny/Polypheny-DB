@@ -621,7 +621,7 @@ public class ImmutableBitSet implements Iterable<Integer>, Serializable, Compara
      * breaks even (versus {@link #toList}) if you intend to scan it only once.
      */
     public List<Integer> asList() {
-        return new AbstractList<Integer>() {
+        return new AbstractList<>() {
             @Override
             public Integer get( int index ) {
                 return nth( index );

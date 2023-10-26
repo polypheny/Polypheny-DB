@@ -357,6 +357,7 @@ TOKEN [IGNORE_CASE] :
     | < NEQ: "!=" >
     | < NEQ2: "<>" >
     | < NAME: "NAME" >
+    | < NAMESPACE: "NAMESPACE" >
     | < NAMES: "NAMES" >
     | < NEW: "NEW" >
     | < NODE: "NODE" >
@@ -4893,7 +4894,7 @@ CypherAdminCommand CreateDatabase( Token start, boolean replace ):
     CypherSimpleEither<String, CypherParameter> store = null;
 }
 {
-    <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<DATABASE>|<NAMESPACE>) databaseName=SymbolicDatabaseNameStringOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     ( <ON> <STORE> store=SymbolicDatabaseNameStringOrParameter() )?
     ( optionz = Options() )?

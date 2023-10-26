@@ -71,7 +71,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
-    public static LogicalDocumentValues createOneRow( AlgOptCluster cluster ) {
+    public static LogicalDocumentValues createOneTuple( AlgOptCluster cluster ) {
         final AlgDataType rowType =
                 cluster.getTypeFactory()
                         .builder()

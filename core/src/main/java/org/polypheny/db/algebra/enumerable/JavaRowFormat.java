@@ -28,8 +28,8 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.interpreter.Row;
-import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Unit;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -117,7 +117,7 @@ public enum JavaRowFormat {
     LIST {
         @Override
         Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
-            return ComparableList.class;
+            return PolyList.class;
         }
 
 
@@ -133,9 +133,9 @@ public enum JavaRowFormat {
                 case 0:
                     return Expressions.field(
                             null,
-                            ComparableList.class,
-                            "COMPARABLE_EMPTY_LIST" );
-                case 2:
+                            PolyList.class,
+                            "EMPTY_LIST" );
+                /*case 2:
                     return Expressions.convert_(
                             Expressions.call(
                                     ComparableList.class,
@@ -174,14 +174,14 @@ public enum JavaRowFormat {
                                     null,
                                     BuiltInMethod.LIST6.method,
                                     expressions ),
-                            List.class );
+                            List.class );*/
                 default:
                     return Expressions.convert_(
                             Expressions.call(
-                                    ComparableList.class,
+                                    PolyList.class,
                                     null,
                                     BuiltInMethod.LIST_N.method,
-                                    Expressions.newArrayInit( Comparable.class, expressions ) ),
+                                    Expressions.newArrayInit( PolyValue.class, expressions ) ),
                             List.class );
             }
         }

@@ -89,6 +89,11 @@ public class PolyBigDecimal extends PolyNumber {
     }
 
 
+    public static PolyBigDecimal ofNullable( BigDecimal value ) {
+        return value == null ? null : of( value, value.precision(), value.scale() );
+    }
+
+
     @Override
     public @Nullable String toJson() {
         return value == null ? JsonToken.VALUE_NULL.asString() : value.toString();
@@ -96,6 +101,10 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public static PolyBigDecimal convert( Object value ) {
+        if ( value == null ) {
+            return null;
+        }
+
         if ( value instanceof PolyNumber ) {
             return PolyBigDecimal.of( ((PolyNumber) value).bigDecimalValue() );
         } else if ( value instanceof PolyValue ) {

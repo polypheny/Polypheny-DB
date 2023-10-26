@@ -53,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
 public class ComparableList<T extends Comparable<T>> implements Comparable<ComparableList<T>>, List<T> {
 
     // used by BuiltInMethod
-    public static final ComparableList<?> COMPARABLE_EMPTY_LIST = (ComparableList<?>) ComparableList.of();
+    public static final ComparableList<?> COMPARABLE_EMPTY_LIST = ComparableList.of();
 
     @Delegate
     List<T> list;

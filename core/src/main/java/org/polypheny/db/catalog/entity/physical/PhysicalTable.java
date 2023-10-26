@@ -58,7 +58,7 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
         super( id, allocationId, logicalId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
-        this.columns = ImmutableList.copyOf( columns );
+        this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
     }
 
 

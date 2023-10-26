@@ -76,7 +76,7 @@ public class LogicalStreamer extends Streamer {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
         if ( !(allModify instanceof RelModify<?>) ) {
-            log.warn( "non relational nodes are not supported for toModify streamer rule" );
+            log.debug( "non relational nodes are not supported for toModify streamer rule" );
             return null;
         }
         RelModify<?> modify = (RelModify<?>) allModify;

@@ -376,24 +376,19 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
-        if ( true ) {
-            log.warn( "Disabled for now" );
-            return initial;
-        }
-
         LogicalDocumentModify modify = (LogicalDocumentModify) super.visit( initial );
         List<RexNode> newSourceExpression = null;
-        if ( modify.getUpdates() != null ) {
+        //if ( modify.getUpdates() != null ) {
             newSourceExpression = new ArrayList<>();
             for ( RexNode node : modify.getUpdates().values() ) {
                 newSourceExpression.add( node.accept( this ) );
             }
-        }
+        //}
         AlgNode input = modify.getInput();
         if ( input instanceof LogicalDocumentValues ) {
             Map<String, RexNode> projects = new HashMap<>();
             boolean firstRow = true;
-            HashMap<Integer, Integer> idxMapping = new HashMap<>();
+            Map<Integer, Integer> idxMapping = new HashMap<>();
             this.batchSize = ((LogicalDocumentValues) input).documents.size();
             for ( PolyValue node : ((LogicalDocumentValues) input).documents ) {
                 int i = 0;
@@ -408,7 +403,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
                 AlgDataType type = input.getRowType().getFieldList().get( i ).getType();
                 if ( firstRow ) {
-                    projects.put( null, null );//new RexDynamicParam( type, idx ) );
+                    projects.put( null, new RexDynamicParam( type, idx ) );
                 }
                 if ( !values.containsKey( idx ) ) {
                     types.add( type );
@@ -418,11 +413,11 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
                 firstRow = false;
             }
-            LogicalDocumentValues logicalValues = LogicalDocumentValues.createOneRow( input.getCluster() );
-            input = LogicalDocumentProject.create(
+            input = LogicalDocumentValues.createOneTuple( input.getCluster() );
+            /*input = LogicalDocumentProject.create(
                     logicalValues,
                     projects,
-                    List.of() );
+                    List.of() );*/
         }
         return new LogicalDocumentModify(
                 modify.getTraitSet(),

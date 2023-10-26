@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
@@ -55,6 +56,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -64,7 +66,13 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialectFactory;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
@@ -180,7 +188,7 @@ public final class JdbcUtils {
                 }
                 return values;
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 
@@ -201,7 +209,39 @@ public final class JdbcUtils {
                 case Types.DATE:
                     return PolyDate.of( shift( resultSet.getDate( i + 1 ) ) );
             }
-            return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
+            return getPolyValue( i );
+
+            //return (PolyValue) reps[i].jdbcGet( resultSet, i + 1 );
+        }
+
+
+        private PolyValue getPolyValue( int i ) throws SQLException {
+            Object o = reps[i].jdbcGet( resultSet, i + 1 );
+            switch ( reps[i] ) {
+                case STRING:
+                    return PolyString.ofNullable( (String) o );
+                case INTEGER:
+                    return PolyInteger.ofNullable( (Number) o );
+                case PRIMITIVE_INT:
+                    return PolyInteger.of( (int) o );
+                case OBJECT:
+                    switch ( types[i] ) {
+                        case Types.INTEGER:
+                            return PolyInteger.ofNullable( (Number) o );
+                        case Types.VARCHAR:
+                            return PolyString.ofNullable( (String) o );
+                        case Types.BOOLEAN:
+                            return PolyBoolean.ofNullable( (Boolean) o );
+                        case Types.DOUBLE:
+                            return PolyDouble.ofNullable( (Number) o );
+                        case Types.FLOAT:
+                            return PolyFloat.ofNullable( (Number) o );
+                        case Types.DECIMAL:
+                            return PolyBigDecimal.ofNullable( (BigDecimal) o );
+                    }
+                default:
+                    throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
+            }
         }
 
 

@@ -32,6 +32,7 @@ public class UIRequest extends RequestModel {
      */
     public Long entityId;
 
+
     public String namespace;
 
     /**

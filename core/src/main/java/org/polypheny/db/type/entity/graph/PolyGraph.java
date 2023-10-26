@@ -16,8 +16,8 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
-import com.google.gson.annotations.Expose;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -51,9 +51,9 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class PolyGraph extends GraphObject {
 
-    @Expose
+    @JsonProperty
     private final PolyMap<PolyString, PolyNode> nodes;
-    @Expose
+    @JsonProperty
     private final PolyMap<PolyString, PolyEdge> edges;
 
 
@@ -66,6 +66,12 @@ public class PolyGraph extends GraphObject {
         super( id, PolyType.GRAPH, null );
         this.nodes = nodes;
         this.edges = edges;
+    }
+
+
+    @Override
+    public String toJson() {
+        return "{\"nodes\":" + nodes.toJson() + ", \"edges\":" + edges.toJson() + "}";
     }
 
 

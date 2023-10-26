@@ -16,6 +16,7 @@
 
 package org.polypheny.db.webui.models.catalog;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -38,6 +39,7 @@ public class FieldDefinition {
     public String dataType; //varchar/int/etc
 
 
+    @JsonCreator
     public FieldDefinition( @JsonProperty("name") String name, @JsonProperty("dataType") String dataType ) {
         this.name = name;
         this.dataType = dataType;

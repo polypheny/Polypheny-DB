@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.helper;
 
 import javax.annotation.Nullable;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class TestLiteral implements TestObject {
 
@@ -29,7 +30,7 @@ public class TestLiteral implements TestObject {
 
 
     @Override
-    public boolean matches( Object other, boolean exclusive ) {
+    public boolean matches( PolyValue other, boolean exclusive ) {
         if ( value == null && other == null ) {
             return true;
         }
@@ -37,13 +38,13 @@ public class TestLiteral implements TestObject {
             return false;
         }
 
-        return value.equals( other );
+        return value.equals( other.toJson() );
     }
 
 
     @Override
-    public Object toPoly( String val ) {
-        return val;
+    public PolyValue toPoly( String val ) {
+        return val == null ? null : PolyValue.fromTypedJson( val, PolyValue.class );
     }
 
 

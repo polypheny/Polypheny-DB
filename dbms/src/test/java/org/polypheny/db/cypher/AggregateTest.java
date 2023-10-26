@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,6 +30,12 @@ public class AggregateTest extends CypherTestTemplate {
     public void reset() {
         tearDown();
         createGraph();
+    }
+
+
+    @After
+    public void tearGraphDown() {
+        tearDown();
     }
 
 
