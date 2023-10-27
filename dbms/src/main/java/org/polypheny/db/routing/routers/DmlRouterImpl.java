@@ -62,6 +62,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -546,7 +547,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-
     @Override
     public AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
@@ -632,31 +632,35 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
     @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
-        LogicalGraph catalogGraph = alg.entity.unwrap( LogicalGraph.class );
+        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
         List<Long> placements = statement
                 .getTransaction()
                 .getSnapshot()
-                .alloc()
-                .getFromLogical( catalogGraph.id ).stream().map( c -> c.adapterId )
+                .alloc().getPlacementsFromLogical( graph.id )
+                .stream().map( c -> c.id )
                 .collect( Collectors.toList() );
-        return routeGraphDml( alg, statement, catalogGraph, placements );
+        return routeGraphDml( alg, statement, graph, placements );
     }
 
 
     @Override
-    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Long> placements ) {
-
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph graph, List<Long> placements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         List<AlgNode> modifies = new ArrayList<>();
 
-        for ( long adapterId : placements ) {
-            AllocationEntity alloc = snapshot.alloc().getEntity( adapterId, catalogGraph.id ).orElseThrow();
+        for ( long placementId : placements ) {
+            List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( graph.id );
+            if ( partitions.size() > 1 ) {
+                throw new GenericRuntimeException( "Vertical partitioned graphs are not supported yet." );
+            }
+
+            AllocationEntity alloc = snapshot.alloc().getAlloc( placementId, partitions.get( 0 ).id ).orElseThrow();
 
             modifies.add( new LogicalLpgModify( alg.getCluster(),
                     alg.getTraitSet(),
                     alloc,
-                    buildGraphDml( alg.getInput(), statement, adapterId ),
+                    buildGraphDml( alg.getInput(), statement, alloc.adapterId ),
                     alg.operation,
                     alg.ids,
                     alg.operations ) );

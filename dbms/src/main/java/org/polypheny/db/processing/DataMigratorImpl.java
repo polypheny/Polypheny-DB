@@ -147,7 +147,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), to, values, Modify.Operation.INSERT, null, null );
 
-            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, from, List.of( to.id ) );
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, from, List.of( to.placementId ) );
 
             result = statement.getQueryProcessor().prepareQuery(
                     AlgRoot.of( routedModify, Kind.SELECT ),

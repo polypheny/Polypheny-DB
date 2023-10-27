@@ -58,7 +58,7 @@ public class AllocCatalogTest {
 
         execute( format( "CREATE DATABASE %s", name ) );
 
-        execute( format( "CREATE (n:TEST {name:\"test\"})" ), name );
+        execute( "CREATE (n:TEST {name:\"test\"})", name );
 
         execute( format( "DROP DATABASE %s", name ) );
 

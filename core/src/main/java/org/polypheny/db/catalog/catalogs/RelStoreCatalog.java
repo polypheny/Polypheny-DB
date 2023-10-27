@@ -19,13 +19,10 @@ package org.polypheny.db.catalog.catalogs;
 import com.google.common.collect.ImmutableList;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
-import io.activej.serializer.annotations.Serialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -41,25 +38,23 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.util.Pair;
 
+@Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Slf4j
 @NonFinal
 public class RelStoreCatalog extends StoreCatalog {
 
-    @Getter
     public BinarySerializer<GraphStoreCatalog> serializer = PolySerializable.buildSerializer( GraphStoreCatalog.class );
-
-    @Serialize
-    public ConcurrentMap<Pair<Long, Long>, PhysicalColumn> columns; // allocId, columnId
 
 
     public RelStoreCatalog( long adapterId ) {
-        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
+        this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
@@ -68,18 +63,18 @@ public class RelStoreCatalog extends StoreCatalog {
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
             @Deserialize("columns") Map<Pair<Long, Long>, PhysicalColumn> columns,
-            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals ) {
-        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals );
-        this.columns = new ConcurrentHashMap<>( columns );
+            @Deserialize("allocToPhysicals") Map<Long, Set<Long>> allocToPhysicals,
+            @Deserialize("fields") Map<Pair<Long, Long>, PhysicalField> fields ) {
+        super( adapterId, Map.of(), physicals, allocations, allocToPhysicals, fields );
     }
 
 
     @Override
     public void renameLogicalColumn( long id, String newFieldName ) {
         List<PhysicalColumn> updates = new ArrayList<>();
-        for ( PhysicalColumn field : columns.values() ) {
+        for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -87,13 +82,13 @@ public class RelStoreCatalog extends StoreCatalog {
             List<PhysicalColumn> newColumns = table.columns.stream().filter( c -> c.id != id ).collect( Collectors.toList() );
             newColumns.add( u );
             physicals.put( table.id, table.toBuilder().columns( ImmutableList.copyOf( newColumns ) ).build() );
-            columns.put( Pair.of( u.allocId, u.id ), u );
+            fields.put( Pair.of( u.allocId, u.id ), u );
         }
     }
 
 
     public void addColumn( PhysicalColumn column ) {
-        columns.put( Pair.of( column.allocId, column.id ), column );
+        fields.put( Pair.of( column.allocId, column.id ), column );
     }
 
 
@@ -103,7 +98,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalColumn getColumn( long id, long allocId ) {
-        return columns.get( Pair.of( allocId, id ) );
+        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class );
     }
 
 
@@ -148,17 +143,17 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = columns.get( Pair.of( allocId, columnId ) );
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
         addPhysical( getAlloc( allocId ), table.toBuilder().columns( ImmutableList.copyOf( pColumns ) ).build() );
-        columns.remove( Pair.of( allocId, columnId ) );
+        fields.remove( Pair.of( allocId, columnId ) );
     }
 
 
     public List<PhysicalColumn> getColumns( long allocId ) {
-        return columns.values().stream().filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
     }
 
 

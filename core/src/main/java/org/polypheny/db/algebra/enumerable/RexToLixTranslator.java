@@ -1091,6 +1091,8 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyDocument.class, "convert", operand );
             } else if ( toType == PolyValue.class ) {
                 return Expressions.convert_( operand, toType ); // document
+            } else if ( toType == PolyNumber.class ) {
+                return Expressions.convert_( operand, toType ); // number
             }
             log.warn( "Converter missing " + toType );
         }
