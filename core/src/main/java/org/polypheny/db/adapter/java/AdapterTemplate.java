@@ -79,7 +79,7 @@ public class AdapterTemplate {
         List<AbstractAdapterSetting> settings = new ArrayList<>( AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties ) );
         if ( Arrays.stream( properties.usedModes() ).anyMatch( m -> m == DeployMode.DOCKER ) ) {
             String instanceId = DockerManager.getInstance().getDockerInstances().keySet().stream().findFirst().orElse( 0 ).toString();
-            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
+            settings.add( new AbstractAdapterSettingList( "instanceId", false, null, true, false, DockerManager.getInstance().getDockerInstances().keySet().stream().map( Object::toString ).collect( Collectors.toList() ), List.of( DeploySetting.DOCKER ), instanceId, 0 ) );
         }
         return settings;
     }
