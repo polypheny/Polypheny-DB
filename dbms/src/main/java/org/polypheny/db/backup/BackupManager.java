@@ -18,17 +18,19 @@ package org.polypheny.db.backup;
 
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
+import org.slf4j.Logger;
 
 
-public class BackupInterface {
+public class BackupManager {
 
 
-    private static BackupInterface INSTANCE = null;
+    private static BackupManager INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
+    //private final Logger logger;
 
 
-    public BackupInterface() {
+    public BackupManager() {
         informationPage = new InformationPage( "Backup Tasks" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
@@ -49,13 +51,23 @@ public class BackupInterface {
         startBackupAction.setOrder( 2 );
         im.registerInformation( startBackupAction );
 
+        InformationText insertBackupData = new InformationText( informationGroupOverview, "Insert the Backup Data." );
+        insertBackupData.setOrder( 3 );
+        im.registerInformation( insertBackupData );
+
+        InformationAction insertBackupDataAction = new InformationAction( informationGroupOverview, "Insert", parameters -> {
+            //IndexManager.getInstance().resetCounters();
+            System.out.println("hii");
+            return "Successfully inserted backup data";
+        } );
+
     }
 
-    public static BackupInterface setAndGetInstance( BackupInterface backupInterface ) {
+    public static BackupManager setAndGetInstance( BackupManager backupManager ) {
         if ( INSTANCE != null ) {
             throw new GenericRuntimeException( "Setting the BackupInterface, when already set is not permitted." );
         }
-        INSTANCE = backupInterface;
+        INSTANCE = backupManager;
         return INSTANCE;
     }
 

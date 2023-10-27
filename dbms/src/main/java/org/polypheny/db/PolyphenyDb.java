@@ -41,7 +41,7 @@ import org.polypheny.db.StatusService.ErrorConfig;
 import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.backup.BackupInterface;
+import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -405,7 +405,7 @@ public class PolyphenyDb {
         Catalog catalog = startCatalog();
 
         // Start backup management
-        BackupInterface backupInterface = BackupInterface.setAndGetInstance( new BackupInterface() );
+        BackupManager backupManager = BackupManager.setAndGetInstance( new BackupManager() );
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );
