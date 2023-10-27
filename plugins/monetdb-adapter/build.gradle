@@ -9,6 +9,7 @@ dependencies {
     // JDBC Driver
     implementation group: "monetdb", name: "monetdb-jdbc-new", version: monetdb_version
 
+
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":plugins:sql-language", configuration: "tests")
@@ -76,6 +77,3 @@ javadoc {
 licensee {
     allow('MPL-2.0')
 }
-
-
-

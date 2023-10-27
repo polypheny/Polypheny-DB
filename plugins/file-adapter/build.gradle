@@ -4,15 +4,12 @@ group "org.polypheny"
 dependencies {
     compileOnly project(":core")
 
-      // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+    implementation group: "commons-codec", name: "commons-codec", version: commons_codec_version  // Apache 2.0
 
-    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
-    // BSD 3-clause
 }
 
 

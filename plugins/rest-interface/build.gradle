@@ -2,14 +2,13 @@ group "org.polypheny"
 
 
 dependencies {
-    compileOnly project(path: ':core')
     compileOnly project(":core")
     compileOnly project(":monitoring")
 
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
-        exclude group: 'org.slf4j'
-        exclude(module: 'jetty-server')
-    } // Apache 2.0
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {  // Apache 2.0
+        exclude group: "org.slf4j"
+        exclude(module: "jetty-server")
+    }
     // implementation group: "org.apache.logging.log4j", name: "log4j-slf4j2-impl", version: log4j_slf4j_impl_version // Apache 2.0
 
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version // Apache 2.0
@@ -20,7 +19,8 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
-    testCompileOnly group: 'org.pf4j', name: 'pf4j', version: pf4j_version
+
+    testCompileOnly group: "org.pf4j", name: "pf4j", version: pf4j_version
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }

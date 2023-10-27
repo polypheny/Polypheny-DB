@@ -5,15 +5,14 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":webui")
 
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) { // Apache 2.0
         exclude(group: "org.slf4j")
-        exclude(module: 'jetty-server')
-    } // Apache 2.0
+        exclude(module: "jetty-server")
+    }
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-    // BSD 3-clause
 }
 
 
@@ -66,4 +65,3 @@ licensee {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
 }
-

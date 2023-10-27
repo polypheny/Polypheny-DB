@@ -8,14 +8,11 @@ dependencies {
     implementation(group: "org.web3j", name: "core", version: web3j_version) {
         exclude(group: "org.slf4j")
         exclude(group: "com.fasterxml.jackson.core")
-    }  // Apache 2.0
-    // Apache 2.0
+    }
 
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
-
-    // BSD 3-clause
 }
 
 
@@ -85,6 +82,3 @@ licensee {
     allowDependency('org.ow2.asm', 'asm-commons', '5.0.3') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-tree', '5.0.3') { because 'BSD 3-Clause' }
 }
-
-
-

@@ -24,12 +24,13 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    implementation group: 'org.eclipse.jetty.websocket', name: 'websocket-api', version: jetty_websocket_api_version
+    implementation group: "org.eclipse.jetty.websocket", name: "websocket-api", version: jetty_websocket_api_version
+
 
     // --- Test Compile ---
-    testImplementation project(path: ':dbms', configuration: 'test')
-    testImplementation project(path: ':dbms')
-    testImplementation project(path: ':core')
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
+    testImplementation project(path: ":core")
 
     // Workaround so org.polypheny.db.docker gets the right protobuf during testing
     testImplementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
