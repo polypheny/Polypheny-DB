@@ -98,8 +98,8 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -550,7 +550,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         query.append( colJoiner );
         query.append( ")" );
         if ( request.storeId != null ) {
-            CatalogAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
+            LogicalAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
             query.append( String.format( " ON STORE \"%s\"", adapter.uniqueName ) );
         }
 

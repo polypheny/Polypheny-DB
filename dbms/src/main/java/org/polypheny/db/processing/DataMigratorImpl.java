@@ -58,7 +58,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -147,7 +147,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             LogicalLpgModify modify = new LogicalLpgModify( builder.getCluster(), builder.getCluster().traitSetOf( ModelTrait.GRAPH ), to, values, Modify.Operation.INSERT, null, null );
 
-            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, from, List.of( to.placementId ) );
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeGraphDml( modify, statement, to, List.of( to.placementId ) );
 
             result = statement.getQueryProcessor().prepareQuery(
                     AlgRoot.of( routedModify, Kind.SELECT ),
@@ -205,7 +205,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             LogicalDocumentModify modify = new LogicalDocumentModify( builder.getCluster().traitSetOf( ModelTrait.DOCUMENT ), to, values, Modify.Operation.INSERT, null, null, null );
 
-            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeDocumentDml( modify, statement, to.adapterId );
+            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeDocumentDml( modify, statement, to, List.of( to.placementId ) );
 
             result = statement.getQueryProcessor().prepareQuery(
                     AlgRoot.of( routedModify, Kind.SELECT ),
@@ -252,7 +252,7 @@ public class DataMigratorImpl implements DataMigrator {
     @Override
     public void copyData(
             Transaction transaction,
-            CatalogAdapter store,
+            LogicalAdapter store,
             LogicalTable source,
             List<LogicalColumn> columns,
             AllocationPlacement target ) {
@@ -583,7 +583,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, CatalogAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
+     * For Table Partitioning use {@link DataMigrator#copyAllocationData(Transaction, LogicalAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -594,7 +594,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param targetPartitionIds Target Partitions where data should be inserted
      */
     @Override
-    public void copySelectiveData( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, Map<Long, List<AllocationColumn>> placementDistribution, List<Long> targetPartitionIds ) {
+    public void copySelectiveData( Transaction transaction, LogicalAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, Map<Long, List<AllocationColumn>> placementDistribution, List<Long> targetPartitionIds ) {
         LogicalPrimaryKey sourcePrimaryKey = Catalog.getInstance().getSnapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElseThrow();
         AllocSnapshot snapshot = Catalog.getInstance().getSnapshot().alloc();
 
@@ -682,7 +682,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     /**
      * Currently used to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
+     * For Table Merge use {@link #copySelectiveData(Transaction, LogicalAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -692,7 +692,7 @@ public class DataMigratorImpl implements DataMigrator {
      * @param table
      */
     @Override
-    public void copyAllocationData( Transaction transaction, CatalogAdapter store, List<AllocationTable> sourceTables, PartitionProperty targetProperty, List<AllocationTable> targetTables, LogicalTable table ) {
+    public void copyAllocationData( Transaction transaction, LogicalAdapter store, List<AllocationTable> sourceTables, PartitionProperty targetProperty, List<AllocationTable> targetTables, LogicalTable table ) {
         if ( targetTables.stream().anyMatch( t -> t.logicalId != sourceTables.get( 0 ).logicalId ) ) {
             throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
@@ -875,7 +875,7 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    public void copyPartitionDataOld( Transaction transaction, CatalogAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
+    public void copyPartitionDataOld( Transaction transaction, LogicalAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
         if ( sourceTable.id != targetTable.id ) {
             throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }

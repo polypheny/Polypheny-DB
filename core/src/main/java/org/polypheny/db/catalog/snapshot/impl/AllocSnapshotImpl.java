@@ -34,8 +34,8 @@ import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -83,7 +83,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     ImmutableMap<Pair<Long, String>, AllocationPartition> entityPartitionNameToPartition;
 
 
-    public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, CatalogAdapter> adapters ) {
+    public AllocSnapshotImpl( Map<Long, AllocationCatalog> allocationCatalogs, Map<Long, LogicalAdapter> adapters ) {
         this.tables = buildTables( allocationCatalogs
                 .values()
                 .stream()
@@ -362,10 +362,10 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     }
 
 
-    private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOnAdapters( Map<Long, CatalogAdapter> adapters ) {
+    private ImmutableMap<Long, List<AllocationEntity>> buildAllocsOnAdapters( Map<Long, LogicalAdapter> adapters ) {
         Map<Long, List<AllocationEntity>> allocs = new HashMap<>();
 
-        for ( CatalogAdapter adapter : adapters.values() ) {
+        for ( LogicalAdapter adapter : adapters.values() ) {
             allocs.put( adapter.id, new ArrayList<>() );
         }
         this.allocs.forEach( ( k, v ) -> allocs.get( v.adapterId ).add( v ) );
@@ -458,7 +458,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
 
     @Override
-    public List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
+    public List<LogicalAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId ) {
         return null;
     }
 

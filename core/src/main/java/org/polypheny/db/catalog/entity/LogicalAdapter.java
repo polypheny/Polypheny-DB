@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.DeployMode;
 @EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
-public class CatalogAdapter implements CatalogObject {
+public class LogicalAdapter implements CatalogObject {
 
     private static final long serialVersionUID = -6140489767408917639L;
 
@@ -55,7 +55,7 @@ public class CatalogAdapter implements CatalogObject {
     public enum AdapterType {STORE, SOURCE}
 
 
-    public CatalogAdapter(
+    public LogicalAdapter(
             @Deserialize("id") final long id,
             @Deserialize("uniqueName") @NonNull final String uniqueName,
             @Deserialize("adapterName") @NonNull final String adapterName,

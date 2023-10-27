@@ -31,8 +31,8 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 
 
 @EqualsAndHashCode(callSuper = true)
@@ -64,7 +64,7 @@ public class AdapterModel extends IdEntity {
     }
 
 
-    public static AdapterModel from( CatalogAdapter adapter ) {
+    public static AdapterModel from( LogicalAdapter adapter ) {
         Map<String, AdapterSettingValueModel> settings = adapter.settings.entrySet().stream().collect( Collectors.toMap( Entry::getKey, s -> AdapterSettingValueModel.from( s.getKey(), s.getValue() ) ) );
 
         Adapter<?> a = AdapterManager.getInstance().getAdapter( adapter.id );

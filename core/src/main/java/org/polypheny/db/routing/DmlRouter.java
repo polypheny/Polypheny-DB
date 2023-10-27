@@ -17,11 +17,12 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -40,14 +41,12 @@ public interface DmlRouter {
      */
     AlgNode handleConditionalExecute( AlgNode node, Statement statement, LogicalQueryInformation queryInformation );
 
-    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement );
-
     AlgNode handleConstraintEnforcer( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
     AlgNode handleBatchIterator( AlgNode alg, Statement statement, LogicalQueryInformation queryInformation );
 
-    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, Long adapterId );
+    AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
-    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph catalogGraph, List<Long> placements );
+    AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
 }

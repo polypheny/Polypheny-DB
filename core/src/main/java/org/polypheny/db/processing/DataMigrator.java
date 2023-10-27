@@ -19,7 +19,7 @@ package org.polypheny.db.processing;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -39,14 +39,14 @@ public interface DataMigrator {
 
     void copyData(
             Transaction transaction,
-            CatalogAdapter store,
+            LogicalAdapter store,
             LogicalTable source,
             List<LogicalColumn> columns,
             AllocationPlacement target );
 
     /**
      * Currently used to transfer data if partitioned table is about to be merged.
-     * For Table Partitioning use {@link #copyAllocationData(Transaction, CatalogAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
+     * For Table Partitioning use {@link #copyAllocationData(Transaction, LogicalAdapter, List, PartitionProperty, List, LogicalTable)}  } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -58,7 +58,7 @@ public interface DataMigrator {
      */
     void copySelectiveData(
             Transaction transaction,
-            CatalogAdapter store,
+            LogicalAdapter store,
             LogicalTable sourceTable,
             LogicalTable targetTable,
             List<LogicalColumn> columns,
@@ -67,7 +67,7 @@ public interface DataMigrator {
 
     /**
      * Currently used to to transfer data if unpartitioned is about to be partitioned.
-     * For Table Merge use {@link #copySelectiveData(Transaction, CatalogAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
+     * For Table Merge use {@link #copySelectiveData(Transaction, LogicalAdapter, LogicalTable, LogicalTable, List, Map, List)}   } instead
      *
      * @param transaction Transactional scope
      * @param store Target Store where data should be migrated to
@@ -78,7 +78,7 @@ public interface DataMigrator {
      */
     void copyAllocationData(
             Transaction transaction,
-            CatalogAdapter store,
+            LogicalAdapter store,
             List<AllocationTable> sourceTables,
             PartitionProperty targetProperty,
             List<AllocationTable> targetTables,

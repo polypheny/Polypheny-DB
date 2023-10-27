@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
@@ -600,7 +601,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
             input = handleConstraintEnforcer( iterator.getInput(), statement, queryInformation );
         } else {
-            throw new RuntimeException( "BachIterator had an unknown child!" );
+            throw new GenericRuntimeException( "BachIterator had an unknown child!" );
         }
 
         return LogicalBatchIterator.create( input, statement );
@@ -608,7 +609,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, Long adapterId ) {
+    public AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class );
@@ -619,7 +620,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
         for ( AllocationEntity allocation : allocs ) {
             RoutedAlgBuilder algBuilder = RoutedAlgBuilder.create( statement, alg.getCluster() );
-            modifies.add( alg.toBuilder().entity( allocation ).input( buildDmlNew( alg.getInput(), statement, algBuilder ).build() ).build() );
+            modifies.add( alg.toBuilder().entity( allocation ).input( buildDml( alg.getInput(), statement, algBuilder, target, excludedPlacements ).build() ).build() );
         }
 
         if ( modifies.size() == 1 ) {
@@ -631,36 +632,38 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement ) {
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
-        List<Long> placements = statement
-                .getTransaction()
-                .getSnapshot()
-                .alloc().getPlacementsFromLogical( graph.id )
-                .stream().map( c -> c.id )
-                .collect( Collectors.toList() );
-        return routeGraphDml( alg, statement, graph, placements );
-    }
-
-
-    @Override
-    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, LogicalGraph graph, List<Long> placements ) {
+    public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
-
         List<AlgNode> modifies = new ArrayList<>();
+        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
 
-        for ( long placementId : placements ) {
+        if ( target != null ) {
+            return new LogicalLpgModify( alg.getCluster(),
+                    alg.getTraitSet(),
+                    target,
+                    buildGraphDml( alg.getInput(), statement, target, excludedPlacements ),
+                    alg.operation,
+                    alg.ids,
+                    alg.operations );
+        }
+
+        List<AllocationPlacement> targetPlacements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+        if ( excludedPlacements != null ) {
+            targetPlacements = targetPlacements.stream().filter( p -> !excludedPlacements.contains( p.id ) ).collect( Collectors.toList() );
+        }
+
+        for ( AllocationPlacement placement : targetPlacements ) {
             List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( graph.id );
             if ( partitions.size() > 1 ) {
                 throw new GenericRuntimeException( "Vertical partitioned graphs are not supported yet." );
             }
 
-            AllocationEntity alloc = snapshot.alloc().getAlloc( placementId, partitions.get( 0 ).id ).orElseThrow();
+            AllocationEntity alloc = snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow();
 
             modifies.add( new LogicalLpgModify( alg.getCluster(),
                     alg.getTraitSet(),
                     alloc,
-                    buildGraphDml( alg.getInput(), statement, alloc.adapterId ),
+                    buildGraphDml( alg.getInput(), statement, null, excludedPlacements ),
                     alg.operation,
                     alg.ids,
                     alg.operations ) );
@@ -675,37 +678,24 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
-    private AlgNode buildDocumentDml( AlgNode node, Statement statement, LogicalQueryInformation queryInformation ) {
-        if ( node instanceof DocumentScan ) {
-            //return super.handleDocScan( (DocumentScan<?>) node, statement, RoutedAlgBuilder.create( statement, node.getCluster() ), null ).build();
-        }
-        int i = 0;
-        List<AlgNode> inputs = new ArrayList<>();
-        for ( AlgNode input : node.getInputs() ) {
-            inputs.add( i, buildDocumentDml( input, statement, queryInformation ) );
-            i++;
-        }
-        return node.copy( node.getTraitSet(), inputs );
-    }
-
-
-    private AlgNode buildGraphDml( AlgNode node, Statement statement, long adapterId ) {
+    private AlgNode buildGraphDml( AlgNode node, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         if ( node instanceof LpgScan ) {
-            return super.handleGraphScan( (LogicalLpgScan) node, statement, adapterId, null );
+            return super.handleGraphScan( (LogicalLpgScan) node, statement, target, excludedPlacements );
         }
         int i = 0;
         List<AlgNode> inputs = new ArrayList<>();
         for ( AlgNode input : node.getInputs() ) {
-            inputs.add( i, buildGraphDml( input, statement, adapterId ) );
+            inputs.add( i, buildGraphDml( input, statement, target, excludedPlacements ) );
             i++;
         }
         return node.copy( node.getTraitSet(), inputs );
     }
 
 
-    private AlgBuilder buildDmlNew( AlgNode node, Statement statement, RoutedAlgBuilder builder ) {
+    private AlgBuilder buildDml( AlgNode node, Statement statement, RoutedAlgBuilder builder, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
+
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDmlNew( node.getInput( i ), statement, builder );
+            buildDml( node.getInput( i ), statement, builder, target, excludedPlacements );
         }
 
         if ( node instanceof LogicalDocumentScan ) {
@@ -718,6 +708,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     builder,
                     statement,
                     node.getEntity() );
+
+        } else if ( node instanceof LogicalLpgScan ) {
+            return AlgBuilder.create( statement ).push( super.handleGraphScan(
+                    (LogicalLpgScan) node,
+                    statement,
+                    target,
+                    excludedPlacements ) );
         } else if ( node instanceof LogicalValues ) {
             LogicalValues values = (LogicalValues) node;
 
