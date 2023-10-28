@@ -90,6 +90,8 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 @Slf4j
 public class DmlRouterImpl extends BaseRouter implements DmlRouter {
@@ -152,20 +154,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         List<Map<Long, PolyValue>> allValues = statement.getDataContext().getParameterValues();
 
         for ( AllocationPlacement pkPlacement : pkPlacements ) {
-
             // Get placements on storeId
             List<AllocationColumn> placementsOnAdapter = catalog.getSnapshot().alloc().getColumns( pkPlacement.id );
 
             // If this is an update, check whether we need to execute on this storeId at all
-            List<String> updateColumnList = modify.getUpdateColumns();
-            List<? extends RexNode> sourceExpressionList = modify.getSourceExpressions();
+            List<String> updateColumns = modify.getUpdateColumns();
+            List<? extends RexNode> sourceExpressions = modify.getSourceExpressions();
             if ( placementsOnAdapter.size() != table.getColumnIds().size() ) {
 
                 if ( modify.getOperation() == Operation.UPDATE ) {
-                    updateColumnList = new ArrayList<>( modify.getUpdateColumns() );
-                    sourceExpressionList = new ArrayList<>( modify.getSourceExpressions() );
-                    Iterator<String> updateColumnListIterator = updateColumnList.iterator();
-                    Iterator<? extends RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
+                    updateColumns = new ArrayList<>( modify.getUpdateColumns() );
+                    sourceExpressions = new ArrayList<>( modify.getSourceExpressions() );
+                    Iterator<String> updateColumnListIterator = updateColumns.iterator();
+                    Iterator<? extends RexNode> sourceExpressionListIterator = sourceExpressions.iterator();
                     while ( updateColumnListIterator.hasNext() ) {
                         String columnName = updateColumnListIterator.next();
                         sourceExpressionListIterator.next();
@@ -179,7 +180,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             sourceExpressionListIterator.remove();
                         }
                     }
-                    if ( updateColumnList.isEmpty() ) {
+                    if ( updateColumns.isEmpty() ) {
                         continue;
                     }
                 }
@@ -187,7 +188,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
             long identPart = -1;
             long identifiedPartitionForSetValue = -1;
-            Set<Long> accessedPartitionList = new HashSet<>();
+            Set<Long> accessedPartitions = new HashSet<>();
             // Identify where clause of UPDATE
             if ( property.isPartitioned ) {
                 boolean worstCaseRouting = false;
@@ -222,7 +223,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     for ( String value : whereClauseValues ) {
                         worstCaseRouting = false;
                         identPart = (int) partitionManager.getTargetPartitionId( table, property, value );
-                        accessedPartitionList.add( identPart );
+                        accessedPartitions.add( identPart );
                         identifiedPartitionsInFilter.add( identPart );
                     }
                 }
@@ -231,253 +232,39 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 // Set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
 
                 if ( modify.getOperation() == Operation.UPDATE ) {
-                    // In case of update always use worst case routing for now.
-                    // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
-                    int index = 0;
-
-                    for ( String cn : updateColumnList ) {
-
-                        if ( catalog.getSnapshot().rel().getColumn( table.id, cn ).orElseThrow().id == property.partitionColumnId ) {
-                            if ( log.isDebugEnabled() ) {
-                                log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", property.partitionColumnId, index );
-                            }
-                            // Routing/Locking can now be executed on certain partitions
-                            partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
-                            if ( log.isDebugEnabled() ) {
-                                log.debug(
-                                        "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
-                                        partitionValue,
-                                        partitionManager.getTargetPartitionId( table, property, partitionValue ) );
-                            }
-                            identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
-                            // Needed to verify if UPDATE shall be executed on two partitions or not
-                            identifiedPartitionForSetValue = identPart;
-                            accessedPartitionList.add( identPart );
-                            break;
-                        }
-                        index++;
-                    }
-
-                    // If WHERE clause has any value for partition column
-                    if ( !identifiedPartitionsInFilter.isEmpty() ) {
-
-                        // Partition has been identified in SET
-                        if ( identifiedPartitionForSetValue != -1 ) {
-
-                            // SET value and single WHERE clause point to same partition.
-                            // Inplace update possible
-                            if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "oldValue and new value reside on same partition: {}", identifiedPartitionForSetValue );
-                                }
-                                worstCaseRouting = false;
-                            } else {
-                                throw new GenericRuntimeException( "Updating partition key is not allowed" );
-                            }
-                        }// WHERE clause only
-                        else {
-                            throw new GenericRuntimeException( "Updating partition key is not allowed" );
-
-                            //Simply execute the UPDATE on all identified partitions
-                            //Nothing to do
-                            //worstCaseRouting = false;
-                        }
-                    }// If only SET is specified
-                    // Changes the value of partition column of complete table to only reside on one partition
-                    //Partition functionality cannot be used --> worstCase --> send query to every partition
-                    else {
-                        worstCaseRouting = true;
-                        accessedPartitionList = new HashSet<>( property.partitionIds );
-                    }
-
+                    Pair<Set<Long>, String> accessedPartitionsPartVal = handleDmlUpdate(
+                            updateColumns,
+                            table,
+                            property,
+                            sourceExpressions,
+                            partitionValue,
+                            partitionManager,
+                            identifiedPartitionsInFilter,
+                            identifiedPartitionForSetValue,
+                            identPart );
+                    accessedPartitions.clear();
+                    accessedPartitions.addAll( accessedPartitionsPartVal.left );
+                    partitionValue = accessedPartitionsPartVal.right;
                 } else if ( modify.getOperation() == Operation.INSERT ) {
-                    int i;
-                    if ( modify.getInput() instanceof LogicalValues ) {
-                        // Get fieldList and map columns to index since they could be in arbitrary order
-                        int partitionColumnIndex = -1;
-                        for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
-                            String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
-
-                            // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
-                            int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
-
-                            // Determine location of partitionColumn in fieldList
-                            if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
-                                partitionColumnIndex = columnIndex;
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", property.partitionColumnId, j );
-                                    worstCaseRouting = false;
-
-                                }
-                            }
-                        }
-
-                        // Will executed all required tuples that belong on the same partition jointly
-                        Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
-                        for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) modify.getInput()).tuples ) {
-
-                            worstCaseRouting = false;
-                            if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
-                                partitionValue = PartitionManager.NULL_STRING;
-                            } else {
-                                partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
-                            }
-                            identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
-                            accessedPartitionList.add( identPart );
-
-                            if ( !tuplesOnPartition.containsKey( identPart ) ) {
-                                tuplesOnPartition.put( identPart, new ArrayList<>() );
-                            }
-                            tuplesOnPartition.get( identPart ).add( currentTuple );
-
-                        }
-
-                        for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
-                            Long currentPartitionId = partitionMapping.getKey();
-
-                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == currentPartitionId ) ) {
-                                continue;
-                            }
-
-                            for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
-                                LogicalValues newLogicalValues = new LogicalValues(
-                                        cluster,
-                                        cluster.traitSet(),
-                                        (modify.getInput()).getRowType(),
-                                        ImmutableList.copyOf( ImmutableList.of( row ) ) );
-
-                                AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
-
-                                AlgNode input = buildDml(
-                                        newLogicalValues,
-                                        RoutedAlgBuilder.create( statement, cluster ),
-                                        table,
-                                        placementsOnAdapter,
-                                        allocation,
-                                        statement,
-                                        cluster,
-                                        true,
-                                        statement.getDataContext().getParameterValues() ).build();
-
-                                // Build DML
-                                RelModify<?> adjustedModify = LogicalRelModify.create(
-                                        allocation,
-                                        input,
-                                        modify.getOperation(),
-                                        updateColumnList,
-                                        sourceExpressionList,
-                                        modify.isFlattened() );
-
-                                modifies.add( adjustedModify );
-
-                            }
-                        }
-                        operationWasRewritten = true;
-
-                    } else if ( modify.getInput() instanceof LogicalProject
-                            && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
-
-                        String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
-                        List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
-
-                        LogicalRelModify ltm = modify;
-                        LogicalProject lproject = (LogicalProject) ltm.getInput();
-
-                        List<RexNode> fieldValues = lproject.getProjects();
-
-                        for ( i = 0; i < fieldNames.size(); i++ ) {
-                            String columnName = fieldNames.get( i );
-
-                            if ( partitionColumnName.equals( columnName ) ) {
-
-                                if ( ((LogicalProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
-
-                                    // Needed to identify the column which contains the partition value
-                                    long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
-
-                                    long tempPartitionId = 0;
-                                    // Get partitionValue per row/tuple to be inserted
-                                    // Create as many independent TableModifies as there are entries in getParameterValues
-
-                                    Map<Long, List<Map<Long, PolyValue>>> tempValues = new HashMap<>();
-                                    statement.getDataContext().resetContext();
-                                    for ( Map<Long, PolyValue> currentRow : allValues ) {
-                                        // first we sort the values to insert according to the partitionManager and their partitionId
-
-                                        tempPartitionId = partitionManager.getTargetPartitionId( table, property, currentRow.get( partitionValueIndex ).toString() );
-
-                                        long finalTempPartitionId = tempPartitionId;
-                                        if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == finalTempPartitionId ) ) {
-                                            continue;
-                                        }
-
-                                        statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
-
-                                        if ( !tempValues.containsKey( tempPartitionId ) ) {
-                                            tempValues.put( tempPartitionId, new ArrayList<>() );
-                                        }
-                                        tempValues.get( tempPartitionId ).add( currentRow );
-                                    }
-
-                                    for ( Entry<Long, List<Map<Long, PolyValue>>> entry : tempValues.entrySet() ) {
-                                        // then we add a modification for each partition
-                                        statement.getDataContext().setParameterValues( entry.getValue() );
-
-                                        AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, entry.getKey() ).orElseThrow();
-
-                                        AlgNode input = buildDml(
-                                                super.recursiveCopy( modify.getInput( 0 ) ),
-                                                RoutedAlgBuilder.create( statement, cluster ),
-                                                table,
-                                                placementsOnAdapter,
-                                                allocation,
-                                                statement,
-                                                cluster,
-                                                false,
-                                                entry.getValue() ).build();
-
-                                        // Build DML
-                                        LogicalRelModify adjustedModify = LogicalRelModify.create(
-                                                allocation,
-                                                input,
-                                                modify.getOperation(),
-                                                updateColumnList,
-                                                sourceExpressionList,
-                                                modify.isFlattened() );
-
-                                        statement.getDataContext().addContext();
-                                        modifies.add( new LogicalContextSwitcher( adjustedModify ) );
-                                    }
-
-                                    operationWasRewritten = true;
-                                } else {
-                                    partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
-                                    identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
-                                    accessedPartitionList.add( identPart );
-                                }
-                                worstCaseRouting = false;
-                                break;
-                            } else {
-                                // When loop is finished
-                                if ( i == fieldNames.size() - 1 ) {
-
-                                    worstCaseRouting = true;
-                                    // Because partitionColumn has not been specified in insert
-                                }
-                            }
-                        }
-                    } else {
-                        worstCaseRouting = true;
-                    }
-
-                    if ( log.isDebugEnabled() ) {
-                        String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
-                        String partitionName = null; //.getPartitionGroup( identPart ).partitionGroupName;
-                        log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
-                                partitionValue, identPart, partitionName, partitionColumnName );
-                    }
-
-
+                    Triple<Long, String, Boolean> identPartValueRewritten = handleDmlInsert(
+                            updateColumns,
+                            modify,
+                            columnIds,
+                            columns,
+                            property,
+                            table,
+                            accessedPartitions,
+                            partitionManager,
+                            pkPlacement,
+                            statement,
+                            placementsOnAdapter,
+                            cluster,
+                            modifies,
+                            sourceExpressions,
+                            allValues );
+                    partitionValue = identPartValueRewritten.middle;
+                    identPart = identPartValueRewritten.left;
+                    operationWasRewritten = identPartValueRewritten.right;
                 } else if ( modify.getOperation() == Operation.DELETE ) {
                     if ( whereClauseValues == null ) {
                         worstCaseRouting = true;
@@ -489,22 +276,22 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                 if ( worstCaseRouting ) {
                     log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
-                    accessedPartitionList = new HashSet<>( property.partitionIds );
+                    accessedPartitions = new HashSet<>( property.partitionIds );
                 }
             } else {
                 // un-partitioned tables only have one partition anyway
                 identPart = property.partitionIds.get( 0 );
-                accessedPartitionList.add( identPart );
+                accessedPartitions.add( identPart );
             }
 
             if ( statement.getMonitoringEvent() != null ) {
                 statement.getMonitoringEvent()
                         .updateAccessedPartitions(
-                                Collections.singletonMap( table.id, accessedPartitionList ) );
+                                Collections.singletonMap( table.id, accessedPartitions ) );
             }
 
             if ( !operationWasRewritten ) {
-                for ( long partitionId : accessedPartitionList ) {
+                for ( long partitionId : accessedPartitions ) {
 
                     if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == partitionId ) ) {
                         continue;
@@ -528,8 +315,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             allocation,
                             input,
                             modify.getOperation(),
-                            updateColumnList,
-                            sourceExpressionList,
+                            updateColumns,
+                            sourceExpressions,
                             modify.isFlattened()
                     );
 
@@ -544,6 +331,263 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
         }
 
+
+    }
+
+
+    private Triple<Long, String, Boolean> handleDmlInsert( List<String> updateColumns, LogicalRelModify modify, List<Long> columnIds, List<LogicalColumn> columns, PartitionProperty property, LogicalTable table, Set<Long> accessedPartitionList, PartitionManager partitionManager, AllocationPlacement pkPlacement, Statement statement, List<AllocationColumn> placementsOnAdapter, AlgOptCluster cluster, List<AlgNode> modifies, List<? extends RexNode> sourceExpressions, List<Map<Long, PolyValue>> allValues ) {
+        String partitionValue = null;
+        long identPart = -1;
+        boolean worstCaseRouting;
+        boolean operationWasRewritten = false;
+        int i;
+        if ( modify.getInput() instanceof LogicalValues ) {
+            // Get fieldList and map columns to index since they could be in arbitrary order
+            int partitionColumnIndex = -1;
+            for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
+                String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
+
+                // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
+                int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
+
+                // Determine location of partitionColumn in fieldList
+                if ( columnIds.get( columnIndex ) == property.partitionColumnId ) {
+                    partitionColumnIndex = columnIndex;
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "INSERT: Found PartitionColumnID: '{}' at column index: {}", property.partitionColumnId, j );
+
+                    }
+                }
+            }
+
+            // Will executed all required tuples that belong on the same partition jointly
+            Map<Long, List<ImmutableList<RexLiteral>>> tuplesOnPartition = new HashMap<>();
+            for ( ImmutableList<RexLiteral> currentTuple : ((LogicalValues) modify.getInput()).tuples ) {
+
+                if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
+                    partitionValue = PartitionManager.NULL_STRING;
+                } else {
+                    partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
+                }
+                identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
+                accessedPartitionList.add( identPart );
+
+                if ( !tuplesOnPartition.containsKey( identPart ) ) {
+                    tuplesOnPartition.put( identPart, new ArrayList<>() );
+                }
+                tuplesOnPartition.get( identPart ).add( currentTuple );
+
+            }
+
+            for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
+                Long currentPartitionId = partitionMapping.getKey();
+
+                if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == currentPartitionId ) ) {
+                    continue;
+                }
+
+                for ( ImmutableList<RexLiteral> row : partitionMapping.getValue() ) {
+                    LogicalValues newLogicalValues = new LogicalValues(
+                            modify.getCluster(),
+                            modify.getCluster().traitSet(),
+                            (modify.getInput()).getRowType(),
+                            ImmutableList.copyOf( ImmutableList.of( row ) ) );
+
+                    AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
+
+                    AlgNode input = buildDml(
+                            newLogicalValues,
+                            RoutedAlgBuilder.create( statement, cluster ),
+                            table,
+                            placementsOnAdapter,
+                            allocation,
+                            statement,
+                            cluster,
+                            true,
+                            statement.getDataContext().getParameterValues() ).build();
+
+                    // Build DML
+                    RelModify<?> adjustedModify = LogicalRelModify.create(
+                            allocation,
+                            input,
+                            modify.getOperation(),
+                            updateColumns,
+                            sourceExpressions,
+                            modify.isFlattened() );
+
+                    modifies.add( adjustedModify );
+
+                }
+            }
+            operationWasRewritten = true;
+
+        } else if ( modify.getInput() instanceof LogicalProject
+                && ((LogicalProject) modify.getInput()).getInput() instanceof LogicalValues ) {
+
+            String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
+            List<String> fieldNames = modify.getInput().getRowType().getFieldNames();
+
+            LogicalRelModify ltm = modify;
+            LogicalProject lproject = (LogicalProject) ltm.getInput();
+
+            List<RexNode> fieldValues = lproject.getProjects();
+
+            for ( i = 0; i < fieldNames.size(); i++ ) {
+                String columnName = fieldNames.get( i );
+
+                if ( partitionColumnName.equals( columnName ) ) {
+
+                    if ( ((LogicalProject) modify.getInput()).getProjects().get( i ).getKind().equals( Kind.DYNAMIC_PARAM ) ) {
+
+                        // Needed to identify the column which contains the partition value
+                        long partitionValueIndex = ((RexDynamicParam) fieldValues.get( i )).getIndex();
+
+                        long tempPartitionId = 0;
+                        // Get partitionValue per row/tuple to be inserted
+                        // Create as many independent TableModifies as there are entries in getParameterValues
+
+                        Map<Long, List<Map<Long, PolyValue>>> tempValues = new HashMap<>();
+                        statement.getDataContext().resetContext();
+                        for ( Map<Long, PolyValue> currentRow : allValues ) {
+                            // first we sort the values to insert according to the partitionManager and their partitionId
+
+                            tempPartitionId = partitionManager.getTargetPartitionId( table, property, currentRow.get( partitionValueIndex ).toString() );
+
+                            long finalTempPartitionId = tempPartitionId;
+                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == finalTempPartitionId ) ) {
+                                continue;
+                            }
+
+                            statement.getDataContext().setParameterTypes( statement.getDataContext().getParameterTypes() );
+
+                            if ( !tempValues.containsKey( tempPartitionId ) ) {
+                                tempValues.put( tempPartitionId, new ArrayList<>() );
+                            }
+                            tempValues.get( tempPartitionId ).add( currentRow );
+                        }
+
+                        for ( Entry<Long, List<Map<Long, PolyValue>>> entry : tempValues.entrySet() ) {
+                            // then we add a modification for each partition
+                            statement.getDataContext().setParameterValues( entry.getValue() );
+
+                            AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, entry.getKey() ).orElseThrow();
+
+                            AlgNode input = buildDml(
+                                    super.recursiveCopy( modify.getInput( 0 ) ),
+                                    RoutedAlgBuilder.create( statement, cluster ),
+                                    table,
+                                    placementsOnAdapter,
+                                    allocation,
+                                    statement,
+                                    cluster,
+                                    false,
+                                    entry.getValue() ).build();
+
+                            // Build DML
+                            LogicalRelModify adjustedModify = LogicalRelModify.create(
+                                    allocation,
+                                    input,
+                                    modify.getOperation(),
+                                    updateColumns,
+                                    sourceExpressions,
+                                    modify.isFlattened() );
+
+                            statement.getDataContext().addContext();
+                            modifies.add( new LogicalContextSwitcher( adjustedModify ) );
+                        }
+
+                        operationWasRewritten = true;
+                    } else {
+                        partitionValue = ((LogicalProject) modify.getInput()).getProjects().get( i ).toString().replace( "'", "" );
+                        identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
+                        accessedPartitionList.add( identPart );
+                    }
+                    worstCaseRouting = false;
+                    break;
+                } else {
+                    // When loop is finished
+                    if ( i == fieldNames.size() - 1 ) {
+
+                        worstCaseRouting = true;
+                        // Because partitionColumn has not been specified in insert
+                    }
+                }
+            }
+        } else {
+            worstCaseRouting = true;
+        }
+
+        if ( log.isDebugEnabled() ) {
+            String partitionColumnName = catalog.getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name;
+            String partitionName = null; //.getPartitionGroup( identPart ).partitionGroupName;
+            log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column {}",
+                    partitionValue, identPart, partitionName, partitionColumnName );
+        }
+
+        return Triple.of( identPart, partitionValue, operationWasRewritten );
+    }
+
+
+    private Pair<Set<Long>, String> handleDmlUpdate( List<String> updateColumns, LogicalTable table, PartitionProperty property, List<? extends RexNode> sourceExpressionList, String partitionValue, PartitionManager partitionManager, Set<Long> identifiedPartitionsInFilter, long identifiedPartitionForSetValue, long identPart ) {
+        Set<Long> accessedPartitions = new HashSet<>();
+        // In case of update always use worst case routing for now.
+        // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
+        int index = 0;
+
+        for ( String cn : updateColumns ) {
+
+            if ( catalog.getSnapshot().rel().getColumn( table.id, cn ).orElseThrow().id == property.partitionColumnId ) {
+                if ( log.isDebugEnabled() ) {
+                    log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", property.partitionColumnId, index );
+                }
+                // Routing/Locking can now be executed on certain partitions
+                partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                if ( log.isDebugEnabled() ) {
+                    log.debug(
+                            "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
+                            partitionValue,
+                            partitionManager.getTargetPartitionId( table, property, partitionValue ) );
+                }
+                identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
+                // Needed to verify if UPDATE shall be executed on two partitions or not
+                identifiedPartitionForSetValue = identPart;
+                accessedPartitions.add( identPart );
+                break;
+            }
+            index++;
+        }
+
+        // If WHERE clause has any value for partition column
+        if ( !identifiedPartitionsInFilter.isEmpty() ) {
+
+            // Partition has been identified in SET
+            if ( identifiedPartitionForSetValue != -1 ) {
+
+                // SET value and single WHERE clause point to same partition.
+                // Inplace update possible
+                if ( identifiedPartitionsInFilter.size() == 1 && identifiedPartitionsInFilter.contains( identifiedPartitionForSetValue ) ) {
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "oldValue and new value reside on same partition: {}", identifiedPartitionForSetValue );
+                    }
+                } else {
+                    throw new GenericRuntimeException( "Updating partition key is not allowed" );
+                }
+            }// WHERE clause only
+            else {
+                throw new GenericRuntimeException( "Updating partition key is not allowed" );
+
+                //Simply execute the UPDATE on all identified partitions
+                //Nothing to do
+                //worstCaseRouting = false;
+            }
+        }// If only SET is specified
+        // Changes the value of partition column of complete table to only reside on one partition
+        //Partition functionality cannot be used --> worstCase --> send query to every partition
+        else {
+            accessedPartitions = new HashSet<>( property.partitionIds );
+        }
+
+        return Pair.of( accessedPartitions, partitionValue );
 
     }
 

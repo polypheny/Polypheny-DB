@@ -108,21 +108,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
     void addPartitionProperty( long tableId, PartitionProperty partitionProperty );
 
     /**
-     * Effectively partitions a table with the specified partitionType
-     *
-     * @param tableId Table to be partitioned
-     */
-    void partitionTable( long tableId, PartitionProperty partitionProperty );
-
-    /**
-     * Merges a  partitioned table.
-     * Resets all objects and structures which were introduced by partitionTable.
-     *
-     * @param tableId Table to be merged
-     */
-    void mergeTable( long tableId );
-
-    /**
      * Assign the partition to a new partitionGroup
      *
      * @param partitionId Partition to move
@@ -154,25 +139,6 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
 
 
     void deleteAllocation( long allocId );
-
-    /**
-     * Updates and overrides list of associated columnPlacements {@code &} partitionPlacements for a given data placement
-     *
-     * @param adapterId adapter where placement is located
-     * @param tableId table to retrieve the placement from
-     * @param columnIds List of columnIds to be located on a specific store for the table
-     * @param partitionIds List of partitionIds to be located on a specific store for the table
-     */
-    void updateDataPlacement( long adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds );
-
-
-    /**
-     * Deletes a placement for a partition.
-     *
-     * @param adapterId The adapter on which the table should be placed on
-     * @param partitionId The id of a partition which shall be removed from that store.
-     */
-    void deletePartitionPlacement( long adapterId, long partitionId );
 
 
     Map<Long, AllocationTable> getTables();

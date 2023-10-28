@@ -734,18 +734,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 Pattern p2 = Pattern.compile( "(?si:limit)[\\s]+[0-9]+[\\s]*$" );
                 //If the user specifies a limit
                 noLimit = p2.matcher( query ).find() || request.noLimit;
-                // decrease limit if it is too large
-                /*else {
-                    Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-                    Matcher limitMatcher = pattern.matcher( query );
-                    if ( limitMatcher.find() ) {
-                        int limit = Integer.parseInt( limitMatcher.group( 2 ) );
-                        if ( limit > getPageSize() ) {
-                            // see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
-                            query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
-                        }
-                    }
-                }*/
                 try {
                     temp = System.nanoTime();
                     result = executeSqlSelect( transaction.createStatement(), request, query, noLimit, crud )

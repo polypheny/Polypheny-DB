@@ -1128,7 +1128,6 @@ public class DdlManagerImpl extends DdlManager {
         // Physically delete the data from the storeId
         store.dropTable( statement.getPrepareContext(), allocId );
 
-        // Remove allocations, physical will be removed on next rebuild
         catalog.getAllocRel( namespaceId ).deleteAllocation( allocId );
     }
 

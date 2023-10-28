@@ -207,7 +207,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, table.columns.size() - 1, logicalColumn );
+        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, table.columns.size(), logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -336,14 +336,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-
-        //List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
-
-        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-        // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-        // physicalSchemaName = partitionPlacement.physicalSchemaName;
-        // physicalTableName = partitionPlacement.physicalTableName;
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
@@ -357,7 +349,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         }
         executeUpdate( builder, context );
         storeCatalog.removeAllocAndPhysical( allocId );
-        // }
     }
 
 
