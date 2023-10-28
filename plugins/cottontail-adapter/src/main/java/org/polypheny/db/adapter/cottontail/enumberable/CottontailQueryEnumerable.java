@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.cottontail.algebra.CottontailToEnumerableConvert
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
@@ -196,7 +197,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<PolyValue[]> {
                             case REAL:
                                 return Linq4JFixer.getFloatVector( data );
                             default:
-                                throw new RuntimeException( "Impossible to reach statement." );
+                                throw new GenericRuntimeException( "Impossible to reach statement." );
                         }
                     } else {
                         SqlArrayValueConstructor.reparse( arrayType.getComponentType().getPolyType(), arrayType.getDimension(), (String) data );

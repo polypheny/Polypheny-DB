@@ -640,7 +640,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
             }
         } catch ( ServletException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
@@ -1124,7 +1124,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else {
             List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( tablee.id );
             if ( Catalog.snapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
-                throw new RuntimeException( "The table has an unexpected number of placements!" );
+                throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
@@ -1224,7 +1224,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new MaterializedInfos( materializedInfo ) );
         } else {
-            throw new RuntimeException( "only possible with materialized views" );
+            throw new GenericRuntimeException( "only possible with materialized views" );
         }
     }
 

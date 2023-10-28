@@ -266,7 +266,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         builder.append( " SET " ).append( dialect.quoteIdentifier( column.name ) ).append( " = " );
 
         if ( column.collectionsType == PolyType.ARRAY ) {
-            throw new RuntimeException( "Default values are not supported for array types" );
+            throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
         SqlLiteral literal;
@@ -414,7 +414,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

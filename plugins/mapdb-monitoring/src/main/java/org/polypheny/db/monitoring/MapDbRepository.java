@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.events.MonitoringDataPoint;
 import org.polypheny.db.monitoring.events.QueryPostCost;
 import org.polypheny.db.monitoring.events.metrics.QueryPostCostImpl;
@@ -245,7 +246,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             }*/
             // Exceeded threshold
             if ( (finish - start) >= timeThreshold ) {
-                throw new RuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
+                throw new GenericRuntimeException( "Initializing Monitoring Repository took too long...\nMake sure that no other "
                         + "instance of Polypheny-DB has still locked the monitoring information.\n"
                         + "Wait a few seconds or stop the locking process and try again. " );
             }

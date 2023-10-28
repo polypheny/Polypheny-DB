@@ -58,6 +58,7 @@ import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
@@ -193,7 +194,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
             return connectionFactory.getOrCreateConnectionHandler( dataContext.getStatement().getTransaction().getXid() );
         } catch ( ConnectionHandlerException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

@@ -321,7 +321,7 @@ public class CottontailPlugin extends PolyPlugin {
                             .addAllColumns( columns ) ).build();
 
             if ( !this.wrapper.createEntityBlocking( message ) ) {
-                throw new RuntimeException( "Unable to create table." );
+                throw new GenericRuntimeException( "Unable to create table." );
             }
 
             PolyType actualDefaultType;
@@ -399,7 +399,7 @@ public class CottontailPlugin extends PolyPlugin {
                     .build();
 
             if ( !this.wrapper.createEntityBlocking( message ) ) {
-                throw new RuntimeException( "Unable to create table." );
+                throw new GenericRuntimeException( "Unable to create table." );
             }
             final QueryMessage query = QueryMessage.newBuilder()
                     .setMetadata( Metadata.newBuilder().setTransactionId( txId ) )

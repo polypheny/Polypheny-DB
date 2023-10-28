@@ -95,7 +95,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             }
 
             DockerInstance instance = DockerManager.getInstance().getInstanceById( dockerInstanceId )
-                    .orElseThrow( () -> new RuntimeException( "No docker instance with id " + dockerInstanceId ) );
+                    .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + dockerInstanceId ) );
             try {
                 this.container = instance.newBuilder( "polypheny/monet:latest", getUniqueName() )
                         .withEnvironmentVariable( "MONETDB_PASSWORD", settings.get( "password" ) )
@@ -107,7 +107,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
                 container.destroy();
-                throw new RuntimeException( "Failed to connect to monetdb container" );
+                throw new GenericRuntimeException( "Failed to connect to monetdb container" );
             }
 
             deploymentId = container.getContainerId();
@@ -117,9 +117,9 @@ public class MonetdbStore extends AbstractJdbcStore {
             deploymentId = settings.get( "deploymentId" );
             DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
             container = DockerContainer.getContainerByUUID( deploymentId )
-                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+                    .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
             if ( !testDockerConnection() ) {
-                throw new RuntimeException( "Could not connect to container" );
+                throw new GenericRuntimeException( "Could not connect to container" );
             }
         }
 
@@ -136,7 +136,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         database = settings.get( "database" );
         username = settings.get( "username" );
         if ( !testConnection() ) {
-            throw new RuntimeException( "Unable to connect" );
+            throw new GenericRuntimeException( "Unable to connect" );
         }
         ConnectionFactory connectionFactory = createConnectionFactory();
         createDefaultSchema( connectionFactory );
@@ -152,7 +152,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             handler.execute( "CREATE SCHEMA IF NOT EXISTS \"public\";" );
             handler.commit();
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( "Exception while creating default schema on monetdb store!", e );
+            throw new GenericRuntimeException( "Exception while creating default schema on monetdb store!", e );
         }
     }
 

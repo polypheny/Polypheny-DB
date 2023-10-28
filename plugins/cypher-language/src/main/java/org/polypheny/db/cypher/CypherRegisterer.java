@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.LangFunctionOperator;
@@ -34,7 +35,7 @@ public class CypherRegisterer {
 
     public static void registerOperators() {
         if ( isInit ) {
-            throw new RuntimeException( "Cypher operators were already registered." );
+            throw new GenericRuntimeException( "Cypher operators were already registered." );
         }
 
         register( OperatorName.CYPHER_LIKE, new LangFunctionOperator( OperatorName.CYPHER_LIKE.name(), Kind.LIKE ) );

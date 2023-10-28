@@ -153,7 +153,7 @@ public class MongoPlugin extends PolyPlugin {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
-                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                            .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/mongo:latest", getUniqueName() )
                                 .withCommand( Arrays.asList( "mongod", "--replSet", "poly" ) )

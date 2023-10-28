@@ -205,7 +205,7 @@ public class ConfigManager {
                     myList.add( v );
                 }
             }
-            if ( myMap.size() > 0 ) {
+            if ( !myMap.isEmpty() ) {
                 modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myMap ) );
             } else {
                 modifiedConfig = configFile.withValue( configKey, ConfigValueFactory.fromAnyRef( myList ) );

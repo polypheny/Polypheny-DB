@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
@@ -295,7 +296,7 @@ public class Linq4JFixer {
             return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
         }
 
-        throw new RuntimeException( "Not a proper filter expression!" );
+        throw new GenericRuntimeException( "Not a proper filter expression!" );
     }
 
 

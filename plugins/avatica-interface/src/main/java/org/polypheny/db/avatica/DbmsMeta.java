@@ -98,6 +98,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryK
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -187,7 +188,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 propertyValue = p.method.invoke( metaData );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             propertyValue = p.defaultValue;
@@ -240,7 +241,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 field = clazz.getField( fieldName );
             } catch ( NoSuchFieldException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             columns.add( MetaImpl.columnMetaData( name, index, field.getType(), false ) );
             fields.add( field );
@@ -989,11 +990,11 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             StatementHandle h = createStatement( ch );
-            PolyphenyDbStatementHandle polyphenyDbStatement;
+            PolyphenyDbStatementHandle<?> polyphenyDbStatement;
             try {
                 polyphenyDbStatement = getPolyphenyDbStatementHandle( h );
             } catch ( NoSuchStatementException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             polyphenyDbStatement.setPreparedQuery( sql );
 
@@ -1236,7 +1237,7 @@ public class DbmsMeta implements ProtobufMeta {
                 } catch ( Exception e ) {
                     rollback( connection.getHandle() );
 
-                    throw new RuntimeException( "Error on auto-commit, transaction was rolled back.\n\n" + e );
+                    throw new GenericRuntimeException( "Error on auto-commit, transaction was rolled back.\n\n" + e );
                 }
             }
 
@@ -1588,7 +1589,7 @@ public class DbmsMeta implements ProtobufMeta {
                 try {
                     transaction.rollback();
                 } catch ( TransactionException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
 
@@ -1733,7 +1734,7 @@ public class DbmsMeta implements ProtobufMeta {
         } else if ( e instanceof Error ) {
             throw (Error) e;
         } else {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

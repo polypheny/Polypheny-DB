@@ -598,7 +598,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             idAccessMap.addAll( accessMap.getAccessedEntityPair() );
             LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -662,9 +662,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
                                         //
-                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                        throw new GenericRuntimeException( "Index updates are not yet supported for prepared statements" );
                                     } else {
-                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                        throw new GenericRuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
                                     }
                                 }
                                 for ( final String column : index.getTargetColumns() ) {
@@ -677,9 +677,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                         //
                                         // TODO: This is dynamic parameter. We need to do the index update in the generated code!
                                         //
-                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                        throw new GenericRuntimeException( "Index updates are not yet supported for prepared statements" );
                                     } else {
-                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                        throw new GenericRuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
                                     }
                                 }
                                 tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
@@ -1000,7 +1000,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             final List<ProposedRoutingPlan> distinctPlans = proposedPlans.stream().distinct().collect( Collectors.toList() );
 
             if ( distinctPlans.isEmpty() ) {
-                throw new RuntimeException( "No routing of query found" );
+                throw new GenericRuntimeException( "No routing of query found" );
             }
 
             if ( statement.getTransaction().isAnalyze() ) {
@@ -1584,7 +1584,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         try {
             LockManager.INSTANCE.lock( Collections.singletonList( Pair.of( LockManager.GLOBAL_LOCK, LockMode.SHARED ) ), (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
-            throw new RuntimeException( "DeadLock while locking to reevaluate statistics", e );
+            throw new GenericRuntimeException( "DeadLock while locking to reevaluate statistics", e );
         }
     }
 

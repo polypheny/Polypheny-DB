@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -134,7 +135,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
 //                context.visitChild( 0, getInput() );
                 break;
             case MERGE:
-                throw new RuntimeException( "Merge is not supported." );
+                throw new GenericRuntimeException( "Merge is not supported." );
         }
 
     }
@@ -174,7 +175,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
             } else if ( (rexNode instanceof RexCall) && (((RexCall) rexNode).getOperator() instanceof SqlArrayValueConstructor) ) {
                 source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) rexNode, columnTypes.get( actualColumnIndex ) );
             } else {
-                throw new RuntimeException( "unable to convert expression." );
+                throw new GenericRuntimeException( "unable to convert expression." );
             }
 
             inner.add( Expressions.statement(

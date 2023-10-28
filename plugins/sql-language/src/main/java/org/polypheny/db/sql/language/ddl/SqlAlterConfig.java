@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.languages.ParserPos;
@@ -97,7 +98,7 @@ public class SqlAlterConfig extends SqlAlter {
         }
         Config config = ConfigManager.getInstance().getConfig( keyStr );
         if ( config == null ) {
-            throw new RuntimeException( "Unknown config key: " + keyStr );
+            throw new GenericRuntimeException( "Unknown config key: " + keyStr );
         }
         config.parseStringAndSetValue( valueStr );
     }

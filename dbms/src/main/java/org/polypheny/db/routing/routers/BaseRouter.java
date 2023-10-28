@@ -315,7 +315,7 @@ public abstract class BaseRouter implements Router {
                 );
                 break;
             default:
-                throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
+                throw new GenericRuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
     }

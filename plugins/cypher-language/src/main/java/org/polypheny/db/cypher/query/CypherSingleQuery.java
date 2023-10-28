@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.query;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
@@ -64,7 +65,7 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
         if ( clauses.stream().noneMatch( CypherNode::isDDL ) ) {
             return false;
         }
-        throw new RuntimeException( "The mixed query is not supported" );
+        throw new GenericRuntimeException( "The mixed query is not supported" );
     }
 
 

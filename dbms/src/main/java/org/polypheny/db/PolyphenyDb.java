@@ -72,6 +72,7 @@ import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.processing.JsonRelProcessorImpl;
+import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -371,6 +372,7 @@ public class PolyphenyDb {
         new ConfigService( server.getServer() );
         new InformationService( server.getServer() );
 
+
         try {
             new JavaInformation();
         } catch ( Exception e ) {
@@ -457,6 +459,8 @@ public class PolyphenyDb {
         }
 
         PolyPluginManager.initAfterCatalog();
+        //noinspection ResultOfMethodCallIgnored
+        RoutingManager.getInstance();
 
         PolyPluginManager.initAfterTransaction( transactionManager );
 

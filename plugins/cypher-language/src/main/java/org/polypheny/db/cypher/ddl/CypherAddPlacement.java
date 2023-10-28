@@ -52,10 +52,10 @@ public class CypherAddPlacement extends CypherAdminCommand implements Executable
         this.store = getNameOrNull( storeName );
 
         if ( this.database == null ) {
-            throw new RuntimeException( "Unknown database name." );
+            throw new GenericRuntimeException( "Unknown database name." );
         }
         if ( this.store == null ) {
-            throw new RuntimeException( "Unknown storeId name." );
+            throw new GenericRuntimeException( "Unknown storeId name." );
         }
     }
 

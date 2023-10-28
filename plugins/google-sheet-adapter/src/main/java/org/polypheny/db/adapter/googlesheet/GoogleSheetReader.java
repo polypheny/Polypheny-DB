@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Pair;
 
 
@@ -111,7 +112,7 @@ public class GoogleSheetReader {
                 }
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -269,7 +270,7 @@ public class GoogleSheetReader {
                 }
             }
         } catch ( IOException | GeneralSecurityException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

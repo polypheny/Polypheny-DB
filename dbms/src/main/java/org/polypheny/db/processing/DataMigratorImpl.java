@@ -675,7 +675,7 @@ public class DataMigratorImpl implements DataMigrator {
                 targetStatement.getDataContext().resetParameterValues();
             }
         } catch ( Throwable t ) {
-            throw new RuntimeException( t );
+            throw new GenericRuntimeException( t );
         }
     }
 
@@ -877,7 +877,7 @@ public class DataMigratorImpl implements DataMigrator {
 
     public void copyPartitionDataOld( Transaction transaction, LogicalAdapter store, LogicalTable sourceTable, LogicalTable targetTable, List<LogicalColumn> columns, List<Long> sourcePartitionIds, List<Long> targetPartitionIds ) {
         if ( sourceTable.id != targetTable.id ) {
-            throw new RuntimeException( "Unsupported migration scenario. Table ID mismatch" );
+            throw new GenericRuntimeException( "Unsupported migration scenario. Table ID mismatch" );
         }
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         LogicalPrimaryKey primaryKey = snapshot.rel().getPrimaryKey( sourceTable.primaryKey ).orElseThrow();
@@ -1015,7 +1015,7 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
         } catch ( Throwable t ) {
-            throw new RuntimeException( t );
+            throw new GenericRuntimeException( t );
         }
     }
 

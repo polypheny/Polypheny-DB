@@ -67,6 +67,7 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -220,7 +221,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                                         Expressions.block(
                                                                 Expressions.tryCatch(
                                                                         builder.toBlock(),
-                                                                        Expressions.catch_( e_, Expressions.throw_( Expressions.new_( RuntimeException.class, e_ ) ) ) ) ) ) ) ),
+                                                                        Expressions.catch_( e_, Expressions.throw_( Expressions.new_( GenericRuntimeException.class, e_ ) ) ) ) ) ) ) ),
                                 resultSet_ ) );
 
         final Expression enumerable;

@@ -624,7 +624,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
             try {
                 return resultSet.next();
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 

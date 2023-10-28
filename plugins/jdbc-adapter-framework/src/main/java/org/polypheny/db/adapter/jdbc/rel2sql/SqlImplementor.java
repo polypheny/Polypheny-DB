@@ -70,6 +70,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.LangFunctionOperator;
@@ -632,7 +633,7 @@ public abstract class SqlImplementor {
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.NONE ) {
                             return sqlDynamicParam;
                         } else {
-                            throw new RuntimeException( "Unknown IntervalParameterStrategy: " + dialect.getIntervalParameterStrategy().name() );
+                            throw new GenericRuntimeException( "Unknown IntervalParameterStrategy: " + dialect.getIntervalParameterStrategy().name() );
                         }
                     } else {
                         return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );

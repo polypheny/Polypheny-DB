@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -56,7 +57,7 @@ public class CypherAlterDatabaseAlias extends CypherAdminCommand implements Exec
 
         if ( graphs.size() != 1 ) {
             if ( !ifExists ) {
-                throw new RuntimeException( "Graph database does not exist and IF EXISTS was not specified." );
+                throw new GenericRuntimeException( "Graph database does not exist and IF EXISTS was not specified." );
             }
             return;
         }

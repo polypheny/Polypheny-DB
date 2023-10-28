@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -223,7 +224,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         try {
             getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, Types.lookupMethod( Tuple.class, "get", Integer.TYPE ), Expressions.constant( i ) ) );
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         // Create accessor + converter for values returned by Cottontail DB. */

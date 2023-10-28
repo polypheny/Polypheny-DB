@@ -80,6 +80,7 @@ import org.polypheny.db.algebra.rules.LpgToEnumerableRule;
 import org.polypheny.db.algebra.rules.SemiJoinRules;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AbstractRelOptPlanner;
 import org.polypheny.db.plan.AlgOptCost;
@@ -393,7 +394,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( ruleNames.put( ruleName, rule.getClass() ) ) {
             Set<Class<?>> x = ruleNames.get( ruleName );
             if ( x.size() > 1 ) {
-                throw new RuntimeException( "Rule description '" + ruleName + "' is not unique; classes: " + x );
+                throw new GenericRuntimeException( "Rule description '" + ruleName + "' is not unique; classes: " + x );
             }
         }
 
