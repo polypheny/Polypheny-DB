@@ -65,6 +65,7 @@ import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.CommonRelSubExprRule;
 import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.graph.BreadthFirstIterator;
@@ -176,6 +177,12 @@ public class HepPlanner extends AbstractRelOptPlanner {
             mapRuleDescription( rule );
         }
         return added;
+    }
+
+
+    @Override
+    public boolean addRule( AlgOptRule rule, VolcanoPlannerPhase phase ) {
+        return addRule( rule );
     }
 
 

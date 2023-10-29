@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
@@ -231,12 +232,12 @@ public class HsqldbStore extends AbstractJdbcStore {
             case DOCUMENT:
                 return "LONGVARCHAR";
         }
-        throw new RuntimeException( "Unknown type: " + type.name() );
+        throw new GenericRuntimeException( "Unknown type: " + type.name() );
     }
 
 
     @Override
-    public String getDefaultPhysicalSchemaName() {
+    public String getDefaultPhysicalNamespaceName() {
         return "PUBLIC";
     }
 

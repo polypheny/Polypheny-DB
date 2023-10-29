@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgNodes;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.plan.AlgOptCost;
+import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -136,6 +137,13 @@ class RuleQueue {
 
             matchListMap.put( phase, matchList );
         }
+    }
+
+
+    public boolean addPhaseRuleMapping( VolcanoPlannerPhase phase, AlgOptRule rule ) {
+        phaseRuleMapping.get( phase ).add( rule.getClass().getSimpleName() );
+        return true;
+
     }
 
 
@@ -616,7 +624,7 @@ class RuleQueue {
     /**
      * PhaseMatchList represents a set of {@link VolcanoRuleMatch rule-matches} for a particular {@link VolcanoPlannerPhase phase of the planner's execution}.
      */
-    private static class PhaseMatchList {
+    static class PhaseMatchList {
 
         /**
          * The VolcanoPlannerPhase that this PhaseMatchList is used in.

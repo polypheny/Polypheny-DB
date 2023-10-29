@@ -332,7 +332,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         typeFactory.createPolyType( PolyType.INTEGER ),
                         typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
-        AlgDataType inputRowType = typeFactory.createStructType( , types, names );
+        AlgDataType inputRowType = typeFactory.createStructType( null, types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
         // $t0 = x
         // $t1 = y

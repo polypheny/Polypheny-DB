@@ -379,6 +379,16 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
 
 
     @Override
+    public boolean addRule( AlgOptRule rule, VolcanoPlannerPhase phase ) {
+        if ( ruleSet.contains( rule ) ) {
+            // Rule already exists.
+            return false;
+        }
+        ruleQueue.addPhaseRuleMapping( phase, rule );
+        return addRule( rule );
+    }
+
+    @Override
     public boolean addRule( AlgOptRule rule ) {
         if ( locked ) {
             return false;

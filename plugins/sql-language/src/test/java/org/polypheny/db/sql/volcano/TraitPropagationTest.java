@@ -37,6 +37,7 @@ package org.polypheny.db.sql.volcano;
 import static org.junit.Assert.assertEquals;
 import static org.polypheny.db.sql.volcano.TraitPropagationTest.PropAction.run;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.List;
@@ -385,12 +386,12 @@ public class TraitPropagationTest {
         private static class PhysSort extends Sort implements Phys {
 
             PhysSort( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, AlgCollation collation, RexNode offset, RexNode fetch ) {
-                super( cluster, traits, child, collation, offset, fetch );
+                super( cluster, traits, child, collation, List.of(), offset, fetch );
             }
 
 
             @Override
-            public PhysSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, RexNode offset, RexNode fetch ) {
+            public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
                 return new PhysSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
             }
 

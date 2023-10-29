@@ -63,14 +63,15 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoCost;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 
 
+@Getter
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
-    @Getter
     private final VolcanoPlanner planner;
 
 
@@ -118,15 +119,20 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
 
-    public static final List<AlgOptRule> DEFAULT_RULES =
+    public static final List<AlgOptRule> PRE_PROCESS_RULES =
             ImmutableList.of(
-                    ScanRule.INSTANCE,
                     AllocationToPhysicalScanRule.REL_INSTANCE,
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
+                    ScanRule.INSTANCE
+            );
+
+
+    public static final List<AlgOptRule> DEFAULT_RULES =
+            ImmutableList.of(
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
@@ -170,11 +176,15 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             planner.registerAbstractAlgebraRules();
         }
 
-
         AlgOptUtil.registerAbstractAlgs( planner );
+        for ( AlgOptRule preProcessRule : PRE_PROCESS_RULES ) {
+            planner.addRule( preProcessRule, VolcanoPlannerPhase.PRE_PROCESS );
+        }
+
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
+
         if ( ENABLE_BINDABLE ) {
             for ( AlgOptRule rule : Bindables.RULES ) {
                 planner.addRule( rule );

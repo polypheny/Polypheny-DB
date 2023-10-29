@@ -112,7 +112,7 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
         } else {
             rowCount += rightRowCount;
         }
-        return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+        return planner.getCostFactory().makeCost( rowCount, 0, 0 ).multiplyBy( 100 ); // de-courage usage of enumerable
     }
 
 

@@ -31,6 +31,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.util.Pair;
@@ -93,6 +94,12 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
         assert this.rule == null : "MockRelOptPlanner only supports a single rule";
         this.rule = rule;
         return false;
+    }
+
+
+    @Override
+    public boolean addRule( AlgOptRule operand, VolcanoPlannerPhase phase ) {
+        return addRule( rule );
     }
 
 

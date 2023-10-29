@@ -132,6 +132,7 @@ import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -226,15 +227,19 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                     DocumentSortToSortRule.INSTANCE
             );
 
-    public static final List<AlgOptRule> DEFAULT_RULES =
+    public static final List<AlgOptRule> PRE_PROCESS_RULES =
             ImmutableList.of(
-                    ScanRule.INSTANCE,
                     AllocationToPhysicalScanRule.REL_INSTANCE,
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
-                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
+                    AllocationToPhysicalModifyRule.GRAPH_INSTANCE
+            );
+
+    public static final List<AlgOptRule> DEFAULT_RULES =
+            ImmutableList.of(
+                    ScanRule.INSTANCE,
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
                             ? JoinAssociateRule.INSTANCE
                             : ProjectMergeRule.INSTANCE,
@@ -311,6 +316,12 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         }
 
         AlgOptUtil.registerAbstractAlgs( planner );
+
+        for ( AlgOptRule preProcessRule : PRE_PROCESS_RULES ) {
+            planner.addRule( preProcessRule, VolcanoPlannerPhase.PRE_PROCESS );
+        }
+
+
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }

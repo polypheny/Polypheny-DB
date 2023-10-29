@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
@@ -64,7 +65,13 @@ public abstract class AlgOptRule {
 
     /**
      * Root of operand tree.
+     * -- GETTER --
+     *  Returns the root operand of this rule
+     *
+     * @return the root operand of this rule
+
      */
+    @Getter
     private final AlgOptRuleOperand operand;
 
     /**
@@ -353,16 +360,6 @@ public abstract class AlgOptRule {
             // Assert: operand appears once in the sort-order.
             assert m == operands.size();
         }
-    }
-
-
-    /**
-     * Returns the root operand of this rule
-     *
-     * @return the root operand of this rule
-     */
-    public AlgOptRuleOperand getOperand() {
-        return operand;
     }
 
 

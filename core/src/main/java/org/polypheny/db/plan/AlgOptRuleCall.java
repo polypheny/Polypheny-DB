@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -60,11 +61,19 @@ public abstract class AlgOptRuleCall {
     private static int nextId = 0;
 
     public final int id;
+
+    @Getter
     protected final AlgOptRuleOperand operand0;
     protected Map<AlgNode, List<AlgNode>> nodeInputs;
+
+    @Getter
     public final AlgOptRule rule;
     public final AlgNode[] algs;
+
+    @Getter
     private final AlgOptPlanner planner;
+
+    @Getter
     private final List<AlgNode> parents;
 
 
@@ -91,26 +100,6 @@ public abstract class AlgOptRuleCall {
 
     protected AlgOptRuleCall( AlgOptPlanner planner, AlgOptRuleOperand operand, AlgNode[] algs, Map<AlgNode, List<AlgNode>> nodeInputs ) {
         this( planner, operand, algs, nodeInputs, null );
-    }
-
-
-    /**
-     * Returns the root operand matched by this rule.
-     *
-     * @return root operand
-     */
-    public AlgOptRuleOperand getOperand0() {
-        return operand0;
-    }
-
-
-    /**
-     * Returns the invoked planner rule.
-     *
-     * @return planner rule
-     */
-    public AlgOptRule getRule() {
-        return rule;
     }
 
 
@@ -167,28 +156,10 @@ public abstract class AlgOptRuleCall {
 
 
     /**
-     * Returns the planner.
-     *
-     * @return planner
-     */
-    public AlgOptPlanner getPlanner() {
-        return planner;
-    }
-
-
-    /**
      * Returns the current RelMetadataQuery, to be used for instance by {@link AlgOptRule#onMatch(AlgOptRuleCall)}.
      */
     public AlgMetadataQuery getMetadataQuery() {
         return alg( 0 ).getCluster().getMetadataQuery();
-    }
-
-
-    /**
-     * @return list of parents of the first relational expression
-     */
-    public List<AlgNode> getParents() {
-        return parents;
     }
 
 

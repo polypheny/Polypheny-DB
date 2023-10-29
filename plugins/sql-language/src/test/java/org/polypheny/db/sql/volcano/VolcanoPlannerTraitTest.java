@@ -279,14 +279,14 @@ public class VolcanoPlannerTraitTest {
     /**
      * Definition of {@link AltTrait}.
      */
-    private static class AltTraitDef extends AlgTraitDef<AltTrait> {
+    private static class AltTraitDef extends AlgTraitDef<AltTrait<?>> {
 
-        private Multimap<AlgTrait, Pair<AlgTrait, ConverterRule>> conversionMap = HashMultimap.create();
+        private Multimap<AlgTrait<?>, Pair<AlgTrait<?>, ConverterRule>> conversionMap = HashMultimap.create();
 
 
         @Override
-        public Class<AltTrait> getTraitClass() {
-            return AltTrait.class;
+        public Class<AltTrait<?>> getTraitClass() {
+            return (Class<AltTrait<?>>) AltTrait.class;
         }
 
 
@@ -297,19 +297,19 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public AltTrait getDefault() {
+        public AltTrait<?> getDefault() {
             return ALT_TRAIT;
         }
 
 
         @Override
         public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
-            AlgTrait fromTrait = alg.getTraitSet().getTrait( this );
+            AlgTrait<?> fromTrait = alg.getTraitSet().getTrait( this );
 
             if ( conversionMap.containsKey( fromTrait ) ) {
                 final AlgMetadataQuery mq = AlgMetadataQuery.instance();
-                for ( Pair<AlgTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
-                    AlgTrait trait = traitAndRule.left;
+                for ( Pair<AlgTrait<?>, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
+                    AlgTrait<?> trait = traitAndRule.left;
                     ConverterRule rule = traitAndRule.right;
 
                     if ( trait == toTrait ) {

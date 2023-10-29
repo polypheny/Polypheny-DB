@@ -123,7 +123,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        if ( storeCatalog.getNamespace( id ) == null ) {
+            currentJdbcSchema = JdbcSchema.create( id, storeCatalog, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
+            storeCatalog.addNamespace( id, currentJdbcSchema );
+        }
         putNamespace( currentJdbcSchema );
     }
 
@@ -145,13 +148,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
-        String namespaceName = getDefaultPhysicalSchemaName();
+        String namespaceName = getDefaultPhysicalNamespaceName();
         String tableName = getPhysicalTableName( allocation.id, 0 );
 
-        if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
-            updateNamespace( namespaceName, allocation.namespaceId );
-            storeCatalog.addNamespace( allocation.namespaceId, currentJdbcSchema );
-        }
+        updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
         PhysicalTable table = storeCatalog.createTable(
                 namespaceName,
@@ -484,7 +484,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     }
 
 
-    public abstract String getDefaultPhysicalSchemaName();
+    public abstract String getDefaultPhysicalNamespaceName();
 
 
     @SuppressWarnings("unused")

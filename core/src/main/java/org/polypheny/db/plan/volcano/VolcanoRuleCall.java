@@ -129,7 +129,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 volcanoPlanner.listener.ruleProductionSucceeded( event );
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( "Error occurred while applying rule " + getRule(), e );
+            throw new GenericRuntimeException( "Error occurred while applying rule " + getRule(), e );
         }
     }
 
