@@ -790,16 +790,16 @@ public class CatalogImpl extends Catalog {
             CatalogAdapter csv = getAdapter( "hr" );
             if ( !testMode ) {
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                    addTable( "depts", schemaId, systemId, EntityType.SOURCE, false );
+                    addTable( "depts", schemaId, systemId, EntityType.SOURCE, false, false, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                    addTable( "emps", schemaId, systemId, EntityType.SOURCE, false );
+                    addTable( "emps", schemaId, systemId, EntityType.SOURCE, false, false, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                    addTable( "emp", schemaId, systemId, EntityType.SOURCE, false );
+                    addTable( "emp", schemaId, systemId, EntityType.SOURCE, false, false, false );
                 }
                 if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                    addTable( "work", schemaId, systemId, EntityType.SOURCE, false );
+                    addTable( "work", schemaId, systemId, EntityType.SOURCE, false, false, false );
                     addDefaultCsvColumns( csv );
                 }
             }
@@ -1285,7 +1285,7 @@ public class CatalogImpl extends Catalog {
         // table id nodes -> id, node, labels
         long nodesId;
         if ( !onlyPlacement ) {
-            nodesId = addTable( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+            nodesId = addTable( "_nodes_", id, Catalog.defaultUserId, EntityType.ENTITY, true, false, false );
         } else {
             nodesId = getTable( id, "_nodes_" ).id;
         }
@@ -1331,7 +1331,7 @@ public class CatalogImpl extends Catalog {
         // table id nodes -> id, node, labels
         long nodesPropertyId;
         if ( !onlyPlacement ) {
-            nodesPropertyId = addTable( "_n_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+            nodesPropertyId = addTable( "_n_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true, false, false );
         } else {
             nodesPropertyId = getTable( id, "_n_properties_" ).id;
         }
@@ -1390,7 +1390,7 @@ public class CatalogImpl extends Catalog {
         // table id relationships -> id, rel, labels
         long edgesId;
         if ( !onlyPlacement ) {
-            edgesId = addTable( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+            edgesId = addTable( "_edges_", id, Catalog.defaultUserId, EntityType.ENTITY, true, false, false );
         } else {
             edgesId = getTable( id, "_edges_" ).id;
         }
@@ -1505,7 +1505,7 @@ public class CatalogImpl extends Catalog {
         // table id nodes -> id, node, labels
         long edgesPropertyId;
         if ( !onlyPlacement ) {
-            edgesPropertyId = addTable( "_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true );
+            edgesPropertyId = addTable( "_properties_", id, Catalog.defaultUserId, EntityType.ENTITY, true, false, false );
         } else {
             edgesPropertyId = getTable( id, "_properties_" ).id;
         }
@@ -1850,7 +1850,7 @@ public class CatalogImpl extends Catalog {
      * {@inheritDoc}
      */
     @Override
-    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable ) {
+    public long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, boolean cached, boolean hidden ) {
         long id = entityIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( namespaceId );
         if ( !schema.caseSensitive ) {
@@ -1884,7 +1884,9 @@ public class CatalogImpl extends Catalog {
                     ImmutableList.of(),
                     modifiable,
                     partitionProperty,
-                    ImmutableList.of() );
+                    ImmutableList.of(),
+                    cached,
+                    hidden );
 
             updateEntityLogistics( name, namespaceId, id, schema, table );
             if ( schema.namespaceType != NamespaceType.DOCUMENT ) {
@@ -2202,7 +2204,9 @@ public class CatalogImpl extends Catalog {
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    old.connectedViews );
+                    old.connectedViews,
+                    old.cached,
+                    old.hidden );
         }
 
         synchronized ( this ) {
@@ -2255,7 +2259,10 @@ public class CatalogImpl extends Catalog {
                     keyId,
                     old.dataPlacements,
                     old.modifiable,
-                    old.partitionProperty, old.connectedViews );
+                    old.partitionProperty,
+                    old.connectedViews,
+                    old.cached,
+                    old.hidden );
         }
 
         synchronized ( this ) {
@@ -2503,7 +2510,7 @@ public class CatalogImpl extends Catalog {
                 throw new RuntimeException( e );
             }
         } else {
-            tableId = addTable( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true );
+            tableId = addTable( name, schemaId, Catalog.defaultUserId, EntityType.ENTITY, true, false, false );
         }
 
         stores.forEach( store -> addDataPlacement( store.getAdapterId(), tableId ) );
@@ -3274,7 +3281,7 @@ public class CatalogImpl extends Catalog {
                     old.dataPlacements,
                     old.modifiable,
                     old.partitionProperty,
-                    old.connectedViews );
+                    old.connectedViews, false, false );
         }
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
@@ -4293,7 +4300,7 @@ public class CatalogImpl extends Catalog {
                 old.dataPlacements,
                 old.modifiable,
                 partitionProperty,
-                old.connectedViews );
+                old.connectedViews, false, false );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4349,7 +4356,7 @@ public class CatalogImpl extends Catalog {
                 old.dataPlacements,
                 old.modifiable,
                 partitionProperty,
-                old.connectedViews );
+                old.connectedViews, false, false );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4378,7 +4385,7 @@ public class CatalogImpl extends Catalog {
                 old.dataPlacements,
                 old.modifiable,
                 partitionProperty,
-                old.connectedViews );
+                old.connectedViews, false, false );
 
         synchronized ( this ) {
             tables.replace( tableId, table );
@@ -4852,7 +4859,9 @@ public class CatalogImpl extends Catalog {
                     ImmutableList.copyOf( newDataPlacements ),
                     old.modifiable,
                     old.partitionProperty,
-                    old.connectedViews );
+                    old.connectedViews,
+                    old.cached,
+                    old.hidden );
         }
 
         synchronized ( this ) {

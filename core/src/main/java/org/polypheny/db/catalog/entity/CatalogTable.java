@@ -53,6 +53,8 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
 
     @Getter
     public final ImmutableList<Long> connectedViews;
+    public final boolean cached;
+    public final boolean hidden;
 
 
     public CatalogTable(
@@ -66,7 +68,9 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
             final Long primaryKey,
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
-            PartitionProperty partitionProperty ) {
+            PartitionProperty partitionProperty,
+            boolean cached,
+            boolean hidden ) {
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;
@@ -76,6 +80,8 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
         this.entityType = type;
         this.primaryKey = primaryKey;
         this.modifiable = modifiable;
+        this.cached = cached;
+        this.hidden = hidden;
 
         this.partitionProperty = partitionProperty;
         this.connectedViews = ImmutableList.of();
@@ -100,7 +106,9 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
             @NonNull final ImmutableList<Integer> dataPlacements,
             boolean modifiable,
             PartitionProperty partitionProperty,
-            ImmutableList<Long> connectedViews ) {
+            ImmutableList<Long> connectedViews,
+            boolean cached,
+            boolean hidden ) {
         this.id = id;
         this.name = name;
         this.fieldIds = fieldIds;
@@ -116,6 +124,8 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
         this.connectedViews = connectedViews;
 
         this.dataPlacements = ImmutableList.copyOf( dataPlacements );
+        this.cached = cached;
+        this.hidden = hidden;
 
         if ( type == EntityType.ENTITY && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -220,7 +230,7 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
                 dataPlacements,
                 modifiable,
                 partitionProperty,
-                connectedViews );
+                connectedViews, false, false );
     }
 
 
@@ -237,7 +247,9 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
                 dataPlacements,
                 modifiable,
                 partitionProperty,
-                newConnectedViews );
+                newConnectedViews,
+                cached,
+                hidden );
     }
 
 
@@ -254,7 +266,9 @@ public class CatalogTable implements CatalogObject, Comparable<CatalogTable> {
                 dataPlacements,
                 modifiable,
                 partitionProperty,
-                connectedViews );
+                connectedViews,
+                cached,
+                hidden );
     }
 
 

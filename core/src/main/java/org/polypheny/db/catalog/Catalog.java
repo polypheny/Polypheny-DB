@@ -98,6 +98,7 @@ import org.polypheny.db.type.PolyType;
 
 public abstract class Catalog implements ExtensionPoint {
 
+    public static final String HIDDEN_PREFIX = "__hidden__";
     public static Adapter defaultStore;
     public static Adapter defaultSource;
     public static int defaultUserId = 0;
@@ -490,9 +491,11 @@ public abstract class Catalog implements ExtensionPoint {
      * @param ownerId The if of the owner
      * @param entityType The table type
      * @param modifiable Whether the content of the table can be modified
+     * @param cached
+     * @param hidden
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable );
+    public abstract long addTable( String name, long namespaceId, int ownerId, EntityType entityType, boolean modifiable, boolean cached, boolean hidden );
 
 
     /**

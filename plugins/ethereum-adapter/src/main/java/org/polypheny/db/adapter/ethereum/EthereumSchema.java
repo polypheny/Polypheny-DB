@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.adapter.ethereum.EthereumPlugin.EthereumDataSource;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
@@ -61,10 +60,40 @@ public class EthereumSchema extends AbstractSchema {
         }
 
         int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
-        EthereumMapper mapper = catalogTable.name.equals( "block" ) ? EthereumMapper.BLOCK : EthereumMapper.TRANSACTION;
-        EthereumTable table = new EthereumTable( clientUrl, AlgDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, mapper, ethereumDataSource, catalogTable.id );
+        EthereumMapper mapper = catalogTable.name.startsWith( "block" ) ? EthereumMapper.BLOCK : catalogTable.name.startsWith( "transaction" ) ? EthereumMapper.TRANSACTION : EthereumMapper.EVENTDATA;
+        EthereumTable.Builder tableBuilder = new EthereumTable.Builder(
+                clientUrl,
+                AlgDataTypeImpl.proto( fieldInfo.build() ),
+                fieldTypes,
+                fields,
+                mapper,
+                ethereumDataSource,
+                catalogTable.id
+        );
+        boolean eventDataRetrieval = ethereumDataSource.isEventDataRetrieval();
+        if (eventDataRetrieval) {
+            String originalName = getOriginalName(catalogTable.name); // remove the last digit for key search in eventDataMap
+
+            tableBuilder
+                    .contractAddress(ethereumDataSource.getSmartContractAddressFromCatalogTable(originalName))
+                    .fromBlock(ethereumDataSource.getFromBlock())
+                    .toBlock(ethereumDataSource.getToBlock())
+                    .event(ethereumDataSource.getEventFromCatalogTable(originalName));
+        }
+        EthereumTable table = tableBuilder.build();
         tableMap.put( catalogTable.name, table );
         return table;
+    }
+
+    public static String getOriginalName(String catalogName) {
+        if (catalogName == null || catalogName.isEmpty()) {
+            return catalogName;
+        }
+        char lastChar = catalogName.charAt(catalogName.length() - 1);
+        if (Character.isDigit(lastChar)) {
+            return catalogName.substring(0, catalogName.length() - 1);
+        }
+        return catalogName;
     }
 
 

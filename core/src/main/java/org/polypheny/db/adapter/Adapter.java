@@ -81,6 +81,8 @@ public abstract class Adapter {
     @Getter
     private final String adapterName;
 
+    public boolean canCache = false;
+
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

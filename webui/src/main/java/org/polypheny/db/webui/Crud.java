@@ -395,6 +395,9 @@ public class Crud implements InformationObserver {
                 ArrayList<SidebarElement> collectionTree = new ArrayList<>();
                 List<CatalogTable> tables = catalog.getTables( schema.id, null );
                 for ( CatalogTable table : tables ) {
+                    if ( table.hidden ) {
+                        continue;
+                    }
                     String icon = "fa fa-table";
                     if ( table.entityType == EntityType.SOURCE ) {
                         icon = "fa fa-plug";

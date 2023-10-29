@@ -63,7 +63,7 @@ public class SchemaToJsonMapperTest extends SqlLanguageDependent {
                 ImmutableList.of(),
                 true,
                 PartitionProperty.builder().build(),
-                ImmutableList.of() );
+                ImmutableList.of(), false, false );
         Catalog catalog = Catalog.getInstance();
         Arrays.asList(
                 new CatalogColumn( 5, "sid", 4, 1, 1, 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),

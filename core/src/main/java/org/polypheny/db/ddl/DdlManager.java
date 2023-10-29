@@ -449,9 +449,11 @@ public abstract class DdlManager {
      * @param ifNotExists whether to silently ignore if the table already exists
      * @param stores list of data stores on which to create a full placement for this table
      * @param placementType which placement type should be used for the initial placements
+     * @param cached
      * @param statement the used statement
+     * @param hidden
      */
-    public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
+    public abstract void createTable( long schemaId, String tableName, List<FieldInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, boolean cached, Statement statement, boolean hidden ) throws EntityAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException, UnknownColumnException, PartitionGroupNamesNotUniqueException;
 
     /**
      * Create a new view

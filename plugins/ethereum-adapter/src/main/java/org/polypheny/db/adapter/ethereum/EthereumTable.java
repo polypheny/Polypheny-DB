@@ -25,7 +25,6 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.ethereum.EthereumPlugin.EthereumDataSource;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -34,6 +33,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.util.Pair;
+import org.web3j.abi.datatypes.Event;
 
 public class EthereumTable extends AbstractTable implements FilterableTable {
 
@@ -43,23 +43,89 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
     protected final EthereumDataSource ethereumDataSource;
     protected final EthereumMapper mapper;
     protected List<EthereumFieldType> fieldTypes;
+    protected final String contractAddress;
+    protected final BigInteger fromBlock;
+    protected final BigInteger toBlock;
+    protected final Event event;
 
 
-    public EthereumTable(
-            String clientUrl,
-            AlgProtoDataType protoRowType,
-            List<EthereumFieldType> fieldTypes,
-            int[] fields,
-            EthereumMapper mapper,
-            EthereumDataSource ethereumDataSource,
-            Long tableId ) {
-        this.clientUrl = clientUrl;
-        this.protoRowType = protoRowType;
-        this.fieldTypes = fieldTypes;
-        this.fields = fields;
-        this.ethereumDataSource = ethereumDataSource;
-        this.mapper = mapper;
-        this.tableId = tableId;
+    public EthereumTable( Builder builder ) {
+        this.clientUrl = builder.clientUrl;
+        this.protoRowType = builder.protoRowType;
+        this.fieldTypes = builder.fieldTypes;
+        this.fields = builder.fields;
+        this.ethereumDataSource = builder.ethereumDataSource;
+        this.mapper = builder.mapper;
+        this.tableId = builder.tableId;
+        this.contractAddress = builder.contractAddress;
+        this.fromBlock = builder.fromBlock;
+        this.toBlock = builder.toBlock;
+        this.event = builder.event;
+    }
+
+
+    // Utilize nested Builder pattern to provide the flexibility of toggling between fetching event data and not fetching it.
+    public static class Builder {
+
+        protected final String clientUrl;
+        protected final AlgProtoDataType protoRowType;
+        protected final int[] fields;
+        protected final EthereumDataSource ethereumDataSource;
+        protected final EthereumMapper mapper;
+        protected List<EthereumFieldType> fieldTypes;
+        protected Long tableId;
+
+        private String contractAddress = null;
+        private BigInteger fromBlock = null;
+        private BigInteger toBlock = null;
+        private Event event = null;
+
+
+        public Builder( String clientUrl,
+                AlgProtoDataType protoRowType,
+                List<EthereumFieldType> fieldTypes,
+                int[] fields,
+                EthereumMapper mapper,
+                EthereumDataSource ethereumDataSource,
+                Long tableId ) {
+            this.clientUrl = clientUrl;
+            this.protoRowType = protoRowType;
+            this.fieldTypes = fieldTypes;
+            this.fields = fields;
+            this.ethereumDataSource = ethereumDataSource;
+            this.mapper = mapper;
+            this.tableId = tableId;
+        }
+
+
+        public Builder contractAddress( String val ) {
+            this.contractAddress = val;
+            return this;
+        }
+
+
+        public Builder fromBlock( BigInteger val ) {
+            this.fromBlock = val;
+            return this;
+        }
+
+
+        public Builder toBlock( BigInteger val ) {
+            this.toBlock = val;
+            return this;
+        }
+
+
+        public Builder event( Event val ) {
+            this.event = val;
+            return this;
+        }
+
+
+        public EthereumTable build() {
+            return new EthereumTable( this );
+        }
+
     }
 
 
@@ -104,7 +170,11 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                             null,
                             mapper,
                             finalBlockNumberPredicate,
-                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ) );
+                            (EthereumEnumerator.RowConverter<Object>) EthereumEnumerator.converter( fieldTypes, fields ),
+                            contractAddress,
+                            fromBlock,
+                            toBlock,
+                            event );
                 }
             };
         }
@@ -119,7 +189,11 @@ public class EthereumTable extends AbstractTable implements FilterableTable {
                         null,
                         mapper,
                         finalBlockNumberPredicate,
-                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ) );
+                        (EthereumEnumerator.RowConverter<Object[]>) EthereumEnumerator.converter( fieldTypes, fields ),
+                        contractAddress,
+                        fromBlock,
+                        toBlock,
+                        event );
             }
         };
     }

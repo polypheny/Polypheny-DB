@@ -20,6 +20,7 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -354,6 +355,8 @@ public class BsonUtil {
 
         if ( obj instanceof Long ) {
             return new BsonInt64( (Long) obj );
+        } else if ( obj instanceof BigInteger ) {
+            return new BsonInt64(( (BigInteger) obj ).longValue());
         } else {
             return new BsonInt64( (Integer) obj );
         }

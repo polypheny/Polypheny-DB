@@ -61,12 +61,15 @@ import org.polypheny.db.catalog.entity.CatalogCollection;
 import org.polypheny.db.catalog.entity.CatalogCollectionPlacement;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphMapping;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPartitionPlacement;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -185,6 +188,12 @@ public abstract class BaseRouter implements Router {
             long partitionId,
             NamespaceType namespaceType ) {
 
+        CatalogTable table = Catalog.getInstance().getTable( tableId );
+
+        if ( table.cached ) {
+            return handleCached( builder, statement, storeUniqueName, physicalSchemaName, namespaceType, table );
+        }
+
         AlgNode node = builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName + "_" + partitionId ) ).build();
@@ -205,6 +214,32 @@ public abstract class BaseRouter implements Router {
         }
 
         return builder;
+    }
+
+
+    private RoutedAlgBuilder handleCached( RoutedAlgBuilder builder, Statement statement, String storeUniqueName, String physicalSchemaName, NamespaceType namespaceType, CatalogTable table ) {
+        //todo add cache status later
+        CatalogTable cached;
+        try {
+            cached = Catalog.getInstance().getTable( table.namespaceId, Catalog.HIDDEN_PREFIX + table.name );
+        } catch ( UnknownTableException e ) {
+            throw new RuntimeException( e );
+        }
+
+        CatalogDataPlacement placement = Catalog.getInstance().getDataPlacements( cached.id ).get( 0 );
+        CatalogPartition partition = Catalog.getInstance().getPartitionsByTable( cached.id ).get( 0 );
+
+        return handleScan(
+                builder,
+                statement,
+                cached.id,
+                placement.getAdapterName(),
+                cached.getNamespaceName(),
+                cached.name,
+                physicalSchemaName,
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, cached.getNamespaceName(), physicalSchemaName ),
+                partition.id,
+                namespaceType );
     }
 
 

@@ -2,19 +2,24 @@ group "org.polypheny"
 
 
 dependencies {
+    implementation project(path: ':core')
     compileOnly project(":core")
 
-      // Apache 2.0
+    implementation project(':webui')
+
+    // Apache 2.0
     implementation(group: "org.web3j", name: "core", version: web3j_version) {
         exclude(group: "org.slf4j")
     }  // Apache 2.0
     // Apache 2.0
 
+    implementation 'org.json:json:20210307'
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
 
     // BSD 3-clause
+
 }
 
 

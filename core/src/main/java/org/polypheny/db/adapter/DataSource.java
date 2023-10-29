@@ -23,9 +23,12 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogGraphDatabase;
 import org.polypheny.db.catalog.entity.CatalogGraphPlacement;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.DdlManager.FieldInformation;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.type.PolyType;
 
@@ -91,6 +94,16 @@ public abstract class DataSource extends Adapter implements ExtensionPoint {
                 }
             }
             return typeStr;
+        }
+
+
+        public ColumnTypeInformation toColumnTypeInformation() {
+            return new ColumnTypeInformation( type, collectionsType, length, scale, dimension, cardinality, nullable );
+
+        }
+
+        public FieldInformation toFieldInformation(){
+            return new FieldInformation( name, toColumnTypeInformation(), PolyType.STRING_TYPES.contains( type ) ? Collation.getDefaultCollation() : null, null, physicalPosition );
         }
 
     }
