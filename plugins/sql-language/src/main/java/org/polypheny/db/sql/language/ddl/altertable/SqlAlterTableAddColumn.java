@@ -77,6 +77,30 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         this.afterColumnName = afterColumnName;
     }
 
+    public SqlAlterTableAddColumn(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier column,
+            SqlDataTypeSpec type,
+            boolean nullable,
+            SqlNode defaultValue,
+            SqlIdentifier beforeColumnName,
+            SqlIdentifier afterColumnName,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.column = Objects.requireNonNull( column );
+        this.type = Objects.requireNonNull( type );
+        this.nullable = nullable;
+        this.defaultValue = defaultValue;
+        this.beforeColumnName = beforeColumnName;
+        this.afterColumnName = afterColumnName;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

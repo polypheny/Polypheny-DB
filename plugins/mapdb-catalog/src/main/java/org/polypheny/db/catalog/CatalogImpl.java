@@ -157,6 +157,7 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
+    private static BTreeMap<String, Object[]> aliases;
 
     private static BTreeMap<Long, CatalogCollection> collections;
     private static BTreeMap<Object[], CatalogCollection> collectionNames;
@@ -672,6 +673,10 @@ public class CatalogImpl extends Catalog {
         tableNames = db.treeMap( "tableNames" )
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
+                .createOrOpen();
+        aliases = db.treeMap( "aliases" )
+                .keySerializer( Serializer.STRING )
+                .valueSerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .createOrOpen();
         dataPlacements = db.treeMap( "dataPlacement", new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ), Serializer.JAVA ).createOrOpen();
         partitionGroups = db.treeMap( "partitionGroups", Serializer.LONG, Serializer.JAVA ).createOrOpen();
@@ -1843,6 +1848,81 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseName, schemaName, tableName );
         }
+    }
+
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isAlias( String name ) {
+        return aliases.containsKey( name );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateAliases( Object[] oldTable, Object[] newTable ) {
+        synchronized (this) {
+            for( var item : aliases.entrySet() ) {
+                Object[] entry = item.getValue();
+                boolean result = ( (long)oldTable[0] == (long)entry[0] ) &&
+                        ( (long)oldTable[1] == (long)entry[1] ) &&
+                        ( ((String)oldTable[2]).equals( (String)entry[2] ) );
+                if( result ) {
+                    aliases.remove( item.getKey() );
+                    aliases.put( item.getKey(), newTable );
+                }
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addAlias( String name, Object[] table ) {
+        synchronized (this) {
+            aliases.put( name, table );
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeAlias( String name ) {
+        synchronized (this) {
+            aliases.remove( name );
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeAliases( Object[] table ) {
+        synchronized (this) {
+            for( var item : aliases.entrySet() ) {
+                Object[] entry = item.getValue();
+                boolean result = ( (long)table[0] == (long)entry[0] ) &&
+                        ( (long)table[1] == (long)entry[1] ) &&
+                        ( ((String)table[2]).equals( (String)entry[2] ) );
+                if( result ) {
+                    aliases.remove( item.getKey() );
+                }
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Object[] getTableNameFromAlias( String name ) {
+        return aliases.get( name );
     }
 
 

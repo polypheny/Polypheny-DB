@@ -51,6 +51,15 @@ public class SqlAlterTableDropPrimaryKey extends SqlAlterTable {
         this.table = Objects.requireNonNull( table );
     }
 
+    public SqlAlterTableDropPrimaryKey( ParserPos pos, SqlIdentifier table, boolean isAlias ) {
+        super( pos );
+        if(isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+    }
+
 
     @Override
     public List<SqlNode> getSqlOperandList() {

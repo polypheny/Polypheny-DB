@@ -482,6 +482,57 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract CatalogTable getTableFromPartition( long partitionId );
 
+
+
+
+
+
+    /**
+     * Check if a given name is an alias
+     *
+     * @param name The given name
+     * @return boolean
+     */
+    public abstract boolean isAlias( String name );
+
+    /**
+     * Add an alias
+     *
+     * @param name alias name
+     * @param table, the Object[] array
+     */
+    public abstract void addAlias( String name, Object[] table );
+
+    /**
+     * remove an alias by name(key)
+     *
+     * @param name alias name
+     */
+    public abstract void removeAlias( String name );
+
+    /**
+     * remove an alias by table(value)
+     *
+     * @param table table array
+     */
+    public abstract void removeAliases( Object[] table );
+
+    /**
+     * update aliases mappings, this will be called when we rename a table
+     *
+     * @param oldTable table array
+     * @param newTable change to
+     */
+    public abstract void updateAliases( Object[] oldTable, Object[] newTable );
+
+    /**
+     * return a table array
+     *
+     * @param name The given name
+     * @return the table array
+     */
+    public abstract Object[] getTableNameFromAlias( String name );
+
     /**
      * Adds a table to a specified schema.
      *

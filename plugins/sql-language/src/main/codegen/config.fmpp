@@ -146,6 +146,7 @@ data: {
             "ADD"
             "ADMIN"
             "AFTER"
+            "ALIAS"
             "ALWAYS"
             "APPLY"
             "ASC"
@@ -496,6 +497,7 @@ data: {
             "SqlCreateView"
             "SqlCreateMaterializedView"
             "SqlCreateFunction"
+            "SqlCreateAlias"
         ]
 
         # List of methods for parsing extensions to "DROP" calls. Each must accept arguments "(SqlParserPos pos)".
@@ -506,6 +508,7 @@ data: {
             "SqlDropView"
             "SqlDropMaterializedView"
             "SqlDropFunction"
+            "SqlDropAlias"
         ]
 
         # List of files in @includes directory that have parser method implementations for parsing custom SQL statements, literals or types

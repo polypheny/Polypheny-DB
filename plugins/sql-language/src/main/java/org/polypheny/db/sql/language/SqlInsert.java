@@ -51,6 +51,19 @@ public class SqlInsert extends SqlCall {
         assert keywords != null;
     }
 
+    public SqlInsert( ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columnList, boolean isTableAlias ) {
+        super( pos );
+        this.keywords = keywords;
+        if (isTableAlias) {
+            this.targetTable = replaceTableNameIfIsAlias( targetTable );
+        } else {
+            this.targetTable = targetTable;
+        }
+        this.source = source;
+        this.columnList = columnList;
+        assert keywords != null;
+    }
+
 
     @Override
     public Kind getKind() {

@@ -54,6 +54,21 @@ public class SqlUpdate extends SqlCall {
         this.alias = alias;
     }
 
+    public SqlUpdate( ParserPos pos, SqlNode targetTable, SqlNodeList targetColumnList, SqlNodeList sourceExpressionList, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias, boolean isTableAlias ) {
+        super( pos );
+        if (isTableAlias) {
+            this.targetTable = replaceTableNameIfIsAlias( targetTable );
+        } else {
+            this.targetTable = targetTable;
+        }
+        this.targetColumnList = targetColumnList;
+        this.sourceExpressionList = sourceExpressionList;
+        this.condition = condition;
+        this.sourceSelect = sourceSelect;
+        assert sourceExpressionList.size() == targetColumnList.size();
+        this.alias = alias;
+    }
+
 
     @Override
     public Kind getKind() {

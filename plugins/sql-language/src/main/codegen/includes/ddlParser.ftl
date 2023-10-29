@@ -261,6 +261,21 @@ SqlCreate SqlCreateType(Span s, boolean replace) :
     }
 }
 
+SqlCreate SqlCreateAlias(Span s, boolean replace) :
+{
+        final SqlIdentifier name;
+        final SqlIdentifier alias;
+}
+{
+        <ALIAS>
+        name = CompoundIdentifier()
+        <AS>
+        alias = CompoundIdentifier()
+        {
+            return SqlDdlNodes.createAlias(s.end(this), replace, name, alias);
+        }
+}
+
 SqlCreate SqlCreateTable(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -502,14 +517,27 @@ SqlDrop SqlDropType(Span s, boolean replace) :
     }
 }
 
+SqlDrop SqlDropAlias(Span s, boolean replace) :
+{
+        final boolean ifExists;
+        final SqlIdentifier alias;
+}
+{
+        <ALIAS> ifExists = IfExistsOpt() alias = CompoundIdentifier() {
+            return SqlDdlNodes.dropAlias(s.end(this), ifExists, alias);
+        }
+}
+
+
 SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
+    boolean isAlias = false;
 }
 {
-    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    <TABLE> ifExists = IfExistsOpt() [ <ALIAS> { isAlias = true; } ] id = CompoundIdentifier() {
+        return SqlDdlNodes.dropTable(s.end(this), ifExists, id, isAlias);
     }
 }
 
@@ -546,4 +574,5 @@ SqlDrop SqlDropFunction(Span s, boolean replace) :
         return SqlDdlNodes.dropFunction(s.end(this), ifExists, id);
     }
 }
+
 

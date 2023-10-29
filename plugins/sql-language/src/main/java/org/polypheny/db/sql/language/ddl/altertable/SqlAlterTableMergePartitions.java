@@ -57,6 +57,16 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         this.table = Objects.requireNonNull( table );
     }
 
+    public SqlAlterTableMergePartitions( ParserPos pos, SqlIdentifier table, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+    }
+
+
 
     @Override
     public List<Node> getOperandList() {

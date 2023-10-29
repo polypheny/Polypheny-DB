@@ -82,6 +82,28 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         this.storeName = storeName;
     }
 
+    public SqlAlterTableAddIndex(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlNodeList columnList,
+            boolean unique,
+            SqlIdentifier indexMethod,
+            SqlIdentifier indexName,
+            SqlIdentifier storeName,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.columnList = Objects.requireNonNull( columnList );
+        this.unique = unique;
+        this.indexName = indexName;
+        this.indexMethod = indexMethod;
+        this.storeName = storeName;
+    }
+
 
     @Override
     public List<Node> getOperandList() {

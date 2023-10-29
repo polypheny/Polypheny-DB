@@ -55,6 +55,16 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         this.storeName = Objects.requireNonNull( storeName );
     }
 
+    public SqlAlterTableDropPlacement( ParserPos pos, SqlIdentifier table, SqlIdentifier storeName, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.storeName = Objects.requireNonNull( storeName );
+    }
+
 
     @Override
     public List<Node> getOperandList() {

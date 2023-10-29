@@ -17,10 +17,14 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.languages.ParserPos;
@@ -41,6 +45,9 @@ public class SqlDropTable extends SqlDropObject {
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP TABLE", Kind.DROP_TABLE );
 
+    private boolean isAlias = false;
+    SqlIdentifier realName;
+
 
     /**
      * Creates a SqlDropTable.
@@ -49,13 +56,32 @@ public class SqlDropTable extends SqlDropObject {
         super( OPERATOR, pos, ifExists, name );
     }
 
+    SqlDropTable( ParserPos pos, boolean ifExists, SqlIdentifier name, boolean isAlias ) {
+        super( OPERATOR, pos, ifExists, name );
+        this.isAlias = isAlias;
+        if ( isAlias ) {
+            realName = (SqlIdentifier) replaceTableNameIfIsAlias( name );
+        } else {
+            realName = name;
+        }
+    }
+
+
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         final CatalogTable table;
+        Catalog catalog = Catalog.getInstance();
 
         try {
-            table = getCatalogTable( context, name );
+            if ( isAlias ) {
+                table = getCatalogTable( context, realName );
+                Object[] realTableNameArray = catalog.getTableNameFromAlias(name.names.get(0));
+                // now we delete all the alias for this table.
+                catalog.removeAliases( new Object[]{ table.databaseId, (long)realTableNameArray[1], table.name } );
+            } else {
+                table = getCatalogTable( context, name );
+            }
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified

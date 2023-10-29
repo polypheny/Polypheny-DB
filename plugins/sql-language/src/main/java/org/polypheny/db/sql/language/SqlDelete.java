@@ -48,6 +48,18 @@ public class SqlDelete extends SqlCall {
         this.alias = alias;
     }
 
+    public SqlDelete( ParserPos pos, SqlNode targetTable, SqlNode condition, SqlSelect sourceSelect, SqlIdentifier alias, boolean isTableAlias ) {
+        super( pos );
+        if (isTableAlias) {
+            this.targetTable = replaceTableNameIfIsAlias( targetTable );
+        } else {
+            this.targetTable = targetTable;
+        }
+        this.condition = condition;
+        this.sourceSelect = sourceSelect;
+        this.alias = alias;
+    }
+
 
     @Override
     public Kind getKind() {

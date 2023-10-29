@@ -72,6 +72,27 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         }
     }
 
+    public SqlAlterTableAddForeignKey( ParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.constraintName = Objects.requireNonNull( constraintName );
+        this.columnList = Objects.requireNonNull( columnList );
+        this.referencesTable = Objects.requireNonNull( referencesTable );
+        this.referencesList = Objects.requireNonNull( referencesList );
+        try {
+            this.onUpdate = onUpdate != null ? ForeignKeyOption.parse( onUpdate ) : ForeignKeyOption.RESTRICT;
+            this.onDelete = onDelete != null ? ForeignKeyOption.parse( onDelete ) : ForeignKeyOption.RESTRICT;
+        } catch ( UnknownForeignKeyOptionException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+
 
     @Override
     public List<Node> getOperandList() {

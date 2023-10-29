@@ -1226,6 +1226,16 @@ public enum Kind {
     DROP_FUNCTION,
 
     /**
+     * {@code CREATE ALIAS} DDL statement.
+     */
+    CREATE_ALIAS,
+
+    /**
+     * {@code DROP ALIAS} DDL statement.
+     */
+    DROP_ALIAS,
+
+    /**
      * DDL statement not handled above.
      *
      * <b>Note to other projects</b>: If you are extending Polypheny-DB's SQL parser and have your own object types you no
@@ -1423,6 +1433,8 @@ public enum Kind {
             SET_OPTION,
             TRUNCATE,
             ALTER_SCHEMA,
+            CREATE_ALIAS,
+            DROP_ALIAS,
             OTHER_DDL );
 
     /**

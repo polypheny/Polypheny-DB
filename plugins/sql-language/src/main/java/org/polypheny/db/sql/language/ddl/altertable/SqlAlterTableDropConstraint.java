@@ -53,6 +53,17 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
         this.constraintName = Objects.requireNonNull( constraintName );
     }
 
+    public SqlAlterTableDropConstraint( ParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.constraintName = Objects.requireNonNull( constraintName );
+    }
+
+
 
     @Override
     public List<Node> getOperandList() {

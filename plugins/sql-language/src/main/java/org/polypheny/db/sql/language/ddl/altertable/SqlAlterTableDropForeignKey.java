@@ -53,6 +53,17 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
         this.foreignKeyName = Objects.requireNonNull( foreignKeyName );
     }
 
+    public SqlAlterTableDropForeignKey( ParserPos pos, SqlIdentifier table, SqlIdentifier foreignKeyName, boolean isAlias ) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.foreignKeyName = Objects.requireNonNull( foreignKeyName );
+    }
+
+
 
     @Override
     public List<Node> getOperandList() {

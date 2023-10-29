@@ -70,6 +70,24 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         this.partitionGroupNamesList = partitionGroupNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
     }
 
+    public SqlAlterTableModifyPartitions(
+            ParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier storeName,
+            List<Integer> partitionGroupList,
+            List<SqlIdentifier> partitionGroupNamesList,
+            boolean isAlias) {
+        super( pos );
+        if (isAlias) {
+            this.table = (SqlIdentifier) replaceTableNameIfIsAlias( Objects.requireNonNull( table ) );
+        } else {
+            this.table = Objects.requireNonNull( table );
+        }
+        this.storeName = Objects.requireNonNull( storeName );
+        this.partitionGroupList = partitionGroupList;
+        this.partitionGroupNamesList = partitionGroupNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+    }
+
 
     @Override
     public List<Node> getOperandList() {

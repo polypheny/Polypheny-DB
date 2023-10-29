@@ -54,6 +54,16 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
         this.name = name;
     }
 
+    public SqlTruncate( ParserPos pos, SqlIdentifier name, boolean isAlias ) {
+        super( OPERATOR, pos );
+        if (isAlias) {
+            this.name = (SqlIdentifier) replaceTableNameIfIsAlias( name );
+        } else {
+            this.name = name;
+        }
+    }
+
+
 
     @Override
     public List<Node> getOperandList() {
