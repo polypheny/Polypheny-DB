@@ -16,11 +16,15 @@
 
 package org.polypheny.db.backup;
 
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.backup.datagatherer.GatherEntries;
+import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
 import org.slf4j.Logger;
 
 
+@Slf4j
 public class BackupManager {
 
 
@@ -35,22 +39,27 @@ public class BackupManager {
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
 
+        // datagatherer.GatherEntries gatherEntries = new datagatherer.GatherEntries();
+        GatherEntries gatherEntries = new GatherEntries();
+
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
         im.addGroup( informationGroupOverview );
 
+        // start backup button
         InformationText startBackup = new InformationText( informationGroupOverview, "Start the Backup." );
         startBackup.setOrder( 1 );
         im.registerInformation( startBackup );
 
         InformationAction startBackupAction = new InformationAction( informationGroupOverview, "Start", parameters -> {
             //IndexManager.getInstance().resetCounters();
-            System.out.println("lol");
+            StartDataGathering();
             return "Successfully started backup";
         } );
         startBackupAction.setOrder( 2 );
         im.registerInformation( startBackupAction );
 
+        // insert backup-data button
         InformationText insertBackupData = new InformationText( informationGroupOverview, "Insert the Backup Data." );
         insertBackupData.setOrder( 3 );
         im.registerInformation( insertBackupData );
@@ -60,6 +69,8 @@ public class BackupManager {
             System.out.println("hii");
             return "Successfully inserted backup data";
         } );
+        insertBackupDataAction.setOrder( 4 );
+        im.registerInformation( insertBackupDataAction );
 
     }
 
@@ -69,6 +80,14 @@ public class BackupManager {
         }
         INSTANCE = backupManager;
         return INSTANCE;
+    }
+
+    public void StartDataGathering () {
+        //GatherEntries gatherEntries = new GatherEntries();
+        GatherSchema gatherSchema = new GatherSchema();
+
+        //gatherEntries.start();
+        gatherSchema.start();
     }
 
 
