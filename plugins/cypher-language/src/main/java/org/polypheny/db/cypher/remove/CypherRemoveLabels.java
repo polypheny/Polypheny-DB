@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
@@ -50,12 +51,12 @@ public class CypherRemoveLabels extends CypherRemoveItem {
         AlgNode node = context.peek();
         int index = node.getRowType().getFieldNames().indexOf( variable.getName() );
         if ( index < 0 ) {
-            throw new RuntimeException( String.format( "Unknown variable with name %s", variable ) );
+            throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
         }
         AlgDataTypeField field = node.getRowType().getFieldList().get( index );
 
         if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
-            throw new RuntimeException( "Edges require exactly one label" );
+            throw new GenericRuntimeException( "Edges require exactly one label" );
         }
 
         RexNode ref = context.getRexNode( variable.getName() );

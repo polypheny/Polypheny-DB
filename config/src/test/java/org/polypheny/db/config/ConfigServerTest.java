@@ -17,6 +17,13 @@
 package org.polypheny.db.config;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import io.javalin.Javalin;
+import io.javalin.plugin.json.JavalinJackson;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Timer;
@@ -27,8 +34,26 @@ import org.polypheny.db.webui.ConfigService;
 public class ConfigServerTest {
 
 
+
     public static void main( String[] args ) {
-        ConfigService s = new ConfigService( null );
+        ObjectMapper mapper = new ObjectMapper() {
+            {
+                setSerializationInclusion( JsonInclude.Include.NON_NULL );
+                configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
+                setVisibility( getSerializationConfig().getDefaultVisibilityChecker()
+                        .withIsGetterVisibility( Visibility.NONE )
+                        .withGetterVisibility( Visibility.NONE )
+                        .withSetterVisibility( Visibility.NONE ) );
+                configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+                writerWithDefaultPrettyPrinter();
+            }
+        };
+        Javalin server = Javalin.create( config -> {
+            config.jsonMapper( new JavalinJackson( mapper ) );
+            config.enableCorsForAllOrigins();
+            config.addStaticFiles( staticFileConfig -> staticFileConfig.directory = "webapp/" );
+        } ).start( 7659 );
+        ConfigService s = new ConfigService( server );
         demoData( s );
     }
 

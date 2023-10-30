@@ -29,13 +29,15 @@ dependencies {
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {
+    implementation(group: "io.javalin", name: "javalin", version: javalin_version) {  // Apache 2.0
         exclude(group: "org.slf4j")
-        exclude(module: 'jetty-server')
-    } // Apache 2.0
+        exclude(module: "jetty-server")
+    }
 
     implementation group: "com.konghq", name: "unirest-java", version: unirest_version  // MIT
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+
+
     // --- Test Compile ---
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":dbms")

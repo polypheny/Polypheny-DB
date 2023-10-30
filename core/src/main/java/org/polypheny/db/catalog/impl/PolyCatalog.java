@@ -45,10 +45,10 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -87,7 +87,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Serialize
     @Getter
-    public final Map<Long, CatalogAdapter> adapters;
+    public final Map<Long, LogicalAdapter> adapters;
 
     @Serialize
     @Getter
@@ -137,7 +137,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
-            @Deserialize("adapters") Map<Long, CatalogAdapter> adapters,
+            @Deserialize("adapters") Map<Long, LogicalAdapter> adapters,
             @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
         // persistent data
         this.users = new ConcurrentHashMap<>( users );
@@ -356,7 +356,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode ) {
         long id = idBuilder.getNewAdapterId();
-        adapters.put( id, new CatalogAdapter( id, uniqueName, clazz, type, mode, settings ) );
+        adapters.put( id, new LogicalAdapter( id, uniqueName, clazz, type, mode, settings ) );
         change();
         return id;
     }

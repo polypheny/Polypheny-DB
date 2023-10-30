@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.vitrivr.cottontail.client.SimpleClient;
@@ -121,7 +122,7 @@ public class CottontailWrapper implements AutoCloseable {
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not COMMIT Cottontail DB transaction {} due to error; trying rollback", txId, e );
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
@@ -142,7 +143,7 @@ public class CottontailWrapper implements AutoCloseable {
                 this.transactions.remove( xid );
             } catch ( StatusRuntimeException e ) {
                 log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         } else {
             log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );

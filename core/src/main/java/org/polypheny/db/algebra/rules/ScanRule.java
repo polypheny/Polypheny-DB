@@ -41,7 +41,7 @@ public class ScanRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public ScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalRelScan.class, any() ), algBuilderFactory, null );
+        super( operand( LogicalRelScan.class, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );
     }
 
 
@@ -54,5 +54,6 @@ public class ScanRule extends AlgOptRule {
         AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }
+
 
 }

@@ -11,7 +11,7 @@ dependencies {
 
     compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) {
         exclude(group: "org.slf4j")
-        exclude(module: 'jetty-server')
+        exclude(module: "jetty-server")
     }
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0

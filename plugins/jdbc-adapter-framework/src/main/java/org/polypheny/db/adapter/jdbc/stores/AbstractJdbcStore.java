@@ -123,7 +123,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
 
     @Override
     public void updateNamespace( String name, long id ) {
-        currentJdbcSchema = JdbcSchema.create( id, storeCatalog, name, connectionFactory, dialect, this );
+        if ( storeCatalog.getNamespace( id ) == null ) {
+            currentJdbcSchema = JdbcSchema.create( id, storeCatalog, getDefaultPhysicalNamespaceName(), connectionFactory, dialect, this );
+            storeCatalog.addNamespace( id, currentJdbcSchema );
+        }
         putNamespace( currentJdbcSchema );
     }
 
@@ -145,13 +148,10 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper ) {
         AllocationTable allocation = allocationWrapper.table;
-        String namespaceName = getDefaultPhysicalSchemaName();
+        String namespaceName = getDefaultPhysicalNamespaceName();
         String tableName = getPhysicalTableName( allocation.id, 0 );
 
-        if ( storeCatalog.getNamespace( allocation.namespaceId ) == null ) {
-            updateNamespace( namespaceName, allocation.namespaceId );
-            storeCatalog.addNamespace( allocation.namespaceId, currentJdbcSchema );
-        }
+        updateNamespace( logical.table.getNamespaceName(), logical.table.namespaceId );
 
         PhysicalTable table = storeCatalog.createTable(
                 namespaceName,
@@ -207,7 +207,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
         String physicalColumnName = getPhysicalColumnName( logicalColumn.id );
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
-        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, table.columns.size() - 1, logicalColumn );
+        PhysicalColumn column = storeCatalog.addColumn( physicalColumnName, allocId, table.columns.size(), logicalColumn );
 
         StringBuilder query = buildAddColumnQuery( table, column );
         executeUpdate( query, context );
@@ -266,7 +266,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         builder.append( " SET " ).append( dialect.quoteIdentifier( column.name ) ).append( " = " );
 
         if ( column.collectionsType == PolyType.ARRAY ) {
-            throw new RuntimeException( "Default values are not supported for array types" );
+            throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
         SqlLiteral literal;
@@ -336,14 +336,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-
-        //List<CatalogPartitionPlacement> partitionPlacements = new ArrayList<>();
-        //partitionIds.forEach( id -> partitionPlacements.add( context.getSnapshot().alloc().getPartitionPlacement( getAdapterId(), id ) ) );
-
-        //for ( CatalogPartitionPlacement partitionPlacement : partitionPlacements ) {
-        // catalog.getAllocRel( catalogTable.namespaceId ).deletePartitionPlacement( getAdapterId(), partitionPlacement.partitionId );
-        // physicalSchemaName = partitionPlacement.physicalSchemaName;
-        // physicalTableName = partitionPlacement.physicalTableName;
         PhysicalTable table = storeCatalog.fromAllocation( allocId );
         StringBuilder builder = new StringBuilder();
 
@@ -357,7 +349,6 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         }
         executeUpdate( builder, context );
         storeCatalog.removeAllocAndPhysical( allocId );
-        // }
     }
 
 
@@ -414,7 +405,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -493,7 +484,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
     }
 
 
-    public abstract String getDefaultPhysicalSchemaName();
+    public abstract String getDefaultPhysicalNamespaceName();
 
 
     @SuppressWarnings("unused")

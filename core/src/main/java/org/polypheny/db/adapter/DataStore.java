@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 
 @Slf4j

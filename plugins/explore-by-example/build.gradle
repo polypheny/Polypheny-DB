@@ -5,15 +5,17 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":webui")
 
-    implementation group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: weka_version  // GPL 3.0
-    compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) {
+    implementation group: "nz.ac.waikato.cms.weka", name: "weka-stable", version: weka_version  // GPL 3.0
+    compileOnly(group: "io.javalin", name: "javalin", version: javalin_version) {  // Apache 2.0
         exclude(group: "org.slf4j")
-    } // Apache 2.0
+    }
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
     testImplementation project(path: ":core")
     testImplementation project(path: ":webui")
+
     testImplementation group: "junit", name: "junit", version: junit_version
 }
 
@@ -76,4 +78,3 @@ licensee {
     }
 
 }
-

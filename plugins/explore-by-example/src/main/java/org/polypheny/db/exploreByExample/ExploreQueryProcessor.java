@@ -27,6 +27,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.languages.QueryLanguage;
@@ -162,7 +163,7 @@ public class ExploreQueryProcessor {
 
         if ( parsed.isA( Kind.DDL ) ) {
             // explore by example should not execute any ddls
-            throw new RuntimeException( "No DDL expected here" );
+            throw new GenericRuntimeException( "No DDL expected here" );
         } else {
             Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
             AlgRoot logicalRoot = sqlProcessor.translate( statement, validated.left, null );

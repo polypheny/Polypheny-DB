@@ -27,10 +27,10 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -100,21 +100,21 @@ public interface Snapshot extends OperatorTable {
      *
      * @return List of adapters
      */
-    List<CatalogAdapter> getAdapters();
+    List<LogicalAdapter> getAdapters();
 
     /**
      * Get an adapter by its unique name
      *
      * @return The adapter
      */
-    @NotNull Optional<CatalogAdapter> getAdapter( String uniqueName );
+    @NotNull Optional<LogicalAdapter> getAdapter( String uniqueName );
 
     /**
      * Get an adapter by its id
      *
      * @return The adapter
      */
-    @NotNull Optional<CatalogAdapter> getAdapter( long id );
+    @NotNull Optional<LogicalAdapter> getAdapter( long id );
 
 
     /*

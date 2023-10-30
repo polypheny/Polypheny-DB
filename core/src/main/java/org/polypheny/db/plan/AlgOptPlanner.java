@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -105,6 +106,8 @@ public interface AlgOptPlanner {
      * @return whether the rule was added, as per {@link java.util.Collection#add}
      */
     boolean addRule( AlgOptRule rule );
+
+    boolean addRule( AlgOptRule operand, VolcanoPlannerPhase phase );
 
     /**
      * Removes a rule.
@@ -171,8 +174,8 @@ public interface AlgOptPlanner {
      *
      * The expression must not already have been registered. If you are not sure whether it has been registered, call {@link #ensureRegistered(AlgNode, AlgNode)}.
      *
-     * @param alg Relational expression to register (must not already be registered)
-     * @param equivAlg Relational expression it is equivalent to (may be null)
+     * @param alg Algebraic expression to register (must not already be registered)
+     * @param equivAlg Algebraic expression it is equivalent to (may be null)
      * @return the same expression, or an equivalent existing expression
      */
     AlgNode register( AlgNode alg, AlgNode equivAlg );
@@ -180,13 +183,13 @@ public interface AlgOptPlanner {
     /**
      * Registers an algebra expression if it is not already registered.
      *
-     * If {@code equivRel} is specified, {@code rel} is placed in the same equivalence set. It is OK if {@code equivRel} has different traits;
-     * {@code rel} will end up in a different subset of the same set.
+     * If {@code equivAlg} is specified, {@code alg} is placed in the same equivalence set. It is OK if {@code equivAlg} has different traits;
+     * {@code alg} will end up in a different subset of the same set.
      *
      * It is OK if {@code alg} is a subset.
      *
-     * @param alg Relational expression to register
-     * @param equivAlg Relational expression it is equivalent to (may be null)
+     * @param alg Algebraic expression to register
+     * @param equivAlg Algebraic expression it is equivalent to (may be null)
      * @return Registered relational expression
      */
     AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg );

@@ -37,6 +37,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -178,7 +179,7 @@ public class CottontailTypeUtil {
             }
         }
 
-        throw new RuntimeException( "Type " + logicalType + " is not supported by the Cottontail DB adapter." );
+        throw new GenericRuntimeException( "Type " + logicalType + " is not supported by the Cottontail DB adapter." );
     }
 
 
@@ -252,7 +253,7 @@ public class CottontailTypeUtil {
                     constantExpression = Expressions.constant( rexLiteral.value.asBlob().as64String() );
                     break;
                 default:
-                    throw new RuntimeException( "Type " + rexLiteral.type + " is not supported by the cottontail adapter." );
+                    throw new GenericRuntimeException( "Type " + rexLiteral.type + " is not supported by the cottontail adapter." );
             }
         }
 
@@ -423,7 +424,7 @@ public class CottontailTypeUtil {
         }
 
         log.error( "Conversion not possible! value: {}, type: {}", value.getClass().getCanonicalName(), actualType );
-        throw new RuntimeException( "Cottontail data type error: Type not handled." );
+        throw new GenericRuntimeException( "Cottontail data type error: Type not handled." );
     }
 
 
@@ -463,7 +464,7 @@ public class CottontailTypeUtil {
                 }
                 return builder.build();
             default:
-                throw new RuntimeException( "Unsupported type: " + dstElementType.getName() );
+                throw new GenericRuntimeException( "Unsupported type: " + dstElementType.getName() );
         }
     }
 
@@ -543,7 +544,7 @@ public class CottontailTypeUtil {
             } else if ( node instanceof RexCall ) {
                 list.add( arrayCallToList( ((RexCall) node).operands, innerType ) );
             } else {
-                throw new RuntimeException( "Invalid array." );
+                throw new GenericRuntimeException( "Invalid array." );
             }
         }
 
@@ -583,7 +584,7 @@ public class CottontailTypeUtil {
             case SMALLINT:
                 return rexLiteral.getValueAs( Short.class );
             default:
-                throw new RuntimeException( "Type " + actualType + " is not supported by the cottontail adapter." );
+                throw new GenericRuntimeException( "Type " + actualType + " is not supported by the cottontail adapter." );
         }
     }
 
@@ -627,7 +628,7 @@ public class CottontailTypeUtil {
             return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
         }
 
-        throw new RuntimeException( "First argument is neither an input ref nor a dynamic parameter" );
+        throw new GenericRuntimeException( "First argument is neither an input ref nor a dynamic parameter" );
     }
 
 
@@ -648,7 +649,7 @@ public class CottontailTypeUtil {
             return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", listExpression, Expressions.constant( actualType ) );
         }
 
-        throw new RuntimeException( "Argument is neither an array call nor a dynamic parameter" );
+        throw new GenericRuntimeException( "Argument is neither an array call nor a dynamic parameter" );
     }
 
 
@@ -667,13 +668,13 @@ public class CottontailTypeUtil {
                     Expressions.constant( dynamicParam.getIndex() ) );
         }
 
-        throw new RuntimeException( "Argument is neither an array call nor a dynamic parameter" );
+        throw new GenericRuntimeException( "Argument is neither an array call nor a dynamic parameter" );
     }
 
 
     public static Object defaultValueParser( CatalogDefaultValue catalogDefaultValue, PolyType actualType ) {
         if ( actualType == PolyType.ARRAY ) {
-            throw new RuntimeException( "Default values are not supported for array types" );
+            throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
         Object literal;

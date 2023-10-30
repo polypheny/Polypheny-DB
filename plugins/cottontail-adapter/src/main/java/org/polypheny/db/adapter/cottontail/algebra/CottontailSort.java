@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -133,7 +134,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
         } else if ( node instanceof RexDynamicParam ) {
             expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
         } else {
-            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
+            throw new GenericRuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
         }
 
         inner.add( Expressions.return_( null, expr ) );

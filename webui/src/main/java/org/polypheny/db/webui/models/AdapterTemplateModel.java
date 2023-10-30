@@ -27,7 +27,7 @@ import org.polypheny.db.adapter.AbstractAdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.java.AdapterTemplate;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 
 @Value
 public class AdapterTemplateModel {

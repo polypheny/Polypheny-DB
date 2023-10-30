@@ -154,7 +154,7 @@ public class DdlTest extends CypherTestTemplate {
 
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );
 
-        execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2 );
+        execute( DmlInsertTest.CREATE_COMPLEX_GRAPH_2, graphName );
 
         try {
             addStore( "store1" );
@@ -163,11 +163,11 @@ public class DdlTest extends CypherTestTemplate {
 
             execute( String.format( "DROP PLACEMENT OF %s ON STORE %s", graphName, "hsqldb" ), graphName );
 
-            GraphResult res = execute( "MATCH (n) RETURN n" );
+            GraphResult res = execute( "MATCH (n) RETURN n", graphName );
             assert res.getData().length == 3;
             assertNode( res, 0 );
 
-            res = execute( "MATCH ()-[r]->() RETURN r" );
+            res = execute( "MATCH ()-[r]->() RETURN r", graphName );
             assert res.getData().length == 3;
             assertEdge( res, 0 );
 

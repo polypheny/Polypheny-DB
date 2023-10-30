@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.type.PolyType;
 
 public abstract class DataSource<S extends StoreCatalog> extends Adapter<S> implements ExtensionPoint {

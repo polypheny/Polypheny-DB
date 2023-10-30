@@ -34,10 +34,10 @@ public class FileUtil {
             case INTEGER:
             case TINYINT:
             case SMALLINT:
-                value.asNumber().IntValue();
+                return value.asNumber().IntValue();
             case REAL:
             case FLOAT:
-                value.asNumber().FloatValue();
+                return value.asNumber().FloatValue();
             case VARCHAR:
             case CHAR:
                 return value.asString().value;
@@ -51,7 +51,12 @@ public class FileUtil {
                 return value.asNumber().DoubleValue();
             case BOOLEAN:
                 return value.asBoolean().value;
-
+            case DATE:
+                return value.asDate().getDaysSinceEpoch();
+            case TIME:
+                return value.asTime().ofDay;
+            case TIMESTAMP:
+                return value.asTimeStamp().milliSinceEpoch;
         }
         throw new NotImplementedException();
     }

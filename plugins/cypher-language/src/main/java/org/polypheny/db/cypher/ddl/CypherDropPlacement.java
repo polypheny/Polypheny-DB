@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -55,12 +56,12 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.databaseName ) );
 
-        DataStore dataStore = Stream.of( storeName )
-                .map( store -> (DataStore) adapterManager.getAdapter( storeName ) )
+        DataStore<?> dataStore = Stream.of( storeName )
+                .map( store -> (DataStore<?>) adapterManager.getAdapter( storeName ) )
                 .collect( Collectors.toList() ).get( 0 );
 
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while adding graph placement" );
+            throw new GenericRuntimeException( "Error while adding graph placement" );
         }
 
         DdlManager.getInstance().dropGraphPlacement( graphs.get( 0 ).id, dataStore, statement );

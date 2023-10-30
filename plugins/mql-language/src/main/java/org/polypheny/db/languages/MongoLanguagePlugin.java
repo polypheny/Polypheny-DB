@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.mql.Mql.Family;
@@ -185,7 +186,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
     public static void registerOperators() {
         if ( isInit ) {
-            throw new RuntimeException( "Mql operators were already registered." );
+            throw new GenericRuntimeException( "Mql operators were already registered." );
         }
         register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS ) );
 

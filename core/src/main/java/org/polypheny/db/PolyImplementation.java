@@ -267,7 +267,7 @@ public class PolyImplementation {
             return Meta.StatementType.IS_DML;
         }
 
-        throw new RuntimeException( "Statement type does not exist." );
+        throw new GenericRuntimeException( "Statement type does not exist." );
     }
 
 
@@ -286,9 +286,9 @@ public class PolyImplementation {
                 rowsChanged = getRowsChanged( statement, iterator, MonitoringType.from( getKind() ) );
             } catch ( RuntimeException e ) {
                 if ( e.getCause() != null ) {
-                    throw new Exception( e.getCause().getMessage(), e );
+                    throw new GenericRuntimeException( e.getCause().getMessage(), e );
                 } else {
-                    throw new Exception( e.getMessage(), e );
+                    throw new GenericRuntimeException( e.getMessage(), e );
                 }
             }
             return rowsChanged;

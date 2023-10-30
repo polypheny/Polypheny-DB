@@ -31,7 +31,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -271,31 +271,31 @@ public class FrequencyMapImpl extends FrequencyMap {
 
             PartitionProperty property = snapshot.alloc().getPartitionProperty( table.id ).orElseThrow();
 
-            List<CatalogAdapter> adaptersWithHot = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
-            List<CatalogAdapter> adaptersWithCold = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getColdPartitionGroupId() );
+            List<LogicalAdapter> adaptersWithHot = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getHotPartitionGroupId() );
+            List<LogicalAdapter> adaptersWithCold = snapshot.alloc().getAdaptersByPartitionGroup( table.id, ((TemperaturePartitionProperty) property).getColdPartitionGroupId() );
 
             log.debug( "Get adapters to create physical tables" );
             // Validate that partition does not already exist on storeId
-            for ( CatalogAdapter catalogAdapter : adaptersWithHot ) {
+            for ( LogicalAdapter logicalAdapter : adaptersWithHot ) {
                 // Skip creation/deletion because this adapter contains both groups HOT {@literal &} COLD
-                if ( adaptersWithCold.contains( catalogAdapter ) ) {
+                if ( adaptersWithCold.contains( logicalAdapter ) ) {
                     if ( log.isDebugEnabled() ) {
-                        log.debug( "Skip adapter {}, hold both partitionGroups HOT & COLD", catalogAdapter.uniqueName );
+                        log.debug( "Skip adapter {}, hold both partitionGroups HOT & COLD", logicalAdapter.uniqueName );
                     }
                     continue;
                 }
 
                 // First create new HOT tables
-                createHotTables( table, partitionsFromColdToHot, partitionsFromHotToCold, partitionsToRemoveFromStore, statement, dataMigrator, catalogAdapter );
+                createHotTables( table, partitionsFromColdToHot, partitionsFromHotToCold, partitionsToRemoveFromStore, statement, dataMigrator, logicalAdapter );
             }
 
-            for ( CatalogAdapter catalogAdapter : adaptersWithCold ) {
+            for ( LogicalAdapter logicalAdapter : adaptersWithCold ) {
                 // Skip creation/deletion because this adapter contains both groups HOT {@literal &}  COLD
-                if ( adaptersWithHot.contains( catalogAdapter ) ) {
+                if ( adaptersWithHot.contains( logicalAdapter ) ) {
                     continue;
                 }
                 // First create new HOT tables
-                createHotTables( table, partitionsFromHotToCold, partitionsFromColdToHot, partitionsToRemoveFromStore, statement, dataMigrator, catalogAdapter );
+                createHotTables( table, partitionsFromHotToCold, partitionsFromColdToHot, partitionsToRemoveFromStore, statement, dataMigrator, logicalAdapter );
             }
 
             // DROP all partitions on each storeId
@@ -325,12 +325,12 @@ public class FrequencyMapImpl extends FrequencyMap {
     }
 
 
-    private void createHotTables( LogicalTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold, Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore, Statement statement, DataMigrator dataMigrator, CatalogAdapter catalogAdapter ) {
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+    private void createHotTables( LogicalTable table, List<Long> partitionsFromColdToHot, List<Long> partitionsFromHotToCold, Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore, Statement statement, DataMigrator dataMigrator, LogicalAdapter logicalAdapter ) {
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( logicalAdapter.id );
         if ( adapter instanceof DataStore ) {
             DataStore<?> store = (DataStore<?>) adapter;
 
-            List<Long> hotPartitionsToCreate = filterList( table.namespaceId, catalogAdapter.id, table.id, partitionsFromColdToHot );
+            List<Long> hotPartitionsToCreate = filterList( table.namespaceId, logicalAdapter.id, table.id, partitionsFromColdToHot );
             //List<Long> coldPartitionsToDelete = filterList( catalogAdapter.id, table.id, partitionsFromHotToCold );
 
             // If this storeId contains both Groups HOT {@literal &}  COLD do nothing

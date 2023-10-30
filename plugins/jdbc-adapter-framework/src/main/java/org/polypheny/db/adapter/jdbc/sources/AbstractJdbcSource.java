@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
@@ -162,7 +163,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -218,7 +219,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
                 if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
-                    throw new RuntimeException( "Invalid table name: " + str );
+                    throw new GenericRuntimeException( "Invalid table name: " + str );
                 }
                 String tableName;
                 String schemaPattern;
@@ -263,7 +264,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
                                 type = PolyType.TIME;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
-                                    throw new RuntimeException( "Unsupported precision for data type time: " + length );
+                                    throw new GenericRuntimeException( "Unsupported precision for data type time: " + length );
                                 }
                                 break;
                             case TIMESTAMP:
@@ -271,7 +272,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
                                 type = PolyType.TIMESTAMP;
                                 length = row.getInt( "DECIMAL_DIGITS" );
                                 if ( length > 3 ) {
-                                    throw new RuntimeException( "Unsupported precision for data type timestamp: " + length );
+                                    throw new GenericRuntimeException( "Unsupported precision for data type timestamp: " + length );
                                 }
                                 break;
                             case CHAR:
@@ -285,7 +286,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
                                 length = row.getInt( "COLUMN_SIZE" );
                                 break;
                             default:
-                                throw new RuntimeException( "Unsupported data type: " + type.getName() );
+                                throw new GenericRuntimeException( "Unsupported data type: " + type.getName() );
                         }
                         list.add( new ExportedColumn(
                                 row.getString( "COLUMN_NAME" ).toLowerCase(),
@@ -307,7 +308,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
                 }
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
-            throw new RuntimeException( "Exception while collecting schema information!" + e );
+            throw new GenericRuntimeException( "Exception while collecting schema information!" + e );
         }
         return map;
     }

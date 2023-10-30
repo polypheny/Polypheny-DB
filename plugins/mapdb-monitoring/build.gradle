@@ -10,10 +10,11 @@ dependencies {
     compileOnly project(":core")
     compileOnly project(":monitoring")
 
-    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
-    implementation(group: "org.mapdb", name: "mapdb", version: mapdb_version) {
+    implementation group: "com.google.guava", name: "guava", version: guava_version
+    implementation(group: "org.mapdb", name: "mapdb", version: mapdb_version) {  // Apache 2.0
         exclude group: "com.google.guava"
-    }  // Apache 2.0
+    }
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "tests")
@@ -21,7 +22,8 @@ dependencies {
     testImplementation project(path: ":monitoring")
     testImplementation project(path: ":dbms", configuration: "test")
     testImplementation project(path: ":config")
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.7.0"// Apache 2.0
+
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: junit_jupiter_version  // Apache 2.0
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
@@ -84,5 +86,3 @@ licensee {
 
     allowUrl('https://www.eclipse.org/licenses/edl-v10.html') // EDL 1.0
 }
-
-

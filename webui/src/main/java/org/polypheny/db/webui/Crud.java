@@ -98,8 +98,8 @@ import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -550,7 +550,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         query.append( colJoiner );
         query.append( ")" );
         if ( request.storeId != null ) {
-            CatalogAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
+            LogicalAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
             query.append( String.format( " ON STORE \"%s\"", adapter.uniqueName ) );
         }
 
@@ -640,7 +640,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
             }
         } catch ( ServletException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
@@ -734,18 +734,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 Pattern p2 = Pattern.compile( "(?si:limit)[\\s]+[0-9]+[\\s]*$" );
                 //If the user specifies a limit
                 noLimit = p2.matcher( query ).find() || request.noLimit;
-                // decrease limit if it is too large
-                /*else {
-                    Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-                    Matcher limitMatcher = pattern.matcher( query );
-                    if ( limitMatcher.find() ) {
-                        int limit = Integer.parseInt( limitMatcher.group( 2 ) );
-                        if ( limit > getPageSize() ) {
-                            // see https://stackoverflow.com/questions/38296673/replace-group-1-of-java-regex-with-out-replacing-the-entire-regex?rq=1
-                            query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
-                        }
-                    }
-                }*/
                 try {
                     temp = System.nanoTime();
                     result = executeSqlSelect( transaction.createStatement(), request, query, noLimit, crud )
@@ -1124,7 +1112,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else {
             List<AllocationEntity> allocs = Catalog.snapshot().alloc().getFromLogical( tablee.id );
             if ( Catalog.snapshot().alloc().getFromLogical( tablee.id ).size() != 1 ) {
-                throw new RuntimeException( "The table has an unexpected number of placements!" );
+                throw new GenericRuntimeException( "The table has an unexpected number of placements!" );
             }
 
             long adapterId = allocs.get( 0 ).adapterId;
@@ -1224,7 +1212,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
             ctx.json( new MaterializedInfos( materializedInfo ) );
         } else {
-            throw new RuntimeException( "only possible with materialized views" );
+            throw new GenericRuntimeException( "only possible with materialized views" );
         }
     }
 

@@ -80,6 +80,7 @@ import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
@@ -8023,7 +8024,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
                     return SqlLiteral.createCharString( value.toString(), ParserPos.ZERO );
                 case TIMESTAMP:
                     TimestampString ts = TimestampString.fromMillisSinceEpoch( (Long) value );
-                    return SqlLiteral.createTimestamp( ts, type.getPrecision(), ParserPos.ZERO );
+                    return SqlLiteral.createTimestamp( PolyTimeStamp.of( ts.getMillisSinceEpoch() ), type.getPrecision(), ParserPos.ZERO );
                 default:
                     throw new AssertionError( type );
             }

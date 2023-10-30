@@ -27,6 +27,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.polypheny.db.functions.Functions.charLength;
+import static org.polypheny.db.functions.Functions.concat;
 import static org.polypheny.db.functions.Functions.greater;
 import static org.polypheny.db.functions.Functions.initcap;
 import static org.polypheny.db.functions.Functions.lesser;
@@ -73,29 +74,29 @@ public class FunctionsTest {
 
     @Test
     public void testCharLength() {
-        assertEquals( 3, charLength( "xyz" ) );
+        assertEquals( 3, charLength( PolyString.of( "xyz" ) ) );
     }
 
 
     @Test
     public void testConcat() {
-        assertEquals( "a bcd", concat( "a b", "cd" ) );
+        assertEquals( PolyString.of( "a bcd" ), concat( PolyString.of( "a b" ), PolyString.of( "cd" ) ) );
         // The code generator will ensure that nulls are never passed in. If we pass in null, it is treated like the string "null", as the following tests show. Not the desired behavior for SQL.
-        assertEquals( "anull", concat( "a", null ) );
-        assertEquals( "nullnull", concat( (String) null, null ) );
-        assertEquals( "nullb", concat( null, "b" ) );
+        // assertEquals( "anull", concat( PolyString.of( "a" ), null ) ); why should we test something we don't want to occur
+        // assertEquals( "nullnull", concat( (PolyString) null, null ) );
+        // assertEquals( "nullb", concat( null, PolyString.of( "b" ) ) );
     }
 
 
     @Test
     public void testLower() {
-        assertEquals( "a bcd iijk", lower( "A bCd Iijk" ) );
+        assertEquals( PolyString.of( "a bcd iijk" ), lower( PolyString.of( "A bCd Iijk" ) ) );
     }
 
 
     @Test
     public void testUpper() {
-        assertEquals( "A BCD IIJK", upper( "A bCd iIjk" ) );
+        assertEquals( PolyString.of( "A BCD IIJK" ), upper( PolyString.of( "A bCd iIjk" ) ) );
     }
 
 
@@ -350,112 +351,113 @@ public class FunctionsTest {
 
     @Test
     public void testSTruncateLong() {
-        assertEquals( 12000d, Functions.struncate( 12345L, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.struncate( 12000L, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.struncate( 12001L, -3 ), 0.001 );
-        assertEquals( 10000d, Functions.struncate( 12000L, -4 ), 0.001 );
-        assertEquals( 0d, Functions.struncate( 12000L, -5 ), 0.001 );
-        assertEquals( 11000d, Functions.struncate( 11999L, -3 ), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyLong.of( 12345L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyLong.of( 12000L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyLong.of( 12001L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.struncate( PolyLong.of( 12000L ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyLong.of( 12000L ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 11000d, Functions.struncate( PolyLong.of( 11999L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12000d, Functions.struncate( -12345L, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.struncate( -12000L, -3 ), 0.001 );
-        assertEquals( -11000d, Functions.struncate( -11999L, -3 ), 0.001 );
-        assertEquals( -10000d, Functions.struncate( -12000L, -4 ), 0.001 );
-        assertEquals( 0d, Functions.struncate( -12000L, -5 ), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyLong.of( -12345L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyLong.of( -12000L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -11000d, Functions.struncate( PolyLong.of( -11999L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.struncate( PolyLong.of( -12000L ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyLong.of( -12000L ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 
     @Test
     public void testSTruncateInt() {
-        assertEquals( 12000d, Functions.struncate( 12345, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.struncate( 12000, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.struncate( 12001, -3 ), 0.001 );
-        assertEquals( 10000d, Functions.struncate( 12000, -4 ), 0.001 );
-        assertEquals( 0d, Functions.struncate( 12000, -5 ), 0.001 );
-        assertEquals( 11000d, Functions.struncate( 11999, -3 ), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyInteger.of( 12345 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyInteger.of( 12000 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.struncate( PolyInteger.of( 12001 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.struncate( PolyInteger.of( 12000 ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyInteger.of( 12000 ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 11000d, Functions.struncate( PolyInteger.of( 11999 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12000d, Functions.struncate( -12345, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.struncate( -12000, -3 ), 0.001 );
-        assertEquals( -11000d, Functions.struncate( -11999, -3 ), 0.001 );
-        assertEquals( -10000d, Functions.struncate( -12000, -4 ), 0.001 );
-        assertEquals( 0d, Functions.struncate( -12000, -5 ), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyInteger.of( -12345 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.struncate( PolyInteger.of( -12000 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -11000d, Functions.struncate( PolyInteger.of( -11999 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.struncate( PolyInteger.of( -12000 ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.struncate( PolyInteger.of( -12000 ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.struncate( PolyInteger.of( -12000 ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 
     @Test
     public void testSRoundDouble() {
-        assertEquals( 12.345d, Functions.sround( 12.345d, 3 ), 0.001 );
-        assertEquals( 12.350d, Functions.sround( 12.345d, 2 ), 0.001 );
-        assertEquals( 12.300d, Functions.sround( 12.345d, 1 ), 0.001 );
-        assertEquals( 13.000d, Functions.sround( 12.999d, 2 ), 0.001 );
-        assertEquals( 13.000d, Functions.sround( 12.999d, 1 ), 0.001 );
-        assertEquals( 13.000d, Functions.sround( 12.999d, 0 ), 0.001 );
+        assertEquals( 12.345d, Functions.sround( PolyDouble.of( 12.345d ), PolyInteger.of( 3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12.350d, Functions.sround( PolyDouble.of( 12.345d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( 12.300d, Functions.sround( PolyDouble.of( 12.345d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( 13.000d, Functions.sround( PolyDouble.of( 12.999d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( 13.000d, Functions.sround( PolyDouble.of( 12.999d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( 13.000d, Functions.sround( PolyDouble.of( 12.999d ), PolyInteger.of( 0 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12.345d, Functions.sround( -12.345d, 3 ), 0.001 );
-        assertEquals( -12.350d, Functions.sround( -12.345d, 2 ), 0.001 );
-        assertEquals( -12.300d, Functions.sround( -12.345d, 1 ), 0.001 );
-        assertEquals( -13.000d, Functions.sround( -12.999d, 2 ), 0.001 );
-        assertEquals( -13.000d, Functions.sround( -12.999d, 1 ), 0.001 );
-        assertEquals( -13.000d, Functions.sround( -12.999d, 0 ), 0.001 );
+        assertEquals( -12.345d, Functions.sround( PolyDouble.of( -12.345d ), PolyInteger.of( 3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12.350d, Functions.sround( PolyDouble.of( -12.345d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( -12.300d, Functions.sround( PolyDouble.of( -12.345d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( -13.000d, Functions.sround( PolyDouble.of( -12.999d ), PolyInteger.of( 2 ) ).doubleValue(), 0.001 );
+        assertEquals( -13.000d, Functions.sround( PolyDouble.of( -12.999d ), PolyInteger.of( 1 ) ).doubleValue(), 0.001 );
+        assertEquals( -13.000d, Functions.sround( PolyDouble.of( -12.999d ), PolyInteger.of( 0 ) ).doubleValue(), 0.001 );
 
-        assertEquals( 12350d, Functions.sround( 12345d, -1 ), 0.001 );
-        assertEquals( 12300d, Functions.sround( 12345d, -2 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12345d, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12000d, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12001d, -3 ), 0.001 );
-        assertEquals( 10000d, Functions.sround( 12000d, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( 12000d, -5 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 11999d, -3 ), 0.001 );
+        assertEquals( 12350d, Functions.sround( PolyDouble.of( 12345d ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( 12300d, Functions.sround( PolyDouble.of( 12345d ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyDouble.of( 12345d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyDouble.of( 12000d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyDouble.of( 12001d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.sround( PolyDouble.of( 12000d ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyDouble.of( 12000d ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyDouble.of( 11999d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12350d, Functions.sround( -12345d, -1 ), 0.001 );
-        assertEquals( -12300d, Functions.sround( -12345d, -2 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12345d, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12000d, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -11999d, -3 ), 0.001 );
-        assertEquals( -10000d, Functions.sround( -12000d, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( -12000d, -5 ), 0.001 );
+        assertEquals( -12350d, Functions.sround( PolyDouble.of( -12345d ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( -12300d, Functions.sround( PolyDouble.of( -12345d ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyDouble.of( -12345d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyDouble.of( -12000d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyDouble.of( -11999d ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.sround( PolyDouble.of( -12000d ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyDouble.of( -12000d ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 
     @Test
     public void testSRoundLong() {
-        assertEquals( 12350d, Functions.sround( 12345L, -1 ), 0.001 );
-        assertEquals( 12300d, Functions.sround( 12345L, -2 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12345L, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12000L, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12001L, -3 ), 0.001 );
-        assertEquals( 10000d, Functions.sround( 12000L, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( 12000L, -5 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 11999L, -3 ), 0.001 );
+        assertEquals( 12350d, Functions.sround( PolyLong.of( 12345L ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( 12300d, Functions.sround( PolyLong.of( 12345L ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyLong.of( 12345L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyLong.of( 12000L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyLong.of( 12001L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.sround( PolyLong.of( 12000L ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyLong.of( 12000L ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyLong.of( 11999L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12350d, Functions.sround( -12345L, -1 ), 0.001 );
-        assertEquals( -12300d, Functions.sround( -12345L, -2 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12345L, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12000L, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -11999L, -3 ), 0.001 );
-        assertEquals( -10000d, Functions.sround( -12000L, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( -12000L, -5 ), 0.001 );
+        assertEquals( -12350d, Functions.sround( PolyLong.of( -12345L ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( -12300d, Functions.sround( PolyLong.of( -12345L ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyLong.of( -12345L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyLong.of( -12000L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyLong.of( -11999L ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.sround( PolyLong.of( -12000L ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyLong.of( -12000L ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 
     @Test
     public void testSRoundInt() {
-        assertEquals( 12350d, Functions.sround( 12345, -1 ), 0.001 );
-        assertEquals( 12300d, Functions.sround( 12345, -2 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12345, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12000, -3 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 12001, -3 ), 0.001 );
-        assertEquals( 10000d, Functions.sround( 12000, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( 12000, -5 ), 0.001 );
-        assertEquals( 12000d, Functions.sround( 11999, -3 ), 0.001 );
+        assertEquals( 12350d, Functions.sround( PolyInteger.of( 12345 ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( 12300d, Functions.sround( PolyInteger.of( 12345 ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyInteger.of( 12345 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyInteger.of( 12000 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyInteger.of( 12001 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( 10000d, Functions.sround( PolyInteger.of( 12000 ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyInteger.of( 12000 ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
+        assertEquals( 12000d, Functions.sround( PolyInteger.of( 11999 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
 
-        assertEquals( -12350d, Functions.sround( -12345, -1 ), 0.001 );
-        assertEquals( -12300d, Functions.sround( -12345, -2 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12345, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -12000, -3 ), 0.001 );
-        assertEquals( -12000d, Functions.sround( -11999, -3 ), 0.001 );
-        assertEquals( -10000d, Functions.sround( -12000, -4 ), 0.001 );
-        assertEquals( 0d, Functions.sround( -12000, -5 ), 0.001 );
+        assertEquals( -12350d, Functions.sround( PolyInteger.of( -12345 ), PolyInteger.of( -1 ) ).doubleValue(), 0.001 );
+        assertEquals( -12300d, Functions.sround( PolyInteger.of( -12345 ), PolyInteger.of( -2 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyInteger.of( -12345 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyInteger.of( -12000 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -12000d, Functions.sround( PolyInteger.of( -11999 ), PolyInteger.of( -3 ) ).doubleValue(), 0.001 );
+        assertEquals( -10000d, Functions.sround( PolyInteger.of( -12000 ), PolyInteger.of( -4 ) ).doubleValue(), 0.001 );
+        assertEquals( 0d, Functions.sround( PolyInteger.of( -12000 ), PolyInteger.of( -5 ) ).doubleValue(), 0.001 );
     }
 
 

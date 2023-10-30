@@ -1154,7 +1154,7 @@ public class ConcurrentTestCommandGenerator {
                 rowNum++;
             }
 
-            throw new RuntimeException( fullMessage.toString() );
+            throw new GenericRuntimeException( fullMessage.toString() );
         }
 
     }

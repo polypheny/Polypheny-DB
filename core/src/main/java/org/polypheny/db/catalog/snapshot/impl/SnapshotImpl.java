@@ -28,10 +28,10 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -63,10 +63,10 @@ public class SnapshotImpl implements Snapshot {
     ImmutableMap<String, QueryInterfaceTemplate> interfaceTemplates;
 
     ImmutableMap<String, CatalogQueryInterface> interfaceNames;
-    ImmutableMap<Long, CatalogAdapter> adapters;
+    ImmutableMap<Long, LogicalAdapter> adapters;
     ImmutableMap<Long, AdapterTemplate> adapterTemplates;
 
-    ImmutableMap<String, CatalogAdapter> adapterNames;
+    ImmutableMap<String, LogicalAdapter> adapterNames;
 
     ImmutableMap<Long, LogicalNamespace> namespaces;
 
@@ -141,19 +141,19 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public List<CatalogAdapter> getAdapters() {
+    public List<LogicalAdapter> getAdapters() {
         return adapters.values().asList();
     }
 
 
     @Override
-    public @NotNull Optional<CatalogAdapter> getAdapter( String uniqueName ) {
+    public @NotNull Optional<LogicalAdapter> getAdapter( String uniqueName ) {
         return Optional.ofNullable( adapterNames.get( uniqueName ) );
     }
 
 
     @Override
-    public @NotNull Optional<CatalogAdapter> getAdapter( long id ) {
+    public @NotNull Optional<LogicalAdapter> getAdapter( long id ) {
         return Optional.ofNullable( adapters.get( id ) );
     }
 

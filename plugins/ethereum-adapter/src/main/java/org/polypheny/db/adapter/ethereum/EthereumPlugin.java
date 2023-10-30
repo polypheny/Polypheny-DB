@@ -121,7 +121,7 @@ public class EthereumPlugin extends PolyPlugin {
             try {
                 BigInteger latest = web3j.ethBlockNumber().send().getBlockNumber();
             } catch ( Exception e ) {
-                throw new RuntimeException( "Unable to connect the client URL '" + clientURL + "'" );
+                throw new GenericRuntimeException( "Unable to connect the client URL '" + clientURL + "'" );
             }
             web3j.shutdown();
             this.clientURL = clientURL;

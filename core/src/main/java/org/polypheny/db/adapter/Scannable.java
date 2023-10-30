@@ -97,6 +97,9 @@ public interface Scannable {
     static AlgNode getGraphScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
         List<PhysicalEntity> physicals = scannable.getCatalog().getPhysicalsFromAllocs( allocId );
+        if ( physicals == null ) {
+            throw new GenericRuntimeException( "This should not happen." );
+        }
         builder.scan( physicals.get( 0 ) );//node
         builder.scan( physicals.get( 1 ) );//node Props
         builder.scan( physicals.get( 2 ) );//edge

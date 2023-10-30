@@ -34,8 +34,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
-import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
@@ -208,10 +208,10 @@ public class AdapterManager {
         if ( adapterInstance == null ) {
             throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
-        CatalogAdapter catalogAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
+        LogicalAdapter logicalAdapter = Catalog.getInstance().getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( catalogAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        List<AllocationEntity> placements = Catalog.getInstance().getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
             throw new GenericRuntimeException( "There is still data placed on this data store" );
         }
@@ -224,16 +224,16 @@ public class AdapterManager {
         adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
-        Catalog.getInstance().dropAdapter( catalogAdapter.id );
+        Catalog.getInstance().dropAdapter( logicalAdapter.id );
     }
 
 
     /**
      * Restores adapters from catalog
      */
-    public void restoreAdapters( List<CatalogAdapter> adapters ) {
+    public void restoreAdapters( List<LogicalAdapter> adapters ) {
         try {
-            for ( CatalogAdapter adapter : adapters ) {
+            for ( LogicalAdapter adapter : adapters ) {
                 Constructor<?> ctor = AdapterTemplate.fromString( adapter.adapterName, adapter.type ).getClazz().getConstructor( long.class, String.class, Map.class );
                 Adapter<?> instance = (Adapter<?>) ctor.newInstance( adapter.id, adapter.uniqueName, adapter.settings );
                 adapterByName.put( instance.getUniqueName(), instance );

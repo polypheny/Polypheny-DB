@@ -221,21 +221,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     }
 
 
-    @Override
-    public void partitionTable( long tableId, PartitionProperty partitionProperty ) {
-        properties.put( partitionProperty.entityId, partitionProperty );
-
-        /*if ( partitionProperty.reliesOnPeriodicChecks ) {
-            addTableToPeriodicProcessing( tableId );
-        }*/
-    }
-
-
-    @Override
-    public void mergeTable( long tableId ) {
-
-    }
-
 
     @Override
     public void updatePartition( long partitionId, Long partitionGroupId ) {
@@ -266,6 +251,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         long id = idBuilder.getNewAllocId();
         AllocationTable table = new AllocationTable( id, placementId, partitionId, logicalId, namespace.id, adapterId );
         tables.put( id, table );
+        change();
         return table;
     }
 
@@ -273,21 +259,8 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void deleteAllocation( long allocId ) {
         tables.remove( allocId );
-
+        change();
     }
-
-
-    @Override
-    public void updateDataPlacement( long adapterId, long tableId, List<Long> columnIds, List<Long> partitionIds ) {
-
-    }
-
-
-    @Override
-    public void deletePartitionPlacement( long adapterId, long partitionId ) {
-
-    }
-
 
     @Override
     public AllocationPlacement addPlacement( long logicalEntityId, long namespaceId, long adapterId ) {
@@ -295,6 +268,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         AllocationPlacement placement = new AllocationPlacement( id, logicalEntityId, namespaceId, adapterId );
 
         placements.put( id, placement );
+        change();
         return placement;
     }
 
@@ -302,12 +276,14 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
     @Override
     public void deletePlacement( long id ) {
         placements.remove( id );
+        change();
     }
 
 
     @Override
     public void deleteProperty( long id ) {
         properties.remove( id );
+        change();
     }
 
 

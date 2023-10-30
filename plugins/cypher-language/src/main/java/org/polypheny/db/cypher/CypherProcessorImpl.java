@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
@@ -73,7 +74,7 @@ public class CypherProcessorImpl extends Processor {
             parsed = parser.parseStmts();
         } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

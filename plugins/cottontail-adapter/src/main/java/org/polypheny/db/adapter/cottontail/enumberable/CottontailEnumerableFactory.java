@@ -29,6 +29,7 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
@@ -360,7 +361,7 @@ public class CottontailEnumerableFactory {
                         .build() );
             }
         } catch ( RuntimeException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
         builder.setFrom( from_ );

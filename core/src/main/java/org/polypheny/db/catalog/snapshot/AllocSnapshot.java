@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
+import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -115,7 +115,7 @@ public interface AllocSnapshot {
      * @param partitionGroupId The unique id of the partition
      * @return List of CatalogAdapters
      */
-    List<CatalogAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
+    List<LogicalAdapter> getAdaptersByPartitionGroup( long tableId, long partitionGroupId );
 
     /**
      * Get all partitions of a DataPlacement (identified by adapterId and tableId)

@@ -363,7 +363,7 @@ public class MqlToAlgConverter {
         for ( Entry<String, BsonValue> entry : query.getUpdate().asDocument().entrySet() ) {
             String op = entry.getKey();
             if ( !entry.getValue().isDocument() ) {
-                throw new RuntimeException( "After a update statement a document is needed" );
+                throw new GenericRuntimeException( "After a update statement a document is needed" );
             }
             Map<String, RexNode> temp = new HashMap<>();
             switch ( op ) {
@@ -414,7 +414,7 @@ public class MqlToAlgConverter {
                 case "$slice":
                 case "$sort":*/
                 default:
-                    throw new RuntimeException( "The update operation is not supported." );
+                    throw new GenericRuntimeException( "The update operation is not supported." );
             }
             if ( query.isOnlyOne() ) {
                 node = wrapLimit( node, 1 );
@@ -470,7 +470,7 @@ public class MqlToAlgConverter {
                 // direct update to a field
                 directUpdates.put( nodeEntry.getKey(), nodeEntry.getValue() );
                 if ( updateOp == UpdateOperation.RENAME ) {
-                    throw new RuntimeException( "You cannot rename a fixed field in an update, as this is a ddl" );
+                    throw new GenericRuntimeException( "You cannot rename a fixed field in an update, as this is a ddl" );
                     // TODO DL maybe find way to trigger ddl later
                 }
             } else {
@@ -485,7 +485,7 @@ public class MqlToAlgConverter {
                 }
 
                 if ( childName == null ) {
-                    throw new RuntimeException( "the specified field in the update was not found" );
+                    throw new GenericRuntimeException( "the specified field in the update was not found" );
                 }
 
                 if ( childUpdates.containsKey( parent ) ) {
@@ -499,7 +499,7 @@ public class MqlToAlgConverter {
         }
 
         if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) && directUpdates.size() == 0 ) {
-            throw new RuntimeException( "DML of a field and its subfields at the same time is not possible" );
+            throw new GenericRuntimeException( "DML of a field and its subfields at the same time is not possible" );
         }
 
         combineUpdate( mergedUpdates, updateOp, childUpdates );
@@ -649,11 +649,11 @@ public class MqlToAlgConverter {
         UpdateOperation updateOp;
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() || value.asDocument().size() != 1 ) {
-                throw new RuntimeException( "Each initial update steps document in the aggregate pipeline can only have one key." );
+                throw new GenericRuntimeException( "Each initial update steps document in the aggregate pipeline can only have one key." );
             }
             String key = value.asDocument().getFirstKey();
             if ( !value.asDocument().get( key ).isDocument() ) {
-                throw new RuntimeException( "The update document needs one key and a document." );
+                throw new GenericRuntimeException( "The update document needs one key and a document." );
             }
             BsonDocument doc = value.asDocument().get( key ).asDocument();
             switch ( key ) {
@@ -668,7 +668,7 @@ public class MqlToAlgConverter {
                     updateOp = UpdateOperation.REMOVE;
                     break;
                 default:
-                    throw new RuntimeException( "The used statement is not supported in the update aggregation pipeline" );
+                    throw new GenericRuntimeException( "The used statement is not supported in the update aggregation pipeline" );
             }
 
             mergeUpdates( mergedUpdates, rowType, updates, updateOp );
@@ -801,7 +801,7 @@ public class MqlToAlgConverter {
 
         for ( BsonValue value : query.getPipeline() ) {
             if ( !value.isDocument() && ((BsonDocument) value).size() > 1 ) {
-                throw new RuntimeException( "The aggregation pipeline is not used correctly." );
+                throw new GenericRuntimeException( "The aggregation pipeline is not used correctly." );
             }
             switch ( ((BsonDocument) value).getFirstKey() ) {
                 case "$match":

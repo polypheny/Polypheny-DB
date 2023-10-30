@@ -127,7 +127,7 @@ class EthereumEnumerator implements Enumerator<PolyValue[]> {
                 return true;
             }
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -143,7 +143,7 @@ class EthereumEnumerator implements Enumerator<PolyValue[]> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing Blockchain reader", e );
+            throw new GenericRuntimeException( "Error closing Blockchain reader", e );
         }
     }
 

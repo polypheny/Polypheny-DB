@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
@@ -323,7 +324,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                 return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
             }
 
-            throw new RuntimeException( "Not a proper filter expression!" );
+            throw new GenericRuntimeException( "Not a proper filter expression!" );
         }
 
     }
@@ -595,7 +596,7 @@ public class CottontailFilter extends Filter implements CottontailAlg {
                     case ROOT:
                         return this;
                 }
-                throw new RuntimeException( "Unreachable code!" );
+                throw new GenericRuntimeException( "Unreachable code!" );
             }
         }
 

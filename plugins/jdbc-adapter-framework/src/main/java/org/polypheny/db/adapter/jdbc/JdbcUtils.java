@@ -130,7 +130,7 @@ public final class JdbcUtils {
                 connection = null;
                 return dialect;
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             } finally {
                 if ( connection != null ) {
                     try {
@@ -173,7 +173,7 @@ public final class JdbcUtils {
                             Pair.left( list ).toArray( new ColumnMetaData.Rep[list.size()] ),
                             Ints.toArray( Pair.right( list ) ) );
                 } catch ( SQLException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             };
         }

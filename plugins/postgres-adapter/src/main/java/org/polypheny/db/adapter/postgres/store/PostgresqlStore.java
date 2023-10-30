@@ -108,18 +108,18 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
 
             DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
-                    .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                    .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
             try {
                 container = instance.newBuilder( "polypheny/postgres:latest", getUniqueName() )
                         .withEnvironmentVariable( "POSTGRES_PASSWORD", settings.get( "password" ) )
                         .createAndStart();
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
 
             if ( !container.waitTillStarted( this::testDockerConnection, 15000 ) ) {
                 container.destroy();
-                throw new RuntimeException( "Failed to connect to postgres container" );
+                throw new GenericRuntimeException( "Failed to connect to postgres container" );
             }
 
             deploymentId = container.getContainerId();
@@ -129,9 +129,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
             deploymentId = settings.get( "deploymentId" );
             DockerManager.getInstance(); // Make sure docker instances are loaded. Very hacky, but it works.
             container = DockerContainer.getContainerByUUID( deploymentId )
-                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+                    .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
             if ( !testDockerConnection() ) {
-                throw new RuntimeException( "Could not connect to container" );
+                throw new GenericRuntimeException( "Could not connect to container" );
             }
         }
 
@@ -383,7 +383,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case ARRAY:
                 return "ARRAY";
         }
-        throw new RuntimeException( "Unknown type: " + type.name() );
+        throw new GenericRuntimeException( "Unknown type: " + type.name() );
     }
 
 
@@ -398,7 +398,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    public String getDefaultPhysicalSchemaName() {
+    public String getDefaultPhysicalNamespaceName() {
         return "public";
     }
 

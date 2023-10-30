@@ -259,10 +259,10 @@ public abstract class BaseRouter implements Router {
     public DocumentScan<CatalogEntity> handleDocScan(
             DocumentScan<?> scan,
             Statement statement,
-            @Nullable List<Long> forbidden ) {
+            @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
-        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).collect( Collectors.toList() );
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( scan.entity.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).collect( Collectors.toList() );
 
         List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( scan.entity.id );
 
@@ -315,7 +315,7 @@ public abstract class BaseRouter implements Router {
                 );
                 break;
             default:
-                throw new RuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
+                throw new GenericRuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
     }
@@ -480,39 +480,30 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable Long allocId, @Nullable List<Long> forbidden ) {
+    public AlgNode handleGraphScan( LogicalLpgScan alg, Statement statement, @Nullable AllocationEntity targetAlloc, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
-        if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
-            // cross model queries on relational
-            return handleGraphOnRelational( alg, namespace, statement, allocId );
-        } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
-            // cross model queries on document
-            return handleGraphOnDocument( alg, namespace, statement, allocId );
-        }
 
-        LogicalGraph catalogGraph = alg.entity.unwrap( LogicalGraph.class );
+        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
 
         List<AlgNode> scans = new ArrayList<>();
 
-        List<Long> placements = snapshot.alloc().getFromLogical( catalogGraph.id ).stream().filter( p -> forbidden == null || !forbidden.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
-        if ( allocId != null ) {
-            placements = List.of( allocId );
+        List<Long> placements = snapshot.alloc().getFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).map( p -> p.adapterId ).collect( Collectors.toList() );
+        if ( targetAlloc != null ) {
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), targetAlloc, alg.getRowType() );
         }
 
-        for ( long adapterId : placements ) {
-            AllocationEntity graph = snapshot.alloc().getEntity( adapterId, catalogGraph.id ).orElseThrow();
+        for ( long placement : placements ) {
+            AllocationEntity entity = snapshot.alloc().getEntity( placement, graph.id ).orElseThrow();
 
             // a native placement was used, we go with that
-            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), graph, alg.getRowType() );
-        }
-        if ( scans.isEmpty() ) {
-            throw new GenericRuntimeException( "Error while routing graph query." );
+            return new LogicalLpgScan( alg.getCluster(), alg.getTraitSet(), entity, alg.getRowType() );
         }
 
+        throw new GenericRuntimeException( "Error while routing graph query." );
+
         // rather naive selection strategy
-        return scans.get( 0 );
     }
 
 
