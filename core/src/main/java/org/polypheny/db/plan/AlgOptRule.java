@@ -66,10 +66,9 @@ public abstract class AlgOptRule {
     /**
      * Root of operand tree.
      * -- GETTER --
-     *  Returns the root operand of this rule
+     * Returns the root operand of this rule
      *
      * @return the root operand of this rule
-
      */
     @Getter
     private final AlgOptRuleOperand operand;
