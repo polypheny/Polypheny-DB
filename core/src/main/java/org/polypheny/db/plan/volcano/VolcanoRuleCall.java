@@ -117,7 +117,7 @@ public class VolcanoRuleCall extends AlgOptRuleCall {
                 volcanoPlanner.listener.ruleProductionSucceeded( event );
             }
 
-            // Registering the root relational expression implicitly registers its descendants. Register any explicit equivalences first, so we don't register twice and cause churn.
+            // Registering the root algebraic expression implicitly registers its descendants. Register any explicit equivalences first, so we don't register twice and cause churn.
             for ( Map.Entry<AlgNode, AlgNode> entry : equiv.entrySet() ) {
                 volcanoPlanner.ensureRegistered( entry.getKey(), entry.getValue(), this );
             }

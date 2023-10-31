@@ -35,7 +35,6 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
@@ -62,49 +61,52 @@ public class PlannerTest {
     public void basicTest() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
+        // add rule to transform to Physical
         planner.addRule( new PhysRule() );
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
 
+        // add trait so it is known to the optimizer
+        planner.addAlgTraitDef( PHYS_CALLING_CONVENTION.getTraitDef() );
+
+        // build the nodes
         AlgOptCluster cluster = DummyCluster.newCluster( planner );
-        AlgNode node = new NoneDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
+        AlgNode node = new LeafDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
+        AlgNode root = new SingleDummyNode( cluster, cluster.traitSetOf( Convention.NONE ), node );
 
-        planner.setRoot( node );
+        AlgNode newRoot = planner.changeTraits( root, root.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
+        planner.setRoot( newRoot );
 
-        AlgNode newAlg = planner.changeTraits( node, cluster.traitSetOf( PHYS_CALLING_CONVENTION ) );
+        AlgNode newAlg = planner.findBestExp();
         assert newAlg.getTraitSet().contains( PHYS_CALLING_CONVENTION );
     }
 
 
-    public void dynamicRegister() {
+    @Test
+    public void dynamicAddRuleTest() {
         VolcanoPlanner planner = new VolcanoPlanner();
 
-        planner.addRule( new PhysRule() );
-        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        // add rule to transform to Physical
+        planner.addRule( new DynamicRule() );
 
+        // add trait so it is known to the optimizer
+        planner.addAlgTraitDef( PHYS_CALLING_CONVENTION.getTraitDef() );
+
+        // build the nodes
         AlgOptCluster cluster = DummyCluster.newCluster( planner );
-        AlgNode node = new NoneDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
+        AlgNode node = new LeafDummyNode( cluster, cluster.traitSetOf( Convention.NONE ) );
+        AlgNode root = new SingleDummyNode( cluster, cluster.traitSetOf( Convention.NONE ), node );
+
+        AlgNode newRoot = planner.changeTraits( root, root.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
+        planner.setRoot( newRoot );
+
+        AlgNode newAlg = planner.findBestExp();
+        assert newAlg.getTraitSet().contains( PHYS_CALLING_CONVENTION );
     }
 
 
     public static class DynamicRule extends AlgOptRule {
 
         public DynamicRule() {
-            super( operandJ( NoneDummyNode.class, ), description );
-        }
-
-
-        @Override
-        public void onMatch( AlgOptRuleCall call ) {
-
-        }
-
-    }
-
-
-    public static class PhysRule extends AlgOptRule {
-
-        public PhysRule() {
-            super( operandJ( AbstractAlgNode.class, Convention.NONE, r -> true, any() ), AddRule.class.getSimpleName() );
+            super( operandJ( LeafDummyNode.class, Convention.NONE, r -> true, any() ), DynamicRule.class.getSimpleName() );
         }
 
 
@@ -112,9 +114,54 @@ public class PlannerTest {
         public void onMatch( AlgOptRuleCall call ) {
             AlgNode alg = call.alg( 0 );
 
-            AlgNode dummy = alg.copy( alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ), List.of() );
+            //call.getPlanner().addRule( PhysRule.INSTANCE );
+            call.getPlanner().addRule( PhysRule.INSTANCE );
+        }
+
+    }
+
+
+    public static class PhysRule extends AlgOptRule {
+
+        public final static PhysRule INSTANCE = new PhysRule();
+
+
+        public PhysRule() {
+            super( operandJ( AlgNode.class, Convention.NONE, r -> r instanceof LeafDummyNode || r instanceof SingleDummyNode, any() ), PhysRule.class.getSimpleName() );
+        }
+
+
+        @Override
+        public void onMatch( AlgOptRuleCall call ) {
+            AlgNode alg = call.alg( 0 );
+
+            AlgNode dummy;
+            if ( alg.getInputs().isEmpty() ) {
+                dummy = alg.copy( alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ), alg.getInputs() );
+            } else {
+                AlgNode converted = convert( alg.getInputs().get( 0 ), alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
+                dummy = alg.copy( alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ), List.of( converted ) );
+            }
 
             call.transformTo( dummy );
+        }
+
+    }
+
+
+    public static class RootConverterRule extends AlgOptRule {
+
+        public RootConverterRule() {
+            super( operandJ( LeafDummyNode.class, Convention.NONE, r -> true, any() ), RootConverterRule.class.getSimpleName() );
+        }
+
+
+        @Override
+        public void onMatch( AlgOptRuleCall call ) {
+            AlgNode alg = call.alg( 0 );
+            //AlgNode input = convert( alg.getInput( 0 ), alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ) );
+
+            call.transformTo( new SingleDummyNode( alg.getCluster(), alg.getTraitSet().replace( PHYS_CALLING_CONVENTION ), alg ) );
         }
 
     }
@@ -161,7 +208,7 @@ public class PlannerTest {
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             if ( traitSet.contains( PHYS_CALLING_CONVENTION ) ) {
-                return planner.getCostFactory().makeCost( 1d, 1d, 1d );
+                return planner.getCostFactory().makeTinyCost();
             }
             return planner.getCostFactory().makeInfiniteCost();
         }
@@ -178,17 +225,17 @@ public class PlannerTest {
     }
 
 
-    public static class NoneDummyNode extends AbstractAlgNode {
+    public static class LeafDummyNode extends AbstractAlgNode {
 
 
-        public NoneDummyNode( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        public LeafDummyNode( AlgOptCluster cluster, AlgTraitSet traitSet ) {
             super( cluster, traitSet );
         }
 
 
         @Override
         public String algCompareString() {
-            return "$" + NoneDummyNode.class;
+            return "$" + LeafDummyNode.class;
         }
 
 
@@ -204,14 +251,14 @@ public class PlannerTest {
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             assert inputs.isEmpty();
-            return new NoneDummyNode( getCluster(), traitSet );
+            return new LeafDummyNode( getCluster(), traitSet );
         }
 
 
         @Override
         public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
             if ( traitSet.contains( PHYS_CALLING_CONVENTION ) ) {
-                return planner.getCostFactory().makeCost( 1d, 1d, 1d );
+                return planner.getCostFactory().makeTinyCost();
             }
             return planner.getCostFactory().makeInfiniteCost();
         }

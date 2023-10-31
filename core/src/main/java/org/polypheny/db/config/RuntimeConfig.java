@@ -837,6 +837,7 @@ public enum RuntimeConfig {
     }
 
 
+    @Getter
     public enum ConfigType {
         BOOLEAN,
         DECIMAL,
@@ -861,7 +862,6 @@ public enum RuntimeConfig {
         DOCKER_LIST( ConfigDocker.class ),
         PLUGIN_LIST( ConfigPlugin.class );
 
-        @Getter
         private final Class<? extends ConfigObject> clazz;
 
 

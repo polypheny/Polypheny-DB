@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.BiAlg;
@@ -69,12 +70,14 @@ import org.polypheny.db.util.ValidatorUtil;
  */
 public abstract class Join extends BiAlg {
 
+    @Getter
     protected final RexNode condition;
     protected final ImmutableSet<CorrelationId> variablesSet;
 
     /**
      * Values must be of enumeration {@link JoinAlgType}, except that {@link JoinAlgType#RIGHT} is disallowed.
      */
+    @Getter
     protected final JoinAlgType joinType;
 
     // Next time we need to change the constructor of Join, let's change the "Set<String> variablesStopped" parameter to "Set<CorrelationId> variablesSet".
@@ -117,16 +120,6 @@ public abstract class Join extends BiAlg {
             return this;
         }
         return copy( traitSet, condition, left, right, joinType, isSemiJoinDone() );
-    }
-
-
-    public RexNode getCondition() {
-        return condition;
-    }
-
-
-    public JoinAlgType getJoinType() {
-        return joinType;
     }
 
 
@@ -259,6 +252,7 @@ public abstract class Join extends BiAlg {
                 (condition != null ? condition.hashCode() : "") + "$" +
                 (joinType != null ? joinType.name() : "") + "&";
     }
+
 
 }
 

@@ -216,7 +216,7 @@ public class TraitPropagationTest {
                 LogicalAggregate alg = call.alg( 0 );
                 assert alg.getGroupSet().cardinality() == 1;
                 int aggIndex = alg.getGroupSet().iterator().next();
-                AlgTrait collation = AlgCollations.of( new AlgFieldCollation( aggIndex, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.FIRST ) );
+                AlgTrait<?> collation = AlgCollations.of( new AlgFieldCollation( aggIndex, AlgFieldCollation.Direction.ASCENDING, AlgFieldCollation.NullDirection.FIRST ) );
                 AlgTraitSet desiredTraits = empty.replace( PHYSICAL ).replace( collation );
                 AlgNode convertedInput = convert( alg.getInput(), desiredTraits );
                 call.transformTo( new PhysAgg( alg.getCluster(), empty.replace( PHYSICAL ), convertedInput, alg.indicator, alg.getGroupSet(), alg.getGroupSets(), alg.getAggCallList() ) );
