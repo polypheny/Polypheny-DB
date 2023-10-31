@@ -28,6 +28,7 @@ import org.polypheny.db.plan.Convention;
  * Model trait models the different possible "schema", also namespace models,
  * this is on purpose different to the {@link Convention} trait to preserve the model information on push-down of each {@link AlgNode}
  */
+@Getter
 public class ModelTrait implements AlgTrait<ModelTraitDef> {
 
     public static final ModelTrait RELATIONAL = new ModelTrait( NamespaceType.RELATIONAL );
@@ -36,7 +37,6 @@ public class ModelTrait implements AlgTrait<ModelTraitDef> {
 
     public static final ModelTrait GRAPH = new ModelTrait( NamespaceType.GRAPH );
 
-    @Getter
     private final NamespaceType dataModel;
 
 

@@ -320,11 +320,11 @@ class RuleQueue {
     void addMatch( VolcanoRuleMatch match ) {
         final String matchName = match.toString();
         for ( PhaseMatchList matchList : matchListMap.values() ) {
-            if ( matchList.names.contains( matchName ) ) {
+            if ( !matchList.names.add( matchName ) ) {
                 // Identical match has already been added.
                 continue;
             }
-            matchList.names.add( matchName );
+            //matchList.names.add( matchName );
 
             String ruleClassName = match.getRule().getClass().getSimpleName();
 

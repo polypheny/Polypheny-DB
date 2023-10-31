@@ -39,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.List;
+import lombok.Getter;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -222,7 +223,7 @@ public class VolcanoPlannerTraitTest {
     /**
      * Implementation of {@link AlgTrait} for testing.
      */
-    private static class AltTrait<T extends AlgTraitDef<?>> implements AlgTrait<T> {
+    private static class AltTrait implements AlgTrait<AltTraitDef> {
 
         private final AltTraitDef traitDef;
         private final int ordinal;
@@ -242,8 +243,8 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public T getTraitDef() {
-            return (T) traitDef;
+        public AltTraitDef getTraitDef() {
+            return traitDef;
         }
 
         public boolean equals( Object other ) {
@@ -279,14 +280,14 @@ public class VolcanoPlannerTraitTest {
     /**
      * Definition of {@link AltTrait}.
      */
-    private static class AltTraitDef extends AlgTraitDef<AltTrait<?>> {
+    private static class AltTraitDef extends AlgTraitDef<AltTrait> {
 
-        private Multimap<AlgTrait<?>, Pair<AlgTrait<?>, ConverterRule>> conversionMap = HashMultimap.create();
+        private final Multimap<AlgTrait<?>, Pair<AlgTrait<?>, ConverterRule>> conversions = HashMultimap.create();
 
 
         @Override
-        public Class<AltTrait<?>> getTraitClass() {
-            return (Class<AltTrait<?>>) AltTrait.class;
+        public Class<AltTrait> getTraitClass() {
+            return AltTrait.class;
         }
 
 
@@ -297,7 +298,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public AltTrait<?> getDefault() {
+        public AltTrait getDefault() {
             return ALT_TRAIT;
         }
 
@@ -306,9 +307,9 @@ public class VolcanoPlannerTraitTest {
         public AlgNode convert( AlgOptPlanner planner, AlgNode alg, AltTrait toTrait, boolean allowInfiniteCostConverters ) {
             AlgTrait<?> fromTrait = alg.getTraitSet().getTrait( this );
 
-            if ( conversionMap.containsKey( fromTrait ) ) {
+            if ( conversions.containsKey( fromTrait ) ) {
                 final AlgMetadataQuery mq = AlgMetadataQuery.instance();
-                for ( Pair<AlgTrait<?>, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
+                for ( Pair<AlgTrait<?>, ConverterRule> traitAndRule : conversions.get( fromTrait ) ) {
                     AlgTrait<?> trait = traitAndRule.left;
                     ConverterRule rule = traitAndRule.right;
 
@@ -329,8 +330,8 @@ public class VolcanoPlannerTraitTest {
 
         @Override
         public boolean canConvert( AlgOptPlanner planner, AltTrait fromTrait, AltTrait toTrait ) {
-            if ( conversionMap.containsKey( fromTrait ) ) {
-                for ( Pair<AlgTrait, ConverterRule> traitAndRule : conversionMap.get( fromTrait ) ) {
+            if ( conversions.containsKey( fromTrait ) ) {
+                for ( Pair<AlgTrait<?>, ConverterRule> traitAndRule : conversions.get( fromTrait ) ) {
                     if ( traitAndRule.left == toTrait ) {
                         return true;
                     }
@@ -347,10 +348,10 @@ public class VolcanoPlannerTraitTest {
                 return;
             }
 
-            AlgTrait fromTrait = converterRule.getInTrait();
-            AlgTrait toTrait = converterRule.getOutTrait();
+            AlgTrait<?> fromTrait = converterRule.getInTrait();
+            AlgTrait<?> toTrait = converterRule.getOutTrait();
 
-            conversionMap.put( fromTrait, Pair.of( toTrait, converterRule ) );
+            conversions.put( fromTrait, Pair.of( toTrait, converterRule ) );
         }
 
     }
@@ -359,19 +360,15 @@ public class VolcanoPlannerTraitTest {
     /**
      * A relational expression with zero inputs.
      */
+    @Getter
     private abstract static class TestLeafRel extends AbstractAlgNode {
 
-        private String label;
+        private final String label;
 
 
         protected TestLeafRel( AlgOptCluster cluster, AlgTraitSet traits, String label ) {
             super( cluster, traits );
             this.label = label;
-        }
-
-
-        public String getLabel() {
-            return label;
         }
 
 
@@ -586,7 +583,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public AlgTrait getOutTrait() {
+        public AlgTrait<?> getOutTrait() {
             return getOutConvention();
         }
 
@@ -622,7 +619,7 @@ public class VolcanoPlannerTraitTest {
 
 
         @Override
-        public AlgTrait getOutTrait() {
+        public AlgTrait<?> getOutTrait() {
             return getOutConvention();
         }
 
@@ -647,7 +644,7 @@ public class VolcanoPlannerTraitTest {
      */
     private static class AltTraitConverterRule extends ConverterRule {
 
-        private final AlgTrait toTrait;
+        private final AlgTrait<?> toTrait;
 
 
         private AltTraitConverterRule( AltTrait fromTrait, AltTrait toTrait, String description ) {
@@ -675,10 +672,10 @@ public class VolcanoPlannerTraitTest {
      */
     private static class AltTraitConverter extends ConverterImpl {
 
-        private final AlgTrait toTrait;
+        private final AlgTrait<?> toTrait;
 
 
-        private AltTraitConverter( AlgOptCluster cluster, AlgNode child, AlgTrait toTrait ) {
+        private AltTraitConverter( AlgOptCluster cluster, AlgNode child, AlgTrait<?> toTrait ) {
             super( cluster, toTrait.getTraitDef(), child.getTraitSet().replace( toTrait ), child );
             this.toTrait = toTrait;
         }

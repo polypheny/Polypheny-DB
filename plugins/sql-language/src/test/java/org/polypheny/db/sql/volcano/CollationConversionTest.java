@@ -21,7 +21,10 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationImpl;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
@@ -51,11 +54,16 @@ import org.polypheny.db.sql.volcano.PlannerTests.TestSingleAlg;
  */
 public class CollationConversionTest {
 
+    @BeforeClass
+    public static void init() {
+        TestHelper.getInstance();
+    }
+
     private static final TestRelCollationImpl LEAF_COLLATION = new TestRelCollationImpl( ImmutableList.of( new AlgFieldCollation( 0, Direction.CLUSTERED ) ) );
 
     private static final TestRelCollationImpl ROOT_COLLATION = new TestRelCollationImpl( ImmutableList.of( new AlgFieldCollation( 0 ) ) );
 
-    @lombok.Getter
+    @Getter
     private static final TestRelCollationTraitDef COLLATION_TRAIT_DEF = new TestRelCollationTraitDef();
 
 

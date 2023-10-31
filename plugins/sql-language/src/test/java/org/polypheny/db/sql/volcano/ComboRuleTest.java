@@ -157,12 +157,9 @@ public class ComboRuleTest {
                 return false;
             }
 
-            if ( call.alg( 0 ) instanceof PhysSingleAlg
+            return call.alg( 0 ) instanceof PhysSingleAlg
                     && call.alg( 1 ) instanceof IntermediateNode
-                    && call.alg( 2 ) instanceof AlgNode ) {
-                return true;
-            }
-            return false;
+                    && call.alg( 2 ) != null;
         }
 
 

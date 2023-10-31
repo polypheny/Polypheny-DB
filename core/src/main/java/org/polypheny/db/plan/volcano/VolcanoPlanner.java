@@ -186,7 +186,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     final RuleQueue ruleQueue = new RuleQueue( this );
 
     /**
-     * Holds the currently registered RelTraitDefs.
+     * Holds the currently registered AlgTraitDefs.
      */
     private final List<AlgTraitDef<?>> traitDefs = new ArrayList<>();
 
@@ -387,6 +387,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         ruleQueue.addPhaseRuleMapping( phase, rule );
         return addRule( rule );
     }
+
 
     @Override
     public boolean addRule( AlgOptRule rule ) {
@@ -602,7 +603,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * Ensures that the subset that is the root algebra expression contains converters to all other subsets
      * in its equivalence set.
      *
-     * Thus the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
+     * Thus, the planner tries to find cheap implementations of those other subsets, which can then be converted to the root.
      * This is the only place in the plan where explicit converters are required; elsewhere, a consumer will be asking for
      * the result in a particular convention, but the root has no consumers.
      */
@@ -1228,7 +1229,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      * @param alg Algebra expression which has just been created (or maybe from the queue)
      * @param deferred If true, each time a rule matches, just add an entry to the queue.
      */
-    void fireRules( AlgNode alg, boolean deferred ) {
+    public void fireRules( AlgNode alg, boolean deferred ) {
         for ( AlgOptRuleOperand operand : classOperands.get( alg.getClass() ) ) {
             if ( operand.matches( alg ) ) {
                 final VolcanoRuleCall ruleCall;
@@ -1249,10 +1250,19 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         if ( getRuleByDescription( rule.toString() ) != null || !addRule( rule ) ) {
             return;
         }
-
-        List<Pair<AlgNode, AlgSubset>> matches = new ArrayList<>();
         AlgOptRuleOperand operand = rule.getOperand();
-        AlgVisitor visitor = new AlgVisitor() {
+
+        List<Pair<AlgNode, AlgSet>> matches = new ArrayList<>();
+        for ( AlgSet set : allSets ) {
+            for ( AlgNode node : set.getAlgsFromAllSubsets() ) {
+                if ( operand.matches( node ) ) {
+                    matches.add( Pair.of( node, set ) );
+                }
+            }
+
+        }
+
+        /*AlgVisitor visitor = new AlgVisitor() {
             final Set<AlgSubset> visitedSubsets = new HashSet<>();
 
 
@@ -1279,9 +1289,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
                 }
             }
         };
-        visitor.go( root );
-        for ( Pair<AlgNode, AlgSubset> pair : matches ) {
-            ruleQueue.recompute( pair.right );
+        visitor.go( root );*/
+        for ( Pair<AlgNode, AlgSet> pair : matches ) {
             fireRules( pair.left, true );
         }
 

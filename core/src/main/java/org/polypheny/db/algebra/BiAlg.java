@@ -37,7 +37,6 @@ package org.polypheny.db.algebra;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -50,7 +49,6 @@ import org.polypheny.db.plan.AlgTraitSet;
  */
 @EqualsAndHashCode(callSuper = true)
 @Getter
-@Value
 @NonFinal
 public abstract class BiAlg extends AbstractAlgNode {
 
