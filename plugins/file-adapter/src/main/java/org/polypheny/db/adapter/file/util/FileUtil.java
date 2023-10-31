@@ -22,7 +22,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public class FileUtil {
 
     public static Object toObject( PolyValue value ) {
-        return value.asString().value;
+        return value == null ? null : value.toJson();
     }
 
 
@@ -46,7 +46,7 @@ public class FileUtil {
                 return value.asNumber().BigDecimalValue();
             case BINARY:
             case VARBINARY:
-                return value.asBinary().value.toBase64String();
+                return value.asBinary().value.getBytes();
             case DOUBLE:
                 return value.asNumber().DoubleValue();
             case BOOLEAN:

@@ -346,7 +346,7 @@ public class FrequencyMapImpl extends FrequencyMap {
                             DataPlacementRole.UP_TO_DATE );
                 }
 
-                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null ), AllocationTableWrapper.of( null, null ) );
+                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerTable( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );

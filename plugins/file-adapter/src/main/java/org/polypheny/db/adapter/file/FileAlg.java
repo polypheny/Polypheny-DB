@@ -22,6 +22,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 
 
 public interface FileAlg extends AlgNode {
@@ -99,7 +100,8 @@ public interface FileAlg extends AlgNode {
                 int i = 0;
                 List<Integer> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
-                    int index = new ArrayList<>( getFileTable().getColumnIdNames().values() ).indexOf( columnNames.get( i ) );
+                    AlgDataTypeField field = getFileTable().getRowType().getField( columnNames.get( i ), false, false );
+                    int index = field.getIndex();
                     update.setColumnReference( index );
                     mapping.add( index );
                     i++;

@@ -94,7 +94,7 @@ public interface DataContext {
         throw new UnsupportedOperationException();
     }
 
-    default Object getParameterValue( long index ) {
+    default PolyValue getParameterValue( long index ) {
         if ( getParameterValues().size() != 1 ) {
             throw new GenericRuntimeException( "Illegal number of parameter sets" );
         }

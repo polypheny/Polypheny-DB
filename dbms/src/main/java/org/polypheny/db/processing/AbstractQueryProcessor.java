@@ -1145,7 +1145,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private <T> PreparedResult<PolyValue> implement( AlgRoot root, AlgDataType parameterRowType ) {
+    private PreparedResult<PolyValue> implement( AlgRoot root, AlgDataType parameterRowType ) {
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", AlgOptUtil.dumpPlan( "-- Physical Plan", root.alg, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES ) );
         }

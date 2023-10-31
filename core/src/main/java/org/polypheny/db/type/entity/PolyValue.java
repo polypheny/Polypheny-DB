@@ -229,7 +229,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
             default:
-                throw new org.apache.commons.lang3.NotImplementedException( "meta" );
+                throw new NotImplementedException( "meta" );
         }
     }
 

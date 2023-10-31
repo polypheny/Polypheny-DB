@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -88,9 +89,13 @@ public class FileTableModify extends RelModify<FileTranslatableEntity> implement
                 int i = 0;
                 for ( RexNode src : getSourceExpressions() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumns().get( i ) ).intValue(), ((RexLiteral) src).value, false ) );
+                        String logicalName = getUpdateColumns().get( i );
+                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        values.add( new Value( Math.toIntExact( field.getId() ), ((RexLiteral) src).value, false ) );
                     } else if ( src instanceof RexDynamicParam ) {
-                        values.add( new Value( implementor.getFileTable().getColumnNamesIds().get( getUpdateColumns().get( i ) ).intValue(), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
+                        String logicalName = getUpdateColumns().get( i );
+                        AlgDataTypeField field = entity.getRowType().getField( logicalName, false, false );
+                        values.add( new Value( Math.toIntExact( field.getId() ), PolyLong.of( ((RexDynamicParam) src).getIndex() ), true ) );
                     } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
                         values.add( Value.fromArrayRexCall( (RexCall) src ) );
                     } else {

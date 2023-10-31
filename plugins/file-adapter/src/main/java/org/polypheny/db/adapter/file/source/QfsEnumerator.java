@@ -30,6 +30,9 @@ import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 
 public class QfsEnumerator<E> implements Enumerator<E> {
@@ -91,7 +94,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
             return false;
         }
         Path path = iterator.next();
-        Object[] row = getRow( path.toFile() );
+        PolyValue[] row = Pair.zip( getRow( path.toFile() ), columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( p.left.toString(), p.right ) ).toArray( PolyValue[]::new );
         if ( condition != null && !condition.matches( row, columnTypes, dataContext ) ) {
             return moveNext();
         }

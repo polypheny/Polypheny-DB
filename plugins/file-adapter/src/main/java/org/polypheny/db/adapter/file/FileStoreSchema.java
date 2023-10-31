@@ -70,13 +70,11 @@ public class FileStoreSchema extends AbstractNamespace implements FileSchema, Sc
     }
 
 
-    public FileTranslatableEntity createFileTable( PhysicalTable table ) {
-        List<Long> pkIds;
-        pkIds = new ArrayList<>();// todo dl
+    public FileTranslatableEntity createFileTable( PhysicalTable table, List<Long> primary ) {
         return new FileTranslatableEntity(
                 this,
                 table,
-                pkIds );
+                primary );
     }
 
 

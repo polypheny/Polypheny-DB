@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.file;
 
 
-import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -38,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -47,7 +47,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.FileInputHandle;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 
@@ -67,7 +66,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     final Condition condition;
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
-    final Gson gson;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
     final File hardlinkFolder;
@@ -100,7 +98,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             final Value[] updates ) {
 
         if ( dataContext.getParameterValues().size() > 1 && (operation == Operation.UPDATE || operation == Operation.DELETE) ) {
-            throw new RuntimeException( "The file store does not support batch update or delete statements!" );
+            throw new GenericRuntimeException( "The file store does not support batch update or delete statements!" );
         }
 
         this.operation = operation;
@@ -129,7 +127,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         }
         this.pkMapping = pkMapping;
 
-        this.gson = new Gson();
         Long[] columnsToIterate = columnIds;
         // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
         // If a filter is given, the whole table has to be loaded (because of the column references)
@@ -147,7 +144,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
             this.columnTypes = columnTypes;
         }
         // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
-        @SuppressWarnings("UnstableApiUsage")
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
         FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
         for ( Long colId : columnsToIterate ) {
@@ -167,7 +163,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         this.hardlinkFolder = new File( rootPath, "hardlinks/" + xidHash );
         if ( !hardlinkFolder.exists() ) {
             if ( !hardlinkFolder.mkdirs() ) {
-                throw new RuntimeException( "Could not create hardlink directory " + hardlinkFolder.getAbsolutePath() );
+                throw new GenericRuntimeException( "Could not create hardlink directory " + hardlinkFolder.getAbsolutePath() );
             }
         }
     }
@@ -247,7 +243,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                             }
                             return false;
                         }
-                        if ( !condition.matches( (Object[]) curr, columnTypes, dataContext ) ) {
+                        if ( !condition.matches( curr, columnTypes, dataContext ) ) {
                             fileListPosition++;
                             continue;
                         }
@@ -296,7 +292,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                     Set<Integer> updatedColumns = new HashSet<>();
                     for ( int c = 0; c < columnFolders.size(); c++ ) {
                         if ( updates.containsKey( c ) ) {
-                            updateObj[c] = updates.get( c ).getValue( dataContext, 0 );
+                            updateObj[c] = updates.get( c ).getValue( dataContext, 0 ).toJson();
                             updatedColumns.add( c );
                         } else {
                             //needed for the hash
@@ -313,9 +309,6 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                         // write new file
                         if ( updateObj[j] != null ) {
                             File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
-                            /*if( newFile.exists() ) {
-                                throw new RuntimeException("This update would lead to a primary key conflict, " + newFile.getAbsolutePath());
-                            }*/
 
                             //if column has not been updated: just copy the old file to the new one with the PK in the new fileName
                             if ( !updatedColumns.contains( j ) && source.exists() ) {
@@ -353,11 +346,11 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                     fileListPosition++;
                     //continue;
                 } else {
-                    throw new RuntimeException( operation + " operation is not supported in FileEnumerator" );
+                    throw new GenericRuntimeException( operation + " operation is not supported in FileEnumerator" );
                 }
             }
         } catch ( IOException | RuntimeException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -417,8 +410,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     }
 
 
-    private PolyValue[] project( final Object o1, PolyType[] columnTypes ) {
-        PolyValue[] o = Pair.zip( ((Object[]) o1), columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( (String) p.left, p.right ) ).toArray( PolyValue[]::new );
+    private PolyValue[] project( final PolyValue[] o1, PolyType[] columnTypes ) {
+        PolyValue[] o = o1;//Pair.zip( o1, columnTypes ).stream().map( p -> PolyTypeUtil.stringToObject( (String) p.left, p.right ) ).toArray( PolyValue[]::new );
         assert (projectionMapping != null);
         PolyValue[] out = new PolyValue[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
@@ -446,13 +439,13 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     int hashRow( final Object row ) {
         Object[] toHash = new Object[pkMapping.length];
         for ( int i = 0; i < pkMapping.length; i++ ) {
-            toHash[i] = ((Object[]) row)[pkMapping[i]].toString();
+            Object obj = ((Object[]) row)[pkMapping[i]];
+            toHash[i] = obj instanceof PolyValue ? ((PolyValue) obj).toJson() : obj.toString();
         }
         return Arrays.hashCode( toHash );
     }
 
 
-    @SuppressWarnings("UnstableApiUsage")
     String getNewFileName( final Operation operation, final String hashCode ) {
         String operationAbbreviation;//must be of length 3!
         switch ( operation ) {
@@ -463,16 +456,16 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                 operationAbbreviation = "del";
                 break;
             default:
-                throw new RuntimeException( "Did not expect operation " + operation );
+                throw new GenericRuntimeException( "Did not expect operation " + operation );
         }
         return "_"// underline at the beginning of files that are not yet committed
                 + operationAbbreviation
                 + "_"
                 //XID
-                + FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString()
+                + FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET )
                 + "_"
                 //PK hash
-                + FileStore.SHA.hashString( hashCode, FileStore.CHARSET ).toString();
+                + FileStore.SHA.hashString( hashCode, FileStore.CHARSET );
     }
 
 }
