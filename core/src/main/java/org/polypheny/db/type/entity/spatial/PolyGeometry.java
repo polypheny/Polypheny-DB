@@ -28,6 +28,7 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Geometry;
@@ -59,10 +60,14 @@ public class PolyGeometry extends PolyValue {
      * <code>jtsGeometry.getSRID()</code>
      * <code>jtsGeometry.getCoordinate()</code>
      */
+    @Getter
     protected Geometry jtsGeometry;
     // Spatial Reference System ID
     @Getter
     protected Integer SRID;
+
+    @Getter
+    protected PolyGeometryType geometryType;
 
     /**
      * Constructor creates the {@link Geometry} from the WKT text.
@@ -78,6 +83,7 @@ public class PolyGeometry extends PolyValue {
         this.SRID = NO_SRID;
         WKTReader reader = new WKTReader();
         try {
+            wkt = wkt.trim();
             // WKT is actually an extended EWKT with SRID before the WKT
             if (wkt.startsWith( "SRID" )) {
                 // in WKT semicolon is invalid character, so we could safely split by it
@@ -93,12 +99,14 @@ public class PolyGeometry extends PolyValue {
         } catch ( ParseException | NumberFormatException e) {
             throw new InvalidGeometryException(e.getMessage());
         }
+        this.geometryType = getPolyGeometryType();
     }
 
     public PolyGeometry( Geometry geometry ) {
         super( PolyType.GEOMETRY );
         this.jtsGeometry = geometry;
         this.SRID = geometry.getSRID();
+        this.geometryType = getPolyGeometryType();
     }
 
     protected PolyGeometry( PolyType type ) {
@@ -113,21 +121,33 @@ public class PolyGeometry extends PolyValue {
         return new PolyGeometry( geometry );
     }
 
-    public String getGeometryType() {
-        return jtsGeometry.getGeometryType();
+    protected PolyGeometryType getPolyGeometryType() {
+        switch ( jtsGeometry.getGeometryType() ) {
+            case "Point":
+                return PolyGeometryType.POINT;
+            case "LineString":
+                return PolyGeometryType.LINESTRING;
+            default:
+                throw new NotImplementedException( "value" );
+        }
     }
 
+    public boolean isPoint() {
+        return geometryType.equals( PolyGeometryType.POINT );
+    }
+
+    @NotNull
     public PolyPoint asPoint() {
-        if (jtsGeometry.getGeometryType().equals( "Point" )) {
+        if ( isPoint() ) {
             return PolyPoint.of( jtsGeometry );
         }
-        return null;
+        throw cannotParse( this, PolyPoint.class );
     }
 
 
     /**
      * Tests whether this {@link Geometry} is simple.
-     * @return <code>true</code> if  {@link Geometry} is simple.
+     * @return <code>true</code> if {@link Geometry} is simple.
      */
     public boolean isSimple() {
         return jtsGeometry.isSimple();
@@ -213,7 +233,7 @@ public class PolyGeometry extends PolyValue {
                 @Override
                 public PolyGeometry decode( BinaryInput in ) throws CorruptedDataException {
                     try {
-                        return PolyGeometry.of( PolySerializable.deserialize( in.readUTF8(), serializer ).asString().value );
+                        return PolyGeometry.of( in.readUTF8() );
                     } catch ( InvalidGeometryException e ) {
                         throw new CorruptedDataException( e.getMessage() );
                     }

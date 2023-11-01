@@ -373,8 +373,10 @@ public enum PolyType {
             PrecScale.NO_NO,
             true,
             // TODO: or should it be Types.VARCHAR because of WKT or Types.JAVA_OBJECT
-            Types.JAVA_OBJECT, // ExtraPolyTypes.GEOMETRY,
+            Types.JAVA_OBJECT,
             PolyTypeFamily.GEO ),
+
+    // TODO: add all other Geo types
 
     FILE(
             PrecScale.NO_NO,
@@ -466,6 +468,8 @@ public enum PolyType {
     public static final List<PolyType> COLLECTION_TYPES = ImmutableList.of( ARRAY );
 
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
+
+    // TODO: add Geometry types
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(

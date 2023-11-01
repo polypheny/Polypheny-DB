@@ -27,8 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometryType;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 public class GeometryTest {
@@ -51,7 +53,7 @@ public class GeometryTest {
             () -> assertDoesNotThrow( () -> PolyGeometry.of( VALID_POINT_EWKT ) ),
             () -> {
                 PolyGeometry geometry = PolyGeometry.of( VALID_POINT_EWKT );
-                assertEquals( "Point", geometry.getGeometryType() );
+                assertEquals( PolyGeometryType.POINT, geometry.getGeometryType() );
                 assertEquals( 4326, (long) geometry.getSRID() );
                 PolyPoint point = geometry.asPoint();
                 assertEquals( 13.4050, point.getX(), DELTA );
@@ -65,7 +67,7 @@ public class GeometryTest {
             () -> assertDoesNotThrow(() -> PolyGeometry.of( VALID_POINT_WKT )),
             () -> {
                 PolyGeometry geometry = PolyGeometry.of( VALID_POINT_WKT );
-                assertEquals( "Point", geometry.getGeometryType() );
+                assertEquals( PolyGeometryType.POINT, geometry.getGeometryType() );
                 assertEquals( NO_SRID, (long) geometry.getSRID() );
                 PolyPoint point = geometry.asPoint();
                 assertEquals( 13.4050, point.getX(), DELTA );
@@ -86,6 +88,15 @@ public class GeometryTest {
         PolyGeometry point3 = PolyGeometry.of( VALID_POINT_WKT );
         assertEquals( point1, point2 );
         assertNotEquals( point1, point3 );
+    }
+
+    @Test
+    public void testSerializability() throws InvalidGeometryException {
+        PolyGeometry geometry = PolyGeometry.of( VALID_POINT_EWKT );
+        String serialized = geometry.serialize();
+        PolyValue polyValue = PolyGeometry.deserialize( serialized );
+        PolyGeometry deserializedGeometry = polyValue.asGeometry();
+        assertEquals( geometry, deserializedGeometry );
     }
 
 }

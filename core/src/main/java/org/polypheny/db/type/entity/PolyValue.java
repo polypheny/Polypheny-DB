@@ -64,7 +64,6 @@ import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
-//import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
@@ -142,6 +141,13 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
 })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
+    public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
+            .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
+            .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
+            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
+            .configure( MapperFeature.USE_STATIC_TYPING, true )
+            .build();
+
     @JsonIgnore
     // used internally to serialize into binary format
     public static BinarySerializer<PolyValue> serializer = SerializerBuilder.create( CLASS_LOADER )
@@ -162,15 +168,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
             .with( PolyGeometry.class, ctx -> new PolyGeometrySerializerDef() )
             .build( PolyValue.class );
-
-
-    public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
-
-            .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
-            .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
-            .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
-            .configure( MapperFeature.USE_STATIC_TYPING, true )
-            .build();
 
 
     static {
@@ -236,6 +233,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case AUDIO:
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
+            case GEOMETRY:
+                return o -> o.asGeometry().getJtsGeometry();
             default:
                 throw new NotImplementedException( "meta" );
         }
@@ -263,17 +262,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @Nullable
-    public String toTypedJson() {
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on serializing typed JSON." );
-            return null;
-        }
-    }
-
-
-    @Nullable
     public static <E extends PolyValue> E fromTypedJson( String value, Class<E> clazz ) {
         try {
             return JSON_WRAPPER.readValue( value, clazz );
@@ -282,30 +270,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return null;
         }
     }
-
-
-    public String toJson() {
-        // fallback serializer
-        try {
-            return JSON_WRAPPER.writeValueAsString( this );
-        } catch ( JsonProcessingException e ) {
-            log.warn( "Error on deserialize JSON." );
-            return null;
-        }
-    }
-
-
-    @NotNull
-    public Optional<Long> getByteSize() {
-        if ( byteSize == null ) {
-            byteSize = deriveByteSize();
-        }
-        return Optional.ofNullable( byteSize );
-    }
-
-
-    @Nullable
-    public abstract Long deriveByteSize();
 
 
     public static Expression getInitialExpression( Type type ) {
@@ -344,17 +308,15 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case BOOLEAN:
                 return PolyBoolean.class;
             case TINYINT:
+            case INTEGER:
                 return PolyInteger.class;
             case SMALLINT:
-                return PolyInteger.class;
-            case INTEGER:
                 return PolyInteger.class;
             case BIGINT:
                 return PolyLong.class;
             case DECIMAL:
                 return PolyBigDecimal.class;
             case FLOAT:
-                return PolyFloat.class;
             case REAL:
                 return PolyFloat.class;
             case DOUBLE:
@@ -440,6 +402,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DYNAMIC_STAR:
                 return PolyValue.class;
             case GEOMETRY:
+                // TODO: should here be all Geometry classes?
                 return PolyGeometry.class;
             case FILE:
             case IMAGE:
@@ -456,6 +419,107 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
     public static PolyValue deserialize( String json ) {
         return PolySerializable.deserialize( json, serializer );
     }
+
+
+    public static PolyValue convert( PolyValue value, PolyType type ) {
+
+        switch ( type ) {
+            case INTEGER:
+                return PolyInteger.from( value );
+            case DOCUMENT:
+                // docs accept all
+                return value;
+            case BIGINT:
+                return PolyLong.from( value );
+        }
+        if ( type.getFamily() == value.getType().getFamily() ) {
+            return value;
+        }
+
+        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
+    }
+
+
+    public static PolyValue fromType( Object object, PolyType type ) {
+        // TODO: should GIS be here?
+        switch ( type ) {
+            case BOOLEAN:
+                return PolyBoolean.of( (Boolean) object );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+                return PolyInteger.of( (Number) object );
+            case BIGINT:
+                return PolyLong.of( (Number) object );
+            case DECIMAL:
+                return PolyBigDecimal.of( object.toString() );
+            case FLOAT:
+            case REAL:
+                return PolyFloat.of( (Number) object );
+            case DOUBLE:
+                return PolyDouble.of( (Number) object );
+            case DATE:
+                if ( object instanceof Number ) {
+                    return PolyDate.of( (Number) object );
+                }
+                throw new NotImplementedException();
+
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Number ) {
+                    return PolyTime.of( (Number) object );
+                }
+                throw new NotImplementedException();
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                if ( object instanceof Timestamp ) {
+                    return PolyTimeStamp.of( (Timestamp) object );
+                }
+                throw new NotImplementedException();
+            case CHAR:
+            case VARCHAR:
+                return PolyString.of( (String) object );
+            case BINARY:
+            case VARBINARY:
+                return PolyBinary.of( (ByteString) object );
+        }
+        throw new NotImplementedException();
+    }
+
+
+    @Nullable
+    public String toTypedJson() {
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on serializing typed JSON." );
+            return null;
+        }
+    }
+
+
+    public String toJson() {
+        // fallback serializer
+        try {
+            return JSON_WRAPPER.writeValueAsString( this );
+        } catch ( JsonProcessingException e ) {
+            log.warn( "Error on deserialize JSON." );
+            return null;
+        }
+    }
+
+
+    @NotNull
+    public Optional<Long> getByteSize() {
+        if ( byteSize == null ) {
+            byteSize = deriveByteSize();
+        }
+        return Optional.ofNullable( byteSize );
+    }
+
+
+    @Nullable
+    public abstract Long deriveByteSize();
 
 
     @Override
@@ -500,7 +564,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     @NotNull
-    private GenericRuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
+    protected GenericRuntimeException cannotParse( PolyValue value, Class<?> clazz ) {
         return new GenericRuntimeException( "Cannot parse %s to type %s", value, clazz.getSimpleName() );
     }
 
@@ -821,6 +885,19 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         throw cannotParse( this, PolyBlob.class );
     }
 
+    public boolean isGeometry() {
+        return type == PolyType.GEOMETRY;
+    }
+
+
+    @NotNull
+    public PolyGeometry asGeometry() {
+        if ( isGeometry() ) {
+            return (PolyGeometry) this;
+        }
+        throw cannotParse( this, PolyGeometry.class );
+    }
+
 
     public boolean isUserDefinedValue() {
         return PolyType.USER_DEFINED_TYPE == type;
@@ -833,71 +910,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             return (PolyUserDefinedValue) this;
         }
         throw cannotParse( this, PolyUserDefinedValue.class );
-    }
-
-
-    public static PolyValue convert( PolyValue value, PolyType type ) {
-
-        switch ( type ) {
-            case INTEGER:
-                return PolyInteger.from( value );
-            case DOCUMENT:
-                // docs accept all
-                return value;
-            case BIGINT:
-                return PolyLong.from( value );
-        }
-        if ( type.getFamily() == value.getType().getFamily() ) {
-            return value;
-        }
-
-        throw new GenericRuntimeException( "%s does not support conversion to %s.", value, type );
-    }
-
-
-    public static PolyValue fromType( Object object, PolyType type ) {
-        switch ( type ) {
-            case BOOLEAN:
-                return PolyBoolean.of( (Boolean) object );
-            case TINYINT:
-            case SMALLINT:
-            case INTEGER:
-                return PolyInteger.of( (Number) object );
-            case BIGINT:
-                return PolyLong.of( (Number) object );
-            case DECIMAL:
-                return PolyBigDecimal.of( object.toString() );
-            case FLOAT:
-            case REAL:
-                return PolyFloat.of( (Number) object );
-            case DOUBLE:
-                return PolyDouble.of( (Number) object );
-            case DATE:
-                if ( object instanceof Number ) {
-                    return PolyDate.of( (Number) object );
-                }
-                throw new NotImplementedException();
-
-            case TIME:
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Number ) {
-                    return PolyTime.of( (Number) object );
-                }
-                throw new NotImplementedException();
-            case TIMESTAMP:
-            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                if ( object instanceof Timestamp ) {
-                    return PolyTimeStamp.of( (Timestamp) object );
-                }
-                throw new NotImplementedException();
-            case CHAR:
-            case VARCHAR:
-                return PolyString.of( (String) object );
-            case BINARY:
-            case VARBINARY:
-                return PolyBinary.of( (ByteString) object );
-        }
-        throw new NotImplementedException();
     }
 
 

@@ -34,11 +34,13 @@ public class PolyPoint extends PolyGeometry {
 
     public PolyPoint( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         super( wkt );
+        this.geometryType = PolyGeometryType.POINT;
         this.jtsPoint = (Point) jtsGeometry;
     }
 
     protected PolyPoint( Geometry geometry ) {
         super( PolyType.GEOMETRY );
+        this.geometryType = PolyGeometryType.POINT;
         this.jtsGeometry = geometry;
         this.jtsPoint = (Point) jtsGeometry;
         this.SRID = geometry.getSRID();
@@ -46,6 +48,7 @@ public class PolyPoint extends PolyGeometry {
 
     protected PolyPoint( PolyType type ) {
         super( type );
+        this.geometryType = PolyGeometryType.POINT;
     }
 
     public static PolyPoint of( Geometry geometry ) {
