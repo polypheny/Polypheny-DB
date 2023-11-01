@@ -93,6 +93,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
                     // PolyType.MULTISET shares Types.ARRAY with PolyType.ARRAY;
                     // PolyType.MAP has no corresponding JDBC type
                     // PolyType.COLUMN_LIST has no corresponding JDBC type
+                    // All spatial data types
                     .put( Types.BIT, NUMERIC )
                     .put( Types.TINYINT, NUMERIC )
                     .put( Types.SMALLINT, NUMERIC )
@@ -174,6 +175,7 @@ public enum PolyTypeFamily implements AlgDataTypeFamily {
             case DATETIME_INTERVAL:
                 return PolyType.INTERVAL_TYPES;
             case GEO:
+                // TODO: add all spatial types
                 return ImmutableList.of( PolyType.GEOMETRY );
             case MULTISET:
                 return ImmutableList.of( PolyType.MULTISET );

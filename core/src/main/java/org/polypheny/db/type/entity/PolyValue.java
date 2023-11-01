@@ -64,6 +64,9 @@ import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
+//import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
 import org.polypheny.db.type.entity.PolyInteger.PolyIntegerSerializerDef;
 import org.polypheny.db.type.entity.PolyList.PolyListSerializerDef;
 import org.polypheny.db.type.entity.PolyLong.PolyLongSerializerDef;
@@ -109,7 +112,9 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         PolyBinary.class,
         PolyNode.class,
         PolyEdge.class,
-        PolyPath.class }) // add on Constructor already exists exception
+        PolyPath.class,
+        PolyGeometry.class
+}) // add on Constructor already exists exception
 @JsonTypeInfo(use = Id.CLASS) // to allow typed json serialization
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PolyList.class, name = "LIST"),
@@ -132,7 +137,8 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         @JsonSubTypes.Type(value = PolyEdge.class, name = "EDGE"),
         @JsonSubTypes.Type(value = PolyPath.class, name = "PATH"),
         @JsonSubTypes.Type(value = PolyDictionary.class, name = "DICTIONARY"),
-        @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV")
+        @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV"),
+        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY")
 })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
@@ -154,6 +160,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             .with( PolyBoolean.class, ctx -> new PolyBooleanSerializerDef() )
             .with( PolyGraph.class, ctx -> new PolyGraphSerializerDef() )
             .with( PolyLong.class, ctx -> new PolyLongSerializerDef() )
+            .with( PolyGeometry.class, ctx -> new PolyGeometrySerializerDef() )
             .build( PolyValue.class );
 
 
@@ -433,7 +440,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DYNAMIC_STAR:
                 return PolyValue.class;
             case GEOMETRY:
-                return PolyValue.class;
+                return PolyGeometry.class;
             case FILE:
             case IMAGE:
             case VIDEO:

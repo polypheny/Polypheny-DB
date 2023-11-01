@@ -372,7 +372,8 @@ public enum PolyType {
     GEOMETRY(
             PrecScale.NO_NO,
             true,
-            ExtraPolyTypes.GEOMETRY,
+            // TODO: or should it be Types.VARCHAR because of WKT or Types.JAVA_OBJECT
+            Types.JAVA_OBJECT, // ExtraPolyTypes.GEOMETRY,
             PolyTypeFamily.GEO ),
 
     FILE(
