@@ -1393,10 +1393,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         //log.warn( "size is: " + provenanceMap.size() );
         // Record its provenance. (Rule call may be null.)
         if ( ruleCallStack.isEmpty() ) {
-            //provenanceMap.put( alg, Provenance.EMPTY );
+            if ( LOGGER.isDebugEnabled() ) {
+                provenanceMap.put( alg, Provenance.EMPTY );
+            }
         } else {
             final VolcanoRuleCall ruleCall = ruleCallStack.peek();
-            //provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+            if ( LOGGER.isDebugEnabled() ) {
+                provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+            }
         }
 
         // If it is equivalent to an existing expression, return the set that the equivalent expression belongs to.

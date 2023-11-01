@@ -42,10 +42,12 @@ import org.polypheny.db.StatusService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.cli.PolyphenyModesConverter;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -111,8 +113,8 @@ public class PolyphenyDb {
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
-    public boolean testMode = false;
+    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyphenyModesConverter.class)
+    public PolyphenyMode mode = PolyphenyMode.DEFAULT;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
@@ -181,7 +183,7 @@ public class PolyphenyDb {
         }
 
         // Configuration shall not be persisted
-        ConfigManager.memoryMode = (testMode || memoryCatalog);
+        ConfigManager.memoryMode = (mode == PolyphenyMode.TEST || memoryCatalog);
         ConfigManager.resetCatalogOnStartup = resetCatalog;
 
         // Select behavior depending on arguments
@@ -259,7 +261,7 @@ public class PolyphenyDb {
         }
 
         // Backup content of Polypheny folder
-        if ( testMode || memoryCatalog ) {
+        if ( mode == PolyphenyMode.TEST || memoryCatalog ) {
             if ( phdm.checkIfExists( "_test_backup" ) ) {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
@@ -305,7 +307,7 @@ public class PolyphenyDb {
             }
         }
 
-        if ( testMode ) {
+        if ( mode == PolyphenyMode.TEST ) {
             uuid = "polypheny-test";
         }
 
@@ -372,7 +374,6 @@ public class PolyphenyDb {
         new ConfigService( server.getServer() );
         new InformationService( server.getServer() );
 
-
         try {
             new JavaInformation();
         } catch ( Exception e ) {
@@ -385,12 +386,12 @@ public class PolyphenyDb {
         }
 
         if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( testMode ) {
+            if ( mode == PolyphenyMode.TEST ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
             }
             boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( testMode && !success ) {
+            if ( mode == PolyphenyMode.TEST && !success ) {
                 // AutoDocker does not work in Windows containers
                 if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
                     log.error( "Failed to connect to docker instance" );
@@ -443,7 +444,7 @@ public class PolyphenyDb {
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Add config and monitoring test page for UI testing
-        if ( testMode ) {
+        if ( mode == PolyphenyMode.TEST ) {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
@@ -521,7 +522,7 @@ public class PolyphenyDb {
     private Catalog startCatalog() {
         Catalog.resetCatalog = resetCatalog;
         Catalog.memoryCatalog = memoryCatalog;
-        Catalog.testMode = testMode;
+        Catalog.mode = mode;
         Catalog.resetDocker = resetDocker;
         Catalog catalog = Catalog.setAndGetInstance( new PolyCatalog() );
         if ( catalog == null ) {
@@ -535,7 +536,7 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog && !testMode ) {
+        if ( !resetCatalog && mode != PolyphenyMode.TEST ) {
             Catalog.getInstance().restore();
         }
         Catalog.getInstance().updateSnapshot();

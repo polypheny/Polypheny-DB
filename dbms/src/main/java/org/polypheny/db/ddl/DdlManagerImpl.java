@@ -710,7 +710,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addDataPlacement( LogicalTable table, List<LogicalColumn> newColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement ) {
+    public void createAllocationPlacement( LogicalTable table, List<LogicalColumn> newColumns, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement ) {
 
         // check if allocation already exists
         if ( catalog.getSnapshot().alloc().getPlacement( dataStore.getAdapterId(), table.id ).isPresent() ) {
@@ -732,7 +732,7 @@ public class DdlManagerImpl extends DdlManager {
         AllocationPlacement placement = catalog.getAllocRel( table.namespaceId ).addPlacement( table.id, table.namespaceId, dataStore.adapterId );
         PartitionProperty property = catalog.getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
-        addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, property.partitionIds, primaryKey.columnIds, dataStore );
+        addAllocationsForPlacement( table.namespaceId, statement, table, placement.id, adjustedColumns, primaryKey.columnIds, property.partitionIds, dataStore );
 
         Catalog.getInstance().updateSnapshot();
 
@@ -1817,7 +1817,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( view.id, namespaceId, store.adapterId );
 
-            addAllocationsForPlacement( namespaceId, statement, view, placement.id, List.copyOf( ids.values() ), List.of( partition.id ), List.of(), store );
+            addAllocationsForPlacement( namespaceId, statement, view, placement.id, List.copyOf( ids.values() ), List.of(), List.of( partition.id ), store );
 
         }
         addBlankPartition( namespaceId, view.id, List.of( group.id ), List.of( partition.id ) );
@@ -2133,8 +2133,9 @@ public class DdlManagerImpl extends DdlManager {
 
     private List<AllocationTable> addAllocationsForPlacement( long namespaceId, Statement statement, LogicalTable logical, long placementId, List<LogicalColumn> lColumns, List<Long> pkIds, List<Long> partitionIds, Adapter<?> adapter ) {
         List<AllocationColumn> columns = new ArrayList<>();
-        for ( LogicalColumn column : lColumns ) {
-            columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, column.position ) );
+        int i = 0;
+        for ( LogicalColumn column : sortByPosition( lColumns ) ) {
+            columns.add( catalog.getAllocRel( namespaceId ).addColumn( placementId, logical.id, column.id, adapter.adapterId, PlacementType.AUTOMATIC, i++ ) );
         }
 
         buildNamespace( namespaceId, logical, adapter );
@@ -2146,7 +2147,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private PartitionProperty addBlankPartition( long namespaceId, long logicalEntityId, List<Long> groupIds, List<Long> allocIds ) {
+    private PartitionProperty addBlankPartition( long namespaceId, long logicalEntityId, List<Long> groupIds, List<Long> partitionIds ) {
         //LogicalPartitionGroup defaultUnpartitionedGroup = catalog.getAllocRel( namespaceId ).addPartitionGroup( logicalEntityId, "full", namespaceId, PartitionType.NONE, 1, List.of(), true );
 
         PartitionProperty partitionProperty = PartitionProperty.builder()
@@ -2154,7 +2155,7 @@ public class DdlManagerImpl extends DdlManager {
                 .partitionType( PartitionType.NONE )
                 .isPartitioned( false )
                 .partitionGroupIds( ImmutableList.copyOf( groupIds ) )
-                .partitionIds( ImmutableList.copyOf( allocIds ) )
+                .partitionIds( ImmutableList.copyOf( partitionIds ) )
                 .reliesOnPeriodicChecks( false )
                 .build();
 
@@ -2166,19 +2167,13 @@ public class DdlManagerImpl extends DdlManager {
     private AllocationTable addAllocationTable( long namespaceId, Statement statement, LogicalTable logical, List<LogicalColumn> lColumns, List<Long> pkIds, long placementId, long partitionId, List<AllocationColumn> aColumns, Adapter<?> adapter ) {
         AllocationTable alloc = catalog.getAllocRel( namespaceId ).addAllocation( adapter.adapterId, placementId, partitionId, logical.id );
 
-        adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( logical, sortByPosition( lColumns ), pkIds ), AllocationTableWrapper.of( alloc, sortByPositionAlloc( aColumns ) ) );
+        adapter.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( logical, sortByPosition( lColumns ), pkIds ), AllocationTableWrapper.of( alloc, aColumns ) );
         return alloc;
     }
 
 
     @NotNull
     private static List<LogicalColumn> sortByPosition( List<LogicalColumn> columns ) {
-        return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
-    }
-
-
-    @NotNull
-    private static List<AllocationColumn> sortByPositionAlloc( List<AllocationColumn> columns ) {
         return columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() );
     }
 
@@ -2672,6 +2667,7 @@ public class DdlManagerImpl extends DdlManager {
         }
         return Pair.of( partitions, partitionProperty );
     }
+
 
     @Override
     public void dropTablePartition( LogicalTable table, Statement statement ) throws TransactionException {

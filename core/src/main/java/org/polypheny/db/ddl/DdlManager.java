@@ -196,7 +196,7 @@ public abstract class DdlManager {
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addDataPlacement( LogicalTable table, List<LogicalColumn> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
+    public abstract void createAllocationPlacement( LogicalTable table, List<LogicalColumn> columnIds, List<Integer> partitionGroupIds, List<String> partitionGroupNames, DataStore<?> dataStore, Statement statement );
 
     /**
      * Adds a new primary key to a table

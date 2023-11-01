@@ -124,7 +124,7 @@ import org.polypheny.db.util.Util;
 public class PlannerTest extends SqlLanguageDependent {
 
     static {
-        Catalog.testMode = true;
+        Catalog.mode = true;
     }
 
 

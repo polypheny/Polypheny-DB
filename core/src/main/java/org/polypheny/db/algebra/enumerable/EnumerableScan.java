@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.interpreter.Row;
@@ -255,7 +256,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        if ( Catalog.testMode ) {
+        if ( Catalog.mode == PolyphenyMode.TEST ) {
             // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
             // but theoretically it is able to handle scans on the application layer
             // this is tested by different instances and should then lead to a finite selfCost

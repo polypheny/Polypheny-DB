@@ -70,7 +70,7 @@ import org.polypheny.db.util.SourceStringReader;
 public class PlannerImplMock implements Planner {
 
     static {
-        Catalog.testMode = true;
+        Catalog.mode = true;
     }
 
 

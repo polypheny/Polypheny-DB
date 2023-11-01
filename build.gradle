@@ -163,6 +163,15 @@ allprojects {
     test.dependsOn(":plugins:assemblePlugins")
 }
 
+def getCurrentBranch() {
+    def branch = ""
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    proc.in.eachLine { line -> branch = line }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    branch
+}
+
 
 idea {
     project {

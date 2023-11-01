@@ -92,7 +92,7 @@ public class CsvSchema extends AbstractNamespace implements Schema {
 
         for ( PhysicalColumn column : table.getColumns() ) {
             AlgDataType sqlType = sqlType( typeFactory, column.type, column.length, column.scale, null );
-            fieldInfo.add( column.id, column.name, columns.get( column.position - 1 ).physicalColumnName, sqlType ).nullable( column.nullable );
+            fieldInfo.add( column.id, column.name, columns.get( column.position ).physicalColumnName, sqlType ).nullable( column.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( column.type ) );
             fieldIds.add( column.position );
         }

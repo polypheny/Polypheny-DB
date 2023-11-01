@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.catalogs;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
@@ -105,7 +106,7 @@ public class RelStoreCatalog extends StoreCatalog {
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, AllocationTableWrapper wrapper ) {
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
-        List<PhysicalColumn> pColumns = columns.stream().map( c -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, c.position, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
+        List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).collect( Collectors.toList() );
         PhysicalTable table = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, allocation.logicalId, tableName, pColumns, logical.namespaceId, namespaceName, allocation.adapterId );
         pColumns.forEach( this::addColumn );
         addPhysical( allocation, table );
@@ -117,7 +118,7 @@ public class RelStoreCatalog extends StoreCatalog {
         PhysicalColumn column = new PhysicalColumn( name, lColumn.tableId, allocId, adapterId, position, lColumn );
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> columns = new ArrayList<>( table.columns );
-        columns.add( position - 1, column );
+        columns.add( position, column );
         addColumn( column );
         addPhysical( getAlloc( table.allocationId ), table.toBuilder().columns( ImmutableList.copyOf( columns ) ).build() );
         return column;

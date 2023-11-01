@@ -39,6 +39,7 @@ import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.config.RuntimeConfig;
 
 /**
@@ -125,11 +126,11 @@ public final class DockerContainer {
     public static String getPhysicalUniqueName( String uniqueName ) {
         // while not all Docker containers belong to an adapter we annotate it anyway
         String name = "polypheny_" + RuntimeConfig.INSTANCE_UUID.getString() + "_" + uniqueName;
-        if ( !Catalog.testMode ) {
+        if ( Catalog.mode != PolyphenyMode.TEST ) {
             return name;
-        } else {
-            return name + "_test";
         }
+        return name + "_test";
+
     }
 
 
