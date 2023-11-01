@@ -68,8 +68,8 @@ public interface Scannable {
             AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
             allocColumns.add( alloc );
         }
-
-        scannable.createTable( context, LogicalTableWrapper.of( table, columns ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
+        // we use first as pk
+        scannable.createTable( context, LogicalTableWrapper.of( table, columns, List.of( columns.get( 0 ).id ) ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class );
     }
 

@@ -1261,35 +1261,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             }
 
         }
-
-        /*AlgVisitor visitor = new AlgVisitor() {
-            final Set<AlgSubset> visitedSubsets = new HashSet<>();
-
-
-            @Override
-            public void visit( AlgNode node, int ordinal, AlgNode parent ) {
-                if ( node instanceof AlgSubset ) {
-                    AlgSubset subset = (AlgSubset) node;
-
-                    if ( visitedSubsets.contains( subset ) ) {
-                        return;
-                    }
-
-                    visitedSubsets.add( subset );
-
-                    int i = 0;
-                    for ( AlgNode alg : subset.set.algs ) {
-                        visit( alg, i++, subset );
-                    }
-                } else {
-                    if ( operand.matches( node ) ) {
-                        matches.add( Pair.of( node, (AlgSubset) parent ) );
-                    }
-                    super.visit( node, ordinal, parent );
-                }
-            }
-        };
-        visitor.go( root );*/
         for ( Pair<AlgNode, AlgSet> pair : matches ) {
             fireRules( pair.left, true );
         }

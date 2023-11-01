@@ -209,7 +209,7 @@ public class FilePlugin extends PolyPlugin {
                 }
             }
 
-            FileTranslatableEntity physical = currentNamespace.createFileTable( table );
+            FileTranslatableEntity physical = currentNamespace.createFileTable( table, logical.pkIds );
 
             storeCatalog.replacePhysical( physical );
             return List.of( physical );

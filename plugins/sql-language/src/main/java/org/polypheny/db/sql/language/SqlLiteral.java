@@ -137,20 +137,19 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
+@Getter
 public class SqlLiteral extends SqlNode implements Literal {
 
     /**
      * The type with which this literal was declared. This type is very approximate: the literal may have a different type once validated. For example, all numeric literals have a type name of
      * {@link PolyType#DECIMAL}, but on validation may become {@link PolyType#INTEGER}.
      */
-    @Getter
     private final PolyType typeName;
 
     /**
      * The value of this literal. The type of the value must be appropriate for the typeName, as defined by the {@link #valueMatchesType} method.
      */
-    @Getter
-    public final PolyValue value; //todo dl make PolyValue
+    public final PolyValue value;
 
 
     /**
@@ -668,7 +667,7 @@ public class SqlLiteral extends SqlNode implements Literal {
                 writer.keyword( "NULL" );
                 break;
             case CHAR:
-            //case DECIMAL:
+                //case DECIMAL:
             case DOUBLE:
             case BINARY:
                 // should be handled in subtype

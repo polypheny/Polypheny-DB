@@ -120,6 +120,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
@@ -1292,6 +1293,8 @@ public class DbmsMeta implements ProtobufMeta {
                 return PolyType.FLOAT;
             case STRING:
                 return PolyType.VARCHAR;
+            case BYTE_STRING:
+                return PolyType.BINARY;
             case OBJECT:
                 return PolyType.OTHER;
         }
@@ -1342,6 +1345,8 @@ public class DbmsMeta implements ProtobufMeta {
                 return PolyInteger.of( (Short) jdbc );
             case BYTE:
                 return PolyInteger.of( (byte) jdbc );
+            case BYTE_STRING:
+                return PolyBinary.of( (byte[]) jdbc );
         }
         throw new NotImplementedException( "dbms to poly " + value.type );
     }

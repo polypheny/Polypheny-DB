@@ -28,6 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.util.DateString;
@@ -100,7 +101,7 @@ public class FileModifier extends FileEnumerator {
                 return true;
             }
         } catch ( IOException | RuntimeException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

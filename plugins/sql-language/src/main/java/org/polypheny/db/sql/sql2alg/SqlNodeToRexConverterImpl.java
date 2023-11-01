@@ -17,9 +17,7 @@
 package org.polypheny.db.sql.sql2alg;
 
 
-import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
-import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
@@ -105,14 +103,7 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
             case BOOLEAN:
                 return rexBuilder.makeLiteral( literal.value.asBoolean().value );
             case BINARY:
-                bitString = literal.getValueAs( BitString.class );
-                Preconditions.checkArgument(
-                        (bitString.getBitCount() % 8) == 0,
-                        "incomplete octet" );
-
-                // An even number of hexits (e.g. X'ABCD') makes whole number of bytes.
-                ByteString byteString = new ByteString( bitString.getAsByteArray() );
-                return rexBuilder.makeBinaryLiteral( byteString );
+                return rexBuilder.makeBinaryLiteral( literal.value.asBinary().value );
             case SYMBOL:
                 return rexBuilder.makeFlag( literal.getValueAs( Enum.class ) );
             case TIMESTAMP:

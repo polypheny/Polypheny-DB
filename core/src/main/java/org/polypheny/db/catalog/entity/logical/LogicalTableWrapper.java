@@ -26,4 +26,6 @@ public class LogicalTableWrapper {
 
     public List<LogicalColumn> columns;
 
+    public List<Long> pkIds;
+
 }

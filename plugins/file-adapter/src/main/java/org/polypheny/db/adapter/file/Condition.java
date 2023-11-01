@@ -17,30 +17,23 @@
 package org.polypheny.db.adapter.file;
 
 
-import java.io.File;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.file.util.FileUtil;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 public class Condition {
@@ -48,7 +41,7 @@ public class Condition {
     private final Kind operator;
     private Integer columnReference;
     private Long literalIndex;
-    private Object literal;
+    private PolyValue literal;
     private ArrayList<Condition> operands = new ArrayList<>();
 
 
@@ -72,7 +65,7 @@ public class Condition {
     /**
      * Called by generated code, see {@link Condition#getExpression}
      */
-    public Condition( final Kind operator, final Integer columnReference, final Long literalIndex, final Object literal, final Condition[] operands ) {
+    public Condition( final Kind operator, final Integer columnReference, final Long literalIndex, final PolyValue literal, final Condition[] operands ) {
         this.operator = operator;
         this.columnReference = columnReference;
         this.literalIndex = literalIndex;
@@ -95,7 +88,7 @@ public class Condition {
                 Expressions.constant( operator, Kind.class ),
                 Expressions.constant( columnReference, Integer.class ),
                 Expressions.constant( literalIndex, Long.class ),
-                Expressions.constant( this.literal ),
+                this.literal == null ? Expressions.constant( null ) : this.literal.asExpression(),
                 Expressions.newArrayInit( Condition.class, operandsExpressions )
         );
     }
@@ -107,7 +100,7 @@ public class Condition {
         } else if ( rexNode instanceof RexDynamicParam ) {
             this.literalIndex = ((RexDynamicParam) rexNode).getIndex();
         } else if ( rexNode instanceof RexLiteral ) {
-            this.literal = FileUtil.toObject( ((RexLiteral) rexNode).value );
+            this.literal = ((RexLiteral) rexNode).value;
         }
     }
 
@@ -141,7 +134,7 @@ public class Condition {
                     return null;
                 }
             }
-            if ( pkColumnReferences.size() == 0 ) {
+            if ( pkColumnReferences.isEmpty() ) {
                 return lookups;
             } else {
                 return null;
@@ -154,14 +147,14 @@ public class Condition {
     /**
      * Get the value of the condition parameter, either from the literal or literalIndex
      */
-    Object getParamValue( final DataContext dataContext, final PolyType polyType ) {
-        Object out;
+    PolyValue getParamValue( final DataContext dataContext, final PolyType polyType ) {
+        PolyValue out;
         if ( this.literalIndex != null ) {
             out = dataContext.getParameterValue( literalIndex );
         } else {
             out = this.literal;
         }
-        if ( out instanceof Calendar ) {
+        /*if ( out instanceof Calendar ) {
             switch ( polyType ) {
                 case TIME:
                 case TIMESTAMP:
@@ -170,7 +163,7 @@ public class Condition {
                     Calendar cal = ((Calendar) out);
                     return LocalDateTime.ofInstant( cal.toInstant(), cal.getTimeZone().toZoneId() ).toLocalDate().toEpochDay();
             }
-        }
+        }*/
         return out;
     }
 
@@ -216,7 +209,7 @@ public class Condition {
     }
 
 
-    public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
+    public boolean matches( final PolyValue[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             switch ( operator ) {
                 case AND:
@@ -234,14 +227,14 @@ public class Condition {
                     }
                     return false;
                 default:
-                    throw new RuntimeException( operator + " not supported in condition without columnReference" );
+                    throw new GenericRuntimeException( operator + " not supported in condition without columnReference" );
             }
         }
         // don't allow comparison of files and return false if Objects are not comparable
-        if ( columnValues[columnReference] != null && (!(columnValues[columnReference] instanceof Comparable) || (columnValues[columnReference] instanceof File)) ) {
+        /*if ( columnValues[columnReference] == null ) {
             return false;
-        }
-        Comparable columnValue = (Comparable) columnValues[columnReference];//don't do the projectionMapping here
+        }*/
+        PolyValue columnValue = columnValues[columnReference];//don't do the projectionMapping here
         PolyType polyType = columnTypes[columnReference];
         switch ( operator ) {
             case IS_NULL:
@@ -253,19 +246,19 @@ public class Condition {
             //if there is no null check and the column value is null, any check on the column value would return false
             return false;
         }
-        Object parameterValue = getParamValue( dataContext, polyType );
+        PolyValue parameterValue = getParamValue( dataContext, polyType );
         if ( parameterValue == null ) {
             //WHERE x = null is always false, see https://stackoverflow.com/questions/9581745/sql-is-null-and-null
             return false;
         }
-        if ( columnValue instanceof Number && parameterValue instanceof Number ) {
-            columnValue = ((Number) columnValue).doubleValue();
-            parameterValue = ((Number) parameterValue).doubleValue();
-        }
+        /*if ( columnValue.isNumber() && parameterValue.isNumber() ) {
+            columnValue = columnValue;//.doubleValue();
+            parameterValue = parameterValue;//).doubleValue();
+        }*/
 
         int comparison;
 
-        if ( parameterValue instanceof Calendar ) {
+        /*if ( parameterValue instanceof Calendar ) {
             //could be improved with precision..
             switch ( polyType ) {
                 case DATE:
@@ -282,7 +275,7 @@ public class Condition {
                     comparison = ldt.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDateTime() );
                     break;
                 default:
-                    comparison = columnValue.compareTo( parameterValue );
+                    comparison = ((Comparable) columnValue).compareTo( parameterValue );
             }
         } else if ( FileHelper.isSqlDateOrTimeOrTS( parameterValue ) ) {
             switch ( polyType ) {
@@ -292,11 +285,12 @@ public class Condition {
                     break;
                 case TIMESTAMP:
                 default:
-                    comparison = columnValue.compareTo( FileHelper.sqlToLong( parameterValue ) );
+                    comparison = ((Comparable) columnValue).compareTo( FileHelper.sqlToLong( parameterValue ) );
             }
         } else {
-            comparison = columnValue.compareTo( parameterValue );
-        }
+            comparison = ((Comparable) columnValue).compareTo( parameterValue );
+        }*/
+        comparison = columnValue.compareTo( parameterValue );
 
         switch ( operator ) {
             case AND:
@@ -328,7 +322,7 @@ public class Condition {
             case LIKE:
                 return like( columnValue.toString(), parameterValue.toString() );
             default:
-                throw new RuntimeException( operator + " comparison not supported by file adapter." );
+                throw new GenericRuntimeException( operator + " comparison not supported by file adapter." );
         }
     }
 

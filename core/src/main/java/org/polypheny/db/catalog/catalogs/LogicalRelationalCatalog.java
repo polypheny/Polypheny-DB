@@ -193,8 +193,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      *
      * @param tableId The id of the table
      * @param columnIds The id of key which will be part of the primary keys
+     * @return
      */
-    void addPrimaryKey( long tableId, List<Long> columnIds );
+    LogicalTable addPrimaryKey( long tableId, List<Long> columnIds );
 
 
     /**
@@ -216,8 +217,9 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param tableId The id of the table
      * @param constraintName The name of the constraint
      * @param columnIds A list of column ids
+     * @return
      */
-    void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
+    LogicalTable addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds );
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.file;
 
 
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -50,7 +49,6 @@ public class Value {
     private Integer columnReference;
     private PolyValue literal;
     private PolyValue literalIndex;
-    private static final Gson gson = new Gson();
 
 
     /**
@@ -88,15 +86,6 @@ public class Value {
 
     Expression getExpression() {
         if ( literal != null ) {
-            Expression literalExpression;
-            /*if ( literal ) {
-                // this is a fix, else linq4j will submit an integer that is too long
-                literalExpression = Expressions.constant( literal, Long.class );
-            } else if ( literal instanceof BigDecimal ) {
-                literalExpression = Expressions.constant( literal.toString() );
-            } else {
-                literalExpression = Expressions.constant( literal );
-            }*/
             return Expressions.new_( Value.class, Expressions.constant( columnReference ), literal.asExpression(), Expressions.constant( false ) );
         } else {
             return Expressions.new_( Value.class, Expressions.constant( columnReference ), literalIndex.asExpression(), Expressions.constant( true ) );

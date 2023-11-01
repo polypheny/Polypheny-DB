@@ -366,7 +366,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void addPrimaryKey( long tableId, List<Long> columnIds ) {
+    public LogicalTable addPrimaryKey( long tableId, List<Long> columnIds ) {
         if ( columnIds.stream().anyMatch( id -> columns.get( id ).nullable ) ) {
             throw new GenericRuntimeException( "Primary key is not allowed to use nullable columns." );
         }
@@ -390,6 +390,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         setPrimaryKey( tableId, keyId );
         change();
+        return tables.get( tableId );
     }
 
 
@@ -500,7 +501,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
+    public LogicalTable addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) {
         long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_QUERY );
         // Check if there is already a unique constraint
         List<LogicalConstraint> logicalConstraints = constraints.values().stream()
@@ -514,6 +515,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             constraints.put( id, new LogicalConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
             change();
         }
+        return tables.get( tableId );
     }
 
 

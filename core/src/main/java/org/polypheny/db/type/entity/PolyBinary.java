@@ -20,9 +20,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.ConversionUtil;
 
 @EqualsAndHashCode(callSuper = true)
@@ -88,7 +90,7 @@ public class PolyBinary extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        return null;
+        return Expressions.call( PolyBinary.class, "of", Expressions.constant( value.getBytes() ) );
     }
 
 
@@ -100,12 +102,12 @@ public class PolyBinary extends PolyValue {
 
     @Override
     public String toString() {
-        return value.toBase64String();
+        return value.toString();
     }
 
 
     public int getBitCount() {
-        return value.getBytes().length;
+        return BitString.createFromBytes( value.getBytes() ).getBitCount();
     }
 
 
