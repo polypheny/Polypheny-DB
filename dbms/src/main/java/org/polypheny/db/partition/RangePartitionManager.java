@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -47,24 +49,24 @@ public class RangePartitionManager extends AbstractPartitionManager {
         long selectedPartitionId = -1;
 
         // Process all accumulated CatalogPartitions
-        /*for ( AllocationEntity entity : Catalog.getInstance().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
-            if ( unboundPartitionId == -1 && catalogPartition.isUnbound ) {
-                unboundPartitionId = catalogPartition.id;
+        for ( AllocationPartition partition : Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ) ) {
+            if ( unboundPartitionId == -1 && partition.isUnbound ) {
+                unboundPartitionId = partition.id;
                 break;
             }
 
-            if ( isValueInRange( columnValue, catalogPartition ) ) {
+            if ( isValueInRange( columnValue, partition ) ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Found column value: {} on partitionID {} in range: [{} - {}]",
                             columnValue,
-                            catalogPartition.id,
-                            catalogPartition.partitionQualifiers.get( 0 ),
-                            catalogPartition.partitionQualifiers.get( 1 ) );
+                            partition.id,
+                            partition.qualifiers.get( 0 ),
+                            partition.qualifiers.get( 1 ) );
                 }
-                selectedPartitionId = catalogPartition.id;
+                selectedPartitionId = partition.id;
                 break;
             }
-        }*/
+        }
 
         // If no concrete partition could be identified, report back the unbound/default partition
         if ( selectedPartitionId == -1 ) {
@@ -100,11 +102,11 @@ public class RangePartitionManager extends AbstractPartitionManager {
         }
 
         if ( partitionGroupQualifiers.size() + 1 != numPartitionGroups ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
+            throw new GenericRuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 
         if ( partitionGroupQualifiers.isEmpty() ) {
-            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionGroupQualifiers + "'" );
+            throw new GenericRuntimeException( "Partition Qualifiers are empty '" + partitionGroupQualifiers + "'" );
         }
 
         // Check if range is overlapping
@@ -253,14 +255,13 @@ public class RangePartitionManager extends AbstractPartitionManager {
     }
 
 
-    private boolean isValueInRange( String columnValue, AllocationPartition logicalPartition ) {
-        //int lowerBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 0 ) );
-        //int upperBound = Integer.parseInt( logicalPartition.partitionQualifiers.get( 1 ) );
+    private boolean isValueInRange( String columnValue, AllocationPartition partition ) {
+        int lowerBound = Integer.parseInt( partition.qualifiers.get( 0 ) );
+        int upperBound = Integer.parseInt( partition.qualifiers.get( 1 ) );
 
         double numericValue = Double.parseDouble( columnValue );
 
-        //return numericValue >= lowerBound && numericValue <= upperBound;
-        return false;// todo dl;
+        return numericValue >= lowerBound && numericValue <= upperBound;
     }
 
 }

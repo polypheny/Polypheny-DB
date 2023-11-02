@@ -226,7 +226,8 @@ public class DdlManagerImpl extends DdlManager {
 
             LogicalTable logical = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
-            AllocationPartition partition = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartition( logical.id, Catalog.defaultNamespaceId, UNPARTITIONED, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, PartitionType.NONE );
+            AllocationPartitionGroup group = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartitionGroup( logical.id, null, Catalog.defaultNamespaceId, PartitionType.NONE, 1, true );
+            AllocationPartition partition = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartition( logical.id, Catalog.defaultNamespaceId, group.id, UNPARTITIONED, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, null, PartitionType.NONE );
 
             AllocationPlacement placement = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPlacement( logical.id, Catalog.defaultNamespaceId, adapter.adapterId );
             AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partition.id, logical.id );
@@ -1811,8 +1812,8 @@ public class DdlManagerImpl extends DdlManager {
         // Sets previously created primary key
         //catalog.getLogicalRel( namespaceId ).createPrimaryKey( view.id, columnIds );
 
-        AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, List.of(), false );
-        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, PartitionType.NONE );
+        AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( view.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, false );
+        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( view.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, null, PartitionType.NONE );
 
         for ( DataStore<?> store : stores ) {
             AllocationPlacement placement = catalog.getAllocRel( namespaceId ).addPlacement( view.id, namespaceId, store.adapterId );
@@ -2124,8 +2125,8 @@ public class DdlManagerImpl extends DdlManager {
 
     @NotNull
     private Pair<AllocationPartition, PartitionProperty> createSinglePartition( long namespaceId, LogicalTable logical ) {
-        AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( logical.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, List.of(), false );
-        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( logical.id, namespaceId, null, false, PlacementType.AUTOMATIC, DataPlacementRole.REFRESHABLE, PartitionType.NONE );
+        AllocationPartitionGroup group = catalog.getAllocRel( namespaceId ).addPartitionGroup( logical.id, UNPARTITIONED, namespaceId, PartitionType.NONE, 1, false );
+        AllocationPartition partition = catalog.getAllocRel( namespaceId ).addPartition( logical.id, namespaceId, group.id, null, false, PlacementType.AUTOMATIC, DataPlacementRole.REFRESHABLE, null, PartitionType.NONE );
         PartitionProperty property = addBlankPartition( namespaceId, logical.id, List.of( group.id ), List.of( partition.id ) );
         return Pair.of( partition, property );
     }
@@ -2534,7 +2535,6 @@ public class DdlManagerImpl extends DdlManager {
                         partitionInfo.table.namespaceId,
                         actualPartitionType,
                         numberOfPartitionsPerGroup,
-                        new ArrayList<>(),
                         true );
             } else {
                 // If no names have been explicitly defined
@@ -2551,7 +2551,6 @@ public class DdlManagerImpl extends DdlManager {
                             partitionInfo.table.namespaceId,
                             actualPartitionType,
                             numberOfPartitionsPerGroup,
-                            new ArrayList<>(),
                             false );
                 } else {
                     group = catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionGroup(
@@ -2560,7 +2559,6 @@ public class DdlManagerImpl extends DdlManager {
                             partitionInfo.table.namespaceId,
                             actualPartitionType,
                             numberOfPartitionsPerGroup,
-                            partitionInfo.qualifiers.get( i ),
                             false );
                 }
             }
@@ -2568,14 +2566,18 @@ public class DdlManagerImpl extends DdlManager {
             partitionGroups.put( group, partitions );
         }
 
+        int j = 0;
         for ( AllocationPartitionGroup group : partitionGroups.keySet() ) {
+            List<String> qualifiers = group.isUnbound ? null : (j < partitionInfo.qualifiers.size() + 1 ? null : partitionInfo.qualifiers.get( j++ ));
             partitionGroups.put( group, List.of( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                     partitionInfo.table.id,
                     partitionInfo.table.namespaceId,
+                    group.id,
                     group.name,
                     group.isUnbound,
                     PlacementType.AUTOMATIC,
-                    DataPlacementRole.REFRESHABLE, PartitionType.NONE ) ) );
+                    DataPlacementRole.REFRESHABLE,
+                    qualifiers, PartitionType.NONE ) ) );
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds
@@ -2583,77 +2585,7 @@ public class DdlManagerImpl extends DdlManager {
 
         PartitionProperty partitionProperty;
         if ( actualPartitionType == PartitionType.TEMPERATURE ) {
-            long frequencyInterval = ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInterval();
-            switch ( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getIntervalUnit().toString() ) {
-                case "days":
-                    frequencyInterval = frequencyInterval * 60 * 60 * 24;
-                    break;
-
-                case "hours":
-                    frequencyInterval = frequencyInterval * 60 * 60;
-                    break;
-
-                case "minutes":
-                    frequencyInterval = frequencyInterval * 60;
-                    break;
-            }
-
-            int hotPercentageIn = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString() );
-            int hotPercentageOut = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString() );
-
-            //Initially distribute partitions as intended in a running system
-            long numberOfPartitionsInHot = (long) numberOfPartitions * hotPercentageIn / 100;
-            if ( numberOfPartitionsInHot == 0 ) {
-                numberOfPartitionsInHot = 1;
-            }
-
-            long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
-
-            // -1 because one partition is already created in COLD
-            AllocationPartitionGroup firstGroup = partitionGroups.keySet().stream().findFirst().orElseThrow();
-
-            // -1 because one partition is already created in HOT
-            for ( int i = 0; i < numberOfPartitionsInHot - 1; i++ ) {
-                partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
-                        partitionInfo.table.id,
-                        partitionInfo.table.namespaceId,
-                        null,
-                        false,
-                        PlacementType.AUTOMATIC,
-                        DataPlacementRole.UP_TO_DATE, PartitionType.NONE ) );
-            }
-
-            // -1 because one partition is already created in COLD
-            AllocationPartitionGroup secondGroup = new ArrayList<>( partitionGroups.keySet() ).get( 0 );
-
-            for ( int i = 0; i < numberOfPartitionsInCold - 1; i++ ) {
-                partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
-                        partitionInfo.table.id,
-                        partitionInfo.table.namespaceId,
-                        null,
-                        false,
-                        PlacementType.AUTOMATIC,
-                        DataPlacementRole.UP_TO_DATE, PartitionType.NONE ) );
-            }
-
-            partitionProperty = TemperaturePartitionProperty.builder()
-                    .entityId( logicalColumn.tableId )
-                    .partitionType( actualPartitionType )
-                    .isPartitioned( true )
-                    .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
-                    .partitionColumnId( logicalColumn.id )
-                    .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
-                    .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
-                    .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase() ) )
-                    .frequencyInterval( frequencyInterval )
-                    .hotAccessPercentageIn( hotPercentageIn )
-                    .hotAccessPercentageOut( hotPercentageOut )
-                    .reliesOnPeriodicChecks( true )
-                    .hotPartitionGroupId( firstGroup.id )
-                    .coldPartitionGroupId( secondGroup.id )
-                    .numPartitions( partitions.size() )
-                    .numPartitionGroups( partitionGroups.size() )
-                    .build();
+            partitionProperty = handleTemperaturePartitioning( partitionInfo, numberOfPartitions, partitionGroups, partitions, logicalColumn, actualPartitionType );
         } else {
             partitionProperty = PartitionProperty.builder()
                     .entityId( logicalColumn.tableId )
@@ -2666,6 +2598,87 @@ public class DdlManagerImpl extends DdlManager {
                     .build();
         }
         return Pair.of( partitions, partitionProperty );
+    }
+
+
+    private PartitionProperty handleTemperaturePartitioning( PartitionInformation partitionInfo, int numberOfPartitions, Map<AllocationPartitionGroup, List<AllocationPartition>> partitionGroups, List<AllocationPartition> partitions, LogicalColumn logicalColumn, PartitionType actualPartitionType ) {
+        PartitionProperty partitionProperty;
+        long frequencyInterval = ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInterval();
+        switch ( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getIntervalUnit().toString() ) {
+            case "days":
+                frequencyInterval = frequencyInterval * 60 * 60 * 24;
+                break;
+
+            case "hours":
+                frequencyInterval = frequencyInterval * 60 * 60;
+                break;
+
+            case "minutes":
+                frequencyInterval = frequencyInterval * 60;
+                break;
+        }
+
+        int hotPercentageIn = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageIn().toString() );
+        int hotPercentageOut = Integer.parseInt( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getHotAccessPercentageOut().toString() );
+
+        //Initially distribute partitions as intended in a running system
+        long numberOfPartitionsInHot = (long) numberOfPartitions * hotPercentageIn / 100;
+        if ( numberOfPartitionsInHot == 0 ) {
+            numberOfPartitionsInHot = 1;
+        }
+
+        long numberOfPartitionsInCold = numberOfPartitions - numberOfPartitionsInHot;
+
+        // -1 because one partition is already created in HOT
+        AllocationPartitionGroup firstGroup = partitionGroups.keySet().stream().findFirst().orElseThrow();
+
+        // -1 because one partition is already created in HOT
+        for ( int i = 0; i < numberOfPartitionsInHot - 1; i++ ) {
+            partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                    partitionInfo.table.id,
+                    partitionInfo.table.namespaceId,
+                    firstGroup.id,
+                    null,
+                    false,
+                    PlacementType.AUTOMATIC,
+                    DataPlacementRole.UP_TO_DATE,
+                    null, PartitionType.NONE ) );
+        }
+
+        // -1 because one partition is already created in COLD
+        AllocationPartitionGroup secondGroup = new ArrayList<>( partitionGroups.keySet() ).get( 1 );
+
+        for ( int i = 0; i < numberOfPartitionsInCold - 1; i++ ) {
+            partitions.add( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
+                    partitionInfo.table.id,
+                    partitionInfo.table.namespaceId,
+                    secondGroup.id,
+                    null,
+                    false,
+                    PlacementType.AUTOMATIC,
+                    DataPlacementRole.UP_TO_DATE,
+                    null, PartitionType.NONE ) );
+        }
+
+        partitionProperty = TemperaturePartitionProperty.builder()
+                .entityId( logicalColumn.tableId )
+                .partitionType( actualPartitionType )
+                .isPartitioned( true )
+                .internalPartitionFunction( PartitionType.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getInternalPartitionFunction().toString().toUpperCase() ) )
+                .partitionColumnId( logicalColumn.id )
+                .partitionGroupIds( ImmutableList.copyOf( partitionGroups.keySet().stream().map( g -> g.id ).collect( Collectors.toList() ) ) )
+                .partitionIds( ImmutableList.copyOf( partitions.stream().map( p -> p.id ).collect( Collectors.toList() ) ) )
+                .partitionCostIndication( PartitionCostIndication.valueOf( ((RawTemperaturePartitionInformation) partitionInfo.rawPartitionInformation).getAccessPattern().toString().toUpperCase() ) )
+                .frequencyInterval( frequencyInterval )
+                .hotAccessPercentageIn( hotPercentageIn )
+                .hotAccessPercentageOut( hotPercentageOut )
+                .reliesOnPeriodicChecks( true )
+                .hotPartitionGroupId( firstGroup.id )
+                .coldPartitionGroupId( secondGroup.id )
+                .numPartitions( partitions.size() )
+                .numPartitionGroups( partitionGroups.size() )
+                .build();
+        return partitionProperty;
     }
 
 

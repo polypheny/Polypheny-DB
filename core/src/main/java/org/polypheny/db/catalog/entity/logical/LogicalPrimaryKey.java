@@ -53,7 +53,7 @@ public class LogicalPrimaryKey extends LogicalKey {
     // Used for creating ResultSets
     public List<CatalogPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
         int i = 1;
-        LinkedList<CatalogPrimaryKeyColumn> list = new LinkedList<>();
+        List<CatalogPrimaryKeyColumn> list = new LinkedList<>();
         for ( String columnName : getColumnNames() ) {
             list.add( new CatalogPrimaryKeyColumn( id, i++, columnName ) );
         }

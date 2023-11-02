@@ -167,7 +167,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
         for ( PhysicalColumn column : columns ) {
             SqlNode[] operands = new SqlNode[]{
                     new SqlIdentifier( Arrays.asList( namespaceName, name, column.name ), ParserPos.ZERO ),
-                    new SqlIdentifier( Collections.singletonList( column.name ), ParserPos.ZERO )
+                    new SqlIdentifier( Collections.singletonList( column.logicalName ), ParserPos.ZERO )
             };
             pcnl.add( new SqlBasicCall( (SqlOperator) OperatorRegistry.get( OperatorName.AS ), operands, ParserPos.ZERO ) );
         }

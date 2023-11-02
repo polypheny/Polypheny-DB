@@ -16,6 +16,9 @@
 
 package org.polypheny.db.catalog.logistic;
 
+import lombok.Getter;
+
+@Getter
 public enum PartitionType {
     NONE( 0 ),
     RANGE( 1 ),
@@ -29,11 +32,6 @@ public enum PartitionType {
 
     PartitionType( int id ) {
         this.id = id;
-    }
-
-
-    public int getId() {
-        return id;
     }
 
 

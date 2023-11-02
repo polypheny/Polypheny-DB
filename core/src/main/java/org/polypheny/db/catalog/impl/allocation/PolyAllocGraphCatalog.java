@@ -125,7 +125,7 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
     @Override
     public AllocationPartition addPartition( LogicalGraph graph, PartitionType partitionType, String name ) {
         long id = idBuilder.getNewPartitionId();
-        AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, graph.id, -1, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, null, partitionType );
         partitions.put( id, partition );
         change();
         return partition;

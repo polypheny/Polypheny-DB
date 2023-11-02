@@ -105,7 +105,7 @@ public class LogicalForeignKey extends LogicalKey {
     // Used for creating ResultSets
     public List<CatalogForeignKeyColumn> getCatalogForeignKeyColumns() {
         int i = 1;
-        LinkedList<CatalogForeignKeyColumn> list = new LinkedList<>();
+        List<CatalogForeignKeyColumn> list = new LinkedList<>();
         List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
         for ( String columnName : getColumnNames() ) {
             list.add( new CatalogForeignKeyColumn( tableId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );

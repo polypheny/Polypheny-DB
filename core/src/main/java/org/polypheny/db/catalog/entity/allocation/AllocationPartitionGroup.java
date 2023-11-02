@@ -16,12 +16,10 @@
 
 package org.polypheny.db.catalog.entity.allocation;
 
-import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
-import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
@@ -37,14 +35,12 @@ public class AllocationPartitionGroup implements CatalogObject {
     @Serialize
     public long id;
     @Serialize
+    @SerializeNullable
     public String name;
     @Serialize
     public long logicalEntityId;
     @Serialize
     public long namespaceId;
-    @Serialize
-    @SerializeNullable
-    public ImmutableList<String> partitionQualifiers;
     @Serialize
     public boolean isUnbound;
     @Serialize
@@ -53,20 +49,16 @@ public class AllocationPartitionGroup implements CatalogObject {
 
     public AllocationPartitionGroup(
             @Deserialize("id") final long id,
-            @Deserialize("name") final String name,
+            @Deserialize("name") @Nullable final String name,
             @Deserialize("logicalEntityId") final long logicalEntityId,
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("partitionKey") final long partitionKey,
-            @Deserialize("partitionQualifiers") @Nullable final List<String> partitionQualifiers,
             @Deserialize("isUnbound") final boolean isUnbound ) {
         this.id = id;
         this.name = name;
         this.logicalEntityId = logicalEntityId;
         this.namespaceId = namespaceId;
         this.partitionKey = partitionKey;
-        // TODO @HENNLO Although the qualifiers are now part of CatalogPartitions, it might be a good improvement to
-        //  accumulate all qualifiers of all internal partitions here to speed up query time.
-        this.partitionQualifiers = partitionQualifiers == null ? null : ImmutableList.copyOf( partitionQualifiers );
         this.isUnbound = isUnbound;
     }
 

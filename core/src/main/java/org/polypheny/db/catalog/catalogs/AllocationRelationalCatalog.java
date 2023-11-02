@@ -74,7 +74,7 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      * @param partitionType partition Type of the added partition
      * @return The id of the created partitionGroup
      */
-    AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound );
+    AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, boolean isUnbound );
 
     /**
      * Should only be called from mergePartitions(). Deletes a single partition and all references.
@@ -89,13 +89,15 @@ public interface AllocationRelationalCatalog extends AllocationCatalog {
      *
      * @param tableId The unique id of the table
      * @param namespaceId The unique id of the table
+     * @param groupId
      * @param name
      * @param placementType
      * @param role
+     * @param qualifiers
      * @param partitionType
      * @return The id of the created partition
      */
-    AllocationPartition addPartition( long tableId, long namespaceId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, PartitionType partitionType );
+    AllocationPartition addPartition( long tableId, long namespaceId, long groupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, List<String> qualifiers, PartitionType partitionType );
 
     /**
      * Deletes a single partition and all references.

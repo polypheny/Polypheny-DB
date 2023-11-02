@@ -776,13 +776,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             RoutedAlgBuilder builder,
             LogicalTable table,
             List<AllocationColumn> placements,
-            AllocationEntity allocationTable,
+            AllocationEntity allocEntity,
             Statement statement,
             AlgOptCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, table, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
+            buildDml( node.getInput( i ), builder, table, placements, allocEntity, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -795,7 +795,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            return handleRelScan( builder, statement, ((LogicalRelScan) node).entity );
+            return handleRelScan( builder, statement, allocEntity != null ? allocEntity : ((LogicalRelScan) node).entity );
         } else if ( node instanceof LogicalDocumentValues ) {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
@@ -850,13 +850,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     builder = remapParameterizedDml( node, builder, statement, parameterValues );
                 }
                 builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
                 return builder.project( rexNodes );
             } else {
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
