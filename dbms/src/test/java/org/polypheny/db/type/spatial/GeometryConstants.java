@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.type.entity.spatial;
+package org.polypheny.db.type.spatial;
 
-/**
- * Represent Geometry types supported by Polypheny.
- */
-public enum PolyGeometryType {
+public class GeometryConstants {
 
-    POINT,
-    LINESTRING,
-    LINEAR_RING
+    static final String POINT_EWKT = "SRID=4326;POINT (13.4050 52.5200)";
+    static final String POINT_WKT = "POINT (13.4050 52.5200 36.754)";
+    static final String LINESTRING_WKT = "LINESTRING(-1 -1, 2 2, 4 5, 6 7)";
+    static final String LINEAR_RING_WKT = "LINEARRING (0 0, 0 10, 10 10, 10 0, 0 0)";
+    static final double DELTA = 1e-5;
+    static final int NO_SRID = 0;
 }

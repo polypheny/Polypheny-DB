@@ -234,7 +234,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
             case GEOMETRY:
-                return o -> o.asGeometry().getJtsGeometry();
+                // TODO: check how does it work
+                return o -> o.asGeometry().toString();
             default:
                 throw new NotImplementedException( "meta" );
         }

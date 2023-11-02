@@ -69,37 +69,45 @@ public class PolyGeometry extends PolyValue {
     @Getter
     protected PolyGeometryType geometryType;
 
+
     /**
      * Constructor creates the {@link Geometry} from the WKT text.
      * <p>
      * The WKT may contain SRID in the text, e.g. <code>"SRID=4326;POINT (13.4050 52.5200)"</code>.
      * In this case SRID from the WKT would be used, otherwise the default one is selected.
      * <p>
+     *
      * @param wkt Well Know Text representation of the geometry
      * @throws InvalidGeometryException if {@link Geometry} is invalid or provided WKT is invalid.
      */
     public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
-        this.SRID = NO_SRID;
-        WKTReader reader = new WKTReader();
+        int SRID = NO_SRID;
         try {
             wkt = wkt.trim();
             // WKT is actually an extended EWKT with SRID before the WKT
-            if (wkt.startsWith( "SRID" )) {
+            if ( wkt.startsWith( "SRID" ) ) {
                 // in WKT semicolon is invalid character, so we could safely split by it
                 String[] ewktParts = wkt.split( ";" );
-                this.SRID = Integer.valueOf( ewktParts[0].replace( "SRID=", "" ) );
+                SRID = Integer.parseInt( ewktParts[0].replace( "SRID=", "" ) );
                 wkt = ewktParts[1];
             }
-            this.jtsGeometry = reader.read( wkt );
-            if (!jtsGeometry.isValid()) {
-                throw new ParseException("Provided geometry is not valid.");
-            }
-            this.jtsGeometry.setSRID( this.SRID );
-        } catch ( ParseException | NumberFormatException e) {
-            throw new InvalidGeometryException(e.getMessage());
+        } catch ( NumberFormatException e ) {
+            throw new InvalidGeometryException( e.getMessage() );
         }
-        this.geometryType = getPolyGeometryType();
+        init(wkt, SRID);
+    }
+
+    /**
+     * Constructor creates the {@link Geometry} from the WKT text using the provided SRID.
+     *
+     * @param wkt Well Know Text representation of the geometry
+     * @param SRID Spatial reference system of the geometry
+     * @throws InvalidGeometryException if {@link Geometry} is invalid or provided WKT is invalid.
+     */
+    public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
+        this( PolyType.GEOMETRY );
+        init( wkt, SRID );
     }
 
     public PolyGeometry( Geometry geometry ) {
@@ -109,17 +117,41 @@ public class PolyGeometry extends PolyValue {
         this.geometryType = getPolyGeometryType();
     }
 
+
     protected PolyGeometry( PolyType type ) {
         super( type );
     }
+
+    private void init( String wkt, int SRID) throws InvalidGeometryException {
+        this.SRID = SRID;
+        WKTReader reader = new WKTReader();
+        try {
+            this.jtsGeometry = reader.read( wkt );
+            if ( !jtsGeometry.isValid() ) {
+                throw new ParseException( "Provided geometry is not valid." );
+            }
+            this.jtsGeometry.setSRID( this.SRID );
+        } catch ( ParseException | IllegalArgumentException e) {
+            // IllegalArgumentException is thrown in case geometry conditions are not met
+            throw new InvalidGeometryException( e.getMessage() );
+        }
+        this.geometryType = getPolyGeometryType();
+    }
+
 
     public static PolyGeometry of( String wkt ) throws InvalidGeometryException {
         return new PolyGeometry( wkt );
     }
 
+    public static PolyGeometry of( String wkt, int SRID ) throws InvalidGeometryException {
+        return new PolyGeometry( wkt, SRID );
+    }
+
+
     public static PolyGeometry of( Geometry geometry ) {
         return new PolyGeometry( geometry );
     }
+
 
     protected PolyGeometryType getPolyGeometryType() {
         switch ( jtsGeometry.getGeometryType() ) {
@@ -127,14 +159,18 @@ public class PolyGeometry extends PolyValue {
                 return PolyGeometryType.POINT;
             case "LineString":
                 return PolyGeometryType.LINESTRING;
+            case "LinearRing":
+                return PolyGeometryType.LINEAR_RING;
             default:
                 throw new NotImplementedException( "value" );
         }
     }
 
+
     public boolean isPoint() {
         return geometryType.equals( PolyGeometryType.POINT );
     }
+
 
     @NotNull
     public PolyPoint asPoint() {
@@ -142,6 +178,32 @@ public class PolyGeometry extends PolyValue {
             return PolyPoint.of( jtsGeometry );
         }
         throw cannotParse( this, PolyPoint.class );
+    }
+
+    public boolean isLineString() {
+        return geometryType.equals( PolyGeometryType.LINESTRING );
+    }
+
+
+    @NotNull
+    public PolyLineString asLineString() {
+        if ( isLineString() ) {
+            return PolyLineString.of( jtsGeometry );
+        }
+        throw cannotParse( this, PolyLineString.class );
+    }
+
+    public boolean isLinearRing() {
+        return geometryType.equals( PolyGeometryType.LINEAR_RING );
+    }
+
+
+    @NotNull
+    public PolyLinearRing asLinearRing() {
+        if ( isLinearRing() ) {
+            return PolyLinearRing.of( jtsGeometry );
+        }
+        throw cannotParse( this, PolyLinearRing.class );
     }
 
 
@@ -155,7 +217,53 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
+     * @return <code>true</code> if the set of points covered by this {@link Geometry} is empty.
+     */
+    public boolean isEmpty() {
+        return jtsGeometry.isEmpty();
+    }
+
+
+    /**
+     * @return the count of this {@link Geometry} vertices.
+     */
+    public int getNumPoints() {
+        return jtsGeometry.getNumPoints();
+    }
+
+
+    /**
+     * @return the dimension of this {@link Geometry}.
+     */
+    public int getDimension() {
+        return jtsGeometry.getDimension();
+    }
+
+
+    /**
+     * Linear geometries return their length.
+     * Areal geometries return their perimeter.
+     *
+     * @return the length of this {@link Geometry}
+     */
+    public double getLength() {
+        return jtsGeometry.getLength();
+    }
+
+
+    /**
+     * Areal Geometries have a non-zero area.
+     *
+     * @return the area of this {@link Geometry}
+     */
+    public double getArea() {
+        return jtsGeometry.getArea();
+    }
+
+
+    /**
      * Bound the {@link Geometry} my the minimum box that could fit this geometry.
+     *
      * @return {@link PolyGeometry} with minimum bounding box
      */
     public PolyGeometry getMinimumBoundingBox() {
@@ -169,11 +277,11 @@ public class PolyGeometry extends PolyValue {
      */
     @Override
     public boolean equals( Object o ) {
-        if ( !( o instanceof PolyGeometry )) {
+        if ( !(o instanceof PolyGeometry) ) {
             return false;
         }
         PolyGeometry that = (PolyGeometry) o;
-        return jtsGeometry.equals( that.jtsGeometry ) && Objects.equals( SRID, that.SRID );
+        return geometryType.equals( that.geometryType ) && jtsGeometry.equals( that.jtsGeometry ) && Objects.equals( SRID, that.SRID );
     }
 
 
@@ -217,8 +325,9 @@ public class PolyGeometry extends PolyValue {
      */
     @Override
     public String toString() {
-        return String.format( "SRID=%d;%s" , SRID, jtsGeometry.toString() );
+        return String.format( "SRID=%d;%s", SRID, jtsGeometry.toString() );
     }
+
 
     public static class PolyGeometrySerializerDef extends SimpleSerializerDef<PolyGeometry> {
 
@@ -229,6 +338,7 @@ public class PolyGeometry extends PolyValue {
                 public void encode( BinaryOutput out, PolyGeometry item ) {
                     out.writeUTF8( item.toString() );
                 }
+
 
                 @Override
                 public PolyGeometry decode( BinaryInput in ) throws CorruptedDataException {
