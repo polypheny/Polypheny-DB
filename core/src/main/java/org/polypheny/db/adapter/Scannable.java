@@ -63,9 +63,9 @@ public interface Scannable {
         AllocationTable allocSubTable = new AllocationTable( builder.getNewAllocId(), allocation.placementId, allocation.partitionId, table.id, table.namespaceId, allocation.adapterId );
 
         List<AllocationColumn> allocColumns = new ArrayList<>();
-        i = 1;
+
         for ( LogicalColumn column : columns ) {
-            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, i++, allocation.adapterId );
+            AllocationColumn alloc = new AllocationColumn( logical.namespaceId, allocSubTable.placementId, allocSubTable.logicalId, column.id, PlacementType.AUTOMATIC, column.position, allocation.adapterId );
             allocColumns.add( alloc );
         }
         // we use first as pk

@@ -56,6 +56,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -94,7 +95,7 @@ public class TestHelper {
         log.info( "Starting Polypheny-DB..." );
 
         Runnable runnable = () -> {
-            polyphenyDb.testMode = true;
+            polyphenyDb.mode = PolyphenyMode.TEST;
             String defaultStoreName = System.getProperty( "storeId.default" );
             if ( defaultStoreName != null ) {
                 polyphenyDb.defaultStoreName = defaultStoreName;

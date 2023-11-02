@@ -141,7 +141,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             columns.addAll( statement.getTransaction().getSnapshot().rel().getColumns( table.id ) );
         }
 
-        DdlManager.getInstance().addDataPlacement(
+        DdlManager.getInstance().createAllocationPlacement(
                 table,
                 columns,
                 partitionGroupsList,

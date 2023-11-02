@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
@@ -51,7 +52,7 @@ public final class DockerManager {
 
     public Optional<DockerInstance> getInstanceById( int instanceId ) {
         // Tests expect a localhost docker instance with id 0
-        if ( Catalog.testMode && instanceId == 0 ) {
+        if ( Catalog.mode == PolyphenyMode.TEST && instanceId == 0 ) {
             return dockerInstances.values().stream().filter( d -> d.getHost().equals( "localhost" ) ).findFirst();
         }
         return Optional.ofNullable( dockerInstances.get( instanceId ) );

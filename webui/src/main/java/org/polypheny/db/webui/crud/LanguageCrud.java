@@ -37,6 +37,7 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -321,7 +322,7 @@ public class LanguageCrud {
     private static String toJson( @Nullable PolyValue src ) {
         return src == null
                 ? null
-                : Catalog.testMode ? src.toTypedJson() : src.toJson();
+                : Catalog.mode == PolyphenyMode.TEST ? src.toTypedJson() : src.toJson();
     }
 
 

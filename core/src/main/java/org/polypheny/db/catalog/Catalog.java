@@ -68,7 +68,7 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static boolean testMode;
+    public static PolyphenyMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
@@ -273,6 +273,13 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract void restore();
+
+
+    public enum PolyphenyMode {
+        DEFAULT,
+        TEST,
+        BENCHMARK
+    }
 
 
 }
