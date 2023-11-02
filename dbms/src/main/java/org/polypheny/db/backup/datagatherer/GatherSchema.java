@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.impl.PolyCatalog;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 
@@ -53,8 +54,11 @@ public class GatherSchema {
 
     //table id, list of views for the table
     ImmutableMap<Long, List<LogicalView>> views;
+    ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
     ImmutableMap<Long, List<LogicalColumn>> columns;
     ImmutableMap<Long, List<LogicalKey>> keysPerTable;
+    ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    // index -> can only be created per (one) table
 
     public GatherSchema() {
     }
@@ -90,15 +94,22 @@ public class GatherSchema {
      * Gets the tables, views, columns, keys, indexes, constraints and nodes from the snapshot
      */
     private void getRelSchema() {
-        HashMap<Long, List<LogicalTable>> tables = new HashMap<>();
-        HashMap<Long, List<LogicalView>> views = new HashMap<>();
-        HashMap<Long, List<LogicalColumn>> columns = new HashMap<>();
-        HashMap<Long, List<LogicalConstraint>> constraints = new HashMap<>();
-        HashMap<Long, List<LogicalKey>> keysPerTable = new HashMap<>();
+        //TODO(FF): differentiate between views and materialized views (safe them seperately)
+        Map<Long, List<LogicalTable>> tables = new HashMap<>();
+        Map<Long, List<LogicalView>> views = new HashMap<>();
+        Map<Long, List<LogicalMaterializedView>> materializedViews = new HashMap<>();
+        Map<Long, List<LogicalColumn>> columns = new HashMap<>();
+        Map<Long, List<LogicalConstraint>> constraints = new HashMap<>();
+        Map<Long, List<LogicalKey>> keysPerTable = new HashMap<>();
+        Map<Long, List<LogicalIndex>> logicalIndex1 = new HashMap<>();
+        Map<Long, List<LogicalIndex>> logicalIndex2 = new HashMap<>();
         //List<LogicalView> getConnectedViews( long id );
 
+        List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL ).collect( Collectors.toList() );
+
         // go through the list of namespaces and get the id of each namespace, map the tables to the namespace id
-        for (LogicalNamespace namespace : namespaces) {
+        //TODO(FF)?: views - list is just empty, but creates it nontheless, same for constraints, keys
+        for (LogicalNamespace namespace : relNamespaces) {
             Long namespaceId = namespace.getId();
 
             // get tables from namespace
@@ -115,7 +126,14 @@ public class GatherSchema {
 
                 //views
                 List<LogicalView> connectedViews = snapshot.rel().getConnectedViews( tableId );
-                views.put( tableId, connectedViews );
+                //TODO(FF): see if this actually works... (does it seperate correctly?) (views not handles yet correctly in snapshot)
+                //get all materialized views from the list of views and materialized views
+                List<LogicalMaterializedView> connMatView = connectedViews.stream().filter( v -> v instanceof LogicalMaterializedView ).map( v -> (LogicalMaterializedView) v ).collect( Collectors.toList() );
+                //get all views from the list of views and materialized views
+                List<LogicalView> connView = connectedViews.stream().filter( v -> v instanceof LogicalView ).map( v -> v ).collect( Collectors.toList() );
+                //safes the views and materialized views in the maps
+                views.put( tableId, connView );
+                materializedViews.put( tableId, connMatView );
 
                 //cols
                 List<LogicalColumn> tableColumns = snapshot.rel().getColumns( tableId );
@@ -125,6 +143,19 @@ public class GatherSchema {
                 //snapshot.rel().getKeys(); - get all keys
                 List<LogicalKey> tableKeys = snapshot.rel().getTableKeys( tableId );
                 keysPerTable.put( tableId, tableKeys );
+
+                //indexes
+                //TODO(FF): indexes are also safed as keys... (they are part of the keys list...) maybe i have to safe keys seperately as pks and fks... but am i missing keys? LogicalGenericKey, was cha das alles sii??
+                // keyToIndexes = snapshot.rel().getKeys().stream().collect( Collectors.toMap( k -> k, k -> snapshot.rel().getIndexes( k ) ) );
+                //keyToIndexes maps keyid to idx... (to know which key is an idx). Do i have to remove them from the key list? - see when building it to insert back? (for loop over all keys?) how do i get keyToIndexes map? havent figured out yet
+                List<LogicalIndex> tableIndexes = snapshot.rel().getIndexes();
+                logicalIndex1.put( tableId, tableIndexes );
+
+                // Get the keyToIndexes map from the snapshot. maybe with the following?
+                //TODO(FF): still need to test it, since intellij again didnt recognize map and list...
+                List<LogicalIndex> logicalIdx = snapshot.rel().getIndexes( tableId, false );
+                logicalIndex2.put( tableId, logicalIdx );
+
 
             }
 
@@ -144,6 +175,7 @@ public class GatherSchema {
      * Gets the Graph schema from the snapshot, and safes it in class variables
      */
     private void getGraphSchema() {
+
 
     }
 

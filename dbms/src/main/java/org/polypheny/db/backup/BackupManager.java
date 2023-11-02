@@ -47,7 +47,7 @@ public class BackupManager {
         im.addGroup( informationGroupOverview );
 
         // start backup button
-        InformationText startBackup = new InformationText( informationGroupOverview, "Start the Backup." );
+        InformationText startBackup = new InformationText( informationGroupOverview, "Create the Backup." );
         startBackup.setOrder( 1 );
         im.registerInformation( startBackup );
 
