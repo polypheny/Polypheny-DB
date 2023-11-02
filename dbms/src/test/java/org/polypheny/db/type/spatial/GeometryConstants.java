@@ -22,6 +22,7 @@ public class GeometryConstants {
     static final String POINT_WKT = "POINT (13.4050 52.5200 36.754)";
     static final String LINESTRING_WKT = "LINESTRING(-1 -1, 2 2, 4 5, 6 7)";
     static final String LINEAR_RING_WKT = "LINEARRING (0 0, 0 10, 10 10, 10 0, 0 0)";
+    static final String POLYGON_WKT = "POLYGON((-1 -1, 2 2, -1 2, -1 -1))";
     static final double DELTA = 1e-5;
     static final int NO_SRID = 0;
 }

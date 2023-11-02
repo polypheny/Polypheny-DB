@@ -37,6 +37,7 @@ import org.locationtech.jts.io.WKTReader;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
 
 /**
  * {@link PolyGeometry} is an abstraction for all spatial data types.
@@ -54,11 +55,6 @@ public class PolyGeometry extends PolyValue {
 
     /**
      * Wrap the JTS {@link Geometry} class.
-     * <p>
-     * It is possible to extract useful information from the {@link Geometry}:
-     * <code>jtsGeometry.getGeometryType()</code>
-     * <code>jtsGeometry.getSRID()</code>
-     * <code>jtsGeometry.getCoordinate()</code>
      */
     @Getter
     protected Geometry jtsGeometry;
@@ -71,14 +67,14 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Constructor creates the {@link Geometry} from the WKT text.
+     * Constructor creates the {@link PolyGeometry} from the WKT text.
      * <p>
      * The WKT may contain SRID in the text, e.g. <code>"SRID=4326;POINT (13.4050 52.5200)"</code>.
      * In this case SRID from the WKT would be used, otherwise the default one is selected.
      * <p>
      *
      * @param wkt Well Know Text representation of the geometry
-     * @throws InvalidGeometryException if {@link Geometry} is invalid or provided WKT is invalid.
+     * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided WKT is invalid.
      */
     public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
@@ -95,20 +91,22 @@ public class PolyGeometry extends PolyValue {
         } catch ( NumberFormatException e ) {
             throw new InvalidGeometryException( e.getMessage() );
         }
-        init(wkt, SRID);
+        init( wkt, SRID );
     }
 
+
     /**
-     * Constructor creates the {@link Geometry} from the WKT text using the provided SRID.
+     * Constructor creates the {@link PolyGeometry} from the WKT text using the provided SRID.
      *
      * @param wkt Well Know Text representation of the geometry
      * @param SRID Spatial reference system of the geometry
-     * @throws InvalidGeometryException if {@link Geometry} is invalid or provided WKT is invalid.
+     * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided WKT is invalid.
      */
     public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
         init( wkt, SRID );
     }
+
 
     public PolyGeometry( Geometry geometry ) {
         super( PolyType.GEOMETRY );
@@ -122,26 +120,11 @@ public class PolyGeometry extends PolyValue {
         super( type );
     }
 
-    private void init( String wkt, int SRID) throws InvalidGeometryException {
-        this.SRID = SRID;
-        WKTReader reader = new WKTReader();
-        try {
-            this.jtsGeometry = reader.read( wkt );
-            if ( !jtsGeometry.isValid() ) {
-                throw new ParseException( "Provided geometry is not valid." );
-            }
-            this.jtsGeometry.setSRID( this.SRID );
-        } catch ( ParseException | IllegalArgumentException e) {
-            // IllegalArgumentException is thrown in case geometry conditions are not met
-            throw new InvalidGeometryException( e.getMessage() );
-        }
-        this.geometryType = getPolyGeometryType();
-    }
-
 
     public static PolyGeometry of( String wkt ) throws InvalidGeometryException {
         return new PolyGeometry( wkt );
     }
+
 
     public static PolyGeometry of( String wkt, int SRID ) throws InvalidGeometryException {
         return new PolyGeometry( wkt, SRID );
@@ -153,6 +136,23 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    private void init( String wkt, int SRID ) throws InvalidGeometryException {
+        this.SRID = SRID;
+        WKTReader reader = new WKTReader();
+        try {
+            this.jtsGeometry = reader.read( wkt );
+            if ( !jtsGeometry.isValid() ) {
+                throw new ParseException( "Provided geometry is not valid." );
+            }
+            this.jtsGeometry.setSRID( this.SRID );
+        } catch ( ParseException | IllegalArgumentException e ) {
+            // IllegalArgumentException is thrown in case geometry conditions are not met
+            throw new InvalidGeometryException( e.getMessage() );
+        }
+        this.geometryType = getPolyGeometryType();
+    }
+
+
     protected PolyGeometryType getPolyGeometryType() {
         switch ( jtsGeometry.getGeometryType() ) {
             case "Point":
@@ -161,6 +161,8 @@ public class PolyGeometry extends PolyValue {
                 return PolyGeometryType.LINESTRING;
             case "LinearRing":
                 return PolyGeometryType.LINEAR_RING;
+            case "Polygon":
+                return PolyGeometryType.POLYGON;
             default:
                 throw new NotImplementedException( "value" );
         }
@@ -180,6 +182,7 @@ public class PolyGeometry extends PolyValue {
         throw cannotParse( this, PolyPoint.class );
     }
 
+
     public boolean isLineString() {
         return geometryType.equals( PolyGeometryType.LINESTRING );
     }
@@ -192,6 +195,7 @@ public class PolyGeometry extends PolyValue {
         }
         throw cannotParse( this, PolyLineString.class );
     }
+
 
     public boolean isLinearRing() {
         return geometryType.equals( PolyGeometryType.LINEAR_RING );
@@ -207,8 +211,23 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    public boolean isPolygon() {
+        return geometryType.equals( PolyGeometryType.POLYGON );
+    }
+
+
+    @NotNull
+    public PolyPolygon asPolygon() {
+        if ( isPolygon() ) {
+            return PolyPolygon.of( jtsGeometry );
+        }
+        throw cannotParse( this, PolyPolygon.class );
+    }
+
+
     /**
      * Tests whether this {@link Geometry} is simple.
+     *
      * @return <code>true</code> if {@link Geometry} is simple.
      */
     public boolean isSimple() {
@@ -239,10 +258,16 @@ public class PolyGeometry extends PolyValue {
         return jtsGeometry.getDimension();
     }
 
+    // TODO: add geometry collections (@link) to documentation
+
 
     /**
      * Linear geometries return their length.
      * Areal geometries return their perimeter.
+     * The length of a {@link PolyPoint} or {link PolyMultiPoint} is 0.
+     * The length of a {@link PolyLineString} is the sum of the lengths of each line segment: distance from the start point to the end point
+     * The length of a {@link PolyPolygon} is the sum of the lengths of the exterior boundary and any interior boundaries.
+     * The length of any {link GeometryCollection} is the sum of the lengths of all {@link PolyGeometry} it contains.
      *
      * @return the length of this {@link Geometry}
      */
@@ -262,17 +287,108 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Bound the {@link Geometry} my the minimum box that could fit this geometry.
+     * Bound the {@link PolyGeometry} my the minimum box that could fit this geometry.
      *
      * @return {@link PolyGeometry} with minimum bounding box
      */
-    public PolyGeometry getMinimumBoundingBox() {
+    public PolyGeometry getEnvelope() {
         return PolyGeometry.of( jtsGeometry.getEnvelope() );
     }
 
 
     /**
-     * {@link #equals(Object) equals} ensures that the {@link Geometry} types and coordinates are the same.
+     * The boundary of a {@link PolyGeometry} is a set of {@link PolyGeometry}s of the next lower dimension
+     * that define the limit of this {@link PolyGeometry}.
+     *
+     * @return the closure of the combinatorial boundary of this {@link PolyGeometry}
+     */
+    public PolyGeometry getBoundary() {
+        return PolyGeometry.of( jtsGeometry.getBoundary() );
+    }
+
+
+    /**
+     * Calculate the smallest convex {@link PolyGeometry} that contains this {@link PolyGeometry}.
+     * @return the minimum area {@link PolyGeometry} containing all points in this {@link PolyGeometry}
+     */
+    public PolyGeometry convexHull() {
+        return PolyGeometry.of( jtsGeometry.convexHull() );
+    }
+
+
+    /**
+     * Computes the geometric center - centroid - of this {@link PolyGeometry}.
+     * <p>
+     * When a geometry contains a combination of {@link PolyPoint}s, {@link PolyLineString}s, and {@link PolyPolygon}s,
+     * the centroid calculation is influenced solely by the {@link PolyPolygon}s within the {@link PolyGeometry}.
+     * <p>
+     * Likewise, in the presence of both {@link PolyPoint}s and {@link PolyLineString}s within a {@link PolyGeometry},
+     * the contribution of {@link PolyPoint}s to the centroid calculation is disregarded.
+     *
+     * @return {@link PolyPoint} that is the centroid of this {@link PolyGeometry}
+     */
+    public PolyPoint getCentroid() {
+        return PolyPoint.of( jtsGeometry.getCentroid() );
+    }
+
+
+    /**
+     * Compute a buffer area around this {@link PolyGeometry} within the given distance.
+     * The buffer maybe empty.
+     * The negative or zero-distance buffer of {@link PolyLineString}s and {@link PolyPoint}s
+     * is always an {@link PolyPolygon}.
+     *
+     * @param distance width of the buffer
+     * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
+     */
+    public PolyGeometry buffer( double distance ) {
+       return PolyPoint.of( jtsGeometry.buffer( distance ) );
+    }
+
+
+    /**
+     * Compute a buffer area around this {@link PolyGeometry} within the given distance
+     * and accuracy of approximation for circular arcs.
+     * The buffer maybe empty.
+     * The negative or zero-distance buffer of {@link PolyLineString}s and {@link PolyPoint}s
+     * is always an {@link PolyPolygon}.
+     *
+     * @param distance width of the buffer
+     * @param quadrantSegments number of line segments to represent a quadrant of a circle
+     * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
+     */
+    public PolyGeometry buffer( double distance, int quadrantSegments ) {
+        return PolyPoint.of( jtsGeometry.buffer( distance, quadrantSegments ) );
+    }
+
+
+    /**
+     * Compute a buffer area around this {@link PolyGeometry} within the given distance
+     * and accuracy of approximation for circular arcs, and use provided buffer end cap style.
+     * The buffer maybe empty.
+     * The negative or zero-distance buffer of {@link PolyLineString}s and {@link PolyPoint}s
+     * is an empty {@link PolyPolygon}.
+     *
+     * @param distance width of the buffer
+     * @param quadrantSegments number of line segments to represent a quadrant of a circle
+     * @param endCapStyle specifies how the buffer command terminates the end of a line.
+     * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
+     */
+    public PolyGeometry buffer( double distance, int quadrantSegments, BufferCapStyle endCapStyle ) {
+        return PolyPoint.of( jtsGeometry.buffer( distance, quadrantSegments, endCapStyle.code ) );
+    }
+
+
+    /**
+     * @return new {@link PolyGeometry} with coordinates in a reverse order.
+     */
+    public PolyGeometry reverse() {
+        return PolyGeometry.of( jtsGeometry.reverse() );
+    }
+
+
+    /**
+     * {@link #equals(Object) equals} ensures that the {@link PolyGeometry} types and coordinates are the same.
      * And {@link #SRID} used for representation of coordinates are also identical.
      */
     @Override
@@ -321,7 +437,7 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Output the {@link Geometry} in a WKT format with its SRID. So-called EWKT
+     * Output the {@link PolyGeometry} in a WKT format with its SRID. So-called EWKT
      */
     @Override
     public String toString() {

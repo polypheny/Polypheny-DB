@@ -19,7 +19,6 @@ package org.polypheny.db.type.entity.spatial;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.LinearRing;
 import org.polypheny.db.type.PolyType;
 
@@ -32,11 +31,13 @@ public class PolyLinearRing extends PolyLineString {
 
     private LinearRing jtsLinearRing;
 
+
     public PolyLinearRing( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         super( wkt );
         this.geometryType = PolyGeometryType.LINEAR_RING;
         this.jtsLinearRing = (LinearRing) jtsGeometry;
     }
+
 
     public PolyLinearRing( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
         super( wkt, SRID );
@@ -58,6 +59,7 @@ public class PolyLinearRing extends PolyLineString {
         super( type );
         this.geometryType = PolyGeometryType.LINEAR_RING;
     }
+
 
     public static PolyLinearRing of( Geometry geometry ) {
         return new PolyLinearRing( geometry );

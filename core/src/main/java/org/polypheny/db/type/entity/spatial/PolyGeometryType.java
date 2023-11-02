@@ -17,11 +17,56 @@
 package org.polypheny.db.type.entity.spatial;
 
 /**
- * Represent Geometry types supported by Polypheny.
+ * Geometry types, with the names and codes assigned by OGC.
  */
 public enum PolyGeometryType {
+    GEOMETRY( 0 ),
+    POINT( 1 ),
+    LINESTRING( 2 ),
+    // not actually a full type
+    LINEAR_RING( 2 ),
+    POLYGON(3),
+    MULTIPOINT( 4 ),
+    MULTILINESTRING( 5 ),
+    MULTIPOLYGON( 6 ),
+    GEOMCOLLECTION( 7 ),
+    CURVE( 13 ),
+    SURFACE( 14 ),
+    POLYHEDRALSURFACE( 15 );
 
-    POINT,
-    LINESTRING,
-    LINEAR_RING
+    final int code;
+
+
+    PolyGeometryType( int code ) {
+        this.code = code;
+    }
+
+
+    /**
+     * How the "buffer" command terminates the end of a line.
+     */
+    public enum BufferCapStyle {
+        ROUND( 1 ), FLAT( 2 ), SQUARE( 3 );
+
+        final int code;
+
+
+        BufferCapStyle( int code ) {
+            this.code = code;
+        }
+
+
+        static BufferCapStyle of( String value ) {
+            switch ( value ) {
+                case "round":
+                    return ROUND;
+                case "flat":
+                    return FLAT;
+                case "square":
+                    return SQUARE;
+                default:
+                    throw new IllegalArgumentException( "unknown endcap value: " + value );
+            }
+        }
+    }
 }

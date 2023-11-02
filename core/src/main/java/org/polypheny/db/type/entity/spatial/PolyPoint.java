@@ -24,6 +24,7 @@ import org.polypheny.db.type.PolyType;
 
 /**
  * Represent a single point in the space.
+ * <p>
  * The {@link PolyPoint} is valid if
  * <strong>X</strong> and <strong>Y</strong> coordinates are provided.
  * The {@link PolyPoint} could store up to 4 dimensions
@@ -32,17 +33,20 @@ public class PolyPoint extends PolyGeometry {
 
     private Point jtsPoint;
 
+
     public PolyPoint( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         super( wkt );
         this.geometryType = PolyGeometryType.POINT;
         this.jtsPoint = (Point) jtsGeometry;
     }
 
+
     public PolyPoint( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
         super( wkt, SRID );
         this.geometryType = PolyGeometryType.POINT;
         this.jtsPoint = (Point) jtsGeometry;
     }
+
 
     protected PolyPoint( Geometry geometry ) {
         super( PolyType.GEOMETRY );
@@ -52,34 +56,42 @@ public class PolyPoint extends PolyGeometry {
         this.SRID = geometry.getSRID();
     }
 
+
     protected PolyPoint( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.POINT;
     }
 
+
     public static PolyPoint of( Geometry geometry ) {
         return new PolyPoint( geometry );
     }
+
 
     public double getX() {
         return jtsPoint.getX();
     }
 
+
     public double getY() {
         return jtsPoint.getY();
     }
+
 
     public boolean hasZ() {
         return !Double.isNaN( jtsPoint.getCoordinate().getZ() );
     }
 
+
     public double getZ() {
         return jtsPoint.getCoordinate().getZ();
     }
 
+
     public boolean hasM() {
         return !Double.isNaN( jtsPoint.getCoordinate().getM() );
     }
+
 
     public double getM() {
         return jtsPoint.getCoordinate().getM();

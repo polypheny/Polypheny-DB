@@ -35,6 +35,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometryType;
 import org.polypheny.db.type.entity.spatial.PolyLineString;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+import org.polypheny.db.type.entity.spatial.PolyPolygon;
 
 public class GeometryTest {
 
@@ -42,6 +43,7 @@ public class GeometryTest {
     private PolyGeometry point3d;
     private PolyGeometry lineString;
     private PolyGeometry linearRing;
+    private PolyGeometry polygon;
 
 
     @BeforeClass
@@ -55,6 +57,7 @@ public class GeometryTest {
         point3d = PolyGeometry.of( GeometryConstants.POINT_WKT );
         lineString = PolyGeometry.of( GeometryConstants.LINESTRING_WKT );
         linearRing = PolyGeometry.of( GeometryConstants.LINEAR_RING_WKT );
+        polygon = PolyGeometry.of( GeometryConstants.POLYGON_WKT );
     }
 
 
@@ -123,6 +126,25 @@ public class GeometryTest {
                 } );
 
         assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINEARRING(0 0, 0 10, 10 10, 10 5, 5 5)" ) );
+    }
+
+    @Test
+    public void testPolygonValidity() {
+        assertAll( "Group assertions of valid Polygon",
+                () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.POLYGON_WKT ) ),
+                () -> {
+                    assertEquals( PolyGeometryType.POLYGON, polygon.getGeometryType() );
+                    assertEquals( GeometryConstants.NO_SRID, (long) polygon.getSRID() );
+                    PolyPolygon poly = polygon.asPolygon();
+                    assertEquals( PolyPoint.of( "POINT (-0 1)" ), poly.getCentroid() );
+                    assertEquals( PolyLinearRing.of( "LINEARRING (-1 -1, 2 2, -1 2, -1 -1)" ), poly.getBoundary() );
+                    assertEquals( poly.getExteriorRing(), poly.getBoundary() );
+                    assertEquals( 10.2426406, poly.getLength(), GeometryConstants.DELTA );
+                    assertEquals( 4.5, poly.getArea(), GeometryConstants.DELTA );
+                    assertEquals( 4, poly.getNumPoints() );
+                } );
+
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POLYGON((-1 -1, 2 2, -1 1, -1 2, 2 2, -1 -1))" ) );
     }
 
 

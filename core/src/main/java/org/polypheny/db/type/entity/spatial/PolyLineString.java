@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.Point;
 import org.polypheny.db.type.PolyType;
 
 /**
@@ -28,6 +27,7 @@ import org.polypheny.db.type.PolyType;
  * The line segments may intersect other segments.
  * If line segments do not intersect each other, the line is simple
  * The line may start and end at the same point. In this case, it is called closed.
+ * <p>
  * The {@link PolyLineString} is valid if it has
  * either <strong>0</strong> or <strong>2</strong> or <strong>more</strong> points.
  * The {@link PolyLineString} could store up to 4 dimensions.
@@ -43,6 +43,7 @@ public class PolyLineString extends PolyGeometry {
         this.geometryType = PolyGeometryType.LINESTRING;
         this.jtsLineString = (LineString) jtsGeometry;
     }
+
 
     public PolyLineString( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
         super( wkt, SRID );
@@ -126,14 +127,6 @@ public class PolyLineString extends PolyGeometry {
      */
     public PolyPoint getEndPoint() {
         return PolyPoint.of( jtsLineString.getEndPoint() );
-    }
-
-
-    /**
-     * @return new {@link PolyLineString} with coordinates in a reverse order.
-     */
-    public PolyLineString reverse() {
-        return PolyLineString.of( jtsLineString.reverse() );
     }
 
 }
