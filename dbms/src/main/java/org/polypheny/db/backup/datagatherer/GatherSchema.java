@@ -50,6 +50,7 @@ public class GatherSchema {
 
     //namespace id, list of tables for the namespace
     ImmutableMap<Long, List<LogicalTable>> tables;
+    //TODO(FF): if there exist constraint that go over several tables, need other way to signify it... rather use constraints per table, not per namespace! (but gets the right amount of constraints) --> ha sgfühl es get nome constraint öber 1 table
     ImmutableMap<Long, List<LogicalConstraint>> constraints;
 
     //table id, list of views for the table
@@ -148,11 +149,13 @@ public class GatherSchema {
                 //TODO(FF): indexes are also safed as keys... (they are part of the keys list...) maybe i have to safe keys seperately as pks and fks... but am i missing keys? LogicalGenericKey, was cha das alles sii??
                 // keyToIndexes = snapshot.rel().getKeys().stream().collect( Collectors.toMap( k -> k, k -> snapshot.rel().getIndexes( k ) ) );
                 //keyToIndexes maps keyid to idx... (to know which key is an idx). Do i have to remove them from the key list? - see when building it to insert back? (for loop over all keys?) how do i get keyToIndexes map? havent figured out yet
+                //TODO(FF): so pro table je die drü gliiche indexes... nope
                 List<LogicalIndex> tableIndexes = snapshot.rel().getIndexes();
                 logicalIndex1.put( tableId, tableIndexes );
 
                 // Get the keyToIndexes map from the snapshot. maybe with the following?
                 //TODO(FF): still need to test it, since intellij again didnt recognize map and list...
+                //TODO(FF): yes this is the way: lischte met allne tables, aber nome bem rechtige table en lischte a indexes
                 List<LogicalIndex> logicalIdx = snapshot.rel().getIndexes( tableId, false );
                 logicalIndex2.put( tableId, logicalIdx );
 
