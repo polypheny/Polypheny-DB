@@ -24,12 +24,12 @@ public enum PolyGeometryType {
     POINT( 1 ),
     LINESTRING( 2 ),
     // not actually a full type
-    LINEAR_RING( 2 ),
+    LINEARRING( 2 ),
     POLYGON(3),
     MULTIPOINT( 4 ),
     MULTILINESTRING( 5 ),
     MULTIPOLYGON( 6 ),
-    GEOMCOLLECTION( 7 ),
+    GEOMETRYCOLLECTION( 7 ),
     CURVE( 13 ),
     SURFACE( 14 ),
     POLYHEDRALSURFACE( 15 );

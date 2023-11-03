@@ -75,7 +75,7 @@ public class PolyLineString extends PolyGeometry {
     /**
      * Test whether {@link PolyLineString} is closed: line starts and ends at the same point.
      *
-     * @return <code>true</code> if {@link LineString} is closed.
+     * @return <code>true</code> if {@link PolyLineString} is closed.
      */
     public boolean isClosed() {
         return jtsLineString.isClosed();
@@ -85,7 +85,7 @@ public class PolyLineString extends PolyGeometry {
     /**
      * Test whether {@link PolyLineString} is a ring: simple and closed at the same time.
      *
-     * @return <code>true</code> if {@link LineString} is ring.
+     * @return <code>true</code> if {@link PolyLineString} is ring.
      */
     public boolean isRing() {
         return jtsLineString.isRing();

@@ -24,6 +24,7 @@ import io.activej.serializer.CompatibilityLevel;
 import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.SimpleSerializerDef;
 import io.activej.serializer.annotations.Deserialize;
+import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -78,20 +79,20 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
-        int SRID = NO_SRID;
+        int srid = NO_SRID;
         try {
             wkt = wkt.trim();
             // WKT is actually an extended EWKT with SRID before the WKT
             if ( wkt.startsWith( "SRID" ) ) {
                 // in WKT semicolon is invalid character, so we could safely split by it
                 String[] ewktParts = wkt.split( ";" );
-                SRID = Integer.parseInt( ewktParts[0].replace( "SRID=", "" ) );
+                srid = Integer.parseInt( ewktParts[0].replace( "SRID=", "" ) );
                 wkt = ewktParts[1];
             }
         } catch ( NumberFormatException e ) {
             throw new InvalidGeometryException( e.getMessage() );
         }
-        init( wkt, SRID );
+        init( wkt, srid );
     }
 
 
@@ -99,12 +100,12 @@ public class PolyGeometry extends PolyValue {
      * Constructor creates the {@link PolyGeometry} from the WKT text using the provided SRID.
      *
      * @param wkt Well Know Text representation of the geometry
-     * @param SRID Spatial reference system of the geometry
+     * @param srid Spatial reference system of the geometry
      * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided WKT is invalid.
      */
-    public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
+    public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int srid ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
-        init( wkt, SRID );
+        init( wkt, srid );
     }
 
 
@@ -126,8 +127,8 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    public static PolyGeometry of( String wkt, int SRID ) throws InvalidGeometryException {
-        return new PolyGeometry( wkt, SRID );
+    public static PolyGeometry of( String wkt, int srid ) throws InvalidGeometryException {
+        return new PolyGeometry( wkt, srid );
     }
 
 
@@ -136,8 +137,8 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    private void init( String wkt, int SRID ) throws InvalidGeometryException {
-        this.SRID = SRID;
+    private void init( String wkt, int srid ) throws InvalidGeometryException {
+        this.SRID = srid;
         WKTReader reader = new WKTReader();
         try {
             this.jtsGeometry = reader.read( wkt );
@@ -160,9 +161,17 @@ public class PolyGeometry extends PolyValue {
             case "LineString":
                 return PolyGeometryType.LINESTRING;
             case "LinearRing":
-                return PolyGeometryType.LINEAR_RING;
+                return PolyGeometryType.LINEARRING;
             case "Polygon":
                 return PolyGeometryType.POLYGON;
+            case "GeometryCollection":
+                return PolyGeometryType.GEOMETRYCOLLECTION;
+            case "MultiPoint":
+                return PolyGeometryType.MULTIPOINT;
+            case "MultiLineString":
+                return PolyGeometryType.MULTILINESTRING;
+            case "MultiPolygon":
+                return PolyGeometryType.MULTIPOLYGON;
             default:
                 throw new NotImplementedException( "value" );
         }
@@ -198,7 +207,7 @@ public class PolyGeometry extends PolyValue {
 
 
     public boolean isLinearRing() {
-        return geometryType.equals( PolyGeometryType.LINEAR_RING );
+        return geometryType.equals( PolyGeometryType.LINEARRING );
     }
 
 
@@ -225,10 +234,25 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    public boolean isGeometryCollection() {
+        return List.of( PolyGeometryType.GEOMETRYCOLLECTION, PolyGeometryType.MULTIPOINT, PolyGeometryType.MULTILINESTRING, PolyGeometryType.MULTIPOLYGON ).contains( geometryType );
+    }
+
+
+    @NotNull
+    public PolyGeometryCollection asGeometryCollection() {
+        if ( isGeometryCollection() ) {
+            return PolyGeometryCollection.of( jtsGeometry );
+        }
+        throw cannotParse( this, PolyGeometryCollection.class );
+    }
+
+
     /**
-     * Tests whether this {@link Geometry} is simple.
+     * Tests whether this {@link PolyGeometry} is a simple geometry: does not intersect itself.
+     * May touch its own boundary at any point.
      *
-     * @return <code>true</code> if {@link Geometry} is simple.
+     * @return <code>true</code> if {@link PolyGeometry} is simple.
      */
     public boolean isSimple() {
         return jtsGeometry.isSimple();
@@ -236,7 +260,7 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * @return <code>true</code> if the set of points covered by this {@link Geometry} is empty.
+     * @return <code>true</code> if the set of points covered by this {@link PolyGeometry} is empty.
      */
     public boolean isEmpty() {
         return jtsGeometry.isEmpty();
@@ -244,7 +268,7 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * @return the count of this {@link Geometry} vertices.
+     * @return the count of this {@link PolyGeometry} vertices.
      */
     public int getNumPoints() {
         return jtsGeometry.getNumPoints();
@@ -252,24 +276,22 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * @return the dimension of this {@link Geometry}.
+     * @return the dimension of this {@link PolyGeometry}.
      */
     public int getDimension() {
         return jtsGeometry.getDimension();
     }
 
-    // TODO: add geometry collections (@link) to documentation
-
 
     /**
      * Linear geometries return their length.
      * Areal geometries return their perimeter.
-     * The length of a {@link PolyPoint} or {link PolyMultiPoint} is 0.
-     * The length of a {@link PolyLineString} is the sum of the lengths of each line segment: distance from the start point to the end point
-     * The length of a {@link PolyPolygon} is the sum of the lengths of the exterior boundary and any interior boundaries.
-     * The length of any {link GeometryCollection} is the sum of the lengths of all {@link PolyGeometry} it contains.
+     * The length of a {@link PolyPoint} or {@link PolyMultiPoint} is 0.
+     * The length of a {@link PolyLineString} or {@link PolyMultiLineString} is the sum of the lengths of each line segment: distance from the start point to the end point
+     * The length of a {@link PolyPolygon} or {@link PolyMultiPolygon} is the sum of the lengths of the exterior boundary and any interior boundaries.
+     * The length of any {@link PolyGeometryCollection} is the sum of the lengths of all {@link PolyGeometry} it contains.
      *
-     * @return the length of this {@link Geometry}
+     * @return the length of this {@link PolyGeometry}
      */
     public double getLength() {
         return jtsGeometry.getLength();
@@ -279,7 +301,7 @@ public class PolyGeometry extends PolyValue {
     /**
      * Areal Geometries have a non-zero area.
      *
-     * @return the area of this {@link Geometry}
+     * @return the area of this {@link PolyGeometry}
      */
     public double getArea() {
         return jtsGeometry.getArea();
@@ -287,7 +309,7 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Bound the {@link PolyGeometry} my the minimum box that could fit this geometry.
+     * Bound the {@link PolyGeometry} by the minimum box that could fit this geometry.
      *
      * @return {@link PolyGeometry} with minimum bounding box
      */
@@ -298,9 +320,11 @@ public class PolyGeometry extends PolyValue {
 
     /**
      * The boundary of a {@link PolyGeometry} is a set of {@link PolyGeometry}s of the next lower dimension
-     * that define the limit of this {@link PolyGeometry}.
+     * that define the limit of this {@link PolyGeometry}:
+     * For {@link PolyLineString} the boundary is start and end {@link PolyPoint}: {@link PolyMultiPoint}.
+     * For {@link PolyPolygon} the boundary is an exterior shell {@link PolyLinearRing}.
      *
-     * @return the closure of the combinatorial boundary of this {@link PolyGeometry}
+     * @return the set of the combinatorial boundary {@link PolyGeometry} that define the limit of this {@link PolyGeometry}
      */
     public PolyGeometry getBoundary() {
         return PolyGeometry.of( jtsGeometry.getBoundary() );
@@ -308,7 +332,16 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
+     * @return the dimension of the boundary of this {@link PolyGeometry}.
+     */
+    public int getBoundaryDimension() {
+        return jtsGeometry.getBoundaryDimension();
+    }
+
+
+    /**
      * Calculate the smallest convex {@link PolyGeometry} that contains this {@link PolyGeometry}.
+     *
      * @return the minimum area {@link PolyGeometry} containing all points in this {@link PolyGeometry}
      */
     public PolyGeometry convexHull() {
@@ -342,7 +375,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance ) {
-       return PolyPoint.of( jtsGeometry.buffer( distance ) );
+        return PolyPoint.of( jtsGeometry.buffer( distance ) );
     }
 
 

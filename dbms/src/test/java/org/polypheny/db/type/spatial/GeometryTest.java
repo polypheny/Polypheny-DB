@@ -31,9 +31,13 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometryCollection;
 import org.polypheny.db.type.entity.spatial.PolyGeometryType;
 import org.polypheny.db.type.entity.spatial.PolyLineString;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
+import org.polypheny.db.type.entity.spatial.PolyMultiLineString;
+import org.polypheny.db.type.entity.spatial.PolyMultiPoint;
+import org.polypheny.db.type.entity.spatial.PolyMultiPolygon;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
 import org.polypheny.db.type.entity.spatial.PolyPolygon;
 
@@ -44,6 +48,10 @@ public class GeometryTest {
     private PolyGeometry lineString;
     private PolyGeometry linearRing;
     private PolyGeometry polygon;
+    private PolyGeometry geometryCollection;
+    private PolyGeometry multiPoint;
+    private PolyGeometry multiLineString;
+    private PolyGeometry multiPolygon;
 
 
     @BeforeClass
@@ -58,6 +66,10 @@ public class GeometryTest {
         lineString = PolyGeometry.of( GeometryConstants.LINESTRING_WKT );
         linearRing = PolyGeometry.of( GeometryConstants.LINEAR_RING_WKT );
         polygon = PolyGeometry.of( GeometryConstants.POLYGON_WKT );
+        geometryCollection = PolyGeometry.of( GeometryConstants.GEOMETRYCOLLECTION_WKT );
+        multiPoint = PolyGeometry.of( GeometryConstants.MULTIPOINT_WKT );
+        multiLineString = PolyGeometry.of( GeometryConstants.MULTILINESTRING_WKT );
+        multiPolygon = PolyGeometry.of( GeometryConstants.MULTIPOLYGON_WKT );
     }
 
 
@@ -109,7 +121,7 @@ public class GeometryTest {
                     assertFalse( line.isClosed() );
         } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINESTRING(0 0)" ) );
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINESTRING (0 0)" ) );
     }
 
     @Test
@@ -117,7 +129,7 @@ public class GeometryTest {
         assertAll( "Group assertions of valid LinearRing",
                 () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.LINEAR_RING_WKT ) ),
                 () -> {
-                    assertEquals( PolyGeometryType.LINEAR_RING, linearRing.getGeometryType() );
+                    assertEquals( PolyGeometryType.LINEARRING, linearRing.getGeometryType() );
                     assertEquals( GeometryConstants.NO_SRID, (long) linearRing.getSRID() );
                     PolyLinearRing ring = linearRing.asLinearRing();
                     assertTrue( ring.isRing() );
@@ -125,7 +137,7 @@ public class GeometryTest {
                     assertEquals( 5, ring.getNumPoints() );
                 } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINEARRING(0 0, 0 10, 10 10, 10 5, 5 5)" ) );
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINEARRING (0 0, 0 10, 10 10, 10 5, 5 5)" ) );
     }
 
     @Test
@@ -144,7 +156,74 @@ public class GeometryTest {
                     assertEquals( 4, poly.getNumPoints() );
                 } );
 
-        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POLYGON((-1 -1, 2 2, -1 1, -1 2, 2 2, -1 -1))" ) );
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POLYGON ((-1 -1, 2 2, -1 1, -1 2, 2 2, -1 -1))" ) );
+    }
+
+    @Test
+    public void testGeometryCollectionValidity() {
+        assertAll( "Group assertions of valid GeometryCollection",
+                () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.GEOMETRYCOLLECTION_WKT ) ),
+                () -> {
+                    assertEquals( PolyGeometryType.GEOMETRYCOLLECTION, geometryCollection.getGeometryType() );
+                    assertEquals( GeometryConstants.NO_SRID, (long) geometryCollection.getSRID() );
+                    PolyGeometryCollection collection = geometryCollection.asGeometryCollection();
+                    assertEquals( 2, collection.getNumGeometries() );
+                    assertEquals( PolyLinearRing.of( "POINT(2 3)" ), collection.getGeometryN( 0 ) );
+                    assertEquals( 3, collection.getNumPoints() );
+                } );
+        // GEOMETRYCOLLECTION do not have any extra validity rules, geometries may overlap
+        assertDoesNotThrow( () -> PolyGeometry.of( "GEOMETRYCOLLECTION ( POINT (2 3), POINT (2 3) )" ) );
+        assertDoesNotThrow( () -> PolyGeometry.of( "GEOMETRYCOLLECTION ( POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )), POLYGON ((-1 -1, 2 2, -1 2, -1 -1 )) )" ) );
+    }
+
+    @Test
+    public void testMultiPointValidity() {
+        assertAll( "Group assertions of valid MultiPoint",
+                () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.MULTIPOINT_WKT ) ),
+                () -> {
+                    assertEquals( PolyGeometryType.MULTIPOINT, multiPoint.getGeometryType() );
+                    assertEquals( GeometryConstants.NO_SRID, (long) multiPoint.getSRID() );
+                    PolyMultiPoint multi = multiPoint.asGeometryCollection().asMultiPoint();
+                    assertEquals( 2, multi.getNumGeometries() );
+                    assertEquals( 2, multi.getNumPoints() );
+                } );
+        // points may overlap
+        assertDoesNotThrow( () -> PolyGeometry.of( "MULTIPOINT ( (2 3), (2 3) )" ) );
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "MULTIPOINT( (2 3), LINEARRING (-1 -1, 2 2, -1 2, -1 -1) )" ) );
+    }
+
+    @Test
+    public void testMultiLineStringValidity() {
+        assertAll( "Group assertions of valid MultiLineString",
+                () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.MULTILINESTRING_WKT ) ),
+                () -> {
+                    assertEquals( PolyGeometryType.MULTILINESTRING, multiLineString.getGeometryType() );
+                    assertEquals( GeometryConstants.NO_SRID, (long) multiLineString.getSRID() );
+                    PolyMultiLineString multi = multiLineString.asGeometryCollection().asMultiLineString();
+                    assertEquals( 2, multi.getNumGeometries() );
+                    assertEquals( 6, multi.getNumPoints() );
+                } );
+        // line strings may overlap
+        assertDoesNotThrow( () -> PolyGeometry.of( "MULTILINESTRING ( (0 0, 1 1, 1 2), (0 0, 1 1, 1 2) )" ) );
+        assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "MULTILINESTRING ( (2 3), (2 3) )" ) );
+    }
+
+    @Test
+    public void testMultiPolygonValidity() {
+        assertAll( "Group assertions of valid MultiPolygon",
+                () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.MULTIPOLYGON_WKT ) ),
+                () -> {
+                    assertEquals( PolyGeometryType.MULTIPOLYGON, multiPolygon.getGeometryType() );
+                    assertEquals( GeometryConstants.NO_SRID, (long) multiPolygon.getSRID() );
+                    PolyMultiPolygon multi = multiPolygon.asGeometryCollection().asMultiPolygon();
+                    assertEquals( 2, multi.getNumGeometries() );
+                    assertEquals( 9, multi.getNumPoints() );
+                } );
+        // Polygons are not allowed to overlap
+        assertThrows( InvalidGeometryException.class,
+                () -> PolyGeometry.of(
+                        "MULTIPOLYGON (( (1 5, 5 5, 5 1, 1 1, 1 5) ), (-1 -1, 2 2, -1 2, -1 -1 ))" )
+        );
     }
 
 

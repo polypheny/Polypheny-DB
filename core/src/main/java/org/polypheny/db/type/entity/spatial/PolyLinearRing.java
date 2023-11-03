@@ -34,21 +34,21 @@ public class PolyLinearRing extends PolyLineString {
 
     public PolyLinearRing( @JsonProperty("wkt") @Deserialize("wkt") String wkt ) throws InvalidGeometryException {
         super( wkt );
-        this.geometryType = PolyGeometryType.LINEAR_RING;
+        this.geometryType = PolyGeometryType.LINEARRING;
         this.jtsLinearRing = (LinearRing) jtsGeometry;
     }
 
 
     public PolyLinearRing( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int SRID ) throws InvalidGeometryException {
         super( wkt, SRID );
-        this.geometryType = PolyGeometryType.LINEAR_RING;
+        this.geometryType = PolyGeometryType.LINEARRING;
         this.jtsLinearRing = (LinearRing) jtsGeometry;
     }
 
 
     protected PolyLinearRing( Geometry geometry ) {
         super( geometry );
-        this.geometryType = PolyGeometryType.LINEAR_RING;
+        this.geometryType = PolyGeometryType.LINEARRING;
         this.jtsGeometry = geometry;
         this.jtsLinearRing = (LinearRing) jtsGeometry;
         this.SRID = geometry.getSRID();
@@ -57,7 +57,7 @@ public class PolyLinearRing extends PolyLineString {
 
     protected PolyLinearRing( PolyType type ) {
         super( type );
-        this.geometryType = PolyGeometryType.LINEAR_RING;
+        this.geometryType = PolyGeometryType.LINEARRING;
     }
 
 
