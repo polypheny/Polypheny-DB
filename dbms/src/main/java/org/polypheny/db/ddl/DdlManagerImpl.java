@@ -1117,6 +1117,10 @@ public class DdlManagerImpl extends DdlManager {
             dropAllocation( table.namespaceId, store, statement, allocation.id );
         }
 
+        for ( AllocationColumn column : catalog.getSnapshot().alloc().getColumns( placement.id ) ) {
+            catalog.getAllocRel( column.namespaceId ).deleteColumn( column.placementId, column.columnId );
+        }
+
         // remove placement itself
         catalog.getAllocRel( table.namespaceId ).deletePlacement( placement.id );
 
@@ -2357,6 +2361,7 @@ public class DdlManagerImpl extends DdlManager {
         Pair<List<AllocationPartition>, PartitionProperty> result = addGroupsAndPartitions( partitionInfo, snapshot );
 
         LogicalTable unPartitionedTable = partitionInfo.table;
+        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionInfo.table.id, partitionInfo.columnName ).orElseThrow();
 
         // Update catalog table
         catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartitionProperty(
@@ -2395,7 +2400,18 @@ public class DdlManagerImpl extends DdlManager {
             DataStore<?> store = (DataStore<?>) adapter;
             stores.add( store );
 
-            AllocationEntity sourceAlloc = catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 );
+            List<AllocationEntity> sourceAllocs = new ArrayList<>();
+            sourceAllocs.add( catalog.getSnapshot().alloc().getAllocsOfPlacement( placement.id ).get( 0 ) );
+            if ( !sourceAllocs.get( 0 ).unwrap( AllocationTable.class ).getColumnIds().contains( partitionColumn.id ) ) {
+                // partitionColumn is not included in placement, look for it
+                for ( AllocationPlacement allocationPlacement : placements ) {
+                    AllocationEntity allocation = catalog.getSnapshot().alloc().getAllocsOfPlacement( allocationPlacement.id ).get( 0 );
+                    if ( allocation.unwrap( AllocationTable.class ).getColumnIds().contains( partitionColumn.id ) ) {
+                        sourceAllocs.add( allocation );
+                        break;
+                    }
+                }
+            }
 
             List<AllocationColumn> columns = catalog.getSnapshot().alloc().getColumns( placement.id );//allocation.unwrap( AllocationTable.class ).getColumns().stream().map( c -> snapshot.rel().getColumn( c.columnId ).orElseThrow() ).collect( Collectors.toList() );
             List<AllocationTable> partitionAllocations = new ArrayList<>();
@@ -2426,11 +2442,11 @@ public class DdlManagerImpl extends DdlManager {
             dataMigrator.copyAllocationData(
                     statement.getTransaction(),
                     catalog.getSnapshot().getAdapter( store.getAdapterId() ).orElseThrow(),
-                    List.of( sourceAlloc.unwrap( AllocationTable.class ) ),
+                    sourceAllocs.stream().map( s -> s.unwrap( AllocationTable.class ) ).collect( Collectors.toList() ),
                     result.right,
                     newAllocations.get( placement ),
                     unPartitionedTable );
-            sources.add( sourceAlloc );
+            sources.add( sourceAllocs.get( 0 ) );
 
         }
 

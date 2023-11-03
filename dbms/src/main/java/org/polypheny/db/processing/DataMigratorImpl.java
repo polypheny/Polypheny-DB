@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
@@ -298,6 +299,10 @@ public class DataMigratorImpl implements DataMigrator {
 
             Map<Long, List<AllocationColumn>> subDistribution = new HashMap<>( placementDistribution );
             subDistribution.keySet().retainAll( List.of( id ) );
+            if ( subDistribution.isEmpty() ) {
+                continue;
+            }
+
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, source, subDistribution );
             AlgRoot targetAlg;
             AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
@@ -700,7 +705,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Add partition columns to select column list
         long partitionColumnId = targetProperty.partitionColumnId;
-        LogicalColumn partitionColumn = snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
+        LogicalColumn partitionColumn = partitionColumnId == -1 ? null : snapshot.rel().getColumn( partitionColumnId ).orElseThrow();
 
         PartitionManagerFactory partitionManagerFactory = PartitionManagerFactory.getInstance();
         PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( targetProperty.partitionType );
@@ -741,11 +746,9 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }*/
             int columIndex = 0;
-            if ( partitionColumn.tableId == table.id ) {
+            if ( partitionColumn != null && partitionColumn.tableId == table.id ) {
                 columIndex = source.sourceAlg.alg.getRowType().getField( partitionColumn.name, true, false ).getIndex();
             }
-
-
 
             //int partitionColumnIndex = -1;
             String parsedValue = null;
@@ -780,6 +783,8 @@ public class DataMigratorImpl implements DataMigrator {
 
                     if ( row.get( columIndex ) != null ) {
                         parsedValue = row.get( columIndex ).toString();
+                    } else {
+                        parsedValue = PartitionManager.NULL_STRING;
                     }
 
                     long currentPartitionId = partitionManager.getTargetPartitionId( table, targetProperty, parsedValue );
@@ -829,11 +834,11 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @NotNull
-    private Source getSource( Transaction transaction, List<AllocationTable> sourceTables, LogicalTable table, LogicalColumn partitionColumn, List<AllocationTable> excludedTables ) {
+    private Source getSource( Transaction transaction, List<AllocationTable> sourceTables, LogicalTable table, @Nullable LogicalColumn partitionColumn, List<AllocationTable> excludedTables ) {
         Set<Long> excludedPartitions = excludedTables.stream().map( t -> t.partitionId ).collect( Collectors.toSet() );
         List<LogicalColumn> selectColumns = Catalog.snapshot().alloc().getColumns( sourceTables.get( 0 ).placementId ).stream().map( a -> Catalog.snapshot().rel().getColumn( a.columnId ).orElseThrow() ).collect( Collectors.toCollection( ArrayList::new ) );
 
-        if ( !selectColumns.contains( partitionColumn ) ) {
+        if ( partitionColumn != null && !selectColumns.contains( partitionColumn ) ) {
             selectColumns.add( partitionColumn );
         }
 
@@ -841,7 +846,20 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
         //PartitionProperty sourceProperty = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
 
-        List<AllocationColumn> columns = sourceTables.get( 0 ).getColumns();// same length as it is only copy ...
+        List<AllocationColumn> columns = new ArrayList<>();// same length as it is only copy ...
+
+        for ( LogicalColumn selectColumn : selectColumns ) {
+            // make sure all columns are present
+            outer:
+            for ( AllocationTable sourceTable : sourceTables ) {
+                for ( AllocationColumn column : sourceTable.getColumns() ) {
+                    if ( selectColumn.id == column.columnId ) {
+                        columns.add( column );
+                        break outer;
+                    }
+                }
+            }
+        }
         // selectSourcePlacements( table, selectColumns, -1 );
         for ( AllocationTable sourceTable : sourceTables ) {
             placementDistribution.put( sourceTable.partitionId, columns );
@@ -852,6 +870,7 @@ public class DataMigratorImpl implements DataMigrator {
         // targetPartitionIds.forEach( id -> targetStatements.put( id, transaction.createStatement() ) );
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, table, placementDistribution );
         return new Source( sourceStatement, sourceAlg );
+
     }
 
 
@@ -865,6 +884,7 @@ public class DataMigratorImpl implements DataMigrator {
             this.sourceStatement = sourceStatement;
             this.sourceAlg = sourceAlg;
         }
+
 
     }
 

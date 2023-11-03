@@ -21,6 +21,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -46,7 +47,9 @@ public class PartitionProperty implements Serializable {
     @Serialize
     public ImmutableList<Long> partitionIds;
     @Serialize
-    public long partitionColumnId;
+    @Builder.Default
+    @NonFinal
+    public long partitionColumnId = -1;
 
     @Serialize
     public long numPartitionGroups;
