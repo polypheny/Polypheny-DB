@@ -2568,7 +2568,7 @@ public class DdlManagerImpl extends DdlManager {
 
         int j = 0;
         for ( AllocationPartitionGroup group : partitionGroups.keySet() ) {
-            List<String> qualifiers = group.isUnbound ? null : (j < partitionInfo.qualifiers.size() + 1 ? null : partitionInfo.qualifiers.get( j++ ));
+            List<String> qualifiers = group.isUnbound ? null : (j < partitionInfo.qualifiers.size() ? partitionInfo.qualifiers.get( j++ ) : null);
             partitionGroups.put( group, List.of( catalog.getAllocRel( partitionInfo.table.namespaceId ).addPartition(
                     partitionInfo.table.id,
                     partitionInfo.table.namespaceId,
@@ -2577,7 +2577,8 @@ public class DdlManagerImpl extends DdlManager {
                     group.isUnbound,
                     PlacementType.AUTOMATIC,
                     DataPlacementRole.REFRESHABLE,
-                    qualifiers, PartitionType.NONE ) ) );
+                    qualifiers,
+                    PartitionType.NONE ) ) );
         }
 
         //get All PartitionGroups and then get all partitionIds  for each PG and add them to completeList of partitionIds

@@ -27,6 +27,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -36,7 +37,7 @@ public class WhereClauseVisitor extends RexShuttle {
 
     private final Statement statement;
     @Getter
-    private final List<Object> values = new ArrayList<>();
+    private final List<PolyValue> values = new ArrayList<>();
     private final long partitionColumnIndex;
     @Getter
     protected boolean valueIdentified = false;
@@ -57,11 +58,11 @@ public class WhereClauseVisitor extends RexShuttle {
 
         if ( call.operands.size() == 2 ) {
             if ( call.op.getKind() == Kind.EQUALS ) {
-                Object value;
+                PolyValue value;
                 if ( call.operands.get( 0 ) instanceof RexIndexRef ) {
                     if ( ((RexIndexRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
+                            value = ((RexLiteral) call.operands.get( 1 )).value;
                             values.add( value );
                             valueIdentified = true;
                         } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {

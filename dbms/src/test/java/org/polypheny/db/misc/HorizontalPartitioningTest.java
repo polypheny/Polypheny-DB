@@ -783,7 +783,7 @@ public class HorizontalPartitioningTest {
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
                     List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow().partitionId ) );
+                    Assert.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( targetId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {
@@ -1077,7 +1077,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 407, "BarFoo", 67 } ) );
 
                     // Remove data
-                    statement.executeUpdate( "DELETE FROM \"hybridpartitioningtest\" where tvarchar = 'Foo' " );
+                    statement.executeUpdate( "DELETE FROM \"hybridpartitioningtest\" where tvarchar = 'Foo'" );
 
                     // Assert and Check if Table has the desired entries
                     TestHelper.checkResultSet(

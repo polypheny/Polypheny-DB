@@ -211,7 +211,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( !whereClauseVisitor.getValues().isEmpty() ) {
 
                     whereClauseValues = whereClauseVisitor.getValues().stream()
-                            .map( Object::toString )
+                            .map( PolyValue::toJson )
                             .collect( Collectors.toList() );
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found Where Clause Values: {}", whereClauseValues );
@@ -293,7 +293,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( !operationWasRewritten ) {
                 for ( long partitionId : accessedPartitions ) {
 
-                    if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == partitionId ) ) {
+                    if ( catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, partitionId ).isEmpty() ) {
                         continue;
                     }
 
@@ -367,7 +367,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
                     partitionValue = PartitionManager.NULL_STRING;
                 } else {
-                    partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
+                    partitionValue = currentTuple.get( partitionColumnIndex ).value.toJson().replace( "'", "" );
                 }
                 identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                 accessedPartitionList.add( identPart );
@@ -453,8 +453,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             tempPartitionId = partitionManager.getTargetPartitionId( table, property, currentRow.get( partitionValueIndex ).toString() );
 
-                            long finalTempPartitionId = tempPartitionId;
-                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == finalTempPartitionId ) ) {
+                            if ( catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, tempPartitionId ).isEmpty() ) {
                                 continue;
                             }
 
@@ -541,7 +540,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", property.partitionColumnId, index );
                 }
                 // Routing/Locking can now be executed on certain partitions
-                partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                partitionValue = ((RexLiteral) sourceExpressionList.get( index )).value.toJson().replace( "'", "" );
                 if ( log.isDebugEnabled() ) {
                     log.debug(
                             "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",

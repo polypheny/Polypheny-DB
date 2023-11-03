@@ -50,7 +50,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         // Process all accumulated CatalogPartitions
         for ( AllocationPartition partition : Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ) ) {
-            if ( unboundPartitionId == -1 && partition.isUnbound ) {
+            if ( partition.isUnbound ) {
                 unboundPartitionId = partition.id;
                 break;
             }
