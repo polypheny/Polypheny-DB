@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -91,12 +92,12 @@ public class ListPartitionManager extends AbstractPartitionManager {
         }
 
         if ( partitionGroupQualifiers.isEmpty() ) {
-            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers +
+            throw new GenericRuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers +
                     "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
         }
 
         if ( partitionGroupQualifiers.size() + 1 != numPartitionGroups ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers +
+            throw new GenericRuntimeException( "Number of partitionQualifiers '" + partitionGroupQualifiers +
                     "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitionGroups + "'" );
         }
 

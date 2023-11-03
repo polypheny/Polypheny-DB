@@ -740,7 +740,12 @@ public class DataMigratorImpl implements DataMigrator {
                     i++;
                 }
             }*/
-            int columIndex = 0; // todo dl //snapshot.alloc().getC sourcePlacement.indexOf( targetProperty.partitionColumnId );
+            int columIndex = 0;
+            if ( partitionColumn.tableId == table.id ) {
+                columIndex = source.sourceAlg.alg.getRowType().getField( partitionColumn.name, true, false ).getIndex();
+            }
+
+
 
             //int partitionColumnIndex = -1;
             String parsedValue = null;

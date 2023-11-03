@@ -727,7 +727,7 @@ public class HorizontalPartitioningTest {
                     Assert.assertEquals( 20, partitionProperty.getPartitionIds().size() );
 
                     // Check if initially as many partitionPlacements are created as requested and stored in the partition property
-                    Assert.assertEquals( partitionProperty.getPartitionIds().size(), Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id ).size() );
+                    Assert.assertEquals( partitionProperty.getPartitionIds().size(), Catalog.snapshot().alloc().getPartitionsFromLogical( table.id ).size() );
 
                     // Retrieve partition distribution
                     // Get percentage of tables which can remain in HOT
@@ -742,8 +742,8 @@ public class HorizontalPartitioningTest {
                     }
                     long numberOfPartitionsInCold = partitionProperty.partitionIds.size() - numberOfPartitionsInHot;
 
-                    List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
-                    List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
+                    List<AllocationPartition> hotPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getHotPartitionGroupId() );
+                    List<AllocationPartition> coldPartitions = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) partitionProperty).getColdPartitionGroupId() );
 
                     Assert.assertTrue( (numberOfPartitionsInHot == hotPartitions.size()) || (numberOfPartitionsInHot == allowedTablesInHot) );
 
@@ -782,8 +782,8 @@ public class HorizontalPartitioningTest {
                     PartitionManager partitionManager = partitionManagerFactory.getPartitionManager( partitionProperty.partitionType );
                     long targetId = partitionManager.getTargetPartitionId( table, partitionProperty, partitionValue );
 
-                    List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitions( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
-                    Assert.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( Catalog.snapshot().alloc().getEntity( targetId ).orElseThrow().partitionId ) );
+                    List<AllocationPartition> hotPartitionsAfterChange = Catalog.snapshot().alloc().getPartitionsFromGroup( ((TemperaturePartitionProperty) updatedProperty).getHotPartitionGroupId() );
+                    Assert.assertTrue( hotPartitionsAfterChange.stream().map( p -> p.id ).collect( Collectors.toList() ).contains( targetId ) );
 
                     //Todo @Hennlo check number of access
                 } finally {
@@ -1077,7 +1077,7 @@ public class HorizontalPartitioningTest {
                                     new Object[]{ 407, "BarFoo", 67 } ) );
 
                     // Remove data
-                    statement.executeUpdate( "DELETE FROM \"hybridpartitioningtest\" where tvarchar = 'Foo' " );
+                    statement.executeUpdate( "DELETE FROM \"hybridpartitioningtest\" where tvarchar = 'Foo'" );
 
                     // Assert and Check if Table has the desired entries
                     TestHelper.checkResultSet(

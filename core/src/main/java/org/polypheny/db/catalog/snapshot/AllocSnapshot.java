@@ -226,4 +226,7 @@ public interface AllocSnapshot {
     @NotNull
     List<AllocationPartition> getPartitions();
 
+    @NotNull
+    List<AllocationPartition> getPartitionsFromGroup( long groupId );
+
 }

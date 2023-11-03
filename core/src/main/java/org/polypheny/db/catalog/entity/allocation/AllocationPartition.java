@@ -17,14 +17,16 @@
 package org.polypheny.db.catalog.entity.allocation;
 
 
+import com.google.common.collect.ImmutableList;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
+import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.entity.CatalogObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -44,6 +46,9 @@ public class AllocationPartition implements CatalogObject {
 
     @Serialize
     public long logicalEntityId;
+
+    @Serialize
+    public long groupId;
 
     @Getter
     @Serialize
@@ -75,24 +80,32 @@ public class AllocationPartition implements CatalogObject {
     public DataPlacementRole role;
     @Serialize
     public boolean isUnbound;
+    @Serialize
+    @NotNull
+    public List<String> qualifiers;
+
 
     public AllocationPartition(
             @Deserialize("id") final long id,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("logicalEntityId") final long logicalEntityId,
-            @Deserialize("placementType") @NonNull final PlacementType placementType,
+            @Deserialize("groupId") final long groupId,
+            @Deserialize("placementType") @NotNull final PlacementType placementType,
             @Deserialize("name") @Nullable final String name,
             @Deserialize("role") DataPlacementRole role,
             @Deserialize("isUnbound") final boolean isUnbound,
-            @Deserialize("partitionType") PartitionType partitionType ) {
+            @Deserialize("qualifiers") @Nullable final List<String> qualifiers,
+            @Deserialize("partitionType") final PartitionType partitionType ) {
         this.namespaceId = namespaceId;
         this.logicalEntityId = logicalEntityId;
         this.placementType = placementType;
         this.partitionType = partitionType;
+        this.groupId = groupId;
         this.id = id;
         this.role = role;
         this.isUnbound = isUnbound;
         this.name = name;
+        this.qualifiers = qualifiers == null ? List.of() : ImmutableList.copyOf( qualifiers );
     }
 
 

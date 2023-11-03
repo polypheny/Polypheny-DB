@@ -133,7 +133,7 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
     @Override
     public AllocationPartition addPartition( LogicalCollection collection, PartitionType partitionType, String name ) {
         long id = idBuilder.getNewPartitionId();
-        AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, partitionType );
+        AllocationPartition partition = new AllocationPartition( id, namespace.id, collection.id, -1, PlacementType.MANUAL, name, DataPlacementRole.UP_TO_DATE, false, null, partitionType );
         partitions.put( id, partition );
         change();
         return partition;

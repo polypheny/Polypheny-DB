@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -161,17 +160,6 @@ public abstract class SqlImplementor {
      */
     public static boolean isStar( List<RexNode> exps, AlgDataType inputRowType, AlgDataType projectRowType ) {
         return false;
-        /*assert exps.size() == projectRowType.getFieldCount();
-        int i = 0;
-        for ( RexNode ref : exps ) {
-            if ( !(ref instanceof RexInputRef) ) {
-                return false;
-            } else if ( ((RexInputRef) ref).getIndex() != i++ ) {
-                return false;
-            }
-        }
-        return i == inputRowType.getFieldCount()
-                && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );*/
     }
 
 
@@ -844,21 +832,6 @@ public abstract class SqlImplementor {
             return list;
         }
 
-
-        public List<SqlNode> fieldList() {
-            return new AbstractList<>() {
-                @Override
-                public SqlNode get( int index ) {
-                    return field( index );
-                }
-
-
-                @Override
-                public int size() {
-                    return fieldCount;
-                }
-            };
-        }
 
 
         void addOrderItem( List<SqlNode> orderByList, AlgFieldCollation field ) {

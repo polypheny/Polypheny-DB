@@ -211,7 +211,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( !whereClauseVisitor.getValues().isEmpty() ) {
 
                     whereClauseValues = whereClauseVisitor.getValues().stream()
-                            .map( Object::toString )
+                            .map( PolyValue::toJson )
                             .collect( Collectors.toList() );
                     if ( log.isDebugEnabled() ) {
                         log.debug( "Found Where Clause Values: {}", whereClauseValues );
@@ -293,7 +293,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             if ( !operationWasRewritten ) {
                 for ( long partitionId : accessedPartitions ) {
 
-                    if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == partitionId ) ) {
+                    if ( catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, partitionId ).isEmpty() ) {
                         continue;
                     }
 
@@ -367,7 +367,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 if ( partitionColumnIndex == -1 || currentTuple.get( partitionColumnIndex ).getValue() == null ) {
                     partitionValue = PartitionManager.NULL_STRING;
                 } else {
-                    partitionValue = currentTuple.get( partitionColumnIndex ).toString().replace( "'", "" );
+                    partitionValue = currentTuple.get( partitionColumnIndex ).value.toJson().replace( "'", "" );
                 }
                 identPart = (int) partitionManager.getTargetPartitionId( table, property, partitionValue );
                 accessedPartitionList.add( identPart );
@@ -453,8 +453,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
                             tempPartitionId = partitionManager.getTargetPartitionId( table, property, currentRow.get( partitionValueIndex ).toString() );
 
-                            long finalTempPartitionId = tempPartitionId;
-                            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == finalTempPartitionId ) ) {
+                            if ( catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, tempPartitionId ).isEmpty() ) {
                                 continue;
                             }
 
@@ -541,7 +540,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     log.debug( " UPDATE: Found PartitionColumnID Match: '{}' at index: {}", property.partitionColumnId, index );
                 }
                 // Routing/Locking can now be executed on certain partitions
-                partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                partitionValue = ((RexLiteral) sourceExpressionList.get( index )).value.toJson().replace( "'", "" );
                 if ( log.isDebugEnabled() ) {
                     log.debug(
                             "UPDATE: partitionColumn-value: '{}' should be put on partition: {}",
@@ -776,13 +775,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             RoutedAlgBuilder builder,
             LogicalTable table,
             List<AllocationColumn> placements,
-            AllocationEntity allocationTable,
+            AllocationEntity allocEntity,
             Statement statement,
             AlgOptCluster cluster,
             boolean remapParameterValues,
             List<Map<Long, PolyValue>> parameterValues ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, table, placements, allocationTable, statement, cluster, remapParameterValues, parameterValues );
+            buildDml( node.getInput( i ), builder, table, placements, allocEntity, statement, cluster, remapParameterValues, parameterValues );
         }
 
         if ( log.isDebugEnabled() ) {
@@ -795,7 +794,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            return handleRelScan( builder, statement, ((LogicalRelScan) node).entity );
+            return handleRelScan( builder, statement, allocEntity != null ? allocEntity : ((LogicalRelScan) node).entity );
         } else if ( node instanceof LogicalDocumentValues ) {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
@@ -850,13 +849,13 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     builder = remapParameterizedDml( node, builder, statement, parameterValues );
                 }
                 builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
                 return builder.project( rexNodes );
             } else {
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                List<RexNode> rexNodes = new ArrayList<>();
                 for ( AllocationColumn ccp : placements ) {
                     rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }

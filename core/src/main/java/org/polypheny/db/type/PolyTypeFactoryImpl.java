@@ -169,7 +169,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
     @Override
     public AlgDataType leastRestrictive( List<AlgDataType> types ) {
         assert types != null;
-        assert types.size() >= 1;
+        assert !types.isEmpty();
 
         AlgDataType type0 = types.get( 0 );
         if ( type0.getPolyType() != null ) {

@@ -161,7 +161,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, List<String> effectivePartitionGroupQualifier, boolean isUnbound ) {
+    public AllocationPartitionGroup addPartitionGroup( long tableId, String partitionGroupName, long namespaceId, PartitionType partitionType, long numberOfInternalPartitions, boolean isUnbound ) {
         long id = idBuilder.getNewGroupId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partitionGroup of type '{}' with id '{}'", partitionType, id );
@@ -173,7 +173,6 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 tableId,
                 namespaceId,
                 0,
-                null,
                 isUnbound );
 
         partitionGroups.put( id, partitionGroup );
@@ -188,7 +187,7 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
 
 
     @Override
-    public AllocationPartition addPartition( long tableId, long namespaceId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, PartitionType partitionType ) {
+    public AllocationPartition addPartition( long tableId, long namespaceId, long groupId, @Nullable String name, boolean isUnbound, PlacementType placementType, DataPlacementRole role, List<String> qualifiers, PartitionType partitionType ) {
         long id = idBuilder.getNewPartitionId();
         if ( log.isDebugEnabled() ) {
             log.debug( "Creating partition with id '{}'", id );
@@ -198,10 +197,12 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
                 id,
                 namespaceId,
                 tableId,
+                groupId,
                 placementType,
                 name,
                 role,
                 isUnbound,
+                qualifiers,
                 partitionType );
 
         partitions.put( id, partition );
