@@ -184,7 +184,7 @@ public class MongoPlugin extends PolyPlugin {
                     deploymentId = settings.get( "deploymentId" );
                     DockerManager.getInstance(); // Make sure docker instances are loaded.  Very hacky, but it works.
                     container = DockerContainer.getContainerByUUID( deploymentId )
-                            .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+                            .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
                     if ( !testConnection() ) {
                         throw new GenericRuntimeException( "Could not connect to container" );
                     }
@@ -230,7 +230,7 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public void resetDockerConnection() {
             DockerContainer c = DockerContainer.getContainerByUUID( deploymentId )
-                    .orElseThrow( () -> new RuntimeException( "Could not find docker container with id " + deploymentId ) );
+                    .orElseThrow( () -> new GenericRuntimeException( "Could not find docker container with id " + deploymentId ) );
 
             HostAndPort hp = container.connectToContainer( 27017 );
             host = hp.getHost();
@@ -442,7 +442,7 @@ public class MongoPlugin extends PolyPlugin {
                 case SINGLE:
                     List<String> columns = index.key.getColumnNames();
                     if ( columns.size() > 1 ) {
-                        throw new RuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
+                        throw new GenericRuntimeException( "A \"SINGLE INDEX\" can not have multiple columns." );
                     }
                     addCompositeIndex( index, columns, physical, physicalIndexName );
                     break;

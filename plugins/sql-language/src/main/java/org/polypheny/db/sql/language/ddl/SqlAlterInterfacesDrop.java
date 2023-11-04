@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -90,7 +91,7 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
         try {
             QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueNameStr );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove query interface " + uniqueNameStr, e );
+            throw new GenericRuntimeException( "Could not remove query interface " + uniqueNameStr, e );
         }
     }
 

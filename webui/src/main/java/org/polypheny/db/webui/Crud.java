@@ -1809,7 +1809,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             ctx.json( new UnderlyingTables( underlyingTable ) );
         } else {
-            throw new RuntimeException( "Only possible with Views" );
+            throw new GenericRuntimeException( "Only possible with Views" );
         }
     }
 
@@ -1917,7 +1917,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     type = FieldType.LABEL;
                     break;
                 default:
-                    throw new RuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
+                    throw new GenericRuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
             }
 
             if ( type.equals( FieldType.LIST ) ) {
@@ -2307,7 +2307,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 File file = new File( path, is.getKey() );
                 FileUtils.copyInputStreamToFile( is.getValue(), file );
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
         setting.setDirectory( path.getAbsolutePath() );
@@ -2662,7 +2662,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 } catch ( TransactionException transactionException ) {
                     log.error( "Exception while rollback", transactionException );
                 }
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
 
             return RelationalResult.builder().query( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
@@ -2701,7 +2701,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         RelationalResult finalResult = RelationalResult.builder()
                 .header( header )

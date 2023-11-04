@@ -116,10 +116,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", logicalTable.name );
         }
 
         if ( column.names.size() != 1 ) {
@@ -127,7 +127,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type storeId (and not source)
-        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
+        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( logicalTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }
 
@@ -135,7 +135,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
         DdlManager.getInstance().createColumn(
                 column.getSimple(),
-                catalogTable,
+                logicalTable,
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),
                 afterColumnName == null ? null : afterColumnName.getSimple(),
                 ColumnTypeInformation.fromDataTypeSpec( type ),

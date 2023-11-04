@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -117,7 +118,7 @@ public class CypherToAlgConverter {
         }
 
         if ( !CypherFamily.QUERY.contains( query.getCypherKind() ) ) {
-            throw new RuntimeException( "Used a unsupported query." );
+            throw new GenericRuntimeException( "Used a unsupported query." );
         }
 
         CypherContext context = new CypherContext( query, entity, cluster, algBuilder, rexBuilder, snapshot );
@@ -797,7 +798,7 @@ public class CypherToAlgConverter {
 
         public void combineUpdate() {
             if ( rexQueue.isEmpty() ) {
-                throw new RuntimeException( "Empty UPDATE is not possible" );
+                throw new GenericRuntimeException( "Empty UPDATE is not possible" );
             }
 
             List<Pair<PolyString, RexNode>> updates = popNodes();
@@ -809,7 +810,7 @@ public class CypherToAlgConverter {
 
         public void combineDelete() {
             if ( rexQueue.isEmpty() ) {
-                throw new RuntimeException( "Empty DELETE is not possible" );
+                throw new GenericRuntimeException( "Empty DELETE is not possible" );
             }
 
             List<Pair<PolyString, RexNode>> deletes = popNodes();
@@ -823,12 +824,12 @@ public class CypherToAlgConverter {
             AlgNode node = peek();
             int index = node.getRowType().getFieldNames().indexOf( variable );
             if ( index < 0 ) {
-                throw new RuntimeException( String.format( "Unknown variable with name %s", variable ) );
+                throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
             }
             AlgDataTypeField field = node.getRowType().getFieldList().get( index );
 
             if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
-                throw new RuntimeException( "Edges require exactly one label" );
+                throw new GenericRuntimeException( "Edges require exactly one label" );
             }
 
             RexNode ref = getRexNode( variable );
@@ -850,7 +851,7 @@ public class CypherToAlgConverter {
 
         public void combineSet() {
             if ( rexQueue.isEmpty() ) {
-                throw new RuntimeException( "Empty DELETE is not possible" );
+                throw new GenericRuntimeException( "Empty DELETE is not possible" );
             }
 
             List<Pair<PolyString, RexNode>> updates = popNodes();

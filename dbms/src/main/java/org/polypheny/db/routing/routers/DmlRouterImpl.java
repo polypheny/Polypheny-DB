@@ -628,7 +628,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
         } else {
-            throw new RuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
+            throw new GenericRuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
         }
     }
 

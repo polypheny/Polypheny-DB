@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -75,13 +76,13 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE DROP INDEX because " + catalogTable.name + " is not a table or materialized view." );
+        if ( logicalTable.entityType != EntityType.ENTITY && logicalTable.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE DROP INDEX because " + logicalTable.name + " is not a table or materialized view." );
         }
 
-        DdlManager.getInstance().dropIndex( catalogTable, indexName.getSimple(), statement );
+        DdlManager.getInstance().dropIndex( logicalTable, indexName.getSimple(), statement );
     }
 
 }

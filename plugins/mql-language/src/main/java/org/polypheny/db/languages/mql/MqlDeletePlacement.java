@@ -46,10 +46,6 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
 
         LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 
-        if ( collection == null ) {
-            throw new RuntimeException( "Error while adding new collection placement, collection not found." );
-        }
-
         List<DataStore<?>> dataStores = stores
                 .stream()
                 .map( store -> (DataStore<?>) adapterManager.getAdapter( store ) )

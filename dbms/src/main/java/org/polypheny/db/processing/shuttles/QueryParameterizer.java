@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -493,7 +494,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             } else if ( node instanceof RexCall ) {
                 list.add( createListForArrays( ((RexCall) node).operands ) );
             } else {
-                throw new RuntimeException( "Invalid array" );
+                throw new GenericRuntimeException( "Invalid array" );
             }
         }
         return list;

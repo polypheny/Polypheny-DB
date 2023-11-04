@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -57,7 +58,7 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( targetName ) );
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while creating a new graph database alias." );
+            throw new GenericRuntimeException( "Error while creating a new graph database alias." );
         }
         DdlManager.getInstance().createGraphAlias( graphs.get( 0 ).id, aliasName, ifNotExists );
     }

@@ -60,7 +60,6 @@ import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
@@ -946,7 +945,7 @@ public class DbmsMeta implements ProtobufMeta {
             } catch ( Throwable e ) {
                 log.error( "Exception while preparing query", e );
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
 
             return new ExecuteBatchResult( updateCounts );
@@ -1246,7 +1245,7 @@ public class DbmsMeta implements ProtobufMeta {
         } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
-            throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
         }
     }
 
@@ -1439,7 +1438,7 @@ public class DbmsMeta implements ProtobufMeta {
                 ) );
             } catch ( NoSuchStatementException e ) {
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
         }
         return resultSets;
@@ -1533,7 +1532,7 @@ public class DbmsMeta implements ProtobufMeta {
                     connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
                     connectionParameters.getOrDefault( "password", "" ) );
         } catch ( AuthenticationException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         // assert user != null;
 
@@ -1560,7 +1559,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
         openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, namespace, transactionManager ) );
@@ -1668,7 +1667,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 transaction.commit();
             } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }
@@ -1698,7 +1697,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 transaction.rollback();
             } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }

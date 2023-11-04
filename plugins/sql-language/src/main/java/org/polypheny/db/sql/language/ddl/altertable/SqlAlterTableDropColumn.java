@@ -76,21 +76,17 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable == null ) {
-            throw new GenericRuntimeException( "Entity with name '%s' was not found.", String.join( ".", table.names ) );
-        }
-
-        if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.SOURCE ) {
-            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
+        if ( logicalTable.entityType != EntityType.ENTITY && logicalTable.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", logicalTable.name );
         }
 
         if ( column.names.size() != 1 ) {
             throw new GenericRuntimeException( "No FQDN allowed here: %s", column );
         }
 
-        DdlManager.getInstance().dropColumn( catalogTable, column.getSimple(), statement );
+        DdlManager.getInstance().dropColumn( logicalTable, column.getSimple(), statement );
     }
 
 }

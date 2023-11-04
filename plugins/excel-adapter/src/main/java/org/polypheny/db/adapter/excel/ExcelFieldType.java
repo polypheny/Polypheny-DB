@@ -22,6 +22,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.poi.ss.usermodel.Cell;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 
 /**
@@ -90,7 +91,7 @@ public enum ExcelFieldType {
             case TIMESTAMP:
                 return ExcelFieldType.TIMESTAMP;
             default:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
         }
     }
 

@@ -253,7 +253,7 @@ public class RestResult {
                 return "";
             }
         } else {
-            throw new RuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
+            throw new GenericRuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
         }
         if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
             return "." + info.getFileExtensions()[0];

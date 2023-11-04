@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterfaceManager;
@@ -141,7 +142,7 @@ public class RestInterfacePlugin extends PolyPlugin {
             this.port = Integer.parseInt( settings.get( "port" ) );
             if ( !Util.checkIfPortIsAvailable( port ) ) {
                 // Port is already in use
-                throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+                throw new GenericRuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
             }
             // Add information page
             monitoringPage = new MonitoringPage();
@@ -228,7 +229,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                         break;
                     default:
                         log.error( "processResourceRequest should never reach this point in the code!" );
-                        throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
+                        throw new GenericRuntimeException( "processResourceRequest should never reach this point in the code!" );
                 }
             } catch ( ParserException e ) {
                 log.error( "ParserException", e );
@@ -297,7 +298,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                 }
 
             } catch ( Throwable t ) {
-                throw new RuntimeException( "Could not process multipart request", t );
+                throw new GenericRuntimeException( "Could not process multipart request", t );
             }
 
             switch ( type ) {
@@ -357,7 +358,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                     }
             }
             log.error( "processMultipart should never reach this point in the code!" );
-            throw new RuntimeException( "processMultipart should never reach this point in the code!" );
+            throw new GenericRuntimeException( "processMultipart should never reach this point in the code!" );
         }
 
 

@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -118,7 +119,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
                 }
             }
         }
-        throw new RuntimeException( "No values before modify." );
+        throw new GenericRuntimeException( "No values before modify." );
     }
 
 

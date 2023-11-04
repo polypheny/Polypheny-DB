@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
 import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -804,11 +805,11 @@ public abstract class SqlUtil {
                     brackets.push( ch == '(' ? ')' : ch == '[' ? ']' : '}' );
                 } else if ( ch == ')' || ch == ']' || ch == '}' ) {
                     if ( ch != brackets.pop() ) {
-                        throw new RuntimeException( "Unbalanced brackets" );
+                        throw new GenericRuntimeException( "Unbalanced brackets" );
                     }
                 } else if ( ch == ';' ) {
                     if ( !brackets.isEmpty() ) {
-                        throw new RuntimeException( "Missing " + brackets.pop() );
+                        throw new GenericRuntimeException( "Missing " + brackets.pop() );
                     }
                     split.add( currentStatement.toString() );
                     currentStatement = new StringBuilder();
@@ -830,7 +831,7 @@ public abstract class SqlUtil {
                         i++;
                     }
                     if ( i + 1 == statements.length() ) {
-                        throw new RuntimeException( "Unterminated comment" );
+                        throw new GenericRuntimeException( "Unterminated comment" );
                     }
                     i++;
                     // Same reason as above for cases like "SEL/**/ECT"
@@ -841,11 +842,11 @@ public abstract class SqlUtil {
         }
 
         if ( quote != null ) {
-            throw new RuntimeException( String.format( "Unterminated %s", quote ) );
+            throw new GenericRuntimeException( String.format( "Unterminated %s", quote ) );
         }
 
         if ( !brackets.empty() ) {
-            throw new RuntimeException( "Missing " + brackets.pop() );
+            throw new GenericRuntimeException( "Missing " + brackets.pop() );
         }
 
         if ( !currentStatement.toString().isBlank() ) {

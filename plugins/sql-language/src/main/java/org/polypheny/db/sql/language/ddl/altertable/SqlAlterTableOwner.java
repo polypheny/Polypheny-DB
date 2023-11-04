@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -75,17 +76,17 @@ public class SqlAlterTableOwner extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + logicalTable.name + " is not a table." );
         }
 
         if ( owner.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + owner.toString() );
+            throw new GenericRuntimeException( "No FQDN allowed here: " + owner.toString() );
         }
 
-        DdlManager.getInstance().alterTableOwner( catalogTable, owner.getSimple() );
+        DdlManager.getInstance().alterTableOwner( logicalTable, owner.getSimple() );
 
     }
 

@@ -20,11 +20,10 @@ package org.polypheny.db.restapi.exception;
 import lombok.Getter;
 
 
+@Getter
 public class IncorrectOrderOfOperationsException extends RuntimeException {
 
-    @Getter
     private final String requiredOperation;
-    @Getter
     private final String calledOperation;
 
 

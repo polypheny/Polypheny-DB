@@ -100,21 +100,6 @@ public class HttpServer implements Runnable {
 
     @Override
     public void run() {
-        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
-        long maxRequestSize = 1_000_000L * maxSizeMB;
-
-        /*this.server = Javalin.create( config -> { // todo dl enable, when we removed avatica and can finally bump javalin
-            config.plugins.enableCors( cors -> cors.add( CorsPluginConfig::anyHost ) );
-            config.staticFiles.add( "webapp" );
-            config.http.maxRequestSize = maxRequestSize;
-            config.jsonMapper( new JavalinJackson().updateMapper( mapper -> {
-                mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-                mapper.configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false );
-                mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-                mapper.writerWithDefaultPrettyPrinter();
-            } ) );
-        } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );*/
-
         this.crud = new Crud( this.transactionManager );
 
         this.webSocketHandler = new WebSocket( crud );

@@ -71,13 +71,13 @@ public class SqlAlterMaterializedViewDropIndex extends SqlAlterMaterializedView 
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable table = failOnEmpty( context, this.table );
 
-        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        if ( table.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + table.name + " is not a Materialized View." );
         }
 
-        DdlManager.getInstance().dropIndex( catalogTable, indexName.getSimple(), statement );
+        DdlManager.getInstance().dropIndex( table, indexName.getSimple(), statement );
     }
 
 }

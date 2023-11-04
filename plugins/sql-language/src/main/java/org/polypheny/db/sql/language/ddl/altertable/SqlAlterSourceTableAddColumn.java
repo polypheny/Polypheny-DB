@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -105,20 +106,20 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.SOURCE ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a source table." );
+        if ( logicalTable.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + logicalTable.name + " is not a source table." );
         }
 
         if ( columnLogical.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + columnLogical.toString() );
+            throw new GenericRuntimeException( "No FQDN allowed here: " + columnLogical.toString() );
         }
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         DdlManager.getInstance().addColumnToSourceTable(
-                catalogTable,
+                logicalTable,
                 columnPhysical.getSimple(),
                 columnLogical.getSimple(),
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),

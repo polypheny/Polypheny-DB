@@ -85,12 +85,8 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = searchEntity( context, this.table );
+        LogicalTable table = failOnEmpty( context, this.table );
         DataStore<?> store = getDataStoreInstance( storeName );
-
-        if ( table == null ) {
-            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because there is no entity with name %s.", String.join( ".", this.table.names ) );
-        }
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );

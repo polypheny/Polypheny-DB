@@ -39,12 +39,7 @@ public class InformationGraph extends Information {
     private final Map<String, GraphData<? extends Number>> data = new HashMap<>();
     @JsonProperty("labels")
     private String[] xLabels;
-    /**
-     * -- GETTER --
-     * Get the GraphType
-     *
-     * @return graphType enum
-     */
+
     @Getter
     @JsonProperty
     private GraphType graphType;
@@ -66,9 +61,10 @@ public class InformationGraph extends Information {
     @JsonProperty("max")
     private int maxY;
 
+    @SuppressWarnings("unused")
     @Setter
     @JsonProperty
-    private List<GraphColor> colorList = List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.POLICE_BLUE, GraphColor.TUSCAN_RED, GraphColor.DARK_SEE_GREEN, GraphColor.JELLY_BEAN_BLUE, GraphColor.TWILIGHT_LAVENDER, GraphColor.SILVER_PINK, GraphColor.LIME );
+    private List<GraphColor> colors = List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.MIKADO_YELLOW, GraphColor.POLICE_BLUE, GraphColor.TUSCAN_RED, GraphColor.DARK_SEE_GREEN, GraphColor.JELLY_BEAN_BLUE, GraphColor.TWILIGHT_LAVENDER, GraphColor.SILVER_PINK, GraphColor.LIME );
 
 
     /**
@@ -214,6 +210,7 @@ public class InformationGraph extends Information {
          */
         // Choice of CircularFifoQueue: https://stackoverflow.com/questions/5498865/size-limited-queue-that-holds-last-n-elements-in-java
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+        @JsonProperty
         private final CircularFifoQueue<T> data;
 
 

@@ -75,14 +75,10 @@ public class SqlAlterViewRenameColumn extends SqlAlterView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = searchEntity( context, view );
-
-        if ( table == null ) {
-            throw new GenericRuntimeException( "Could not find view with name %s", String.join( ".", view.names ) );
-        }
+        LogicalTable table = failOnEmpty( context, view );
 
         if ( table.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER VIEW because " + table.name + " is not a View." );
+            throw new GenericRuntimeException( "Not Possible to use ALTER VIEW because " + table.name + " is not a View." );
         }
 
         DdlManager.getInstance().renameColumn( table, columnOldName.getSimple(), columnNewName.getSimple(), statement );

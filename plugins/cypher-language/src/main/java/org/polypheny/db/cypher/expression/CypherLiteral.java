@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
@@ -91,7 +92,7 @@ public class CypherLiteral extends CypherExpression {
         } else if ( (literalType == Literal.DOUBLE) ) {
             this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
         } else {
-            throw new RuntimeException( "Could not use provided format to creat cypher literal." );
+            throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
         }
     }
 

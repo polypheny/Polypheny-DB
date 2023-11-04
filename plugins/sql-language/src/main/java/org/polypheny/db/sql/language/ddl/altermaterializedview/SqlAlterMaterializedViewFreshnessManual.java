@@ -66,13 +66,13 @@ public class SqlAlterMaterializedViewFreshnessManual extends SqlAlterMaterialize
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, name );
+        LogicalTable table = failOnEmpty( context, name );
 
-        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        if ( table.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + table.name + " is not a Materialized View." );
         }
 
-        DdlManager.getInstance().refreshView( statement, catalogTable.id );
+        DdlManager.getInstance().refreshView( statement, table.id );
 
     }
 

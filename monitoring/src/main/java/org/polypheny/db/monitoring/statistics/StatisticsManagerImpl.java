@@ -134,7 +134,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
         registerIsFullTracking();
 
         if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
-            // this.asyncReevaluateAllStatistics();
+            this.asyncReevaluateAllStatistics();
         }
     }
 

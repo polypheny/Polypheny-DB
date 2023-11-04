@@ -21,11 +21,10 @@ import lombok.Getter;
 import org.polypheny.db.restapi.ParserErrorCode;
 
 
+@Getter
 public class ParserException extends RuntimeException {
 
-    @Getter
     private final ParserErrorCode errorCode;
-    @Getter
     private final String violatingInput;
 
 

@@ -34,6 +34,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlOperator;
@@ -217,7 +218,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 }
             } catch ( Exception e ) {
                 log.error( "Failed to create JethroDataDialect", e );
-                throw new RuntimeException( "Failed to create JethroDataDialect", e );
+                throw new GenericRuntimeException( "Failed to create JethroDataDialect", e );
             }
         }
 
@@ -235,7 +236,7 @@ public class JethroDataSqlDialect extends SqlDialect {
             } catch ( Exception e ) {
                 final String msg = "Jethro server failed to execute 'show functions extended'";
                 log.error( msg, e );
-                throw new RuntimeException( msg + "; make sure your Jethro server is up to date", e );
+                throw new GenericRuntimeException( msg + "; make sure your Jethro server is up to date", e );
             }
         }
 

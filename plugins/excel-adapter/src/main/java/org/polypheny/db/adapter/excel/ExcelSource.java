@@ -121,7 +121,7 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
             try {
                 excelDir = new File( dir ).toURI().toURL();
             } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
@@ -310,7 +310,7 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
                                     length = 0;
                                     break;
                                 default:
-                                    throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
+                                    throw new GenericRuntimeException( "Unknown type: " + typeStr.toLowerCase() );
                             }
 
                             list.add( new ExportedColumn(
@@ -330,13 +330,13 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
 
                             position++;
                         } catch ( Exception e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                     }
                     break;
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             exportedColumnCache.put( physicalTableName + "_" + currentSheetName, list );
         }

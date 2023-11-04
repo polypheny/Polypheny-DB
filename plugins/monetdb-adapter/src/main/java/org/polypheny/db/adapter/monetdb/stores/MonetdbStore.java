@@ -261,13 +261,13 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
+        throw new GenericRuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        throw new RuntimeException( "MonetDB adapter does not support dropping indexes" );
+        throw new GenericRuntimeException( "MonetDB adapter does not support dropping indexes" );
     }
 
 
@@ -282,7 +282,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public IndexMethodModel getDefaultIndexMethod() {
-        throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
+        throw new GenericRuntimeException( "MonetDB adapter does not support adding indexes" );
     }
 
 
@@ -307,7 +307,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
             case TINYINT:
                 return "TINYINT";
             case SMALLINT:
@@ -335,7 +335,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case ARRAY:
                 return "TEXT";
         }
-        throw new RuntimeException( "Unknown type: " + type.name() );
+        throw new GenericRuntimeException( "Unknown type: " + type.name() );
     }
 
 

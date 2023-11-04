@@ -101,11 +101,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable table = searchEntity( context, this.table );
-
-        if ( table == null ) {
-            throw new GenericRuntimeException( "Could not find entity with name %s", String.join( ".", this.table.getNames() ) );
-        }
+        LogicalTable table = failOnEmpty( context, this.table );
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );

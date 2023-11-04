@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -50,7 +51,7 @@ public class CypherSetProperty extends CypherSetItem {
         AlgNode node = context.peek();
         int index = node.getRowType().getFieldNames().indexOf( nodeName );
         if ( index < 0 ) {
-            throw new RuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
+            throw new GenericRuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
         }
         AlgDataTypeField field = node.getRowType().getFieldList().get( index );
 

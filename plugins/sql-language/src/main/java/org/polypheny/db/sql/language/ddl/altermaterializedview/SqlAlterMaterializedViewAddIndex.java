@@ -21,9 +21,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -39,16 +40,17 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
-
+@EqualsAndHashCode(callSuper = true)
+@Value
 public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
 
-    private final SqlIdentifier table;
-    private final SqlIdentifier indexName;
-    private final SqlIdentifier indexMethod;
-    private final SqlNodeList columnList;
-    private final boolean unique;
-    private final SqlIdentifier storeName;
+    SqlIdentifier table;
+    SqlIdentifier indexName;
+    SqlIdentifier indexMethod;
+    SqlNodeList columnList;
+    boolean unique;
+    SqlIdentifier storeName;
 
 
     public SqlAlterMaterializedViewAddIndex(
@@ -108,11 +110,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
-        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
-        }
-
+        LogicalTable catalogTable = failOnEmpty( context, table );
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
@@ -125,7 +123,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                         unique,
                         statement );
             } else {
-                DataStore storeInstance = null;
+                DataStore<?> storeInstance = null;
                 if ( storeName != null ) {
                     storeInstance = getDataStoreInstance( storeName );
                     if ( storeInstance == null ) {

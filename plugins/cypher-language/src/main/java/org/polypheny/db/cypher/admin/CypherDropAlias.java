@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
@@ -48,7 +49,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( aliasName ) );
         if ( graphs.size() != 1 ) {
-            throw new RuntimeException( "Error while dropping a graph database alias." );
+            throw new GenericRuntimeException( "Error while dropping a graph database alias." );
         }
         DdlManager.getInstance().dropGraphAlias( graphs.get( 0 ).id, aliasName, ifExists );
     }

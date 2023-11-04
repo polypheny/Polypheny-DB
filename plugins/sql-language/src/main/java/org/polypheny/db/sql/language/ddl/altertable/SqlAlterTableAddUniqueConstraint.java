@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -85,14 +86,14 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + logicalTable.name + " is not a table." );
         }
 
         DdlManager.getInstance().createUniqueConstraint(
-                catalogTable,
+                logicalTable,
                 columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                 constraintName.getSimple() );
     }

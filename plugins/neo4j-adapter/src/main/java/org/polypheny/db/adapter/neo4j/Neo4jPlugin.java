@@ -180,7 +180,7 @@ public class Neo4jPlugin extends PolyPlugin {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
-                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                            .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
                                 .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
@@ -247,7 +247,7 @@ public class Neo4jPlugin extends PolyPlugin {
             try {
                 this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
             } catch ( URISyntaxException e ) {
-                throw new RuntimeException( "Error while initiating the neo4j adapter." );
+                throw new GenericRuntimeException( "Error while initiating the neo4j adapter." );
             }
             if ( this.db == null ) {
                 return false;
@@ -356,7 +356,7 @@ public class Neo4jPlugin extends PolyPlugin {
                     try {
                         return new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime();
                     } catch ( ParseException e ) {
-                        throw new RuntimeException( e );
+                        throw new GenericRuntimeException( e );
                     }
                 } else if ( type.getFamily() == PolyTypeFamily.TIME ) {
                     return (int) Time.valueOf( defaultValue.value ).getTime();
@@ -368,7 +368,7 @@ public class Neo4jPlugin extends PolyPlugin {
                     value = defaultValue.value;
                 }
                 if ( type == PolyType.ARRAY ) {
-                    throw new RuntimeException( "Default values are not supported for array types" );
+                    throw new GenericRuntimeException( "Default values are not supported for array types" );
                 }
 
                 return format( "'%s'", value );

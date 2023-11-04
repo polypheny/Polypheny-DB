@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.ArrayValueConstructor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.OperatorBinding;
@@ -126,7 +127,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor implem
             } else if ( node instanceof SqlCall ) {
                 list.add( createListForArrays( ((SqlCall) node).getSqlOperandList() ) );
             } else {
-                throw new RuntimeException( "Invalid array" );
+                throw new GenericRuntimeException( "Invalid array" );
             }
         }
         return list;
