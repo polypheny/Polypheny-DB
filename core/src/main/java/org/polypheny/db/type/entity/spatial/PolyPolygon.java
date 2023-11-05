@@ -72,6 +72,11 @@ public class PolyPolygon extends PolyGeometry {
     }
 
 
+    public boolean isRectangle() {
+        return jtsPolygon.isRectangle();
+    }
+
+
     public PolyLinearRing getExteriorRing() {
         return PolyLinearRing.of( jtsPolygon.getExteriorRing() );
     }

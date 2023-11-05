@@ -33,6 +33,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.polypheny.db.type.PolySerializable;
@@ -156,26 +157,30 @@ public class PolyGeometry extends PolyValue {
 
     protected PolyGeometryType getPolyGeometryType() {
         switch ( jtsGeometry.getGeometryType() ) {
-            case "Point":
+            case Geometry.TYPENAME_POINT:
                 return PolyGeometryType.POINT;
-            case "LineString":
+            case Geometry.TYPENAME_LINESTRING:
                 return PolyGeometryType.LINESTRING;
-            case "LinearRing":
+            case Geometry.TYPENAME_LINEARRING:
                 return PolyGeometryType.LINEARRING;
-            case "Polygon":
+            case Geometry.TYPENAME_POLYGON:
                 return PolyGeometryType.POLYGON;
-            case "GeometryCollection":
+            case Geometry.TYPENAME_GEOMETRYCOLLECTION:
                 return PolyGeometryType.GEOMETRYCOLLECTION;
-            case "MultiPoint":
+            case Geometry.TYPENAME_MULTIPOINT:
                 return PolyGeometryType.MULTIPOINT;
-            case "MultiLineString":
+            case Geometry.TYPENAME_MULTILINESTRING:
                 return PolyGeometryType.MULTILINESTRING;
-            case "MultiPolygon":
+            case Geometry.TYPENAME_MULTIPOLYGON:
                 return PolyGeometryType.MULTIPOLYGON;
             default:
                 throw new NotImplementedException( "value" );
         }
     }
+
+    /*
+     * Casting methods
+     */
 
 
     public boolean isPoint() {
@@ -246,6 +251,10 @@ public class PolyGeometry extends PolyValue {
         }
         throw cannotParse( this, PolyGeometryCollection.class );
     }
+
+    /*
+     * Query Geometry properties
+     */
 
 
     /**
@@ -418,6 +427,318 @@ public class PolyGeometry extends PolyValue {
     public PolyGeometry reverse() {
         return PolyGeometry.of( jtsGeometry.reverse() );
     }
+
+    /*
+     * Topological relationships
+     */
+
+    /*
+     * Binary predicates
+     */
+
+
+    /**
+     * Check that another {@link PolyGeometry} is withing the Euclidean distance.
+     *
+     * @param g another {@link PolyGeometry}
+     * @param distance metric value to compare, measured in Cartesian coordinate units
+     * @return <code>true</code> if {@link PolyGeometry} is withing the given distance
+     */
+    public boolean isWithinDistance( @NotNull PolyGeometry g, double distance ) {
+        return jtsGeometry.isWithinDistance( g.getJtsGeometry(), distance );
+    }
+
+
+    /**
+     * Check that another {@link PolyGeometry} is withing the distance.
+     *
+     * @param g another {@link PolyGeometry}
+     * @param distance metric value to compare, measured in meters if <strong>spheroid</strong>, otherwise in Cartesian coordinate units
+     * @param spheroid use the spheroid physical model to calculate the distance
+     * @return <code>true</code> if {@link PolyGeometry} is withing the given distance
+     */
+    public boolean isWithinDistance( @NotNull PolyGeometry g, double distance, boolean spheroid ) {
+        if ( !spheroid ) {
+            return isWithinDistance( g, distance );
+        }
+        // TODO: implement on Perfect Sphere and for WGS84
+        return false;
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} is disjoint from another {@link PolyGeometry}:
+     * 2 {@link PolyGeometry} do not have points in common
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if 2 {@link PolyGeometry} are disjoint
+     */
+    public boolean disjoint( @NotNull PolyGeometry g ) {
+        return jtsGeometry.disjoint( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} touches another {@link PolyGeometry}:
+     * 2 {@link PolyGeometry} have at least one point in common, but interiors do not intersect
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if one {@link PolyGeometry} touches another. <code>false</code> if two {@link PolyGeometry} are {@link PolyPoint}s
+     */
+    public boolean touches( @NotNull PolyGeometry g ) {
+        return jtsGeometry.touches( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} intersects another {@link PolyGeometry}:
+     * 2 {@link PolyGeometry} have at least one point in common
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} intersects another.
+     */
+    public boolean intersects( @NotNull PolyGeometry g ) {
+        return jtsGeometry.intersects( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} crosses another {@link PolyGeometry}:
+     * 2 {@link PolyGeometry} have some, but not all interior points in common
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} crosses another.
+     */
+    public boolean crosses( @NotNull PolyGeometry g ) {
+        return jtsGeometry.crosses( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} within another {@link PolyGeometry}:
+     * Every point of this {@link PolyGeometry} is a point of another {@link PolyGeometry}
+     * and the interiors of two {@link PolyGeometry} intersect (have at least one point in common)
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} within another.
+     */
+    public boolean within( @NotNull PolyGeometry g ) {
+        return jtsGeometry.within( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} contains another {@link PolyGeometry}:
+     * Every point of another {@link PolyGeometry} is a point of this {@link PolyGeometry}
+     * and the interiors of two {@link PolyGeometry} intersect (have at least one point in common)
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} contains another.
+     */
+    public boolean contains( @NotNull PolyGeometry g ) {
+        return jtsGeometry.contains( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} overlaps another {@link PolyGeometry}:
+     * at least one point is not shared by both {@link PolyGeometry}s, they have the same dimension
+     * and the intersection of interiors have the same dimension as {@link PolyGeometry}s have.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} overlaps another.
+     */
+    public boolean overlaps( @NotNull PolyGeometry g ) {
+        return jtsGeometry.overlaps( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} covers another {@link PolyGeometry}:
+     * Every point of another {@link PolyGeometry} is a point of this {@link PolyGeometry}.
+     * More inclusive than {@link #contains(PolyGeometry)}
+     * (does not differentiate between points in interior and boundary)
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} covers another.
+     */
+    public boolean covers( @NotNull PolyGeometry g ) {
+        return jtsGeometry.covers( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} is covered by another {@link PolyGeometry}:
+     * Every point of this {@link PolyGeometry} is a point of another {@link PolyGeometry}.
+     * More inclusive than {@link #within(PolyGeometry)}
+     * (does not differentiate between points in interior and boundary)
+     *
+     * @param g another {@link PolyGeometry}
+     * @return <code>true</code> if {@link PolyGeometry} is covered by another.
+     */
+    public boolean coveredBy( @NotNull PolyGeometry g ) {
+        return jtsGeometry.coveredBy( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Check that this {@link PolyGeometry} is spatially related to another {@link PolyGeometry}
+     * based on the given intersection DE-9IM pattern matrix.
+     * The DE-9IM pattern consists of 9 characters:
+     * <ul>
+     *     <li>0 (dimension 0)</li>
+     *     <li>1 (dimension 1)</li>
+     *     <li>2 (dimension 2)</li>
+     *     <li>T (matches 0, 1 or 2)</li>
+     *     <li>F (matches FALSE)</li>
+     *     <li>* (matches any value)</li>
+     * </ul>
+     * For more details about the pattern, see <a href="https://en.wikipedia.org/wiki/DE-9IM">DE-9IM</a>.
+     * <p></p>
+     * <pre><code>
+     * PolyGeometry g1 = PolyGeometry.of( "LINESTRING (0 1, 2 2)" );
+     * PolyGeometry g2 = PolyGeometry.of( "LINESTRING (2 2, 0 1)" );
+     * g1.relate( g2, "T*F**FFF2" ); // true
+     * </code>
+     * </pre>
+     *
+     * @param g another {@link PolyGeometry}
+     * @param intersectionPattern pattern to check the intersection matrix of two {@link PolyGeometry}
+     * @return <code>true</code> if the DE-9IM intersection matrix for both {@link PolyGeometry} matches the <code>intersectionPattern</code>
+     * @throws GeometryTopologicalException in case <code>intersectionPattern</code> contains not of 9 characters
+     */
+    public boolean relate( @NotNull PolyGeometry g, @NotNull String intersectionPattern ) throws GeometryTopologicalException {
+        if ( intersectionPattern.length() == 9 ) {
+            throw new GeometryTopologicalException( "DE-9IM pattern should contain 9 characters." );
+        }
+        return jtsGeometry.relate( g.getJtsGeometry(), intersectionPattern );
+    }
+
+    /*
+     * Yield metric values
+     */
+
+
+    /**
+     * Calculate the Euclidean distance between two {@link PolyGeometry}.
+     * The distance is measured in Cartesian coordinate units.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return the distance in Cartesian coordinate units
+     */
+    public double distance( @NotNull PolyGeometry g ) {
+        return jtsGeometry.distance( g.getJtsGeometry() );
+    }
+
+
+    /**
+     * Calculate the distance between two {@link PolyGeometry}.
+     *
+     * @param g another {@link PolyGeometry}
+     * @param spheroid use the spheroid physical model to calculate the distance
+     * @return the distance in meters if <strong>spheroid</strong>, otherwise in Cartesian coordinate units
+     */
+    public double distance( @NotNull PolyGeometry g, boolean spheroid ) {
+        if ( !spheroid ) {
+            return jtsGeometry.distance( g.getJtsGeometry() );
+        }
+        // TODO: implement on Perfect Sphere and for WGS84
+        return 42;
+    }
+
+
+    /*
+     * Set operations
+     */
+
+
+    /**
+     * Compute the intersection set of both {@link PolyGeometry}s.
+     * The produced {@link PolyGeometry} is less than original or equal to the minimum dimension of both {@link PolyGeometry}
+     * {@link PolyGeometryCollection} is allowed only for homogeneous collection types.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return a {@link PolyGeometry} that represent an intersection set of both {@link PolyGeometry}s
+     * @throws GeometryTopologicalException in case a non-empty heterogeneous {@link PolyGeometryCollection} as an input
+     * or a robustness error occurs
+     */
+    public PolyGeometry intersection( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
+        try {
+            return PolyGeometry.of( jtsGeometry.intersection( g.getJtsGeometry() ) );
+        } catch ( TopologyException | IllegalArgumentException e ) {
+            // TopologyException: robustness error occurs
+            // IllegalArgumentException: non-empty heterogeneous GeometryCollection as an input
+            throw new GeometryTopologicalException( e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Compute the union set of both {@link PolyGeometry}s.
+     * The dimension of the produced union set is equal to the maximum dimension of both {@link PolyGeometry}.
+     * The result may be a heterogeneous {@link PolyGeometryCollection}.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return a {@link PolyGeometry} that represent a union set of both {@link PolyGeometry}s
+     * @throws GeometryTopologicalException in case a non-empty {@link PolyGeometryCollection} as an input
+     * or a robustness error occurs
+     */
+    public PolyGeometry union( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
+        try {
+            return PolyGeometry.of( jtsGeometry.union( g.getJtsGeometry() ) );
+        } catch ( TopologyException | IllegalArgumentException e ) {
+            // TopologyException: robustness error occurs
+            // IllegalArgumentException: non-empty GeometryCollection as an input
+            throw new GeometryTopologicalException( e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Compute the difference set of both {@link PolyGeometry}s.
+     * Produced difference set consists of points contained in this {@link PolyGeometry} not contained in other {@link PolyGeometry}.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return a {@link PolyGeometry} that represent a difference set of both {@link PolyGeometry}s
+     * @throws GeometryTopologicalException in case a non-empty {@link PolyGeometryCollection} as an input
+     * or a robustness error occurs
+     */
+    public PolyGeometry difference( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
+        try {
+            return PolyGeometry.of( jtsGeometry.difference( g.getJtsGeometry() ) );
+        } catch ( TopologyException | IllegalArgumentException e ) {
+            // TopologyException: robustness error occurs
+            // IllegalArgumentException: non-empty GeometryCollection as an input
+            throw new GeometryTopologicalException( e.getMessage() );
+        }
+    }
+
+
+    /**
+     * Compute the symmetric difference set of both {@link PolyGeometry}s.
+     * Produced symmetric difference set consists of the union
+     * of points contained in this {@link PolyGeometry} not contained in other {@link PolyGeometry}
+     * and of points contained in other {@link PolyGeometry} not contained in this {@link PolyGeometry}.
+     *
+     * @param g another {@link PolyGeometry}
+     * @return a {@link PolyGeometry} that represent a difference set of both {@link PolyGeometry}s
+     * @throws GeometryTopologicalException in case a non-empty {@link PolyGeometryCollection} as an input
+     * or a robustness error occurs
+     */
+    public PolyGeometry symDifference( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
+        try {
+            return PolyGeometry.of( jtsGeometry.symDifference( g.getJtsGeometry() ) );
+        } catch ( TopologyException | IllegalArgumentException e ) {
+            // TopologyException: robustness error occurs
+            // IllegalArgumentException: non-empty GeometryCollection as an input
+            throw new GeometryTopologicalException( e.getMessage() );
+        }
+    }
+
+
+    /*
+     * PolyType methods
+     */
 
 
     /**

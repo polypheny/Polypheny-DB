@@ -68,25 +68,6 @@ public class PolyGeometryCollection extends PolyGeometry {
     }
 
 
-    /**
-     * @return the number of {@link PolyGeometry} geometries in the {@link PolyGeometryCollection}.
-     */
-    public int getNumGeometries() {
-        return jtsGeometryCollection.getNumGeometries();
-    }
-
-
-    /**
-     * Get the nth {@link PolyGeometry} in the collection.
-     *
-     * @param n number of the {@link PolyGeometry} in the collection
-     * @return the nth {@link PolyGeometry} in the collection.
-     */
-    public PolyGeometry getGeometryN( int n ) {
-        return PolyGeometry.of( jtsGeometryCollection.getGeometryN( n ) );
-    }
-
-
     public boolean isMultiPoint() {
         return geometryType.equals( PolyGeometryType.MULTIPOINT );
     }
@@ -126,6 +107,35 @@ public class PolyGeometryCollection extends PolyGeometry {
             return PolyMultiPolygon.of( jtsGeometry );
         }
         throw cannotParse( this, PolyMultiPolygon.class );
+    }
+
+
+    /**
+     * @return the number of {@link PolyGeometry} geometries in the {@link PolyGeometryCollection}.
+     */
+    public int getNumGeometries() {
+        return jtsGeometryCollection.getNumGeometries();
+    }
+
+
+    /**
+     * Get the nth {@link PolyGeometry} in the collection.
+     *
+     * @param n number of the {@link PolyGeometry} in the collection
+     * @return the nth {@link PolyGeometry} in the collection.
+     */
+    public PolyGeometry getGeometryN( int n ) {
+        return PolyGeometry.of( jtsGeometryCollection.getGeometryN( n ) );
+    }
+
+
+    /**
+     * Compute the union set of all {@link PolyGeometry} in the collection.
+     *
+     * @return the union set of all {@link PolyGeometry} in the collection.
+     */
+    public PolyGeometry union() {
+        return PolyGeometry.of( jtsGeometryCollection.union() );
     }
 
 }
