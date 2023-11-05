@@ -48,7 +48,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.impl.Expressible;
@@ -122,7 +122,7 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
 
 
     @Override
-    public CatalogEntity getEntity( String name ) {
+    public LogicalEntity getEntity( String name ) {
         return null;
     }
 

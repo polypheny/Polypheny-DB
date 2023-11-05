@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
@@ -191,7 +192,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     @Override
     public void stop() {
-        throw new RuntimeException( "Cannot remove language SQL." );
+        throw new GenericRuntimeException( "Cannot remove language SQL." );
     }
 
 
@@ -254,7 +255,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
     public static void registerOperators() {
         if ( isInit ) {
-            throw new RuntimeException( "Sql operators were already registered." );
+            throw new GenericRuntimeException( "Sql operators were already registered." );
         }
 
         register( OperatorName.ORACLE_TRANSLATE3, new SqlTranslate3Function() );

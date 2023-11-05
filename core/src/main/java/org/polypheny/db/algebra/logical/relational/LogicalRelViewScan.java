@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -35,7 +35,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
 
-public class LogicalRelViewScan extends RelScan<CatalogEntity> {
+public class LogicalRelViewScan extends RelScan<LogicalEntity> {
 
     @Getter
     private final AlgNode algNode;
@@ -43,14 +43,14 @@ public class LogicalRelViewScan extends RelScan<CatalogEntity> {
     private final AlgCollation algCollation;
 
 
-    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table, AlgNode algNode, AlgCollation algCollation ) {
+    public LogicalRelViewScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalEntity table, AlgNode algNode, AlgCollation algCollation ) {
         super( cluster, traitSet, table );
         this.algNode = algNode;
         this.algCollation = algCollation;
     }
 
 
-    public static AlgNode create( AlgOptCluster cluster, final CatalogEntity entity ) {
+    public static AlgNode create( AlgOptCluster cluster, final LogicalEntity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )

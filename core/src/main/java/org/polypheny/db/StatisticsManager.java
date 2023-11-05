@@ -30,7 +30,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public static StatisticsManager setAndGetInstance( StatisticsManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;

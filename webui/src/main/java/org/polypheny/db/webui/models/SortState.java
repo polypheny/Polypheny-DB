@@ -22,6 +22,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 /**
  * Defines how a column is sorted.
@@ -73,7 +74,7 @@ public class SortState {
                     column = in.nextString();
                     break;
                 default:
-                    throw new RuntimeException( "There was an unrecognized column while deserializing SortState." );
+                    throw new GenericRuntimeException( "There was an unrecognized column while deserializing SortState." );
             }
 
         }

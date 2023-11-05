@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -43,7 +44,7 @@ public class CreateSinglePlacementStrategy implements CreatePlacementStrategy {
         for ( DataStore<?> store : availableStores.values() ) {
             return ImmutableList.of( store );
         }
-        throw new RuntimeException( "No suitable data storeId found" );
+        throw new GenericRuntimeException( "No suitable data storeId found" );
     }
 
 }

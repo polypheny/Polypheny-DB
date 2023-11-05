@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
@@ -43,21 +43,21 @@ import org.polypheny.db.util.ValidatorUtil;
 class EntityNamespace extends AbstractNamespace {
 
     @Getter
-    private final CatalogEntity table;
+    private final LogicalEntity table;
     public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private EntityNamespace( SqlValidatorImpl validator, CatalogEntity entity, List<AlgDataTypeField> fields ) {
+    private EntityNamespace( SqlValidatorImpl validator, LogicalEntity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
         this.table = entity;
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    EntityNamespace( SqlValidatorImpl validator, CatalogEntity table ) {
+    EntityNamespace( SqlValidatorImpl validator, LogicalEntity table ) {
         this( validator, table, ImmutableList.of() );
     }
 
@@ -84,7 +84,7 @@ class EntityNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final CatalogEntity table = getTable();
+        final LogicalEntity table = getTable();
         return Util.getMonotonicity( table, columnName );
     }
 

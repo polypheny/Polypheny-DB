@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @NonFinal
 @SuperBuilder(toBuilder = true)
 @SerializeClass(subclasses = { PhysicalTable.class, PhysicalGraph.class, PhysicalCollection.class })
-public abstract class PhysicalEntity extends CatalogEntity {
+public abstract class PhysicalEntity extends LogicalEntity {
 
     @Serialize
     public String namespaceName;

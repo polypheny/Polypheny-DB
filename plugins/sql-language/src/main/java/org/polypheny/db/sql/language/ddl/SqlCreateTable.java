@@ -44,6 +44,7 @@ import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlCreate;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlOperator;
@@ -51,6 +52,7 @@ import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Pair;
 
@@ -62,7 +64,7 @@ import org.polypheny.db.util.Pair;
 public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     private final SqlIdentifier name;
-    private final SqlNodeList columnList;
+    private final SqlNodeList columns;
     private final SqlNode query;
     private final SqlIdentifier store;
     private final SqlIdentifier partitionColumn;
@@ -86,7 +88,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             boolean replace,
             boolean ifNotExists,
             SqlIdentifier name,
-            SqlNodeList columnList,
+            SqlNodeList columns,
             SqlNode query,
             SqlIdentifier store,
             SqlIdentifier partitionType,
@@ -98,7 +100,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             RawPartitionInformation rawPartitionInfo ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.columnList = columnList; // May be null
+        this.columns = columns; // May be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
         this.store = store; // ON STORE [storeId name]; may be null
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
@@ -113,13 +115,13 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
     @Override
     public List<Node> getOperandList() {
-        return ImmutableNullableList.of( name, columnList, query );
+        return ImmutableNullableList.of( name, columns, query );
     }
 
 
     @Override
     public List<SqlNode> getSqlOperandList() {
-        return ImmutableNullableList.of( name, columnList, query );
+        return ImmutableNullableList.of( name, columns, query );
     }
 
 
@@ -131,9 +133,9 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
             writer.keyword( "IF NOT EXISTS" );
         }
         name.unparse( writer, leftPrec, rightPrec );
-        if ( columnList != null ) {
+        if ( columns != null ) {
             SqlWriter.Frame frame = writer.startList( "(", ")" );
-            for ( SqlNode c : columnList.getSqlList() ) {
+            for ( SqlNode c : columns.getSqlList() ) {
                 writer.sep( "," );
                 c.unparse( writer, 0, 0 );
             }
@@ -215,7 +217,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<FieldInformation> columns = null;
         List<ConstraintInformation> constraints = null;
 
-        if ( columnList != null ) {
+        if ( this.columns != null ) {
             Pair<List<FieldInformation>, List<ConstraintInformation>> columnsConstraints = separateColumnList();
             columns = columnsConstraints.left;
             constraints = columnsConstraints.right;
@@ -259,11 +261,11 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
         List<ConstraintInformation> constraintInformation = new ArrayList<>();
 
         int position = 1;
-        for ( Ord<SqlNode> c : Ord.zip( columnList.getSqlList() ) ) {
+        for ( Ord<SqlNode> c : Ord.zip( columns.getSqlList() ) ) {
             if ( c.e instanceof SqlColumnDeclaration ) {
                 final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
 
-                String defaultValue = columnDeclaration.getExpression() == null ? null : columnDeclaration.getExpression().toString();
+                PolyValue defaultValue = columnDeclaration.getExpression() == null ? null : SqlLiteral.toPoly( columnDeclaration.getExpression() );
 
                 fieldInformation.add(
                         new FieldInformation(

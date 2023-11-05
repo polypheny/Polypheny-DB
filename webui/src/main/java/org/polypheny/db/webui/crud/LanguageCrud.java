@@ -38,8 +38,8 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PolyphenyMode;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -157,7 +157,7 @@ public class LanguageCrud {
         PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
 
         ResultIterator iterator = polyImplementation.execute( statement, 1 );
-        List<List<PolyValue>> res = iterator.getRows();
+        List<List<PolyValue>> res = iterator.getNextBatch();
 
         try {
             iterator.close();
@@ -216,7 +216,7 @@ public class LanguageCrud {
         }
 
         ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-        List<List<PolyValue>> rows = iterator.getRows();
+        List<List<PolyValue>> rows = iterator.getNextBatch();
         try {
             iterator.close();
         } catch ( Exception e ) {
@@ -251,7 +251,7 @@ public class LanguageCrud {
                 Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( optional.isPresent() ) {
                     if ( optional.get().defaultValue != null ) {
-                        dbCol.defaultValue( optional.get().defaultValue.value );
+                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
                     }
                 }
             }
@@ -300,7 +300,7 @@ public class LanguageCrud {
     private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
 
         ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-        List<List<PolyValue>> data = iterator.getRows();
+        List<List<PolyValue>> data = iterator.getNextBatch();
         try {
             iterator.close();
         } catch ( Exception e ) {
@@ -375,8 +375,8 @@ public class LanguageCrud {
         if ( type == EntityType.VIEW ) {
             return p;
         } else {
-            List<CatalogDataPlacement> placements = catalog.getSnapshot().alloc().getDataPlacements( graph.id );
-            for ( CatalogDataPlacement placement : placements ) {
+            List<AllocationPlacement> placements = catalog.getSnapshot().alloc().getPlacementsFromLogical( graph.id );
+            for ( AllocationPlacement placement : placements ) {
                 Adapter<?> adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
                 p.addAdapter( new PlacementModel.GraphStore(
                         adapter.getUniqueName(),

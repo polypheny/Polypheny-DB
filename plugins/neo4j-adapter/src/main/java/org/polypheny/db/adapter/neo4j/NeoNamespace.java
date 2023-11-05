@@ -25,7 +25,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
@@ -96,7 +96,7 @@ public class NeoNamespace implements Namespace, Schema, Expressible {
 
 
     @Override
-    public CatalogEntity getEntity( String name ) {
+    public LogicalEntity getEntity( String name ) {
         return null;
     }
 

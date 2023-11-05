@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -85,7 +86,7 @@ public class RoutingPlanSelector {
         }
 
         if ( result == null ) {
-            throw new RuntimeException( "Plan selection strategy not found, result still null." );
+            throw new GenericRuntimeException( "Plan selection strategy not found, result still null." );
         }
 
         if ( statement.getTransaction().isAnalyze() ) {

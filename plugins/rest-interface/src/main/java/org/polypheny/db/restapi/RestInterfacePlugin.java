@@ -50,7 +50,7 @@ import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -184,7 +184,7 @@ public class RestInterfacePlugin extends PolyPlugin {
                     before( "/*", ctx -> {
                         log.debug( "Checking authentication of request with id: {}.", (Object) ctx.sessionAttribute( "id" ) );
                         try {
-                            CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( ctx );
+                            LogicalUser logicalUser = this.requestParser.parseBasicAuthentication( ctx );
                         } catch ( UnauthorizedAccessException e ) {
                             restServer.stop();
                         }

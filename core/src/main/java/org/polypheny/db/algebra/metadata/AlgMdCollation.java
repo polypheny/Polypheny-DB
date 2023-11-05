@@ -73,7 +73,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableMergeJoin;
 import org.polypheny.db.algebra.enumerable.EnumerableSemiJoin;
 import org.polypheny.db.algebra.enumerable.EnumerableThetaJoin;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.hep.HepAlgVertex;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexCall;
@@ -203,7 +203,7 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
     /**
      * Helper method to determine a {@link RelScan}'s collation.
      */
-    public static List<AlgCollation> table( CatalogEntity table ) {
+    public static List<AlgCollation> table( LogicalEntity table ) {
         return table.getCollations();
     }
 

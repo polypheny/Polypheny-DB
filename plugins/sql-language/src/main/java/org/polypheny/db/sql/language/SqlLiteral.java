@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
@@ -137,6 +138,7 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
+@Slf4j
 @Getter
 public class SqlLiteral extends SqlNode implements Literal {
 
@@ -217,6 +219,15 @@ public class SqlLiteral extends SqlNode implements Literal {
 
     public static SqlNode createArray( List<PolyValue> array, AlgDataType type, ParserPos pos ) {
         return new SqlArrayLiteral( PolyList.copyOf( array ), type, pos );
+    }
+
+
+    public static PolyValue toPoly( SqlNode value ) {
+        if ( !(value instanceof SqlLiteral) ) {
+            log.warn( "Could not transform: " + value.toString() );
+            return null;
+        }
+        return ((SqlLiteral) value).value;
     }
 
 

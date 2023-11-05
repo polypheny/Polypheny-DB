@@ -28,10 +28,10 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalQueryInterface;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -56,13 +56,13 @@ public class SnapshotImpl implements Snapshot {
     @Getter
     long id;
 
-    ImmutableMap<Long, CatalogUser> users;
+    ImmutableMap<Long, LogicalUser> users;
 
-    ImmutableMap<String, CatalogUser> userNames;
-    ImmutableMap<Long, CatalogQueryInterface> interfaces;
+    ImmutableMap<String, LogicalUser> userNames;
+    ImmutableMap<Long, LogicalQueryInterface> interfaces;
     ImmutableMap<String, QueryInterfaceTemplate> interfaceTemplates;
 
-    ImmutableMap<String, CatalogQueryInterface> interfaceNames;
+    ImmutableMap<String, LogicalQueryInterface> interfaceNames;
     ImmutableMap<Long, LogicalAdapter> adapters;
     ImmutableMap<Long, AdapterTemplate> adapterTemplates;
 
@@ -129,13 +129,13 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NotNull Optional<CatalogUser> getUser( String name ) {
+    public @NotNull Optional<LogicalUser> getUser( String name ) {
         return Optional.ofNullable( userNames.get( name ) );
     }
 
 
     @Override
-    public @NotNull Optional<CatalogUser> getUser( long id ) {
+    public @NotNull Optional<LogicalUser> getUser( long id ) {
         return Optional.ofNullable( users.get( id ) );
     }
 
@@ -159,19 +159,19 @@ public class SnapshotImpl implements Snapshot {
 
 
     @Override
-    public @NotNull List<CatalogQueryInterface> getQueryInterfaces() {
+    public @NotNull List<LogicalQueryInterface> getQueryInterfaces() {
         return interfaces.values().asList();
     }
 
 
     @Override
-    public @NotNull Optional<CatalogQueryInterface> getQueryInterface( String uniqueName ) {
+    public @NotNull Optional<LogicalQueryInterface> getQueryInterface( String uniqueName ) {
         return Optional.ofNullable( interfaceNames.get( uniqueName ) );
     }
 
 
     @Override
-    public @NotNull Optional<CatalogQueryInterface> getQueryInterface( long id ) {
+    public @NotNull Optional<LogicalQueryInterface> getQueryInterface( long id ) {
         return Optional.ofNullable( interfaces.get( id ) );
     }
 

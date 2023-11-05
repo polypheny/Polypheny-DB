@@ -18,12 +18,14 @@ package org.polypheny.db.webui.models.requests;
 
 
 import java.util.Map;
+import lombok.experimental.SuperBuilder;
 import org.polypheny.db.webui.models.SortState;
 
 
 /**
  * Required to parse a request coming from the UI using Gson
  */
+@SuperBuilder(toBuilder = true)
 public class UIRequest extends RequestModel {
 
 

@@ -102,7 +102,8 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.nodes.BasicNodeVisitor;
 import org.polypheny.db.nodes.Call;
@@ -395,7 +396,7 @@ public class Util {
                 try {
                     val = field.get( o );
                 } catch ( IllegalAccessException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
                 print( pw, val, indent + 1 );
             }
@@ -2021,7 +2022,7 @@ public class Util {
     }
 
 
-    public static Monotonicity getMonotonicity( CatalogEntity entity, String columnName ) {
+    public static Monotonicity getMonotonicity( LogicalEntity entity, String columnName ) {
         if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
             return Monotonicity.NOT_MONOTONIC;
         }

@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypePrecedenceList;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -617,7 +617,7 @@ public abstract class SqlUtil {
     }
 
 
-    public static boolean supportsModality( Modality modality, CatalogEntity entity ) {
+    public static boolean supportsModality( Modality modality, LogicalEntity entity ) {
 
         if ( Objects.requireNonNull( modality ) == Modality.STREAM ) {
             return entity instanceof StreamableEntity;

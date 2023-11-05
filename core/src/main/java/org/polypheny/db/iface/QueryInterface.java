@@ -28,6 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -105,13 +106,13 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
                     if ( !s.canBeNull && newValue == null ) {
-                        throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
             } else if ( s.required && s.modifiable ) {
-                throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
+                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
     }

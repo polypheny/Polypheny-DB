@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
@@ -103,12 +103,12 @@ public class LogicalForeignKey extends LogicalKey {
 
 
     // Used for creating ResultSets
-    public List<CatalogForeignKeyColumn> getCatalogForeignKeyColumns() {
+    public List<LogicalForeignKeyColumn> getCatalogForeignKeyColumns() {
         int i = 1;
-        List<CatalogForeignKeyColumn> list = new LinkedList<>();
+        List<LogicalForeignKeyColumn> list = new LinkedList<>();
         List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
         for ( String columnName : getColumnNames() ) {
-            list.add( new CatalogForeignKeyColumn( tableId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
+            list.add( new LogicalForeignKeyColumn( tableId, name, i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
             i++;
         }
         return list;
@@ -136,7 +136,7 @@ public class LogicalForeignKey extends LogicalKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class CatalogForeignKeyColumn implements CatalogObject {
+    public static class LogicalForeignKeyColumn implements LogicalObject {
 
         private static final long serialVersionUID = 3287177728197412000L;
 

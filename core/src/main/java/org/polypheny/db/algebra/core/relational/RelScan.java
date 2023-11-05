@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -48,7 +48,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Relational operator that returns the contents of a table.
  */
-public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
+public abstract class RelScan<E extends LogicalEntity> extends Scan<E> {
 
     protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );
@@ -87,7 +87,7 @@ public abstract class RelScan<E extends CatalogEntity> extends Scan<E> {
     /**
      * Returns an identity projection for the given table.
      */
-    public static ImmutableList<Integer> identity( CatalogEntity entity ) {
+    public static ImmutableList<Integer> identity( LogicalEntity entity ) {
         return ImmutableList.copyOf( IntStream.range( 0, entity.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 

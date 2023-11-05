@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -40,7 +40,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class DocumentModify<E extends CatalogEntity> extends Modify<E> implements DocumentAlg {
+public abstract class DocumentModify<E extends LogicalEntity> extends Modify<E> implements DocumentAlg {
 
     @NonNull
     public ImmutableMap<String, ? extends RexNode> updates;

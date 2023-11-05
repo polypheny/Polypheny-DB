@@ -34,7 +34,6 @@
 package org.polypheny.db.prepare;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
@@ -48,7 +47,6 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -56,8 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactoryImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -77,7 +74,6 @@ import org.polypheny.db.schema.types.ProjectableFilterableEntity;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
-import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.InitializerExpressionFactory;
 import org.polypheny.db.util.NullInitializerExpressionFactory;
 import org.polypheny.db.util.Util;
@@ -96,7 +92,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
     @Getter
     @Nullable
-    private final CatalogEntity catalogEntity;
+    private final LogicalEntity catalogEntity;
 
     /**
      * Estimate for the row count, or null.
@@ -113,7 +109,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             AlgOptSchema schema,
             AlgDataType rowType,
             @Nullable Entity entity,
-            @Nullable CatalogEntity catalogEntity,
+            @Nullable LogicalEntity catalogEntity,
             @Nullable AllocationPartition placement,
             @Nullable Double rowCount ) {
         this.schema = schema;
@@ -130,7 +126,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, CatalogEntity catalogEntity, AllocationPartition placement, Double count ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, LogicalEntity catalogEntity, AllocationPartition placement, Double count ) {
         Double rowCount;
         if ( count == null ) {
             rowCount = Double.valueOf( StatisticsManager.getInstance().rowCountPerTable( catalogEntity.id ) );
@@ -150,7 +146,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     }
 
 
-    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, CatalogEntity catalogEntity, AllocationPartition placement ) {
+    public static AlgOptEntityImpl create( AlgOptSchema schema, AlgDataType rowType, Entity entity, LogicalEntity catalogEntity, AllocationPartition placement ) {
         assert entity instanceof TranslatableEntity
                 || entity instanceof ScannableEntity
                 || entity instanceof ModifiableTable;
@@ -199,25 +195,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     @Override
-    public CatalogEntityPlacement getPartitionPlacement() {
-        return null;
-    }
-
-
-    @Override
-    protected AlgOptEntity extend( Entity extendedEntity ) {
-        final AlgDataType extendedRowType = extendedEntity.getRowType( AlgDataTypeFactory.DEFAULT );
-        return new AlgOptEntityImpl(
-                getRelOptSchema(),
-                extendedRowType,
-                extendedEntity,
-                null,
-                null,
-                getRowCount() );
-    }
-
-
-    @Override
     public boolean equals( Object obj ) {
         return obj instanceof AlgOptEntityImpl
                 && this.rowType.equals( ((AlgOptEntityImpl) obj).getRowType() )
@@ -243,12 +220,6 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
             }
         }
         return 100d;
-    }
-
-
-    @Override
-    public AlgOptSchema getRelOptSchema() {
-        return schema;
     }
 
 
@@ -307,38 +278,11 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
 
 
     @Override
-    public List<AlgCollation> getCollationList() {
-        if ( entity != null ) {
-            return entity.getStatistic().getCollations();
-        }
-        return ImmutableList.of();
-    }
-
-
-    @Override
     public AlgDistribution getDistribution() {
         if ( entity != null ) {
             return entity.getStatistic().getDistribution();
         }
         return AlgDistributionTraitDef.INSTANCE.getDefault();
-    }
-
-
-    @Override
-    public boolean isKey( ImmutableBitSet columns ) {
-        if ( entity != null ) {
-            return entity.getStatistic().isKey( columns );
-        }
-        return false;
-    }
-
-
-    @Override
-    public List<AlgReferentialConstraint> getReferentialConstraints() {
-        if ( entity != null ) {
-            return entity.getStatistic().getReferentialConstraints();
-        }
-        return ImmutableList.of();
     }
 
 
@@ -371,7 +315,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
     /**
      * Helper for {@link #getColumnStrategies()}.
      */
-    public static List<ColumnStrategy> columnStrategies( final CatalogEntity table ) {
+    public static List<ColumnStrategy> columnStrategies( final LogicalEntity table ) {
         final int fieldCount = table.getRowType().getFieldCount();
         final InitializerExpressionFactory ief = Util.first(
                 table.unwrap( InitializerExpressionFactory.class ),
@@ -395,7 +339,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Converts the ordinal of a field into the ordinal of a stored field.
      * That is, it subtracts the number of virtual fields that come before it.
      */
-    public static int realOrdinal( final CatalogEntity table, int i ) {
+    public static int realOrdinal( final LogicalEntity table, int i ) {
         List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).getColumnStrategies();
         int n = 0;
         for ( int j = 0; j < i; j++ ) {
@@ -412,7 +356,7 @@ public class AlgOptEntityImpl extends AbstractPreparingEntity {
      * Returns the row type of a table after any {@link ColumnStrategy#VIRTUAL} columns have been removed. This is the type
      * of the records that are actually stored.
      */
-    public static AlgDataType realRowType( CatalogEntity table ) {
+    public static AlgDataType realRowType( LogicalEntity table ) {
         final AlgDataType rowType = table.getRowType();
         final List<ColumnStrategy> strategies = columnStrategies( table );
         if ( !strategies.contains( ColumnStrategy.VIRTUAL ) ) {

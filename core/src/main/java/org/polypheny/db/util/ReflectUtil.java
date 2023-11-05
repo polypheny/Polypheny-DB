@@ -237,12 +237,12 @@ public abstract class ReflectUtil {
         try {
             method.invoke( visitor, visitee );
         } catch ( IllegalAccessException ex ) {
-            throw new RuntimeException( ex );
+            throw new GenericRuntimeException( ex );
         } catch ( InvocationTargetException ex ) {
             // visit methods aren't allowed to have throws clauses, so the only exceptions which should come
             // to us are RuntimeExceptions and Errors
             Util.throwIfUnchecked( ex.getTargetException() );
-            throw new RuntimeException( ex.getTargetException() );
+            throw new GenericRuntimeException( ex.getTargetException() );
         }
         return true;
     }

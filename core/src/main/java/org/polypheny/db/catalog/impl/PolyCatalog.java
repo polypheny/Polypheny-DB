@@ -45,10 +45,10 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalQueryInterface;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -83,7 +83,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Serialize
     @Getter
-    public final Map<Long, CatalogUser> users;
+    public final Map<Long, LogicalUser> users;
 
     @Serialize
     @Getter
@@ -91,7 +91,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Serialize
     @Getter
-    public final Map<Long, CatalogQueryInterface> interfaces;
+    public final Map<Long, LogicalQueryInterface> interfaces;
 
     @Getter
     public final Map<Long, AdapterTemplate> adapterTemplates;
@@ -133,12 +133,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public PolyCatalog(
-            @Deserialize("users") Map<Long, CatalogUser> users,
+            @Deserialize("users") Map<Long, LogicalUser> users,
             @Deserialize("logicalCatalogs") Map<Long, LogicalCatalog> logicalCatalogs,
             @Deserialize("allocationCatalogs") Map<Long, AllocationCatalog> allocationCatalogs,
             @Deserialize("adapterRestore") Map<Long, AdapterRestore> adapterRestore,
             @Deserialize("adapters") Map<Long, LogicalAdapter> adapters,
-            @Deserialize("interfaces") Map<Long, CatalogQueryInterface> interfaces ) {
+            @Deserialize("interfaces") Map<Long, LogicalQueryInterface> interfaces ) {
         // persistent data
         this.users = new ConcurrentHashMap<>( users );
         this.logicalCatalogs = new ConcurrentHashMap<>( logicalCatalogs );
@@ -304,7 +304,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public long createUser( String name, String password ) {
         long id = idBuilder.getNewUserId();
-        users.put( id, new CatalogUser( id, name, password ) );
+        users.put( id, new LogicalUser( id, name, password ) );
         return id;
     }
 
@@ -383,7 +383,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public long createQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
         long id = idBuilder.getNewInterfaceId();
 
-        interfaces.put( id, new CatalogQueryInterface( id, uniqueName, clazz, settings ) );
+        interfaces.put( id, new LogicalQueryInterface( id, uniqueName, clazz, settings ) );
 
         change();
         return id;

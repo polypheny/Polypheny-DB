@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.algebra.type.DynamicRecordTypeImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.nodes.Call;
@@ -183,7 +183,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
     }
 
 
-    private static List<AlgCollation> deduceMonotonicity( CatalogEntity table ) {
+    private static List<AlgCollation> deduceMonotonicity( LogicalEntity table ) {
         final List<AlgCollation> collationList = new ArrayList<>();
 
         // Deduce which fields the table is sorted on.
@@ -394,7 +394,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 return clazz.cast( initializerFactory );
             }
             if ( clazz.isAssignableFrom( Entity.class ) ) {
-                final CatalogEntity entity = resolver == null
+                final LogicalEntity entity = resolver == null
                         ? new ModifiableEntity( Util.last( names ) )
                         : new ModifiableEntityWithCustomColumnResolving( Util.last( names ) );
                 return clazz.cast( entity );

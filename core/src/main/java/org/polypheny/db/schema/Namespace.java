@@ -38,7 +38,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
 
@@ -94,7 +94,7 @@ public interface Namespace extends Wrapper {
      * @param name Table name
      * @return Table, or null
      */
-    CatalogEntity getEntity( String name );
+    LogicalEntity getEntity( String name );
 
     /**
      * Returns the names of the tables in this schema.

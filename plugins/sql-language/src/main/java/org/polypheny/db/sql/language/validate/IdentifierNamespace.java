@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -175,7 +175,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     public AlgDataType validateImpl( AlgDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof EntityNamespace ) {
-            CatalogEntity table = resolvedNamespace.getTable();
+            LogicalEntity table = resolvedNamespace.getTable();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
                 List<String> qualifiedNames = List.of( table.name );
@@ -199,7 +199,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         if ( extendList != null ) {
             if ( !(resolvedNamespace instanceof EntityNamespace) ) {
-                throw new RuntimeException( "cannot convert" );
+                throw new GenericRuntimeException( "cannot convert" );
             }
             resolvedNamespace = ((EntityNamespace) resolvedNamespace).extend( extendList );
             rowType = resolvedNamespace.getRowType();
@@ -241,7 +241,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public CatalogEntity getTable() {
+    public LogicalEntity getTable() {
         return resolvedNamespace == null ? null : resolve().getTable();
     }
 
@@ -254,14 +254,14 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final CatalogEntity table = getTable();
+        final LogicalEntity table = getTable();
         return Util.getMonotonicity( table, columnName );
     }
 
 
     @Override
     public boolean supportsModality( Modality modality ) {
-        final CatalogEntity table = getTable();
+        final LogicalEntity table = getTable();
         if ( table == null ) {
             return modality == Modality.RELATION;
         }

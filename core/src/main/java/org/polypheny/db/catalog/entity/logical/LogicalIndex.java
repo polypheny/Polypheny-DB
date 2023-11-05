@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.IndexType;
 
 
@@ -119,7 +119,7 @@ public class LogicalIndex implements Serializable {
     // Used for creating ResultSets
     @RequiredArgsConstructor
     @Value
-    public static class LogicalIndexColumn implements CatalogObject {
+    public static class LogicalIndexColumn implements LogicalObject {
 
         private static final long serialVersionUID = -5596459769680478780L;
 

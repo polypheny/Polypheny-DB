@@ -36,20 +36,14 @@ package org.polypheny.db.plan;
 
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.CatalogEntityPlacement;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.util.ImmutableBitSet;
 
 
 /**
@@ -67,10 +61,6 @@ public interface AlgOptEntity extends Wrapper {
      */
     AlgDataType getRowType();
 
-    /**
-     * Returns the {@link AlgOptSchema} this table belongs to.
-     */
-    AlgOptSchema getRelOptSchema();
 
     /**
      * Converts this table into a {@link AlgNode relational expression}.
@@ -82,32 +72,12 @@ public interface AlgOptEntity extends Wrapper {
     AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet );
 
     /**
-     * Returns a description of the physical ordering (or orderings) of the rows returned from this table.
-     *
-     * @see AlgMetadataQuery#collations(AlgNode)
-     */
-    List<AlgCollation> getCollationList();
-
-    /**
      * Returns a description of the physical distribution of the rows in this table.
      *
      * @see AlgMetadataQuery#distribution(AlgNode)
      */
     AlgDistribution getDistribution();
 
-    /**
-     * Returns whether the given columns are a key or a superset of a unique key of this table.
-     *
-     * @param columns Ordinals of key columns
-     * @return Whether the given columns are a key or a superset of a key
-     */
-    boolean isKey( ImmutableBitSet columns );
-
-    /**
-     * Returns the referential constraints existing for this table. These constraints are represented over other tables
-     * using {@link AlgReferentialConstraint} nodes.
-     */
-    List<AlgReferentialConstraint> getReferentialConstraints();
 
     /**
      * Generates code for this table.
@@ -115,14 +85,6 @@ public interface AlgOptEntity extends Wrapper {
      * @param clazz The desired collection class; for example {@code Queryable}.
      */
     Expression getExpression( Class<?> clazz );
-
-    /**
-     * Returns a table with the given extra fields.
-     *
-     * The extended table includes the fields of this base table plus the extended fields that do not have the same name as
-     * a field in the base table.
-     */
-    AlgOptEntity extend( List<AlgDataTypeField> extendedFields );
 
     /**
      * Returns a list describing how each column is populated. The list has the same number of entries as there are fields,
@@ -134,10 +96,6 @@ public interface AlgOptEntity extends Wrapper {
     default Entity getEntity() {
         return null;
     }
-
-    CatalogEntity getCatalogEntity();
-
-    CatalogEntityPlacement getPartitionPlacement();
 
 
     /**

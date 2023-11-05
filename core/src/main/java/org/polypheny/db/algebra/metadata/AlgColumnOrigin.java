@@ -34,8 +34,7 @@
 package org.polypheny.db.algebra.metadata;
 
 
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 
 
 /**
@@ -43,14 +42,14 @@ import org.polypheny.db.plan.AlgOptEntity;
  */
 public class AlgColumnOrigin {
 
-    private final CatalogEntity originTable;
+    private final LogicalEntity originTable;
 
     private final int iOriginColumn;
 
     private final boolean isDerived;
 
 
-    public AlgColumnOrigin( CatalogEntity origin, int iOriginColumn, boolean isDerived ) {
+    public AlgColumnOrigin( LogicalEntity origin, int iOriginColumn, boolean isDerived ) {
         this.originTable = origin;
         this.iOriginColumn = iOriginColumn;
         this.isDerived = isDerived;
@@ -60,7 +59,7 @@ public class AlgColumnOrigin {
     /**
      * @return table of origin
      */
-    public CatalogEntity getOriginTable() {
+    public LogicalEntity getOriginTable() {
         return originTable;
     }
 

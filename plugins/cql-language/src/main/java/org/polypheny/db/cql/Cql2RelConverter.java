@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.exception.UnexpectedTypeException;
 import org.polypheny.db.cql.utils.Tree;
@@ -156,7 +157,7 @@ public class Cql2RelConverter {
                         );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been "
+                    throw new GenericRuntimeException( "This exception will never be thrown since checks have been "
                             + "made before calling the getExternalNode and getInternalNode methods.", e );
                 }
             }
@@ -203,7 +204,7 @@ public class Cql2RelConverter {
                         tableScanColumnOrdinalities.put( column.id, ordinal );
                     }
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been"
+                    throw new GenericRuntimeException( "This exception will never be thrown since checks have been"
                             + " made before calling the getExternalNode method.", e );
                 }
             }
@@ -275,13 +276,13 @@ public class Cql2RelConverter {
                         } else {
 //                            TODO: Implement PROX.
                             log.error( "Found 'PROX'. 'PROX' boolean operator not implemented." );
-                            throw new RuntimeException( "'PROX' boolean operator not implemented." );
+                            throw new GenericRuntimeException( "'PROX' boolean operator not implemented." );
                         }
                     }
                     secondToLastRexNode.set( lastRexNode.get() );
                     lastRexNode.set( rexNode );
                 } catch ( UnexpectedTypeException e ) {
-                    throw new RuntimeException( "This exception will never be thrown since checks have been"
+                    throw new GenericRuntimeException( "This exception will never be thrown since checks have been"
                             + " made before calling the getExternalNode method.", e );
                 }
             }

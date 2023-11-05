@@ -39,8 +39,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 // todo dl add object not null, synchronize
 @Value
@@ -350,8 +351,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
 
     @Override
-    public LogicalColumn setDefaultValue( long columnId, PolyType type, String defaultValue ) {
-        LogicalColumn column = columns.get( columnId ).toBuilder().defaultValue( new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
+    public LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue ) {
+        LogicalColumn column = columns.get( columnId ).toBuilder().defaultValue( new LogicalDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
         columns.put( columnId, column );
         change();
         return column;

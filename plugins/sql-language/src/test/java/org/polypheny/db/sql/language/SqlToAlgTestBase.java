@@ -55,7 +55,6 @@ import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
@@ -312,20 +311,6 @@ public abstract class SqlToAlgTestBase {
                 }
             }
             return collationList;
-        }
-
-
-        @Override
-        public AlgOptEntity getTableForMember( List<String> names, final String datasetName, boolean[] usedDataset ) {
-            final LogicalTable table = getTableForMember( names );
-
-            // If they're asking for a sample, just for test purposes, assume there's a table called "<table>:<sample>".
-            AlgOptEntity datasetTable = null;//new DelegatingRelOptEntity( table ) {};
-            if ( usedDataset != null ) {
-                assert usedDataset.length == 1;
-                usedDataset[0] = true;
-            }
-            return datasetTable;
         }
 
 

@@ -24,10 +24,6 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import java.io.IOException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,13 +33,8 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
-import org.bson.BsonBinary;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonDouble;
 import org.bson.BsonInt32;
-import org.bson.BsonInt64;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
@@ -59,7 +50,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -85,7 +76,6 @@ import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.Pair;
 
@@ -367,34 +357,9 @@ public class MongoPlugin extends PolyPlugin {
 
             Document field;
             if ( logicalColumn.defaultValue != null ) {
-                CatalogDefaultValue defaultValue = logicalColumn.defaultValue;
-                BsonValue value;
-                if ( logicalColumn.type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                    value = new BsonString( defaultValue.value );
-                } else if ( PolyType.INT_TYPES.contains( logicalColumn.type ) ) {
-                    value = new BsonInt32( Integer.parseInt( defaultValue.value ) );
-                } else if ( PolyType.FRACTIONAL_TYPES.contains( logicalColumn.type ) ) {
-                    value = new BsonDouble( Double.parseDouble( defaultValue.value ) );
-                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.BOOLEAN ) {
-                    value = new BsonBoolean( Boolean.parseBoolean( defaultValue.value ) );
-                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.DATE ) {
-                    try {
-                        value = new BsonInt64( new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime() );
-                    } catch ( ParseException e ) {
-                        throw new GenericRuntimeException( e );
-                    }
-                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.TIME ) {
-                    value = new BsonInt32( (int) Time.valueOf( defaultValue.value ).getTime() );
-                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
-                    value = new BsonInt64( Timestamp.valueOf( defaultValue.value ).getTime() );
-                } else if ( logicalColumn.type.getFamily() == PolyTypeFamily.BINARY ) {
-                    value = new BsonBinary( ByteString.parseBase64( defaultValue.value ) );
-                } else {
-                    value = new BsonString( defaultValue.value );
-                }
-                if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
-                    throw new GenericRuntimeException( "Default values are not supported for array types" );
-                }
+                LogicalDefaultValue defaultValue = logicalColumn.defaultValue;
+
+                BsonValue value = BsonUtil.getAsBson( defaultValue.value, defaultValue.type, currentNamespace.getBucket() );
 
                 field = new Document().append( getPhysicalColumnName( logicalColumn ), value );
             } else {

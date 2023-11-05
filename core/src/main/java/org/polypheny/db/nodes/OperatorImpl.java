@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.BasicNodeVisitor.ArgHandler;
 import org.polypheny.db.nodes.Function.FunctionType;
@@ -75,7 +76,7 @@ public abstract class OperatorImpl implements Operator {
 
     public void setOperatorName( OperatorName operatorName ) {
         if ( this.operatorName != null ) {
-            throw new RuntimeException( "The operatorName can only be set once." );
+            throw new GenericRuntimeException( "The operatorName can only be set once." );
         }
         this.operatorName = operatorName;
     }

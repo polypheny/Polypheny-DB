@@ -27,10 +27,10 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalQueryInterface;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -85,7 +85,7 @@ public interface Snapshot extends OperatorTable {
      * @param name The name of the user
      * @return The user
      */
-    @NotNull Optional<CatalogUser> getUser( String name );
+    @NotNull Optional<LogicalUser> getUser( String name );
 
     /**
      * Get the user with the specified id.
@@ -93,7 +93,7 @@ public interface Snapshot extends OperatorTable {
      * @param id The id of the user
      * @return The user
      */
-    @NotNull Optional<CatalogUser> getUser( long id );
+    @NotNull Optional<LogicalUser> getUser( long id );
 
     /**
      * Get list of all adapters
@@ -123,7 +123,7 @@ public interface Snapshot extends OperatorTable {
      * @return List of query interfaces
      */
     @NotNull
-    List<CatalogQueryInterface> getQueryInterfaces();
+    List<LogicalQueryInterface> getQueryInterfaces();
 
     /**
      * Get a query interface by its unique name
@@ -132,7 +132,7 @@ public interface Snapshot extends OperatorTable {
      * @return The CatalogQueryInterface
      */
     @NotNull
-    Optional<CatalogQueryInterface> getQueryInterface( String uniqueName );
+    Optional<LogicalQueryInterface> getQueryInterface( String uniqueName );
 
     /**
      * Get a query interface by its id
@@ -141,7 +141,7 @@ public interface Snapshot extends OperatorTable {
      * @return The CatalogQueryInterface
      */
     @NotNull
-    Optional<CatalogQueryInterface> getQueryInterface( long id );
+    Optional<LogicalQueryInterface> getQueryInterface( long id );
 
     @NotNull Optional<QueryInterfaceTemplate> getInterfaceTemplate( String name );
 

@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -52,7 +52,7 @@ import org.polypheny.db.type.PolyTypeUtil;
  * <li>for {@code UPDATE}, all old values plus updated new values.
  * </ul>
  */
-public abstract class RelModify<E extends CatalogEntity> extends Modify<E> {
+public abstract class RelModify<E extends LogicalEntity> extends Modify<E> {
 
 
     /**

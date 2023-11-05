@@ -64,10 +64,9 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -456,7 +455,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        CatalogEntity table = filter.getInput().getEntity();
+        LogicalEntity table = filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
@@ -465,7 +464,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
+    private void handleIfPartitioned( AlgNode node, org.polypheny.db.catalog.entity.logical.LogicalEntity logicalEntity ) {
         // Only if table is partitioned
         log.warn( "todo" );
         /*if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
@@ -493,12 +492,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        CatalogEntity entity = filter.getInput().getEntity();
+        LogicalEntity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( org.polypheny.db.catalog.entity.logical.LogicalEntity.class ) );
     }
 
 

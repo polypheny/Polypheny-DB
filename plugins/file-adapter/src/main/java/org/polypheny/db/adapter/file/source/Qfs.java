@@ -168,7 +168,7 @@ public class Qfs extends DataSource<RelStoreCatalog> {
         super.validateSettings( newSettings, initialSetup );
         File rootDir = new File( newSettings.get( "rootDir" ) );
         if ( !rootDir.exists() ) {
-            throw new RuntimeException( "The specified QFS root dir does not exist!" );
+            throw new GenericRuntimeException( "The specified QFS root dir does not exist!" );
         }
         boolean allowed = false;
         StringJoiner allowedPaths = new StringJoiner( "\n" );

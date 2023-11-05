@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.Function;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
@@ -122,7 +123,7 @@ public class AlgJson {
         try {
             return (AlgNode) constructor.newInstance( map );
         } catch ( InstantiationException | ClassCastException | InvocationTargetException | IllegalAccessException e ) {
-            throw new RuntimeException( "while invoking constructor for type '" + type + "'", e );
+            throw new GenericRuntimeException( "while invoking constructor for type '" + type + "'", e );
         }
     }
 

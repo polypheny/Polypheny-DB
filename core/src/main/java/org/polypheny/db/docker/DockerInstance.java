@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 
@@ -84,7 +85,7 @@ public final class DockerInstance {
 
     DockerInstance( Integer instanceId, String host, String alias, String registry, int communicationPort, int handshakePort, int proxyPort ) {
         if ( communicationPort == handshakePort || handshakePort == proxyPort || communicationPort == proxyPort ) {
-            throw new RuntimeException( "Communication, handshake and proxy port must be different" );
+            throw new GenericRuntimeException( "Communication, handshake and proxy port must be different" );
         }
         this.host = host;
         this.alias = alias;
@@ -117,7 +118,7 @@ public final class DockerInstance {
         synchronized ( seenUuids ) {
             for ( DockerInstance instance : DockerManager.getInstance().getDockerInstances().values() ) {
                 if ( instance != this && instance.dockerInstanceUuid.equals( dockerInstanceUuid ) ) {
-                    throw new RuntimeException( "The same docker instance cannot be added twice" );
+                    throw new GenericRuntimeException( "The same docker instance cannot be added twice" );
                 }
             }
         }

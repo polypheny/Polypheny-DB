@@ -39,6 +39,7 @@ import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 
 
@@ -108,7 +109,7 @@ public enum CsvFieldType {
             case TIMESTAMP:
                 return CsvFieldType.TIMESTAMP;
             default:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
         }
     }
 

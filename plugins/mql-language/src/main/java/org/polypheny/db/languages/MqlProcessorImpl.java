@@ -81,7 +81,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
             parsed = parser.parseStmt();
         } catch ( NodeParseException e ) {
             log.error( "Caught exception", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -96,7 +96,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
 
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
-        throw new RuntimeException( "The MQL implementation does not support validation." );
+        throw new GenericRuntimeException( "The MQL implementation does not support validation." );
     }
 
 
@@ -130,7 +130,7 @@ public class MqlProcessorImpl extends AutomaticDdlProcessor {
             statement.getTransaction().commit();
             Catalog.getInstance().commit();
         } catch ( TransactionException e ) {
-            throw new RuntimeException( "There was a problem auto-generating the needed collection." );
+            throw new GenericRuntimeException( "There was a problem auto-generating the needed collection." );
         }
     }
 

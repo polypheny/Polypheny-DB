@@ -40,6 +40,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpStatus.Code;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.notebooks.model.JupyterSessionManager;
 
 @Slf4j
@@ -491,7 +492,7 @@ public class JupyterClient {
         try {
             return new URI( "http", host, "/api/" + path, queryParams, null );
         } catch ( URISyntaxException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

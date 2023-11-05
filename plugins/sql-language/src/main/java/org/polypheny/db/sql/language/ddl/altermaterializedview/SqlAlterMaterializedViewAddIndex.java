@@ -25,6 +25,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -142,7 +143,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                         statement );
             }
         } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

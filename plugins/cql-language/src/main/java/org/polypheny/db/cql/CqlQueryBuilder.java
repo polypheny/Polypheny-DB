@@ -23,6 +23,7 @@ import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidModifierException;
@@ -119,7 +120,7 @@ public class CqlQueryBuilder {
                     combineRelationWith( tableIndex, innerJoin );
                 } catch ( InvalidModifierException e ) {
                     log.error( "Exception Unexpected.", e );
-                    throw new RuntimeException( "This exception will never be throws since the BooleanGroup used has no modifiers." );
+                    throw new GenericRuntimeException( "This exception will never be throws since the BooleanGroup used has no modifiers." );
                 }
             }
         } );

@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
@@ -218,7 +219,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 statement.getQueryProcessor().unlock( statement );
                 statement.getTransaction().rollback();
             } catch ( TransactionException ex ) {
-                throw new RuntimeException( ex );
+                throw new GenericRuntimeException( ex );
             }
         }
     }
@@ -468,7 +469,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 queryNode = getTableCount( tableScan, cluster );
                 break;
             default:
-                throw new RuntimeException( "Used nodeType is not defined in statistics." );
+                throw new GenericRuntimeException( "Used nodeType is not defined in statistics." );
         }
         return queryNode;
     }
@@ -499,7 +500,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 } else if ( nodeType == NodeType.MIN ) {
                     operator = OperatorRegistry.getAgg( OperatorName.MIN );
                 } else {
-                    throw new RuntimeException( "Unknown aggregate is used in Statistic Manager." );
+                    throw new GenericRuntimeException( "Unknown aggregate is used in Statistic Manager." );
                 }
 
                 AlgDataType relDataType = logicalProject.getRowType().getFieldList().get( 0 ).getType();
@@ -965,7 +966,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 table.setNumberOfRows( number );
                 break;
             default:
-                throw new RuntimeException( "updateRowCountPerTable is not implemented for: " + type );
+                throw new GenericRuntimeException( "updateRowCountPerTable is not implemented for: " + type );
         }
 
         tableStatistic.put( tableId, table );
@@ -1007,8 +1008,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
     @Override
     public void setTableCalls( long tableId, MonitoringType type ) {
         TableCalls calls;
-        if ( tableStatistic.containsKey( tableId ) ) {
-            calls = tableStatistic.get( tableId ).getCalls();
+        StatisticTable table = tableStatistic.get( tableId );
+        if ( table != null ) {
+            calls = table.getCalls();
             if ( calls == null ) {
                 calls = new TableCalls( tableId, 0, 0, 0, 0 );
             }

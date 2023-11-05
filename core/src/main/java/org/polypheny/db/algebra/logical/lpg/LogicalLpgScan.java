@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -38,19 +38,19 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public class LogicalLpgScan extends LpgScan<CatalogEntity> implements RelationalTransformable {
+public class LogicalLpgScan extends LpgScan<LogicalEntity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link LpgScan} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity graph, AlgDataType rowType ) {
+    public LogicalLpgScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalEntity graph, AlgDataType rowType ) {
         super( cluster, traitSet.replace( ModelTrait.GRAPH ), graph );
         this.rowType = rowType;
     }
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<CatalogEntity> entities, Snapshot snapshot ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<LogicalEntity> entities, Snapshot snapshot ) {
         assert !entities.isEmpty();
         AlgTraitSet out = getTraitSet().replace( ModelTrait.RELATIONAL );
         LogicalRelScan nodes = new LogicalRelScan( getCluster(), out, entities.get( 0 ) );

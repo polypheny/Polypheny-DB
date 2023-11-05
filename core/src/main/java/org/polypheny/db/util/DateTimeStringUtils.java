@@ -38,6 +38,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 
 
@@ -135,7 +136,7 @@ public class DateTimeStringUtils {
             case TIME:
                 return TimeString.fromMillisOfDay( number.intValue() ).toString();
             default:
-                throw new RuntimeException( "Unexpected polyType " + polyType );
+                throw new GenericRuntimeException( "Unexpected polyType " + polyType );
         }
     }
 
@@ -153,7 +154,7 @@ public class DateTimeStringUtils {
                 String zeroDate = "0000-00-00";
                 return zeroDate + " " + TimeString.fromMillisOfDay( number.intValue() ).toString();
             default:
-                throw new RuntimeException( "Unexpected polyType " + polyType );
+                throw new GenericRuntimeException( "Unexpected polyType " + polyType );
         }
     }
 

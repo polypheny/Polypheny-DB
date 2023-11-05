@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
@@ -93,7 +93,7 @@ public interface MongoAlg extends AlgNode {
         public boolean onlyOne = false;
         public boolean isDocumentUpdate = false;
 
-        public CatalogEntity entity;
+        public LogicalEntity entity;
         @Setter
         @Getter
         public boolean hasProject = false;

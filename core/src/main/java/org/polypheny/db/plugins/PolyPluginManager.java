@@ -200,7 +200,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         try {
             FileUtils.deleteDirectory( PolyphenyHomeDirManager.getInstance().registerNewFolder( "plugins" ) );
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

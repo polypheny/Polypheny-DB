@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.zip.GZIPInputStream;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -84,7 +85,7 @@ public abstract class Sources implements Serializable {
         try {
             return of( new URL( url ) );
         } catch ( MalformedURLException | IllegalArgumentException e ) {
-            throw new RuntimeException( "Malformed URL: '" + url + "'", e );
+            throw new GenericRuntimeException( "Malformed URL: '" + url + "'", e );
         }
     }
 

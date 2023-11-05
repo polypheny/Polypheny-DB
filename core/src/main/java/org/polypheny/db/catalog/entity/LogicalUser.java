@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,35 +21,43 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import org.polypheny.db.type.PolyType;
+import lombok.Value;
 
 
 @EqualsAndHashCode
-public class CatalogDefaultValue implements Serializable {
+@Value
+public class LogicalUser implements LogicalObject, Comparable<LogicalUser> {
 
-    private static final long serialVersionUID = 6085682952587659184L;
+    private static final long serialVersionUID = 5022567585804699491L;
 
     @Serialize
-    public final long columnId;
+    public long id;
     @Serialize
-    public final PolyType type;
+    public String name;
     @Serialize
-    public final String value;
-    @Serialize
-    public final String functionName;
+    public String password;
 
 
-    public CatalogDefaultValue(
-            @Deserialize("columnId") final long columnId,
-            @Deserialize("type") @NonNull final PolyType type,
-            @Deserialize("value") final String value,
-            @Deserialize("functionName") final String functionName ) {
-        this.columnId = columnId;
-        this.type = type;
-        this.value = value;
-        this.functionName = functionName;
+    public LogicalUser( @Deserialize("id") final long id, @Deserialize("name") final String name, @Deserialize("password") final String password ) {
+        this.id = id;
+        this.name = name;
+        this.password = password;
     }
 
+
+    // Used for creating ResultSets
+    @Override
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{ name };
+    }
+
+
+    @Override
+    public int compareTo( LogicalUser o ) {
+        if ( o != null ) {
+            return Math.toIntExact( this.id - o.id );
+        }
+        return -1;
+    }
 
 }

@@ -29,6 +29,7 @@ import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
@@ -113,10 +114,8 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
         }
 
         if ( columnLogical.names.size() != 1 ) {
-            throw new GenericRuntimeException( "No FQDN allowed here: " + columnLogical.toString() );
+            throw new GenericRuntimeException( "No FQDN allowed here: " + columnLogical );
         }
-
-        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         DdlManager.getInstance().addColumnToSourceTable(
                 logicalTable,
@@ -124,7 +123,7 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
                 columnLogical.getSimple(),
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),
                 afterColumnName == null ? null : afterColumnName.getSimple(),
-                defaultValue,
+                SqlLiteral.toPoly( defaultValue ),
                 statement );
 
     }

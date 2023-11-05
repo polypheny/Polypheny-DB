@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -31,7 +31,7 @@ public interface ModifiableGraph extends Typed {
     Modify<?> toModificationGraph(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity entity,
+            LogicalEntity entity,
             AlgNode child,
             Operation operation,
             List<PolyString> targets,

@@ -46,6 +46,7 @@ import org.polypheny.db.partition.raw.RawPartitionInformation;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 /**
  * Abstract class for the DDLManager, goal of this class is to expose a unified interface,
@@ -132,7 +133,7 @@ public abstract class DdlManager {
      * @param afterColumnName the name of the column after the column, which is inserted; can be null
      * @param defaultValue the default value of the inserted column
      */
-    public abstract void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement );
+    public abstract void addColumnToSourceTable( LogicalTable table, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, PolyValue defaultValue, Statement statement );
 
     /**
      * Add a column to an existing table
@@ -146,7 +147,7 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement );
+    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
 
     /**
      * Add a foreign key to a table
@@ -315,7 +316,7 @@ public abstract class DdlManager {
      * @param defaultValue the new default value of the column
      * @param statement the used statement
      */
-    public abstract void setDefaultValue( LogicalTable table, String columnName, String defaultValue, Statement statement );
+    public abstract void setDefaultValue( LogicalTable table, String columnName, PolyValue defaultValue, Statement statement );
 
     /**
      * Drop the default value of the column
@@ -563,11 +564,11 @@ public abstract class DdlManager {
         public final String name;
         public final ColumnTypeInformation typeInformation;
         public final Collation collation;
-        public final String defaultValue;
+        public final PolyValue defaultValue;
         public final int position;
 
 
-        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
+        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
             this.name = name;
             this.typeInformation = typeInformation;
             this.collation = collation;

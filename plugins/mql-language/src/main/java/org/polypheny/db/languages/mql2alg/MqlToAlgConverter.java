@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -211,7 +211,7 @@ public class MqlToAlgConverter {
     private long namespaceId;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private CatalogEntity entity;
+    private LogicalEntity entity;
 
 
     public MqlToAlgConverter( Snapshot snapshot, AlgOptCluster cluster ) {
@@ -309,7 +309,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private CatalogEntity getEntity( MqlCollectionStatement query, long namespaceId ) {
+    private LogicalEntity getEntity( MqlCollectionStatement query, long namespaceId ) {
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
 
         Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
@@ -331,7 +331,7 @@ public class MqlToAlgConverter {
     /**
      * Starts converting a db.collection.update();
      */
-    private AlgNode convertUpdate( MqlUpdate query, CatalogEntity entity, AlgNode node ) {
+    private AlgNode convertUpdate( MqlUpdate query, LogicalEntity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getRowType(), node );
             if ( query.isOnlyOne() ) {
@@ -354,7 +354,7 @@ public class MqlToAlgConverter {
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
-    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, CatalogEntity entity ) {
+    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
         Map<String, List<RexNode>> updates = new HashMap<>();
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
@@ -639,7 +639,7 @@ public class MqlToAlgConverter {
     /**
      * Starts translating an update pipeline
      */
-    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, CatalogEntity entity ) {
+    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -690,7 +690,7 @@ public class MqlToAlgConverter {
     /**
      * Translates a delete operation from its MqlNode format to the {@link AlgNode} form
      */
-    private AlgNode convertDelete( MqlDelete query, CatalogEntity table, AlgNode node ) {
+    private AlgNode convertDelete( MqlDelete query, LogicalEntity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
         }
@@ -715,7 +715,7 @@ public class MqlToAlgConverter {
      * @param entity the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private AlgNode convertInsert( MqlInsert query, CatalogEntity entity ) {
+    private AlgNode convertInsert( MqlInsert query, LogicalEntity entity ) {
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues(), entity.getRowType() ),
@@ -881,7 +881,7 @@ public class MqlToAlgConverter {
         BsonValue newRoot = value;
         if ( !isWith ) {
             if ( !value.isDocument() ) {
-                throw new RuntimeException( "$replaceRoot requires a document." );
+                throw new GenericRuntimeException( "$replaceRoot requires a document." );
             }
             BsonDocument doc = value.asDocument();
             if ( !doc.containsKey( "newRoot" ) ) {
@@ -932,7 +932,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineUnwind( BsonValue value, AlgNode node ) {
         if ( !value.isString() && !value.isDocument() ) {
-            throw new RuntimeException( "$unwind pipeline stage needs either a document or a string describing the path." );
+            throw new GenericRuntimeException( "$unwind pipeline stage needs either a document or a string describing the path." );
         }
 
         String path;
@@ -940,12 +940,12 @@ public class MqlToAlgConverter {
             path = value.asString().getValue();
         } else {
             if ( !value.asDocument().containsKey( "path" ) && value.asDocument().get( "path" ).isString() ) {
-                throw new RuntimeException( "The used document in the $unwind stage needs the key \"path\" with a string value." );
+                throw new GenericRuntimeException( "The used document in the $unwind stage needs the key \"path\" with a string value." );
             }
             path = value.asDocument().get( "path" ).asString().getValue();
         }
         if ( !path.startsWith( "$" ) ) {
-            throw new RuntimeException( "$unwind pipeline stage needs either a document or a string describing the path, which is prefixed with \"$\"." );
+            throw new GenericRuntimeException( "$unwind pipeline stage needs either a document or a string describing the path, which is prefixed with \"$\"." );
         }
         path = path.substring( 1 );
 
@@ -965,7 +965,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineSkip( BsonValue value, AlgNode node ) {
         if ( !value.isNumber() || value.asNumber().intValue() < 0 ) {
-            throw new RuntimeException( "$skip pipeline stage needs a positive number after" );
+            throw new GenericRuntimeException( "$skip pipeline stage needs a positive number after" );
         }
 
         return LogicalDocumentSort.create( node, AlgCollations.of(), List.of(), convertLiteral( value ), null );
@@ -984,7 +984,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineLimit( BsonValue value, AlgNode node ) {
         if ( !value.isNumber() || value.asNumber().intValue() < 0 ) {
-            throw new RuntimeException( "$limit pipeline stage needs a positive number after" );
+            throw new GenericRuntimeException( "$limit pipeline stage needs a positive number after" );
         }
 
         return LogicalDocumentSort.create( node, AlgCollations.of(), List.of(), null, convertLiteral( value ) );
@@ -1004,7 +1004,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineSort( BsonValue value, AlgNode node, AlgDataType rowType ) {
         if ( !value.isDocument() ) {
-            throw new RuntimeException( "$sort pipeline stage needs a document after" );
+            throw new GenericRuntimeException( "$sort pipeline stage needs a document after" );
         }
 
         List<String> names = new ArrayList<>();
@@ -1073,7 +1073,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineGroup( BsonValue value, AlgNode node, AlgDataType rowType ) {
         if ( !value.isDocument() || !value.asDocument().containsKey( "_id" ) ) {
-            throw new RuntimeException( "$group pipeline stage needs a document after, which defines a _id" );
+            throw new GenericRuntimeException( "$group pipeline stage needs a document after, which defines a _id" );
         }
 
         List<AggFunction> ops = new ArrayList<>();
@@ -1096,11 +1096,11 @@ public class MqlToAlgConverter {
                         nodes.add( getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
                     }
                 } else {
-                    throw new RuntimeException( "$group takes as _id values either a document or a string" );
+                    throw new GenericRuntimeException( "$group takes as _id values either a document or a string" );
                 }
             } else {
                 if ( !entry.getValue().isDocument() ) {
-                    throw new RuntimeException( "$group needs a document with an accumulator and an expression" );
+                    throw new GenericRuntimeException( "$group needs a document with an accumulator and an expression" );
                 }
                 BsonDocument doc = entry.getValue().asDocument();
                 ops.add( accumulators.get( doc.getFirstKey() ) );
@@ -1194,7 +1194,7 @@ public class MqlToAlgConverter {
      */
     private AlgNode combineCount( BsonValue value, AlgNode node ) {
         if ( !value.isString() ) {
-            throw new RuntimeException( "$count pipeline stage needs only a string" );
+            throw new GenericRuntimeException( "$count pipeline stage needs only a string" );
         }
         return LogicalDocumentAggregate.create(
                 node,
@@ -1287,7 +1287,7 @@ public class MqlToAlgConverter {
             case INT32:
                 return new PolyInteger( value.asInt32().getValue() );
         }
-        throw new RuntimeException( "Not implemented Comparable transform: " + value );
+        throw new GenericRuntimeException( "Not implemented Comparable transform: " + value );
     }
 
 
@@ -1349,7 +1349,7 @@ public class MqlToAlgConverter {
     private RexNode convertMod( RexNode id, BsonValue bsonValue, AlgDataType rowType ) {
         String msg = "$mod requires an array of two values or documents.";
         if ( !bsonValue.isArray() && bsonValue.asArray().size() != 2 ) {
-            throw new RuntimeException( msg );
+            throw new GenericRuntimeException( msg );
         }
 
         BsonValue divider = bsonValue.asArray().get( 0 );
@@ -1359,7 +1359,7 @@ public class MqlToAlgConverter {
         } else if ( divider.isNumber() ) {
             rexDiv = convertLiteral( divider );
         } else {
-            throw new RuntimeException( msg );
+            throw new GenericRuntimeException( msg );
         }
 
         BsonValue remainder = bsonValue.asArray().get( 1 );
@@ -1369,7 +1369,7 @@ public class MqlToAlgConverter {
         } else if ( remainder.isNumber() ) {
             rexRemainder = convertLiteral( remainder );
         } else {
-            throw new RuntimeException( msg );
+            throw new GenericRuntimeException( msg );
         }
 
         RexNode node = new RexCall(
@@ -1415,7 +1415,7 @@ public class MqlToAlgConverter {
             skip = value.asArray().get( 0 ).asInt32();
             elements = value.asArray().get( 1 ).asInt32();
         } else {
-            throw new RuntimeException( "After a $slice projection a number or an array of 2 is needed" );
+            throw new GenericRuntimeException( "After a $slice projection a number or an array of 2 is needed" );
         }
 
         return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_SLICE ), Arrays.asList( id, convertLiteral( skip ), convertLiteral( elements ) ) );
@@ -1438,12 +1438,12 @@ public class MqlToAlgConverter {
         if ( value.isArray() ) {
             List<RexNode> nodes = convertArray( key, (BsonArray) value, true, rowType, msg );
             if ( nodes.size() > 2 ) {
-                throw new RuntimeException( msg );
+                throw new GenericRuntimeException( msg );
             }
             return new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ITEM ), Arrays.asList( nodes.get( 0 ), nodes.get( 1 ) ) );
 
         } else {
-            throw new RuntimeException( msg );
+            throw new GenericRuntimeException( msg );
         }
     }
 
@@ -1465,7 +1465,7 @@ public class MqlToAlgConverter {
 
             return getFixedCall( nodes, op, isExpr ? PolyType.BOOLEAN : PolyType.ANY );
         } else {
-            throw new RuntimeException( errorMsg );
+            throw new GenericRuntimeException( errorMsg );
         }
     }
 
@@ -1473,7 +1473,7 @@ public class MqlToAlgConverter {
     private RexNode convertSingleMath( String key, BsonValue value, AlgDataType rowType ) {
         Operator op = singleMathOperators.get( key );
         if ( value.isArray() ) {
-            throw new RuntimeException( "The " + key + " operator needs either a single expression or a document." );
+            throw new GenericRuntimeException( "The " + key + " operator needs either a single expression or a document." );
         }
         RexNode node;
         if ( value.isDocument() ) {
@@ -1494,19 +1494,19 @@ public class MqlToAlgConverter {
         switch ( key ) {
             case "$and":
                 if ( notActive ) {
-                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                    throw new GenericRuntimeException( "$logical operations inside $not operations are not possible." );
                 }
                 op = OperatorRegistry.get( OperatorName.AND );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$or":
                 if ( notActive ) {
-                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                    throw new GenericRuntimeException( "$logical operations inside $not operations are not possible." );
                 }
                 op = OperatorRegistry.get( OperatorName.OR );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, false );
             case "$nor":
                 if ( notActive ) {
-                    throw new RuntimeException( "$logical operations inside $not operations are not possible." );
+                    throw new GenericRuntimeException( "$logical operations inside $not operations are not possible." );
                 }
                 op = OperatorRegistry.get( OperatorName.AND );
                 return convertLogicalArray( parentKey, bsonValue, rowType, op, true );
@@ -1517,11 +1517,11 @@ public class MqlToAlgConverter {
                     AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
                     return new RexCall( type, op, Collections.singletonList( translateDocument( bsonValue.asDocument(), rowType, parentKey ) ) );
                 } else {
-                    throw new RuntimeException( "After a $not a document is needed" );
+                    throw new GenericRuntimeException( "After a $not a document is needed" );
                 }
 
             default:
-                throw new RuntimeException( "This logical operator was not recognized:" );
+                throw new GenericRuntimeException( "This logical operator was not recognized:" );
         }
     }
 
@@ -1535,7 +1535,7 @@ public class MqlToAlgConverter {
             }
             return getFixedCall( operands, op, PolyType.BOOLEAN );
         } else {
-            throw new RuntimeException( errorMsg );
+            throw new GenericRuntimeException( errorMsg );
         }
     }
 
@@ -1550,7 +1550,7 @@ public class MqlToAlgConverter {
             } else if ( allowsLiteral ) {
                 operands.add( convertLiteral( value ) );
             } else {
-                throw new RuntimeException( errorMsg );
+                throw new GenericRuntimeException( errorMsg );
             }
         }
         return operands;
@@ -1600,7 +1600,7 @@ public class MqlToAlgConverter {
         //}
         // as it is possible to query relational schema with mql we have to block this step when this happens
         if ( !usesDocumentModel ) {
-            throw new RuntimeException( "The used identifier is not part of the table." );
+            throw new GenericRuntimeException( "The used identifier is not part of the table." );
         }
 
         if ( elemMatchActive ) {
@@ -1733,7 +1733,7 @@ public class MqlToAlgConverter {
         } else if ( bson.isRegularExpression() ) {
             regex = bson;
         } else {
-            throw new RuntimeException( "$regex either needs to be either a document or a regular expression." );
+            throw new GenericRuntimeException( "$regex either needs to be either a document or a regular expression." );
         }
 
         String stringRegex;
@@ -1744,7 +1744,7 @@ public class MqlToAlgConverter {
             stringRegex = regbson.getPattern();
             options += regbson.getOptions();
         } else {
-            throw new RuntimeException( "$regex needs to be either a regular expression or a string" );
+            throw new GenericRuntimeException( "$regex needs to be either a regular expression or a string" );
         }
 
         return getRegex( stringRegex, options, parentKey, rowType );
@@ -1793,7 +1793,7 @@ public class MqlToAlgConverter {
             return exists;
 
         } else {
-            throw new RuntimeException( "$exists without a boolean is not supported" );
+            throw new GenericRuntimeException( "$exists without a boolean is not supported" );
         }
     }
 
@@ -1806,7 +1806,7 @@ public class MqlToAlgConverter {
                 if ( _dataExists ) {
                     index = 0;
                 } else {
-                    throw new RuntimeException( "The field does not exist in the collection" );
+                    throw new GenericRuntimeException( "The field does not exist in the collection" );
                 }
             }
         }
@@ -1820,7 +1820,7 @@ public class MqlToAlgConverter {
             return convertMath( doc.getFirstKey(), parentKey, doc.get( doc.getFirstKey() ), rowType, true );
 
         } else {
-            throw new RuntimeException( "After $expr there needs to be a document with a single entry" );
+            throw new GenericRuntimeException( "After $expr there needs to be a document with a single entry" );
         }
     }
 
@@ -1839,7 +1839,7 @@ public class MqlToAlgConverter {
         if ( bsonValue.isDocument() ) {
             return new RexCall( nullableAny, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_JSON_MATCH ), Collections.singletonList( RexIndexRef.of( getIndexOfParentField( "d", rowType ), rowType ) ) );
         } else {
-            throw new RuntimeException( "After $jsonSchema there needs to follow a document" );
+            throw new GenericRuntimeException( "After $jsonSchema there needs to follow a document" );
         }
     }
 
@@ -1860,7 +1860,7 @@ public class MqlToAlgConverter {
             RexNode id = getIdentifier( parentKey, rowType );
             return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_SIZE_MATCH ), Arrays.asList( id, convertLiteral( bsonValue ) ) );
         } else {
-            throw new RuntimeException( "After $size there needs to follow a number" );
+            throw new GenericRuntimeException( "After $size there needs to follow a number" );
         }
     }
 
@@ -1878,7 +1878,7 @@ public class MqlToAlgConverter {
      */
     private RexNode convertElemMatch( BsonValue bsonValue, String parentKey, AlgDataType rowType ) {
         if ( !bsonValue.isDocument() ) {
-            throw new RuntimeException( "After $elemMatch there needs to follow a document" );
+            throw new GenericRuntimeException( "After $elemMatch there needs to follow a document" );
         }
         this.elemMatchActive = true;
         List<RexNode> nodes = new ArrayList<>();
@@ -1917,7 +1917,7 @@ public class MqlToAlgConverter {
 
             return getFixedCall( operands, OperatorRegistry.get( OperatorName.AND ), PolyType.BOOLEAN );
         } else {
-            throw new RuntimeException( "After $all there needs to follow a array" );
+            throw new GenericRuntimeException( "After $all there needs to follow a array" );
         }
     }
 
@@ -1946,7 +1946,7 @@ public class MqlToAlgConverter {
                 if ( bsonValue.isString() || bsonValue.isNumber() ) {
                     numbers.add( bsonValue.isNumber() ? bsonValue.asNumber().intValue() : DocumentUtil.getTypeNumber( bsonValue.asString().getValue() ) );
                 } else {
-                    throw new RuntimeException( errorMsg );
+                    throw new GenericRuntimeException( errorMsg );
                 }
             }
             types = getIntArray( DocumentUtil.removePlaceholderTypes( numbers ) );
@@ -1954,7 +1954,7 @@ public class MqlToAlgConverter {
             int typeNumber = value.isNumber() ? value.asNumber().intValue() : DocumentUtil.getTypeNumber( value.asString().getValue() );
             types = getIntArray( DocumentUtil.removePlaceholderTypes( Collections.singletonList( typeNumber ) ) );
         } else {
-            throw new RuntimeException( errorMsg );
+            throw new GenericRuntimeException( errorMsg );
         }
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
@@ -2082,7 +2082,7 @@ public class MqlToAlgConverter {
 
         for ( BsonValue literal : bsonValue.asArray() ) {
             if ( literal.isDocument() ) {
-                throw new RuntimeException( "Non-literal in $in clauses are not supported" );
+                throw new GenericRuntimeException( "Non-literal in $in clauses are not supported" );
             }
             if ( literal.isRegularExpression() ) {
                 RexNode filter = getRegex( literal.asRegularExpression().getPattern(), literal.asRegularExpression().getOptions(), key, rowType );
@@ -2149,7 +2149,7 @@ public class MqlToAlgConverter {
             case MAX_KEY:
                 break;
         }
-        throw new RuntimeException( "Not implemented " );
+        throw new GenericRuntimeException( "Not implemented " );
     }
 
 

@@ -386,7 +386,7 @@ public class PolyImplementation {
         }
 
 
-        public List<List<PolyValue>> getRows() {
+        public List<List<PolyValue>> getNextBatch() {
 
             StopWatch stopWatch = null;
             try {
@@ -396,7 +396,7 @@ public class PolyImplementation {
                 }
                 List<List<PolyValue>> res = new ArrayList<>();
                 int i = 0;
-                while ( i++ < batch && iterator.hasNext() ) {
+                while ( (batch < 0 || i++ < batch) && iterator.hasNext() ) {
                     res.add( Lists.newArrayList( iterator.next() ) );
                 }
 
@@ -426,7 +426,7 @@ public class PolyImplementation {
 
 
         public List<List<PolyValue>> getAllRowsAndClose() {
-            List<List<PolyValue>> result = getRows();
+            List<List<PolyValue>> result = getNextBatch();
             try {
                 close();
             } catch ( Exception e ) {
@@ -437,12 +437,12 @@ public class PolyImplementation {
 
 
         public List<PolyValue> getSingleRows() {
-            return getRows( null );
+            return getNextBatch( null );
         }
 
 
         @NotNull
-        private <D> List<D> getRows( @Nullable Function<PolyValue[], D> transformer ) {
+        private <D> List<D> getNextBatch( @Nullable Function<PolyValue[], D> transformer ) {
             final Iterable<PolyValue[]> iterable = () -> iterator;
 
             if ( transformer == null ) {
@@ -459,7 +459,7 @@ public class PolyImplementation {
 
         public List<PolyValue[]> getArrayRows() {
 
-            return getRows( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
+            return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
 
         }
 

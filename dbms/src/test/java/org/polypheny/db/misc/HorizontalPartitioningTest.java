@@ -661,19 +661,19 @@ public class HorizontalPartitioningTest {
                     // ADD adapter
                     statement.executeUpdate( "ALTER ADAPTERS ADD \"anotherstore\" USING 'Hsqldb' AS 'Store'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
-                    List<AllocationPartition> debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+
                     // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" ADD PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( partitionsToCreate * 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
-                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+
                     // Modify partitions on second storeId
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MODIFY PARTITIONS (\"foo\") ON STORE anotherstore" );
                     Assert.assertEquals( partitionsToCreate + 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
-                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+
                     // After MERGE should only hold one partition
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" MERGE PARTITIONS" );
                     Assert.assertEquals( 2, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );
-                    debugPlacements = Catalog.snapshot().alloc().getAllPartitionPlacementsByTable( table.id );
+
                     // DROP STORE and verify number of partition Placements
                     statement.executeUpdate( "ALTER TABLE \"physicalPartitionTest\" DROP PLACEMENT ON STORE \"anotherstore\"" );
                     Assert.assertEquals( 1, Catalog.snapshot().alloc().getFromLogical( table.id ).size() );

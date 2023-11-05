@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 public class Mql {
@@ -62,7 +63,7 @@ public class Mql {
         } else if ( DQL.contains( kind ) ) {
             return Family.DQL;
         } else {
-            throw new RuntimeException( "Unknown kind: " + kind.name() );
+            throw new GenericRuntimeException( "Unknown kind: " + kind.name() );
         }
     }
 

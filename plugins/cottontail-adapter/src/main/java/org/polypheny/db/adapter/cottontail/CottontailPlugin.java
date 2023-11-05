@@ -57,6 +57,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.vitrivr.cottontail.CottontailKt;
 import org.vitrivr.cottontail.client.iterators.TupleIterator;
@@ -325,12 +326,12 @@ public class CottontailPlugin extends PolyPlugin {
             }
 
             PolyType actualDefaultType;
-            Object defaultValue;
+            PolyValue defaultValue;
             if ( column.defaultValue != null ) {
                 actualDefaultType = (column.collectionsType != null)
                         ? column.collectionsType
                         : column.type;
-                defaultValue = CottontailTypeUtil.defaultValueParser( column.defaultValue, actualDefaultType );
+                defaultValue = column.defaultValue.value;
             } else {
                 defaultValue = null;
                 actualDefaultType = null;

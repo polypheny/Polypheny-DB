@@ -46,7 +46,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<CatalogEntity> {
+public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<LogicalEntity> {
 
     @Serialize
     public long id;
@@ -68,7 +68,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
     public boolean modifiable;
 
 
-    public CatalogEntity(
+    public LogicalEntity(
             long id,
             String name,
             long namespaceId,
@@ -150,7 +150,7 @@ public abstract class CatalogEntity implements CatalogObject, Wrapper, Serializa
 
 
     @Override
-    public int compareTo( @NotNull CatalogEntity o ) {
+    public int compareTo( @NotNull LogicalEntity o ) {
         if ( !this.getClass().getSimpleName().equals( o.getClass().getSimpleName() ) ) {
             return -1;
         }

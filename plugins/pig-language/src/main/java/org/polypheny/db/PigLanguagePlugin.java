@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.LanguageManager;
@@ -84,8 +85,8 @@ public class PigLanguagePlugin extends PolyPlugin {
         QueryLanguage language = QueryLanguage.from( NAME );
 
         try {
-            if ( query.trim().equals( "" ) ) {
-                throw new RuntimeException( "PIG query is an empty string!" );
+            if ( query.trim().isEmpty() ) {
+                throw new GenericRuntimeException( "PIG query is an empty string!" );
             }
 
             if ( log.isDebugEnabled() ) {

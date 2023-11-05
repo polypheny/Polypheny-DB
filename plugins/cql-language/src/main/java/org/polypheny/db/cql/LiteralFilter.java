@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -57,7 +58,7 @@ public class LiteralFilter implements Filter {
             return rexBuilder.makeCall( relation.comparator.toSqlStdOperatorTable( OperatorRegistry.getBinary( OperatorName.EQUALS ) ), lhs, rhs );
         } else {
             log.error( "Named Comparators have not been implemented." );
-            throw new RuntimeException( "Named Comparators have not been implemented." );
+            throw new GenericRuntimeException( "Named Comparators have not been implemented." );
         }
     }
 

@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.enumerable.RexImpTable;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.ImplementableFunction;
@@ -182,7 +183,7 @@ public class TableFunctionImpl extends ReflectiveFunctionBase implements TableFu
                     Arrays.toString( method.getParameterTypes() ),
                     arguments.toString() ).ex( e );
         } catch ( IllegalAccessException | InvocationTargetException | InstantiationException | NoSuchMethodException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

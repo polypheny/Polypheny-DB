@@ -78,12 +78,13 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -1319,7 +1320,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             boolean fallback = false;
             if ( alg.getEntity() != null ) {
-                CatalogEntity table = alg.getEntity();
+                LogicalEntity table = alg.getEntity();
 
                 int scanId = alg.getId();
 
@@ -1544,7 +1545,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             // Clean Code (remove package names to make code better readable)
             String cleanedCode = code.replaceAll( "(org.)([a-z][a-z_0-9]*\\.)*", "" );
 
-            InformationCode informationCode = new InformationCode( group, cleanedCode );
+            Information informationCode = new InformationCode( group, cleanedCode );
             queryAnalyzer.registerInformation( informationCode );
         } else {
             log.error( "Generated code is null" );

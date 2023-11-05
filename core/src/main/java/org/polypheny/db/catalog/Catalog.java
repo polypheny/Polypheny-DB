@@ -40,10 +40,10 @@ import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalQueryInterface;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -257,11 +257,11 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
-    public abstract Map<Long, CatalogUser> getUsers();
+    public abstract Map<Long, LogicalUser> getUsers();
 
     public abstract Map<Long, LogicalAdapter> getAdapters();
 
-    public abstract Map<Long, CatalogQueryInterface> getInterfaces();
+    public abstract Map<Long, LogicalQueryInterface> getInterfaces();
 
     public abstract Map<Long, AdapterTemplate> getAdapterTemplates();
 

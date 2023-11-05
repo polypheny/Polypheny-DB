@@ -115,7 +115,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             }
             this.reader.readNext(); // skip header row
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -257,7 +257,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing CSV reader", e );
+            throw new GenericRuntimeException( "Error closing CSV reader", e );
         }
     }
 

@@ -53,8 +53,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
@@ -76,7 +77,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
     private final Class clazz;
     private Object target;
-    private Map<String, CatalogEntity> tableMap;
+    private Map<String, LogicalEntity> tableMap;
     private Multimap<String, Function> functionMap;
 
 
@@ -110,7 +111,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Map<String, CatalogEntity> getTables() {
+    public Map<String, LogicalEntity> getTables() {
         if ( tableMap == null ) {
             tableMap = createTableMap();
         }
@@ -118,17 +119,17 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private Map<String, CatalogEntity> createTableMap() {
-        final ImmutableMap.Builder<String, CatalogEntity> builder = ImmutableMap.builder();
+    private Map<String, LogicalEntity> createTableMap() {
+        final ImmutableMap.Builder<String, LogicalEntity> builder = ImmutableMap.builder();
         for ( Field field : clazz.getFields() ) {
             final String fieldName = field.getName();
-            final CatalogEntity entity = fieldRelation( field );
+            final LogicalEntity entity = fieldRelation( field );
             if ( entity == null ) {
                 continue;
             }
             builder.put( fieldName, entity );
         }
-        Map<String, CatalogEntity> tableMap = builder.build();
+        Map<String, LogicalEntity> tableMap = builder.build();
         // Unique-Key - Foreign-Key
         for ( Field field : clazz.getFields() ) {
             if ( AlgReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
@@ -136,7 +137,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
                 try {
                     rc = (AlgReferentialConstraint) field.get( target );
                 } catch ( IllegalAccessException e ) {
-                    throw new RuntimeException( "Error while accessing field " + field, e );
+                    throw new GenericRuntimeException( "Error while accessing field " + field, e );
                 }
                 // CatalogEntity table = (FieldEntity) tableMap.get( Util.last( rc.getSourceQualifiedName() ) );
                 // assert table != null;
@@ -176,7 +177,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns a table based on a particular field of this schema. If the field is not of the right type to be a relation, returns null.
      */
-    private <T> CatalogEntity fieldRelation( final Field field ) {
+    private <T> LogicalEntity fieldRelation( final Field field ) {
         final Type elementType = getElementType( field.getType() );
         if ( elementType == null ) {
             return null;
@@ -185,7 +186,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
         try {
             o = field.get( target );
         } catch ( IllegalAccessException e ) {
-            throw new RuntimeException( "Error while accessing field " + field, e );
+            throw new GenericRuntimeException( "Error while accessing field " + field, e );
         }
         final Enumerable<T> enumerable = (Enumerable<T>) toEnumerable( o );
         return null;

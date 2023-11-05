@@ -24,7 +24,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @SuperBuilder(toBuilder = true)
 @NonFinal
 @SerializeClass(subclasses = PhysicalColumn.class)
-public abstract class PhysicalField extends CatalogEntity {
+public abstract class PhysicalField extends LogicalEntity {
 
     @Serialize
     public long adapterId;

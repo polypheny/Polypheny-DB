@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.NamespaceType;
@@ -81,7 +81,7 @@ public class PhysicalColumn extends PhysicalField {
     @Serialize
     @Nullable
     @SerializeNullable
-    public CatalogDefaultValue defaultValue;
+    public LogicalDefaultValue defaultValue;
 
 
     public PhysicalColumn(
@@ -100,7 +100,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") CatalogDefaultValue defaultValue ) {
+            @Deserialize("defaultValue") LogicalDefaultValue defaultValue ) {
         super( id, name, logicalName, allocId, tableId, adapterId, NamespaceType.RELATIONAL, true );
         this.position = position;
         this.type = type;

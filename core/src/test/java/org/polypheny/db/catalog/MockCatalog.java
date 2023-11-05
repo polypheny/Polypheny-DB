@@ -26,10 +26,10 @@ import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
+import org.polypheny.db.catalog.entity.LogicalQueryInterface;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
@@ -55,7 +55,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Map<Long, CatalogUser> getUsers() {
+    public Map<Long, LogicalUser> getUsers() {
         throw new NotImplementedException();
     }
 
@@ -67,7 +67,7 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
-    public Map<Long, CatalogQueryInterface> getInterfaces() {
+    public Map<Long, LogicalQueryInterface> getInterfaces() {
         throw new NotImplementedException();
     }
 

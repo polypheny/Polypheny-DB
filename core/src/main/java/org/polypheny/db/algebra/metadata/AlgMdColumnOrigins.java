@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.TableFunctionScan;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitor;
@@ -222,7 +222,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
         final Set<AlgColumnOrigin> set = new HashSet<>();
 
-        CatalogEntity entity = alg.getEntity();
+        LogicalEntity entity = alg.getEntity();
         if ( entity == null ) {
             // Somebody is making column values up out of thin air, like a VALUES clause, so we return an empty set.
             return set;

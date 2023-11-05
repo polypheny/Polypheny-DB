@@ -23,12 +23,12 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 
 
 @EqualsAndHashCode
 @Value
-public class AllocationPartitionGroup implements CatalogObject {
+public class AllocationPartitionGroup implements LogicalObject {
 
     private static final long serialVersionUID = 6229244317971622972L;
 

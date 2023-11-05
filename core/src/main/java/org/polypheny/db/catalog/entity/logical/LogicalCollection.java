@@ -24,14 +24,14 @@ import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
 @SuperBuilder(toBuilder = true)
-public class LogicalCollection extends LogicalEntity implements CatalogObject {
+public class LogicalCollection extends LogicalEntity implements LogicalObject {
 
     private static final long serialVersionUID = -6490762948368178584L;
 

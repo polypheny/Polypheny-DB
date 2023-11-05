@@ -44,6 +44,7 @@ import org.codehaus.janino.JavaSourceClassLoader;
 import org.codehaus.janino.util.ClassFile;
 import org.codehaus.janino.util.resource.MapResourceFinder;
 import org.codehaus.janino.util.resource.ResourceFinder;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 
@@ -98,7 +99,7 @@ public class JaninoCompiler implements JavaCompiler {
         try {
             classLoader.loadClass( args.fullClassName );
         } catch ( ClassNotFoundException ex ) {
-            throw new RuntimeException( "while compiling " + args.fullClassName, ex );
+            throw new GenericRuntimeException( "while compiling " + args.fullClassName, ex );
         }
     }
 
@@ -201,7 +202,7 @@ public class JaninoCompiler implements JavaCompiler {
                         fos.close();
                     }
                 } catch ( IOException e ) {
-                    throw new RuntimeException( e );
+                    throw new GenericRuntimeException( e );
                 }
             }
 

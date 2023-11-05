@@ -24,6 +24,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.cql.parser.CqlParser;
 import org.polypheny.db.information.InformationManager;
@@ -85,8 +86,8 @@ public class CqlLanguagePlugin extends PolyPlugin {
         String query = request.query;
         Transaction transaction = Crud.getTransaction( request.analyze, request.cache, transactionManager, userId, databaseId, "HTTP Interface CQL" );
         try {
-            if ( query.trim().equals( "" ) ) {
-                throw new RuntimeException( "CQL query is an empty string!" );
+            if ( query.trim().isEmpty() ) {
+                throw new GenericRuntimeException( "CQL query is an empty string!" );
             }
 
             if ( log.isDebugEnabled() ) {

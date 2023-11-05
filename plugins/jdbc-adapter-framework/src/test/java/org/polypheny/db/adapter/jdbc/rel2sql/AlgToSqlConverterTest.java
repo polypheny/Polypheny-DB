@@ -51,6 +51,7 @@ import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.rules.UnionMergeRule;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
@@ -66,7 +67,6 @@ import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.FlatLists;
 import org.polypheny.db.schema.FoodmartSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -95,6 +95,8 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.type.PolyType;
+
+;
 
 
 /**
@@ -3466,7 +3468,7 @@ public class AlgToSqlConverterTest extends SqlLanguageDependent {
             } catch ( RuntimeException e ) {
                 throw e;
             } catch ( Exception e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
 

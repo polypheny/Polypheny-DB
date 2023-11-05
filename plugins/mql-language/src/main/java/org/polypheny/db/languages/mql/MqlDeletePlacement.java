@@ -22,6 +22,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
@@ -52,7 +53,7 @@ public class MqlDeletePlacement extends MqlCollectionStatement implements Execut
                 .collect( Collectors.toList() );
 
         if ( statement.getTransaction().getSnapshot().alloc().getFromLogical( collection.id ).stream().noneMatch( p -> dataStores.stream().map( Adapter::getAdapterId ).collect( Collectors.toList() ).contains( p.adapterId ) ) ) {
-            throw new RuntimeException( "Error while adding a new collection placement, placement already present." );
+            throw new GenericRuntimeException( "Error while adding a new collection placement, placement already present." );
         }
 
         DdlManager.getInstance().dropCollectionPlacement( namespaceId, collection, dataStores, statement );

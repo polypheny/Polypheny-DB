@@ -19,23 +19,22 @@ package org.polypheny.db.monitoring.statistics;
 import lombok.Data;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
 /**
  * Boilerplate of a column to guide the handling and pattern of a column
  */
+@Getter
 @Data
 class QueryResult {
 
-    @Getter
-    private final CatalogEntity entity;
-    @Getter
+    private final LogicalEntity entity;
     private final LogicalColumn column;
 
 
-    QueryResult( CatalogEntity entity, LogicalColumn column ) {
+    QueryResult( LogicalEntity entity, LogicalColumn column ) {
         this.entity = entity;
         this.column = column;
     }

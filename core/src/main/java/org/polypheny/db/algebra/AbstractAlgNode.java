@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.metadata.MetadataFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -389,7 +389,7 @@ public abstract class AbstractAlgNode implements AlgNode {
 
 
     @Override
-    public CatalogEntity getEntity() {
+    public LogicalEntity getEntity() {
         return null;
     }
 

@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -98,7 +99,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
             // Add placement in order of list to combine full placements of one storeId
             if ( placements.size() != builders.size() ) {
                 log.error( "Not allowed! With Icarus, this should not happen" );
-                throw new RuntimeException( "Not allowed! With Icarus, this should not happen" );
+                throw new GenericRuntimeException( "Not allowed! With Icarus, this should not happen" );
             }
 
             for ( List<AllocationColumn> currentPlacement : placements ) {

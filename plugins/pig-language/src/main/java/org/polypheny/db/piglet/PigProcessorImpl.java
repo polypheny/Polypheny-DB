@@ -24,6 +24,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.piglet.Ast.PigNode;
@@ -60,7 +61,7 @@ public class PigProcessorImpl extends Processor {
             parsed = new PigletParser( new StringReader( query ) ).stmtListEof();
         } catch ( ParseException e ) {
             log.error( "Caught exception", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -75,7 +76,7 @@ public class PigProcessorImpl extends Processor {
 
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
-        throw new RuntimeException( "The PIG implementation does not support validation." );
+        throw new GenericRuntimeException( "The PIG implementation does not support validation." );
     }
 
 
@@ -89,13 +90,13 @@ public class PigProcessorImpl extends Processor {
 
     @Override
     public void unlock( Statement statement ) {
-        throw new RuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
+        throw new GenericRuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        throw new RuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
+        throw new GenericRuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
     }
 
 

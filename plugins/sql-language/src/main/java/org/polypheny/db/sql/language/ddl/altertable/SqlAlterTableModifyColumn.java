@@ -31,6 +31,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
@@ -154,7 +155,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         } else if ( collation != null ) {
             DdlManager.getInstance().setColumnCollation( table, columnName.getSimple(), Collation.parse( collation ), statement );
         } else if ( defaultValue != null ) {
-            DdlManager.getInstance().setDefaultValue( table, columnName.getSimple(), defaultValue.toString(), statement );
+            DdlManager.getInstance().setDefaultValue( table, columnName.getSimple(), SqlLiteral.toPoly( defaultValue ), statement );
         } else if ( dropDefault != null && dropDefault ) {
             DdlManager.getInstance().dropDefaultValue( table, columnName.getSimple(), statement );
         } else {

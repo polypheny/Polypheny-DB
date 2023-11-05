@@ -39,10 +39,11 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
@@ -74,7 +75,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     @Getter
-    private final CatalogUser user;
+    private final LogicalUser user;
     @Getter
     private final LogicalNamespace defaultNamespace;
 
@@ -114,7 +115,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     TransactionImpl(
             PolyXid xid,
             TransactionManagerImpl transactionManager,
-            CatalogUser user,
+            LogicalUser user,
             LogicalNamespace defaultNamespace,
             boolean analyze,
             String origin,
@@ -366,7 +367,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 break;
 
             case NO_ACCESS:
-                throw new RuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
+                throw new GenericRuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
         }
 
         // If nothing else has matched so far. It's safe to simply use the input

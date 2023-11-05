@@ -71,7 +71,7 @@ public class InformationDuration extends Information {
     public InformationDuration merge( InformationDuration other ) {
         Set<String> keySet = this.children.keySet();
         keySet.retainAll( other.children.keySet() );
-        if ( this.children.keySet().size() + other.children.keySet().size() != 0 && keySet.size() != 0 ) {
+        if ( this.children.keySet().size() + other.children.keySet().size() != 0 && !keySet.isEmpty() ) {
             throw new RuntimeException( "It was not possible to merge the InformationDuration." );
         }
         InformationDuration duration = new InformationDuration( this.group );

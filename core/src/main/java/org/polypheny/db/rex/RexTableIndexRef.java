@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.AllPredicates;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.ExpressionLineage;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 
 
 /**
@@ -132,12 +132,12 @@ public class RexTableIndexRef extends RexIndexRef {
     @Getter
     public static class AlgTableRef implements Comparable<AlgTableRef> {
 
-        private final CatalogEntity table;
+        private final LogicalEntity table;
         private final int entityNumber;
         private final String digest;
 
 
-        private AlgTableRef( CatalogEntity table, int entityNumber ) {
+        private AlgTableRef( LogicalEntity table, int entityNumber ) {
             this.table = table;
             this.entityNumber = entityNumber;
             this.digest = table.id + ".#" + entityNumber;
@@ -170,7 +170,7 @@ public class RexTableIndexRef extends RexIndexRef {
         }
 
 
-        public static AlgTableRef of( CatalogEntity table, int entityNumber ) {
+        public static AlgTableRef of( LogicalEntity table, int entityNumber ) {
             return new AlgTableRef( table, entityNumber );
         }
 

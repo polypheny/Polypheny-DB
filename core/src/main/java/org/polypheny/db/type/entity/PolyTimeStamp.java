@@ -16,8 +16,11 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -35,6 +38,8 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class PolyTimeStamp extends PolyTemporal {
+
+    public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
     public Long milliSinceEpoch; // normalized to utz
 
@@ -82,6 +87,12 @@ public class PolyTimeStamp extends PolyTemporal {
 
     public Timestamp asSqlTimestamp() {
         return new Timestamp( milliSinceEpoch );
+    }
+
+
+    @Override
+    public String toJson() {
+        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : dateFormat.format( new Date( milliSinceEpoch ) );
     }
 
 

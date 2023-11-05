@@ -18,7 +18,7 @@ package org.polypheny.db.processing;
 
 
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 
@@ -29,10 +29,10 @@ import org.polypheny.db.iface.Authenticator;
 public class AuthenticatorImpl implements Authenticator {
 
     @Override
-    public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
-        CatalogUser catalogUser = Catalog.getInstance().getSnapshot().getUser( username ).orElseThrow();
-        if ( catalogUser.password.equals( password ) ) {
-            return catalogUser;
+    public LogicalUser authenticate( final String username, final String password ) throws AuthenticationException {
+        LogicalUser logicalUser = Catalog.getInstance().getSnapshot().getUser( username ).orElseThrow();
+        if ( logicalUser.password.equals( password ) ) {
+            return logicalUser;
         } else {
             throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
         }

@@ -53,7 +53,6 @@ import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -76,8 +75,6 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -271,28 +268,6 @@ public abstract class Prepare<T> {
      * Abstract implementation of {@link PreparingEntity}.
      */
     public abstract static class AbstractPreparingEntity implements PreparingEntity {
-
-        @Override
-        public final AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
-            final Entity entity = unwrap( Entity.class );
-
-            // Get the set of extended columns that do not have the same name as a column in the base table.
-            final List<AlgDataTypeField> baseColumns = getRowType().getFieldList();
-            final List<AlgDataTypeField> dedupedFields = AlgOptUtil.deduplicateColumns( baseColumns, extendedFields );
-            final List<AlgDataTypeField> dedupedExtendedFields = dedupedFields.subList( baseColumns.size(), dedupedFields.size() );
-
-            if ( entity instanceof ExtensibleEntity ) {
-                final Entity extendedEntity = ((ExtensibleEntity) entity).extend( dedupedExtendedFields );
-                return extend( extendedEntity );
-            }
-            throw new RuntimeException( "Cannot extend " + entity );
-        }
-
-
-        /**
-         * Implementation-specific code to instantiate a new {@link AlgOptEntity} based on a {@link Entity} that has been extended.
-         */
-        protected abstract AlgOptEntity extend( Entity extendedEntity );
 
 
         @Override

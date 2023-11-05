@@ -66,7 +66,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalSortExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
@@ -538,7 +538,7 @@ public class AlgFactories {
         /**
          * Creates a {@link RelScan}.
          */
-        AlgNode createScan( AlgOptCluster cluster, CatalogEntity entity );
+        AlgNode createScan( AlgOptCluster cluster, LogicalEntity entity );
 
     }
 
@@ -549,7 +549,7 @@ public class AlgFactories {
     private static class ScanFactoryImpl implements ScanFactory {
 
         @Override
-        public AlgNode createScan( AlgOptCluster cluster, CatalogEntity entity ) {
+        public AlgNode createScan( AlgOptCluster cluster, LogicalEntity entity ) {
             // Check if RelOptTable contains a View, in this case a LogicalViewScan needs to be created
             if ( entity.entityType == EntityType.VIEW ) {
                 return LogicalRelViewScan.create( cluster, entity );
