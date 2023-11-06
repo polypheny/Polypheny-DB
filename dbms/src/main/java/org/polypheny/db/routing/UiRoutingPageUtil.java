@@ -40,6 +40,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Pair;
 
@@ -54,15 +55,15 @@ public class UiRoutingPageUtil {
     private static Snapshot snapshot;
 
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalAlgNode, InformationManager queryAnalyzer ) {
-        addPhysicalPlanPage( optimalAlgNode, queryAnalyzer );
+    public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer ) {
+        addPhysicalPlanPage( plan.optimalNode(), queryAnalyzer );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", 1, proposedRoutingPlan, queryAnalyzer );
+            page = setBaseOutput( "Routing", 1, plan.proposedRoutingPlan(), queryAnalyzer );
         }
-        addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
-        final AlgRoot root = proposedRoutingPlan.getRoutedRoot();
+        addSelectedAdapterTable( queryAnalyzer, plan.proposedRoutingPlan(), page );
+        final AlgRoot root = plan.proposedRoutingPlan().getRoutedRoot();
         addRoutedPlanPage( root.alg, queryAnalyzer );
     }
 

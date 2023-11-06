@@ -28,7 +28,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.piglet.PigProcessorImpl;
+import org.polypheny.db.piglet.PigProcessor;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -62,7 +62,7 @@ public class PigLanguagePlugin extends PolyPlugin {
     @Override
     public void start() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessorImpl::new, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessor::new, null );
     }
 
 

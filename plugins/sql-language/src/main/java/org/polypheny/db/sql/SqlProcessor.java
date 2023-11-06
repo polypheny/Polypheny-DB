@@ -81,9 +81,10 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class SqlProcessorImpl extends Processor {
+public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
+
     @Setter
     private PolyphenyDbSqlValidator validator;
 
@@ -99,7 +100,7 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    public SqlProcessorImpl() {
+    public SqlProcessor() {
 
     }
 

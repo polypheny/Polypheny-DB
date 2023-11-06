@@ -46,7 +46,7 @@ import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-public class CypherProcessorImpl extends Processor {
+public class CypherProcessor extends Processor {
 
     private static final CypherParserConfig parserConfig;
 

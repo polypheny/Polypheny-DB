@@ -39,7 +39,7 @@ import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-public class PigProcessorImpl extends Processor {
+public class PigProcessor extends Processor {
 
     private String query;
 

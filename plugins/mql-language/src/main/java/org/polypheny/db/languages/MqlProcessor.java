@@ -53,7 +53,7 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class MqlProcessorImpl extends AutomaticDdlProcessor {
+public class MqlProcessor extends AutomaticDdlProcessor {
 
     private static final MqlParserConfig parserConfig;
 
