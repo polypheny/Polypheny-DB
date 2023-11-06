@@ -254,8 +254,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Initialize result lists. They will all be with in the same ordering.
         List<ProposedRoutingPlan> proposedRoutingPlans = null;
-        List<AlgNode> optimalNodeList = new ArrayList<>();
-        List<AlgRoot> parameterizedRootList = new ArrayList<>();
+        List<AlgNode> optimalNodes = new ArrayList<>();
+        List<AlgRoot> parameterizedRoots = new ArrayList<>();
         List<PolyImplementation> results = new ArrayList<>();
         List<String> generatedCodes = new ArrayList<>();
 
@@ -413,7 +413,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 parameterizedRoot = routedRoot;
             }
 
-            parameterizedRootList.add( parameterizedRoot );
+            parameterizedRoots.add( parameterizedRoot );
         }
 
         if ( isAnalyze ) {
@@ -429,9 +429,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
-                AlgRoot parameterizedRoot = parameterizedRootList.get( i );
+                AlgRoot parameterizedRoot = parameterizedRoots.get( i );
                 PreparedResult<PolyValue> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
+                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoots.get( i ).alg );
                 if ( preparedResult != null ) {
                     PolyImplementation result = createPolyImplementation(
                             preparedResult,
@@ -443,16 +443,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
                     results.add( result );
                     generatedCodes.add( preparedResult.getCode() );
-                    optimalNodeList.add( optimalNode );
+                    optimalNodes.add( optimalNode );
                 } else {
                     results.add( null );
                     generatedCodes.add( null );
-                    optimalNodeList.add( null );
+                    optimalNodes.add( null );
                 }
             } else {
                 results.add( null );
                 generatedCodes.add( null );
-                optimalNodeList.add( null );
+                optimalNodes.add( null );
             }
         }
 
@@ -461,16 +461,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Can we return earlier?
-        if ( results.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
+        if ( results.stream().allMatch( Objects::nonNull ) && optimalNodes.stream().allMatch( Objects::nonNull ) ) {
             return new ProposedImplementations(
                     proposedRoutingPlans,
-                    optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                    optimalNodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                     logicalQueryInformation );
         }
 
-        optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), null ) );
+        optimalNodes = new ArrayList<>( Collections.nCopies( optimalNodes.size(), null ) );
 
         //
         // Plan Caching
@@ -480,9 +480,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
             if ( this.isQueryPlanCachingActive( statement, proposedRoutingPlans.get( i ).getRoutedRoot() ) ) {
                 // Should always be the case
-                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
+                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoots.get( i ).alg );
                 if ( cachedElem != null ) {
-                    optimalNodeList.set( i, cachedElem );
+                    optimalNodes.set( i, cachedElem );
                 }
             }
         }
@@ -495,16 +495,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // OptimalNode same size as routed, parametrized and result
-        for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( optimalNodeList.get( i ) != null ) {
+        for ( int i = 0; i < optimalNodes.size(); i++ ) {
+            if ( optimalNodes.get( i ) != null ) {
                 continue;
             }
-            AlgRoot parameterizedRoot = parameterizedRootList.get( i );
+            AlgRoot parameterizedRoot = parameterizedRoots.get( i );
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-            optimalNodeList.set( i, optimize( parameterizedRoot, resultConvention ) );
+            optimalNodes.set( i, optimize( parameterizedRoot, resultConvention ) );
 
             if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
-                QueryPlanCache.INSTANCE.put( parameterizedRoot.alg, optimalNodeList.get( i ) );
+                QueryPlanCache.INSTANCE.put( parameterizedRoot.alg, optimalNodes.get( i ) );
             }
         }
 
@@ -515,13 +515,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Implementation" );
         }
 
-        for ( int i = 0; i < optimalNodeList.size(); i++ ) {
+        for ( int i = 0; i < optimalNodes.size(); i++ ) {
             if ( results.get( i ) != null ) {
                 continue;
             }
 
-            AlgNode optimalNode = optimalNodeList.get( i );
-            AlgRoot parameterizedRoot = parameterizedRootList.get( i );
+            AlgNode optimalNode = optimalNodes.get( i );
+            AlgRoot parameterizedRoot = parameterizedRoots.get( i );
             AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
 
             final AlgDataType rowType = parameterizedRoot.alg.getRowType();
@@ -549,7 +549,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
             results.set( i, result );
             generatedCodes.set( i, preparedResult.getCode() );
-            optimalNodeList.set( i, optimalRoot.alg );
+            optimalNodes.set( i, optimalRoot.alg );
         }
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Implementation" );
@@ -563,7 +563,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
                 proposedRoutingPlans,
-                optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                optimalNodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
                 logicalQueryInformation );
