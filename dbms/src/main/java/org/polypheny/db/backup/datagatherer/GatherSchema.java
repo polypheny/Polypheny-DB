@@ -47,19 +47,32 @@ public class GatherSchema {
 
     //ImmutableMap<Long, LogicalNamespace> namespaces;
     List<LogicalNamespace> namespaces;
+    List<LogicalNamespace> relNamespaces;
+    List<LogicalNamespace> graphNamespaces;
+    List<LogicalNamespace> docNamespaces;
 
     //namespace id, list of tables for the namespace
     ImmutableMap<Long, List<LogicalTable>> tables;
-    //TODO(FF): if there exist constraint that go over several tables, need other way to signify it... rather use constraints per table, not per namespace! (but gets the right amount of constraints) --> ha sgfühl es get nome constraint öber 1 table
-    ImmutableMap<Long, List<LogicalConstraint>> constraints;
-
-    //table id, list of views for the table
+    //TODO(FF): make views and materialized views not (? deleted?)... views and materialized views can be over several tables -> over several namespaces??
     ImmutableMap<Long, List<LogicalView>> views;
     ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
+    ImmutableMap<Long, List<LogicalCollection>> collections;
+    ImmutableMap<Long, LogicalGraph> graphs;
+
+    //table id, list of views for the table
     ImmutableMap<Long, List<LogicalColumn>> columns;
-    ImmutableMap<Long, List<LogicalKey>> keysPerTable;
-    ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeysPerTable;
+    ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
+    //ImmutableMap<Long, List<LogicalKey>> keysPerTable;
+    // uufspliite en pk, fk, constraints, indexes
     // index -> can only be created per (one) table
+    ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    //TODO(FF): if there exist constraint that go over several tables, need other way to signify it... rather use constraints per table, not per namespace! (but gets the right amount of constraints) --> constr only 1 table (?), views can be sever tables
+    ImmutableMap<Long, List<LogicalConstraint>> constraints;
+
+    Boolean collectedRel = false;
+    Boolean collectedDoc = false;
+    Boolean collectedGraph = false;
 
     public GatherSchema() {
     }
@@ -70,6 +83,8 @@ public class GatherSchema {
         //figure out how to get the snapshot from catalog bzw. how to create a new snapshot, and take infos out of it
         getSnapshot();
         getRelSchema();
+        getDocSchema();
+        getGraphSchema();
         testPrint();
     }
 
@@ -101,12 +116,14 @@ public class GatherSchema {
         Map<Long, List<LogicalMaterializedView>> materializedViews = new HashMap<>();
         Map<Long, List<LogicalColumn>> columns = new HashMap<>();
         Map<Long, List<LogicalConstraint>> constraints = new HashMap<>();
-        Map<Long, List<LogicalKey>> keysPerTable = new HashMap<>();
-        Map<Long, List<LogicalIndex>> logicalIndex1 = new HashMap<>();
-        Map<Long, List<LogicalIndex>> logicalIndex2 = new HashMap<>();
+        //Map<Long, List<LogicalKey>> keysPerTable = new HashMap<>();
+        Map<Long, List<LogicalPrimaryKey>> primaryKeysPerTable = new HashMap<>();
+        Map<Long, List<LogicalForeignKey>> foreignKeysPerTable = new HashMap<>();
+        Map<Long, List<LogicalIndex>> logicalIndex = new HashMap<>();
         //List<LogicalView> getConnectedViews( long id );
 
         List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL ).collect( Collectors.toList() );
+        this.relNamespaces = relNamespaces;
 
         // go through the list of namespaces and get the id of each namespace, map the tables to the namespace id
         //TODO(FF)?: views - list is just empty, but creates it nontheless, same for constraints, keys
@@ -117,9 +134,6 @@ public class GatherSchema {
             List<LogicalTable> tablesFromNamespace = snapshot.rel().getTablesFromNamespace( namespaceId );
             tables.put( namespaceId, tablesFromNamespace );
 
-            // get list of constraints for each namespace
-            List<LogicalConstraint> tableConstraints = snapshot.rel().getConstraints();
-            constraints.put( namespaceId, tableConstraints );
 
             // get other schema information for each table
             for (LogicalTable table : tablesFromNamespace) {
@@ -140,24 +154,41 @@ public class GatherSchema {
                 List<LogicalColumn> tableColumns = snapshot.rel().getColumns( tableId );
                 columns.put( tableId, tableColumns );
 
-                //keys
+                //keys - (old: all keys selected: incl. pk, fk, constr, indexes
                 //snapshot.rel().getKeys(); - get all keys
-                List<LogicalKey> tableKeys = snapshot.rel().getTableKeys( tableId );
-                keysPerTable.put( tableId, tableKeys );
+                //List<LogicalKey> tableKeys = snapshot.rel().getTableKeys( tableId );
+                //keysPerTable.put( tableId, tableKeys );
+
+                //primary keys
+                //TODO(FF): bechonnt alli keys of einisch
+                //get only primary keys for the table
+                List<LogicalPrimaryKey> pkk = snapshot.rel().getPrimaryKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
+                primaryKeysPerTable.put( tableId, pkk );
+
+                // foreign keys
+                List<LogicalForeignKey> fk = snapshot.rel().getForeignKeys( tableId );
+                foreignKeysPerTable.put( tableId, fk );
+                /*
+                LogicalForeignKey(
+	                name=fk_students_album,
+	                referencedKeyId=0,
+	                referencedKeySchemaId=0,
+	                referencedKeyTableId=5,
+	                updateRule=RESTRICT,
+	                deleteRule=RESTRICT,
+	                referencedKeyColumnIds=[26])
+                 */
 
                 //indexes
-                //TODO(FF): indexes are also safed as keys... (they are part of the keys list...) maybe i have to safe keys seperately as pks and fks... but am i missing keys? LogicalGenericKey, was cha das alles sii??
-                // keyToIndexes = snapshot.rel().getKeys().stream().collect( Collectors.toMap( k -> k, k -> snapshot.rel().getIndexes( k ) ) );
-                //keyToIndexes maps keyid to idx... (to know which key is an idx). Do i have to remove them from the key list? - see when building it to insert back? (for loop over all keys?) how do i get keyToIndexes map? havent figured out yet
-                //TODO(FF): so pro table je die drü gliiche indexes... nope
-                List<LogicalIndex> tableIndexes = snapshot.rel().getIndexes();
-                logicalIndex1.put( tableId, tableIndexes );
-
-                // Get the keyToIndexes map from the snapshot. maybe with the following?
-                //TODO(FF): still need to test it, since intellij again didnt recognize map and list...
-                //TODO(FF): yes this is the way: lischte met allne tables, aber nome bem rechtige table en lischte a indexes
                 List<LogicalIndex> logicalIdx = snapshot.rel().getIndexes( tableId, false );
-                logicalIndex2.put( tableId, logicalIdx );
+                logicalIndex.put( tableId, logicalIdx );
+
+                // get list of constraints for each table
+                //TODO(FF): does this get the right mapping? -> creates a constraint entry in map, which is empty... (do i want this?) -> bcs ns id statt tableid?
+                // but correctly, no fk, or pks listed in constraints (or indexes)
+                //List<LogicalConstraint> tableConstraints = snapshot.rel().getConstraints();
+                List<LogicalConstraint> tableConstraints = snapshot.rel().getConstraints( tableId );
+                constraints.put( tableId, tableConstraints );
 
 
             }
@@ -169,8 +200,12 @@ public class GatherSchema {
         this.views = ImmutableMap.copyOf( views );
         this.columns = ImmutableMap.copyOf( columns );
         this.constraints = ImmutableMap.copyOf( constraints );
-        this.keysPerTable = ImmutableMap.copyOf( keysPerTable );
-        //for ( Long tableId : tables.keySet())
+        //this.keysPerTable = ImmutableMap.copyOf( keysPerTable );
+        this.primaryKeysPerTable = ImmutableMap.copyOf( primaryKeysPerTable );
+        this.foreignKeysPerTable = ImmutableMap.copyOf( foreignKeysPerTable );
+        this.logicalIndexes = ImmutableMap.copyOf( logicalIndex );
+
+        this.collectedRel = true;
 
     }
 
@@ -179,6 +214,26 @@ public class GatherSchema {
      */
     private void getGraphSchema() {
 
+        List<LogicalNamespace> graphNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.GRAPH ).collect( Collectors.toList() );
+        this.graphNamespaces = graphNamespaces;
+
+        List<LogicalGraph> graphsFromNamespace = snapshot.graph().getGraphs( null);
+
+        //TODO(FF): can there only be one graph per namespace?
+        Map<Long, LogicalGraph> nsGraphs = new HashMap<>();
+
+
+        //for each graph get the namespaceId, see if it matches with the current namespace, and map the graph to the namespaceid
+        for (LogicalGraph graph : graphsFromNamespace) {
+            Long graphNsId = graph.getNamespaceId();
+
+            // map the namespaceId to the graph
+            nsGraphs.put( graphNsId, graph );
+        }
+
+        //safes the gathered information in the class variables
+        this.graphs = ImmutableMap.copyOf( nsGraphs );
+        this.collectedGraph = true;
 
     }
 
@@ -187,6 +242,21 @@ public class GatherSchema {
      */
     private void getDocSchema() {
 
+        Map<Long, List<LogicalCollection>> nsCollections = new HashMap<>();
+        List<LogicalNamespace> docNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() );
+        this.docNamespaces = docNamespaces;
+
+        for (LogicalNamespace namespace : docNamespaces) {
+            Long namespaceId = namespace.getId();
+
+            // get collections per namespace
+            List<LogicalCollection> collectionsFromNamespace = snapshot.doc().getCollections( namespaceId, null );
+            nsCollections.put( namespaceId, collectionsFromNamespace );
+        }
+
+        //safes the gathered information in the class variables
+        this.collections = ImmutableMap.copyOf( nsCollections );
+        this.collectedDoc = true;
     }
 
     //TODO (FF): either create getters (and setters?) or a "whole" getter class... to pass information to BackupManager
@@ -202,7 +272,8 @@ public class GatherSchema {
         log.debug( "views: " + views.toString() );
         log.debug( "columns: " + columns.toString() );
         log.debug( "constraints: " + constraints.toString() );
-        log.debug( "keysPerTable: " + keysPerTable.toString() );
+        log.debug( "primarykeysPerTable: " + primaryKeysPerTable.toString() );
+        log.debug( "foreignkeysPerTable: " + foreignKeysPerTable.toString() );
         log.debug( "============================================= end print ==============================================" );
     }
 }
