@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datainserter;
+package org.polypheny.db.backup;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
+import lombok.Setter;
 
-@Slf4j
-public class EnterSchema {
+public class BupSuperEntity<E> {
 
-    public EnterSchema() {
-    }
+    @Getter @Setter
+    private E entityObject;
 
-    public void start() {
-        log.debug( "insert schemas" );
-    }
+    @Getter @Setter
+    private Boolean toBeInserted = true;
+
+    //default, original name (change if rename needed (options))
+    @Getter @Setter
+    private String nameForQuery;
+
 }

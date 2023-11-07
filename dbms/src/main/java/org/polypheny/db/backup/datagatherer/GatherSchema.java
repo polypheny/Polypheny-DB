@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Serialize;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.backup.BupInformationObject;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
@@ -42,9 +43,11 @@ public class GatherSchema {
     //gather the schemas from Polypheny-DB
     private final IdBuilder idBuilder = IdBuilder.getInstance();
     private Snapshot snapshot;
+    private BupInformationObject bupInformationObject;
 
     private Catalog catalog = PolyCatalog.getInstance();
 
+    //TODO(FF): don't safe data here, but safe it informationobject...
     //ImmutableMap<Long, LogicalNamespace> namespaces;
     List<LogicalNamespace> namespaces;
     List<LogicalNamespace> relNamespaces;
@@ -77,8 +80,9 @@ public class GatherSchema {
     public GatherSchema() {
     }
 
-    public void start() {
+    public BupInformationObject start( BupInformationObject bupInformationObject ) {
         log.debug( "gather schemas" );
+        this.bupInformationObject = bupInformationObject;
 
         //figure out how to get the snapshot from catalog bzw. how to create a new snapshot, and take infos out of it
         getSnapshot();
@@ -86,6 +90,7 @@ public class GatherSchema {
         getDocSchema();
         getGraphSchema();
         testPrint();
+        return bupInformationObject;
     }
 
 

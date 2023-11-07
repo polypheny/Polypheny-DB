@@ -19,7 +19,7 @@ package org.polypheny.db.backup;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
-import org.polypheny.db.backup.datainserter.EnterSchema;
+import org.polypheny.db.backup.datainserter.InsertSchema;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
 
@@ -31,6 +31,7 @@ public class BackupManager {
     private static BackupManager INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
+    private BupInformationObject bupInformationObject;
     //private final Logger logger;
 
 
@@ -85,18 +86,19 @@ public class BackupManager {
     }
 
     public void startDataGathering() {
+        this.bupInformationObject = new BupInformationObject();
         //GatherEntries gatherEntries = new GatherEntries();
         GatherSchema gatherSchema = new GatherSchema();
 
         //gatherEntries.start();
-        gatherSchema.start();
+        this.bupInformationObject = gatherSchema.start(bupInformationObject);
     }
 
 
     private void startInserting() {
-        EnterSchema enterSchema = new EnterSchema();
+        InsertSchema insertSchema = new InsertSchema();
 
-        enterSchema.start();
+        insertSchema.start(bupInformationObject);
     }
 
 }
