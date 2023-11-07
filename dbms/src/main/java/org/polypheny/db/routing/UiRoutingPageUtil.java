@@ -69,9 +69,7 @@ public class UiRoutingPageUtil {
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer ) {
-        log.warn( "Should this not be done in an separate thread?" );
         new Thread( () -> {
-
             InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );

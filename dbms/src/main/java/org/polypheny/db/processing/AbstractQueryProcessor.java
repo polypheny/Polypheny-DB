@@ -1236,7 +1236,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
         // Analyze logical query
-        LogicalAlgAnalyzeShuttle analyzer = new LogicalAlgAnalyzeShuttle();
+        LogicalAlgAnalyzeShuttle analyzer = new LogicalAlgAnalyzeShuttle( statement );
         logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
@@ -1244,7 +1244,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         Map<Integer, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
-        String queryHash = analyzer.getQueryName();// + accessedPartitionMap;
+        String queryHash = analyzer.getQueryName() + accessedPartitions;
 
         // Build LogicalQueryInformation instance and prepare monitoring
         LogicalQueryInformationImpl queryInformation = new LogicalQueryInformationImpl(

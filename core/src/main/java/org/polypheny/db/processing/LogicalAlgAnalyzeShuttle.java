@@ -69,6 +69,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -95,9 +96,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public List<Long> entityIds = new ArrayList<>();
 
+    public Statement statement;
 
-    public LogicalAlgAnalyzeShuttle() {
+
+    public LogicalAlgAnalyzeShuttle( Statement statement ) {
         this.rexShuttle = new LogicalAlgAnalyzeRexShuttle();
+        this.statement = statement;
     }
 
 
@@ -188,7 +192,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -347,7 +351,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        //getPartitioningInfo( filter );
+        getPartitioningInfo( filter );
 
         return filter;
     }
@@ -464,14 +468,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void handleIfPartitioned( AlgNode node, org.polypheny.db.catalog.entity.logical.LogicalEntity logicalEntity ) {
+    private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
         // Only if table is partitioned
-        log.warn( "todo" );
-        /*if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
+        if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
                 || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
-                    statement,
-                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    this.statement,
+                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             int scanId = node.getInput( 0 ).getId();
@@ -487,7 +490,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                             .collect( Collectors.toSet() ) );
                 }
             }
-        }*/
+        }
     }
 
 
@@ -497,12 +500,18 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( org.polypheny.db.catalog.entity.logical.LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
     }
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        // todo might add
+        LogicalEntity entity = filter.getInput().getEntity();
+        if ( entity == null ) {
+            return;
+        }
+
+        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+
     }
 
 }
