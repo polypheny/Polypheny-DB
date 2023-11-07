@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.util;
 
-import java.util.List;
-import java.util.Map;
-import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
-
-
-/**
- * Common interface for cached and non-cached routing plans.
- */
-public interface RoutingPlan {
-
-    String getQueryClass();
-
-    String getPhysicalQueryClass();
-
-    Class<? extends Router> getRouter();
-
-    // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
-    Map<Long, List<AllocationColumn>> getPhysicalPlacementsOfPartitions();
-
+public enum PolyphenyMode {
+    PRODUCTION,
+    DEVELOPMENT,
+    TEST,
+    BENCHMARK
 }

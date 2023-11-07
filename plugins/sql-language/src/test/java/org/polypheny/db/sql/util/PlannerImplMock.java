@@ -26,7 +26,6 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -62,6 +61,7 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
+import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.util.SourceStringReader;
 
 

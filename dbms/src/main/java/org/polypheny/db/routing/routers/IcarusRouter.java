@@ -36,7 +36,6 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -112,11 +111,11 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 // Find corresponding builder:
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
-                    final List<Pair<Long, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
+                    final List<AllocationColumn> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
                             .flatMap( Collection::stream )
                             .collect( Collectors.toList() );
                     final Optional<Long> found = listPairs.stream()
-                            .map( elem -> elem.left )
+                            .map( elem -> elem.placementId )
                             .filter( elem -> elem == placementId )
                             .findFirst();
                             return found.isPresent();

@@ -73,10 +73,13 @@ public class SimpleRouter extends AbstractDqlRouter {
         // Get placements and convert into placement distribution
         // final Map<Long, List<CatalogColumnPlacement>> placements = selectPlacement( catalogTable );
         List<AllocationEntity> entities = Catalog.snapshot().alloc().getFromLogical( table.id );
+        List<AllocationColumn> columns = Catalog.snapshot().alloc().getColumns( entities.get( 0 ).placementId );
 
         // Only one builder available
         // builders.get( 0 ).addPhysicalInfo( placements );
         super.handleRelScan( builders.get( 0 ), statement, entities.get( 0 ) );
+
+        builders.get( 0 ).addPhysicalInfo( Map.of( entities.get( 0 ).partitionId, columns ) );
 
         return builders;
     }

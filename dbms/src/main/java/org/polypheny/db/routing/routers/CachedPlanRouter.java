@@ -19,7 +19,6 @@ package org.polypheny.db.routing.routers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -68,9 +67,7 @@ public class CachedPlanRouter extends BaseRouter {
             Map<Long, List<AllocationColumn>> partitions = new HashMap<>();
             for ( long partition : partitionIds ) {
                 if ( cachedPlan.physicalPlacementsOfPartitions.get( partition ) != null ) {
-                    List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition ).stream()
-                            .map( placementInfo -> catalog.getSnapshot().alloc().getColumn( placementInfo.left, placementInfo.right ).orElseThrow() )
-                            .collect( Collectors.toList() );
+                    List<AllocationColumn> colPlacements = cachedPlan.physicalPlacementsOfPartitions.get( partition );
                     partitions.put( partition, colPlacements );
                 }
             }

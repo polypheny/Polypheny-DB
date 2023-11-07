@@ -95,6 +95,8 @@ import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -1300,58 +1302,51 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
                 // Get placements of this table
                 LogicalTable catalogTable = table.unwrap( LogicalTable.class );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+                fallback = true;
                 // todo dl
-                /*if ( aggregatedPartitionValues.containsKey( scanId ) ) {
-                    if ( aggregatedPartitionValues.get( scanId ) != null ) {
-                        if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
-                            List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
+                if ( aggregatedPartitionValues.containsKey( scanId ) && aggregatedPartitionValues.get( scanId ) != null && !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
+                    fallback = false;
+                    List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
 
-                            if ( log.isDebugEnabled() ) {
-                                /*log.debug(
-                                        "TableID: {} is partitioned on column: {} - {}",
-                                        catalogTable.id,
-                                        catalogTable.partitionProperty.partitionColumnId,
-                                        Catalog.getInstance().getSnapshot().rel().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug(
+                                "TableID: {} is partitioned on column: {} - {}",
+                                catalogTable.id,
+                                property.partitionColumnId,
+                                Catalog.getInstance().getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
 
-                            }
-                            List<Long> identifiedPartitions = new ArrayList<>();
-                            for ( String partitionValue : partitionValues ) {
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
-                                }
-                                long identifiedPartition = PartitionManagerFactory.getInstance()
-                                        .getPartitionManager( catalogTable.partitionProperty.partitionType )
-                                        .getTargetPartitionId( catalogTable, partitionValue );
-
-                                identifiedPartitions.add( identifiedPartition );
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
-                                }
-                            }
-
-                            accessedPartitionList.merge(
-                                    scanId,
-                                    identifiedPartitions,
-                                    ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                            scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                            // Fallback all partitionIds are needed
-                        } else {
-                            fallback = true;
-                        }
-                    } else {
-                        fallback = true;
                     }
-                } else {
-                    fallback = true;
+                    List<Long> identifiedPartitions = new ArrayList<>();
+                    for ( String partitionValue : partitionValues ) {
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Extracted PartitionValue: {}", partitionValue );
+                        }
+                        long identifiedPartition = PartitionManagerFactory.getInstance()
+                                .getPartitionManager( property.partitionType )
+                                .getTargetPartitionId( catalogTable, property, partitionValue );
+
+                        identifiedPartitions.add( identifiedPartition );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
+                        }
+                    }
+
+                    accessedPartitions.merge(
+                            scanId,
+                            identifiedPartitions,
+                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                    scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                    // Fallback all partitionIds are needed
                 }
 
                 if ( fallback ) {
-                    accessedPartitionList.merge(
+                    accessedPartitions.merge(
                             scanId,
-                            catalogTable.partitionProperty.partitionIds,
+                            property.partitionIds,
                             ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                }*/
+                }
 
             }
         }

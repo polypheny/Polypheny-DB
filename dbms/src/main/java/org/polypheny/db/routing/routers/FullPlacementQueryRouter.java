@@ -108,20 +108,15 @@ public class FullPlacementQueryRouter extends AbstractDqlRouter {
             log.debug( "{} is NOT partitioned - Routing will be easy", table.name );
         }
 
-        //final Set<List<AllocationColumn>> placements = selectPlacement( table, queryInformation );
-
         List<RoutedAlgBuilder> newBuilders = new ArrayList<>();
-        /*for ( List<CatalogColumnPlacement> placementCombination : placements ) {
-            Map<Long, List<CatalogColumnPlacement>> currentPlacementDistribution = new HashMap<>();
-            PartitionProperty property = snapshot.alloc().getPartitionProperty( catalogTable.id );*/
-        //currentPlacementDistribution.put( property.partitionIds.get( 0 ), placementCombination );
 
-        List<AllocationPlacement> allocationEntities = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
-        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocsOfPlacement( allocationEntities.get( 0 ).id );
+        List<AllocationPlacement> placements = Catalog.snapshot().alloc().getPlacementsFromLogical( table.id );
+        List<AllocationEntity> allocs = Catalog.snapshot().alloc().getAllocsOfPlacement( placements.get( 0 ).id );
+        List<AllocationColumn> columns = Catalog.snapshot().alloc().getColumns( allocs.get( 0 ).placementId );
 
         for ( RoutedAlgBuilder builder : builders ) {
             RoutedAlgBuilder newBuilder = RoutedAlgBuilder.createCopy( statement, cluster, builder );
-            //newBuilder.addPhysicalInfo( currentPlacementDistribution );
+            newBuilder.addPhysicalInfo( Map.of( allocs.get( 0 ).partitionId, columns ) );
             newBuilder.push( super.buildJoinedScan( statement, cluster, table, Map.of( allocs.get( 0 ).placementId, allocs.get( 0 ).unwrap( AllocationTable.class ).getColumns() ) ) );
             newBuilders.add( newBuilder );
         }

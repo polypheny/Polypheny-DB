@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.PolyphenyMode;
 
 public final class DockerManager {
 

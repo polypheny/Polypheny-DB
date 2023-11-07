@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.routing.RoutingPlan;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -36,7 +36,7 @@ import org.polypheny.db.util.Pair;
 public class CachedProposedRoutingPlan implements RoutingPlan {
 
     @Getter
-    public Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<Pair<PlacementId, ColumnId>>
+    public Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions; // PartitionId -> List<Pair<PlacementId, ColumnId>>
     protected String queryClass;
     protected String physicalQueryClass;
     protected AlgOptCost preCosts;

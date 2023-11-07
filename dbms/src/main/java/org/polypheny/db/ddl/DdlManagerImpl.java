@@ -221,11 +221,11 @@ public class DdlManagerImpl extends DdlManager {
 
             LogicalTable logical = catalog.getLogicalRel( Catalog.defaultNamespaceId ).addTable( tableName, EntityType.SOURCE, !(adapter).isDataReadOnly() );
             List<LogicalColumn> columns = new ArrayList<>();
-            AllocationPartitionGroup group = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartitionGroup( logical.id, null, Catalog.defaultNamespaceId, PartitionType.NONE, 1, true );
-            AllocationPartition partition = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPartition( logical.id, Catalog.defaultNamespaceId, group.id, UNPARTITIONED, false, PlacementType.AUTOMATIC, DataPlacementRole.UP_TO_DATE, null, PartitionType.NONE );
+
+            Pair<AllocationPartition, PartitionProperty> partitionProperty = createSinglePartition( logical.namespaceId, logical );
 
             AllocationPlacement placement = catalog.getAllocRel( Catalog.defaultNamespaceId ).addPlacement( logical.id, Catalog.defaultNamespaceId, adapter.adapterId );
-            AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partition.id, logical.id );
+            AllocationEntity allocation = catalog.getAllocRel( Catalog.defaultNamespaceId ).addAllocation( adapter.getAdapterId(), placement.id, partitionProperty.left.id, logical.id );
             List<AllocationColumn> aColumns = new ArrayList<>();
             int colPos = 1;
 

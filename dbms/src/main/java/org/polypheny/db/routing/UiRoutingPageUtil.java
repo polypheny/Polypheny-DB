@@ -42,7 +42,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -104,9 +103,9 @@ public class UiRoutingPageUtil {
                 group,
                 ImmutableList.of( "Entity", "Field", "Allocation Id", "Adapter" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
-            for ( Entry<Long, List<Pair<Long, Long>>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
+            for ( Entry<Long, List<AllocationColumn>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
                 Long k = entry.getKey();
-                List<Pair<Long, Long>> v = entry.getValue();
+                List<AllocationColumn> v = entry.getValue();
                 AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
                 LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
 

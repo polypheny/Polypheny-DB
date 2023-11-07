@@ -38,7 +38,6 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.interpreter.Row;
@@ -53,6 +52,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.PolyphenyMode;
 
 
 /**

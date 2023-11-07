@@ -48,6 +48,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
+import org.polypheny.db.util.PolyphenyMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -273,13 +274,6 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract void restore();
-
-
-    public enum PolyphenyMode {
-        DEFAULT,
-        TEST,
-        BENCHMARK
-    }
 
 
 }
