@@ -16,5 +16,15 @@
 
 package org.polypheny.db.backup.datainserter;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class EnterSchema {
+
+    public EnterSchema() {
+    }
+
+    public void start() {
+        log.debug( "insert schemas" );
+    }
 }

@@ -19,9 +19,9 @@ package org.polypheny.db.backup;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
+import org.polypheny.db.backup.datainserter.EnterSchema;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
-import org.slf4j.Logger;
 
 
 @Slf4j
@@ -53,7 +53,8 @@ public class BackupManager {
 
         InformationAction startBackupAction = new InformationAction( informationGroupOverview, "Start", parameters -> {
             //IndexManager.getInstance().resetCounters();
-            StartDataGathering();
+            startDataGathering();
+            System.out.println("gather");
             return "Successfully started backup";
         } );
         startBackupAction.setOrder( 2 );
@@ -66,6 +67,7 @@ public class BackupManager {
 
         InformationAction insertBackupDataAction = new InformationAction( informationGroupOverview, "Insert", parameters -> {
             //IndexManager.getInstance().resetCounters();
+            startInserting();
             System.out.println("hii");
             return "Successfully inserted backup data";
         } );
@@ -82,7 +84,7 @@ public class BackupManager {
         return INSTANCE;
     }
 
-    public void StartDataGathering () {
+    public void startDataGathering() {
         //GatherEntries gatherEntries = new GatherEntries();
         GatherSchema gatherSchema = new GatherSchema();
 
@@ -90,5 +92,11 @@ public class BackupManager {
         gatherSchema.start();
     }
 
+
+    private void startInserting() {
+        EnterSchema enterSchema = new EnterSchema();
+
+        enterSchema.start();
+    }
 
 }
