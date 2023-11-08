@@ -43,7 +43,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.avatica.util.ArrayImpl;
-import org.polypheny.db.functions.GeoFunctions;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
 
 
 /**
@@ -83,7 +84,7 @@ public class JavaToPolyTypeConversionRules {
                     .put( Time.class, PolyType.TIME )
                     .put( BigDecimal.class, PolyType.DECIMAL )
 
-                    .put( GeoFunctions.Geom.class, PolyType.GEOMETRY )
+                    .put ( Geometry.class, PolyType.GEOMETRY )
 
                     .put( ResultSet.class, PolyType.CURSOR )
                     .put( ColumnList.class, PolyType.COLUMN_LIST )

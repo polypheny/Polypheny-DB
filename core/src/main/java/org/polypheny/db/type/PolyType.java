@@ -376,8 +376,6 @@ public enum PolyType {
             Types.JAVA_OBJECT,
             PolyTypeFamily.GEO ),
 
-    // TODO: add all other Geo types
-
     FILE(
             PrecScale.NO_NO,
             true,
@@ -437,7 +435,8 @@ public enum PolyType {
                     TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
                     INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
                     INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
-                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
+                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST,
+                    GEOMETRY );
 
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
 
@@ -470,6 +469,7 @@ public enum PolyType {
     public static final List<PolyType> BLOB_TYPES = ImmutableList.of( FILE, AUDIO, IMAGE, VIDEO );
 
     // TODO: add Geometry types
+    public static final List<PolyType> GEOMETRY_TYPES = ImmutableList.of( GEOMETRY );
 
     public static final Set<PolyType> YEAR_INTERVAL_TYPES =
             Sets.immutableEnumSet(
@@ -511,6 +511,7 @@ public enum PolyType {
                     // TODO: provide real support for these eventually
                     .put( ExtraPolyTypes.NCHAR, CHAR )
                     .put( ExtraPolyTypes.NVARCHAR, VARCHAR )
+                    .put( ExtraPolyTypes.GEOMETRY, GEOMETRY )
 
                     // TODO: additional types not yet supported. See ExtraSqlTypes.
                     // .put(Types.LONGVARCHAR, Longvarchar)

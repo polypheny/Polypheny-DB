@@ -53,6 +53,8 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -86,6 +88,7 @@ import org.polypheny.db.type.entity.graph.PolyNode.PolyNodeSerializerDef;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
+import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 @Value
 @Slf4j
@@ -137,7 +140,8 @@ import org.polypheny.db.type.entity.relational.PolyMap.PolyMapSerializerDef;
         @JsonSubTypes.Type(value = PolyPath.class, name = "PATH"),
         @JsonSubTypes.Type(value = PolyDictionary.class, name = "DICTIONARY"),
         @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV"),
-        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY")
+        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY"),
+        @JsonSubTypes.Type(value = PolyPoint.class, name = "POINT")
 })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
@@ -234,8 +238,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
             case GEOMETRY:
-                // TODO: check how does it work
-                return o -> o.asGeometry().toString();
+                // TODO: we need to convert to types that avatica has / that are in JDBC
+                return o -> o.asGeometry().toString(); // (Object) o.asGeometry().getJtsGeometry();
             default:
                 throw new NotImplementedException( "meta" );
         }
@@ -442,7 +446,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static PolyValue fromType( Object object, PolyType type ) {
-        // TODO: should GIS be here?
         switch ( type ) {
             case BOOLEAN:
                 return PolyBoolean.of( (Boolean) object );
@@ -483,6 +486,8 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case BINARY:
             case VARBINARY:
                 return PolyBinary.of( (ByteString) object );
+            case GEOMETRY:
+                return PolyGeometry.of( (Geometry) object ); // or of( (String) object )
         }
         throw new NotImplementedException();
     }

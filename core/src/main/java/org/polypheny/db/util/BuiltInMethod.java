@@ -113,6 +113,7 @@ import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
+import org.polypheny.db.functions.GeoFunctions;
 import org.polypheny.db.functions.MqlFunctions;
 import org.polypheny.db.functions.RefactorFunctions;
 import org.polypheny.db.functions.TemporalFunctions;
@@ -148,6 +149,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 
 
 /**
@@ -440,6 +442,9 @@ public enum BuiltInMethod {
     RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class ),
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
+    // GEO METHODS
+    ST_GEO_FROM_TEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
+    ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

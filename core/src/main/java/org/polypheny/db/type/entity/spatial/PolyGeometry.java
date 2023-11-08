@@ -608,7 +608,7 @@ public class PolyGeometry extends PolyValue {
      * @throws GeometryTopologicalException in case <code>intersectionPattern</code> contains not of 9 characters
      */
     public boolean relate( @NotNull PolyGeometry g, @NotNull String intersectionPattern ) throws GeometryTopologicalException {
-        if ( intersectionPattern.length() == 9 ) {
+        if ( intersectionPattern.length() != 9 ) {
             throw new GeometryTopologicalException( "DE-9IM pattern should contain 9 characters." );
         }
         return jtsGeometry.relate( g.getJtsGeometry(), intersectionPattern );

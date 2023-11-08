@@ -145,6 +145,7 @@ import org.polypheny.db.sql.language.fun.SqlRollupOperator;
 import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSequenceValueOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
+import org.polypheny.db.sql.language.fun.SqlStGeoFromText;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlStringContextVariable;
 import org.polypheny.db.sql.language.fun.SqlSubstringFunction;
@@ -2491,6 +2492,29 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
 
         register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
+
+        // GEO functions
+        // TODO: move it to separate class and add a varying argument [SRID] how it's done for distances
+//        register(
+//                OperatorName.ST_GEOFROMTEXT,
+//                new SqlFunction(
+//                        "ST_GEOFROMTEXT",
+//                        Kind.OTHER_FUNCTION,
+//                        ReturnTypes.GEOMETRY,
+//                        null,
+//                        OperandTypes.STRING,
+//                        FunctionCategory.GEOMETRY ) );
+        register( OperatorName.ST_GEOFROMTEXT, new SqlStGeoFromText() );
+
+        register(
+                OperatorName.ST_X,
+                new SqlFunction(
+                        "ST_X",
+                        Kind.OTHER_FUNCTION,
+                        ReturnTypes.DOUBLE,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
 
         isInit = true;
     }
