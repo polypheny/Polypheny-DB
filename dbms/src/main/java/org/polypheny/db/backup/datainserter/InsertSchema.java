@@ -42,6 +42,11 @@ public class InsertSchema {
         log.debug( "insert schemas" );
         this.bupInformationObject = bupInformationObject;
 
+        bupInformationObject.transformNamespacesToBupSuperEntityMap( bupInformationObject.getRelNamespaces() );
+        //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
+        createNamespace( bupInformationObject.getBupRelNamespaces() );
+        createTable( bupInformationObject.getBupTables() );
+
         //TODO(FF): create something to test that only available data is tried to be inserted
 
         /*

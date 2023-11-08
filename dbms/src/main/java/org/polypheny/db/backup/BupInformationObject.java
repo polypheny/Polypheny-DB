@@ -52,7 +52,7 @@ public class BupInformationObject {
     List<LogicalMaterializedView> materializedViews;
      */
 
-    //namespace id, list of tables for the namespace
+    //namespace id, list of entities for the namespace
     @Getter @Setter
     ImmutableMap<Long, List<LogicalView>> views;
     @Getter @Setter

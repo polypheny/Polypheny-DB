@@ -106,6 +106,7 @@ public class GatherSchema {
 
         //this.namespaces = ImmutableMap.copyOf( namespaces );
         this.namespaces = snapshot.getNamespaces( null );
+        this.bupInformationObject.setNamespaces( namespaces );
 
         log.debug( "# namespaces = " + nbrNamespaces );
         log.debug( "# tables from public = " + publicTables );
@@ -129,6 +130,7 @@ public class GatherSchema {
 
         List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL ).collect( Collectors.toList() );
         this.relNamespaces = relNamespaces;
+        this.bupInformationObject.setRelNamespaces( relNamespaces );
 
         // go through the list of namespaces and get the id of each namespace, map the tables to the namespace id
         //TODO(FF)?: views - list is just empty, but creates it nontheless, same for constraints, keys
@@ -164,9 +166,7 @@ public class GatherSchema {
                 //List<LogicalKey> tableKeys = snapshot.rel().getTableKeys( tableId );
                 //keysPerTable.put( tableId, tableKeys );
 
-                //primary keys
-                //TODO(FF): bechonnt alli keys of einisch
-                //get only primary keys for the table
+                //primary keys (for the table)
                 List<LogicalPrimaryKey> pkk = snapshot.rel().getPrimaryKeys().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
                 primaryKeysPerTable.put( tableId, pkk );
 
@@ -189,9 +189,6 @@ public class GatherSchema {
                 logicalIndex.put( tableId, logicalIdx );
 
                 // get list of constraints for each table
-                //TODO(FF): does this get the right mapping? -> creates a constraint entry in map, which is empty... (do i want this?) -> bcs ns id statt tableid?
-                // but correctly, no fk, or pks listed in constraints (or indexes)
-                //List<LogicalConstraint> tableConstraints = snapshot.rel().getConstraints();
                 List<LogicalConstraint> tableConstraints = snapshot.rel().getConstraints( tableId );
                 constraints.put( tableId, tableConstraints );
 
@@ -202,15 +199,22 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.tables = ImmutableMap.copyOf( tables );
+        this.bupInformationObject.setTables( this.tables );
         this.views = ImmutableMap.copyOf( views );
+        this.bupInformationObject.setViews( this.views );
         this.columns = ImmutableMap.copyOf( columns );
+        this.bupInformationObject.setColumns( this.columns );
         this.constraints = ImmutableMap.copyOf( constraints );
+        this.bupInformationObject.setConstraints( this.constraints );
         //this.keysPerTable = ImmutableMap.copyOf( keysPerTable );
         this.primaryKeysPerTable = ImmutableMap.copyOf( primaryKeysPerTable );
+        this.bupInformationObject.setPrimaryKeysPerTable( this.primaryKeysPerTable );
         this.foreignKeysPerTable = ImmutableMap.copyOf( foreignKeysPerTable );
+        this.bupInformationObject.setForeignKeysPerTable( this.foreignKeysPerTable );
         this.logicalIndexes = ImmutableMap.copyOf( logicalIndex );
+        this.bupInformationObject.setLogicalIndexes( this.logicalIndexes );
 
-        this.collectedRel = true;
+        this.bupInformationObject.setCollectedRelSchema( true );
 
     }
 
@@ -221,6 +225,7 @@ public class GatherSchema {
 
         List<LogicalNamespace> graphNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.GRAPH ).collect( Collectors.toList() );
         this.graphNamespaces = graphNamespaces;
+        this.bupInformationObject.setGraphNamespaces( graphNamespaces );
 
         List<LogicalGraph> graphsFromNamespace = snapshot.graph().getGraphs( null);
 
@@ -238,7 +243,8 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.graphs = ImmutableMap.copyOf( nsGraphs );
-        this.collectedGraph = true;
+        this.bupInformationObject.setGraphs( this.graphs );
+        this.bupInformationObject.setCollectedGraphSchema( true );
 
     }
 
@@ -250,6 +256,7 @@ public class GatherSchema {
         Map<Long, List<LogicalCollection>> nsCollections = new HashMap<>();
         List<LogicalNamespace> docNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() );
         this.docNamespaces = docNamespaces;
+        this.bupInformationObject.setDocNamespaces( docNamespaces );
 
         for (LogicalNamespace namespace : docNamespaces) {
             Long namespaceId = namespace.getId();
@@ -261,7 +268,8 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.collections = ImmutableMap.copyOf( nsCollections );
-        this.collectedDoc = true;
+        this.bupInformationObject.setCollections( this.collections );
+        this.bupInformationObject.setCollectedDocSchema( true );
     }
 
     //TODO (FF): either create getters (and setters?) or a "whole" getter class... to pass information to BackupManager
