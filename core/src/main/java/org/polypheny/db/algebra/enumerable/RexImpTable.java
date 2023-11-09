@@ -369,9 +369,16 @@ public class RexImpTable {
 
         // geo functions
         defineMethod( OperatorRegistry.get( OperatorName.ST_GEOFROMTEXT ), BuiltInMethod.ST_GEO_FROM_TEXT.method, NullPolicy.STRICT );
+        // on Points
         defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Z ), BuiltInMethod.ST_Z.method, NullPolicy.STRICT );
+        // on LineStrings
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCLOSED ), BuiltInMethod.ST_ISCLOSED.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRING ), BuiltInMethod.ST_ISRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISCOORDINATE ), BuiltInMethod.ST_ISCOORDINATE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_STARTPOINT ), BuiltInMethod.ST_STARTPOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENDPOINT ), BuiltInMethod.ST_ENDPOINT.method, NullPolicy.STRICT );
     }
 
 

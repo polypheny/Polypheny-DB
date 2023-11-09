@@ -1313,6 +1313,8 @@ public enum OperatorName {
      */
     ST_GEOFROMTEXT( Function.class ),
 
+    // Functions on Points
+
     /**
      * The <code>ST_X</code> operator function: receive the <strong>X</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
      */
@@ -1327,6 +1329,33 @@ public enum OperatorName {
      * The <code>ST_Z</code> operator function: receive the <strong>Z</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
      */
     ST_Z( Function.class ),
+
+    // Functions on LineStrings
+
+    /**
+     * The <code>ST_IsClosed</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyLineString} is closed
+     */
+    ST_ISCLOSED( Function.class ),
+
+    /**
+     * The <code>ST_IsRing</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyLineString} is a ring
+     */
+    ST_ISRING( Function.class ),
+
+    /**
+     * The <code>ST_IsCoordinate</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyPoint} is coordinate of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_ISCOORDINATE( Function.class ),
+
+    /**
+     * The <code>ST_StartPoint</code> operator function: return the start {@link org.polypheny.db.type.entity.spatial.PolyPoint} of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_STARTPOINT( Function.class ),
+
+    /**
+     * The <code>ST_EndPoint</code> operator function: return the end {@link org.polypheny.db.type.entity.spatial.PolyPoint} of {@link org.polypheny.db.type.entity.spatial.PolyLineString}
+     */
+    ST_ENDPOINT( Function.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS

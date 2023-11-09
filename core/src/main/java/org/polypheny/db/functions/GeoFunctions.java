@@ -18,6 +18,7 @@ package org.polypheny.db.functions;
 
 import static org.polypheny.db.functions.Functions.toUnchecked;
 
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -30,6 +31,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 public class GeoFunctions {
 
     private static final String POINT_RESTRICTION = "This function could be applied only to points";
+    private static final String LINE_STRING_RESTRICTION = "This function could be applied only to line strings";
 
 
     private GeoFunctions() {
@@ -77,9 +79,53 @@ public class GeoFunctions {
         return PolyFloat.of( geometry.asPoint().getZ() );
     }
 
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsClosed( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyBoolean.of( geometry.asLineString().isClosed() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsRing( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyBoolean.of( geometry.asLineString().isRing() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsCoordinate( PolyGeometry geometry, PolyGeometry point ) {
+        restrictToLineStrings( geometry );
+        restrictToPoints( point );
+        return PolyBoolean.of( geometry.asLineString().isCoordinate( point.asPoint() ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stStartPoint( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyGeometry.of( geometry.asLineString().getStartPoint().getJtsGeometry() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stEndPoint( PolyGeometry geometry ) {
+        restrictToLineStrings( geometry );
+        return PolyGeometry.of( geometry.asLineString().getEndPoint().getJtsGeometry() );
+    }
+
+
     private static void restrictToPoints( PolyGeometry geometry ) {
         if ( !geometry.isPoint() ) {
             throw toUnchecked( new InvalidGeometryException( POINT_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToLineStrings( PolyGeometry geometry ) {
+        if ( !geometry.isLineString() ) {
+            throw toUnchecked( new InvalidGeometryException( LINE_STRING_RESTRICTION ) );
         }
     }
 

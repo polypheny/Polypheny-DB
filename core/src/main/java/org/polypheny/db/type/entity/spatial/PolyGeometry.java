@@ -198,7 +198,7 @@ public class PolyGeometry extends PolyValue {
 
 
     public boolean isLineString() {
-        return geometryType.equals( PolyGeometryType.LINESTRING );
+        return List.of( PolyGeometryType.LINESTRING, PolyGeometryType.LINEARRING ).contains( geometryType );
     }
 
 

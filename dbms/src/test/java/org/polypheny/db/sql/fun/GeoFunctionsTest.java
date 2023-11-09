@@ -78,4 +78,43 @@ public class GeoFunctionsTest {
         }
     }
 
+    @Test
+    public void lineStringsFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // test if line is closed
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsClosed(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ false }
+                        ) );
+                // test if line is a ring
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsRing(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ false }
+                        ) );
+                // test if point is a coordinate of a line
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsCoordinate(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'), ST_GeoFromText('POINT (-1 -1)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ true }
+                        ) );
+                // check the starting point
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_StartPoint(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POINT (-1 -1)" }
+                        ) );
+                // check the ending point
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_EndPoint(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POINT (6 7)" }
+                        ) );
+            }
+        }
+    }
+
 }

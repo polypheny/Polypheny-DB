@@ -2496,6 +2496,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
         // GEO functions
         register( OperatorName.ST_GEOFROMTEXT, new SqlStGeoFromText() );
 
+        // on Points
         register(
                 OperatorName.ST_X,
                 new SqlFunction(
@@ -2522,6 +2523,57 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         "ST_Z",
                         Kind.GEO,
                         ReturnTypes.DOUBLE,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        // on LineStrings
+        register(
+                OperatorName.ST_ISCLOSED,
+                new SqlFunction(
+                        "ST_ISCLOSED",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_ISRING,
+                new SqlFunction(
+                        "ST_ISRING",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_ISCOORDINATE,
+                new SqlFunction(
+                        "ST_ISCOORDINATE",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_STARTPOINT,
+                new SqlFunction(
+                        "ST_STARTPOINT",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_ENDPOINT,
+                new SqlFunction(
+                        "ST_ENDPOINT",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
                         InferTypes.GEOMETRY,
                         OperandTypes.GEOMETRY,
                         FunctionCategory.GEOMETRY ) );

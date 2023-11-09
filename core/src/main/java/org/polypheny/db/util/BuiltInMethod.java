@@ -444,9 +444,16 @@ public enum BuiltInMethod {
     UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
     // GEO METHODS
     ST_GEO_FROM_TEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
+    // on Points
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
     ST_Z( GeoFunctions.class, "stZ", PolyGeometry.class ),
+    // on LineStrings
+    ST_ISCLOSED( GeoFunctions.class, "stIsClosed", PolyGeometry.class ),
+    ST_ISRING( GeoFunctions.class, "stIsRing", PolyGeometry.class ),
+    ST_ISCOORDINATE( GeoFunctions.class, "stIsCoordinate", PolyGeometry.class, PolyGeometry.class ),
+    ST_STARTPOINT( GeoFunctions.class, "stStartPoint", PolyGeometry.class ),
+    ST_ENDPOINT( GeoFunctions.class, "stEndPoint", PolyGeometry.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
