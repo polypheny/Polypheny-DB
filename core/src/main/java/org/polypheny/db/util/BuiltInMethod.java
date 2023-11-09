@@ -136,6 +136,7 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -454,6 +455,11 @@ public enum BuiltInMethod {
     ST_ISCOORDINATE( GeoFunctions.class, "stIsCoordinate", PolyGeometry.class, PolyGeometry.class ),
     ST_STARTPOINT( GeoFunctions.class, "stStartPoint", PolyGeometry.class ),
     ST_ENDPOINT( GeoFunctions.class, "stEndPoint", PolyGeometry.class ),
+    // on Polygons
+    ST_ISRECTANGLE( GeoFunctions.class, "stIsRectangle", PolyGeometry.class ),
+    ST_EXTERIORRING( GeoFunctions.class, "stExteriorRing", PolyGeometry.class ),
+    ST_NUMINTERIORRING( GeoFunctions.class, "stNumInteriorRing", PolyGeometry.class ),
+    ST_INTERIORRINGN( GeoFunctions.class, "stInteriorRingN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

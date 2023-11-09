@@ -117,4 +117,38 @@ public class GeoFunctionsTest {
         }
     }
 
+
+    @Test
+    public void polygonFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // test if polygon is rectangle
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsRectangle(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ false }
+                        ) );
+                // retrieve the exterior ring of the polygon
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_ExteriorRing(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;LINEARRING (-1 -1, 2 2, -1 2, -1 -1)" }
+                        ) );
+                // retrieve the number of interior ring of the polygon
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_NumInteriorRing(ST_GeoFromText('POLYGON((0.5 0.5,5 0,5 5,0 5,0.5 0.5), (1.5 1,4 3,4 1,1.5 1))'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 1 }
+                        ) );
+                // retrieve the nth interior ring of the polygon
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_InteriorRingN(ST_GeoFromText('POLYGON((0.5 0.5,5 0,5 5,0 5,0.5 0.5), (1.5 1,4 3,4 1,1.5 1))'), 0)" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;LINEARRING (1.5 1, 4 3, 4 1, 1.5 1)" }
+                        ) );
+            }
+        }
+    }
+
 }

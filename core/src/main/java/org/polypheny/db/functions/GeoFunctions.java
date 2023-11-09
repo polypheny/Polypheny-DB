@@ -20,6 +20,7 @@ import static org.polypheny.db.functions.Functions.toUnchecked;
 
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyFloat;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
@@ -32,6 +33,7 @@ public class GeoFunctions {
 
     private static final String POINT_RESTRICTION = "This function could be applied only to points";
     private static final String LINE_STRING_RESTRICTION = "This function could be applied only to line strings";
+    private static final String POLYGON_RESTRICTION = "This function could be applied only to polygons";
 
 
     private GeoFunctions() {
@@ -58,6 +60,10 @@ public class GeoFunctions {
         }
     }
 
+    /*
+     * on Points
+     */
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyFloat stX( PolyGeometry geometry ) {
@@ -78,6 +84,10 @@ public class GeoFunctions {
         restrictToPoints( geometry );
         return PolyFloat.of( geometry.asPoint().getZ() );
     }
+
+    /*
+     * on LineStrings
+     */
 
 
     @SuppressWarnings("UnusedDeclaration")
@@ -115,6 +125,34 @@ public class GeoFunctions {
         return PolyGeometry.of( geometry.asLineString().getEndPoint().getJtsGeometry() );
     }
 
+    /*
+     * on Polygons
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsRectangle( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return PolyBoolean.of( geometry.asPolygon().isRectangle() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stExteriorRing( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return geometry.asPolygon().getExteriorRing();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumInteriorRing( PolyGeometry geometry ) {
+        restrictToPolygons( geometry );
+        return PolyInteger.of( geometry.asPolygon().getNumInteriorRing() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stInteriorRingN( PolyGeometry geometry, PolyNumber n ) {
+        restrictToPolygons( geometry );
+        return PolyGeometry.of( geometry.asPolygon().getInteriorRingN( n.intValue() ).getJtsGeometry() );
+    }
+
 
     private static void restrictToPoints( PolyGeometry geometry ) {
         if ( !geometry.isPoint() ) {
@@ -126,6 +164,12 @@ public class GeoFunctions {
     private static void restrictToLineStrings( PolyGeometry geometry ) {
         if ( !geometry.isLineString() ) {
             throw toUnchecked( new InvalidGeometryException( LINE_STRING_RESTRICTION ) );
+        }
+    }
+
+    private static void restrictToPolygons( PolyGeometry geometry ) {
+        if ( !geometry.isPolygon() ) {
+            throw toUnchecked( new InvalidGeometryException( POLYGON_RESTRICTION ) );
         }
     }
 

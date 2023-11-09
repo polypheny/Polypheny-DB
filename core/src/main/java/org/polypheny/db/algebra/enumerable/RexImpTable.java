@@ -379,6 +379,11 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_ISCOORDINATE ), BuiltInMethod.ST_ISCOORDINATE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_STARTPOINT ), BuiltInMethod.ST_STARTPOINT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_ENDPOINT ), BuiltInMethod.ST_ENDPOINT.method, NullPolicy.STRICT );
+        // on Polygons
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISRECTANGLE ), BuiltInMethod.ST_ISRECTANGLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_EXTERIORRING ), BuiltInMethod.ST_EXTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMINTERIORRING ), BuiltInMethod.ST_NUMINTERIORRING.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERIORRINGN ), BuiltInMethod.ST_INTERIORRINGN.method, NullPolicy.STRICT );
     }
 
 

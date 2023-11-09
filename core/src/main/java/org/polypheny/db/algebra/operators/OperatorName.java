@@ -1357,6 +1357,27 @@ public enum OperatorName {
      */
     ST_ENDPOINT( Function.class ),
 
+    // Functions on Polygons
+    /**
+     * The <code>ST_IsRectangle</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyPolygon} is rectangle
+     */
+    ST_ISRECTANGLE( Function.class ),
+
+    /**
+     * The <code>ST_ExteriorRing</code> operator function: return the exterior ring {@link org.polypheny.db.type.entity.spatial.PolyGeometry} of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_EXTERIORRING( Function.class ),
+
+    /**
+     * The <code>ST_NumInteriorRing</code> operator function: return the number of interior rings of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_NUMINTERIORRING( Function.class ),
+
+    /**
+     * The <code>ST_InteriorRingN</code> operator function: return the nth interior ring of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
+     */
+    ST_INTERIORRINGN( Function.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------

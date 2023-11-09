@@ -2578,6 +2578,47 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY,
                         FunctionCategory.GEOMETRY ) );
 
+        // on Polygons
+        register(
+                OperatorName.ST_ISRECTANGLE,
+                new SqlFunction(
+                        "ST_ISRECTANGLE",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_EXTERIORRING,
+                new SqlFunction(
+                        "ST_EXTERIORRING",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_NUMINTERIORRING,
+                new SqlFunction(
+                        "ST_NUMINTERIORRING",
+                        Kind.GEO,
+                        ReturnTypes.INTEGER,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_INTERIORRINGN,
+                new SqlFunction(
+                        "ST_INTERIORRINGN",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_INTEGER,
+                        FunctionCategory.GEOMETRY ) );
+
         isInit = true;
     }
 
