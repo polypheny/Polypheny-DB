@@ -1308,8 +1308,25 @@ public enum OperatorName {
     //                   GEO OPERATORS
     //-------------------------------------------------------------
 
+    /**
+     * The <code>ST_GeoFromText</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from text
+     */
     ST_GEOFROMTEXT( Function.class ),
+
+    /**
+     * The <code>ST_X</code> operator function: receive the <strong>X</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
     ST_X( Function.class ),
+
+    /**
+     * The <code>ST_Y</code> operator function: receive the <strong>Y</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_Y( Function.class ),
+
+    /**
+     * The <code>ST_Z</code> operator function: receive the <strong>Z</strong> coordinate of the {@link org.polypheny.db.type.entity.spatial.PolyPoint}
+     */
+    ST_Z( Function.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS

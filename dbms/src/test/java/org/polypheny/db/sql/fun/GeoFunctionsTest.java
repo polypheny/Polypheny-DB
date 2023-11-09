@@ -16,6 +16,7 @@
 
 package org.polypheny.db.sql.fun;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,12 +47,33 @@ public class GeoFunctionsTest {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                ResultSet resultSet = statement.executeQuery( "SELECT ST_GeoFromText('Point(0 1)')" );
-                List<Object[]> received = TestHelper.convertResultSetToList( resultSet );
-                System.out.println(received);
-                resultSet = statement.executeQuery( "SELECT ST_X(ST_GeoFromText('Point(0 1)'))" );
-                received = TestHelper.convertResultSetToList( resultSet );
-                System.out.println(received);
+                // ST_GeoFromText with only 1 parameter (WKT)
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_GeoFromText('POINT (0 1)')" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POINT (0 1)" }
+                        ) );
+                // ST_GeoFromText with 2 parameters (WKT, SRID)
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_GeoFromText('POINT (0 1)', 1)" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=1;POINT (0 1)" }
+                        ) );
+            }
+        }
+    }
+
+    @Test
+    public void pointFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // get X coordinate of the point
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_X(ST_GeoFromText('POINT (0 1)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 0.0 }
+                        ) );
             }
         }
     }

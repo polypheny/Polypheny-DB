@@ -445,6 +445,8 @@ public enum BuiltInMethod {
     // GEO METHODS
     ST_GEO_FROM_TEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
+    ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
+    ST_Z( GeoFunctions.class, "stZ", PolyGeometry.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),

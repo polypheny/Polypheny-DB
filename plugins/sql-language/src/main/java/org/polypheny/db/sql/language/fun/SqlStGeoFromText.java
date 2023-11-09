@@ -16,32 +16,123 @@
 
 package org.polypheny.db.sql.language.fun;
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.nodes.CallBinding;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlFunction;
+import org.polypheny.db.type.OperandCountRange;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.CoreUtil;
+import org.polypheny.db.util.Util;
 
 /**
  * Definition of the "ST_GeoFromText" spatial function.
+ * The function has a required parameter - WKT string representation
+ * and an optional SRID integer.
  */
 public class SqlStGeoFromText extends SqlFunction {
+
+    private static final PolyOperandTypeChecker ST_GEOFROMTEXT_ARG_CHECKER = new PolyOperandTypeChecker() {
+
+        @Override
+        public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
+            int nOperandsActual = callBinding.getOperandCount();
+
+            // Make sure the first argument is not null
+            if ( CoreUtil.isNullLiteral( callBinding.operand( 0 ), false ) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.nullIllegal() );
+                } else {
+                    return false;
+                }
+            }
+
+            // Make sure the first argument is a string
+            if ( !PolyTypeUtil.inCharFamily( callBinding.getOperandType( 0 ) ) ) {
+                if ( throwOnFailure ) {
+                    throw callBinding.getValidator().newValidationError( callBinding.operand( 0 ), RESOURCE.expectedCharacter() );
+                } else {
+                    return false;
+                }
+            }
+
+            // Check, if present, whether second argument is a number
+            if ( nOperandsActual == 2 ) {
+                if ( CoreUtil.isNullLiteral( callBinding.operand( 1 ), false ) ) {
+                    if ( throwOnFailure ) {
+                        throw callBinding.getValidator().newValidationError( callBinding.operand( 1 ), RESOURCE.nullIllegal() );
+                    } else {
+                        return false;
+                    }
+                }
+
+                if ( (!PolyTypeUtil.isNumeric( callBinding.getOperandType( 1 ) )) ) {
+                    if ( throwOnFailure ) {
+                        throw callBinding.newValidationSignatureError();
+                    } else {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+
+        }
+
+
+        @Override
+        public String getAllowedSignatures( Operator op, String opName ) {
+            return "'ST_GeoFromText(<STRING>)'" + "\n" + "'ST_GeoFromText(<STRING>, <INTEGER>)'";
+        }
+
+
+        @Override
+        public Consistency getConsistency() {
+            return Consistency.NONE;
+        }
+
+
+        @Override
+        public OperandCountRange getOperandCountRange() {
+            return PolyOperandCountRanges.between( 1, 2 );
+        }
+
+
+        @Override
+        public boolean isOptional( int i ) {
+            return i == 1;
+        }
+    };
+
 
     /**
      * Creates the SqlStGeoFromText.
      */
     public SqlStGeoFromText() {
-        super(
-                "ST_GEOFROMTEXT",
-                Kind.OTHER_FUNCTION,
-                ReturnTypes.GEOMETRY,
-                null,
-                OperandTypes.STRING,
-                FunctionCategory.GEOMETRY );
+        super( "ST_GEOFROMTEXT", Kind.GEO, ReturnTypes.GEOMETRY, null, ST_GEOFROMTEXT_ARG_CHECKER, FunctionCategory.GEOMETRY );
     }
 
-    // TODO: add varying arguments for SRID
+
+    @Override
+    public String getSignatureTemplate( int operandsCount ) {
+        switch ( operandsCount ) {
+            case 1:
+                return "{0}({1})";
+            case 2:
+                return "{0}({1}, {2})";
+            default:
+                throw new AssertionError();
+        }
+    }
 
 }

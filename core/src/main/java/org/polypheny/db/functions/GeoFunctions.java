@@ -20,35 +20,67 @@ import static org.polypheny.db.functions.Functions.toUnchecked;
 
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 
+/**
+ * Implementations of Geo functions
+ */
 public class GeoFunctions {
+
+    private static final String POINT_RESTRICTION = "This function could be applied only to points";
+
 
     private GeoFunctions() {
         // empty on purpose
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stGeoFromText( PolyString wkt ) {
         try {
             return PolyGeometry.of( wkt.value );
-        }
-        catch ( InvalidGeometryException e ) {
+        } catch ( InvalidGeometryException e ) {
             throw toUnchecked( e );
         }
     }
 
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeoFromText( PolyString wkt, PolyNumber srid ) {
+        try {
+            return PolyGeometry.of( wkt.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyFloat stX( PolyGeometry geometry ) {
-        if (!geometry.isPoint()) {
-            throw toUnchecked( new InvalidGeometryException( "This function could be applied only to points" ));
-        }
+        restrictToPoints( geometry );
         return PolyFloat.of( geometry.asPoint().getX() );
     }
 
-    public static PolyString test1( PolyString wkt ) {
-        return wkt;
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stY( PolyGeometry geometry ) {
+        restrictToPoints( geometry );
+        return PolyFloat.of( geometry.asPoint().getY() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stZ( PolyGeometry geometry ) {
+        restrictToPoints( geometry );
+        return PolyFloat.of( geometry.asPoint().getZ() );
+    }
+
+    private static void restrictToPoints( PolyGeometry geometry ) {
+        if ( !geometry.isPoint() ) {
+            throw toUnchecked( new InvalidGeometryException( POINT_RESTRICTION ) );
+        }
     }
 
 }

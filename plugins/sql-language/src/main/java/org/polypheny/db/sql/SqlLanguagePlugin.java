@@ -2494,23 +2494,33 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
         // GEO functions
-        // TODO: move it to separate class and add a varying argument [SRID] how it's done for distances
-//        register(
-//                OperatorName.ST_GEOFROMTEXT,
-//                new SqlFunction(
-//                        "ST_GEOFROMTEXT",
-//                        Kind.OTHER_FUNCTION,
-//                        ReturnTypes.GEOMETRY,
-//                        null,
-//                        OperandTypes.STRING,
-//                        FunctionCategory.GEOMETRY ) );
         register( OperatorName.ST_GEOFROMTEXT, new SqlStGeoFromText() );
 
         register(
                 OperatorName.ST_X,
                 new SqlFunction(
                         "ST_X",
-                        Kind.OTHER_FUNCTION,
+                        Kind.GEO,
+                        ReturnTypes.DOUBLE,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_Y,
+                new SqlFunction(
+                        "ST_Y",
+                        Kind.GEO,
+                        ReturnTypes.DOUBLE,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_Z,
+                new SqlFunction(
+                        "ST_Z",
+                        Kind.GEO,
                         ReturnTypes.DOUBLE,
                         InferTypes.GEOMETRY,
                         OperandTypes.GEOMETRY,
