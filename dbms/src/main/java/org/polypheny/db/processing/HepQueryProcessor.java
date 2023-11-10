@@ -27,9 +27,9 @@ import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.transaction.Statement;
 
 
+@Getter
 public class HepQueryProcessor extends AbstractQueryProcessor {
 
-    @Getter
     private final HepPlanner planner;
 
 

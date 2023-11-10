@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.properties.PartitionProperty;
 
 
@@ -62,7 +63,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable catalogTable, List<AllocationEntity> allocs, List<Long> excludedAdapters ) {
+    public Map<Long, List<AllocationColumn>> getRelevantPlacements( LogicalTable table, List<AllocationEntity> allocs, List<Long> excludedAdapters ) {
 
         Map<Long, List<AllocationColumn>> placementDistribution = new HashMap<>();
 
@@ -117,7 +118,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
             LogicalColumn partitionColumn ) {
 
         if ( numPartitionGroups == 0 && partitionGroupNames.size() < 2 ) {
-            throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
+            throw new GenericRuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
         return true;
     }

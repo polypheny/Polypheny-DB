@@ -40,6 +40,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.util.Static;
@@ -104,9 +105,9 @@ public class TableMacroImpl extends ReflectiveFunctionBase implements TableMacro
             }
             return (TranslatableEntity) method.invoke( o, arguments.toArray() );
         } catch ( IllegalArgumentException e ) {
-            throw new RuntimeException( "Expected " + Arrays.toString( method.getParameterTypes() ) + " actual " + arguments, e );
+            throw new GenericRuntimeException( "Expected " + Arrays.toString( method.getParameterTypes() ) + " actual " + arguments, e );
         } catch ( IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 }

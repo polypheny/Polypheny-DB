@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.transaction.Statement;
@@ -143,15 +144,15 @@ public class DataContextImpl implements DataContext {
     @Override
     public void addParameterValues( long index, AlgDataType type, List<PolyValue> data ) {
         if ( parameterTypes.containsKey( index ) ) {
-            throw new RuntimeException( "There are already values assigned to this index" );
+            throw new GenericRuntimeException( "There are already values assigned to this index" );
         }
-        if ( parameterValues.size() == 0 ) {
+        if ( parameterValues.isEmpty() ) {
             for ( Object d : data ) {
                 parameterValues.add( new HashMap<>() );
             }
         }
         if ( parameterValues.size() != data.size() ) {
-            throw new RuntimeException( "Expecting " + parameterValues.size() + " rows but " + data.size() + " values specified!" );
+            throw new GenericRuntimeException( "Expecting " + parameterValues.size() + " rows but " + data.size() + " values specified!" );
         }
         parameterTypes.put( index, type );
         int i = 0;

@@ -296,7 +296,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             idAccessMap.addAll( accessMap.getAccessedEntityPair() );
             LockManager.INSTANCE.lock( idAccessMap, (TransactionImpl) statement.getTransaction() );
         } catch ( DeadlockException e ) {
-            throw new RuntimeException( "DeadLock while locking for materialized view update", e );
+            throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
         updateData( transaction, materializedId );
         commitTransaction( transaction );

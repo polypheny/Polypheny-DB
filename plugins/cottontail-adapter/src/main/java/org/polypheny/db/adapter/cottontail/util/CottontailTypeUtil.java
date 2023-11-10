@@ -20,8 +20,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,22 +34,18 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyDouble;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BoolVector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
@@ -267,7 +261,7 @@ public class CottontailTypeUtil {
     }
 
 
-    public static CottontailGrpc.Literal toData( Object value, PolyType actualType, PolyType parameterComponentType ) {
+    public static CottontailGrpc.Literal toData( PolyValue value, PolyType actualType, PolyType parameterComponentType ) {
         final CottontailGrpc.Literal.Builder builder = Literal.newBuilder();
         if ( value == null ) {
             return builder.build();
@@ -275,142 +269,87 @@ public class CottontailTypeUtil {
 
         log.trace( "Attempting to data value: {}, type: {}", value.getClass().getCanonicalName(), actualType );
 
-        if ( value instanceof List ) {
+        if ( value.isList() ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
             // Check whether the decimal array should be converted to a double array (i.e. when we are not comparing to a column of
             // type decimal (which is encoded as string since cottontail does not support the data type decimal))
-            if ( parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && ((List) value).get( 0 ) instanceof BigDecimal ) {
-                ArrayList<Double> arrayList = new ArrayList<>( ((List) value).size() );
-                ((List) value).forEach( e -> arrayList.add( ((BigDecimal) e).doubleValue() ) );
-                value = arrayList;
+            if ( parameterComponentType == PolyType.DECIMAL && actualType != PolyType.DECIMAL && actualType != PolyType.ARRAY && value.asList().get( 0 ).isBigDecimal() ) {
+                List<PolyValue> numbers = new ArrayList<>( value.asList().size() );
+                value.asList().forEach( e -> numbers.add( PolyDouble.of( e.asNumber().doubleValue() ) ) );
+                value = PolyList.of( numbers );
             }
             final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
             } else {
                 /* TODO (RG): BigDecimals are currently handled by this branch, which excludes them from being usable for native NNS. */
-                return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (List<Object>) value ) ).build();
+                return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( value ) ).build();
             }
         }
 
         switch ( actualType ) {
             case BOOLEAN: {
-                if ( value instanceof Boolean ) {
-                    return builder.setBooleanData( (Boolean) value ).build();
+                if ( value.isBoolean() ) {
+                    return builder.setBooleanData( value.asBoolean().value ).build();
                 }
                 break;
             }
             case BIGINT: {
-                if ( value instanceof Byte ) {
-                    return builder.setLongData( ((Byte) value).longValue() ).build();
-                }
-                if ( value instanceof Short ) {
-                    return builder.setLongData( ((Short) value).longValue() ).build();
-                }
-                if ( value instanceof Integer ) {
-                    return builder.setLongData( ((Integer) value).longValue() ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setLongData( ((Long) value) ).build();
+                if ( value.isNumber() ) {
+                    return builder.setLongData( value.asNumber().longValue() ).build();
                 }
                 break;
             }
             case INTEGER:
             case TINYINT:
             case SMALLINT: {
-                if ( value instanceof Byte ) {
-                    return builder.setIntData( ((Byte) value).intValue() ).build();
-                }
-                if ( value instanceof Short ) {
-                    return builder.setIntData( ((Short) value).intValue() ).build();
-                }
-                if ( value instanceof Integer ) {
-                    return builder.setIntData( ((Integer) value) ).build();
-                }
-                if ( value instanceof Long ) {
-                    return builder.setIntData( ((Long) value).intValue() ).build();
+                if ( value.isNumber() ) {
+                    return builder.setIntData( value.asNumber().intValue() ).build();
                 }
                 break;
             }
             case DOUBLE: {
-                if ( value instanceof Number ) {
-                    return builder.setDoubleData( ((Number) value).doubleValue() ).build();
+                if ( value.isNumber() ) {
+                    return builder.setDoubleData( value.asNumber().doubleValue() ).build();
                 }
                 break;
             }
             case FLOAT:
             case REAL: {
-                if ( value instanceof Number ) {
-                    return builder.setFloatData( ((Number) value).floatValue() ).build();
+                if ( value.isNumber() ) {
+                    return builder.setFloatData( value.asNumber().floatValue() ).build();
                 }
                 break;
             }
             case JSON:
             case VARCHAR: {
-                if ( value instanceof String ) {
-                    return builder.setStringData( (String) value ).build();
+                if ( value.isString() ) {
+                    return builder.setStringData( value.asString().value ).build();
                 }
                 break;
             }
             case DECIMAL: {
-                if ( value instanceof BigDecimal ) {
-                    return builder.setStringData( value.toString() ).build();
-                } else if ( value instanceof Integer ) {
-                    return builder.setStringData( BigDecimal.valueOf( (Integer) value ).toString() ).build();
-                } else if ( value instanceof Double ) {
-                    return builder.setStringData( BigDecimal.valueOf( (Double) value ).toString() ).build();
-                } else if ( value instanceof Long ) {
-                    return builder.setStringData( BigDecimal.valueOf( (Long) value ).toString() ).build();
-                } else if ( value instanceof String ) {
-                    return builder.setStringData( new BigDecimal( (String) value ).toString() ).build();
+                if ( value.isNumber() ) {
+                    return builder.setStringData( value.asNumber().BigDecimalValue().toString() ).build();
                 }
                 break;
             }
             case TIME: {
-                if ( value instanceof TimeString ) {
-                    return builder.setIntData( ((TimeString) value).getMillisOfDay() ).build();
-                } else if ( value instanceof java.sql.Time ) {
-                    java.sql.Time time = (java.sql.Time) value;
-                    TimeString timeString = new TimeString( time.toString() );
-                    return builder.setIntData( timeString.getMillisOfDay() ).build();
-                } else if ( value instanceof Integer ) {
-                    return builder.setIntData( (Integer) value ).build();
-                } else if ( value instanceof GregorianCalendar ) {
-                    GregorianCalendar calendar = (GregorianCalendar) value;
-                    return builder.setIntData( TimeString.fromCalendarFields( calendar ).getMillisOfDay() ).build();
+                if ( value.isTemporal() ) {
+                    return builder.setIntData( value.asTemporal().getMillisOfDay() ).build();
                 }
                 break;
             }
             case DATE: {
-                if ( value instanceof DateString ) {
-                    return builder.setIntData( ((DateString) value).getDaysSinceEpoch() ).build();
-                } else if ( value instanceof java.sql.Date ) {
-                    DateString dateString = new DateString( value.toString() );
-                    return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
-                } else if ( value instanceof Integer ) {
-                    return builder.setIntData( (Integer) value ).build();
-                } else if ( value instanceof GregorianCalendar ) {
-                    GregorianCalendar calendar = (GregorianCalendar) value;
-                    return builder.setIntData( DateString.fromCalendarFields( calendar ).getDaysSinceEpoch() ).build();
+                if ( value.isTemporal() ) {
+                    return builder.setIntData( (int) value.asTemporal().getDaysSinceEpoch() ).build();
                 }
                 break;
             }
             case TIMESTAMP: {
-                if ( value instanceof TimestampString ) {
-                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( ((TimestampString) value).getMillisSinceEpoch() ) ).build();
-                } else if ( value instanceof java.sql.Timestamp ) {
-                    String timeStampString = value.toString();
-                    if ( timeStampString.endsWith( ".0" ) ) {
-                        timeStampString = timeStampString.substring( 0, timeStampString.length() - 2 );
-                    }
-                    TimestampString tsString = new TimestampString( timeStampString );
-                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( tsString.getMillisSinceEpoch() ) ).build();
-                } else if ( value instanceof Calendar ) {
-                    TimestampString timestampString = TimestampString.fromCalendarFields( (Calendar) value );
-                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( timestampString.getMillisSinceEpoch() ) ).build();
-                } else if ( value instanceof Long ) {
-                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( (Long) value ) ).build();
+                if ( value.isTemporal() ) {
+                    return builder.setDateData( Date.newBuilder().setUtcTimestamp( value.asTemporal().getMilliSinceEpoch() ) ).build();
                 }
                 break;
             }
@@ -418,8 +357,8 @@ public class CottontailTypeUtil {
             case IMAGE:
             case AUDIO:
             case VIDEO:
-                if ( value instanceof String ) {
-                    return builder.setStringData( value.toString() ).build();
+                if ( value.isBlob() ) {
+                    return builder.setStringData( value.asBlob().as64String() ).build();
                 }
         }
 
@@ -672,40 +611,41 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Object defaultValueParser( CatalogDefaultValue catalogDefaultValue, PolyType actualType ) {
+    /*
+    public static SqlLiteral defaultValueParser( LogicalDefaultValue logicalDefaultValue, PolyType actualType ) {
         if ( actualType == PolyType.ARRAY ) {
             throw new GenericRuntimeException( "Default values are not supported for array types" );
         }
 
-        Object literal;
+        SqlLiteral literal;
         switch ( actualType ) {
             case BOOLEAN:
-                literal = Boolean.parseBoolean( catalogDefaultValue.value );
+                literal = Boolean.parseBoolean( logicalDefaultValue.value.toJson() );
                 break;
             case INTEGER:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Integer.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Integer.class );
                 break;
             case DECIMAL:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( BigDecimal.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( BigDecimal.class );
                 break;
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Long.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Long.class );
                 break;
             case REAL:
             case FLOAT:
-                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Float.class );
+                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Float.class );
                 break;
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, ParserPos.ZERO ).getValueAs( Double.class );
+                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Double.class );
                 break;
             case VARCHAR:
-                literal = catalogDefaultValue.value;
+                literal = logicalDefaultValue.value;
                 break;
             default:
                 throw new PolyphenyDbException( "Not yet supported default value type: " + actualType );
         }
 
         return literal;
-    }
+    }*/
 
 }

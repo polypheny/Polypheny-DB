@@ -46,7 +46,7 @@ import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
-public class CypherProcessorImpl extends Processor {
+public class CypherProcessor extends Processor {
 
     private static final CypherParserConfig parserConfig;
 
@@ -89,7 +89,7 @@ public class CypherProcessorImpl extends Processor {
 
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
-        throw new RuntimeException( "The MQL implementation does not support validation." );
+        throw new GenericRuntimeException( "The Cypher implementation does not support validation." );
     }
 
 

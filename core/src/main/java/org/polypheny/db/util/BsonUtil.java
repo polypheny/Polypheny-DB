@@ -56,6 +56,7 @@ import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.enumerable.EnumUtils;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -666,7 +667,7 @@ public class BsonUtil {
             case DECIMAL128:
                 return value.asDecimal128().decimal128Value().bigDecimalValue();
             default:
-                throw new RuntimeException( "The used Bson type is not supported." );
+                throw new GenericRuntimeException( "The used Bson type is not supported." );
         }
     }
 
@@ -763,7 +764,7 @@ public class BsonUtil {
                 break;
 
         }
-        throw new RuntimeException( "BsonType cannot be transformed." );
+        throw new GenericRuntimeException( "BsonType cannot be transformed." );
     }
 
 

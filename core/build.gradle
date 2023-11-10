@@ -33,8 +33,6 @@ dependencies {
     api project(":config")
     api project(":information")
 
-    //javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
-
     implementation(group: "org.pf4j", name: "pf4j", version: pf4j_version) {
         exclude group: "org.slf4j"
     }
@@ -74,11 +72,6 @@ dependencies {
     implementation group: "com.google.protobuf", name: "protobuf-java", version: protobuf_version // BSD 3-clause
     implementation group: "com.github.docker-java", name: "docker-java", version: java_docker_version // Apache 2.0
     implementation group: "com.github.docker-java", name: "docker-java-transport-httpclient5", version: java_docker_version // TODO: should probably be independent version in future
-
-    // uses config internally...
-    /*implementation(group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version) { // Apache 2.0
-        exclude group: "com.github.spotbugs"
-    }*/
 
     api group: "io.activej", name: "activej-serializer", version: activej_serializer_version // Apache 2.0
 
@@ -157,9 +150,6 @@ javadoc {
     if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
-    // Exclude build dir
-    // exclude "fmpp/sql/javacc/**"
-    // exclude "fmpp/mql/javacc/**"
 }
 
 

@@ -77,7 +77,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -168,7 +168,7 @@ public class Bindables {
         @Override
         public void onMatch( AlgOptRuleCall call ) {
             final LogicalRelScan scan = call.alg( 0 );
-            final CatalogEntity table = scan.entity;
+            final LogicalEntity table = scan.entity;
             if ( BindableScan.canHandle( table ) ) {
                 call.transformTo( BindableScan.create( scan.getCluster(), scan.entity ) );
             }
@@ -180,7 +180,7 @@ public class Bindables {
     /**
      * Scan of a table that implements {@link ScannableEntity} and therefore can be converted into an {@link Enumerable}.
      */
-    public static class BindableScan extends RelScan<CatalogEntity> implements BindableAlg {
+    public static class BindableScan extends RelScan<LogicalEntity> implements BindableAlg {
 
         public final ImmutableList<RexNode> filters;
         public final ImmutableList<Integer> projects;
@@ -191,7 +191,7 @@ public class Bindables {
          *
          * Use {@link #create} unless you know what you are doing.
          */
-        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
+        BindableScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalEntity entity, ImmutableList<RexNode> filters, ImmutableList<Integer> projects ) {
             super( cluster, traitSet, entity );
             this.filters = Objects.requireNonNull( filters );
             this.projects = Objects.requireNonNull( projects );
@@ -202,7 +202,7 @@ public class Bindables {
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, CatalogEntity entity ) {
+        public static BindableScan create( AlgOptCluster cluster, LogicalEntity entity ) {
             return create( cluster, entity, ImmutableList.of(), identity( entity ) );
         }
 
@@ -210,7 +210,7 @@ public class Bindables {
         /**
          * Creates a BindableScan.
          */
-        public static BindableScan create( AlgOptCluster cluster, CatalogEntity entity, List<RexNode> filters, List<Integer> projects ) {
+        public static BindableScan create( AlgOptCluster cluster, LogicalEntity entity, List<RexNode> filters, List<Integer> projects ) {
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
                             .replace( entity.namespaceType.getModelTrait() )
@@ -267,7 +267,7 @@ public class Bindables {
         }
 
 
-        public static boolean canHandle( CatalogEntity entity ) {
+        public static boolean canHandle( LogicalEntity entity ) {
             return entity.unwrap( ScannableEntity.class ) != null
                     || entity.unwrap( FilterableEntity.class ) != null
                     || entity.unwrap( ProjectableFilterableEntity.class ) != null;

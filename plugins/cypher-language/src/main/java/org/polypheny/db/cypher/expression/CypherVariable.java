@@ -21,6 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -80,7 +81,7 @@ public class CypherVariable extends CypherExpression {
             }
         }
 
-        throw new RuntimeException( "The used variable is not known." );
+        throw new GenericRuntimeException( "The used variable is not known." );
     }
 
 

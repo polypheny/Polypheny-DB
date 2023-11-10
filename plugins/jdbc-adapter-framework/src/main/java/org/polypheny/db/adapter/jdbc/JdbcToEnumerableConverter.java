@@ -186,12 +186,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             calendar_ = null;
         }
 
-        /*if ( fieldCount == 1 ) {
-            final ParameterExpression value_ = Expressions.parameter( PolyValue.class, builder.newName( "value" ) );
-            builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
-            generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy, jdbcConvention.dialect );
-            builder.add( Expressions.return_( null, value_ ) );
-        } else {*/
         final Expression values_ = builder.append(
                 "values",
                 Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
@@ -342,37 +336,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case AUDIO:
             case IMAGE:
             case VIDEO:
-                //source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                 source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
                 break;
-            /*case FILE:
-            case AUDIO:
-            case VIDEO:
-                // if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ){ ..getBytes } else { ..getBinaryStream }
-                Expression getStatement = Expressions.call( DataContext.ROOT, Types.lookupMethod( DataContext.class, "getStatement" ) );
-                Expression getTransaction = Expressions.call( getStatement, Types.lookupMethod( Statement.class, "getTransaction" ) );
-                Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
-                Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
-                Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                builder.add( EnumUtils.ifThenElse(
-                        Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
-                        Expressions.statement( Expressions.assign( target, getBytes ) ),
-                        //assign a PushbackInputStream for the SQL META function
-                        Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
-                source = null;
-                break;
-                //When it is of type array, fetch with getObject, because it could either be an array or the elementType
-                /*case ARRAY:
-                if( dialect.supportsNestedArrays() ) {
-                    final Expression x = Expressions.convert_(
-                            Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) ),
-                            java.sql.Array.class );
-                    source = Expressions.call( BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x );
-                } else {
-                    source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
-                }
-                break;
-                */
             default:
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
 

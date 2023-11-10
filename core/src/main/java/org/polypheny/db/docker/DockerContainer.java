@@ -39,8 +39,9 @@ import org.bouncycastle.tls.AlertDescription;
 import org.bouncycastle.tls.TlsFatalAlert;
 import org.bouncycastle.tls.TlsNoCloseNotifyException;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PolyphenyMode;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.PolyphenyMode;
 
 /**
  * The container is the main interaction instance for calling classes when interacting with Docker.
@@ -268,7 +269,7 @@ public final class DockerContainer {
             return s;
         } catch ( Exception e ) {
             log.error( "Failed to start local proxy server: ", e );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

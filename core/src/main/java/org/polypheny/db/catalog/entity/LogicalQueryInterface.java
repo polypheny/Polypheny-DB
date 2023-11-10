@@ -17,31 +17,43 @@
 package org.polypheny.db.catalog.entity;
 
 
+import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 
 
 @EqualsAndHashCode
 @Value
-public class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
+@SuperBuilder(toBuilder = true)
+public class LogicalQueryInterface implements LogicalObject {
 
-    private static final long serialVersionUID = 5022567585804699491L;
+    private static final long serialVersionUID = 7212289724539530050L;
 
     @Serialize
     public long id;
     @Serialize
     public String name;
     @Serialize
-    public String password;
+    public String clazz;
+    @Serialize
+    public ImmutableMap<String, String> settings;
 
 
-    public CatalogUser( @Deserialize("id") final long id, @Deserialize("name") final String name, @Deserialize("password") final String password ) {
+    public LogicalQueryInterface(
+            @Deserialize("id") final long id,
+            @Deserialize("name") @NonNull final String uniqueName,
+            @Deserialize("clazz") @NonNull final String clazz,
+            @Deserialize("settings") @NonNull final Map<String, String> settings ) {
         this.id = id;
-        this.name = name;
-        this.password = password;
+        this.name = uniqueName;
+        this.clazz = clazz;
+        this.settings = ImmutableMap.copyOf( settings );
     }
 
 
@@ -51,13 +63,5 @@ public class CatalogUser implements CatalogObject, Comparable<CatalogUser> {
         return new Serializable[]{ name };
     }
 
-
-    @Override
-    public int compareTo( CatalogUser o ) {
-        if ( o != null ) {
-            return Math.toIntExact( this.id - o.id );
-        }
-        return -1;
-    }
 
 }

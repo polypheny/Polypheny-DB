@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
@@ -30,6 +31,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
@@ -131,33 +133,33 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             writer.keyword( "DROP" );
             writer.keyword( "DEFAULT" );
         } else {
-            throw new RuntimeException( "Unknown option" );
+            throw new GenericRuntimeException( "Unknown option" );
         }
     }
 
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, tableName );
+        LogicalTable table = failOnEmpty( context, tableName );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE because " + catalogTable.name + " is not a table." );
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because " + table.name + " is not a table." );
         }
 
         if ( type != null ) {
-            DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromDataTypeSpec( type ), statement );
+            DdlManager.getInstance().setColumnType( table, columnName.getSimple(), ColumnTypeInformation.fromDataTypeSpec( type ), statement );
         } else if ( nullable != null ) {
-            DdlManager.getInstance().setColumnNullable( catalogTable, columnName.getSimple(), nullable, statement );
+            DdlManager.getInstance().setColumnNullable( table, columnName.getSimple(), nullable, statement );
         } else if ( beforeColumn != null || afterColumn != null ) {
-            DdlManager.getInstance().setColumnPosition( catalogTable, columnName.getSimple(), beforeColumn == null ? null : beforeColumn.getSimple(), afterColumn == null ? null : afterColumn.getSimple(), statement );
+            DdlManager.getInstance().setColumnPosition( table, columnName.getSimple(), beforeColumn == null ? null : beforeColumn.getSimple(), afterColumn == null ? null : afterColumn.getSimple(), statement );
         } else if ( collation != null ) {
-            DdlManager.getInstance().setColumnCollation( catalogTable, columnName.getSimple(), Collation.parse( collation ), statement );
+            DdlManager.getInstance().setColumnCollation( table, columnName.getSimple(), Collation.parse( collation ), statement );
         } else if ( defaultValue != null ) {
-            DdlManager.getInstance().setDefaultValue( catalogTable, columnName.getSimple(), defaultValue.toString(), statement );
+            DdlManager.getInstance().setDefaultValue( table, columnName.getSimple(), SqlLiteral.toPoly( defaultValue ), statement );
         } else if ( dropDefault != null && dropDefault ) {
-            DdlManager.getInstance().dropDefaultValue( catalogTable, columnName.getSimple(), statement );
+            DdlManager.getInstance().dropDefaultValue( table, columnName.getSimple(), statement );
         } else {
-            throw new RuntimeException( "Unknown option" );
+            throw new GenericRuntimeException( "Unknown option" );
         }
 
 

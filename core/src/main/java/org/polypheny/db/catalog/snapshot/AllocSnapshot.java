@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -153,32 +152,6 @@ public interface AllocSnapshot {
      */
     @NotNull
     Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId );
-
-    /**
-     * Returns all DataPlacements of a given table.
-     *
-     * @param tableId table to retrieve the placements from
-     * @return List of all DataPlacements for the table
-     */
-    List<CatalogDataPlacement> getDataPlacements( long tableId );
-
-    /**
-     * Returns a list of all Partition Placements which currently reside on an adapter, for a specific table.
-     *
-     * @param adapterId The adapter on which the requested partition placements reside
-     * @param tableId The table for which all partition placements on an adapter should be considered
-     * @return A list of all Partition Placements, that are currently located  on that specific store for an individual table
-     */
-    List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId );
-
-    /**
-     * Returns a list of all Partition Placements which are currently associated with a table.
-     *
-     * @param tableId The table on which the requested partition placements are currently associated with.
-     * @return A list of all Partition Placements, that belong to the desired table
-     */
-    List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId );
-
 
     @NotNull
     List<AllocationEntity> getFromLogical( long logicalId );

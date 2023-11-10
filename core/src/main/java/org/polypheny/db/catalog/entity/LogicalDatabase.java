@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 
 
 @EqualsAndHashCode
-public final class CatalogDatabase implements CatalogObject, Comparable<CatalogDatabase> {
+public final class LogicalDatabase implements LogicalObject, Comparable<LogicalDatabase> {
 
     private static final long serialVersionUID = -4529369849606480011L;
 
@@ -35,7 +35,7 @@ public final class CatalogDatabase implements CatalogObject, Comparable<CatalogD
     public final String defaultNamespaceName; // can be null
 
 
-    public CatalogDatabase(
+    public LogicalDatabase(
             final long id,
             @NonNull final String name,
             final int ownerId,
@@ -59,7 +59,7 @@ public final class CatalogDatabase implements CatalogObject, Comparable<CatalogD
 
 
     @Override
-    public int compareTo( CatalogDatabase o ) {
+    public int compareTo( LogicalDatabase o ) {
         if ( o != null ) {
             return (int) (this.id - o.id);
         }

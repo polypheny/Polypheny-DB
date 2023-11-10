@@ -21,7 +21,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -31,7 +31,7 @@ public interface ModifiableCollection extends Typed {
     Modify<?> toModificationCollection(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            CatalogEntity collection,
+            LogicalEntity collection,
             AlgNode child,
             Operation operation,
             Map<String, ? extends RexNode> updates,

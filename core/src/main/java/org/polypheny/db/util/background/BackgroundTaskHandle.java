@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.background.BackgroundTask.TaskDelayType;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -66,7 +67,7 @@ class BackgroundTaskHandle implements Runnable {
         } else if ( schedulingType.getDelayType() == TaskDelayType.DELAYED ) {
             this.runner = exec.scheduleWithFixedDelay( this, 0, schedulingType.getMillis(), TimeUnit.MILLISECONDS );
         } else {
-            throw new RuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
+            throw new GenericRuntimeException( "Unknown TaskDelayType: " + schedulingType.getDelayType().name() );
         }
 
     }

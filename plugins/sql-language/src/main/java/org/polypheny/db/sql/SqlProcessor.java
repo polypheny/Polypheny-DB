@@ -24,7 +24,6 @@ import java.util.List;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
@@ -35,7 +34,7 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -82,9 +81,10 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 @Slf4j
-public class SqlProcessorImpl extends Processor {
+public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
+
     @Setter
     private PolyphenyDbSqlValidator validator;
 
@@ -100,7 +100,7 @@ public class SqlProcessorImpl extends Processor {
     }
 
 
-    public SqlProcessorImpl() {
+    public SqlProcessor() {
 
     }
 
@@ -164,7 +164,7 @@ public class SqlProcessorImpl extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -283,30 +283,30 @@ public class SqlProcessorImpl extends Processor {
                     } else {
                         // Add value
                         if ( column.defaultValue != null ) {
-                            CatalogDefaultValue defaultValue = column.defaultValue;
+                            LogicalDefaultValue defaultValue = column.defaultValue;
                             //TODO NH handle arrays
                             switch ( column.type ) {
                                 case BOOLEAN:
                                     newValues[i][pos] = SqlLiteral.createBoolean(
-                                            Boolean.parseBoolean( column.defaultValue.value ),
+                                            Boolean.parseBoolean( column.defaultValue.value.toJson() ),
                                             ParserPos.ZERO );
                                     break;
                                 case INTEGER:
                                 case DECIMAL:
                                 case BIGINT:
                                     newValues[i][pos] = SqlLiteral.createExactNumeric(
-                                            column.defaultValue.value,
+                                            column.defaultValue.value.toJson(),
                                             ParserPos.ZERO );
                                     break;
                                 case REAL:
                                 case DOUBLE:
                                     newValues[i][pos] = SqlLiteral.createApproxNumeric(
-                                            column.defaultValue.value,
+                                            column.defaultValue.value.toJson(),
                                             ParserPos.ZERO );
                                     break;
                                 case VARCHAR:
                                     newValues[i][pos] = SqlLiteral.createCharString(
-                                            column.defaultValue.value,
+                                            column.defaultValue.value.toJson(),
                                             ParserPos.ZERO );
                                     break;
                                 default:

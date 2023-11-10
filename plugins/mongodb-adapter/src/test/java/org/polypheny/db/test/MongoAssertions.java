@@ -33,10 +33,10 @@
 
 package org.polypheny.db.test;
 
-import com.google.common.collect.Ordering;
-import org.hamcrest.CoreMatchers;
-import org.polypheny.db.util.Util;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
+import com.google.common.collect.Ordering;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -44,9 +44,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
+import org.hamcrest.CoreMatchers;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.util.Util;
 
 
 /**
@@ -79,7 +79,7 @@ public class MongoAssertions {
 
                 assertThat( Ordering.natural().immutableSortedCopy( actualList ), CoreMatchers.equalTo( expectedList ) );
             } catch ( SQLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         };
     }

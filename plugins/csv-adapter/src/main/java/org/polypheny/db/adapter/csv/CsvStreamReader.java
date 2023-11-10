@@ -35,16 +35,16 @@ package org.polypheny.db.adapter.csv;
 
 import au.com.bytecode.opencsv.CSVParser;
 import au.com.bytecode.opencsv.CSVReader;
-import org.apache.commons.io.input.Tailer;
-import org.apache.commons.io.input.TailerListener;
-import org.apache.commons.io.input.TailerListenerAdapter;
-import org.polypheny.db.util.Source;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import org.apache.commons.io.input.Tailer;
+import org.apache.commons.io.input.TailerListener;
+import org.apache.commons.io.input.TailerListenerAdapter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.util.Source;
 
 
 /**
@@ -103,7 +103,7 @@ class CsvStreamReader extends CSVReader implements Closeable {
             // wait for tailer to capture data
             Thread.sleep( DEFAULT_MONITOR_DELAY );
         } catch ( InterruptedException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

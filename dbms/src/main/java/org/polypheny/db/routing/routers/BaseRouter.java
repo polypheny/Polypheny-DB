@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -61,7 +61,6 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -229,14 +228,14 @@ public abstract class BaseRouter implements Router {
     public RoutedAlgBuilder handleRelScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            CatalogEntity entity ) {
+            LogicalEntity entity ) {
 
-        LogicalEntity table;
+        org.polypheny.db.catalog.entity.logical.LogicalEntity table;
 
         if ( entity.unwrap( LogicalTable.class ) != null ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
 
-            table = entity.unwrap( LogicalEntity.class );
+            table = entity.unwrap( org.polypheny.db.catalog.entity.logical.LogicalEntity.class );
             builder.scan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ) != null ) {
             builder.scan( entity.unwrap( AllocationTable.class ) );
@@ -256,7 +255,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public DocumentScan<CatalogEntity> handleDocScan(
+    public DocumentScan<LogicalEntity> handleDocScan(
             DocumentScan<?> scan,
             Statement statement,
             @Nullable List<Long> excludedPlacements ) {

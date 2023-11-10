@@ -80,7 +80,7 @@ public class ColumnModel extends FieldModel {
                 column.collectionsType,
                 column.length,
                 column.scale,
-                column.defaultValue == null ? null : column.defaultValue.value,
+                column.defaultValue == null ? null : column.defaultValue.value.toJson(),
                 column.dimension,
                 column.cardinality,
                 column.nullable,

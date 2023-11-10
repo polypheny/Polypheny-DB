@@ -82,21 +82,21 @@ public class RangePartitionManager extends AbstractPartitionManager {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ) {
-            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
+            throw new GenericRuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected ExpressionType: " + partitionColumn.type + " for column: '" + partitionColumn.name + "'" );
         }
 
         for ( List<String> partitionQualifiers : partitionGroupQualifiers ) {
             for ( String partitionQualifier : partitionQualifiers ) {
                 if ( partitionQualifier.isEmpty() ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionGroupQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
                 }
 
                 if ( !(partitionQualifier.chars().allMatch( Character::isDigit )) ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support non-integer partition qualifiers: '" + partitionQualifier + "'" );
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support non-integer partition qualifiers: '" + partitionQualifier + "'" );
                 }
 
-                if ( partitionQualifiers.size() > 2 || partitionQualifiers.size() <= 1 ) {
-                    throw new RuntimeException( "RANGE Partitioning doesn't support anything other than two qualifiers per partition. Use (PARTITION name1 VALUES(lowerValue, upperValue)\n Error Token: '" + partitionQualifiers + "' " );
+                if ( partitionQualifiers.size() != 2 ) {
+                    throw new GenericRuntimeException( "RANGE Partitioning doesn't support anything other than two qualifiers per partition. Use (PARTITION name1 VALUES(lowerValue, upperValue)\n Error Token: '" + partitionQualifiers + "' " );
                 }
             }
         }
@@ -125,7 +125,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 partitionGroupQualifiers.set( i, Stream.of( partitionGroupQualifiers.get( i ).get( 1 ), partitionGroupQualifiers.get( i ).get( 0 ) ).collect( Collectors.toList() ) );
 
             } else if ( upperBound == lowerBound ) {
-                throw new RuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );
+                throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + lowerBound + " = " + upperBound );
             }
 
             for ( int k = i; k < partitionGroupQualifiers.size() - 1; k++ ) {
@@ -142,12 +142,12 @@ public class RangePartitionManager extends AbstractPartitionManager {
                     partitionGroupQualifiers.set( k + 1, list );
 
                 } else if ( contestingUpperBound == contestingLowerBound ) {
-                    throw new RuntimeException( "No Range specified. Lower and upper bound are equal:" + contestingLowerBound + " = " + contestingUpperBound );
+                    throw new GenericRuntimeException( "No Range specified. Lower and upper bound are equal:" + contestingLowerBound + " = " + contestingUpperBound );
                 }
 
                 // Check if they are overlapping
                 if ( lowerBound <= contestingUpperBound && upperBound >= contestingLowerBound ) {
-                    throw new RuntimeException( "Several ranges are overlapping: [" + lowerBound + " - " + upperBound + "] and [" + contestingLowerBound + " - " + contestingUpperBound + "] You need to specify distinct ranges." );
+                    throw new GenericRuntimeException( "Several ranges are overlapping: [" + lowerBound + " - " + upperBound + "] and [" + contestingLowerBound + " - " + contestingUpperBound + "] You need to specify distinct ranges." );
                 }
 
             }

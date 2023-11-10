@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -111,10 +112,10 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY && catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + catalogTable.name + " is not a table or materialized view." );
+        if ( logicalTable.entityType != EntityType.ENTITY && logicalTable.entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + logicalTable.name + " is not a table or materialized view." );
         }
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
@@ -122,7 +123,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         try {
             if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
                 DdlManager.getInstance().createPolyphenyIndex(
-                        catalogTable,
+                        logicalTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                         indexName.getSimple(),
@@ -139,7 +140,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                 }
                 DdlManager.getInstance().createIndex(
-                        catalogTable,
+                        logicalTable,
                         indexMethodName,
                         columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                         indexName.getSimple(),
@@ -148,7 +149,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                         statement );
             }
         } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

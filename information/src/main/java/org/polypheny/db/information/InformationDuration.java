@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,7 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 
 public class InformationDuration extends Information {
 
-    @JsonProperty
+
     private final Map<String, Duration> children = new HashMap<>();
 
 
@@ -56,6 +57,11 @@ public class InformationDuration extends Information {
     }
 
 
+    @JsonProperty("children")
+    public Collection<Duration> getDurationValues() {
+        return children.values();
+    }
+
     public Duration start( final String name ) {
         Duration d = new Duration( name );
         this.children.put( name, d );
@@ -71,7 +77,7 @@ public class InformationDuration extends Information {
     public InformationDuration merge( InformationDuration other ) {
         Set<String> keySet = this.children.keySet();
         keySet.retainAll( other.children.keySet() );
-        if ( this.children.keySet().size() + other.children.keySet().size() != 0 && keySet.size() != 0 ) {
+        if ( this.children.keySet().size() + other.children.keySet().size() != 0 && !keySet.isEmpty() ) {
             throw new RuntimeException( "It was not possible to merge the InformationDuration." );
         }
         InformationDuration duration = new InformationDuration( this.group );
@@ -136,9 +142,10 @@ public class InformationDuration extends Information {
         @JsonProperty
         private final long sequence;
 
-        @JsonProperty
-        @JsonPropertyOrder("sequence")
+
         private final Map<String, Duration> children = new HashMap<>();
+
+
         @JsonProperty
         private final boolean isChild = true;
         /**
@@ -164,6 +171,12 @@ public class InformationDuration extends Information {
             this.sw = StopWatch.createStarted();
         }
 
+
+        @JsonPropertyOrder("sequence")
+        @JsonProperty("children")
+        public Collection<Duration> getDurationValues() {
+            return children.values();
+        }
 
         private Duration( final String name, final long nanoDuration ) {
             this.sequence = counter++;

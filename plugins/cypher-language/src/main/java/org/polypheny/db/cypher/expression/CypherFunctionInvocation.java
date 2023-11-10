@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
@@ -43,7 +44,7 @@ public class CypherFunctionInvocation extends CypherExpression {
         if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else {
-            throw new RuntimeException( "Used function is not supported!" );
+            throw new GenericRuntimeException( "Used function is not supported!" );
         }
         this.distinct = distinct;
         this.arguments = arguments;

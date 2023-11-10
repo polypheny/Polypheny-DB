@@ -32,6 +32,7 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -143,7 +144,7 @@ public final class SqlParserUtil {
             ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
-            throw new RuntimeException( "while parsing day-to-second interval " + literal, e );
+            throw new GenericRuntimeException( "while parsing day-to-second interval " + literal, e );
         }
         long l = 0;
         long[] conv = new long[5];
@@ -179,7 +180,7 @@ public final class SqlParserUtil {
             ret = intervalQualifier.evaluateIntervalLiteral( literal, intervalQualifier.getPos(), AlgDataTypeSystem.DEFAULT );
             assert ret != null;
         } catch ( PolyphenyDbContextException e ) {
-            throw new RuntimeException( "Error while parsing year-to-month interval " + literal, e );
+            throw new GenericRuntimeException( "Error while parsing year-to-month interval " + literal, e );
         }
 
         long l = 0;

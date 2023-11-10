@@ -57,6 +57,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -151,7 +152,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
             addRowCount( 1 );
             return;
         }
-        throw new RuntimeException();
+        throw new GenericRuntimeException( "" );
     }
 
 

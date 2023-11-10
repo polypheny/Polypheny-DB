@@ -32,22 +32,19 @@ import org.polypheny.db.type.entity.category.PolyNumber;
  * Stores the available statistic data of a specific column
  * Responsible to validate if data should be changed
  */
+@Getter
 @Slf4j
 public class NumericalStatisticColumn extends StatisticColumn {
 
     @Expose
-    @Getter
     @Setter
     private PolyNumber min;
 
     @Expose
-    @Getter
     @Setter
     private PolyNumber max;
 
-    @Getter
     private final TreeSet<PolyNumber> minCache = new TreeSet<>();
-    @Getter
     private final TreeSet<PolyNumber> maxCache = new TreeSet<>();
 
 

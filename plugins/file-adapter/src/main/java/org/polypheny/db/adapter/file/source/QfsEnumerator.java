@@ -131,7 +131,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
                             try {
                                 row.add( Files.readAllBytes( file.toPath() ) );
                             } catch ( IOException e ) {
-                                throw new RuntimeException( "Could not return QFS file as a byte array", e );
+                                throw new GenericRuntimeException( "Could not return QFS file as a byte array", e );
                             }
                         } else {
                             row.add( null );
@@ -141,7 +141,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
                     }
                     break;
                 default:
-                    throw new RuntimeException( "The QFS data source has not implemented the column " + col + " yet" );
+                    throw new GenericRuntimeException( "The QFS data source has not implemented the column " + col + " yet" );
             }
         }
         return row.toArray( new Object[0] );

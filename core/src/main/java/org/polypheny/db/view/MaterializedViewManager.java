@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 
@@ -46,7 +47,7 @@ public abstract class MaterializedViewManager {
 
     public static MaterializedViewManager setAndGetInstance( MaterializedViewManager transaction ) {
         if ( INSTANCE != null ) {
-            throw new RuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
+            throw new GenericRuntimeException( "Overwriting the MaterializedViewManager is not permitted." );
         }
         INSTANCE = transaction;
         return INSTANCE;
@@ -55,7 +56,7 @@ public abstract class MaterializedViewManager {
 
     public static MaterializedViewManager getInstance() {
         if ( INSTANCE == null ) {
-            throw new RuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
+            throw new GenericRuntimeException( "MaterializedViewManager was not set correctly on Polypheny-DB start-up" );
         }
         return INSTANCE;
     }

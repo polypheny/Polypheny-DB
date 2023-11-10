@@ -16,6 +16,9 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -29,11 +32,13 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 
+@Getter
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class PolyDate extends PolyTemporal {
 
-    @Getter
+    public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
+
     public Long milliSinceEpoch;
 
 
@@ -74,6 +79,12 @@ public class PolyDate extends PolyTemporal {
 
 
     @Override
+    public String toJson() {
+        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : dateFormat.format( new Date( milliSinceEpoch ) );
+    }
+
+
+    @Override
     public int compareTo( @NotNull PolyValue o ) {
         if ( !isDate() ) {
             return -1;
@@ -93,7 +104,6 @@ public class PolyDate extends PolyTemporal {
     public @Nullable Long deriveByteSize() {
         return null;
     }
-
 
 
     @Override

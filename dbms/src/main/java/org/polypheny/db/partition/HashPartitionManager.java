@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.partition.properties.PartitionProperty;
@@ -58,10 +59,10 @@ public class HashPartitionManager extends AbstractPartitionManager {
         super.validatePartitionGroupSetup( partitionGroupQualifiers, numPartitionGroups, partitionGroupNames, partitionColumn );
 
         if ( !partitionGroupQualifiers.isEmpty() ) {
-            throw new RuntimeException( "PartitionType HASH does not support the assignment of values to partitions" );
+            throw new GenericRuntimeException( "PartitionType HASH does not support the assignment of values to partitions" );
         }
         if ( numPartitionGroups < 2 ) {
-            throw new RuntimeException( "You can't partition a table with less than 2 partitions. You only specified: '" + numPartitionGroups + "'" );
+            throw new GenericRuntimeException( "You can't partition a table with less than 2 partitions. You only specified: '" + numPartitionGroups + "'" );
         }
 
         return true;

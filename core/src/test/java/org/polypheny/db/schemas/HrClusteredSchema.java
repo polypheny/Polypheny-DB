@@ -47,7 +47,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -64,7 +64,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public final class HrClusteredSchema extends AbstractNamespace implements Schema {
 
-    private final ImmutableMap<String, CatalogEntity> tables;
+    private final ImmutableMap<String, LogicalEntity> tables;
 
 
     public HrClusteredSchema( long id ) {
@@ -106,7 +106,7 @@ public final class HrClusteredSchema extends AbstractNamespace implements Schema
 
 
     @Override
-    protected Map<String, CatalogEntity> getTables() {
+    protected Map<String, LogicalEntity> getTables() {
         return tables;
     }
 

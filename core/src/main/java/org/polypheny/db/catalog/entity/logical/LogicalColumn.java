@@ -29,8 +29,8 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyType;
@@ -40,7 +40,7 @@ import org.polypheny.db.type.PolyType;
 @Value
 @SuperBuilder(toBuilder = true)
 @NonFinal
-public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
+public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
 
     private static final long serialVersionUID = -4792846455300897399L;
 
@@ -86,7 +86,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
 
     @Serialize
     @SerializeNullable
-    public CatalogDefaultValue defaultValue;
+    public LogicalDefaultValue defaultValue;
 
     public NamespaceType namespaceType = NamespaceType.RELATIONAL;
 
@@ -105,7 +105,7 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
             @Deserialize("cardinality") final Integer cardinality,
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
-            @Deserialize("defaultValue") final CatalogDefaultValue defaultValue ) {
+            @Deserialize("defaultValue") final LogicalDefaultValue defaultValue ) {
         this.id = id;
         this.name = name;
         this.tableId = tableId;
@@ -169,13 +169,13 @@ public class LogicalColumn implements CatalogObject, Comparable<LogicalColumn> {
                 null,
                 nullable ? 1 : 0,
                 "",
-                defaultValue == null ? null : defaultValue.value,
+                defaultValue == null ? null : defaultValue.value.toJson(),
                 null,
                 null,
                 null,
                 position,
                 nullable ? "YES" : "NO",
-                CatalogObject.getEnumNameOrNull( collation ) };
+                LogicalObject.getEnumNameOrNull( collation ) };
     }
 
 

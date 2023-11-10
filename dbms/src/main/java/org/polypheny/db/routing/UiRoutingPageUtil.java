@@ -40,8 +40,8 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.processing.util.Plan;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -54,23 +54,21 @@ public class UiRoutingPageUtil {
     private static Snapshot snapshot;
 
 
-    public static void outputSingleResult( ProposedRoutingPlan proposedRoutingPlan, AlgNode optimalAlgNode, InformationManager queryAnalyzer ) {
-        addPhysicalPlanPage( optimalAlgNode, queryAnalyzer );
+    public static void outputSingleResult( Plan plan, InformationManager queryAnalyzer ) {
+        addPhysicalPlanPage( plan.optimalNode(), queryAnalyzer );
 
         InformationPage page = queryAnalyzer.getPage( "routing" );
         if ( page == null ) {
-            page = setBaseOutput( "Routing", 1, proposedRoutingPlan, queryAnalyzer );
+            page = setBaseOutput( "Routing", 1, plan.proposedRoutingPlan(), queryAnalyzer );
         }
-        addSelectedAdapterTable( queryAnalyzer, proposedRoutingPlan, page );
-        final AlgRoot root = proposedRoutingPlan.getRoutedRoot();
+        addSelectedAdapterTable( queryAnalyzer, plan.proposedRoutingPlan(), page );
+        final AlgRoot root = plan.proposedRoutingPlan().getRoutedRoot();
         addRoutedPlanPage( root.alg, queryAnalyzer );
     }
 
 
     public static void addPhysicalPlanPage( AlgNode optimalNode, InformationManager queryAnalyzer ) {
-        log.warn( "Should this not be done in an separate thread?" );
         new Thread( () -> {
-
             InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
@@ -105,9 +103,9 @@ public class UiRoutingPageUtil {
                 group,
                 ImmutableList.of( "Entity", "Field", "Allocation Id", "Adapter" ) );
         if ( proposedRoutingPlan.getPhysicalPlacementsOfPartitions() != null ) {
-            for ( Entry<Long, List<Pair<Long, Long>>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
+            for ( Entry<Long, List<AllocationColumn>> entry : proposedRoutingPlan.getPhysicalPlacementsOfPartitions().entrySet() ) {
                 Long k = entry.getKey();
-                List<Pair<Long, Long>> v = entry.getValue();
+                List<AllocationColumn> v = entry.getValue();
                 AllocationEntity alloc = snapshot.alloc().getEntity( k ).orElseThrow();
                 LogicalEntity entity = snapshot.getLogicalEntity( alloc.logicalId ).orElseThrow();
 

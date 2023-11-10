@@ -15,6 +15,7 @@
  */
 package org.polypheny.db.partition;
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PartitionType;
 
 
@@ -41,7 +42,7 @@ public class PartitionManagerFactoryImpl extends PartitionManagerFactory {
                 return new NonePartitionManager();
         }
 
-        throw new RuntimeException( "Unknown partition type: " + partitionType );
+        throw new GenericRuntimeException( "Unknown partition type: " + partitionType );
     }
 
 }

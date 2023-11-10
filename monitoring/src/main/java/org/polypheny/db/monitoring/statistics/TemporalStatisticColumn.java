@@ -32,29 +32,25 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
  * Stores the available statistic data of a specific column.
  * Responsible to validate if data should be changed.
  */
+@Getter
 @Slf4j
 public class TemporalStatisticColumn extends StatisticColumn {
 
 
     @Expose
-    @Getter
     @Setter
     private PolyTemporal min;
 
     @Expose
-    @Getter
     @Setter
     private PolyTemporal max;
 
     @Expose
-    @Getter
     @Setter
     private String temporalType;
 
 
-    @Getter
     public TreeSet<PolyTemporal> minCache = new TreeSet<>();
-    @Getter
     public TreeSet<PolyTemporal> maxCache = new TreeSet<>();
 
 

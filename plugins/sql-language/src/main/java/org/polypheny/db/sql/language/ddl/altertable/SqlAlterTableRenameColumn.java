@@ -78,9 +78,9 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+        DdlManager.getInstance().renameColumn( logicalTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
     }
 
 }

@@ -44,7 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -111,7 +111,7 @@ public class RequestParser {
      * @return the authorized user
      * @throws UnauthorizedAccessException thrown if no authorization provided or invalid credentials
      */
-    public CatalogUser parseBasicAuthentication( Context ctx ) throws UnauthorizedAccessException {
+    public LogicalUser parseBasicAuthentication( Context ctx ) throws UnauthorizedAccessException {
         if ( ctx.req.getHeader( "Authorization" ) == null ) {
             log.debug( "No Authorization header for request id: {}.", ctx.req.getSession().getId() );
             throw new UnauthorizedAccessException( "No Basic Authorization sent by user." );

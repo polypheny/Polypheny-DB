@@ -44,6 +44,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.Util;
 
 
@@ -158,7 +159,7 @@ public class ChainedAlgMetadataProvider implements AlgMetadataProvider {
                         continue;
                     }
                     Util.throwIfUnchecked( e.getCause() );
-                    throw new RuntimeException( e.getCause() );
+                    throw new GenericRuntimeException( e.getCause() );
                 }
             }
             return null;

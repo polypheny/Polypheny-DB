@@ -157,7 +157,7 @@ public class StatisticQueryProcessor {
         try {
             implementation = statement.getQueryProcessor().prepareQuery( AlgRoot.of( node, Kind.SELECT ), node.getRowType(), false );
             ResultIterator iterator = implementation.execute( statement, getPageSize() );
-            rows = iterator.getRows();
+            rows = iterator.getNextBatch();
             iterator.close();
         } catch ( Throwable t ) {
             throw new QueryExecutionException( t );

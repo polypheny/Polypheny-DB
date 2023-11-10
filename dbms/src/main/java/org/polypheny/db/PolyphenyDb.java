@@ -43,7 +43,6 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PolyphenyMode;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
@@ -72,9 +71,9 @@ import org.polypheny.db.partition.FrequencyMapImpl;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.PartitionManagerFactoryImpl;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.AlgProcessor;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
-import org.polypheny.db.processing.JsonRelProcessorImpl;
 import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
@@ -82,6 +81,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigService;
@@ -115,7 +115,7 @@ public class PolyphenyDb {
     public boolean memoryCatalog = false;
 
     @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyphenyModesConverter.class)
-    public PolyphenyMode mode = PolyphenyMode.DEFAULT;
+    public PolyphenyMode mode = PolyphenyMode.PRODUCTION;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
@@ -224,7 +224,7 @@ public class PolyphenyDb {
         }
 
         // Restore content of Polypheny folder
-        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.getInstance();
+        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.setModeAndGetInstance( mode );
         if ( phdm.checkIfExists( "_test_backup" ) && phdm.getFileIfExists( "_test_backup" ).isDirectory() ) {
             File backupFolder = phdm.getFileIfExists( "_test_backup" );
             // Cleanup Polypheny folder
@@ -426,7 +426,7 @@ public class PolyphenyDb {
                 "rel",
                 List.of( "rel", "relational" ),
                 null,
-                JsonRelProcessorImpl::new,
+                AlgProcessor::new,
                 null );
 
         // Initialize index manager

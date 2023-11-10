@@ -215,13 +215,13 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
                     if ( !s.canBeNull && newValue == null ) {
-                        throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {
-                    throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
             } else if ( s.required && initialSetup ) {
-                throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
+                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
     }

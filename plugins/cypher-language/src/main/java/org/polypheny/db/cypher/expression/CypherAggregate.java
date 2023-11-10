@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -46,7 +47,7 @@ public class CypherAggregate extends CypherExpression {
         this.target = target;
         this.distinct = distinct;
         if ( this.op != OperatorName.COUNT && distinct ) {
-            throw new RuntimeException( "Only count([name]) aggregations can be DISTINCT." );
+            throw new GenericRuntimeException( "Only count([name]) aggregations can be DISTINCT." );
         }
     }
 

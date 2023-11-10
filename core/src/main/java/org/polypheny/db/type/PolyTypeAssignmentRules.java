@@ -40,9 +40,14 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -446,7 +451,7 @@ public class PolyTypeAssignmentRules {
             try {
                 map.put( fromType, sets.get( toTypes ) );
             } catch ( ExecutionException e ) {
-                throw new RuntimeException( "populating SqlTypeAssignmentRules", e );
+                throw new GenericRuntimeException( "populating SqlTypeAssignmentRules", e );
             }
         }
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
@@ -716,7 +717,7 @@ public enum RuntimeConfig {
                 break;
 
             default:
-                throw new RuntimeException( "Unknown config type: " + configType.name() );
+                throw new GenericRuntimeException( "Unknown config type: " + configType.name() );
         }
         configManager.registerConfig( config );
         if ( webUiGroup != null ) {
@@ -832,7 +833,7 @@ public enum RuntimeConfig {
         if ( optional.isPresent() ) {
             return optional.get();
         } else {
-            throw new RuntimeException( "The was an error while retrieving the config." );
+            throw new GenericRuntimeException( "The was an error while retrieving the config." );
         }
     }
 

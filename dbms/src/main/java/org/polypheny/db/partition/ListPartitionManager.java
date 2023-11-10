@@ -85,7 +85,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     try {
                         Integer.valueOf( qualifier );
                     } catch ( NumberFormatException e ) {
-                        throw new RuntimeException( "Specified partition value '" + qualifier + "' is not a number as expected according to the type of the partition column " + partitionColumn.name );
+                        throw new GenericRuntimeException( "Specified partition value '" + qualifier + "' is not a number as expected according to the type of the partition column " + partitionColumn.name );
                     }
                 }
             }

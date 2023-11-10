@@ -20,6 +20,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
@@ -45,7 +46,7 @@ public class ColumnFilter implements Filter {
     @Override
     public RexNode convert2RexNode( AlgNode baseNode, RexBuilder rexBuilder, Map<String, AlgDataTypeField> typeField ) {
         log.error( "Column Filters have not been implemented." );
-        throw new RuntimeException( "Column Filters have not been implemented." );
+        throw new GenericRuntimeException( "Column Filters have not been implemented." );
     }
 
 

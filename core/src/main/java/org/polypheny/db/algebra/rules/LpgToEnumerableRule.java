@@ -31,6 +31,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -91,7 +92,7 @@ public class LpgToEnumerableRule extends AlgOptRule {
             call.transformTo( node );
         } catch ( InvalidAlgException e ) {
             //EnumerableRules.LOGGER.debug( e.toString() );
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

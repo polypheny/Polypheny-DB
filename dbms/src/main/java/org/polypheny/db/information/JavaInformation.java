@@ -55,7 +55,7 @@ public class JavaInformation {
                 GraphType.DOUGHNUT,
                 new String[]{ "Current", "Maximum", "Free" }
         );
-        heapInfoGraph.colorList( List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.LIME ) );
+        heapInfoGraph.colors( List.of( GraphColor.PASTEL_RED, GraphColor.BATTERY_CHARGED_BLUE, GraphColor.LIME ) );
         im.registerInformation( heapInfoGraph );
 
         InformationTable heapInfoTable = new InformationTable(
@@ -92,7 +92,7 @@ public class JavaInformation {
                 groupHeapOverTime,
                 GraphType.LINE,
                 null,
-                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() / 1000000 }, 20 )
+                new GraphData<>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() / 1000000 }, 20 )
         );
         heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );

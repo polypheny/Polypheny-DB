@@ -37,6 +37,7 @@ public class InformationQueryPlan extends Information {
      */
     public InformationQueryPlan( final InformationGroup group, final String queryPlan ) {
         this( group.getId(), queryPlan );
+        fullWidth( true );
     }
 
 
@@ -53,7 +54,7 @@ public class InformationQueryPlan extends Information {
     /**
      * Constructor
      *
-     * @param id    Unique id for this information object
+     * @param id Unique id for this information object
      * @param group The id of the InformationGroup to which this information belongs
      */
     public InformationQueryPlan( final String id, final String group, final String queryPlan ) {

@@ -46,6 +46,7 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ClassBodyEvaluator;
 import org.codehaus.janino.Scanner;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.util.Pair;
@@ -82,7 +83,7 @@ public class RexExecutable {
             final Constructor<Function1<DataContext, Object[]>> constructor = c.getConstructor();
             return constructor.newInstance();
         } catch ( CompileException | IOException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e ) {
-            throw new RuntimeException( "While compiling " + reason, e );
+            throw new GenericRuntimeException( "While compiling " + reason, e );
         }
     }
 

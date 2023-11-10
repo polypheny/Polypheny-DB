@@ -24,7 +24,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
@@ -35,7 +35,7 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 @Slf4j
 @SuperBuilder
 @SerializeClass(subclasses = { AllocationTable.class, AllocationGraph.class, AllocationCollection.class })
-public abstract class AllocationEntity extends CatalogEntity {
+public abstract class AllocationEntity extends LogicalEntity {
 
     @Serialize
     public long adapterId;

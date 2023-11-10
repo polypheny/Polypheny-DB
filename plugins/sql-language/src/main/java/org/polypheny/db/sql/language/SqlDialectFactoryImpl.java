@@ -21,6 +21,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.dialect.AccessSqlDialect;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.language.dialect.BigQuerySqlDialect;
@@ -74,7 +75,7 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
             databaseMinorVersion = databaseMetaData.getDatabaseMinorVersion();
             databaseVersion = databaseMetaData.getDatabaseProductVersion();
         } catch ( SQLException e ) {
-            throw new RuntimeException( "while detecting database product", e );
+            throw new GenericRuntimeException( "while detecting database product", e );
         }
         final String upperProductName = databaseProductName.toUpperCase( Locale.ROOT ).trim();
         final String quoteString = getIdentifierQuoteString( databaseMetaData );
@@ -207,7 +208,7 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
             case INTERBASE:
                 return InterbaseSqlDialect.DEFAULT;
             case JETHRO:
-                throw new RuntimeException( "Jethro does not support simple creation" );
+                throw new GenericRuntimeException( "Jethro does not support simple creation" );
             case LUCIDDB:
                 return LucidDbSqlDialect.DEFAULT;
             case MSSQL:

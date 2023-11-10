@@ -21,6 +21,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorScope;
@@ -46,13 +47,13 @@ public class LangFunctionOperator extends OperatorImpl {
 
     @Override
     public AlgDataType inferReturnType( OperatorBinding opBinding ) {
-        throw new RuntimeException( "Not Implemented" );
+        throw new GenericRuntimeException( "Not Implemented" );
     }
 
 
     @Override
     public AlgDataType deriveType( Validator validator, ValidatorScope scope, Call call ) {
-        throw new RuntimeException( "Not Implemented" );
+        throw new GenericRuntimeException( "Not Implemented" );
     }
 
 

@@ -20,8 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -34,16 +32,15 @@ import org.polypheny.db.processing.DeepCopyShuttle;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.util.Pair;
 
 
 /**
  * Extension of RelBuilder for routed plans with some more information.
  */
+@Getter
 public class RoutedAlgBuilder extends AlgBuilder {
 
-    @Getter
-    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<PlacementId, ColumnId>
+    protected Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions = new HashMap<>(); // PartitionId -> List<AllocationColumn>
 
 
     public RoutedAlgBuilder( Context context, AlgOptCluster cluster, Snapshot snapshot ) {
@@ -99,16 +96,10 @@ public class RoutedAlgBuilder extends AlgBuilder {
     }
 
 
-    public void addPhysicalInfo( Map<Long, List<AllocationColumn>> physicalPlacements ) {
-        final Map<Long, List<Pair<Long, Long>>> map = physicalPlacements.entrySet().stream()
-                .collect( Collectors.toMap( Entry::getKey, entry -> map( entry.getValue() ) ) );
-        physicalPlacementsOfPartitions.putAll( map );
+    public void addPhysicalInfo( Map<Long, List<AllocationColumn>> partitionColumns ) {
+        physicalPlacementsOfPartitions.putAll( partitionColumns );
     }
 
-
-    private List<Pair<Long, Long>> map( List<AllocationColumn> columns ) {
-        return columns.stream().map( col -> new Pair<>( col.placementId, col.columnId ) ).collect( Collectors.toList() );
-    }
 
 
 }

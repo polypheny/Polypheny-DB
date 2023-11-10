@@ -277,7 +277,7 @@ public class FilePlugin extends PolyPlugin {
             try {
                 FileUtils.deleteDirectory( columnFile );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Could not delete column folder", e );
+                throw new GenericRuntimeException( "Could not delete column folder", e );
             }
 
         }
@@ -291,7 +291,7 @@ public class FilePlugin extends PolyPlugin {
 
         @Override
         public void dropIndex( Context context, LogicalIndex catalogIndex, long allocId ) {
-            throw new RuntimeException( "File adapter does not support dropping indexes" );
+            throw new GenericRuntimeException( "File adapter does not support dropping indexes" );
         }
 
 
@@ -325,7 +325,7 @@ public class FilePlugin extends PolyPlugin {
                 pw.println( Hex.encodeHexString( key.getBranchQualifier() ) );
                 pw.println( value );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Could not add entry to WAL", e );
+                throw new GenericRuntimeException( "Could not add entry to WAL", e );
             }
         }
 
@@ -365,7 +365,7 @@ public class FilePlugin extends PolyPlugin {
                             commitOrRollback( xid, false );
                             break;
                         default:
-                            throw new RuntimeException( "Unexpected WAL entry: " + action );
+                            throw new GenericRuntimeException( "Unexpected WAL entry: " + action );
                     }
                     f.delete();
                 }
@@ -410,9 +410,9 @@ public class FilePlugin extends PolyPlugin {
                         }
                     } catch ( IOException e ) {
                         if ( target == null ) {
-                            throw new RuntimeException( "Could not commit because moving of files failed", e );
+                            throw new GenericRuntimeException( "Could not commit because moving of files failed", e );
                         } else {
-                            throw new RuntimeException( "Could not commit because moving of files failed, trying to move "
+                            throw new GenericRuntimeException( "Could not commit because moving of files failed, trying to move "
                                     + data.getAbsolutePath() + " to " + target.getAbsolutePath(), e );
                         }
                     }
@@ -428,7 +428,7 @@ public class FilePlugin extends PolyPlugin {
                 try {
                     FileHelper.deleteDirRecursively( hardlinkFolder );
                 } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not cleanup hardlink-folder " + hardlinkFolder.getAbsolutePath(), e );
+                    throw new GenericRuntimeException( "Could not cleanup hardlink-folder " + hardlinkFolder.getAbsolutePath(), e );
                 }
             }
         }
@@ -445,7 +445,7 @@ public class FilePlugin extends PolyPlugin {
                     FileUtils.cleanDirectory( columnFolder );
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( "Could not truncate file table", e );
+                throw new GenericRuntimeException( "Could not truncate file table", e );
             }
 
         }
@@ -454,7 +454,7 @@ public class FilePlugin extends PolyPlugin {
         @Override
         public void updateColumnType( Context context, long allocId, LogicalColumn newCol ) {
             //context.getStatement().getTransaction().registerInvolvedStore( this );
-            throw new RuntimeException( "File adapter does not support updating column types!" );
+            throw new GenericRuntimeException( "File adapter does not support updating column types!" );
         }
 
 
@@ -485,7 +485,7 @@ public class FilePlugin extends PolyPlugin {
             try {
                 FileHelper.deleteDirRecursively( rootDir );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Could not delete all files from file store", e );
+                throw new GenericRuntimeException( "Could not delete all files from file store", e );
             }
         }
 

@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.dialect;
 
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDialect;
@@ -86,7 +87,7 @@ public class HiveSqlDialect extends SqlDialect {
                 writer.sep( "," );
                 ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
                 if ( 3 == call.operandCount() ) {
-                    throw new RuntimeException( "3rd operand Not Supported for Function INSTR in Hive" );
+                    throw new GenericRuntimeException( "3rd operand Not Supported for Function INSTR in Hive" );
                 }
                 writer.endFunCall( frame );
                 break;

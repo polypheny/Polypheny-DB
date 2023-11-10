@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
@@ -66,6 +67,12 @@ public abstract class Information {
     @Setter
     @JsonProperty
     private int uiOrder;
+
+    @JsonProperty
+    @Accessors(fluent = true)
+    @Setter
+    @Getter
+    public boolean fullWidth;
 
     /**
      * Sets the information manager instance this information is registered at.

@@ -16,12 +16,13 @@
 
 package org.polypheny.db.cypher;
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.parser.ParseException;
 
 public class CypherSyntaxException extends RuntimeException {
 
     public CypherSyntaxException( ParseException e, int beginOffset, int beginLine, int beginColumn ) {
-        throw new RuntimeException( e.getMessage() );
+        throw new GenericRuntimeException( e.getMessage() );
     }
 
 

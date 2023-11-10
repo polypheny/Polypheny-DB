@@ -31,8 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Moniker;
@@ -101,9 +100,9 @@ public abstract class ListScope extends DelegatingScope {
             }
 
             // Look up the 2 tables independently, in case one is qualified with catalog & schema and the other is not.
-            final CatalogEntity table = child.namespace.getTable();
+            final LogicalEntity table = child.namespace.getTable();
             if ( table != null ) {
-                Optional<? extends LogicalEntity> optionalEntity = getEntity( names );
+                Optional<? extends org.polypheny.db.catalog.entity.logical.LogicalEntity> optionalEntity = getEntity( names );
                 if ( optionalEntity.isPresent()
                         && optionalEntity.get().name.equals( table.name )
                         && optionalEntity.get().namespaceId == table.namespaceId ) {
@@ -115,7 +114,7 @@ public abstract class ListScope extends DelegatingScope {
     }
 
 
-    private Optional<? extends LogicalEntity> getEntity( List<String> names ) {
+    private Optional<? extends org.polypheny.db.catalog.entity.logical.LogicalEntity> getEntity( List<String> names ) {
         if ( names.size() == 2 ) {
             return validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) );
         } else if ( names.size() == 1 ) {

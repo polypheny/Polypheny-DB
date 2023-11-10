@@ -26,7 +26,7 @@ import java.util.Map;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -84,7 +84,7 @@ class EmptyScope implements SqlValidatorScope {
 
     @Override
     public SqlValidatorNamespace getTableNamespace( List<String> names ) {
-        CatalogEntity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
+        LogicalEntity table = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElse( null );
         return table != null
                 ? new EntityNamespace( validator, table )
                 : null;

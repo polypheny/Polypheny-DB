@@ -16,14 +16,15 @@
 
 package org.polypheny.db.sql.language.ddl;
 
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
@@ -45,28 +46,26 @@ public class SqlDropMaterializedView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final LogicalTable catalogTable;
+        final Optional<LogicalTable> table = searchEntity( context, name );
 
-        try {
-            catalogTable = searchEntity( context, name );
-        } catch ( PolyphenyDbContextException e ) {
+        if ( table.isEmpty() ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw e;
+                throw new GenericRuntimeException( "Could not find View with name: " + String.join( ".", name.names ) );
             }
         }
 
-        if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+        if ( table.get().entityType != EntityType.MATERIALIZED_VIEW ) {
+            throw new GenericRuntimeException( "Not Possible to use DROP MATERIALIZED VIEW because " + table.get().name + " is not a Materialized View." );
         }
 
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.isDroppingMaterialized = true;
-        materializedManager.deleteMaterializedViewFromInfo( catalogTable.id );
+        materializedManager.deleteMaterializedViewFromInfo( table.get().id );
 
-        DdlManager.getInstance().dropMaterializedView( catalogTable, statement );
+        DdlManager.getInstance().dropMaterializedView( table.get(), statement );
 
         materializedManager.isDroppingMaterialized = false;
     }

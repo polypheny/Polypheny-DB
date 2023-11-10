@@ -274,19 +274,19 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
         SqlLiteral literal;
         switch ( Objects.requireNonNull( column.defaultValue ).type ) {
             case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), ParserPos.ZERO );
+                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value.toJson() ), ParserPos.ZERO );
                 break;
             case INTEGER:
             case DECIMAL:
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( column.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createExactNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
                 break;
             case REAL:
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( column.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createApproxNumeric( column.defaultValue.value.toJson(), ParserPos.ZERO );
                 break;
             case VARCHAR:
-                literal = SqlLiteral.createCharString( column.defaultValue.value, ParserPos.ZERO );
+                literal = SqlLiteral.createCharString( column.defaultValue.value.toJson(), ParserPos.ZERO );
                 break;
             default:
                 throw new PolyphenyDbException( "Not yet supported default value type: " + column.defaultValue.type );

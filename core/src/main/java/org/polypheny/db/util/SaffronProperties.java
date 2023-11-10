@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.Collation;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.BooleanProp;
@@ -152,7 +153,7 @@ public interface SaffronProperties {
                     properties.load( stream );
                 }
             } catch ( IOException e ) {
-                throw new RuntimeException( "while reading from saffron.properties file", e );
+                throw new GenericRuntimeException( "while reading from saffron.properties file", e );
             }
 
             // copy in all system properties which start with "saffron."

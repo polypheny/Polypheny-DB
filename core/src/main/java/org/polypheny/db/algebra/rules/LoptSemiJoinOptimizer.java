@@ -52,7 +52,7 @@ import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -342,7 +342,7 @@ public class LoptSemiJoinOptimizer {
      */
     private LcsEntity validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
         int keyIdx = 0;
-        CatalogEntity theTable = null;
+        LogicalEntity theTable = null;
         ListIterator<Integer> keyIter = leftKeys.listIterator();
         while ( keyIter.hasNext() ) {
             boolean removeKey = false;
@@ -352,7 +352,7 @@ public class LoptSemiJoinOptimizer {
             if ( (colOrigin == null) || LucidDbSpecialOperators.isLcsRidColumnId( colOrigin.getOriginColumnOrdinal() ) ) {
                 removeKey = true;
             } else {
-                CatalogEntity table = colOrigin.getOriginTable();
+                LogicalEntity table = colOrigin.getOriginTable();
                 if ( theTable == null ) {
                     if ( !(table instanceof LcsEntity) ) {
                         // not a column store table
@@ -666,7 +666,7 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private abstract static class LcsEntity extends CatalogEntity {
+    private abstract static class LcsEntity extends LogicalEntity {
 
         protected LcsEntity() {
             super( -1, "lcs", -1, EntityType.ENTITY, NamespaceType.RELATIONAL, false );

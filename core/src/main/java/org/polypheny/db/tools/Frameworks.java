@@ -46,6 +46,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
@@ -184,7 +185,7 @@ public class Frameworks {
 
             return new PolyphenyDbPrepareImpl().perform( action );
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 

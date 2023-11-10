@@ -32,6 +32,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
@@ -116,10 +117,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
+        LogicalTable logicalTable = failOnEmpty( context, table );
 
-        if ( catalogTable.entityType != EntityType.ENTITY ) {
-            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", catalogTable.name );
+        if ( logicalTable.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", logicalTable.name );
         }
 
         if ( column.names.size() != 1 ) {
@@ -127,20 +128,18 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         }
 
         // Make sure that all adapters are of type storeId (and not source)
-        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( catalogTable.id ) ) {
+        for ( AllocationEntity allocation : statement.getTransaction().getSnapshot().alloc().getFromLogical( logicalTable.id ) ) {
             getDataStoreInstance( allocation.adapterId );
         }
 
-        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
-
         DdlManager.getInstance().createColumn(
                 column.getSimple(),
-                catalogTable,
+                logicalTable,
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),
                 afterColumnName == null ? null : afterColumnName.getSimple(),
                 ColumnTypeInformation.fromDataTypeSpec( type ),
                 nullable,
-                defaultValue,
+                SqlLiteral.toPoly( defaultValue ),
                 statement );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2022 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,33 @@
 
 package org.polypheny.db.catalog.entity;
 
+
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
-import lombok.experimental.SuperBuilder;
-import org.polypheny.db.schema.Wrapper;
 
-@AllArgsConstructor
-@SuperBuilder(toBuilder = true)
-public abstract class CatalogEntityPlacement implements CatalogObject, Serializable, Wrapper {
 
-    public final Long namespaceId;
-    public final Long adapterId;
-    public final Long entityId;
+/**
+ *
+ */
+public interface LogicalObject extends Serializable {
 
+    Serializable[] getParameterArray();
+
+    default Visibility getVisibility() {
+        return Visibility.EXTERNAL;
+    }
+
+
+    static String getEnumNameOrNull( Enum<?> theEnum ) {
+        if ( theEnum == null ) {
+            return null;
+        } else {
+            return theEnum.name();
+        }
+    }
+
+    enum Visibility {
+        INTERNAL,
+        EXTERNAL
+    }
 
 }

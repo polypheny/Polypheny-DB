@@ -20,7 +20,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.entity.CatalogEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
@@ -28,7 +27,7 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class LogicalEntity extends CatalogEntity {
+public abstract class LogicalEntity extends org.polypheny.db.catalog.entity.LogicalEntity {
 
 
     public LogicalEntity(

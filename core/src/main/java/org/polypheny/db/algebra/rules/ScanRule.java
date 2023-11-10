@@ -20,15 +20,16 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.plan.AlgOptEntity;
+import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link AlgOptEntity#toAlg}.
+ * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link TranslatableEntity#toAlg(ToAlgContext, AlgTraitSet)}.
  */
 public class ScanRule extends AlgOptRule {
 

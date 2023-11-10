@@ -18,7 +18,9 @@ package org.polypheny.db.webui.models.requests;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.experimental.SuperBuilder;
 
+@SuperBuilder(toBuilder = true)
 public class RequestModel {
 
     /**

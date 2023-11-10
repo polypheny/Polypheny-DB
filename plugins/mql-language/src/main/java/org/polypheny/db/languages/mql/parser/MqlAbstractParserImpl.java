@@ -28,6 +28,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.languages.mql.MqlNode;
@@ -191,7 +192,7 @@ public abstract class MqlAbstractParserImpl implements ParserImpl {
                     }
                 }
             } catch ( Throwable e ) {
-                throw new RuntimeException( "While building token lists", e );
+                throw new GenericRuntimeException( "While building token lists", e );
             }
         }
 

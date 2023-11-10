@@ -41,12 +41,11 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -54,7 +53,7 @@ import org.polypheny.db.view.ViewManager;
 
 
 /**
- * A <code>LogicalScan</code> reads all the rows from a {@link AlgOptEntity}.
+ * A <code>LogicalScan</code> reads all the rows from a {@link org.polypheny.db.catalog.entity.logical.LogicalEntity}.
  *
  * If the table is a <code>net.sf.saffron.ext.JdbcTable</code>, then this is literally possible. But for other kinds of tables,
  * there may be many ways to read the data from the table. For some kinds of table, it may not even be possible to read all of
@@ -74,7 +73,7 @@ import org.polypheny.db.view.ViewManager;
  *
  * can. It is the optimizer's responsibility to find these ways, by applying transformation rules.
  */
-public final class LogicalRelScan extends RelScan<CatalogEntity> {
+public final class LogicalRelScan extends RelScan<LogicalEntity> {
 
 
     /**
@@ -82,7 +81,7 @@ public final class LogicalRelScan extends RelScan<CatalogEntity> {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, CatalogEntity table ) {
+    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalEntity table ) {
         super( cluster, traitSet, table );
     }
 
@@ -108,7 +107,7 @@ public final class LogicalRelScan extends RelScan<CatalogEntity> {
      *
      * @param cluster Cluster
      */
-    public static LogicalRelScan create( AlgOptCluster cluster, final CatalogEntity entity ) {
+    public static LogicalRelScan create( AlgOptCluster cluster, final LogicalEntity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )

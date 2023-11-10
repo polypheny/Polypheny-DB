@@ -30,12 +30,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -98,7 +98,7 @@ public class IcarusRouter extends FullPlacementQueryRouter {
             // Add placement in order of list to combine full placements of one storeId
             if ( placements.size() != builders.size() ) {
                 log.error( "Not allowed! With Icarus, this should not happen" );
-                throw new RuntimeException( "Not allowed! With Icarus, this should not happen" );
+                throw new GenericRuntimeException( "Not allowed! With Icarus, this should not happen" );
             }
 
             for ( List<AllocationColumn> currentPlacement : placements ) {
@@ -111,11 +111,11 @@ public class IcarusRouter extends FullPlacementQueryRouter {
 
                 // Find corresponding builder:
                 final RoutedAlgBuilder builder = builders.stream().filter( b -> {
-                    final List<Pair<Long, Long>> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
+                    final List<AllocationColumn> listPairs = b.getPhysicalPlacementsOfPartitions().values().stream()
                             .flatMap( Collection::stream )
                             .collect( Collectors.toList() );
                     final Optional<Long> found = listPairs.stream()
-                            .map( elem -> elem.left )
+                            .map( elem -> elem.placementId )
                             .filter( elem -> elem == placementId )
                             .findFirst();
                             return found.isPresent();

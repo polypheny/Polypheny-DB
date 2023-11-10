@@ -27,14 +27,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 
 
 @EqualsAndHashCode(callSuper = false)
 @With
 @Value
-public class LogicalNamespace implements CatalogObject, Comparable<LogicalNamespace> {
+public class LogicalNamespace implements LogicalObject, Comparable<LogicalNamespace> {
 
     private static final long serialVersionUID = 3090632164988970558L;
 
@@ -66,7 +66,7 @@ public class LogicalNamespace implements CatalogObject, Comparable<LogicalNamesp
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, Catalog.DATABASE_NAME, Catalog.USER_NAME, CatalogObject.getEnumNameOrNull( namespaceType ) };
+        return new Serializable[]{ name, Catalog.DATABASE_NAME, Catalog.USER_NAME, LogicalObject.getEnumNameOrNull( namespaceType ) };
     }
 
 

@@ -70,7 +70,7 @@ public class AdapterManager {
     public static void removeAdapterTemplate( long templateId ) {
         AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
         if ( Catalog.getInstance().getSnapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
-            throw new RuntimeException( "Adapter is still deployed!" );
+            throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
         Catalog.getInstance().dropAdapterTemplate( templateId );
     }
@@ -240,7 +240,7 @@ public class AdapterManager {
                 adapterById.put( instance.getAdapterId(), instance );
             }
         } catch ( NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-            throw new RuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
+            throw new GenericRuntimeException( "Something went wrong while restoring adapters from the catalog.", e );
         }
     }
 

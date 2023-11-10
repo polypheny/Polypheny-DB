@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.transaction.Transaction.AccessMode;
 
 
@@ -48,7 +49,7 @@ public class Lock {
             acquireXLock( txn );
             txn.updateAccessMode( AccessMode.WRITE_ACCESS );
         } else {
-            throw new RuntimeException( "Lock mode does not exist" );
+            throw new GenericRuntimeException( "Lock mode does not exist" );
         }
     }
 

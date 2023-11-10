@@ -22,10 +22,6 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +30,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
@@ -49,9 +44,10 @@ import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.GraphStoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
@@ -75,7 +71,7 @@ import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PasswordGenerator;
 
 
@@ -180,7 +176,7 @@ public class Neo4jPlugin extends PolyPlugin {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
-                            .orElseThrow( () -> new RuntimeException( "No docker instance with id " + instanceId ) );
+                            .orElseThrow( () -> new GenericRuntimeException( "No docker instance with id " + instanceId ) );
                     try {
                         this.container = instance.newBuilder( "polypheny/neo:latest", getUniqueName() )
                                 .withEnvironmentVariable( "NEO4J_AUTH", format( "%s/%s", user, pass ) )
@@ -247,7 +243,7 @@ public class Neo4jPlugin extends PolyPlugin {
             try {
                 this.db = GraphDatabase.driver( new URI( format( "bolt://%s:%s", host, port ) ), auth );
             } catch ( URISyntaxException e ) {
-                throw new RuntimeException( "Error while initiating the neo4j adapter." );
+                throw new GenericRuntimeException( "Error while initiating the neo4j adapter." );
             }
             if ( this.db == null ) {
                 return false;
@@ -341,36 +337,9 @@ public class Neo4jPlugin extends PolyPlugin {
         }
 
 
-        private Object getDefaultAsNeo( CatalogDefaultValue defaultValue, PolyType type ) {
+        private Object getDefaultAsNeo( LogicalDefaultValue defaultValue, PolyType type ) {
             if ( defaultValue != null ) {
-                Object value;
-                if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                    value = defaultValue.value;
-                } else if ( PolyType.INT_TYPES.contains( type ) ) {
-                    return Integer.parseInt( defaultValue.value );
-                } else if ( PolyType.FRACTIONAL_TYPES.contains( type ) ) {
-                    return Double.parseDouble( defaultValue.value );
-                } else if ( type.getFamily() == PolyTypeFamily.BOOLEAN ) {
-                    return Boolean.valueOf( defaultValue.value );
-                } else if ( type.getFamily() == PolyTypeFamily.DATE ) {
-                    try {
-                        return new SimpleDateFormat( "yyyy-MM-dd" ).parse( defaultValue.value ).getTime();
-                    } catch ( ParseException e ) {
-                        throw new RuntimeException( e );
-                    }
-                } else if ( type.getFamily() == PolyTypeFamily.TIME ) {
-                    return (int) Time.valueOf( defaultValue.value ).getTime();
-                } else if ( type.getFamily() == PolyTypeFamily.TIMESTAMP ) {
-                    return Timestamp.valueOf( defaultValue.value ).getTime();
-                } else if ( type.getFamily() == PolyTypeFamily.BINARY ) {
-                    return Arrays.toString( ByteString.parseBase64( defaultValue.value ) );
-                } else {
-                    value = defaultValue.value;
-                }
-                if ( type == PolyType.ARRAY ) {
-                    throw new RuntimeException( "Default values are not supported for array types" );
-                }
-
+                Object value = NeoUtil.fixParameterValue( defaultValue.value, Pair.of( type, type ) );
                 return format( "'%s'", value );
             }
             return null;

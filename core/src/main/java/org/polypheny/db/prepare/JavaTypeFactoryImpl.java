@@ -283,7 +283,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 }
             }
         }
-        log.warn( "Could not find corresponding class for PolyType" );
+        log.debug( "Could not find corresponding class for PolyType" );
         return null;
     }
 

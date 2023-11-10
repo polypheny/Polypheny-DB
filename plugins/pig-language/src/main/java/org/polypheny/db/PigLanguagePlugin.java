@@ -21,13 +21,14 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.piglet.PigProcessorImpl;
+import org.polypheny.db.piglet.PigProcessor;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
@@ -61,7 +62,7 @@ public class PigLanguagePlugin extends PolyPlugin {
     @Override
     public void start() {
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( NAME, PigLanguagePlugin::anyPigQuery ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessorImpl::new, null );
+        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessor::new, null );
     }
 
 
@@ -84,8 +85,8 @@ public class PigLanguagePlugin extends PolyPlugin {
         QueryLanguage language = QueryLanguage.from( NAME );
 
         try {
-            if ( query.trim().equals( "" ) ) {
-                throw new RuntimeException( "PIG query is an empty string!" );
+            if ( query.trim().isEmpty() ) {
+                throw new GenericRuntimeException( "PIG query is an empty string!" );
             }
 
             if ( log.isDebugEnabled() ) {

@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.Spaces;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
@@ -759,11 +760,11 @@ public class SqlPrettyWriter implements SqlWriter {
         FrameImpl endedFrame = (FrameImpl) frame;
         Preconditions.checkArgument( frame == this.frame, "Frame does not match current frame" );
         if ( this.frame == null ) {
-            throw new RuntimeException( "No list started" );
+            throw new GenericRuntimeException( "No list started" );
         }
         if ( this.frame.open.equals( "(" ) ) {
             if ( !this.frame.close.equals( ")" ) ) {
-                throw new RuntimeException( "Expected ')'" );
+                throw new GenericRuntimeException( "Expected ')'" );
             }
         }
         if ( this.frame.newlineBeforeClose ) {
@@ -980,10 +981,10 @@ public class SqlPrettyWriter implements SqlWriter {
     @Override
     public void sep( String sep, boolean printFirst ) {
         if ( frame == null ) {
-            throw new RuntimeException( "No list started" );
+            throw new GenericRuntimeException( "No list started" );
         }
         if ( sep.startsWith( " " ) || sep.endsWith( " " ) ) {
-            throw new RuntimeException( "Separator must not contain whitespace" );
+            throw new GenericRuntimeException( "Separator must not contain whitespace" );
         }
         frame.sep( printFirst, sep );
     }
@@ -1145,7 +1146,7 @@ public class SqlPrettyWriter implements SqlWriter {
                 method.invoke( o, value );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
                 Util.throwIfUnchecked( e.getCause() );
-                throw new RuntimeException( e.getCause() );
+                throw new GenericRuntimeException( e.getCause() );
             }
         }
 
@@ -1156,7 +1157,7 @@ public class SqlPrettyWriter implements SqlWriter {
                 return method.invoke( o );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
                 Util.throwIfUnchecked( e.getCause() );
-                throw new RuntimeException( e.getCause() );
+                throw new GenericRuntimeException( e.getCause() );
             }
         }
 

@@ -21,9 +21,9 @@ import lombok.Getter;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
+@Getter
 public class IllegalColumnException extends RuntimeException {
 
-    @Getter
     private final LogicalColumn logicalColumn;
 
 

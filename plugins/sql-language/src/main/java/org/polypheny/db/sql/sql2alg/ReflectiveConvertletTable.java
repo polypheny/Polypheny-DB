@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
@@ -78,7 +79,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
             try {
                 return (RexNode) method.invoke( ReflectiveConvertletTable.this, cx, call );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( "while converting " + call, e );
+                throw new GenericRuntimeException( "while converting " + call, e );
             }
         } );
     }
@@ -117,7 +118,7 @@ public class ReflectiveConvertletTable implements SqlRexConvertletTable {
             try {
                 return (RexNode) method.invoke( ReflectiveConvertletTable.this, cx, call.getOperator(), call );
             } catch ( IllegalAccessException | InvocationTargetException e ) {
-                throw new RuntimeException( "while converting " + call, e );
+                throw new GenericRuntimeException( "while converting " + call, e );
             }
         } );
     }

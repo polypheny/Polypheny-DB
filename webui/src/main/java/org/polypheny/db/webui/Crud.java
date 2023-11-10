@@ -278,12 +278,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             orderBy = sortTable( request.sortState );
         }
 
-        String tableId = getFullEntityName( request.entityId );
+        String fullTableName = getFullEntityName( request.entityId );
         query.append( "SELECT * FROM " )
-                .append( tableId )
+                .append( fullTableName )
                 .append( where )
                 .append( orderBy );
-        if ( !request.noLimit ) {
+        if ( false && !request.noLimit ) {
             query.append( " LIMIT " )
                     .append( getPageSize() )
                     .append( " OFFSET " )
@@ -327,7 +327,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             primaryColumns = new ArrayList<>();
         }
         for ( LogicalColumn logicalColumn : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
+            PolyValue defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
                     UiColumnDefinition.builder()
@@ -340,7 +340,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue )
+                            .defaultValue( defaultValue == null ? null : defaultValue.toJson() )
                             .sort( request.sortState == null ? new SortState() : request.sortState.get( logicalColumn.name ) )
                             .filter( request.filter == null || request.filter.get( logicalColumn.name ) == null ? "" : request.filter.get( logicalColumn.name ) ).build() );
         }
@@ -1055,7 +1055,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             primaryColumns = new ArrayList<>();
         }
         for ( LogicalColumn logicalColumn : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
+            String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value.toJson();
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
                     UiColumnDefinition.builder()
@@ -1103,7 +1103,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .dimension( col.dimension )
                         .cardinality( col.cardinality )
                         .primary( false )
-                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value )
+                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value.toJson() )
                         .build()
                 );
 
@@ -1121,17 +1121,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             List<UiColumnDefinition> columns = new ArrayList<>();
             for ( AllocationColumn ccp : Catalog.snapshot().alloc().getColumnPlacementsOnAdapterPerTable( adapterId, tablee.id ) ) {
                 LogicalColumn col = Catalog.snapshot().rel().getColumn( ccp.columnId ).orElseThrow();
-                columns.add( UiColumnDefinition.builder().name(
-                        col.name ).dataType(
-                        col.type.getName() ).collectionsType(
-                        col.collectionsType == null ? "" : col.collectionsType.getName() ).nullable(
-                        col.nullable ).precision(
-                        col.length ).scale(
-                        col.scale ).dimension(
-                        col.dimension ).cardinality(
-                        col.cardinality ).primary(
-                        pkColumnNames.contains( col.name ) ).defaultValue(
-                        col.defaultValue == null ? null : col.defaultValue.value ).build() );
+                columns.add( UiColumnDefinition.builder()
+                        .name( col.name )
+                        .dataType( col.type.getName() )
+                        .collectionsType( col.collectionsType == null ? "" : col.collectionsType.getName() ).nullable( col.nullable )
+                        .precision( col.length )
+                        .scale( col.scale )
+                        .dimension( col.dimension )
+                        .cardinality( col.cardinality )
+                        .primary( pkColumnNames.contains( col.name ) )
+                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value.toJson() ).build() );
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.TABLE ).build() );
         }
@@ -1809,7 +1808,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             ctx.json( new UnderlyingTables( underlyingTable ) );
         } else {
-            throw new RuntimeException( "Only possible with Views" );
+            throw new GenericRuntimeException( "Only possible with Views" );
         }
     }
 
@@ -1917,7 +1916,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     type = FieldType.LABEL;
                     break;
                 default:
-                    throw new RuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
+                    throw new GenericRuntimeException( "Unknown Field ExpressionType: " + currentColumn.getFieldType() );
             }
 
             if ( type.equals( FieldType.LIST ) ) {
@@ -2307,7 +2306,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 File file = new File( path, is.getKey() );
                 FileUtils.copyInputStreamToFile( is.getValue(), file );
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
         setting.setDirectory( path.getAbsolutePath() );
@@ -2662,7 +2661,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 } catch ( TransactionException transactionException ) {
                     log.error( "Exception while rollback", transactionException );
                 }
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
 
             return RelationalResult.builder().query( "Created " + viewType + " \"" + viewName + "\" from logical query plan" ).build();
@@ -2671,7 +2670,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         List<List<PolyValue>> rows;
         try {
             ResultIterator iterator = polyImplementation.execute( statement, getPageSize() );
-            rows = iterator.getRows();
+            rows = iterator.getNextBatch();
             iterator.close();
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
@@ -2701,7 +2700,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             } catch ( TransactionException transactionException ) {
                 log.error( "Exception while rollback", transactionException );
             }
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
         RelationalResult finalResult = RelationalResult.builder()
                 .header( header )
@@ -3007,14 +3006,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public static RelationalResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
         PolyImplementation implementation;
-        List<List<PolyValue>> rows;
+        List<List<PolyValue>> rows = List.of();
         boolean hasMoreRows;
         boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         try {
             implementation = crud.processQuery( statement, sqlSelect, isAnalyze );
             ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
-            rows = iterator.getRows();
+            for ( int i = 0; i < request.currentPage; i++ ) {
+                rows = iterator.getNextBatch();
+            }
             iterator.close();
             hasMoreRows = implementation.hasMoreRows();
 
@@ -3065,7 +3066,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 Optional<LogicalColumn> logicalColumn = Catalog.snapshot().rel().getColumn( table.id, columnName );
                 if ( logicalColumn.isPresent() ) {
                     if ( logicalColumn.get().defaultValue != null ) {
-                        dbCol.defaultValue( logicalColumn.get().defaultValue.value );
+                        dbCol.defaultValue( logicalColumn.get().defaultValue.value.toJson() );
                     }
                 }
             }
@@ -3120,152 +3121,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     } else {
                         temp[counter] = o.toJson();
                     }
-                    /*switch ( header.get( counter ).dataType ) {
-                        case "TIMESTAMP":
-                            if ( o instanceof Long ) {
-                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (long) o, PolyType.TIMESTAMP );// TimestampString.fromMillisSinceEpoch( (long) o ).toString();
-                            } else {
-                                temp[counter] = o.toString();
-                            }
-                            break;
-                        case "DATE":
-                            if ( o instanceof Integer ) {
-                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.DATE );//DateString.fromDaysSinceEpoch( (int) o ).toString();
-                            } else {
-                                temp[counter] = o.toString();
-                            }
-                            break;
-                        case "TIME":
-                            if ( o instanceof Integer ) {
-                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.TIME );//TimeString.fromMillisOfDay( (int) o ).toString();
-                            } else {
-                                temp[counter] = o.toString();
-                            }
-                            break;
-                        case "GRAPH NOT NULL":
-                        case "NODE NOT NULL":
-                        case "EDGE NOT NULL":
-                            temp[counter] = ((GraphObject) o).toJson();
-                            break;
-                        case "FILE":
-                        case "IMAGE":
-                        case "AUDIO":
-                        case "VIDEO":
-                            String columnName = String.valueOf( header.get( counter ).name.hashCode() );
-                            File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
-                            mmFolder.mkdirs();
-                            ContentInfoUtil util = new ContentInfoUtil();
-                            if ( o instanceof File ) {
-                                File f = ((File) o);
-                                try {
-                                    ContentInfo info = null;
-                                    if ( !f.isDirectory() ) {
-                                        info = util.findMatch( f );
-                                    }
-                                    String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-                                        extension = "." + info.getFileExtensions()[0];
-                                    }
-                                    File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
-                                    newLink.delete();//delete to override
-                                    Path added;
-                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getUniqueName().equals( "QFS" ) ) ) {
-                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
-                                    } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
-                                        added = Files.createLink( newLink.toPath(), f.toPath() );
-                                    } else {
-                                        added = Files.copy( f.toPath(), newLink.toPath() );
-                                        //added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
-                                    }
-                                    TemporalFileManager.addPath( transaction.getXid().toString(), added );
-                                    temp[counter] = newLink.getName();
-                                } catch ( Exception e ) {
-                                    throw new RuntimeException( "Could not create link to mm file " + f.getAbsolutePath(), e );
-                                }
-                                break;
-                            } else if ( o instanceof InputStream || o instanceof Blob ) {
-                                InputStream is;
-                                if ( o instanceof Blob ) {
-                                    try {
-                                        is = ((Blob) o).getBinaryStream();
-                                    } catch ( SQLException e ) {
-                                        throw new RuntimeException( "Could not get inputStream from Blob column", e );
-                                    }
-                                } else {
-                                    is = (InputStream) o;
-                                }
-                                File f;
-                                FileOutputStream fos = null;
-                                try ( PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE ) ) {
-                                    byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
-                                    pbis.read( buffer );
-                                    ContentInfo info = util.findMatch( buffer );
-                                    pbis.unread( buffer );
-                                    String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-                                        extension = "." + info.getFileExtensions()[0];
-                                    }
-                                    f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
-                                    fos = new FileOutputStream( f.getPath() );
-                                    IOUtils.copyLarge( pbis, fos );
-                                    TemporalFileManager.addFile( transaction.getXid().toString(), f );
-                                } catch ( IOException e ) {
-                                    throw new RuntimeException( "Could not place file in mm folder", e );
-                                } finally {
-                                    if ( fos != null ) {
-                                        try {
-                                            fos.close();
-                                        } catch ( IOException ignored ) {
-                                            // ignore
-                                        }
-                                    }
-                                }
-                                temp[counter] = f.getName();
-                                break;
-                            } else if ( o instanceof byte[] || o instanceof Byte[] ) {
-                                byte[] bytes;
-                                if ( o instanceof byte[] ) {
-                                    bytes = (byte[]) o;
-                                } else {
-                                    bytes = ArrayUtils.toPrimitive( (Byte[]) o );
-                                }
-                                ContentInfo info = util.findMatch( bytes );
-                                String extension = "";
-                                if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-                                    extension = "." + info.getFileExtensions()[0];
-                                }
-                                File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
-                                try ( FileOutputStream fos = new FileOutputStream( f ) ) {
-                                    fos.write( bytes );
-                                } catch ( IOException e ) {
-                                    throw new RuntimeException( "Could not place file in mm folder", e );
-                                }
-                                temp[counter] = f.getName();
-                                TemporalFileManager.addFile( transaction.getXid().toString(), f );
-                                break;
-                            }
-                            //fall through
-                        default:
-                            temp[counter] = o.toString();
-                    }*/
-
-                    /*if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                        if ( o instanceof Array ) {
-                            try {
-                                temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
-                            } catch ( SQLException sqlException ) {
-                                temp[counter] = o.toString();
-                            }
-                        } else if ( o instanceof List ) {
-                            // TODO js(knn): make sure all of this is not just a hotfix.
-                            temp[counter] = gson.toJson( o );
-                        } else {
-                            temp[counter] = o.toString();
-                        }
-                    }
-                    if ( header.get( counter ).dataType.contains( "Path" ) ) {
-                        temp[counter] = o.toJson();
-                    }*/
                 }
                 counter++;
             }
@@ -3353,7 +3208,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             query += " " + filterTable( request.filter );
         }
         Statement statement = transaction.createStatement();
-        RelationalResult result = executeSqlSelect( statement, request, query ).build();
+        RelationalResult result = executeSqlSelect( statement, request.toBuilder().currentPage( 1 ).build(), query ).build();
         // We expect the result to be in the first column of the first row
         if ( result.data.length == 0 ) {
             return 0;
@@ -3535,7 +3390,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         Map<String, String> config = gson.fromJson( ctx.body(), Map.class );
         int id = Integer.parseInt( config.getOrDefault( "id", "-1" ) );
         if ( id == -1 ) {
-            throw new RuntimeException( "Invalid id" );
+            throw new GenericRuntimeException( "Invalid id" );
         }
 
         String res = DockerSetupHelper.removeDockerInstance( id );
@@ -3626,7 +3481,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             try {
                 FileUtils.copyInputStreamToFile( file.getContent(), f );
             } catch ( IOException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
             PolyPluginManager.loadAdditionalPlugin( f );
         } );
@@ -3689,10 +3544,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public static class QueryExecutionException extends Exception {
-
-        QueryExecutionException( String message ) {
-            super( message );
-        }
 
 
         QueryExecutionException( String message, Throwable t ) {

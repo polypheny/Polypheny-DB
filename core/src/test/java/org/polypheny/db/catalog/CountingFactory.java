@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -51,7 +51,7 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public ColumnStrategy generationStrategy( CatalogEntity table, int iColumn ) {
+    public ColumnStrategy generationStrategy( LogicalEntity table, int iColumn ) {
         final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {
             return ColumnStrategy.DEFAULT;
@@ -61,7 +61,7 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newColumnDefaultValue( CatalogEntity table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( LogicalEntity table, int iColumn, InitializerContext context ) {
         THREAD_CALL_COUNT.get().incrementAndGet();
         final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {

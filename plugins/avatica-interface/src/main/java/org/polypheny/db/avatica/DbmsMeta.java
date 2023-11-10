@@ -60,7 +60,6 @@ import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.avatica.util.Unsafe;
@@ -80,22 +79,22 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogDatabase.PrimitiveCatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalDatabase.PrimitiveCatalogDatabase;
+import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.CatalogForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey.LogicalForeignKeyColumn.PrimitiveCatalogForeignKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex.LogicalIndexColumn.PrimitiveCatalogIndexColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.CatalogPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryKeyColumn.PrimitiveCatalogPrimaryKeyColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -255,9 +254,9 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Enumerable<Object> toEnumerable( final List<? extends CatalogObject> entities ) {
+    private Enumerable<Object> toEnumerable( final List<? extends LogicalObject> entities ) {
         final List<Object> objects = new LinkedList<>();
-        for ( CatalogObject entity : entities ) {
+        for ( LogicalObject entity : entities ) {
             objects.add( entity.getParameterArray() );
         }
         return Linq4j.asEnumerable( objects );
@@ -553,7 +552,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
+            List<LogicalPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 if ( catalogTable.primaryKey != null ) {
                     final LogicalPrimaryKey primaryKey = catalog.getSnapshot().rel().getPrimaryKey( catalogTable.primaryKey ).orElseThrow();
@@ -590,7 +589,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> importedKeys = catalog.getSnapshot().rel().getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
@@ -633,7 +632,7 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
 
             final List<LogicalTable> catalogEntities = getLogicalTables( schemaPattern, tablePattern );
-            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            List<LogicalForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( LogicalTable catalogTable : catalogEntities ) {
                 List<LogicalForeignKey> exportedKeys = catalog.getSnapshot().rel().getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
@@ -946,7 +945,7 @@ public class DbmsMeta implements ProtobufMeta {
             } catch ( Throwable e ) {
                 log.error( "Exception while preparing query", e );
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
 
             return new ExecuteBatchResult( updateCounts );
@@ -1246,7 +1245,7 @@ public class DbmsMeta implements ProtobufMeta {
         } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
-            throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
         }
     }
 
@@ -1439,7 +1438,7 @@ public class DbmsMeta implements ProtobufMeta {
                 ) );
             } catch ( NoSuchStatementException e ) {
                 String message = e.getLocalizedMessage();
-                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
             }
         }
         return resultSets;
@@ -1527,13 +1526,13 @@ public class DbmsMeta implements ProtobufMeta {
             log.debug( "Creating a new connection." );
         }
 
-        final CatalogUser user;
+        final LogicalUser user;
         try {
             user = authenticator.authenticate(
                     connectionParameters.getOrDefault( "username", connectionParameters.get( "user" ) ),
                     connectionParameters.getOrDefault( "password", "" ) );
         } catch ( AuthenticationException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         // assert user != null;
 
@@ -1560,7 +1559,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             transaction.commit();
         } catch ( TransactionException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
         openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, null, namespace, transactionManager ) );
@@ -1668,7 +1667,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 transaction.commit();
             } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }
@@ -1698,7 +1697,7 @@ public class DbmsMeta implements ProtobufMeta {
             try {
                 transaction.rollback();
             } catch ( TransactionException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+                throw new GenericRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
             } finally {
                 connection.endCurrentTransaction();
             }

@@ -19,6 +19,7 @@ package org.polypheny.db.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class PolyphenyHomeDirManager {
     private File root;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
+    private static PolyphenyMode mode;
 
 
     public static PolyphenyHomeDirManager getInstance() {
@@ -53,7 +55,7 @@ public class PolyphenyHomeDirManager {
         } else {
             pathVar = System.getProperty( "user.home" );
         }
-        root = new File( pathVar, ".polypheny" );
+        root = Path.of( pathVar, ".polypheny", getPrefix() ).toFile();
 
         if ( !tryCreatingFolder( root ) ) {
             root = new File( "." );
@@ -69,6 +71,21 @@ public class PolyphenyHomeDirManager {
                 }
             }
         } ) );
+    }
+
+
+    public static PolyphenyHomeDirManager setModeAndGetInstance( PolyphenyMode mode ) {
+        if ( PolyphenyHomeDirManager.mode != null ) {
+            throw new RuntimeException( "Could not set the mode." );
+        }
+        PolyphenyHomeDirManager.mode = mode;
+        return PolyphenyHomeDirManager.getInstance();
+    }
+
+
+    private String getPrefix() {
+        VersionCollector collector = VersionCollector.INSTANCE;
+        return mode == PolyphenyMode.PRODUCTION ? collector.version : collector.version + "-" + collector.branch;
     }
 
 

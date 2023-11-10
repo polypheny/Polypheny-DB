@@ -64,12 +64,12 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -96,9 +96,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public List<Long> entityIds = new ArrayList<>();
 
+    public Statement statement;
 
-    public LogicalAlgAnalyzeShuttle() {
+
+    public LogicalAlgAnalyzeShuttle( Statement statement ) {
         this.rexShuttle = new LogicalAlgAnalyzeRexShuttle();
+        this.statement = statement;
     }
 
 
@@ -189,7 +192,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        getPartitioningInfo( filter );
+        //getPartitioningInfo( filter );
 
         return filter;
     }
@@ -348,7 +351,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         super.visit( filter );
         filter.accept( this.rexShuttle );
 
-        //getPartitioningInfo( filter );
+        getPartitioningInfo( filter );
 
         return filter;
     }
@@ -456,7 +459,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        CatalogEntity table = filter.getInput().getEntity();
+        LogicalEntity table = filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
@@ -467,12 +470,11 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
         // Only if table is partitioned
-        log.warn( "todo" );
-        /*if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
+        if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
                 || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
             WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(
-                    statement,
-                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( catalogTable.partitionProperty.partitionColumnId ) );
+                    this.statement,
+                    Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
             int scanId = node.getInput( 0 ).getId();
@@ -488,12 +490,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                             .collect( Collectors.toSet() ) );
                 }
             }
-        }*/
+        }
     }
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        CatalogEntity entity = filter.getInput().getEntity();
+        LogicalEntity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
@@ -503,7 +505,13 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        // todo might add
+        LogicalEntity entity = filter.getInput().getEntity();
+        if ( entity == null ) {
+            return;
+        }
+
+        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+
     }
 
 }

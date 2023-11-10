@@ -27,7 +27,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
+import org.polypheny.db.catalog.entity.LogicalObject;
 
 
 @Value
@@ -51,11 +51,11 @@ public class LogicalPrimaryKey extends LogicalKey {
 
 
     // Used for creating ResultSets
-    public List<CatalogPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
+    public List<LogicalPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
         int i = 1;
-        List<CatalogPrimaryKeyColumn> list = new LinkedList<>();
+        List<LogicalPrimaryKeyColumn> list = new LinkedList<>();
         for ( String columnName : getColumnNames() ) {
-            list.add( new CatalogPrimaryKeyColumn( id, i++, columnName ) );
+            list.add( new LogicalPrimaryKeyColumn( id, i++, columnName ) );
         }
         return list;
     }
@@ -68,7 +68,7 @@ public class LogicalPrimaryKey extends LogicalKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class CatalogPrimaryKeyColumn implements CatalogObject {
+    public static class LogicalPrimaryKeyColumn implements LogicalObject {
 
         private static final long serialVersionUID = -2669773639977732201L;
 

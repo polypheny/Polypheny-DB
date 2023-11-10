@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.ddl;
 
 
+import java.util.Optional;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -25,7 +26,6 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
@@ -50,19 +50,9 @@ public class SqlDropView extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        final LogicalTable table;
+        final Optional<LogicalTable> table = searchEntity( context, name );
 
-        try {
-            table = searchEntity( context, name );
-        } catch ( PolyphenyDbContextException e ) {
-            if ( ifExists ) {
-                // It is ok that there is no view with this name because "IF EXISTS" was specified
-                return;
-            } else {
-                throw e;
-            }
-        }
-        if ( table == null ) {
+        if ( table.isEmpty() ) {
             if ( ifExists ) {
                 // It is ok that there is no view with this name because "IF EXISTS" was specified
                 return;
@@ -71,11 +61,11 @@ public class SqlDropView extends SqlDropObject {
             }
         }
 
-        if ( table.entityType != EntityType.VIEW ) {
-            throw new RuntimeException( "Not Possible to use DROP VIEW because " + table.name + " is not a View." );
+        if ( table.get().entityType != EntityType.VIEW ) {
+            throw new GenericRuntimeException( "Not Possible to use DROP VIEW because " + table.get().name + " is not a View." );
         }
 
-        DdlManager.getInstance().dropView( table, statement );
+        DdlManager.getInstance().dropView( table.get(), statement );
 
 
     }

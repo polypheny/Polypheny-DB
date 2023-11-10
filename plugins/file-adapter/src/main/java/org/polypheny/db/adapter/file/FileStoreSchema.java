@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FilePlugin.FileStore;
 import org.polypheny.db.adapter.file.util.FileUtil;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.schema.Namespace.Schema;
 import org.polypheny.db.schema.impl.AbstractNamespace;
@@ -44,7 +44,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public class FileStoreSchema extends AbstractNamespace implements FileSchema, Schema {
 
     private final String schemaName;
-    private final Map<String, CatalogEntity> tables = new HashMap<>();
+    private final Map<String, LogicalEntity> tables = new HashMap<>();
     private final FileStore store;
     private final FileConvention convention;
 

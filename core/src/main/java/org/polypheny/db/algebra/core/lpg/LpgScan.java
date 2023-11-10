@@ -18,13 +18,13 @@ package org.polypheny.db.algebra.core.lpg;
 
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.GraphType;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public abstract class LpgScan<E extends CatalogEntity> extends Scan<E> implements LpgAlg {
+public abstract class LpgScan<E extends LogicalEntity> extends Scan<E> implements LpgAlg {
 
 
     /**

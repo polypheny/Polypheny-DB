@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 
 @SerializeClass(subclasses = { RelationalCatalog.class })
 public interface LogicalRelationalCatalog extends LogicalCatalog {
@@ -178,7 +179,7 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param defaultValue True if the column should allow null values, false if not.
      * @return
      */
-    LogicalColumn setDefaultValue( long columnId, PolyType type, String defaultValue );
+    LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue );
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.

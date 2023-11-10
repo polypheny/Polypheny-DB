@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
@@ -98,7 +99,7 @@ public class DocumentUtil {
             case 5:
                 return new Pair<>( BsonBinary.class, PolyBinary.class );
             case 6: // undefined
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 7:
                 return new Pair<>( BsonObjectId.class, ObjectId.class );
             case 8:
@@ -110,15 +111,15 @@ public class DocumentUtil {
             case 11:
                 return new Pair<>( BsonRegularExpression.class, PolyString.class );
             case 12: // dbPointer
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 13:
                 //return new Pair<>( BsonJavaScript.class, String.class );
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case 14: // Symbol
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case 15:
                 //return new Pair<>( BsonJavaScriptWithScope.class, String.class );
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case 16:
                 return new Pair<>( BsonInt32.class, PolyInteger.class );
             case 17:
@@ -132,7 +133,7 @@ public class DocumentUtil {
             case 127:
                 return new Pair<>( BsonMaxKey.class, BsonMaxKey.class );
             default:
-                throw new RuntimeException( "This type does not exist." );
+                throw new GenericRuntimeException( "This type does not exist." );
         }
     }
 
@@ -150,7 +151,7 @@ public class DocumentUtil {
             case "binData":
                 return 5;
             case "undefined":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "objectId":
                 return 7;
             case "bool":
@@ -162,13 +163,13 @@ public class DocumentUtil {
             case "regex":
                 return 11;
             case "dbPointer":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "javascript":
-                throw new RuntimeException( "UNSUPPORTED" );
+                throw new GenericRuntimeException( "UNSUPPORTED" );
             case "symbol":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "javascriptWithScope":
-                throw new RuntimeException( "DEPRECATED" );
+                throw new GenericRuntimeException( "DEPRECATED" );
             case "int":
                 return 16;
             case "timestamp":

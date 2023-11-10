@@ -99,11 +99,11 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, table );
-        LogicalTable refTable = searchEntity( context, referencesTable );
+        LogicalTable logicalTable = failOnEmpty( context, table );
+        LogicalTable refTable = failOnEmpty( context, referencesTable );
 
         DdlManager.getInstance().createForeignKey(
-                catalogTable,
+                logicalTable,
                 refTable,
                 columnList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),
                 referencesList.getList().stream().map( Node::toString ).collect( Collectors.toList() ),

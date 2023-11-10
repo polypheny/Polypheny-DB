@@ -25,11 +25,11 @@ import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.tools.RoutedAlgBuilder;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -43,7 +43,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     protected String queryClass;
     protected String physicalQueryClass;
     protected Class<? extends Router> router;
-    protected Map<Long, List<Pair<Long, Long>>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+    protected Map<Long, List<AllocationColumn>> physicalPlacementsOfPartitions; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
     protected AlgOptCost preCosts;
 
 
@@ -114,9 +114,9 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
             return true;
         }
 
-        for ( Map.Entry<Long, List<Pair<Long, Long>>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
+        for ( Map.Entry<Long, List<AllocationColumn>> entry : this.physicalPlacementsOfPartitions.entrySet() ) {
             final Long id = entry.getKey();
-            List<Pair<Long, Long>> values = entry.getValue();
+            List<AllocationColumn> values = entry.getValue();
 
             if ( !other.physicalPlacementsOfPartitions.containsKey( id ) ) {
                 return false;
@@ -141,9 +141,9 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         if ( this.physicalPlacementsOfPartitions != null && !this.physicalPlacementsOfPartitions.isEmpty() ) {
             return this.physicalPlacementsOfPartitions.values()
                     .stream().flatMap( Collection::stream )
-                    .map( elem -> elem.right.hashCode() * elem.left.hashCode() )
+                    .map( AllocationColumn::hashCode )
                     .reduce( Integer::sum )
-                    .get();
+                    .orElseThrow();
         }
         return super.hashCode();
     }

@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language.ddl.altermaterializedview;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -74,14 +75,14 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = searchEntity( context, oldName );
+        LogicalTable catalogTable = failOnEmpty( context, oldName );
 
         if ( catalogTable.entityType != EntityType.MATERIALIZED_VIEW ) {
-            throw new RuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
+            throw new GenericRuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + catalogTable.name + " is not a Materialized View." );
         }
 
         if ( newName.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + newName );
+            throw new GenericRuntimeException( "No FQDN allowed here: " + newName );
         }
 
         DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );

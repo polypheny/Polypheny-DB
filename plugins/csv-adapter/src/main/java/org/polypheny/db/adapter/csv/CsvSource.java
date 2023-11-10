@@ -98,7 +98,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
         }
         if ( maxStringLength < 1 ) {
-            throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+            throw new GenericRuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
         }
 
         addInformationExportedColumns();
@@ -150,7 +150,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
             try {
                 csvDir = new File( dir ).toURI().toURL();
             } catch ( MalformedURLException e ) {
-                throw new RuntimeException( e );
+                throw new GenericRuntimeException( e );
             }
         }
     }
@@ -158,7 +158,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
 
     @Override
     public void truncate( Context context, long allocId ) {
-        throw new RuntimeException( "CSV adapter does not support truncate" );
+        throw new GenericRuntimeException( "CSV adapter does not support truncate" );
     }
 
 
@@ -186,7 +186,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
                     .file()
                     .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) );
             if ( files == null ) {
-                throw new RuntimeException( "No .csv files where found." );
+                throw new GenericRuntimeException( "No .csv files where found." );
             }
             fileNames = Arrays.stream( files )
                     .sequential()
@@ -247,7 +247,7 @@ public class CsvSource extends DataSource<RelStoreCatalog> {
                             length = 0;
                             break;
                         default:
-                            throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
+                            throw new GenericRuntimeException( "Unknown type: " + typeStr.toLowerCase() );
                     }
                     list.add( new ExportedColumn(
                             name,

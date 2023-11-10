@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -121,7 +122,7 @@ public abstract class AlgOptRule {
             description = guessDescription( getClass().getName() );
         }
         if ( !description.matches( "[A-Za-z][-A-Za-z0-9_.():]*" ) ) {
-            throw new RuntimeException( "Rule description '" + description + "' is not valid" );
+            throw new GenericRuntimeException( "Rule description '" + description + "' is not valid" );
         }
         this.description = description;
         this.operands = flattenOperands( operand );
@@ -563,7 +564,7 @@ public abstract class AlgOptRule {
             description = className.substring( punc + 1 );
         }
         if ( description.matches( "[0-9]+" ) ) {
-            throw new RuntimeException( "Derived description of rule class " + className + " is an integer, not valid. Supply a description manually." );
+            throw new GenericRuntimeException( "Derived description of rule class " + className + " is an integer, not valid. Supply a description manually." );
         }
         return description;
     }

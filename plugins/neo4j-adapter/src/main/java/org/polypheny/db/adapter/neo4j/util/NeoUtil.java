@@ -42,6 +42,7 @@ import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -164,7 +165,7 @@ public interface NeoUtil {
                 return o -> asPolyPath( o.asPath() );
         }
 
-        throw new RuntimeException( String.format( "Object of type %s was not transformable.", type ) );
+        throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
     }
 
     static PolyPath asPolyPath( Path path ) {
@@ -474,7 +475,7 @@ public interface NeoUtil {
                     return name;
                 };
             case CYPHER_SET_PROPERTIES:
-                throw new RuntimeException( "No values should land here" );
+                throw new GenericRuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY:
                 return o -> String.format( "%s.%s = %s", o.get( 0 ), o.get( 1 ), o.get( 2 ) );
             case CYPHER_EXTRACT_PROPERTY:

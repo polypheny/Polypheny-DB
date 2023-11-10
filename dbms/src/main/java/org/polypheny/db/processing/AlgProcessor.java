@@ -21,6 +21,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.Statement;
@@ -29,18 +30,18 @@ import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.QueryPlanBuilder;
 
-public class JsonRelProcessorImpl extends Processor {
+public class AlgProcessor extends Processor {
 
 
     @Override
     public List<? extends Node> parse( String query ) {
-        throw new RuntimeException( "JsonProcessor does not support string representation!" );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support string representation!" );
     }
 
 
     @Override
     public Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues ) {
-        throw new RuntimeException( "JsonProcessor does not support validation!" );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support validation!" );
     }
 
 
@@ -52,19 +53,19 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        throw new RuntimeException( "JsonProcessor does not support DDLs!" );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " AlgProcessor does not support DDLs!" );
     }
 
 
     @Override
     public void unlock( Statement statement ) {
-        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support DML or DDLs and should therefore not lock." );
     }
 
 
     @Override
     public void lock( Statement statement ) throws DeadlockException {
-        throw new RuntimeException( "The JsonRelProcessor does not support DML or DDLs and should therefore not lock." );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support DML or DDLs and should therefore not lock." );
     }
 
 
@@ -76,7 +77,7 @@ public class JsonRelProcessorImpl extends Processor {
 
     @Override
     public AlgDataType getParameterRowType( Node left ) {
-        throw new RuntimeException( "JsonProcessor does not support getParameterRowType!" );
+        throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " does not support getParameterRowType!" );
     }
 
 }

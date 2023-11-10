@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.ConfigString;
@@ -148,7 +149,7 @@ public class NotebooksPlugin extends PolyPlugin {
 
                 if ( !this.container.waitTillStarted( this::testConnection, 20000 ) ) {
                     this.container.destroy();
-                    throw new RuntimeException( "Failed to start Jupyter Server container" );
+                    throw new GenericRuntimeException( "Failed to start Jupyter Server container" );
                 }
                 ConfigManager.getInstance().getConfig( CONFIG_CONTAINER_KEY ).setString( this.container.getContainerId() );
                 log.info( "Jupyter Server container has been deployed" );

@@ -35,11 +35,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.PolyImplementation.ResultIterator;
 import org.polypheny.db.adapter.DataContext;
@@ -78,12 +77,13 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -95,6 +95,8 @@ import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
+import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -108,6 +110,8 @@ import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
 import org.polypheny.db.processing.shuttles.ParameterValueValidator;
 import org.polypheny.db.processing.shuttles.QueryParameterizer;
+import org.polypheny.db.processing.util.Plan;
+import org.polypheny.db.processing.util.ProposedImplementations;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
@@ -252,11 +256,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         stopWatch.start();
 
         // Initialize result lists. They will all be with in the same ordering.
-        List<ProposedRoutingPlan> proposedRoutingPlans = null;
-        List<AlgNode> optimalNodeList = new ArrayList<>();
-        List<AlgRoot> parameterizedRootList = new ArrayList<>();
-        List<PolyImplementation> results = new ArrayList<>();
-        List<String> generatedCodes = new ArrayList<>();
+        List<Plan> plans = null;
 
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Expand Views" );
@@ -305,9 +305,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         if ( isRouted ) {
-            proposedRoutingPlans = Lists.newArrayList( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryHash() ) );
+            plans = List.of( new Plan().proposedRoutingPlan( new ProposedRoutingPlanImpl( logicalRoot, logicalQueryInformation.getQueryHash() ) ) );
         } else {
-            //
             // Locking
             if ( isAnalyze ) {
                 statement.getProcessingDuration().start( "Locking" );
@@ -316,7 +315,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 this.acquireLock( isAnalyze, logicalRoot, logicalQueryInformation.getAccessedPartitions() );
             }
 
-            //
             // Index Update
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Locking" );
@@ -358,33 +356,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             //
             // Routing
-            if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( Kind.DML ) ) {
-                Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
-                        .flatMap( List::stream )
-                        .collect( Collectors.toSet() );
-                List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryHash(), partitionIds );
-                if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( p -> p.physicalPlacementsOfPartitions.isEmpty() ) ) {
-                    proposedRoutingPlans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
-                }
-            }
-
-            if ( proposedRoutingPlans == null ) {
-                proposedRoutingPlans = route( indexLookupRoot, statement, logicalQueryInformation );
-            }
+            plans = routePlans( indexLookupRoot, logicalQueryInformation, plans, isAnalyze );
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
             }
 
-            proposedRoutingPlans.forEach( proposedRoutingPlan -> {
-                AlgRoot routedRoot = proposedRoutingPlan.getRoutedRoot();
-                AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
-                        AlgBuilder.create( statement, routedRoot.alg.getCluster() ),
-                        routedRoot.alg.getCluster().getRexBuilder(),
-                        routedRoot.alg::getCluster,
-                        true );
-                proposedRoutingPlan.setRoutedRoot( routedRoot.withAlg( typeFlattener.rewrite( routedRoot.alg ) ) );
-            } );
+            flattenPlans( plans );
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().stop( "Flattener" );
@@ -392,7 +370,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
 
-        //
         // Parameterize
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Parameterize" );
@@ -400,8 +377,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Add optional parameterizedRoots and results for all routed AlgRoots.
         // Index of routedRoot, parameterizedRootList and results correspond!
-        for ( ProposedRoutingPlan routingPlan : proposedRoutingPlans ) {
-            AlgRoot routedRoot = routingPlan.getRoutedRoot();
+        for ( Plan plan : plans ) {
+            AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             AlgRoot parameterizedRoot;
             if ( statement.getDataContext().getParameterValues().isEmpty()
                     && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
@@ -412,7 +389,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 parameterizedRoot = routedRoot;
             }
 
-            parameterizedRootList.add( parameterizedRoot );
+            plan.parameterizedRoot( parameterizedRoot );
         }
 
         if ( isAnalyze ) {
@@ -425,12 +402,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Implementation Caching" );
         }
 
-        for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
+        for ( Plan plan : plans ) {
+            AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
-                AlgRoot parameterizedRoot = parameterizedRootList.get( i );
+                AlgRoot parameterizedRoot = plan.parameterizedRoot();
                 PreparedResult<PolyValue> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
+                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
                 if ( preparedResult != null ) {
                     PolyImplementation result = createPolyImplementation(
                             preparedResult,
@@ -440,18 +417,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             resultConvention,
                             executionTimeMonitor,
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
-                    results.add( result );
-                    generatedCodes.add( preparedResult.getCode() );
-                    optimalNodeList.add( optimalNode );
-                } else {
-                    results.add( null );
-                    generatedCodes.add( null );
-                    optimalNodeList.add( null );
+                    plan.result( result );
+                    plan.generatedCodes( preparedResult.getCode() );
+                    plan.optimalNode( optimalNode );
                 }
-            } else {
-                results.add( null );
-                generatedCodes.add( null );
-                optimalNodeList.add( null );
             }
         }
 
@@ -460,28 +429,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Can we return earlier?
-        if ( results.stream().allMatch( Objects::nonNull ) && optimalNodeList.stream().allMatch( Objects::nonNull ) ) {
-            return new ProposedImplementations(
-                    proposedRoutingPlans,
-                    optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                    results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                    generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                    logicalQueryInformation );
+        if ( plans.stream().allMatch( obj -> Objects.nonNull( obj.result() ) && Objects.nonNull( obj.optimalNode() ) ) ) {
+            return new ProposedImplementations( plans.stream().filter( Plan::isValid ).collect( Collectors.toList() ), logicalQueryInformation );
         }
-
-        optimalNodeList = new ArrayList<>( Collections.nCopies( optimalNodeList.size(), null ) );
 
         //
         // Plan Caching
         if ( isAnalyze ) {
             statement.getProcessingDuration().start( "Plan Caching" );
         }
-        for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( this.isQueryPlanCachingActive( statement, proposedRoutingPlans.get( i ).getRoutedRoot() ) ) {
+        for ( Plan plan : plans ) {
+            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
                 // Should always be the case
-                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRootList.get( i ).alg );
+                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.parameterizedRoot().alg );
                 if ( cachedElem != null ) {
-                    optimalNodeList.set( i, cachedElem );
+                    plan.optimalNode( cachedElem );
                 }
             }
         }
@@ -494,16 +456,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // OptimalNode same size as routed, parametrized and result
-        for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( optimalNodeList.get( i ) != null ) {
+        for ( Plan plan : plans ) {
+            if ( plan.optimalNode() != null ) {
                 continue;
             }
-            AlgRoot parameterizedRoot = parameterizedRootList.get( i );
-            AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-            optimalNodeList.set( i, optimize( parameterizedRoot, resultConvention ) );
+            plan.optimalNode( optimize( plan.parameterizedRoot(), resultConvention ) );
 
-            if ( this.isQueryPlanCachingActive( statement, routedRoot ) ) {
-                QueryPlanCache.INSTANCE.put( parameterizedRoot.alg, optimalNodeList.get( i ) );
+            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+                QueryPlanCache.INSTANCE.put( plan.parameterizedRoot().alg, plan.optimalNode() );
             }
         }
 
@@ -514,25 +474,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Implementation" );
         }
 
-        for ( int i = 0; i < optimalNodeList.size(); i++ ) {
-            if ( results.get( i ) != null ) {
+        for ( Plan plan : plans ) {
+            if ( plan.result() != null ) {
                 continue;
             }
 
-            AlgNode optimalNode = optimalNodeList.get( i );
-            AlgRoot parameterizedRoot = parameterizedRootList.get( i );
-            AlgRoot routedRoot = proposedRoutingPlans.get( i ).getRoutedRoot();
-
-            final AlgDataType rowType = parameterizedRoot.alg.getRowType();
+            final AlgDataType rowType = plan.parameterizedRoot().alg.getRowType();
             final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-            AlgRoot optimalRoot = new AlgRoot( optimalNode, rowType, parameterizedRoot.kind, fields, algCollation( parameterizedRoot.alg ) );
+            AlgRoot optimalRoot = new AlgRoot( plan.optimalNode(), rowType, plan.parameterizedRoot().kind, fields, algCollation( plan.parameterizedRoot().alg ) );
 
             PreparedResult<PolyValue> preparedResult = implement( optimalRoot, parameterRowType );
 
             // Cache implementation
-            if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
+            if ( this.isImplementationCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
                 if ( optimalRoot.alg.isImplementationCacheable() ) {
-                    ImplementationCache.INSTANCE.put( parameterizedRoot.alg, preparedResult );
+                    ImplementationCache.INSTANCE.put( plan.parameterizedRoot().alg, preparedResult );
                 } else {
                     ImplementationCache.INSTANCE.countUncacheable();
                 }
@@ -545,10 +501,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     optimalRoot.validatedRowType,
                     resultConvention,
                     executionTimeMonitor,
-                    Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
-            results.set( i, result );
-            generatedCodes.set( i, preparedResult.getCode() );
-            optimalNodeList.set( i, optimalRoot.alg );
+                    Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel() );
+            plan.result( result );
+            plan.generatedCodes( preparedResult.getCode() );
+            plan.optimalNode( optimalRoot.alg );
         }
         if ( isAnalyze ) {
             statement.getProcessingDuration().stop( "Implementation" );
@@ -561,24 +517,40 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations(
-                proposedRoutingPlans,
-                optimalNodeList.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                results.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
-                generatedCodes.stream().filter( Objects::nonNull ).collect( Collectors.toList() ),
+                plans.stream().filter( Plan::isValid ).collect( Collectors.toList() ),
                 logicalQueryInformation );
     }
 
 
-    @AllArgsConstructor
-    @Getter
-    private static class ProposedImplementations {
+    @NotNull
+    private List<Plan> routePlans( AlgRoot indexLookupRoot, LogicalQueryInformation logicalQueryInformation, List<Plan> plans, boolean isAnalyze ) {
+        if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( Kind.DML ) ) {
+            Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
+                    .flatMap( List::stream )
+                    .collect( Collectors.toSet() );
+            List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryHash(), partitionIds );
+            if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( p -> p.physicalPlacementsOfPartitions.isEmpty() ) ) {
+                plans = routeCached( indexLookupRoot, routingPlansCached, statement, logicalQueryInformation, isAnalyze );
+            }
+        }
 
-        private final List<ProposedRoutingPlan> proposedRoutingPlans;
-        private final List<AlgNode> optimizedPlans;
-        private final List<PolyImplementation> results;
-        private final List<String> generatedCodes;
-        private final LogicalQueryInformation logicalQueryInformation;
+        if ( plans == null ) {
+            plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).collect( Collectors.toList() );
+        }
+        return plans;
+    }
 
+
+    private void flattenPlans( List<Plan> plans ) {
+        for ( Plan plan : plans ) {
+            AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
+            AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
+                    AlgBuilder.create( statement, routedRoot.alg.getCluster() ),
+                    routedRoot.alg.getCluster().getRexBuilder(),
+                    routedRoot.alg::getCluster,
+                    true );
+            plan.proposedRoutingPlan().setRoutedRoot( routedRoot.withAlg( typeFlattener.rewrite( routedRoot.alg ) ) );
+        }
     }
 
 
@@ -1034,7 +1006,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<ProposedRoutingPlan> routeCached( AlgRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
+    private List<Plan> routeCached( AlgRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
         if ( isAnalyze ) {
             statement.getRoutingDuration().start( "Select Cached Plan" );
         }
@@ -1066,7 +1038,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getRoutingDuration().stop( "Create Plan From Cache" );
         }
 
-        return Lists.newArrayList( proposed );
+        return List.of( new Plan().proposedRoutingPlan( proposed ) );
     }
 
 
@@ -1266,20 +1238,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private LogicalQueryInformation analyzeQueryAndPrepareMonitoring( Statement statement, AlgRoot logicalRoot, boolean isAnalyze, boolean isSubquery ) {
         // Analyze logical query
-        LogicalAlgAnalyzeShuttle analyzer = new LogicalAlgAnalyzeShuttle();
+        LogicalAlgAnalyzeShuttle analyzer = new LogicalAlgAnalyzeShuttle( statement );
         logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
         Map<Integer, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
-        Map<Integer, List<Long>> accessedPartitionMap = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
+        Map<Integer, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
-        String queryHash = analyzer.getQueryName();// + accessedPartitionMap;
+        String queryHash = analyzer.getQueryName() + accessedPartitions;
 
         // Build LogicalQueryInformation instance and prepare monitoring
         LogicalQueryInformationImpl queryInformation = new LogicalQueryInformationImpl(
                 queryHash,
-                accessedPartitionMap,
+                accessedPartitions,
                 analyzer.availableColumns,
                 analyzer.availableColumnsWithTable,
                 analyzer.getUsedColumns(),
@@ -1306,86 +1278,79 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * @return Mapping of Scan Ids to identified partition Ids
      */
     private Map<Integer, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
-        Map<Integer, List<Long>> accessedPartitionList = new HashMap<>(); // tableId  -> partitionIds
+        Map<Integer, List<Long>> accessedPartitions = new HashMap<>(); // tableId  -> partitionIds
         if ( !(alg instanceof LogicalRelScan) ) {
             for ( int i = 0; i < alg.getInputs().size(); i++ ) {
                 Map<Integer, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
                     for ( Map.Entry<Integer, List<Long>> elem : result.entrySet() ) {
-                        accessedPartitionList.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                        accessedPartitions.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     }
                 }
             }
         } else {
             boolean fallback = false;
             if ( alg.getEntity() != null ) {
-                CatalogEntity table = alg.getEntity();
+                LogicalEntity table = alg.getEntity();
 
                 int scanId = alg.getId();
 
                 if ( table == null ) {
                     // todo dl: remove after RowType refactor
-                    return accessedPartitionList;
+                    return accessedPartitions;
                 }
 
                 // Get placements of this table
                 LogicalTable catalogTable = table.unwrap( LogicalTable.class );
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+                fallback = true;
                 // todo dl
-                /*if ( aggregatedPartitionValues.containsKey( scanId ) ) {
-                    if ( aggregatedPartitionValues.get( scanId ) != null ) {
-                        if ( !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
-                            List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
+                if ( aggregatedPartitionValues.containsKey( scanId ) && aggregatedPartitionValues.get( scanId ) != null && !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
+                    fallback = false;
+                    List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
 
-                            if ( log.isDebugEnabled() ) {
-                                /*log.debug(
-                                        "TableID: {} is partitioned on column: {} - {}",
-                                        catalogTable.id,
-                                        catalogTable.partitionProperty.partitionColumnId,
-                                        Catalog.getInstance().getSnapshot().rel().getColumn( catalogTable.partitionProperty.partitionColumnId ).name );
+                    if ( log.isDebugEnabled() ) {
+                        log.debug(
+                                "TableID: {} is partitioned on column: {} - {}",
+                                catalogTable.id,
+                                property.partitionColumnId,
+                                Catalog.getInstance().getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
 
-                            }
-                            List<Long> identifiedPartitions = new ArrayList<>();
-                            for ( String partitionValue : partitionValues ) {
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
-                                }
-                                long identifiedPartition = PartitionManagerFactory.getInstance()
-                                        .getPartitionManager( catalogTable.partitionProperty.partitionType )
-                                        .getTargetPartitionId( catalogTable, partitionValue );
-
-                                identifiedPartitions.add( identifiedPartition );
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
-                                }
-                            }
-
-                            accessedPartitionList.merge(
-                                    scanId,
-                                    identifiedPartitions,
-                                    ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                            scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                            // Fallback all partitionIds are needed
-                        } else {
-                            fallback = true;
-                        }
-                    } else {
-                        fallback = true;
                     }
-                } else {
-                    fallback = true;
+                    List<Long> identifiedPartitions = new ArrayList<>();
+                    for ( String partitionValue : partitionValues ) {
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Extracted PartitionValue: {}", partitionValue );
+                        }
+                        long identifiedPartition = PartitionManagerFactory.getInstance()
+                                .getPartitionManager( property.partitionType )
+                                .getTargetPartitionId( catalogTable, property, partitionValue );
+
+                        identifiedPartitions.add( identifiedPartition );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Identified PartitionId: {} for value: {}", identifiedPartition, partitionValue );
+                        }
+                    }
+
+                    accessedPartitions.merge(
+                            scanId,
+                            identifiedPartitions,
+                            ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
+                    scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                    // Fallback all partitionIds are needed
                 }
 
                 if ( fallback ) {
-                    accessedPartitionList.merge(
+                    accessedPartitions.merge(
                             scanId,
-                            catalogTable.partitionProperty.partitionIds,
+                            property.partitionIds,
                             ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     scanPerTable.putIfAbsent( scanId, catalogTable.id );
-                }*/
+                }
 
             }
         }
-        return accessedPartitionList;
+        return accessedPartitions;
     }
 
 
@@ -1478,19 +1443,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private Pair<PolyImplementation, ProposedRoutingPlan> selectPlan( ProposedImplementations proposedImplementations ) {
-        // Lists should all be same size
-        List<ProposedRoutingPlan> proposedRoutingPlans = proposedImplementations.getProposedRoutingPlans();
-        List<AlgNode> optimalAlgs = proposedImplementations.getOptimizedPlans();
-        List<PolyImplementation> results = proposedImplementations.getResults();
-        List<String> generatedCodes = proposedImplementations.getGeneratedCodes();
-        LogicalQueryInformation queryInformation = proposedImplementations.getLogicalQueryInformation();
+    private Pair<PolyImplementation, ProposedRoutingPlan> selectPlan( ProposedImplementations proposed ) {
+        List<ProposedRoutingPlan> proposedRoutingPlans = proposed.getRoutingPlans();
+        LogicalQueryInformation queryInformation = proposed.getLogicalQueryInformation();
 
         List<AlgOptCost> approximatedCosts;
         if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
             // Get approximated costs and cache routing plans
-            approximatedCosts = optimalAlgs.stream()
-                    .map( alg -> alg.computeSelfCost( getPlanner(), alg.getCluster().getMetadataQuery() ) )
+            approximatedCosts = proposed.plans.stream()
+                    .map( p -> p.optimalNode().computeSelfCost( getPlanner(), p.optimalNode().getCluster().getMetadataQuery() ) )
                     .collect( Collectors.toList() );
             this.cacheRouterPlans(
                     proposedRoutingPlans,
@@ -1499,20 +1460,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
         }
 
-        if ( results.size() == 1 ) {
+        if ( proposed.plans.size() == 1 ) {
             // If only one plan proposed, return this without further selection
             if ( statement.getTransaction().isAnalyze() ) {
                 UiRoutingPageUtil.outputSingleResult(
-                        proposedRoutingPlans.get( 0 ),
-                        optimalAlgs.get( 0 ),
+                        proposed.plans.get( 0 ),
                         statement.getTransaction().getQueryAnalyzer() );
-                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( 0 ) );
+                addGeneratedCodeToQueryAnalyzer( proposed.plans.get( 0 ).generatedCodes() );
             }
-            return new Pair<>( results.get( 0 ), proposedRoutingPlans.get( 0 ) );
+            return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
         } else {
             // Calculate costs and get selected plan from plan selector
-            approximatedCosts = optimalAlgs.stream()
-                    .map( alg -> alg.computeSelfCost( getPlanner(), alg.getCluster().getMetadataQuery() ) )
+            approximatedCosts = proposed.plans.stream()
+                    .map( p -> p.optimalNode().computeSelfCost( getPlanner(), p.optimalNode().getCluster().getMetadataQuery() ) )
                     .collect( Collectors.toList() );
             RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
                     proposedRoutingPlans,
@@ -1522,12 +1482,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             int index = proposedRoutingPlans.indexOf( (ProposedRoutingPlan) routingPlan );
 
             if ( statement.getTransaction().isAnalyze() ) {
-                AlgNode optimalNode = optimalAlgs.get( index );
+                AlgNode optimalNode = proposed.plans.get( index ).optimalNode();
                 UiRoutingPageUtil.addPhysicalPlanPage( optimalNode, statement.getTransaction().getQueryAnalyzer() );
-                addGeneratedCodeToQueryAnalyzer( generatedCodes.get( index ) );
+                addGeneratedCodeToQueryAnalyzer( proposed.plans.get( index ).generatedCodes() );
             }
 
-            return new Pair<>( proposedImplementations.getResults().get( index ), (ProposedRoutingPlan) routingPlan );
+            return new Pair<>( proposed.plans.get( index ).result(), (ProposedRoutingPlan) routingPlan );
         }
     }
 
@@ -1544,7 +1504,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             // Clean Code (remove package names to make code better readable)
             String cleanedCode = code.replaceAll( "(org.)([a-z][a-z_0-9]*\\.)*", "" );
 
-            InformationCode informationCode = new InformationCode( group, cleanedCode );
+            Information informationCode = new InformationCode( group, cleanedCode );
             queryAnalyzer.registerInformation( informationCode );
         } else {
             log.error( "Generated code is null" );

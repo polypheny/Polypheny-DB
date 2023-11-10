@@ -73,7 +73,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     protected ConnectionFactory deployEmbedded() {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
-            throw new RuntimeException( "2PC Mode is not implemented" );
+            throw new GenericRuntimeException( "2PC Mode is not implemented" );
         } else {
             BasicDataSource dataSource = new BasicDataSource();
             dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );

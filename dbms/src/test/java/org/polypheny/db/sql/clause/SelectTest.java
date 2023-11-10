@@ -218,8 +218,8 @@ public class SelectTest {
         PolyImplementation impl = statement.getQueryProcessor().prepareQuery( AlgRoot.of( scan, Kind.SELECT ), false );
 
         ResultIterator iter = impl.execute( statement, 2 );
-        List<List<PolyValue>> first = iter.getRows();
-        List<List<PolyValue>> others = iter.getRows();
+        List<List<PolyValue>> first = iter.getNextBatch();
+        List<List<PolyValue>> others = iter.getNextBatch();
 
         assertEquals( 2, first.size() );
         assertEquals( 1, others.size() );

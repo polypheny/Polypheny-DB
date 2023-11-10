@@ -17,7 +17,7 @@
 package org.polypheny.db.iface;
 
 
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 
 
 /**
@@ -25,5 +25,5 @@ import org.polypheny.db.catalog.entity.CatalogUser;
  */
 public interface Authenticator {
 
-    CatalogUser authenticate( final String username, final String password ) throws AuthenticationException;
+    LogicalUser authenticate( final String username, final String password ) throws AuthenticationException;
 }

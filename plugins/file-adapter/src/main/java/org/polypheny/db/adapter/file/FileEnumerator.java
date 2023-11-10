@@ -317,7 +317,7 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
                                 // Write updated value. Overrides file if it exists (if you have a double update on the same item)
                                 if ( updateObj[j] instanceof FileInputHandle ) {
                                     if ( insertFile.exists() && !insertFile.delete() ) {
-                                        throw new RuntimeException( "Could not delete temporary insert file" );
+                                        throw new GenericRuntimeException( "Could not delete temporary insert file" );
                                     }
                                     ((FileInputHandle) updateObj[j]).materializeAsFile( insertFile.toPath() );
                                 } else if ( updateObj[j] instanceof InputStream ) {

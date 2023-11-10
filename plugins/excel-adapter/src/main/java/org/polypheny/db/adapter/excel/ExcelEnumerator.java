@@ -102,7 +102,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
             }
             this.reader.next(); // skip header row
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -293,7 +293,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                         try {
                             Thread.sleep( ExcelStreamReader.DEFAULT_MONITOR_DELAY );
                         } catch ( InterruptedException e ) {
-                            throw new RuntimeException( e );
+                            throw new GenericRuntimeException( e );
                         }
                         System.out.println( "Stream" );
                         continue;
@@ -305,7 +305,7 @@ class ExcelEnumerator implements Enumerator<PolyValue[]> {
                 return true;
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
 
     }

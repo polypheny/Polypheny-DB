@@ -49,4 +49,9 @@ public abstract class PolyTemporal extends PolyValue {
         return cal;
     }
 
+
+    public int getMillisOfDay() {
+        return (int) (getMilliSinceEpoch() % DateTimeUtils.MILLIS_PER_DAY);
+    }
+
 }

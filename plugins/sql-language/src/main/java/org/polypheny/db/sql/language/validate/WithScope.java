@@ -19,7 +19,7 @@ package org.polypheny.db.sql.language.validate;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWithItem;
@@ -71,7 +71,7 @@ class WithScope extends ListScope {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
             final Step path2 = path.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
             LogicalNamespace namespace = validator.snapshot.getNamespace( names.get( 0 ) ).orElseThrow();
-            CatalogEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
+            LogicalEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
             resolved.found( ns, false, null, path2, null );
             return;
         }
@@ -84,7 +84,7 @@ class WithScope extends ListScope {
         if ( names.size() == 1 && names.equals( withItem.name.names ) ) {
             final SqlValidatorNamespace ns = validator.getSqlNamespace( withItem );
             final Step path = Path.EMPTY.plus( ns.getRowType(), 0, names.get( 0 ), StructKind.FULLY_QUALIFIED );
-            CatalogEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
+            LogicalEntity entity = validator.snapshot.rel().getTable( names.get( 0 ), names.get( 1 ) ).orElseThrow();
             resolved.found( ns, false, null, path, null );
             return;
         }

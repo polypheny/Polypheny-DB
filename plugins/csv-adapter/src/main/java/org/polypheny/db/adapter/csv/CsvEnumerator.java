@@ -115,7 +115,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             }
             this.reader.readNext(); // skip header row
         } catch ( IOException e ) {
-            throw new RuntimeException( e );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -257,7 +257,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
         try {
             reader.close();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Error closing CSV reader", e );
+            throw new GenericRuntimeException( "Error closing CSV reader", e );
         }
     }
 
@@ -375,7 +375,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             final PolyValue[] objects = new PolyValue[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }
@@ -386,7 +386,7 @@ class CsvEnumerator implements Enumerator<PolyValue[]> {
             objects[0] = PolyLong.of( System.currentTimeMillis() );
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );
+                objects[i + 1] = convert( fieldTypes[i], strings[field] );
             }
             return objects;
         }

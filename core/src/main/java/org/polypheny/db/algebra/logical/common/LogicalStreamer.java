@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -168,7 +168,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
-    public static void attachFilter( CatalogEntity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
+    public static void attachFilter( LogicalEntity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
         for ( AlgDataTypeField field : entity.getRowType().getFieldList() ) {

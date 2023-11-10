@@ -21,7 +21,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
@@ -30,6 +32,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
@@ -64,8 +67,8 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    @Nullable
-    protected LogicalTable searchEntity( Context context, SqlIdentifier tableName ) {
+    @NotNull
+    protected Optional<LogicalTable> searchEntity( Context context, SqlIdentifier tableName ) {
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.NamespaceName.TableName
@@ -78,7 +81,17 @@ public abstract class SqlDdl extends SqlCall {
             namespaceId = context.getSnapshot().getNamespace( context.getDefaultNamespaceName() ).orElseThrow().id;
             tableOldName = tableName.names.get( 0 );
         }
-        return context.getSnapshot().rel().getTable( namespaceId, tableOldName ).orElse( null );
+        return context.getSnapshot().rel().getTable( namespaceId, tableOldName );
+    }
+
+
+    @NotNull
+    protected LogicalTable failOnEmpty( Context context, SqlIdentifier tableName ) {
+        Optional<LogicalTable> table = searchEntity( context, tableName );
+        if ( table.isEmpty() ) {
+            throw new GenericRuntimeException( "Could not find table with name: " + String.join( ".", tableName.names ) );
+        }
+        return table.get();
     }
 
 
@@ -106,7 +119,7 @@ public abstract class SqlDdl extends SqlCall {
         } else if ( adapterInstance instanceof DataSource ) {
             throw CoreUtil.newContextException( storeName.getPos(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
-            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+            throw new GenericRuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }
     }
 
@@ -114,7 +127,7 @@ public abstract class SqlDdl extends SqlCall {
     protected DataStore<?> getDataStoreInstance( long storeId ) {
         Adapter<?> adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
-            throw new RuntimeException( "Unknown storeId id: " + storeId );
+            throw new GenericRuntimeException( "Unknown storeId id: " + storeId );
         }
         // Make sure it is a data storeId instance
         if ( adapterInstance instanceof DataStore ) {
@@ -122,7 +135,7 @@ public abstract class SqlDdl extends SqlCall {
         } else if ( adapterInstance instanceof DataSource ) {
             throw CoreUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
         } else {
-            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+            throw new GenericRuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }
     }
 

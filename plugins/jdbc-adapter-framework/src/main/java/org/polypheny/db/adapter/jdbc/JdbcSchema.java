@@ -56,7 +56,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.entity.CatalogEntity;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -224,7 +224,7 @@ public class JdbcSchema implements Namespace, Schema, Expressible {
 
 
     @Override
-    public CatalogEntity getEntity( String name ) {
+    public LogicalEntity getEntity( String name ) {
         return getTableMap().get( name );
     }
 

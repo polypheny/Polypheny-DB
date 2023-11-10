@@ -18,7 +18,7 @@ package org.polypheny.db.routing;
 
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 
 
 /**
@@ -33,6 +33,6 @@ public interface RoutingPlan {
     Class<? extends Router> getRouter();
 
     // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
-    Map<Long, List<Pair<Long, Long>>> getPhysicalPlacementsOfPartitions();
+    Map<Long, List<AllocationColumn>> getPhysicalPlacementsOfPartitions();
 
 }

@@ -19,15 +19,10 @@ package org.polypheny.db.sql.web;
 
 import com.google.gson.Gson;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.entity.logical.LogicalKey;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.pretty.SqlPrettyWriter;
@@ -37,40 +32,6 @@ import org.polypheny.db.type.PolyType;
 public class SchemaToJsonMapper {
 
     private final static Gson gson = new Gson();
-
-
-    public static String exportTableDefinitionAsJson( @NonNull LogicalTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
-        List<JsonColumn> columns = new LinkedList<>();
-        for ( LogicalColumn logicalColumn : Catalog.getInstance().getSnapshot().rel().getColumns( catalogTable.id ) ) {
-            String defaultValue = null;
-            String defaultFunctionName = null;
-            if ( exportDefaultValues ) {
-                if ( logicalColumn.defaultValue != null ) {
-                    defaultValue = logicalColumn.defaultValue.value;
-                    defaultFunctionName = logicalColumn.defaultValue.functionName;
-                }
-            }
-            columns.add( new JsonColumn(
-                    logicalColumn.name,
-                    logicalColumn.type.name(),
-                    logicalColumn.length,
-                    logicalColumn.scale,
-                    logicalColumn.nullable,
-                    defaultValue,
-                    defaultFunctionName ) );
-        }
-        List<String> primaryKeyColumnNames = null;
-        if ( exportPrimaryKey ) {
-            for ( LogicalKey logicalKey : Catalog.getInstance().getSnapshot().rel().getTableKeys( catalogTable.id ) ) {
-                if ( logicalKey.id == catalogTable.primaryKey ) {
-                    primaryKeyColumnNames = logicalKey.getColumnNames();
-                    break;
-                }
-            }
-        }
-        JsonTable table = new JsonTable( catalogTable.name, columns, primaryKeyColumnNames );
-        return gson.toJson( table );
-    }
 
 
     public static String getTableNameFromJson( @NonNull String json ) {

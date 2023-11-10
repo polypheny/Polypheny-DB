@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidMethodInvocation;
@@ -78,7 +79,7 @@ public class Combiner {
                     modifiers.put( "null", parseNullModifier( modifier.comparator, modifier.modifierValue.trim() ) );
                 } else {
                     log.error( "Invalid modifier for combining tables: {}", modifierName );
-                    throw new RuntimeException( "Invalid modifier for combining tables: " + modifierName );
+                    throw new GenericRuntimeException( "Invalid modifier for combining tables: " + modifierName );
                 }
             } );
         } catch ( RuntimeException e ) {
@@ -189,10 +190,10 @@ public class Combiner {
                 }
             } else {
 //                TODO: Implement SetOpsType Combiners. (Union, Intersection, etc.)
-                throw new RuntimeException( "Set Ops Type Combiners have not been implemented." );
+                throw new GenericRuntimeException( "Set Ops Type Combiners have not been implemented." );
             }
         } catch ( InvalidMethodInvocation e ) {
-            throw new RuntimeException( "This exception would never be thrown since we have checked if the combiner isJoinType.", e );
+            throw new GenericRuntimeException( "This exception would never be thrown since we have checked if the combiner isJoinType.", e );
         }
     }
 

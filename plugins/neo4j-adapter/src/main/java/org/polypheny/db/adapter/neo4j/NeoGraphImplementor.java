@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PathType;
 import org.polypheny.db.type.entity.PolyString;
@@ -244,7 +245,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             i++;
         }
         if ( lastReturn == null ) {
-            throw new RuntimeException( "Could not find a RETURN to replace" );
+            throw new GenericRuntimeException( "Could not find a RETURN to replace" );
         }
         statements.set( lastReturn, return_ );
 

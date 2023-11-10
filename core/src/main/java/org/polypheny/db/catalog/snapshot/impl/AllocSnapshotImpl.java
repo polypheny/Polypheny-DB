@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationRelationalCatalog;
-import org.polypheny.db.catalog.entity.CatalogDataPlacement;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
@@ -499,26 +498,6 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     public @NotNull Optional<AllocationPlacement> getPlacement( long adapterId, long logicalTableId ) {
         return Optional.ofNullable( adapterLogicalToPlacement.get( Pair.of( adapterId, logicalTableId ) ) );
     }
-
-
-    @Override
-    @Deprecated
-    public List<CatalogDataPlacement> getDataPlacements( long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<AllocationPartition> getPartitionPlacementsByTableOnAdapter( long adapterId, long tableId ) {
-        return null;
-    }
-
-
-    @Override
-    public List<AllocationPartition> getAllPartitionPlacementsByTable( long tableId ) {
-        return null;
-    }
-
 
     @Override
     public @NonNull List<AllocationEntity> getFromLogical( long logicalId ) {

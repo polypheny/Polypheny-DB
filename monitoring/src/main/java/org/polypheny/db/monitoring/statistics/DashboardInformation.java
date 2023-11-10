@@ -30,35 +30,28 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 import org.polypheny.db.util.Pair;
 
 
+@Getter
 public class DashboardInformation {
 
     @Setter
-    @Getter
     private int numberOfCommits;
 
     @Setter
-    @Getter
     private int numberOfRollbacks;
 
     @Setter
-    @Getter
     private int numberOfQueries;
 
     @Setter
-    @Getter
     private int numberOfWorkloads;
 
     @Setter
-    @Getter
     private long numberOfPendingEvents;
 
-    @Getter
     private final Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
 
-    @Getter
     private final Map<Long, Pair<String, NamespaceType>> availableSchemas = new HashMap<>();
 
-    @Getter
     private boolean catalogPersistent;
 
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
@@ -62,8 +63,10 @@ import lombok.experimental.NonFinal;
 public class Pair<T1, T2> implements Comparable<Pair<T1, T2>>, Map.Entry<T1, T2>, Serializable {
 
     @Serialize
+    @JsonProperty
     public T1 left;
     @Serialize
+    @JsonProperty
     public T2 right;
 
 

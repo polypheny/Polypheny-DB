@@ -87,7 +87,7 @@ public class FileModifier extends FileEnumerator {
                         if ( value instanceof FileInputHandle ) {
                             if ( newFile.exists() ) {
                                 if ( !newFile.delete() ) {
-                                    throw new RuntimeException( "Could not delete file" );
+                                    throw new GenericRuntimeException( "Could not delete file" );
                                 }
                             }
                             ((FileInputHandle) value).materializeAsFile( newFile.toPath() );
@@ -108,7 +108,7 @@ public class FileModifier extends FileEnumerator {
 
     static void write( File newFile, Object value ) throws IOException {
         if ( !newFile.createNewFile() ) {
-            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+            throw new GenericRuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
         }
         if ( value instanceof byte[] ) {
             Files.write( newFile.toPath(), (byte[]) value );

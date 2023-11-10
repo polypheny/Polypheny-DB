@@ -21,9 +21,9 @@ import lombok.Getter;
 import org.polypheny.db.restapi.RestErrorCode;
 
 
+@Getter
 public class RestException extends RuntimeException {
 
-    @Getter
     private final RestErrorCode errorCode;
 
 

@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 public interface FileAlg extends AlgNode {
@@ -144,7 +145,7 @@ public interface FileAlg extends AlgNode {
                     }
                     int indexOf = new ArrayList<>( fileTable.getColumnIdNames().values() ).indexOf( ithProject );
                     if ( indexOf == -1 ) {
-                        throw new RuntimeException( "Could not perform the projection." );
+                        throw new GenericRuntimeException( "Could not perform the projection." );
                     }
                     projectionMapping[i] = indexOf;
                 }

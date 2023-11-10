@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -39,7 +40,7 @@ public class BackgroundTaskManager {
         overviewTable = new InformationTable(
                 informationGroupOverview,
                 Arrays.asList( "Class", "Description", " Scheduling Type", "Priority", "Average Time", "Max Time" ) );
-        im.registerInformation( overviewTable );
+        im.registerInformation( overviewTable.fullWidth( true ) );
 
         BackgroundTaskInfo backgroundTaskInfo = new BackgroundTaskInfo();
         ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
@@ -59,7 +60,7 @@ public class BackgroundTaskManager {
             tasks.get( id ).stop();
             tasks.remove( id );
         } else {
-            throw new RuntimeException( "There is no tasks with this id: " + id );
+            throw new GenericRuntimeException( "There is no tasks with this id: " + id );
         }
     }
 
@@ -78,6 +79,7 @@ public class BackgroundTaskManager {
                         String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms", "" + handle.getMaxExecTime() + " ms" );
             }
         }
+
     }
 
 }
