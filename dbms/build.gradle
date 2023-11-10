@@ -90,7 +90,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources"]
+            srcDirs = ["src/main/resources", "bin/main/"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -187,6 +187,9 @@ jar {
             include "LICENSE"
             include "NOTICE"
         })
+    }
+    from('/') {
+        include 'dbms/bin/main/version.properties'
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -321,7 +324,7 @@ task createProperties() {
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.
         copy {
             from "$buildDir/version.properties"
-            into "bin/main/"
+            into "src/main/resources"
         }
     }
 }
