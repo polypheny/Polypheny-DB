@@ -18,11 +18,13 @@ package org.polypheny.db.functions;
 
 import static org.polypheny.db.functions.Functions.toUnchecked;
 
+import java.util.Objects;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
@@ -36,6 +38,7 @@ public class GeoFunctions {
     private static final String LINE_STRING_RESTRICTION = "This function could be applied only to line strings";
     private static final String POLYGON_RESTRICTION = "This function could be applied only to polygons";
     private static final String GEOMETRY_COLLECTION_RESTRICTION = "This function could be applied only to geometry collections";
+    private static final String SRID_RESTRICTION = "Geometries of the same SRID should be used";
 
 
     private GeoFunctions() {
@@ -66,82 +69,124 @@ public class GeoFunctions {
         }
     }
 
+    // TODO: transform to another SRID
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stTransform( PolyGeometry geometry, PolyNumber srid ) {
+        // todo:
+        return null;
+    }
+
+
     /*
      * Common properties
      */
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsSimple( PolyGeometry geometry ) {
         return PolyBoolean.of( geometry.isSimple() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsEmpty( PolyGeometry geometry ) {
         return PolyBoolean.of( geometry.isEmpty() );
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyInteger stNumPoints( PolyGeometry geometry ) {
         return PolyInteger.of( geometry.getNumPoints() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyInteger stDimension( PolyGeometry geometry ) {
         return PolyInteger.of( geometry.getDimension() );
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyFloat stLength( PolyGeometry geometry ) {
         return PolyFloat.of( geometry.getLength() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyFloat stArea( PolyGeometry geometry ) {
         return PolyFloat.of( geometry.getArea() );
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stEnvelope( PolyGeometry geometry ) {
         return geometry.getEnvelope();
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stBoundary( PolyGeometry geometry ) {
         return geometry.getBoundary();
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyInteger stBoundaryDimension( PolyGeometry geometry ) {
-        return PolyInteger.of (geometry.getBoundaryDimension() );
+        return PolyInteger.of( geometry.getBoundaryDimension() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stConvexHull( PolyGeometry geometry ) {
         return geometry.convexHull();
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stCentroid( PolyGeometry geometry ) {
         return geometry.getCentroid();
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stReverse( PolyGeometry geometry ) {
         return geometry.reverse();
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance ) {
         return geometry.buffer( distance.doubleValue() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments ) {
         return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue() );
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments, PolyString endCapStyle ) {
         return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue(), BufferCapStyle.of( endCapStyle.value ) );
+    }
+
+    /*
+     * TODO: Spatial relationships
+     */
+
+
+    /*
+     * Yield metric values
+     */
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyNumber stDistance( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyFloat.of( g1.distance( g2 ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
     }
 
 
@@ -195,6 +240,7 @@ public class GeoFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsCoordinate( PolyGeometry geometry, PolyGeometry point ) {
+        restrictToSrid( geometry, point );
         restrictToLineStrings( geometry );
         restrictToPoints( point );
         return PolyBoolean.of( geometry.asLineString().isCoordinate( point.asPoint() ) );
@@ -217,6 +263,7 @@ public class GeoFunctions {
     /*
      * on Polygons
      */
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsRectangle( PolyGeometry geometry ) {
@@ -267,6 +314,7 @@ public class GeoFunctions {
      * Helpers
      */
 
+
     private static void restrictToPoints( PolyGeometry geometry ) {
         if ( !geometry.isPoint() ) {
             throw toUnchecked( new InvalidGeometryException( POINT_RESTRICTION ) );
@@ -291,6 +339,13 @@ public class GeoFunctions {
     private static void restrictToGeometryCollection( PolyGeometry geometry ) {
         if ( !geometry.isGeometryCollection() ) {
             throw toUnchecked( new InvalidGeometryException( GEOMETRY_COLLECTION_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToSrid( PolyGeometry g1, PolyGeometry g2 ) {
+        if ( !Objects.equals( g1.getSRID(), g2.getSRID() ) ) {
+            throw toUnchecked( new GeometryTopologicalException( SRID_RESTRICTION ) );
         }
     }
 

@@ -120,6 +120,7 @@ import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.interpreter.Context;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Scalar;
+import org.polypheny.db.nodes.Function;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.ArrayBindable;
 import org.polypheny.db.runtime.BinarySearch;
@@ -460,6 +461,8 @@ public enum BuiltInMethod {
     ST_CENTROID( GeoFunctions.class, "stCentroid", PolyGeometry.class ),
     ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
     ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
+    // Yield metric values
+    ST_DISTANCE( GeoFunctions.class, "stDistance", PolyGeometry.class, PolyGeometry.class ),
     // on Points
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),

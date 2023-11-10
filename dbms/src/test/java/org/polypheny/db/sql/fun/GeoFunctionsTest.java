@@ -127,6 +127,33 @@ public class GeoFunctionsTest {
     }
 
     @Test
+    public void distanceFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // calculate the distance between two points
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Distance(ST_GeoFromText('POINT (7.852923 47.998949)', 4326), ST_GeoFromText('POINT (9.289382 48.741588)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ 134.45105 }
+                        ) );
+                // calculate the distance between point and linestring
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Distance(ST_GeoFromText('POINT (7.852923 47.998949)', 4326), ST_GeoFromText('LINESTRING (9.289382 48.741588, 10.289382 47.741588, 12.289382 45.741588)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ 134.45105 } // still the same closest point
+                        ) );
+                // calculate the distance between point and polygon
+                TestHelper.checkResultSet(                                                                                                                        //  -1 -1, 2 2, -1 2, -1 -1
+                        statement.executeQuery( "SELECT ST_Distance(ST_GeoFromText('POINT (7.852923 47.998949)', 4326), ST_GeoFromText('POLYGON ((9.289382 48.741588, 10.289382 47.741588, 9.289382 47.741588, 9.289382 48.741588))', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ 106.87882 }
+                        ) );
+            }
+        }
+    }
+
+    @Test
     public void pointFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

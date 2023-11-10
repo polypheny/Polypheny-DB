@@ -2620,6 +2620,17 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.ST_BUFFER, new SqlStBuffer() );
 
+        // Yield metric values
+        register(
+                OperatorName.ST_DISTANCE,
+                new SqlFunction(
+                        "ST_DISTANCE",
+                        Kind.GEO,
+                        ReturnTypes.DOUBLE,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
         // on Points
         register(
                 OperatorName.ST_X,

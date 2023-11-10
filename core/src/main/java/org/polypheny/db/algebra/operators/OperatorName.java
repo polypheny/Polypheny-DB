@@ -1380,6 +1380,12 @@ public enum OperatorName {
      */
     ST_BUFFER( Function.class ),
 
+    // Yield metric values
+    /**
+     * The <code>ST_Distance</code> operator function: compute the distance between two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DISTANCE( Function.class ),
+
     // Functions on Points
 
     /**

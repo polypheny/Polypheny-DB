@@ -32,10 +32,13 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinates;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.polypheny.db.functions.GeoDistanceFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -438,31 +441,18 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Check that another {@link PolyGeometry} is withing the Euclidean distance.
+     * Check that another {@link PolyGeometry} is withing the given distance.
      *
      * @param g another {@link PolyGeometry}
-     * @param distance metric value to compare, measured in Cartesian coordinate units
+     * @param distance threshold, measured in Cartesian coordinate units for Euclidean, and in meters for others
      * @return <code>true</code> if {@link PolyGeometry} is withing the given distance
      */
-    public boolean isWithinDistance( @NotNull PolyGeometry g, double distance ) {
-        return jtsGeometry.isWithinDistance( g.getJtsGeometry(), distance );
-    }
-
-
-    /**
-     * Check that another {@link PolyGeometry} is withing the distance.
-     *
-     * @param g another {@link PolyGeometry}
-     * @param distance metric value to compare, measured in meters if <strong>spheroid</strong>, otherwise in Cartesian coordinate units
-     * @param spheroid use the spheroid physical model to calculate the distance
-     * @return <code>true</code> if {@link PolyGeometry} is withing the given distance
-     */
-    public boolean isWithinDistance( @NotNull PolyGeometry g, double distance, boolean spheroid ) {
-        if ( !spheroid ) {
-            return isWithinDistance( g, distance );
+    public boolean isWithinDistance( @NotNull PolyGeometry g, double distance ) throws GeometryTopologicalException {
+        if (this.SRID == NO_SRID) {
+            // Euclidean distance
+            return jtsGeometry.isWithinDistance( g.getJtsGeometry(), distance );
         }
-        // TODO: implement on Perfect Sphere and for WGS84
-        return false;
+        return GeoDistanceFunctions.isWithinSphericalDistance( this, g, distance );
     }
 
 
@@ -620,30 +610,20 @@ public class PolyGeometry extends PolyValue {
 
 
     /**
-     * Calculate the Euclidean distance between two {@link PolyGeometry}.
-     * The distance is measured in Cartesian coordinate units.
+     * Calculate the distance between two {@link PolyGeometry} taking the <strong>SRID</strong> into account.
+     * By default, (for <code>SRID=0</code>) Euclidean distance is calculated. Otherwise, the spheroid model is used.
+     * The distance is measured in Cartesian coordinate units for <code>SRID=0</code>
+     * and in meters for spheroid model.
      *
      * @param g another {@link PolyGeometry}
-     * @return the distance in Cartesian coordinate units
-     */
-    public double distance( @NotNull PolyGeometry g ) {
-        return jtsGeometry.distance( g.getJtsGeometry() );
-    }
-
-
-    /**
-     * Calculate the distance between two {@link PolyGeometry}.
-     *
-     * @param g another {@link PolyGeometry}
-     * @param spheroid use the spheroid physical model to calculate the distance
      * @return the distance in meters if <strong>spheroid</strong>, otherwise in Cartesian coordinate units
      */
-    public double distance( @NotNull PolyGeometry g, boolean spheroid ) {
-        if ( !spheroid ) {
+    public double distance( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
+        if (this.SRID == NO_SRID) {
+            // Euclidean distance
             return jtsGeometry.distance( g.getJtsGeometry() );
         }
-        // TODO: implement on Perfect Sphere and for WGS84
-        return 42;
+        return GeoDistanceFunctions.sphericalDistance( this, g );
     }
 
 
