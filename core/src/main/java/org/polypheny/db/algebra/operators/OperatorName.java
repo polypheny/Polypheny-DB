@@ -1313,6 +1313,73 @@ public enum OperatorName {
      */
     ST_GEOFROMTEXT( Function.class ),
 
+    // Common properties
+
+    /**
+     * The <code>ST_IsSimple</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is simple
+     */
+    ST_ISSIMPLE( Function.class ),
+
+    /**
+     * The <code>ST_IsEmpty</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is empty
+     */
+    ST_ISEMPTY( Function.class ),
+
+    /**
+     * The <code>ST_NumPoints</code> operator function: receive the number of points in the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_NUMPOINTS( Function.class ),
+
+    /**
+     * The <code>ST_Dimension</code> operator function: receive the dimension of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DIMENSION( Function.class ),
+
+    /**
+     * The <code>ST_Length</code> operator function: receive the length of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_LENGTH( Function.class ),
+
+    /**
+     * The <code>ST_Area</code> operator function: receive the area of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_AREA( Function.class ),
+
+    /**
+     * The <code>ST_Envelope</code> operator function: receive the minimum bounding box {@link org.polypheny.db.type.entity.spatial.PolyGeometry} that would include the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ENVELOPE( Function.class ),
+
+    /**
+     * The <code>ST_Boundary</code> operator function: receive the boundary of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BOUNDARY( Function.class ),
+
+    /**
+     * The <code>ST_BoundaryDimension</code> operator function: receive the boundary dimension of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BOUNDARYDIMENSION( Function.class ),
+
+    /**
+     * The <code>ST_ConvexHull</code> operator function: receive the convex full of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_CONVEXHULL( Function.class ),
+
+    /**
+     * The <code>ST_Centroid</code> operator function: receive the centroid of the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_CENTROID( Function.class ),
+
+    /**
+     * The <code>ST_Reverse</code> operator function: reverse the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_REVERSE( Function.class ),
+
+    /**
+     * The <code>ST_Buffer</code> operator function: receive the buffer {@link org.polypheny.db.type.entity.spatial.PolyGeometry} around the {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_BUFFER( Function.class ),
+
     // Functions on Points
 
     /**
@@ -1358,6 +1425,7 @@ public enum OperatorName {
     ST_ENDPOINT( Function.class ),
 
     // Functions on Polygons
+
     /**
      * The <code>ST_IsRectangle</code> operator function: check that {@link org.polypheny.db.type.entity.spatial.PolyPolygon} is rectangle
      */
@@ -1377,6 +1445,17 @@ public enum OperatorName {
      * The <code>ST_InteriorRingN</code> operator function: return the nth interior ring of the {@link org.polypheny.db.type.entity.spatial.PolyPolygon}
      */
     ST_INTERIORRINGN( Function.class ),
+
+    // Functions on GeometryCollection
+    /**
+     * The <code>ST_NumGeometries</code> operator function: return the number of {@link org.polypheny.db.type.entity.spatial.PolyGeometry} in {@link org.polypheny.db.type.entity.spatial.PolyGeometryCollection}
+     */
+    ST_NUMGEOMETRIES( Function.class ),
+
+    /**
+     * The <code>ST_GeometryN</code> operator function: return the nth geometry in the {@link org.polypheny.db.type.entity.spatial.PolyGeometryCollection}
+     */
+    ST_GEOMETRYN( Function.class ),
 
     //-------------------------------------------------------------
     //                   SET OPERATORS
@@ -1511,6 +1590,7 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
+    final public static List<OperatorName> MQL_OPERATORS = Arrays.asList( MQL_EQUALS, MQL_GT, MQL_GTE, MQL_LT, MQL_LTE );
     @Getter
     private final Class<? extends Operator> clazz;
 
@@ -1518,13 +1598,4 @@ public enum OperatorName {
     OperatorName( Class<? extends Operator> clazz ) {
         this.clazz = clazz;
     }
-
-
-    final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
-            MQL_EQUALS,
-            MQL_GT,
-            MQL_GTE,
-            MQL_LT,
-            MQL_LTE
-    );
 }

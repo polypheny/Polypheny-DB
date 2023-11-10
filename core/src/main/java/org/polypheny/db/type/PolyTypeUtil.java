@@ -319,6 +319,13 @@ public abstract class PolyTypeUtil {
         return type.getFamily() == PolyTypeFamily.BOOLEAN;
     }
 
+    /**
+     * @return true if type is in SqlTypeFamily.Geo
+     */
+    public static boolean inGeoFamily( AlgDataType type ) {
+        return type.getFamily() == PolyTypeFamily.GEO;
+    }
+
 
     /**
      * @return true if two types are in same type family

@@ -368,7 +368,21 @@ public class RexImpTable {
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
 
         // geo functions
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOFROMTEXT ), BuiltInMethod.ST_GEO_FROM_TEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOFROMTEXT ), BuiltInMethod.ST_GEOFROMTEXT.method, NullPolicy.STRICT );
+        // Common properties
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISSIMPLE ), BuiltInMethod.ST_ISSIMPLE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ISEMPTY ), BuiltInMethod.ST_ISEMPTY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMPOINTS ), BuiltInMethod.ST_NUMPOINTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIMENSION ), BuiltInMethod.ST_DIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_LENGTH ), BuiltInMethod.ST_LENGTH.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_AREA ), BuiltInMethod.ST_AREA.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ENVELOPE ), BuiltInMethod.ST_ENVELOPE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARY ), BuiltInMethod.ST_BOUNDARY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BOUNDARYDIMENSION ), BuiltInMethod.ST_BOUNDARYDIMENSION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONVEXHULL ), BuiltInMethod.ST_CONVEXHULL.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CENTROID ), BuiltInMethod.ST_CENTROID.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
         // on Points
         defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );
@@ -384,6 +398,9 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_EXTERIORRING ), BuiltInMethod.ST_EXTERIORRING.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_NUMINTERIORRING ), BuiltInMethod.ST_NUMINTERIORRING.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_INTERIORRINGN ), BuiltInMethod.ST_INTERIORRINGN.method, NullPolicy.STRICT );
+        // on GeometryCollection
+        defineMethod( OperatorRegistry.get( OperatorName.ST_NUMGEOMETRIES ), BuiltInMethod.ST_NUMGEOMETRIES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMETRYN ), BuiltInMethod.ST_GEOMETRYN.method, NullPolicy.STRICT );
     }
 
 

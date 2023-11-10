@@ -384,7 +384,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance ) {
-        return PolyPoint.of( jtsGeometry.buffer( distance ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance ) );
     }
 
 
@@ -400,7 +400,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance, int quadrantSegments ) {
-        return PolyPoint.of( jtsGeometry.buffer( distance, quadrantSegments ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments ) );
     }
 
 
@@ -417,7 +417,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance, int quadrantSegments, BufferCapStyle endCapStyle ) {
-        return PolyPoint.of( jtsGeometry.buffer( distance, quadrantSegments, endCapStyle.code ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments, endCapStyle.code ) );
     }
 
 

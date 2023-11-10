@@ -56,7 +56,7 @@ public enum PolyGeometryType {
         }
 
 
-        static BufferCapStyle of( String value ) {
+        public static BufferCapStyle of( String value ) {
             switch ( value ) {
                 case "round":
                     return ROUND;

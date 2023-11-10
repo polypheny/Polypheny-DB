@@ -64,6 +64,69 @@ public class GeoFunctionsTest {
     }
 
     @Test
+    public void commonPropertiesFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // check that the geometry is simple
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsSimple(ST_GeoFromText('POINT (0 1)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ true }
+                        ) );
+                // check that the geometry is empty
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_IsEmpty(ST_GeoFromText('POINT (0 1)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ false }
+                        ) );
+                // get the number of points in the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_NumPoints(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 4 }
+                        ) );
+                // get the dimension of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Dimension(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 1 }
+                        ) );
+                // get the length of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Length(ST_GeoFromText('LINESTRING (-1 -1, 2 2, 4 5, 6 7)'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 10.67662 }
+                        ) );
+                // get the area of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Area(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 4.5 }
+                        ) );
+                // get the minimum bounding box of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Envelope(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POLYGON ((-1 -1, -1 2, 2 2, 2 -1, -1 -1))" }
+                        ) );
+                // get the convex hull of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_ConvexHull(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POLYGON ((-1 -1, -1 2, 2 2, -1 -1))" }
+                        ) );
+                // get the centroid of the geometry
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Centroid(ST_GeoFromText('POLYGON ( (-1 -1, 2 2, -1 2, -1 -1 ) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;POINT (-0 1)" }
+                        ) );
+            }
+        }
+    }
+
+    @Test
     public void pointFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -146,6 +209,27 @@ public class GeoFunctionsTest {
                         statement.executeQuery( "SELECT ST_InteriorRingN(ST_GeoFromText('POLYGON((0.5 0.5,5 0,5 5,0 5,0.5 0.5), (1.5 1,4 3,4 1,1.5 1))'), 0)" ),
                         ImmutableList.of(
                                 new Object[]{ "SRID=0;LINEARRING (1.5 1, 4 3, 4 1, 1.5 1)" }
+                        ) );
+            }
+        }
+    }
+
+    @Test
+    public void geometryCollectionFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // get the number of geometries in the collection
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_NumGeometries(ST_GeoFromText('GEOMETRYCOLLECTION ( POINT (2 3), LINESTRING (2 3, 3 4) )'))" ),
+                        ImmutableList.of(
+                                new Object[]{ 2 }
+                        ) );
+                // retrieve the nth geometry in the collection
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_GeometryN(ST_GeoFromText('GEOMETRYCOLLECTION ( POINT (2 3), LINESTRING (2 3, 3 4) )'), 1)" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=0;LINESTRING (2 3, 3 4)" }
                         ) );
             }
         }

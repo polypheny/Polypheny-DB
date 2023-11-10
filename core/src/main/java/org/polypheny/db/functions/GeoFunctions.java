@@ -25,6 +25,7 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
 
 /**
  * Implementations of Geo functions
@@ -34,11 +35,16 @@ public class GeoFunctions {
     private static final String POINT_RESTRICTION = "This function could be applied only to points";
     private static final String LINE_STRING_RESTRICTION = "This function could be applied only to line strings";
     private static final String POLYGON_RESTRICTION = "This function could be applied only to polygons";
+    private static final String GEOMETRY_COLLECTION_RESTRICTION = "This function could be applied only to geometry collections";
 
 
     private GeoFunctions() {
         // empty on purpose
     }
+
+    /*
+     * Create Geometry
+     */
 
 
     @SuppressWarnings("UnusedDeclaration")
@@ -59,6 +65,89 @@ public class GeoFunctions {
             throw toUnchecked( e );
         }
     }
+
+    /*
+     * Common properties
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsSimple( PolyGeometry geometry ) {
+        return PolyBoolean.of( geometry.isSimple() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIsEmpty( PolyGeometry geometry ) {
+        return PolyBoolean.of( geometry.isEmpty() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumPoints( PolyGeometry geometry ) {
+        return PolyInteger.of( geometry.getNumPoints() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stDimension( PolyGeometry geometry ) {
+        return PolyInteger.of( geometry.getDimension() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stLength( PolyGeometry geometry ) {
+        return PolyFloat.of( geometry.getLength() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyFloat stArea( PolyGeometry geometry ) {
+        return PolyFloat.of( geometry.getArea() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stEnvelope( PolyGeometry geometry ) {
+        return geometry.getEnvelope();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBoundary( PolyGeometry geometry ) {
+        return geometry.getBoundary();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stBoundaryDimension( PolyGeometry geometry ) {
+        return PolyInteger.of (geometry.getBoundaryDimension() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stConvexHull( PolyGeometry geometry ) {
+        return geometry.convexHull();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stCentroid( PolyGeometry geometry ) {
+        return geometry.getCentroid();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stReverse( PolyGeometry geometry ) {
+        return geometry.reverse();
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance ) {
+        return geometry.buffer( distance.doubleValue() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments ) {
+        return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue() );
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stBuffer( PolyGeometry geometry, PolyNumber distance, PolyNumber quadrantSegments, PolyString endCapStyle ) {
+        return geometry.buffer( distance.doubleValue(), quadrantSegments.intValue(), BufferCapStyle.of( endCapStyle.value ) );
+    }
+
+
+    /*
+     * Geometry Specific Functions
+     */
 
     /*
      * on Points
@@ -128,6 +217,7 @@ public class GeoFunctions {
     /*
      * on Polygons
      */
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsRectangle( PolyGeometry geometry ) {
         restrictToPolygons( geometry );
@@ -141,11 +231,13 @@ public class GeoFunctions {
         return geometry.asPolygon().getExteriorRing();
     }
 
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyInteger stNumInteriorRing( PolyGeometry geometry ) {
         restrictToPolygons( geometry );
         return PolyInteger.of( geometry.asPolygon().getNumInteriorRing() );
     }
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stInteriorRingN( PolyGeometry geometry, PolyNumber n ) {
@@ -153,6 +245,27 @@ public class GeoFunctions {
         return PolyGeometry.of( geometry.asPolygon().getInteriorRingN( n.intValue() ).getJtsGeometry() );
     }
 
+    /*
+     * on GeometryCollection
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyInteger stNumGeometries( PolyGeometry geometry ) {
+        restrictToGeometryCollection( geometry );
+        return PolyInteger.of( geometry.asGeometryCollection().getNumGeometries() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeometryN( PolyGeometry geometry, PolyNumber n ) {
+        restrictToGeometryCollection( geometry );
+        return geometry.asGeometryCollection().getGeometryN( n.intValue() );
+    }
+
+    /*
+     * Helpers
+     */
 
     private static void restrictToPoints( PolyGeometry geometry ) {
         if ( !geometry.isPoint() ) {
@@ -167,9 +280,17 @@ public class GeoFunctions {
         }
     }
 
+
     private static void restrictToPolygons( PolyGeometry geometry ) {
         if ( !geometry.isPolygon() ) {
             throw toUnchecked( new InvalidGeometryException( POLYGON_RESTRICTION ) );
+        }
+    }
+
+
+    private static void restrictToGeometryCollection( PolyGeometry geometry ) {
+        if ( !geometry.isGeometryCollection() ) {
+            throw toUnchecked( new InvalidGeometryException( GEOMETRY_COLLECTION_RESTRICTION ) );
         }
     }
 

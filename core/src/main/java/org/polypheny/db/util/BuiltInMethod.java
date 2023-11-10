@@ -136,6 +136,7 @@ import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDate;
+import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
@@ -444,7 +445,21 @@ public enum BuiltInMethod {
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
     // GEO METHODS
-    ST_GEO_FROM_TEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
+    ST_GEOFROMTEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
+    // Common properties
+    ST_ISSIMPLE( GeoFunctions.class, "stIsSimple", PolyGeometry.class ),
+    ST_ISEMPTY( GeoFunctions.class, "stIsEmpty", PolyGeometry.class ),
+    ST_NUMPOINTS( GeoFunctions.class, "stNumPoints", PolyGeometry.class ),
+    ST_DIMENSION( GeoFunctions.class, "stDimension", PolyGeometry.class ),
+    ST_LENGTH( GeoFunctions.class, "stLength", PolyGeometry.class ),
+    ST_AREA( GeoFunctions.class, "stArea", PolyGeometry.class ),
+    ST_ENVELOPE( GeoFunctions.class, "stEnvelope", PolyGeometry.class ),
+    ST_BOUNDARY( GeoFunctions.class, "stBoundary", PolyGeometry.class ),
+    ST_BOUNDARYDIMENSION( GeoFunctions.class, "stBoundaryDimension", PolyGeometry.class ),
+    ST_CONVEXHULL( GeoFunctions.class, "stConvexHull", PolyGeometry.class ),
+    ST_CENTROID( GeoFunctions.class, "stCentroid", PolyGeometry.class ),
+    ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
+    ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
     // on Points
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),
@@ -460,6 +475,9 @@ public enum BuiltInMethod {
     ST_EXTERIORRING( GeoFunctions.class, "stExteriorRing", PolyGeometry.class ),
     ST_NUMINTERIORRING( GeoFunctions.class, "stNumInteriorRing", PolyGeometry.class ),
     ST_INTERIORRINGN( GeoFunctions.class, "stInteriorRingN", PolyGeometry.class, PolyInteger.class ),
+    // on GeometryCollection
+    ST_NUMGEOMETRIES( GeoFunctions.class, "stNumGeometries", PolyGeometry.class ),
+    ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
