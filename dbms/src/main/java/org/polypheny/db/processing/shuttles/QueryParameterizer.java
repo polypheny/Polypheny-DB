@@ -282,7 +282,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                         types.add( type );
                         values.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
                     }
-                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    values.get( idx ).add( new ParameterValue( idx, type, literal.getValue() ) );
                     i++;
                 }
                 firstRow = false;
@@ -346,7 +346,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                         types.add( type );
                         doc.put( idx, new ArrayList<>( ((LogicalValues) input).getTuples().size() ) );
                     }
-                    doc.get( idx ).add( new ParameterValue( idx, type, literal.getValueForQueryParameterizer() ) );
+                    doc.get( idx ).add( new ParameterValue( idx, type, literal.getValue() ) );
                     i++;
                 }
                 firstRow = false;
@@ -455,7 +455,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return literal;
         }
         int i = index.getAndIncrement();
-        values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValueForQueryParameterizer() ) ) );
+        values.put( i, Collections.singletonList( new ParameterValue( i, literal.getType(), literal.getValue() ) ) );
         types.add( literal.getType() );
         return new RexDynamicParam( literal.getType(), i );
     }
@@ -490,7 +490,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
         PolyList<PolyValue> list = new PolyList<>();
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
-                list.add( ((RexLiteral) node).getValueForQueryParameterizer() );
+                list.add( ((RexLiteral) node).getValue() );
             } else if ( node instanceof RexCall ) {
                 list.add( createListForArrays( ((RexCall) node).operands ) );
             } else {

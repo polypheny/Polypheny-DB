@@ -91,7 +91,7 @@ public class CsvFilterableTable extends CsvTable implements FilterableEntity {
             if ( left instanceof RexIndexRef && right instanceof RexLiteral ) {
                 final int index = ((RexIndexRef) left).getIndex();
                 if ( filterValues[index] == null ) {
-                    filterValues[index] = ((RexLiteral) right).getValue2().toString();
+                    filterValues[index] = ((RexLiteral) right).getValue().toString();
                     return true;
                 }
             }

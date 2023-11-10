@@ -28,6 +28,9 @@ public class VersionCollector {
 
     public static final String VERSION = "version";
     public static final String BRANCH = "branch";
+
+    public static final String HASH = "hash";
+
     public static VersionCollector INSTANCE = new VersionCollector();
 
     private final Properties versionProperties = new Properties();
@@ -35,6 +38,8 @@ public class VersionCollector {
     final String version;
 
     final String branch;
+
+    final String hash;
 
     public boolean inJar = false;
 
@@ -56,6 +61,7 @@ public class VersionCollector {
         }
         version = versionProperties.getProperty( VERSION );
         branch = versionProperties.getProperty( BRANCH );
+        hash = versionProperties.getProperty( HASH );
 
     }
 

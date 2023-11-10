@@ -154,7 +154,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             executor.reduce( rexBuilder, ImmutableList.of( ten ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 1 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue2(), equalTo( (Object) 10L ) );
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue(), equalTo( (Object) 10L ) );
         } );
     }
 
@@ -189,7 +189,7 @@ public class RexExecutorTest extends SqlLanguageDependent {
             executor.reduce( rexBuilder, ImmutableList.of( expression ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 1 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue2(), equalTo( operand ) );
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue(), equalTo( operand ) );
         } );
     }
 
@@ -205,9 +205,9 @@ public class RexExecutorTest extends SqlLanguageDependent {
             executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue2(), equalTo( (Object) "ello" ) ); // substring('Hello world!, 2, 4)
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue(), equalTo( (Object) "ello" ) ); // substring('Hello world!, 2, 4)
             assertThat( reducedValues.get( 1 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue2(), equalTo( (Object) 2L ) );
+            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue(), equalTo( (Object) 2L ) );
         } );
     }
 
@@ -224,9 +224,9 @@ public class RexExecutorTest extends SqlLanguageDependent {
             executor.reduce( rexBuilder, ImmutableList.of( substring, plus ), reducedValues );
             assertThat( reducedValues.size(), equalTo( 2 ) );
             assertThat( reducedValues.get( 0 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue2().toString(), equalTo( (Object) "656c6c6f" ) ); // substring('Hello world!, 2, 4)
+            assertThat( ((RexLiteral) reducedValues.get( 0 )).getValue().toString(), equalTo( (Object) "656c6c6f" ) ); // substring('Hello world!, 2, 4)
             assertThat( reducedValues.get( 1 ), instanceOf( RexLiteral.class ) );
-            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue2(), equalTo( (Object) 2L ) );
+            assertThat( ((RexLiteral) reducedValues.get( 1 )).getValue(), equalTo( (Object) 2L ) );
         } );
     }
 

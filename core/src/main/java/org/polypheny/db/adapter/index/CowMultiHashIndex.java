@@ -226,7 +226,7 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    Object getRaw() {
+    Map<List<PolyValue>, Set<List<PolyValue>>> getRaw() {
         return index;
     }
 

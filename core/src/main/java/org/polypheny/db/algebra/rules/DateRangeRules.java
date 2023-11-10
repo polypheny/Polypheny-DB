@@ -609,7 +609,7 @@ public abstract class DateRangeRules {
                     return Util.calendar( timeLiteral.value.asTimeStamp().milliSinceEpoch );
                 case DATE:
                     // Cast date to timestamp with local time zone
-                    //final DateString d = timeLiteral.getValueAs( DateString.class );
+                    //final DateString d = timeLiteral.getValue( DateString.class );
                     return Util.calendar( timeLiteral.value.asDate().milliSinceEpoch );
                 default:
                     throw Util.unexpected( timeLiteral.getPolyType() );

@@ -630,7 +630,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
                 assertRexCall( condition, 1 )
                         .operands
                         .stream()
-                        .map( e -> ((RexLiteral) e).getValueAs( String.class ) )
+                        .map( e -> ((RexLiteral) e).getValue() )
                         .collect( Collectors.toList() ) );
     }
 
@@ -680,7 +680,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
         assertTrue( jsonApi.operands.get( 1 ).isA( Kind.LITERAL ) );
         RexLiteral cond = (RexLiteral) jsonApi.operands.get( 1 );
-        assertEquals( key == null ? "strict $" : "strict $." + key, cond.getValueAs( String.class ) );
+        assertEquals( key == null ? "strict $" : "strict $." + key, cond.getValue() );
     }
 
 
@@ -695,7 +695,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
         assertEquals( Kind.ARRAY_VALUE_CONSTRUCTOR, excluded.op.getKind() );
         assertEquals( excludes.size(), excluded.operands.size() );
         List<PolyValue> names = excluded.operands.stream()
-                .map( e -> ((RexLiteral) e).getValueAs( String.class ) )
+                .map( e -> ((RexLiteral) e).getValue() )
                 .collect( Collectors.toList() );
         assertEquals( names, excludes );
     }
@@ -710,7 +710,7 @@ public class Mql2AlgFindTest extends Mql2AlgTest {
 
     private void testCastLiteral( RexNode node, Object value, Class<?> clazz ) {
         assertTrue( node.isA( Kind.LITERAL ) );
-        assertEquals( value, ((RexLiteral) node).getValueAs( clazz ) );
+        assertEquals( value, ((RexLiteral) node).getValue() );
     }
 
 

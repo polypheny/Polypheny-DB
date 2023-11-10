@@ -1134,7 +1134,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( names.operands.size() > 0 ) {
                 mergedName += "." + names.operands
                         .stream()
-                        .map( name -> ((RexLiteral) name).getValueAs( String.class ) )
+                        .map( name -> ((RexLiteral) name).getValue( String.class ) )
                         .collect( Collectors.joining( "." ) );
             }
 

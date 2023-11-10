@@ -47,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.TimeZone;
 import org.apache.calcite.avatica.util.ByteString;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -54,9 +55,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
@@ -67,6 +71,16 @@ import org.polypheny.db.util.Util;
  * Test for {@link RexBuilder}.
  */
 public class RexBuilderTest {
+
+    @BeforeClass
+    public static void init() {
+        try {
+            PolyphenyHomeDirManager.setModeAndGetInstance( PolyphenyMode.TEST );
+        } catch ( Exception e ) {
+            // can fail
+        }
+
+    }
 
     /**
      * Test RexBuilder.ensureType()
@@ -134,20 +148,20 @@ public class RexBuilderTest {
         final TimestampString ts2 = ts.withMillis( 56 );
         assertThat( ts2.toString(), is( "1969-07-21 02:56:15.056" ) );
         final RexNode literal2 = builder.makeLiteral( ts2, timestampType3, false );
-        assertThat( ((RexLiteral) literal2).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15.056" ) );
+        assertThat( ((RexLiteral) literal2).getValue().toString(), is( "1969-07-21 02:56:15.056" ) );
 
         // Now with nanoseconds
         final TimestampString ts3 = ts.withNanos( 56 );
         final RexNode literal3 = builder.makeLiteral( ts3, timestampType9, false );
-        assertThat( ((RexLiteral) literal3).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15" ) );
+        assertThat( ((RexLiteral) literal3).getValue().toString(), is( "1969-07-21 02:56:15" ) );
         final TimestampString ts3b = ts.withNanos( 2345678 );
         final RexNode literal3b = builder.makeLiteral( ts3b, timestampType9, false );
-        assertThat( ((RexLiteral) literal3b).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15.002" ) );
+        assertThat( ((RexLiteral) literal3b).getValue().toString(), is( "1969-07-21 02:56:15.002" ) );
 
         // Now with a very long fraction
         final TimestampString ts4 = ts.withFraction( "102030405060708090102" );
         final RexNode literal4 = builder.makeLiteral( ts4, timestampType18, false );
-        assertThat( ((RexLiteral) literal4).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15.102" ) );
+        assertThat( ((RexLiteral) literal4).getValue().toString(), is( "1969-07-21 02:56:15.102" ) );
 
         // toString
         assertThat( ts2.round( 1 ).toString(), is( "1969-07-21 02:56:15" ) );
@@ -172,11 +186,11 @@ public class RexBuilderTest {
         assertThat( node.toString(), is( "1969-07-21 02:56:15" ) );
         RexLiteral literal = (RexLiteral) node;
         assertThat( literal.getValue().isDate(), is( true ) );
-        assertThat( literal.getValue2() instanceof Long, is( true ) );
-        assertThat( literal.getValue3() instanceof Long, is( true ) );
-        assertThat( (Long) literal.getValue2(), is( MOON ) );
-        assertThat( literal.getValueAs( Calendar.class ), notNullValue() );
-        assertThat( literal.getValueAs( TimestampString.class ), notNullValue() );
+        assertThat( literal.getValue().isNumber(), is( true ) );
+        assertThat( literal.getValue().isNumber(), is( true ) );
+        assertThat( literal.getValue(), is( MOON ) );
+        assertThat( literal.getValue(), notNullValue() );
+        assertThat( literal.getValue(), notNullValue() );
     }
 
 
@@ -206,15 +220,15 @@ public class RexBuilderTest {
         // Now with nanoseconds
         final TimestampWithTimeZoneString ts3 = ts.withNanos( 56 );
         final RexNode literal3 = builder.makeLiteral( ts3.getLocalTimestampString(), timestampType9, false );
-        assertThat( ((RexLiteral) literal3).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15" ) );
+        assertThat( ((RexLiteral) literal3).getValue().toString(), is( "1969-07-21 02:56:15" ) );
         final TimestampWithTimeZoneString ts3b = ts.withNanos( 2345678 );
         final RexNode literal3b = builder.makeLiteral( ts3b.getLocalTimestampString(), timestampType9, false );
-        assertThat( ((RexLiteral) literal3b).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15.002" ) );
+        assertThat( ((RexLiteral) literal3b).getValue().toString(), is( "1969-07-21 02:56:15.002" ) );
 
         // Now with a very long fraction
         final TimestampWithTimeZoneString ts4 = ts.withFraction( "102030405060708090102" );
         final RexNode literal4 = builder.makeLiteral( ts4.getLocalTimestampString(), timestampType18, false );
-        assertThat( ((RexLiteral) literal4).getValueAs( TimestampString.class ).toString(), is( "1969-07-21 02:56:15.102" ) );
+        assertThat( ((RexLiteral) literal4).getValue().toString(), is( "1969-07-21 02:56:15.102" ) );
 
         // toString
         assertThat( ts2.round( 1 ).toString(), is( "1969-07-21 02:56:15 PST" ) );
@@ -237,8 +251,7 @@ public class RexBuilderTest {
         assertThat( node.toString(), is( "1969-07-21 02:56:15:TIMESTAMP_WITH_LOCAL_TIME_ZONE(0)" ) );
         RexLiteral literal = (RexLiteral) node;
         assertThat( literal.getValue().isTimestamp(), is( true ) );
-        assertThat( literal.getValue2() instanceof Long, is( true ) );
-        assertThat( literal.getValue3() instanceof Long, is( true ) );
+        assertThat( literal.getValue().isTemporal(), is( true ) );
     }
 
 
@@ -273,19 +286,19 @@ public class RexBuilderTest {
         assertThat( t2.getMillisOfDay(), is( 10575056 ) );
         assertThat( t2.toString(), is( "02:56:15.056" ) );
         final RexNode literal2 = builder.makeLiteral( t2, timeType3, false );
-        assertThat( ((RexLiteral) literal2).getValueAs( TimeString.class ).toString(), is( "02:56:15.056" ) );
+        assertThat( ((RexLiteral) literal2).getValue().toString(), is( "02:56:15.056" ) );
 
         // Now with nanoseconds
         final TimeString t3 = t.withNanos( 2345678 );
         assertThat( t3.getMillisOfDay(), is( 10575002 ) );
         final RexNode literal3 = builder.makeLiteral( t3, timeType9, false );
-        assertThat( ((RexLiteral) literal3).getValueAs( TimeString.class ).toString(), is( "02:56:15.002" ) );
+        assertThat( ((RexLiteral) literal3).getValue().toString(), is( "02:56:15.002" ) );
 
         // Now with a very long fraction
         final TimeString t4 = t.withFraction( "102030405060708090102" );
         assertThat( t4.getMillisOfDay(), is( 10575102 ) );
         final RexNode literal4 = builder.makeLiteral( t4, timeType18, false );
-        assertThat( ((RexLiteral) literal4).getValueAs( TimeString.class ).toString(), is( "02:56:15.102" ) );
+        assertThat( ((RexLiteral) literal4).getValue().toString(), is( "02:56:15.102" ) );
 
         // toString
         assertThat( t2.round( 1 ).toString(), is( "02:56:15" ) );
@@ -310,11 +323,10 @@ public class RexBuilderTest {
         assertThat( node.toString(), is( "02:56:15" ) );
         RexLiteral literal = (RexLiteral) node;
         assertThat( literal.getValue().isTime(), is( true ) );
-        assertThat( literal.getValue2() instanceof Integer, is( true ) );
-        assertThat( literal.getValue3() instanceof Integer, is( true ) );
-        assertThat( (Integer) literal.getValue2(), is( MOON_TIME ) );
-        assertThat( literal.getValueAs( Calendar.class ), notNullValue() );
-        assertThat( literal.getValueAs( TimeString.class ), notNullValue() );
+        assertThat( literal.getValue().isTemporal(), is( true ) );
+        assertThat( literal.getValue().asNumber().intValue(), is( MOON_TIME ) );
+        assertThat( literal.getValue(), notNullValue() );
+        assertThat( literal.getValue(), notNullValue() );
     }
 
 
@@ -331,7 +343,7 @@ public class RexBuilderTest {
         final Calendar calendar = Util.calendar();
         calendar.set( 1969, Calendar.JULY, 21 ); // one small step
         calendar.set( Calendar.MILLISECOND, 0 );
-        checkDate( builder.makeLiteral( calendar, dateType, false ) );
+        checkDate( builder.makeLiteral( PolyDate.of( calendar.getTime() ), dateType, dateType.getPolyType() ) );
 
         // Old way #2: Provide in Integer
         checkDate( builder.makeLiteral( MOON_DAY, dateType, false ) );
@@ -346,16 +358,15 @@ public class RexBuilderTest {
         assertThat( node.toString(), is( "1969-07-21" ) );
         RexLiteral literal = (RexLiteral) node;
         assertThat( literal.getValue().isDate(), is( true ) );
-        assertThat( literal.getValue2() instanceof Integer, is( true ) );
-        assertThat( literal.getValue3() instanceof Integer, is( true ) );
-        assertThat( (Integer) literal.getValue2(), is( MOON_DAY ) );
-        assertThat( literal.getValueAs( Calendar.class ), notNullValue() );
-        assertThat( literal.getValueAs( DateString.class ), notNullValue() );
+        assertThat( literal.getValue().isTemporal(), is( true ) );
+        assertThat( literal.getValue().asNumber().intValue(), is( MOON_DAY ) );
+        assertThat( literal.getValue(), notNullValue() );
+        assertThat( literal.getValue(), notNullValue() );
     }
 
 
     /**
-     * Test case for "AssertionError in {@link RexLiteral#getValue3} with null literal of type DECIMAL".
+     * Test case for "AssertionError in {@link RexLiteral#getValue} with null literal of type DECIMAL".
      */
     @Test
     public void testDecimalLiteral() {
@@ -363,7 +374,7 @@ public class RexBuilderTest {
         final AlgDataType type = typeFactory.createPolyType( PolyType.DECIMAL );
         final RexBuilder builder = new RexBuilder( typeFactory );
         final RexLiteral literal = builder.makeExactLiteral( null, type );
-        assertThat( literal.getValue3(), nullValue() );
+        assertThat( literal.getValue(), nullValue() );
     }
 
 
@@ -569,7 +580,7 @@ public class RexBuilderTest {
 
     private void checkBigDecimalLiteral( RexBuilder builder, String val ) {
         final RexLiteral literal = builder.makeExactLiteral( new BigDecimal( val ) );
-        assertThat( "builder.makeExactLiteral(new BigDecimal(" + val + ")).getValueAs(BigDecimal.class).toString()", literal.getValueAs( BigDecimal.class ).toString(), is( val ) );
+        assertThat( "builder.makeExactLiteral(new BigDecimal(" + val + ")).getValue(BigDecimal.class).toString()", literal.getValue().toString(), is( val ) );
     }
 
 }

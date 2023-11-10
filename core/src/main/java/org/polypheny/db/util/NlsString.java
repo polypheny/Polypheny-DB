@@ -53,6 +53,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.ByteString;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.functions.Functions;
 
 
@@ -67,7 +68,7 @@ public class NlsString implements Comparable<NlsString>, Cloneable, Externalizab
             .build(
                     new CacheLoader<>() {
                         @Override
-                        public String load( @Nonnull Pair<ByteString, Charset> key ) {
+                        public @NotNull String load( @Nonnull Pair<ByteString, Charset> key ) {
                             final Charset charset = key.right;
                             final CharsetDecoder decoder = charset.newDecoder();
                             final byte[] bytes = key.left.getBytes();

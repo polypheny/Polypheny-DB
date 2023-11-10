@@ -202,7 +202,7 @@ public class RexUtil {
     public static boolean isNull( RexNode expr ) {
         switch ( expr.getKind() ) {
             case LITERAL:
-                return ((RexLiteral) expr).getValue2() == null;
+                return ((RexLiteral) expr).getValue() == null;
             case CAST:
                 return isNull( ((RexCall) expr).operands.get( 0 ) );
             default:

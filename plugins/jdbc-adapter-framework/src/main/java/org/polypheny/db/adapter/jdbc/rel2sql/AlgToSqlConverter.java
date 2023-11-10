@@ -565,7 +565,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
 
         final SqlNode after;
         if ( e.getAfter() instanceof RexLiteral ) {
-            SqlMatchRecognize.AfterOption value = (SqlMatchRecognize.AfterOption) ((RexLiteral) e.getAfter()).getValue2();
+            SqlMatchRecognize.AfterOption value = (SqlMatchRecognize.AfterOption) ((RexLiteral) e.getAfter()).getValue().asSymbol().value;
             after = SqlLiteral.createSymbol( value, POS );
         } else {
             RexCall call = (RexCall) e.getAfter();

@@ -30,7 +30,7 @@ import org.polypheny.db.util.Util;
 public interface PolySerializable {
 
 
-    DefiningClassLoader CLASS_LOADER = DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() == null ? ClassLoader.getPlatformClassLoader() : PolyPluginManager.getMainClassLoader() );
+    DefiningClassLoader CLASS_LOADER = DefiningClassLoader.create( PolyPluginManager.getMainClassLoader() == null ? PolySerializable.class.getClassLoader() : PolyPluginManager.getMainClassLoader() );
 
     static <C extends Class<T>, T> BinarySerializer<T> buildSerializer( C clazz ) {
         return SerializerBuilder

@@ -300,7 +300,7 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
         for ( ImmutableList<RexLiteral> tuple : alg.tuples ) {
             for ( int column : columns ) {
                 final RexLiteral literal = tuple.get( column );
-                values.add( literal.isNull() ? NullSentinel.INSTANCE : literal.getValueAs( Comparable.class ) );
+                values.add( literal.isNull() ? NullSentinel.INSTANCE : literal.getValue() );
             }
             if ( !set.add( ImmutableList.copyOf( values ) ) ) {
                 return false;

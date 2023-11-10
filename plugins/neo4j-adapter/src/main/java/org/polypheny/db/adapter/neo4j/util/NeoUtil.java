@@ -273,7 +273,7 @@ public interface NeoUtil {
     }
 
     static String rexAsString( RexLiteral literal, String mappingLabel, boolean isLiteral ) {
-        Object ob = literal.getValueForQueryParameterizer();
+        Object ob = literal.getValue();
         if ( ob == null ) {
             return null;
         }
@@ -303,12 +303,12 @@ public interface NeoUtil {
             case INTERVAL_SECOND:
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return literal.getValueAs( Long.class ).toString();
+                return literal.getValue().toString();
             case DECIMAL:
             case FLOAT:
             case REAL:
             case DOUBLE:
-                return literal.getValueAs( Double.class ).toString();
+                return literal.getValue().toString();
             case CHAR:
             case VARCHAR:
                 if ( isLiteral ) {

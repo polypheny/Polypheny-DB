@@ -40,6 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Util;
 
 @Value
 public class PolyString extends PolyValue {
@@ -196,6 +197,19 @@ public class PolyString extends PolyValue {
             };
         }
 
+    }
+
+
+    public String toTypedString( boolean prefix ) {
+        StringBuilder ret = new StringBuilder();
+        if ( prefix && (null != charset && charset != Charset.defaultCharset()) ) {
+            ret.append( "_" );
+            ret.append( charset.name() );
+        }
+        ret.append( "'" );
+        ret.append( Util.replace( getValue(), "'", "''" ) );
+        ret.append( "'" );
+        return ret.toString();
     }
 
 

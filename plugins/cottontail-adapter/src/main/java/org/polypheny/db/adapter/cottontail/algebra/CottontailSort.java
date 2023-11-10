@@ -130,7 +130,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
 
         Expression expr;
         if ( node instanceof RexLiteral ) {
-            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
+            expr = Expressions.constant( ((RexLiteral) node).getValue() );
         } else if ( node instanceof RexDynamicParam ) {
             expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
         } else {

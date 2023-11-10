@@ -117,7 +117,7 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
 
     @Override
     public Comparable<?> visitLiteral( RexLiteral literal ) {
-        return Util.first( literal.getValue4(), N );
+        return Util.first( literal.getValue(), N );
     }
 
 

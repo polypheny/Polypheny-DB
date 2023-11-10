@@ -129,16 +129,14 @@ public class MongoRules {
         if ( op0 instanceof RexIndexRef
                 && ((RexIndexRef) op0).getIndex() == 0
                 && op1 instanceof RexLiteral
-                && ((RexLiteral) op1).getValue2() instanceof String ) {
-            return (String) ((RexLiteral) op1).getValue2();
+                && ((RexLiteral) op1).getValue().isString() ) {
+            return ((RexLiteral) op1).getValue().asString().value;
         }
         /*if ( op0 instanceof RexInputRef && op1 instanceof RexDynamicParam ) {
             return new BsonDynamic( (RexDynamicParam) op1 ).toJson();
         }*/
 
-        if ( op0.getType().getPolyType() == PolyType.ARRAY & op1 instanceof RexLiteral && op0 instanceof RexIndexRef ) {
-            return null;
-        }
+        op0.getType().getPolyType();
         return null;
     }
 
@@ -200,7 +198,7 @@ public class MongoRules {
         assert call.operands.get( 0 ) instanceof RexIndexRef;
         assert call.operands.get( 1 ) instanceof RexLiteral;
         String field = rowType.getFieldNames().get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
-        field += "." + ((RexLiteral) call.operands.get( 1 )).getValueAs( String.class );
+        field += "." + ((RexLiteral) call.operands.get( 1 )).getValue();
         return new Pair<>( field, call.operands.get( 2 ) );
     }
 

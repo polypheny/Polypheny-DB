@@ -213,7 +213,7 @@ class CoWHashIndex extends Index {
 
 
     @Override
-    Object getRaw() {
+    Map<?, ?> getRaw() {
         return index;
     }
 

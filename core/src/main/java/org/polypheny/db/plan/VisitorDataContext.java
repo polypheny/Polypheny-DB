@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -195,34 +194,34 @@ public class VisitorDataContext implements DataContext {
             final AlgDataType type = inputRef.getType();
 
             if ( type.getPolyType() == null ) {
-                log.warn( "{} returned null PolyType", inputRef.toString() );
+                log.warn( "{} returned null PolyType", inputRef );
                 return null;
             }
 
             switch ( type.getPolyType() ) {
                 case INTEGER:
-                    return Pair.of( index, rexLiteral.getValueAs( Integer.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case DOUBLE:
-                    return Pair.of( index, rexLiteral.getValueAs( Double.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case REAL:
-                    return Pair.of( index, rexLiteral.getValueAs( Float.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case BIGINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Long.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case SMALLINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Short.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case TINYINT:
-                    return Pair.of( index, rexLiteral.getValueAs( Byte.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case DECIMAL:
-                    return Pair.of( index, rexLiteral.getValueAs( BigDecimal.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case DATE:
                 case TIME:
-                    return Pair.of( index, rexLiteral.getValueAs( Integer.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case TIMESTAMP:
-                    return Pair.of( index, rexLiteral.getValueAs( Long.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case CHAR:
-                    return Pair.of( index, rexLiteral.getValueAs( Character.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 case VARCHAR:
-                    return Pair.of( index, rexLiteral.getValueAs( String.class ) );
+                    return Pair.of( index, rexLiteral.getValue() );
                 default:
                     // TODO: Support few more supported cases
                     log.warn( "{} for value of class {} is being handled in default way", type.getPolyType(), rexLiteral.getValue().getClass() );
