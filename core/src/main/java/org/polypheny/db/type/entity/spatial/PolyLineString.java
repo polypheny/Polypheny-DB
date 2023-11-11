@@ -61,6 +61,15 @@ public class PolyLineString extends PolyGeometry {
     }
 
 
+    protected PolyLineString( Geometry geometry, int srid ) {
+        super( PolyType.GEOMETRY );
+        this.geometryType = PolyGeometryType.LINESTRING;
+        this.jtsGeometry = geometry;
+        this.jtsLineString = (LineString) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyLineString( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.LINESTRING;
@@ -69,6 +78,11 @@ public class PolyLineString extends PolyGeometry {
 
     public static PolyLineString of( Geometry geometry ) {
         return new PolyLineString( geometry );
+    }
+
+
+    public static PolyLineString of( Geometry geometry, int srid ) {
+        return new PolyLineString( geometry, srid );
     }
 
 
@@ -110,7 +124,7 @@ public class PolyLineString extends PolyGeometry {
      * @return the nth point in the sequence.
      */
     public PolyPoint getPoint( int n ) {
-        return PolyPoint.of( jtsLineString.getPointN( n ) );
+        return PolyPoint.of( jtsLineString.getPointN( n ), getSRID() );
     }
 
 
@@ -118,7 +132,7 @@ public class PolyLineString extends PolyGeometry {
      * @return the first (start) point in the sequence
      */
     public PolyPoint getStartPoint() {
-        return PolyPoint.of( jtsLineString.getStartPoint() );
+        return PolyPoint.of( jtsLineString.getStartPoint(), getSRID() );
     }
 
 
@@ -126,7 +140,7 @@ public class PolyLineString extends PolyGeometry {
      * @return the last (end) point in the sequence
      */
     public PolyPoint getEndPoint() {
-        return PolyPoint.of( jtsLineString.getEndPoint() );
+        return PolyPoint.of( jtsLineString.getEndPoint(), getSRID() );
     }
 
 }

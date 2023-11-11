@@ -57,6 +57,15 @@ public class PolyPoint extends PolyGeometry {
     }
 
 
+    protected PolyPoint( Geometry geometry, int srid ) {
+        super( PolyType.GEOMETRY );
+        this.geometryType = PolyGeometryType.POINT;
+        this.jtsGeometry = geometry;
+        this.jtsPoint = (Point) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyPoint( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.POINT;
@@ -65,6 +74,11 @@ public class PolyPoint extends PolyGeometry {
 
     public static PolyPoint of( Geometry geometry ) {
         return new PolyPoint( geometry );
+    }
+
+
+    public static PolyPoint of( Geometry geometry, int srid ) {
+        return new PolyPoint( geometry, srid );
     }
 
 

@@ -57,6 +57,15 @@ public class PolyGeometryCollection extends PolyGeometry {
     }
 
 
+    public PolyGeometryCollection( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = getPolyGeometryType();
+        this.jtsGeometry = geometry;
+        this.jtsGeometryCollection = (GeometryCollection) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyGeometryCollection( PolyType type ) {
         super( type );
         this.geometryType = getPolyGeometryType();
@@ -68,6 +77,11 @@ public class PolyGeometryCollection extends PolyGeometry {
     }
 
 
+    public static PolyGeometryCollection of( Geometry geometry, int srid ) {
+        return new PolyGeometryCollection( geometry, srid );
+    }
+
+
     public boolean isMultiPoint() {
         return geometryType.equals( PolyGeometryType.MULTIPOINT );
     }
@@ -76,7 +90,7 @@ public class PolyGeometryCollection extends PolyGeometry {
     @NotNull
     public PolyMultiPoint asMultiPoint() {
         if ( isMultiPoint() ) {
-            return PolyMultiPoint.of( jtsGeometry );
+            return PolyMultiPoint.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyMultiPoint.class );
     }
@@ -90,7 +104,7 @@ public class PolyGeometryCollection extends PolyGeometry {
     @NotNull
     public PolyMultiLineString asMultiLineString() {
         if ( isMultiLineString() ) {
-            return PolyMultiLineString.of( jtsGeometry );
+            return PolyMultiLineString.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyMultiLineString.class );
     }
@@ -104,7 +118,7 @@ public class PolyGeometryCollection extends PolyGeometry {
     @NotNull
     public PolyMultiPolygon asMultiPolygon() {
         if ( isMultiPolygon() ) {
-            return PolyMultiPolygon.of( jtsGeometry );
+            return PolyMultiPolygon.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyMultiPolygon.class );
     }
@@ -125,7 +139,7 @@ public class PolyGeometryCollection extends PolyGeometry {
      * @return the nth {@link PolyGeometry} in the collection.
      */
     public PolyGeometry getGeometryN( int n ) {
-        return PolyGeometry.of( jtsGeometryCollection.getGeometryN( n ) );
+        return PolyGeometry.of( jtsGeometryCollection.getGeometryN( n ), getSRID() );
     }
 
 
@@ -135,7 +149,7 @@ public class PolyGeometryCollection extends PolyGeometry {
      * @return the union set of all {@link PolyGeometry} in the collection.
      */
     public PolyGeometry union() {
-        return PolyGeometry.of( jtsGeometryCollection.union() );
+        return PolyGeometry.of( jtsGeometryCollection.union(), getSRID() );
     }
 
 }

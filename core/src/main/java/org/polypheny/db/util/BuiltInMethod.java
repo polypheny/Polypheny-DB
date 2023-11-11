@@ -463,6 +463,11 @@ public enum BuiltInMethod {
     ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
     // Yield metric values
     ST_DISTANCE( GeoFunctions.class, "stDistance", PolyGeometry.class, PolyGeometry.class ),
+    // Set operations
+    ST_INTERSECTION( GeoFunctions.class, "stIntersection", PolyGeometry.class, PolyGeometry.class ),
+    ST_UNION( GeoFunctions.class, "stUnion", PolyGeometry.class, PolyGeometry.class ),
+    ST_DIFFERENCE( GeoFunctions.class, "stDifference", PolyGeometry.class, PolyGeometry.class ),
+    ST_SYMDIFFERENCE( GeoFunctions.class, "stSymDifference", PolyGeometry.class, PolyGeometry.class ),
     // on Points
     ST_X( GeoFunctions.class, "stX", PolyGeometry.class ),
     ST_Y( GeoFunctions.class, "stY", PolyGeometry.class ),

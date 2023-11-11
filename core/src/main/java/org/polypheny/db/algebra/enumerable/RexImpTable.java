@@ -385,6 +385,11 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
         // Yield metric values
         defineMethod( OperatorRegistry.get( OperatorName.ST_DISTANCE ), BuiltInMethod.ST_DISTANCE.method, NullPolicy.STRICT );
+        // Set operations
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTION ), BuiltInMethod.ST_INTERSECTION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_UNION ), BuiltInMethod.ST_UNION.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DIFFERENCE ), BuiltInMethod.ST_DIFFERENCE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_SYMDIFFERENCE ), BuiltInMethod.ST_SYMDIFFERENCE.method, NullPolicy.STRICT );
         // on Points
         defineMethod( OperatorRegistry.get( OperatorName.ST_X ), BuiltInMethod.ST_X.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_Y ), BuiltInMethod.ST_Y.method, NullPolicy.STRICT );

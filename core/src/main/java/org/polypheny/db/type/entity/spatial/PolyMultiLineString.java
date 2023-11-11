@@ -54,6 +54,15 @@ public class PolyMultiLineString extends PolyGeometryCollection {
     }
 
 
+    public PolyMultiLineString( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = PolyGeometryType.MULTILINESTRING;
+        this.jtsGeometry = geometry;
+        this.jtMultiLineString = (MultiLineString) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyMultiLineString( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.MULTILINESTRING;
@@ -62,6 +71,11 @@ public class PolyMultiLineString extends PolyGeometryCollection {
 
     public static PolyMultiLineString of( Geometry geometry ) {
         return new PolyMultiLineString( geometry );
+    }
+
+
+    public static PolyMultiLineString of( Geometry geometry, int srid ) {
+        return new PolyMultiLineString( geometry, srid );
     }
 
 

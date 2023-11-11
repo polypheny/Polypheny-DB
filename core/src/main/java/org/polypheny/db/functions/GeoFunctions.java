@@ -189,6 +189,54 @@ public class GeoFunctions {
         }
     }
 
+    /*
+     * Set operations
+     */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stIntersection( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.intersection( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stUnion( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.union( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stDifference( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.difference( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stSymDifference( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return g1.symDifference( g2 );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
 
     /*
      * Geometry Specific Functions

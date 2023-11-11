@@ -55,6 +55,15 @@ public class PolyLinearRing extends PolyLineString {
     }
 
 
+    protected PolyLinearRing( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = PolyGeometryType.LINEARRING;
+        this.jtsGeometry = geometry;
+        this.jtsLinearRing = (LinearRing) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyLinearRing( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.LINEARRING;
@@ -63,6 +72,11 @@ public class PolyLinearRing extends PolyLineString {
 
     public static PolyLinearRing of( Geometry geometry ) {
         return new PolyLinearRing( geometry );
+    }
+
+
+    public static PolyLinearRing of( Geometry geometry, int srid ) {
+        return new PolyLinearRing( geometry, srid );
     }
 
 }

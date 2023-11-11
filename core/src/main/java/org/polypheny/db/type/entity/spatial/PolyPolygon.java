@@ -61,6 +61,15 @@ public class PolyPolygon extends PolyGeometry {
     }
 
 
+    public PolyPolygon( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = PolyGeometryType.POLYGON;
+        this.jtsGeometry = geometry;
+        this.jtsPolygon = (Polygon) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyPolygon( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.POLYGON;
@@ -72,13 +81,18 @@ public class PolyPolygon extends PolyGeometry {
     }
 
 
+    public static PolyPolygon of( Geometry geometry, int srid ) {
+        return new PolyPolygon( geometry, srid );
+    }
+
+
     public boolean isRectangle() {
         return jtsPolygon.isRectangle();
     }
 
 
     public PolyLinearRing getExteriorRing() {
-        return PolyLinearRing.of( jtsPolygon.getExteriorRing() );
+        return PolyLinearRing.of( jtsPolygon.getExteriorRing(), getSRID() );
     }
 
 
@@ -88,7 +102,7 @@ public class PolyPolygon extends PolyGeometry {
 
 
     public PolyLinearRing getInteriorRingN( int n ) {
-        return PolyLinearRing.of( jtsPolygon.getInteriorRingN( n ) );
+        return PolyLinearRing.of( jtsPolygon.getInteriorRingN( n ), getSRID() );
     }
 
 }

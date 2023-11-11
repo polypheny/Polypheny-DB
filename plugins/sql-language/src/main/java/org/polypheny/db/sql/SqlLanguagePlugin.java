@@ -2631,6 +2631,49 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         OperandTypes.GEOMETRY_GEOMETRY,
                         FunctionCategory.GEOMETRY ) );
 
+        // Set operations
+
+        register(
+                OperatorName.ST_INTERSECTION,
+                new SqlFunction(
+                        "ST_INTERSECTION",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_UNION,
+                new SqlFunction(
+                        "ST_UNION",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_DIFFERENCE,
+                new SqlFunction(
+                        "ST_DIFFERENCE",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_SYMDIFFERENCE,
+                new SqlFunction(
+                        "ST_SYMDIFFERENCE",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+
         // on Points
         register(
                 OperatorName.ST_X,

@@ -154,6 +154,39 @@ public class GeoFunctionsTest {
     }
 
     @Test
+    public void setOperationsFunctions() throws SQLException {
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // calculate the intersection of two points
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Intersection(ST_GeoFromText('POINT (7.852923 47.998949)', 4326), ST_GeoFromText('POINT (9.289382 48.741588)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=4326;POINT EMPTY" } // empty
+                        ) );
+                // calculate the union of two points
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Union(ST_GeoFromText('POINT (7.852923 47.998949)', 4326), ST_GeoFromText('POINT (9.289382 48.741588)', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=4326;MULTIPOINT ((7.852923 47.998949), (9.289382 48.741588))" }
+                        ) );
+                // calculate the difference of linestring and polygon
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_Difference(ST_GeoFromText('LINESTRING (9.289382 48.741588, 10.289382 47.741588, 12.289382 45.741588)', 4326), ST_GeoFromText('POLYGON ((9.289382 48.741588, 10.289382 47.741588, 9.289382 47.741588, 9.289382 48.741588))', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=4326;LINESTRING (10.289382 47.741588, 12.289382 45.741588)" }
+                        ) );
+                // calculate the symmetrical difference of linestring and polygon
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ST_SymDifference(ST_GeoFromText('LINESTRING (9.289382 48.741588, 10.289382 47.741588, 12.289382 45.741588)', 4326), ST_GeoFromText('POLYGON ((9.289382 48.741588, 10.289382 47.741588, 9.289382 47.741588, 9.289382 48.741588))', 4326))" ),
+                        ImmutableList.of(
+                                new Object[]{ "SRID=4326;GEOMETRYCOLLECTION (LINESTRING (10.289382 47.741588, 12.289382 45.741588), POLYGON ((9.289382 48.741588, 10.289382 47.741588, 9.289382 47.741588, 9.289382 48.741588)))" }
+                        ) );
+            }
+        }
+    }
+
+    @Test
     public void pointFunctions() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

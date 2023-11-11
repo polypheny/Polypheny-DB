@@ -1386,6 +1386,28 @@ public enum OperatorName {
      */
     ST_DISTANCE( Function.class ),
 
+    // Set operations
+
+    /**
+     * The <code>ST_Intersection</code> operator function: compute the intersection of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_INTERSECTION( Function.class ),
+
+    /**
+     * The <code>ST_Union</code> operator function: compute the union of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_UNION( Function.class ),
+
+    /**
+     * The <code>ST_Difference</code> operator function: compute the difference of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_DIFFERENCE( Function.class ),
+
+    /**
+     * The <code>ST_SymDifference</code> operator function: compute the symmetric difference of two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_SYMDIFFERENCE( Function.class ),
+
     // Functions on Points
 
     /**

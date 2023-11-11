@@ -56,6 +56,15 @@ public class PolyMultiPoint extends PolyGeometryCollection {
     }
 
 
+    public PolyMultiPoint( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = PolyGeometryType.MULTIPOINT;
+        this.jtsGeometry = geometry;
+        this.jtsMultiPoint = (MultiPoint) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyMultiPoint( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.MULTIPOINT;
@@ -64,6 +73,11 @@ public class PolyMultiPoint extends PolyGeometryCollection {
 
     public static PolyMultiPoint of( Geometry geometry ) {
         return new PolyMultiPoint( geometry );
+    }
+
+
+    public static PolyMultiPoint of( Geometry geometry, int srid ) {
+        return new PolyMultiPoint( geometry, srid );
     }
 
 }

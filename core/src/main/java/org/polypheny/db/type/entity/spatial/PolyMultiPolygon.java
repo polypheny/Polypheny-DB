@@ -57,6 +57,15 @@ public class PolyMultiPolygon extends PolyGeometryCollection {
     }
 
 
+    public PolyMultiPolygon( Geometry geometry, int srid ) {
+        super( geometry );
+        this.geometryType = PolyGeometryType.MULTIPOLYGON;
+        this.jtsGeometry = geometry;
+        this.jtsMultiPolygon = (MultiPolygon) jtsGeometry;
+        this.SRID = srid;
+    }
+
+
     protected PolyMultiPolygon( PolyType type ) {
         super( type );
         this.geometryType = PolyGeometryType.MULTIPOLYGON;
@@ -65,6 +74,11 @@ public class PolyMultiPolygon extends PolyGeometryCollection {
 
     public static PolyMultiPolygon of( Geometry geometry ) {
         return new PolyMultiPolygon( geometry );
+    }
+
+
+    public static PolyMultiPolygon of( Geometry geometry, int srid ) {
+        return new PolyMultiPolygon( geometry, srid );
     }
 
 }

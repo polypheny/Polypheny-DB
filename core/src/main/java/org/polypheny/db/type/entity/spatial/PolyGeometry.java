@@ -121,6 +121,14 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    public PolyGeometry( Geometry geometry, int srid ) {
+        super( PolyType.GEOMETRY );
+        this.jtsGeometry = geometry;
+        this.SRID = srid;
+        this.geometryType = getPolyGeometryType();
+    }
+
+
     protected PolyGeometry( PolyType type ) {
         super( type );
     }
@@ -138,6 +146,11 @@ public class PolyGeometry extends PolyValue {
 
     public static PolyGeometry of( Geometry geometry ) {
         return new PolyGeometry( geometry );
+    }
+
+
+    public static PolyGeometry of( Geometry geometry, int srid ) {
+        return new PolyGeometry( geometry, srid );
     }
 
 
@@ -194,7 +207,7 @@ public class PolyGeometry extends PolyValue {
     @NotNull
     public PolyPoint asPoint() {
         if ( isPoint() ) {
-            return PolyPoint.of( jtsGeometry );
+            return PolyPoint.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyPoint.class );
     }
@@ -208,7 +221,7 @@ public class PolyGeometry extends PolyValue {
     @NotNull
     public PolyLineString asLineString() {
         if ( isLineString() ) {
-            return PolyLineString.of( jtsGeometry );
+            return PolyLineString.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyLineString.class );
     }
@@ -222,7 +235,7 @@ public class PolyGeometry extends PolyValue {
     @NotNull
     public PolyLinearRing asLinearRing() {
         if ( isLinearRing() ) {
-            return PolyLinearRing.of( jtsGeometry );
+            return PolyLinearRing.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyLinearRing.class );
     }
@@ -236,7 +249,7 @@ public class PolyGeometry extends PolyValue {
     @NotNull
     public PolyPolygon asPolygon() {
         if ( isPolygon() ) {
-            return PolyPolygon.of( jtsGeometry );
+            return PolyPolygon.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyPolygon.class );
     }
@@ -250,7 +263,7 @@ public class PolyGeometry extends PolyValue {
     @NotNull
     public PolyGeometryCollection asGeometryCollection() {
         if ( isGeometryCollection() ) {
-            return PolyGeometryCollection.of( jtsGeometry );
+            return PolyGeometryCollection.of( jtsGeometry, getSRID() );
         }
         throw cannotParse( this, PolyGeometryCollection.class );
     }
@@ -339,7 +352,7 @@ public class PolyGeometry extends PolyValue {
      * @return the set of the combinatorial boundary {@link PolyGeometry} that define the limit of this {@link PolyGeometry}
      */
     public PolyGeometry getBoundary() {
-        return PolyGeometry.of( jtsGeometry.getBoundary() );
+        return PolyGeometry.of( jtsGeometry.getBoundary(), getSRID() );
     }
 
 
@@ -357,7 +370,7 @@ public class PolyGeometry extends PolyValue {
      * @return the minimum area {@link PolyGeometry} containing all points in this {@link PolyGeometry}
      */
     public PolyGeometry convexHull() {
-        return PolyGeometry.of( jtsGeometry.convexHull() );
+        return PolyGeometry.of( jtsGeometry.convexHull(), getSRID() );
     }
 
 
@@ -373,7 +386,7 @@ public class PolyGeometry extends PolyValue {
      * @return {@link PolyPoint} that is the centroid of this {@link PolyGeometry}
      */
     public PolyPoint getCentroid() {
-        return PolyPoint.of( jtsGeometry.getCentroid() );
+        return PolyPoint.of( jtsGeometry.getCentroid(), getSRID() );
     }
 
 
@@ -387,7 +400,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance ) {
-        return PolyGeometry.of( jtsGeometry.buffer( distance ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance ), getSRID() );
     }
 
 
@@ -403,7 +416,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance, int quadrantSegments ) {
-        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments ), getSRID() );
     }
 
 
@@ -420,7 +433,7 @@ public class PolyGeometry extends PolyValue {
      * @return a {@link PolyPolygon} that represent buffer region around this {@link PolyGeometry}
      */
     public PolyGeometry buffer( double distance, int quadrantSegments, BufferCapStyle endCapStyle ) {
-        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments, endCapStyle.code ) );
+        return PolyGeometry.of( jtsGeometry.buffer( distance, quadrantSegments, endCapStyle.code ), getSRID() );
     }
 
 
@@ -428,7 +441,7 @@ public class PolyGeometry extends PolyValue {
      * @return new {@link PolyGeometry} with coordinates in a reverse order.
      */
     public PolyGeometry reverse() {
-        return PolyGeometry.of( jtsGeometry.reverse() );
+        return PolyGeometry.of( jtsGeometry.reverse(), getSRID() );
     }
 
     /*
@@ -448,7 +461,7 @@ public class PolyGeometry extends PolyValue {
      * @return <code>true</code> if {@link PolyGeometry} is withing the given distance
      */
     public boolean isWithinDistance( @NotNull PolyGeometry g, double distance ) throws GeometryTopologicalException {
-        if (this.SRID == NO_SRID) {
+        if ( this.SRID == NO_SRID ) {
             // Euclidean distance
             return jtsGeometry.isWithinDistance( g.getJtsGeometry(), distance );
         }
@@ -619,7 +632,7 @@ public class PolyGeometry extends PolyValue {
      * @return the distance in meters if <strong>spheroid</strong>, otherwise in Cartesian coordinate units
      */
     public double distance( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
-        if (this.SRID == NO_SRID) {
+        if ( this.SRID == NO_SRID ) {
             // Euclidean distance
             return jtsGeometry.distance( g.getJtsGeometry() );
         }
@@ -644,7 +657,7 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry intersection( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
         try {
-            return PolyGeometry.of( jtsGeometry.intersection( g.getJtsGeometry() ) );
+            return PolyGeometry.of( jtsGeometry.intersection( g.getJtsGeometry() ), getSRID() );
         } catch ( TopologyException | IllegalArgumentException e ) {
             // TopologyException: robustness error occurs
             // IllegalArgumentException: non-empty heterogeneous GeometryCollection as an input
@@ -665,7 +678,7 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry union( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
         try {
-            return PolyGeometry.of( jtsGeometry.union( g.getJtsGeometry() ) );
+            return PolyGeometry.of( jtsGeometry.union( g.getJtsGeometry() ), getSRID() );
         } catch ( TopologyException | IllegalArgumentException e ) {
             // TopologyException: robustness error occurs
             // IllegalArgumentException: non-empty GeometryCollection as an input
@@ -685,7 +698,7 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry difference( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
         try {
-            return PolyGeometry.of( jtsGeometry.difference( g.getJtsGeometry() ) );
+            return PolyGeometry.of( jtsGeometry.difference( g.getJtsGeometry() ), getSRID() );
         } catch ( TopologyException | IllegalArgumentException e ) {
             // TopologyException: robustness error occurs
             // IllegalArgumentException: non-empty GeometryCollection as an input
@@ -707,7 +720,7 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry symDifference( @NotNull PolyGeometry g ) throws GeometryTopologicalException {
         try {
-            return PolyGeometry.of( jtsGeometry.symDifference( g.getJtsGeometry() ) );
+            return PolyGeometry.of( jtsGeometry.symDifference( g.getJtsGeometry() ), getSRID() );
         } catch ( TopologyException | IllegalArgumentException e ) {
             // TopologyException: robustness error occurs
             // IllegalArgumentException: non-empty GeometryCollection as an input
