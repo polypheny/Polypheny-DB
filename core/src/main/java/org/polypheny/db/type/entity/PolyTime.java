@@ -16,6 +16,7 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.core.JsonToken;
 import java.sql.Time;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -27,6 +28,7 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.util.TimeString;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -71,6 +73,12 @@ public class PolyTime extends PolyTemporal {
 
     public Time asSqlTime() {
         return new Time( ofDay );
+    }
+
+
+    @Override
+    public String toJson() {
+        return ofDay == null ? JsonToken.VALUE_NULL.asString() : TimeString.fromMillisOfDay( ofDay ).toString();
     }
 
 

@@ -36,6 +36,7 @@ package org.polypheny.db.rex;
 
 import java.util.Objects;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -49,6 +50,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 @NonFinal
 public abstract class RexVariable extends RexNode {
 
+    @Getter
     public String name;
     public AlgDataType type;
 
@@ -65,13 +67,6 @@ public abstract class RexVariable extends RexNode {
         return type;
     }
 
-
-    /**
-     * Returns the name of this variable.
-     */
-    public String getName() {
-        return name;
-    }
 
 }
 

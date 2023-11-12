@@ -398,14 +398,14 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 || type.getPolyType() == PolyType.SYMBOL ) {
             // We don't want false:BOOLEAN NOT NULL, so we don't print type information for non-nullable BOOLEAN and INTEGER
             includeType = RexDigestIncludeType.NO_TYPE;
-        } else if ( type.getPolyType() == PolyType.CHAR && value.isString() ) {
+        } else if ( PolyType.STRING_TYPES.contains( type.getPolyType() ) && value.isString() ) {
             PolyString string = value.asString();
 
             // Ignore type information for 'Bar':CHAR(3)
             if ( ((string.getCharset() != null
-                    && type.getCharset().equals( string.getCharset() ))
+                    && type.getCharset().name().equals( string.getCharset().name() ))
                     || (string.getCharset() == null
-                    && Collation.IMPLICIT.getCharset().equals( type.getCharset() )))
+                    && Collation.IMPLICIT.getCharset().name().equals( type.getCharset().name() )))
                     && string.value.length() == type.getPrecision() ) {
                 includeType = RexDigestIncludeType.NO_TYPE;
             } else {
@@ -559,17 +559,17 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 break;
             case DATE:
                 assert value.isDate();
-                pw.print( value );
+                pw.print( value.toJson() );
                 break;
             case TIME:
             case TIME_WITH_LOCAL_TIME_ZONE:
                 assert value.isTime();
-                pw.print( value );
+                pw.print( value.toJson() );
                 break;
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 assert value.isTimestamp();
-                pw.print( value );
+                pw.print( value.toJson() );
                 break;
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:

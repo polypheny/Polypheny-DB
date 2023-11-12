@@ -33,6 +33,7 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.util.TimestampString;
 
 @Getter
 @Value
@@ -92,7 +93,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
     @Override
     public String toJson() {
-        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : dateFormat.format( new Date( milliSinceEpoch ) );
+        return milliSinceEpoch == null ? JsonToken.VALUE_NULL.asString() : TimestampString.fromMillisSinceEpoch( milliSinceEpoch ).toString();
     }
 
 

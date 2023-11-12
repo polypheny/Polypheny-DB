@@ -69,6 +69,11 @@ public class PolyString extends PolyValue {
     }
 
 
+    public static PolyString of( String value, @Nullable Charset charset ) {
+        return new PolyString( value, charset == null ? Charsets.UTF_16 : charset );
+    }
+
+
     public static PolyString of( String value ) {
         return new PolyString( value );
     }
@@ -202,9 +207,9 @@ public class PolyString extends PolyValue {
 
     public String toTypedString( boolean prefix ) {
         StringBuilder ret = new StringBuilder();
-        if ( prefix && (null != charset && charset != Charset.defaultCharset()) ) {
+        if ( prefix && (null != charset && charset != PolyString.CHARSET) ) {
             ret.append( "_" );
-            ret.append( charset.name() );
+            ret.append( charset.displayName() );
         }
         ret.append( "'" );
         ret.append( Util.replace( getValue(), "'", "''" ) );
