@@ -18,10 +18,8 @@ package org.polypheny.db.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
