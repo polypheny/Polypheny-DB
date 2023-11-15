@@ -19,26 +19,23 @@ package org.polypheny.db.backup.datainserter;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.backup.BupInformationObject;
 import org.polypheny.db.backup.BupSuperEntity;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.*;
+import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
-import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class InsertSchema {
@@ -57,6 +54,7 @@ public class InsertSchema {
     public void start( BupInformationObject bupInformationObject ) {
         log.debug( "insert schemas" );
         this.bupInformationObject = bupInformationObject;
+        ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tables;
 
         /*
         ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> temp = bupInformationObject.transformNamespacesToBupSuperEntityMap( bupInformationObject.getRelNamespaces() );
@@ -71,11 +69,20 @@ public class InsertSchema {
         bupInformationObject.setBupNamespaces( namespaces );
         insertCreateNamespace( bupInformationObject.getBupNamespaces() );
 
+        /*
+        //List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
+        Map<Long, List<BupSuperEntity<LogicalTable>>> tempMap = new HashMap<>();
+
         for ( Map.Entry<Long, List<LogicalTable>> a : bupInformationObject.getTables().entrySet()) {
-            bupInformationObject.transformLogigalEntityToSuperEntity( a.getValue().stream().map( e -> (LogicalEntity) e ).collect( Collectors.toList()) );
+            List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
+            //TODO(FF): doesn't work with return value :(
+            bupEntityList = bupInformationObject.transformLogigalEntityToSuperEntity( a.getValue().stream().map( e -> (LogicalEntity) e ).collect( Collectors.toList()) );
+            tempMap.put( a.getKey(), bupEntityList.stream().map( e -> (BupSuperEntity<LogicalTable>) e ).collect( Collectors.toList()));
         }
+
+         */
         //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
-        ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tables = bupInformationObject.tempTableTransformation( bupInformationObject.getTables(), true );
+        tables = bupInformationObject.tempTableTransformation( bupInformationObject.getTables(), true );
         bupInformationObject.setBupTables( tables );
         insertCreateTable( bupInformationObject.getBupTables() );
 
@@ -134,7 +141,7 @@ public class InsertSchema {
 
             //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
             if (!ns.getValue().getEntityObject().name.equals( "public" )) {
-                executeStatementinPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
             }
         }
 
@@ -156,61 +163,64 @@ public class InsertSchema {
 
             // go through each table in the list (of tables for one namespace)
             for ( BupSuperEntity<LogicalTable> table : tablesList ) {
-                //TODO(FF): Insert if clause to filter for preexisting tables (like emps)
-                EntityType lol = table.getEntityObject().entityType;
-                if (table.getEntityObject().entityType.equals( EntityType.SOURCE )) {
-                    //dont create table
-                    int lool = 0;
-                } else {
-                    String columnDefinitions = new String();
-                    String pkConstraint = new String();
-                    ImmutableMap<Long, List<LogicalColumn>> columns = bupInformationObject.getColumns();
-                    ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeys = bupInformationObject.getPrimaryKeysPerTable();
-                    LogicalTable logicalTable = table.getEntityObject();
-                    Long tableID = logicalTable.getId();
-                    List<LogicalColumn> colsPerTable = columns.get( tableID );
-                    List<LogicalPrimaryKey> pksPerTable = primaryKeys.get( tableID );
 
-                    // create the column defintion statement for the table
-                    //java.lang.NullPointerException: Cannot read field "value" because "col.defaultValue" is null
-                    for ( LogicalColumn col : colsPerTable ) {
-                        columnDefinitions = columnDefinitions + createColumnDefinition( col );
-                        //log.info( columnDefinitions );
-
-                    }
-                    if ( columnDefinitions.length() > 0 ) {
-                        columnDefinitions = columnDefinitions.substring( 0, columnDefinitions.length() - 2 ); // remove last ", "
-                    }
-
-
-                    // create the primary key constraint statement for the table
-                    List<String> colNamesForPK = pksPerTable.get( 0 ).getColumnNames();
-                    String listOfCols = new String();
-                    for (String colName : colNamesForPK) {
-                        listOfCols = listOfCols + colName + ", ";
-                    }
-                    if (listOfCols.length() > 0) {
-                        listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
-                        pkConstraint = "PRIMARY KEY (" + listOfCols + ")";
-                    }
-
-                    //query to create one table (from the list of tables, from the list of namespaces)
-                    //TODO(FF): ON STORE storename PARTITION BY partionionInfo
-                    //query = "CREATE TABLE " + namespaceName + "." + table.getNameForQuery() + " ( " + columnDefinitions + ", " + pkConstraint + " );";
-                    query = String.format("CREATE TABLE %s.%s ( %s, %s )", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint);
-                    log.info( query );
-
+                // only create tables that don't (exist by default in polypheny)
+                if (!(table.getEntityObject().entityType.equals( EntityType.SOURCE ))) {
+                    query = createTableQuery( table, namespaceName );
+                    executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
                 }
-
             }
         }
+    }
+
+    private String createTableQuery( BupSuperEntity<LogicalTable> table, String namespaceName ) {
+        String query = new String();
+        String columnDefinitions = new String();
+        String pkConstraint = new String();
+        ImmutableMap<Long, List<LogicalColumn>> columns = bupInformationObject.getColumns();
+        ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeys = bupInformationObject.getPrimaryKeysPerTable();
+        LogicalTable logicalTable = table.getEntityObject();
+        Long tableID = logicalTable.getId();
+        List<LogicalColumn> colsPerTable = columns.get( tableID );
+        List<LogicalPrimaryKey> pksPerTable = primaryKeys.get( tableID );
+
+        // create the column defintion statement for the table
+        for ( LogicalColumn col : colsPerTable ) {
+            columnDefinitions = columnDefinitions + createColumnDefinition( col );
+            //log.info( columnDefinitions );
+
+        }
+        if ( columnDefinitions.length() > 0 ) {
+            columnDefinitions = columnDefinitions.substring( 0, columnDefinitions.length() - 2 ); // remove last ", "
+        }
+
+
+        // create the primary key constraint statement for the table
+        List<String> colNamesForPK = pksPerTable.get( 0 ).getColumnNames();
+        String listOfCols = new String();
+        for (String colName : colNamesForPK) {
+            listOfCols = listOfCols + colName + ", ";
+        }
+        if (listOfCols.length() > 0) {
+            listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
+            pkConstraint = "PRIMARY KEY (" + listOfCols + ")";
+        }
+
+        //query to create one table (from the list of tables, from the list of namespaces)
+        //TODO(FF): ON STORE storename PARTITION BY partionionInfo
+        //query = "CREATE TABLE " + namespaceName + "." + table.getNameForQuery() + " ( " + columnDefinitions + ", " + pkConstraint + " );";
+        query = String.format("CREATE TABLE %s.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint);
+        log.info( query );
+
+        return query;
     }
 
     private String createColumnDefinition( LogicalColumn col) {
         String columnDefinitionString = new String();
         String colName = col.getName();
         String colDataType = col.getType().toString();
-        String colNullable = nullableBoolToString( col.isNullable() );
+        //String colNullable = nullableBoolToString( col.isNullable() );
+        String colNullable = col.nullableBoolToString();
 
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
@@ -220,15 +230,40 @@ public class InsertSchema {
         String caseSensitivity = new String();
         if ( !(col.collation == null) ) {
             //caseSensitivity = col.collation.toString();
-            caseSensitivity = String.format( "COLLATE %s", col.collation.toString());
+            caseSensitivity = String.format( "COLLATE %s", col.collation.collationToString());
         }
 
-        columnDefinitionString = String.format("%s %s %s%s %s , ", colName, colDataType, colNullable, defaultValue, caseSensitivity);
+        String varcharLength = new String();
+        if ( !(col.length == null) ) {
+            varcharLength = String.format( "(%s) ", col.length.toString());
+        }
+
+        columnDefinitionString = String.format("%s %s%s %s%s %s, ", colName, colDataType, varcharLength, colNullable, defaultValue, caseSensitivity);
         //log.info( columnDefinitionString );
 
         return columnDefinitionString;
     }
 
+    /*
+    private String collationToString( Collation collation ) {
+        try {
+            if (collation.equals( Collation.CASE_SENSITIVE )) {
+                return "CASE SENSITIVE";
+            }
+            if ( collation.equals( Collation.CASE_INSENSITIVE ) ) {
+                return "CASE INSENSITIVE";
+            }
+            else {
+                throw new RuntimeException( "Collation not supported" );
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+     */
+
+    /*
     private String nullableBoolToString (boolean nullable) {
         if (nullable) {
             return "NULL";
@@ -237,7 +272,9 @@ public class InsertSchema {
         }
     }
 
-    private void executeStatementinPolypheny (String query, String queryLanguageType, NamespaceType namespaceType) {
+     */
+
+    private void executeStatementInPolypheny( String query, String queryLanguageType, NamespaceType namespaceType) {
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;

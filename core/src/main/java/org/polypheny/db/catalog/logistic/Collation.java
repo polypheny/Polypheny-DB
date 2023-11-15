@@ -55,6 +55,22 @@ public enum Collation {
         throw new RuntimeException( "Unknown Collation with name: " + str );
     }
 
+    public String collationToString(  ) {
+        try {
+            if ( this.id == 1 ) {
+                return "CASE SENSITIVE";
+            }
+            if ( this.id == 2 ) {
+                return "CASE INSENSITIVE";
+            }
+            else {
+                throw new RuntimeException( "Collation not supported" );
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
 
     public static Collation getDefaultCollation() {
         return getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() );

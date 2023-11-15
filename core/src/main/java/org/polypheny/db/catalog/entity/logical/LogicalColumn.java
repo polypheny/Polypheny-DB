@@ -153,6 +153,14 @@ public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
         return Catalog.snapshot().rel().getTable( tableId ).orElseThrow().name;
     }
 
+    public String nullableBoolToString () {
+        if (this.nullable) {
+            return "NULL";
+        } else {
+            return "NOT NULL";
+        }
+    }
+
 
     @Override
     public Serializable[] getParameterArray() {

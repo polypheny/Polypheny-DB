@@ -33,21 +33,21 @@ public class BupInformationObject {
 
     //ImmutableMap<Long, LogicalNamespace> namespaces;
     @Getter @Setter
-    List<LogicalNamespace> namespaces;
+    private List<LogicalNamespace> namespaces;
     @Getter @Setter
-    List<LogicalNamespace> relNamespaces;
+    private List<LogicalNamespace> relNamespaces;
     @Getter @Setter
-    List<LogicalNamespace> graphNamespaces;
+    private List<LogicalNamespace> graphNamespaces;
     @Getter @Setter
-    List<LogicalNamespace> docNamespaces;
+    private List<LogicalNamespace> docNamespaces;
     @Getter @Setter
-    ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupRelNamespaces;
+    private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupRelNamespaces;
     @Getter @Setter
-    ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupGraphNamespaces;
+    private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupGraphNamespaces;
     @Getter @Setter
-    ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupDocNamespaces;
+    private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupDocNamespaces;
     @Getter @Setter
-    ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupNamespaces;
+    private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupNamespaces;
 
     /*//TODO(FF): adjust (also to gather schema...there it is per table right now)
     @Getter @Setter
@@ -58,46 +58,46 @@ public class BupInformationObject {
     //TODO(FF): make it private(all)
     //namespace id, list of entities for the namespace
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalView>> views;
+    private ImmutableMap<Long, List<LogicalView>> views;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalView>>> bupViews;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalView>>> bupViews;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
+    private ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalMaterializedView>>> bupMaterializedViews;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalMaterializedView>>> bupMaterializedViews;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalTable>> tables;
+    private ImmutableMap<Long, List<LogicalTable>> tables;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> bupTables;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> bupTables;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalCollection>> collections;
+    private ImmutableMap<Long, List<LogicalCollection>> collections;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalCollection>>> bupCollections;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalCollection>>> bupCollections;
     @Getter @Setter
-    ImmutableMap<Long, LogicalGraph> graphs;
+    private ImmutableMap<Long, LogicalGraph> graphs;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalGraph>>> bupGraphs;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalGraph>>> bupGraphs;
 
     //table id, list of views for the table
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalColumn>> columns;
+    private ImmutableMap<Long, List<LogicalColumn>> columns;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeysPerTable;
+    private ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeysPerTable;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
+    private ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    private ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
     @Getter @Setter
-    ImmutableMap<Long, List<BupSuperEntity<LogicalIndex>>> bupLogicalIndexes;
+    private ImmutableMap<Long, List<BupSuperEntity<LogicalIndex>>> bupLogicalIndexes;
     @Getter @Setter
-    ImmutableMap<Long, List<LogicalConstraint>> constraints;
+    private ImmutableMap<Long, List<LogicalConstraint>> constraints;
 
     @Getter @Setter
-    Boolean collectedRelSchema = false;
+    private Boolean collectedRelSchema = false;
     @Getter @Setter
-    Boolean collectedDocSchema = false;
+    private Boolean collectedDocSchema = false;
     @Getter @Setter
-    Boolean collectedGraphSchema = false;
+    private Boolean collectedGraphSchema = false;
 
 
     public ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> transformNamespacesToBupSuperEntityMap( List<LogicalNamespace> namespaces, Boolean toBeInserted) {
