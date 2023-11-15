@@ -22,6 +22,7 @@ import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertSchema;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
+import org.polypheny.db.transaction.TransactionManager;
 
 
 @Slf4j
@@ -32,10 +33,13 @@ public class BackupManager {
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
     private BupInformationObject bupInformationObject;
+    public static TransactionManager transactionManager = null;
     //private final Logger logger;
 
 
-    public BackupManager() {
+    public BackupManager( TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
+
         informationPage = new InformationPage( "Backup Tasks" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
@@ -96,9 +100,10 @@ public class BackupManager {
 
 
     private void startInserting() {
-        InsertSchema insertSchema = new InsertSchema();
+        InsertSchema insertSchema = new InsertSchema(transactionManager);
 
         insertSchema.start(bupInformationObject);
+        log.info( "inserting done" );
     }
 
 }

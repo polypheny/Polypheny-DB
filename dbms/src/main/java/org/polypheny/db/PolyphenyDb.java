@@ -408,7 +408,7 @@ public class PolyphenyDb {
         Catalog catalog = startCatalog();
 
         // Start backup management
-        BackupManager backupManager = BackupManager.setAndGetInstance( new BackupManager() );
+        BackupManager backupManager = BackupManager.setAndGetInstance( new BackupManager( transactionManager ) );
 
         // Initialize interface manager
         QueryInterfaceManager.initialize( transactionManager, authenticator );

@@ -17,6 +17,8 @@
 package org.polypheny.db.backup;
 
 import com.google.common.collect.ImmutableMap;
+import io.activej.serializer.annotations.Deserialize;
+import io.activej.serializer.annotations.Serialize;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -44,6 +46,8 @@ public class BupInformationObject {
     ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupGraphNamespaces;
     @Getter @Setter
     ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupDocNamespaces;
+    @Getter @Setter
+    ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupNamespaces;
 
     /*//TODO(FF): adjust (also to gather schema...there it is per table right now)
     @Getter @Setter
@@ -51,7 +55,7 @@ public class BupInformationObject {
     @Getter @Setter
     List<LogicalMaterializedView> materializedViews;
      */
-
+    //TODO(FF): make it private(all)
     //namespace id, list of entities for the namespace
     @Getter @Setter
     ImmutableMap<Long, List<LogicalView>> views;
@@ -117,9 +121,10 @@ public class BupInformationObject {
 
         ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> resultMap;
         Map<Long, BupSuperEntity<LogicalNamespace>> tempNS = new HashMap<>();
-        BupSuperEntity<LogicalNamespace> nsBupObj = new BupSuperEntity<>();
+
 
         for (LogicalNamespace ns : namespaces ) {
+            BupSuperEntity<LogicalNamespace> nsBupObj = new BupSuperEntity<>();
             nsBupObj.setEntityObject( ns );
             nsBupObj.setNameForQuery( ns.name );
             tempNS.put( ns.id, nsBupObj );
@@ -133,7 +138,6 @@ public class BupInformationObject {
 
         ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalEntity>>> tempMap = new HashMap<>();
-        BupSuperEntity<LogicalEntity> tempBupEntity = new BupSuperEntity<>();
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
         for ( Map.Entry<Long, List<LogicalEntity>> entry : entityMap.entrySet() ) {
@@ -141,6 +145,7 @@ public class BupInformationObject {
             List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
 
             for ( LogicalEntity entity : entityList ) {
+                BupSuperEntity<LogicalEntity> tempBupEntity = new BupSuperEntity<>();
                 tempBupEntity.setEntityObject( entity );
                 tempBupEntity.setToBeInserted( toBeInserted );
                 tempBupEntity.setNameForQuery( entity.name );
@@ -158,7 +163,6 @@ public class BupInformationObject {
 
         ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalEntity>>> tempMap = new HashMap<>();
-        BupSuperEntity<LogicalEntity> tempBupEntity = new BupSuperEntity<>();
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
         for ( Map.Entry<Long, List<LogicalEntity>> entry : entityMap.entrySet() ) {
@@ -166,6 +170,7 @@ public class BupInformationObject {
             List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
 
             for ( LogicalEntity entity : entityList ) {
+                BupSuperEntity<LogicalEntity> tempBupEntity = new BupSuperEntity<>();
                 tempBupEntity.setEntityObject( entity );
                 tempBupEntity.setToBeInserted( true );
                 tempBupEntity.setNameForQuery( entity.name );
@@ -177,6 +182,55 @@ public class BupInformationObject {
 
         resultMap = ImmutableMap.copyOf( tempMap );
         return resultMap;
+    }
+
+    public ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tempTableTransformation( ImmutableMap<Long, List<LogicalTable>> entityMap, Boolean toBeInserted) {
+
+        ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> resultMap;
+        Map<Long, List<BupSuperEntity<LogicalTable>>> tempMap = new HashMap<>();
+
+        //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
+        for ( Map.Entry<Long, List<LogicalTable>> entry : entityMap.entrySet() ) {
+            List<LogicalTable> entityList = entry.getValue();
+            List<BupSuperEntity<LogicalTable>> bupEntityList = new ArrayList<>();
+
+            for ( LogicalTable entity : entityList ) {
+                BupSuperEntity<LogicalTable> tempBupEntity = new BupSuperEntity<>();
+                tempBupEntity.setEntityObject( entity );
+                tempBupEntity.setToBeInserted( toBeInserted );
+                tempBupEntity.setNameForQuery( entity.name );
+                bupEntityList.add( tempBupEntity );
+            }
+            tempMap.put( entry.getKey(), bupEntityList );
+
+        }
+
+        resultMap = ImmutableMap.copyOf( tempMap );
+        return resultMap;
+    }
+
+    public void transformationManager () {
+        //ImmutableMap<Long, List<LogicalEntity>> entityMap = getTables();
+        //transformLogicalEntitiesToBupSuperEntity( getTables(), true );
+        //TODO: testen ob es mit ganzem angabekladatch funktioniert (past me, what?)
+    }
+
+    public List<BupSuperEntity<LogicalEntity>> transformLogigalEntityToSuperEntity( List<LogicalEntity> entityList) {
+
+
+        //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
+        List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
+
+        for ( LogicalEntity entity : entityList ) {
+            BupSuperEntity<LogicalEntity> tempBupEntity = new BupSuperEntity<>();
+            tempBupEntity.setEntityObject( entity );
+            tempBupEntity.setToBeInserted( true );
+            tempBupEntity.setNameForQuery( entity.name );
+            bupEntityList.add( tempBupEntity );
+        }
+
+        return bupEntityList;
+
     }
 
 }
