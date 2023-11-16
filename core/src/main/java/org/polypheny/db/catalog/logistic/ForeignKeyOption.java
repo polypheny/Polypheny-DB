@@ -63,4 +63,26 @@ public enum ForeignKeyOption {
         }*/
         throw new RuntimeException( "Unknown ForeignKeyOption with name: " + str );
     }
+
+    public String foreignKeyOptionToString(  ) {
+
+        if ( this.id == -1 ) {
+            return "NONE";
+        }
+        if ( this.id == 1 ) {
+            return "RESTRICT";
+        }
+        /*if ( this.id == 0 ) {
+            return "CASCADE";
+        }
+        if ( this.id == 2 ) {
+            return "SET NULL";
+        }
+        if ( this.id == 4 ) {
+            return "SET DEFAULT";
+        }*/
+        else {
+            throw new RuntimeException( "Unknown ForeignKeyOption with id: " + this.id );
+        }
+    }
 }

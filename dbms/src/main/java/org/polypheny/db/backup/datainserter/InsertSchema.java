@@ -88,9 +88,9 @@ public class InsertSchema {
         bupInformationObject.setBupTables( tables );
         insertCreateTable( bupInformationObject.getBupTables() );
 
-
         // alter table - add unique constraint
         insertAlterTableUQ( bupInformationObject.getBupTables(), bupInformationObject.getConstraints() );
+        insertAlterTableFK( bupInformationObject.getBupTables(), bupInformationObject.getForeignKeysPerTable() );
 
         //TODO(FF): create something to test that only available data is tried to be inserted
         //TODO(FF): don't insert tables from source (check for entityType SOURCE (not default is ENTITY))
@@ -147,6 +147,7 @@ public class InsertSchema {
 
             //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
             if (!ns.getValue().getEntityObject().name.equals( "public" )) {
+                // TODO(FF): got this error (no 11): org.polypheny.db.catalog.exceptions.GenericRuntimeException: Duplicates merging snapshot
                 executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
             }
         }
@@ -206,14 +207,7 @@ public class InsertSchema {
                         List<Long> colIDs = constraint.getKey().columnIds;
 
                         // get all column-names used in the constraint from the columns
-                        for (Long colID : colIDs) {
-                            String colName = logicalColumns.stream().filter( e -> e.getId() == colID ).findFirst().get().getName();
-                            listOfCols = listOfCols + colName  + ", ";
-
-                        }
-                        if (listOfCols.length() > 0) {
-                            listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
-                        }
+                        listOfCols = getListOfCol( colIDs, logicalColumns );
 
 
                         query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
@@ -225,6 +219,51 @@ public class InsertSchema {
             }
 
         }
+    }
+
+    private void insertAlterTableFK( ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
+        String query = new String();
+
+        // go through foreign key constraints and collect the necessary data
+        for (Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet()) {
+            for (LogicalForeignKey foreignKey : fkListPerTable.getValue()) {
+                String namespaceName = bupInformationObject.getBupNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
+                String tableName = bupInformationObject.getBupTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
+                String constraintName = foreignKey.name;
+                String listOfCols = getListOfCol( foreignKey.columnIds, bupInformationObject.getColumns().get( foreignKey.tableId ) );
+                String referencedNamespaceName = bupInformationObject.getBupNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
+                String referencedTableName = bupInformationObject.getBupTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
+                String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, bupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
+                String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
+                String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
+                //TODO(FF): enforcementTime (on commit) - how to set?? how to change?? possible to change?
+
+                query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
+                log.info( query );
+                executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+            }
+        }
+    }
+
+    /**
+     * Gets a list of the column names (seperated by ", ") without brackets
+     * @param colIDs list of column ids from which the name is wanted
+     * @param logicalColumns list of all logical columns
+     * @return list, seperated by a semicolon, with the names of the wanted columns (from the ids)
+     */
+    private String getListOfCol (List<Long> colIDs, List<LogicalColumn> logicalColumns) {
+        String listOfCols = new String();
+
+        for (Long colID : colIDs) {
+            String colName = logicalColumns.stream().filter( e -> e.getId() == colID ).findFirst().get().getName();
+            listOfCols = listOfCols + colName  + ", ";
+
+        }
+        if (listOfCols.length() > 0) {
+            listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
+        }
+
+        return listOfCols;
     }
 
     private String createTableQuery( BupSuperEntity<LogicalTable> table, String namespaceName ) {
