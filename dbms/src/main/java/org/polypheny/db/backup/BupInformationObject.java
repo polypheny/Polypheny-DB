@@ -32,21 +32,29 @@ import java.util.Map;
 public class BupInformationObject {
 
     //ImmutableMap<Long, LogicalNamespace> namespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private List<LogicalNamespace> namespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private List<LogicalNamespace> relNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private List<LogicalNamespace> graphNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private List<LogicalNamespace> docNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupRelNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupGraphNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupDocNamespaces;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> bupNamespaces;
 
     /*//TODO(FF): adjust (also to gather schema...there it is per table right now)
@@ -57,56 +65,75 @@ public class BupInformationObject {
      */
     //TODO(FF): make it private(all)
     //namespace id, list of entities for the namespace
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalView>> views;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalView>>> bupViews;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalMaterializedView>>> bupMaterializedViews;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalTable>> tables;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> bupTables;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalCollection>> collections;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalCollection>>> bupCollections;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, LogicalGraph> graphs;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalGraph>>> bupGraphs;
 
     //table id, list of views for the table
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalColumn>> columns;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeysPerTable;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<BupSuperEntity<LogicalIndex>>> bupLogicalIndexes;
-    @Getter @Setter
+    @Getter
+    @Setter
     private ImmutableMap<Long, List<LogicalConstraint>> constraints;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private Boolean collectedRelSchema = false;
-    @Getter @Setter
+    @Getter
+    @Setter
     private Boolean collectedDocSchema = false;
-    @Getter @Setter
+    @Getter
+    @Setter
     private Boolean collectedGraphSchema = false;
 
 
-    public ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> transformNamespacesToBupSuperEntityMap( List<LogicalNamespace> namespaces, Boolean toBeInserted) {
+    public ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> transformNamespacesToBupSuperEntityMap( List<LogicalNamespace> namespaces, Boolean toBeInserted ) {
 
         ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> resultMap;
         Map<Long, BupSuperEntity<LogicalNamespace>> tempNS = new HashMap<>();
         BupSuperEntity<LogicalNamespace> nsBupObj = new BupSuperEntity<>();
 
-        for (LogicalNamespace ns : namespaces ) {
+        for ( LogicalNamespace ns : namespaces ) {
             nsBupObj.setEntityObject( ns );
             nsBupObj.setToBeInserted( toBeInserted );
             nsBupObj.setNameForQuery( ns.name );
@@ -117,13 +144,13 @@ public class BupInformationObject {
         return resultMap;
     }
 
-    public ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> transformNamespacesToBupSuperEntityMap( List<LogicalNamespace> namespaces) {
+
+    public ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> transformNamespacesToBupSuperEntityMap( List<LogicalNamespace> namespaces ) {
 
         ImmutableMap<Long, BupSuperEntity<LogicalNamespace>> resultMap;
         Map<Long, BupSuperEntity<LogicalNamespace>> tempNS = new HashMap<>();
 
-
-        for (LogicalNamespace ns : namespaces ) {
+        for ( LogicalNamespace ns : namespaces ) {
             BupSuperEntity<LogicalNamespace> nsBupObj = new BupSuperEntity<>();
             nsBupObj.setEntityObject( ns );
             nsBupObj.setNameForQuery( ns.name );
@@ -134,7 +161,8 @@ public class BupInformationObject {
         return resultMap;
     }
 
-    public ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> transformLogicalEntitiesToBupSuperEntity( ImmutableMap<Long, List<LogicalEntity>> entityMap, Boolean toBeInserted) {
+
+    public ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> transformLogicalEntitiesToBupSuperEntity( ImmutableMap<Long, List<LogicalEntity>> entityMap, Boolean toBeInserted ) {
 
         ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalEntity>>> tempMap = new HashMap<>();
@@ -159,7 +187,8 @@ public class BupInformationObject {
         return resultMap;
     }
 
-    public ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> transformLogicalEntitiesToBupSuperEntity( ImmutableMap<Long, List<LogicalEntity>> entityMap) {
+
+    public ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> transformLogicalEntitiesToBupSuperEntity( ImmutableMap<Long, List<LogicalEntity>> entityMap ) {
 
         ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalEntity>>> tempMap = new HashMap<>();
@@ -184,7 +213,8 @@ public class BupInformationObject {
         return resultMap;
     }
 
-    public ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tempTableTransformation( ImmutableMap<Long, List<LogicalTable>> entityMap, Boolean toBeInserted) {
+
+    public ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tempTableTransformation( ImmutableMap<Long, List<LogicalTable>> entityMap, Boolean toBeInserted ) {
 
         ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalTable>>> tempMap = new HashMap<>();
@@ -209,14 +239,15 @@ public class BupInformationObject {
         return resultMap;
     }
 
-    public void transformationManager () {
+
+    public void transformationManager() {
         //ImmutableMap<Long, List<LogicalEntity>> entityMap = getTables();
         //transformLogicalEntitiesToBupSuperEntity( getTables(), true );
         //TODO: testen ob es mit ganzem angabekladatch funktioniert (past me, what?)
     }
 
-    public List<BupSuperEntity<LogicalEntity>> transformLogigalEntityToSuperEntity( List<LogicalEntity> entityList) {
 
+    public List<BupSuperEntity<LogicalEntity>> transformLogigalEntityToSuperEntity( List<LogicalEntity> entityList ) {
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
         List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();

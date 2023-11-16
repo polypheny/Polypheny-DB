@@ -24,4 +24,5 @@ public class GatherEntries {
     public void start() {
         log.debug( "gather entries" );
     }
+
 }

@@ -59,7 +59,7 @@ public class BackupManager {
         InformationAction startBackupAction = new InformationAction( informationGroupOverview, "Start", parameters -> {
             //IndexManager.getInstance().resetCounters();
             startDataGathering();
-            System.out.println("gather");
+            System.out.println( "gather" );
             return "Successfully started backup";
         } );
         startBackupAction.setOrder( 2 );
@@ -73,13 +73,14 @@ public class BackupManager {
         InformationAction insertBackupDataAction = new InformationAction( informationGroupOverview, "Insert", parameters -> {
             //IndexManager.getInstance().resetCounters();
             startInserting();
-            System.out.println("hii");
+            System.out.println( "hii" );
             return "Successfully inserted backup data";
         } );
         insertBackupDataAction.setOrder( 4 );
         im.registerInformation( insertBackupDataAction );
 
     }
+
 
     public static BackupManager setAndGetInstance( BackupManager backupManager ) {
         if ( INSTANCE != null ) {
@@ -89,20 +90,21 @@ public class BackupManager {
         return INSTANCE;
     }
 
+
     public void startDataGathering() {
         this.bupInformationObject = new BupInformationObject();
         //GatherEntries gatherEntries = new GatherEntries();
         GatherSchema gatherSchema = new GatherSchema();
 
         //gatherEntries.start();
-        this.bupInformationObject = gatherSchema.start(bupInformationObject);
+        this.bupInformationObject = gatherSchema.start( bupInformationObject );
     }
 
 
     private void startInserting() {
-        InsertSchema insertSchema = new InsertSchema(transactionManager);
+        InsertSchema insertSchema = new InsertSchema( transactionManager );
 
-        insertSchema.start(bupInformationObject);
+        insertSchema.start( bupInformationObject );
         log.info( "inserting done" );
     }
 

@@ -17,4 +17,5 @@
 package org.polypheny.db.backup.datagatherer;
 
 public class GatherStorageConfig {
+
 }

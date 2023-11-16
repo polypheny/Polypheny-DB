@@ -21,14 +21,17 @@ import lombok.Setter;
 
 public class BupSuperEntity<E> {
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private E entityObject;
 
-    @Getter @Setter
+    @Getter
+    @Setter
     private Boolean toBeInserted = true;
 
     //default, original name (change if rename needed (options))
-    @Getter @Setter
+    @Getter
+    @Setter
     private String nameForQuery;
 
 }

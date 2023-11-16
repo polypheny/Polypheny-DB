@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class GatherSchema {
+
     //gather the schemas from Polypheny-DB
     private final IdBuilder idBuilder = IdBuilder.getInstance();
     private Snapshot snapshot;
@@ -77,8 +78,10 @@ public class GatherSchema {
     Boolean collectedDoc = false;
     Boolean collectedGraph = false;
 
+
     public GatherSchema() {
     }
+
 
     public BupInformationObject start( BupInformationObject bupInformationObject ) {
         log.debug( "gather schemas" );
@@ -101,7 +104,7 @@ public class GatherSchema {
     private void getSnapshot() {
 
         this.snapshot = catalog.getSnapshot();
-        int nbrNamespaces = snapshot.getNamespaces(null).size();
+        int nbrNamespaces = snapshot.getNamespaces( null ).size();
         int publicTables = snapshot.rel().getTablesFromNamespace( 0 ).size();
 
         //this.namespaces = ImmutableMap.copyOf( namespaces );
@@ -112,11 +115,12 @@ public class GatherSchema {
         log.debug( "# tables from public = " + publicTables );
     }
 
+
     /**
      * Gets the tables, views, columns, keys, indexes, constraints and nodes from the snapshot
      */
     private void getRelSchema() {
-        //TODO(FF): differentiate between views and materialized views (safe them seperately)
+        // TODO(FF): differentiate between views and materialized views (safe them seperately)
         Map<Long, List<LogicalTable>> tables = new HashMap<>();
         Map<Long, List<LogicalView>> views = new HashMap<>();
         Map<Long, List<LogicalMaterializedView>> materializedViews = new HashMap<>();
@@ -134,16 +138,15 @@ public class GatherSchema {
 
         // go through the list of namespaces and get the id of each namespace, map the tables to the namespace id
         //TODO(FF)?: views - list is just empty, but creates it nontheless, same for constraints, keys
-        for (LogicalNamespace namespace : relNamespaces) {
+        for ( LogicalNamespace namespace : relNamespaces ) {
             Long namespaceId = namespace.getId();
 
             // get tables from namespace
             List<LogicalTable> tablesFromNamespace = snapshot.rel().getTablesFromNamespace( namespaceId );
             tables.put( namespaceId, tablesFromNamespace );
 
-
             // get other schema information for each table
-            for (LogicalTable table : tablesFromNamespace) {
+            for ( LogicalTable table : tablesFromNamespace ) {
                 Long tableId = table.getId();
 
                 //views
@@ -218,6 +221,7 @@ public class GatherSchema {
 
     }
 
+
     /**
      * Gets the Graph schema from the snapshot, and safes it in class variables
      */
@@ -227,14 +231,13 @@ public class GatherSchema {
         this.graphNamespaces = graphNamespaces;
         this.bupInformationObject.setGraphNamespaces( graphNamespaces );
 
-        List<LogicalGraph> graphsFromNamespace = snapshot.graph().getGraphs( null);
+        List<LogicalGraph> graphsFromNamespace = snapshot.graph().getGraphs( null );
 
         //TODO(FF): can there only be one graph per namespace?
         Map<Long, LogicalGraph> nsGraphs = new HashMap<>();
 
-
         //for each graph get the namespaceId, see if it matches with the current namespace, and map the graph to the namespaceid
-        for (LogicalGraph graph : graphsFromNamespace) {
+        for ( LogicalGraph graph : graphsFromNamespace ) {
             Long graphNsId = graph.getNamespaceId();
 
             // map the namespaceId to the graph
@@ -248,6 +251,7 @@ public class GatherSchema {
 
     }
 
+
     /**
      * Gets the Doc schema from the snapshot, and safes it in class variables
      */
@@ -258,7 +262,7 @@ public class GatherSchema {
         this.docNamespaces = docNamespaces;
         this.bupInformationObject.setDocNamespaces( docNamespaces );
 
-        for (LogicalNamespace namespace : docNamespaces) {
+        for ( LogicalNamespace namespace : docNamespaces ) {
             Long namespaceId = namespace.getId();
 
             // get collections per namespace
@@ -289,4 +293,5 @@ public class GatherSchema {
         log.debug( "foreignkeysPerTable: " + foreignKeysPerTable.toString() );
         log.debug( "============================================= end print ==============================================" );
     }
+
 }
