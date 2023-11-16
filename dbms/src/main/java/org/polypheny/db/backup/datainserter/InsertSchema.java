@@ -22,6 +22,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.backup.BupInformationObject;
 import org.polypheny.db.backup.BupSuperEntity;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -81,10 +82,15 @@ public class InsertSchema {
         }
 
          */
+        // create table
         //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
         tables = bupInformationObject.tempTableTransformation( bupInformationObject.getTables(), true );
         bupInformationObject.setBupTables( tables );
         insertCreateTable( bupInformationObject.getBupTables() );
+
+
+        // alter table - add unique constraint
+        insertAlterTableUQ( bupInformationObject.getBupTables(), bupInformationObject.getConstraints() );
 
         //TODO(FF): create something to test that only available data is tried to be inserted
         //TODO(FF): don't insert tables from source (check for entityType SOURCE (not default is ENTITY))
@@ -173,6 +179,54 @@ public class InsertSchema {
         }
     }
 
+    private void insertAlterTableUQ( ImmutableMap<Long, List<BupSuperEntity<LogicalTable>>> tables, ImmutableMap<Long, List<LogicalConstraint>> constraints ) {
+        String query = new String();
+
+        for (Map.Entry<Long, List<BupSuperEntity<LogicalTable>>> tablesPerNs : tables.entrySet()) {
+            Long nsID = tablesPerNs.getKey();
+            String namespaceName = bupInformationObject.getBupNamespaces().get( nsID ).getNameForQuery();
+
+            List<BupSuperEntity<LogicalTable>> tablesList = tablesPerNs.getValue();
+
+            // go through each constraint in the list (of tables for one namespace)
+            for ( BupSuperEntity<LogicalTable> table : tablesList ) {
+                //TODO(FF): exclude source tables (for speed)
+                // compare the table id with the constraint keys, and if they are the same, create the constraint
+                if ( constraints.containsKey( table.getEntityObject().getId() ) ) {
+                    List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().getId() );
+                    List<LogicalColumn> logicalColumns = bupInformationObject.getColumns().get( table.getEntityObject().getId() );
+
+                    // go through all constraints per table
+                    for ( LogicalConstraint constraint : constraintsList ) {
+                        String tableName = table.getNameForQuery();
+                        String constraintName = constraint.name;
+                        String listOfCols = new String();
+
+
+                        List<Long> colIDs = constraint.getKey().columnIds;
+
+                        // get all column-names used in the constraint from the columns
+                        for (Long colID : colIDs) {
+                            String colName = logicalColumns.stream().filter( e -> e.getId() == colID ).findFirst().get().getName();
+                            listOfCols = listOfCols + colName  + ", ";
+
+                        }
+                        if (listOfCols.length() > 0) {
+                            listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
+                        }
+
+
+                        query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
+                        log.info( query );
+                        executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                    }
+                }
+
+            }
+
+        }
+    }
+
     private String createTableQuery( BupSuperEntity<LogicalTable> table, String namespaceName ) {
         String query = new String();
         String columnDefinitions = new String();
@@ -209,7 +263,7 @@ public class InsertSchema {
         //query to create one table (from the list of tables, from the list of namespaces)
         //TODO(FF): ON STORE storename PARTITION BY partionionInfo
         //query = "CREATE TABLE " + namespaceName + "." + table.getNameForQuery() + " ( " + columnDefinitions + ", " + pkConstraint + " );";
-        query = String.format("CREATE TABLE %s.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint);
+        query = String.format("CREATE TABLE %s11.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint);
         log.info( query );
 
         return query;
@@ -292,10 +346,6 @@ public class InsertSchema {
         try {
             // get algRoot
             Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( queryLanguageType ));
-            //TODO(FF): fails at this step... error:org.polypheny.db.catalog.exceptions.GenericRuntimeException: org.polypheny.db.languages.NodeParseException: Encountered " ";" "; "" at line 1, column 35.
-            // Was expecting:
-            //     <EOF>
-            //my query looks like this (works via ui): CREATE RELATIONAL NAMESPACE reli11;
             Node parsed = sqlProcessor.parse( query ).get( 0 );
             QueryParameters parameters = new QueryParameters( query, namespaceType );
 
