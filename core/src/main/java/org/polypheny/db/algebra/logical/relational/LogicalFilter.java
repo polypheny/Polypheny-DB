@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -57,7 +58,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Sub-class of {@link Filter} not targeted at any particular engine or calling convention.
  */
-public final class LogicalFilter extends Filter {
+public final class LogicalFilter extends Filter implements RelAlg {
 
     private final ImmutableSet<CorrelationId> variablesSet;
 

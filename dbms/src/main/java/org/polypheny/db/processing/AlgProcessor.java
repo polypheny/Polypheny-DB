@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -47,7 +48,11 @@ public class AlgProcessor extends Processor {
 
     @Override
     public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
-        return AlgRoot.of( QueryPlanBuilder.buildFromJsonRel( statement, parameters.getQuery() ), Kind.SELECT );
+        try {
+            return AlgRoot.of( QueryPlanBuilder.buildFromJsonAlg( statement, parameters.getQuery() ), Kind.SELECT );
+        } catch ( JsonProcessingException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 

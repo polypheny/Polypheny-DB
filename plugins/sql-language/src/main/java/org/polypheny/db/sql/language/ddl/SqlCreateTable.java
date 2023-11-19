@@ -238,7 +238,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
                 context.updateSnapshot();
                 DdlManager.getInstance().createTablePartition(
                         PartitionInformation.fromNodeLists(
-                                failOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
+                                getTableFailOnEmpty( context, new SqlIdentifier( tableName, ParserPos.ZERO ) ),
                                 partitionType.getSimple(),
                                 partitionColumn.getSimple(),
                                 partitionGroupNamesList.stream().map( n -> (Identifier) n ).collect( Collectors.toList() ),

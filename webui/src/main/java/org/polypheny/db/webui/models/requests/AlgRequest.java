@@ -20,7 +20,7 @@ package org.polypheny.db.webui.models.requests;
 import org.polypheny.db.webui.models.UIAlgNode;
 
 
-public class RelAlgRequest extends UIRequest {
+public class AlgRequest extends UIRequest {
 
     public UIAlgNode topNode;
     public boolean useCache;

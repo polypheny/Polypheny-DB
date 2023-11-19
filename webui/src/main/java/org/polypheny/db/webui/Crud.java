@@ -200,6 +200,7 @@ import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
+import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -208,7 +209,6 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
@@ -1731,8 +1731,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
         Transaction transaction = getTransaction();
 
-        String tableId = String.format( "\"%s\".\"%s\"", index.getNamespaceId(), index.getEntityId() );
-        String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableId, index.getName() );
+        String tableName = getFullEntityName( index.entityId );
+        String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableName, index.getName() );
         RelationalResult result;
         try {
             int a = executeSqlUpdate( transaction, query );
@@ -1767,7 +1767,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( long col : index.columnIds ) {
             colJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
         }
-        String store = "POLYPHENY";
+        String store = IndexManager.POLYPHENY;
         if ( index.storeUniqueName != null && !index.storeUniqueName.equals( "Polypheny-DB" ) ) {
             store = index.getStoreUniqueName();
         }
@@ -2542,7 +2542,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    RelationalResult executeAlg( final RelAlgRequest request, Session session ) {
+    RelationalResult executeAlg( final AlgRequest request, Session session ) {
         Transaction transaction = getTransaction( request.analyze, request.useCache, this );
         transaction.getQueryAnalyzer().setSession( session );
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 
@@ -25,6 +26,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
  * Model for a {@link AlgNode} coming from the RelAlg-Builder in the UI
  */
 public class UIAlgNode {
+
+    @JsonProperty("class")
+    public String clazz;
 
     /**
      * ExpressionType of the AlgNode, e.g. Scan

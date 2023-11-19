@@ -49,6 +49,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Window;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -73,7 +74,7 @@ import org.polypheny.db.util.Util;
 /**
  * Sub-class of {@link Window} not targeted at any particular engine or calling convention.
  */
-public final class LogicalWindow extends Window {
+public final class LogicalWindow extends Window implements RelAlg {
 
     /**
      * Creates a LogicalWindow.

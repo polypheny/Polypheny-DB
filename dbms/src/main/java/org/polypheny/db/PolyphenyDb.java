@@ -364,19 +364,8 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( mode == PolyphenyMode.TEST ) {
-                resetDocker = true;
-                Catalog.resetDocker = true;
-            }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( mode == PolyphenyMode.TEST && !success ) {
-                // AutoDocker does not work in Windows containers
-                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to docker instance" );
-                    return;
-                }
-            }
+        if ( initializeDockerManager() ) {
+            return;
         }
 
         // Initialize plugin manager
@@ -398,19 +387,14 @@ public class PolyphenyDb {
         // temporary add sql and rel here
         LanguageManager.getINSTANCE().addQueryLanguage(
                 NamespaceType.RELATIONAL,
-                "rel",
-                List.of( "rel", "relational" ),
+                "alg",
+                List.of( "alg", "algebra" ),
                 null,
                 AlgProcessor::new,
                 null );
 
         // Initialize index manager
-        try {
-            IndexManager.getInstance().initialize( transactionManager );
-            IndexManager.getInstance().restoreIndexes();
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
-        }
+        initializeIndexManager();
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -480,6 +464,35 @@ public class PolyphenyDb {
 
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
+        }
+    }
+
+
+    private boolean initializeDockerManager() {
+        if ( AutoDocker.getInstance().isAvailable() ) {
+            if ( mode == PolyphenyMode.TEST ) {
+                resetDocker = true;
+                Catalog.resetDocker = true;
+            }
+            boolean success = AutoDocker.getInstance().doAutoConnect();
+            if ( mode == PolyphenyMode.TEST && !success ) {
+                // AutoDocker does not work in Windows containers
+                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to docker instance" );
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private void initializeIndexManager() {
+        try {
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndexes();
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
         }
     }
 

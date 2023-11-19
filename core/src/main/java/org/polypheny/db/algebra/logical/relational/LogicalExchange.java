@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Exchange;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -47,7 +48,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Sub-class of {@link Exchange} not targeted at any particular engine or calling convention.
  */
-public final class LogicalExchange extends Exchange {
+public final class LogicalExchange extends Exchange implements RelAlg {
 
     private LogicalExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution ) {
         super( cluster, traitSet, input, distribution );

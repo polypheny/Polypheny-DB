@@ -17,7 +17,7 @@
 package org.polypheny.db.webui;
 
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -40,7 +40,7 @@ public class QueryPlanBuilder {
     }
 
 
-    private static AlgBuilder createRelBuilder( final Statement statement ) {
+    private static AlgBuilder createAlgBuilder( final Statement statement ) {
         return AlgBuilder.create( statement );
     }
 
@@ -52,16 +52,15 @@ public class QueryPlanBuilder {
      * @param statement transaction
      */
     public static AlgNode buildFromTree( final UIAlgNode topNode, final Statement statement ) {
-        AlgBuilder b = createRelBuilder( statement );
+        AlgBuilder b = createAlgBuilder( statement );
         buildStep( b, topNode );
         return b.build();
     }
 
 
-    public static AlgNode buildFromJsonRel( Statement statement, String json ) {
-        Gson gson = new Gson();
-        AlgBuilder b = createRelBuilder( statement );
-        return buildFromTree( gson.fromJson( json, UIAlgNode.class ), statement );
+    public static AlgNode buildFromJsonAlg( Statement statement, String json ) throws JsonProcessingException {
+        AlgBuilder b = createAlgBuilder( statement );
+        return buildFromTree( HttpServer.mapper.readValue( json, UIAlgNode.class ), statement );
     }
 
 
@@ -85,7 +84,7 @@ public class QueryPlanBuilder {
         }
         switch ( node.type ) {
             case "Scan":
-                return builder.scan( node.tableName ).as( node.tableName );
+                return builder.scan( node.tableName.split( "\\." ) ).as( node.tableName.split( "\\." )[1] );
             case "Join":
                 return builder.join( node.join, builder.call( getOperator( node.operator ), builder.field( node.inputCount, field1[0], field1[1] ), builder.field( node.inputCount, field2[0], field2[1] ) ) );
             case "Filter":

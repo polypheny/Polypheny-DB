@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.TableFunctionScan;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgColumnMapping;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -53,7 +54,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.TableFunctionScan} not targeted at any particular engine or calling convention.
  */
-public class LogicalTableFunctionScan extends TableFunctionScan {
+public class LogicalTableFunctionScan extends TableFunctionScan implements RelAlg {
 
     /**
      * Creates a <code>LogicalTableFunctionScan</code>.

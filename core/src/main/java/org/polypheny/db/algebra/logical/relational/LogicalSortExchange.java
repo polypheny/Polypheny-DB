@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.SortExchange;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -48,7 +49,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Sub-class of {@link SortExchange} not targeted at any particular engine or calling convention.
  */
-public class LogicalSortExchange extends SortExchange {
+public class LogicalSortExchange extends SortExchange implements RelAlg {
 
     private LogicalSortExchange( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgDistribution distribution, AlgCollation collation ) {
         super( cluster, traitSet, input, distribution, collation );
