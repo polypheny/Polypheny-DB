@@ -33,7 +33,7 @@ import org.polypheny.db.routing.LogicalQueryInformation;
 public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     public String queryHash;
-    public ImmutableMap<Integer, List<Long>> accessedPartitions; // scanId  -> partitionIds
+    public ImmutableMap<Long, List<Long>> accessedPartitions; // scanId  -> partitionIds
     public ImmutableMap<Long, String> availableColumns; // column id -> schemaName.tableName.ColumnName
     public ImmutableMap<Long, Long> availableColumnsWithTable; // columnId -> tableId
     public ImmutableMap<Long, String> usedColumns;
@@ -46,7 +46,7 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
 
     public LogicalQueryInformationImpl(
             String queryHash,
-            Map<Integer, List<Long>> accessedPartitions, // scanId -> List of partitionIds
+            Map<Long, List<Long>> accessedPartitions, // scanId -> List of partitionIds
             Map<Long, String> availableColumns,
             Map<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,

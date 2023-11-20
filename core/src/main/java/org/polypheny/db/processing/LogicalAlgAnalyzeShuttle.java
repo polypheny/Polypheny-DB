@@ -82,7 +82,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public LogicalAlgAnalyzeRexShuttle rexShuttle;
 
-    public Map<Integer, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
+    public Map<Long, Set<String>> partitionValueFilterPerScan = new HashMap<>(); // logical scanId (ScanId) -> (logical tableId -> List partitionsValue)
 
     public Set<String> hashBasis = new HashSet<>();
 
@@ -477,7 +477,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
                     Catalog.snapshot().rel().getColumns( logicalEntity.id ).stream().map( c -> c.id ).collect( Collectors.toList() ).indexOf( Catalog.snapshot().alloc().getPartitionProperty( logicalEntity.id ).orElseThrow().partitionColumnId ) );
             node.accept( whereClauseVisitor );
 
-            int scanId = node.getInput( 0 ).getId();
+            long scanId = node.getInput( 0 ).getEntity().id;
 
             if ( !partitionValueFilterPerScan.containsKey( scanId ) ) {
                 partitionValueFilterPerScan.put( scanId, new HashSet<>() );

@@ -90,7 +90,7 @@ public class EntityAccessMap {
     private final Map<EntityIdentifier, Mode> accessMap;
     private final Map<EntityIdentifier, LockMode> accessLockMap;
 
-    private final Map<Integer, List<Long>> accessedPartitions;
+    private final Map<Long, List<Long>> accessedPartitions;
 
 
     /**
@@ -109,7 +109,7 @@ public class EntityAccessMap {
      * @param alg the {@link AlgNode} for which to build the map
      * @param accessedPartitions tableScanId to Partitions
      */
-    public EntityAccessMap( AlgNode alg, Map<Integer, List<Long>> accessedPartitions ) {
+    public EntityAccessMap( AlgNode alg, Map<Long, List<Long>> accessedPartitions ) {
         // NOTE: This method must NOT retain a reference to the input alg, because we use it for cached statements, and we
         // don't want to retain any alg references after preparation completes.
         accessMap = new HashMap<>();

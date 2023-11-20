@@ -475,7 +475,7 @@ public class AlgSubset extends AbstractAlgNode {
             if ( !inputs.equals( oldInputs ) ) {
                 final AlgNode pOld = p;
                 p = p.copy( p.getTraitSet(), inputs );
-                planner.provenanceMap.put( p, new VolcanoPlanner.DirectProvenance( pOld ) );
+                planner.provenances.put( p, new VolcanoPlanner.DirectProvenance( pOld ) );
             }
             return p;
         }
