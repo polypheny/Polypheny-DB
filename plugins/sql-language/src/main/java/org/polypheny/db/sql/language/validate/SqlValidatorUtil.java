@@ -46,7 +46,6 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
@@ -79,7 +78,7 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Converts a {@link SqlValidatorScope} into a {@link AlgOptEntity}. This is only possible if the scope represents an identifier, such as "sales.emp".
+     * Converts a {@link SqlValidatorScope} into a {@link LogicalEntity}. This is only possible if the scope represents an identifier, such as "sales.emp".
      * Otherwise, returns null.
      *
      * @param namespace Namespace

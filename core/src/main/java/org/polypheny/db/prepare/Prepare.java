@@ -63,8 +63,6 @@ import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -74,7 +72,6 @@ import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
-import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
@@ -154,8 +151,7 @@ public abstract class Prepare<T> {
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
                 if ( node instanceof RelScan ) {
                     final AlgOptCluster cluster = node.getCluster();
-                    final ToAlgContext context = () -> cluster;
-                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).toAlg( context, node.getTraitSet() );
+                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).toAlg( cluster, node.getTraitSet() );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );
@@ -259,25 +255,9 @@ public abstract class Prepare<T> {
     /**
      * Definition of a table, for the purposes of the validator and planner.
      */
-    public interface PreparingEntity extends AlgOptEntity, ValidatorTable {
+    public interface PreparingEntity extends ValidatorTable {
 
     }
-
-
-    /**
-     * Abstract implementation of {@link PreparingEntity}.
-     */
-    public abstract static class AbstractPreparingEntity implements PreparingEntity {
-
-
-        @Override
-        public List<ColumnStrategy> getColumnStrategies() {
-            return null;
-            //return AlgOptEntityImpl.columnStrategies( AbstractPreparingEntity.this );
-        }
-
-    }
-
 
     /**
      * PreparedExplanation is a PreparedResult for an EXPLAIN PLAN statement. It's always good to have an explanation prepared.

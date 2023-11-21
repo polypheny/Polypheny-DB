@@ -69,7 +69,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -572,8 +571,7 @@ public class AlgFactories {
         return ( cluster, entity ) -> {
             final TranslatableEntity translatableTable = entity.unwrap( TranslatableEntity.class );
             if ( translatableTable != null ) {
-                final ToAlgContext toAlgContext = () -> cluster;
-                return translatableTable.toAlg( toAlgContext, cluster.traitSet() );
+                return translatableTable.toAlg( cluster, cluster.traitSet() );
             }
             return scanFactory.createScan( cluster, entity );
         };

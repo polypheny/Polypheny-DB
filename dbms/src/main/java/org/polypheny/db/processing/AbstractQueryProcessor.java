@@ -547,7 +547,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                     AlgBuilder.create( statement, routedRoot.alg.getCluster() ),
                     routedRoot.alg.getCluster().getRexBuilder(),
-                    routedRoot.alg::getCluster,
+                    routedRoot.alg.getCluster(),
                     true );
             plan.proposedRoutingPlan().setRoutedRoot( routedRoot.withAlg( typeFlattener.rewrite( routedRoot.alg ) ) );
         }

@@ -101,7 +101,6 @@ import org.polypheny.db.algebra.type.StructKind;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -173,17 +172,17 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     private int iRestructureInput;
     private AlgDataType flattenedRootType;
     boolean restructured;
-    private final ToAlgContext toAlgContext;
+    private final AlgOptCluster cluster;
 
 
     public AlgStructuredTypeFlattener(
             AlgBuilder algBuilder,
             RexBuilder rexBuilder,
-            ToAlgContext toAlgContext,
+            AlgOptCluster cluster,
             boolean restructure ) {
         this.algBuilder = algBuilder;
         this.rexBuilder = rexBuilder;
-        this.toAlgContext = toAlgContext;
+        this.cluster = cluster;
         this.restructure = restructure;
     }
 
@@ -456,7 +455,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
+            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -489,7 +488,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, scan.traitSet );
+            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -874,7 +873,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
             rewriteGeneric( alg );
             return;
         }
-        AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( toAlgContext, alg.traitSet );
+        AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
@@ -1058,7 +1057,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
         @Override
         public RexNode visitSubQuery( RexSubQuery subQuery ) {
             subQuery = (RexSubQuery) super.visitSubQuery( subQuery );
-            AlgStructuredTypeFlattener flattener = new AlgStructuredTypeFlattener( algBuilder, rexBuilder, toAlgContext, restructure );
+            AlgStructuredTypeFlattener flattener = new AlgStructuredTypeFlattener( algBuilder, rexBuilder, cluster, restructure );
             AlgNode alg = flattener.rewrite( subQuery.alg );
             return subQuery.clone( alg );
         }

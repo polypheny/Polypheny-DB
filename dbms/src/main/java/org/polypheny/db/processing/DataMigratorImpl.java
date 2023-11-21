@@ -117,7 +117,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
@@ -182,7 +182,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
@@ -518,7 +518,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }

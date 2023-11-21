@@ -21,7 +21,6 @@ import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
 
@@ -37,7 +36,6 @@ public interface InitializerExpressionFactory {
      * @param table the table containing the column
      * @param iColumn the 0-based offset of the column in the table
      * @return generation strategy, never null
-     * @see AlgOptEntity#getColumnStrategies()
      */
     ColumnStrategy generationStrategy( LogicalEntity table, int iColumn );
 

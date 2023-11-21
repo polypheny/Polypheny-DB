@@ -26,7 +26,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.LogicalEntity;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -102,7 +101,7 @@ class EntityNamespace extends AbstractNamespace {
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
         final Entity schemaEntity = table.unwrap( Entity.class );
-        if ( schemaEntity != null && table instanceof AlgOptEntity && schemaEntity instanceof ExtensibleEntity ) {
+        if ( schemaEntity != null && schemaEntity instanceof ExtensibleEntity ) {
             checkExtendedColumnTypes( extendList );
             //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
             //final CatalogEntity validatorTable = algOptEntity.unwrap( ValidatorTable.class );

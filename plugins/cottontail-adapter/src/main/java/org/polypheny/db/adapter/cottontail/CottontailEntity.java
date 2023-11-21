@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -133,8 +132,8 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return new CottontailScan( context.getCluster(), this, traitSet, this.cottontailNamespace.getConvention() );
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        return new CottontailScan( cluster, this, traitSet, this.cottontailNamespace.getConvention() );
     }
 
 

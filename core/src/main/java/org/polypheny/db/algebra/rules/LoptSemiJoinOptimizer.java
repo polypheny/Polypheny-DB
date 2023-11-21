@@ -228,9 +228,9 @@ public class LoptSemiJoinOptimizer {
                         factIdx,
                         dimIdx );
 
-        AlgNode factRel = multiJoin.getJoinFactor( factIdx );
+        AlgNode factAlg = multiJoin.getJoinFactor( factIdx );
         AlgNode dimRel = multiJoin.getJoinFactor( dimIdx );
-        final JoinInfo joinInfo = JoinInfo.of( factRel, dimRel, semiJoinCondition );
+        final JoinInfo joinInfo = JoinInfo.of( factAlg, dimRel, semiJoinCondition );
         assert joinInfo.leftKeys.size() > 0;
 
         // mutable copies
@@ -239,14 +239,14 @@ public class LoptSemiJoinOptimizer {
 
         // Make sure all the fact table keys originate from the same table and are simple column references
         final List<Integer> actualLeftKeys = new ArrayList<>();
-        LcsEntity factTable = validateKeys( factRel, leftKeys, rightKeys, actualLeftKeys );
+        LcsEntity factTable = validateKeys( factAlg, leftKeys, rightKeys, actualLeftKeys );
         if ( factTable == null ) {
             return null;
         }
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factRel::getCluster, factRel.getTraitSet() );
+        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factAlg.getCluster(), factAlg.getTraitSet() );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -281,7 +281,7 @@ public class LoptSemiJoinOptimizer {
                             semiJoinCondition );
         }
         return SemiJoin.create(
-                factRel,
+                factAlg,
                 dimRel,
                 semiJoinCondition,
                 ImmutableList.copyOf( truncatedLeftKeys ),

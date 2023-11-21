@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import kotlin.text.Charsets;
+import lombok.Getter;
 import org.apache.calcite.avatica.util.Spaces;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
@@ -145,12 +146,10 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptSamplingParameters;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.AlgOptEntityImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCallBinding;
@@ -259,8 +258,19 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private static final BigDecimal TWO = BigDecimal.valueOf( 2L );
 
     protected final SqlValidator validator;
+    /**
+     * -- GETTER --
+     * Returns the row-expression builder.
+     */
+    @Getter
     protected final RexBuilder rexBuilder;
     protected final Snapshot snapshot;
+    /**
+     * -- GETTER --
+     *
+     * @return the RelOptCluster in use.
+     */
+    @Getter
     protected final AlgOptCluster cluster;
     private SubQueryConverter subQueryConverter;
     protected final List<AlgNode> leaves = new ArrayList<>();
@@ -305,22 +315,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         this.explainParamCount = 0;
         this.config = new ConfigBuilder().config( config ).build();
         this.algBuilder = config.getAlgBuilderFactory().create( cluster, null );
-    }
-
-
-    /**
-     * @return the RelOptCluster in use.
-     */
-    public AlgOptCluster getCluster() {
-        return cluster;
-    }
-
-
-    /**
-     * Returns the row-expression builder.
-     */
-    public RexBuilder getRexBuilder() {
-        return rexBuilder;
     }
 
 
@@ -446,7 +440,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 new AlgStructuredTypeFlattener(
                         algBuilder,
                         rexBuilder,
-                        createToRelContext(),
+                        cluster,
                         restructure );
         return typeFlattener.rewrite( rootAlg );
     }
@@ -2905,15 +2899,10 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 null,
                 false );
     }
-
-
-    private ToAlgContext createToRelContext() {
-        return () -> cluster;
-    }
-
+    
 
     public AlgNode toAlg( final LogicalEntity table ) {
-        final AlgNode scan = table.unwrap( TranslatableEntity.class ).toAlg( createToRelContext(), cluster.traitSet() );
+        final AlgNode scan = table.unwrap( TranslatableEntity.class ).toAlg( cluster, cluster.traitSet() );
 
         final InitializerExpressionFactory ief =
                 Util.first(
@@ -2936,7 +2925,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     ++virtualCount;
                     break;
                 default:
-                    list.add( rexBuilder.makeInputRef( scan, AlgOptEntityImpl.realOrdinal( table, f.getIndex() ) ) );
+                    list.add( rexBuilder.makeInputRef( scan, f.getIndex() ) );
             }
         }
         if ( virtualCount > 0 ) {

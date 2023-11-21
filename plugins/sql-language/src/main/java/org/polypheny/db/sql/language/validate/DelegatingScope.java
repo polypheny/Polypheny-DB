@@ -104,7 +104,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         if ( rowType.isStruct() ) {
             LogicalEntity validatorTable = ns.getTable();
             if ( validatorTable instanceof PreparingEntity ) {
-                Entity t = ((PreparingEntity) validatorTable).unwrap( Entity.class );
+                Entity t = validatorTable.unwrap( Entity.class );
                 if ( t instanceof CustomColumnResolvingEntity ) {
                     final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, validator.getTypeFactory(), names );
                     for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
