@@ -126,21 +126,21 @@ public class BackupInformationObject {
 
             // create entityReferences for each namespace (if there is a reference) with namespacedependencies, and add entityReferences to the backupinformationobject
             if ( namespaceDependencies.containsKey( ns.id ) || namespaceTableDependencies.containsKey( ns.id ) ) {
-                EntityReferences entityReferences = new EntityReferences( ns.id, BackupEntityType.NAMESPACE );
+                EntityReferencer entityReferencer = new EntityReferencer( ns.id, BackupEntityType.NAMESPACE );
                 if ( namespaceDependencies.containsKey( ns.id ) ) {
-                    entityReferences.setReferencerNamespaces( namespaceDependencies.get( ns.id ) );
+                    entityReferencer.setReferencerNamespaces( namespaceDependencies.get( ns.id ) );
                 }
                 if ( namespaceTableDependencies.containsKey( ns.id )) {
-                    entityReferences.setReferencerNamespaceTablePairs( namespaceTableDependencies.get( ns.id ) );
+                    entityReferencer.setReferencerNamespaceTablePairs( namespaceTableDependencies.get( ns.id ) );
 
                     // get out all the tableIds from the pairs and add them to the referencerTables list
                     List<Long> tempReferencerTables = new ArrayList<>();
                     for ( Pair<Long, Long> pair : namespaceTableDependencies.get( ns.id ) ) {
                         tempReferencerTables.add( pair.left );
                     }
-                    entityReferences.setReferencerTables( tempReferencerTables );
+                    entityReferencer.setReferencerTables( tempReferencerTables );
                 }
-                nsBupObj.setEntityReferences( entityReferences );
+                nsBupObj.setEntityReferencer( entityReferencer );
             }
 
             tempNS.put( ns.id, nsBupObj );
@@ -222,14 +222,14 @@ public class BackupInformationObject {
 
                 // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject
                 if (entity.getEntityType().equals( EntityType.ENTITY)) {
-                    EntityReferences entityReferences = new EntityReferences( entity.getId(), BackupEntityType.TABLE );
+                    EntityReferencer entityReferencer = new EntityReferencer( entity.getId(), BackupEntityType.TABLE );
                     if (tableDependencies.containsKey( entity.getId() )) {
-                        entityReferences.setReferencerTables( tableDependencies.get( entity.getId() ) );
+                        entityReferencer.setReferencerTables( tableDependencies.get( entity.getId() ) );
                     }
                     if (namespaceTableDependendencies.containsKey( entity.getId() )) {
-                        entityReferences.setReferencerNamespaceTablePairs( namespaceTableDependendencies.get( entity.getId() ) );
+                        entityReferencer.setReferencerNamespaceTablePairs( namespaceTableDependendencies.get( entity.getId() ) );
                     }
-                    tempBupEntity.setEntityReferences( entityReferences );
+                    tempBupEntity.setEntityReferencer( entityReferencer );
                 }
 
 

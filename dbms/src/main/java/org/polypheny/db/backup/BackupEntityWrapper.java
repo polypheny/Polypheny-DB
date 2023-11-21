@@ -29,6 +29,6 @@ public class BackupEntityWrapper<E> {
     //default, original name (change if rename needed (options))
     private String nameForQuery;
 
-    private EntityReferences entityReferences;
+    private EntityReferencer entityReferencer;
 
 }

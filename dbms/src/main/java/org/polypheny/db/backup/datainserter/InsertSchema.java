@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.backup.BackupEntityWrapper;
@@ -39,6 +40,10 @@ import org.polypheny.db.transaction.TransactionManager;
 
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyUserDefinedValue;
+import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class InsertSchema {
@@ -370,7 +375,25 @@ public class InsertSchema {
 
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
-            defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
+            PolyValue lool = col.defaultValue.value;
+            PolyType lol = col.defaultValue.value.type; //decimal
+            String type = lol.getTypeName();
+            //PolyString lal = col.defaultValue.value.asString(); // works with varchar
+            //@NotNull PolyUserDefinedValue lkjlkj = col.defaultValue.value.asUserDefinedValue();
+            //String value = lool.asUserDefinedValue().toString();
+
+            //String hahaaaa = lool.asString().asCharset( "UTF-8" ); //signsign hallo
+            //org.polypheny.db.catalog.exceptions.GenericRuntimeException: Cannot parse PolyBigDecimal(value=2) to type PolyString
+            String hahaa = lool.asString().toTypedString( true ); //'hallo'
+            String hahaaa = lool.asString().toTypedString( false ); //hallo
+
+            String haha = lool.asString().toString();
+            if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) ) {
+                //defaultValue = String.format( " DEFAULT '%s'", col.defaultValue.value.type.toString() );
+            } else {
+                //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value.type.toString() );
+            }
+            //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
         }
 
         String caseSensitivity = new String();

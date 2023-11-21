@@ -24,7 +24,7 @@ import org.polypheny.db.util.Pair;
 /**
  * Class that contains entities and by what they are referenced
  */
-public class EntityReferences {
+public class EntityReferencer {
     private Long entityId;
     private BackupEntityType entityType;
     @Getter @Setter
@@ -40,7 +40,7 @@ public class EntityReferences {
      * @param entityId The id of the entity that is referenced by another entity
      * @param entityType The type of the entity ("namespace", "
      */
-    public EntityReferences(Long entityId, BackupEntityType entityType) {
+    public EntityReferencer(Long entityId, BackupEntityType entityType) {
         this.entityId = entityId;
         this.entityType = entityType;
     }
