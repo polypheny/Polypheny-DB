@@ -188,14 +188,14 @@ public class BupInformationObject {
     }
 
 
-    public ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> transformLogicalEntitiesToBupSuperEntity( ImmutableMap<Long, List<LogicalEntity>> entityMap ) {
+    public ImmutableMap<Long, List<BupSuperEntity<? extends LogicalEntity>>> transformLogicalEntitiesToBupSuperEntityyy( ImmutableMap<Long, List<? extends LogicalEntity>> entityMap ) {
 
-        ImmutableMap<Long, List<BupSuperEntity<LogicalEntity>>> resultMap;
+        ImmutableMap<Long, List<BupSuperEntity<? extends LogicalEntity>>> resultMap;
         Map<Long, List<BupSuperEntity<LogicalEntity>>> tempMap = new HashMap<>();
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
-        for ( Map.Entry<Long, List<LogicalEntity>> entry : entityMap.entrySet() ) {
-            List<LogicalEntity> entityList = entry.getValue();
+        for ( Map.Entry<Long, List<? extends LogicalEntity>> entry : entityMap.entrySet() ) {
+            List<? extends LogicalEntity> entityList = entry.getValue();
             List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
 
             for ( LogicalEntity entity : entityList ) {
@@ -209,7 +209,7 @@ public class BupInformationObject {
 
         }
 
-        resultMap = ImmutableMap.copyOf( tempMap );
+        resultMap = ImmutableMap.copyOf( (Map<? extends Long, ? extends List<BupSuperEntity<? extends LogicalEntity>>>) tempMap );
         return resultMap;
     }
 

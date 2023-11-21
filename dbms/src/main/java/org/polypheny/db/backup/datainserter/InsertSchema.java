@@ -17,10 +17,14 @@
 package org.polypheny.db.backup.datainserter;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.backup.BupInformationObject;
 import org.polypheny.db.backup.BupSuperEntity;
+import org.polypheny.db.backup.EntityReferences;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
@@ -86,18 +90,23 @@ public class InsertSchema {
         executeStatementInPolypheny( queery, "sql", NamespaceType.GRAPH);
          */
 
-        /*
+        //tables = bupInformationObject.transformLogicalEntitiesToBupSuperEntityyy( bupInformationObject.getTables() );
+        //bupInformationObject.setBupTables( tables );
+
+
         //List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
-        Map<Long, List<BupSuperEntity<LogicalTable>>> tempMap = new HashMap<>();
+        Map<Long, List<BupSuperEntity<? extends LogicalEntity>>> tempMap = new HashMap<>();
+        //luege öbs goht eso (a de räschtleche ort, ond söcht met instance of caste)
 
         for ( Map.Entry<Long, List<LogicalTable>> a : bupInformationObject.getTables().entrySet()) {
             List<BupSuperEntity<LogicalEntity>> bupEntityList = new ArrayList<>();
             //TODO(FF): doesn't work with return value :(
             bupEntityList = bupInformationObject.transformLogigalEntityToSuperEntity( a.getValue().stream().map( e -> (LogicalEntity) e ).collect( Collectors.toList()) );
-            tempMap.put( a.getKey(), bupEntityList.stream().map( e -> (BupSuperEntity<LogicalTable>) e ).collect( Collectors.toList()));
+            tempMap.put( a.getKey(), bupEntityList.stream().map( e -> (BupSuperEntity<LogicalEntity>) e ).collect( Collectors.toList()));
         }
+        //bupInformationObject.setBupTables( ImmutableMap.copyOf( tempMap ) );
 
-         */
+
         // create table
         //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
         tables = bupInformationObject.tempTableTransformation( bupInformationObject.getTables(), true );
@@ -285,6 +294,7 @@ public class InsertSchema {
     private void setGraphStore() {
         //query:CREATE PLACEMENT OF graf11 ON STORE 0 (comes from error message from trying to insert it via ui)
         //TODO(FF): how do i know on which store the graph is on? how do i set this with the create query?????
+
     }
 
 
