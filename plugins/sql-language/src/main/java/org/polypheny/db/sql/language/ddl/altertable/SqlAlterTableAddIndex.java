@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -112,7 +113,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable logicalTable = failOnEmpty( context, table );
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
 
         if ( logicalTable.entityType != EntityType.ENTITY && logicalTable.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE ADD INDEX because " + logicalTable.name + " is not a table or materialized view." );
@@ -121,7 +122,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
                 DdlManager.getInstance().createPolyphenyIndex(
                         logicalTable,
                         indexMethodName,
@@ -130,7 +131,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                         unique,
                         statement );
             } else {
-                DataStore storeInstance = null;
+                DataStore<?> storeInstance = null;
                 if ( storeName != null ) {
                     storeInstance = getDataStoreInstance( storeName );
                     if ( storeInstance == null ) {

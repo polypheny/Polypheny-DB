@@ -19,6 +19,7 @@ package org.polypheny.db.catalog.entity.logical;
 
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
+import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,6 +45,7 @@ public class LogicalIndex implements Serializable {
     @Serialize
     public String name;
     @Serialize
+    @SerializeNullable
     public String physicalName;
     @Serialize
     public boolean unique;

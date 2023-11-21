@@ -2987,7 +2987,7 @@ public abstract class AlgOptUtil {
         public Void visitCall( RexCall call ) {
             if ( call.getOperator().equals( RexBuilder.GET_OPERATOR ) ) {
                 RexLiteral literal = (RexLiteral) call.getOperands().get( 1 );
-                extraFields.add( new AlgDataTypeFieldImpl( -1L, (String) literal.getValue2(), -1, call.getType() ) );
+                extraFields.add( new AlgDataTypeFieldImpl( -1L, literal.getValue().asString().value, -1, call.getType() ) );
             }
             return super.visitCall( call );
         }

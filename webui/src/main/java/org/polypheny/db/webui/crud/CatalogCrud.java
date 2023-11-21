@@ -19,9 +19,11 @@ package org.polypheny.db.webui.crud;
 import io.javalin.http.Context;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -31,12 +33,14 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.models.AlgNodeModel;
 import org.polypheny.db.webui.models.AssetsModel;
 import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.requests.NamespaceRequest;
 import org.polypheny.db.webui.models.catalog.schema.NamespaceModel;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
+import org.reflections.Reflections;
 
 @Slf4j
 public class CatalogCrud {
@@ -212,6 +216,23 @@ public class CatalogCrud {
 
     public void getAssetsDefinition( Context context ) {
         context.json( new AssetsModel() );
+    }
+
+
+    public void getAlgebraNodes( Context context ) {
+        Reflections reflections = new Reflections( "org.polypheny" );
+        Map<String, List<AlgNodeModel>> nodes = Map.of(
+                "common", new ArrayList<>(),
+                "relational", new ArrayList<>(),
+                "document", new ArrayList<>(),
+                "graph", new ArrayList<>() );
+        reflections.getSubTypesOf( AlgNode.class ).stream()
+                .filter( c -> c.getSimpleName().startsWith( "Logical" ) ).forEach( c -> {
+                    AlgNodeModel model = AlgNodeModel.from( c );
+                    nodes.get( model.getModel() ).add( model );
+                } );
+
+        context.json( nodes );
     }
 
 }

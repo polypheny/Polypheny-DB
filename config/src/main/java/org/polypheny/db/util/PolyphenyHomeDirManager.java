@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
@@ -30,6 +31,7 @@ import java.util.List;
  *
  * All file system related operations that are specific to the PolyDBMS should be handled with this manager.
  */
+@Slf4j
 public class PolyphenyHomeDirManager {
 
     private static PolyphenyHomeDirManager INSTANCE = null;
@@ -55,11 +57,12 @@ public class PolyphenyHomeDirManager {
         } else {
             pathVar = System.getProperty( "user.home" );
         }
-        root = Path.of( pathVar, ".polypheny", getPrefix() ).toFile();
+        String prefix = getPrefix();
+        root = Path.of( pathVar, ".polypheny", prefix ).toFile();
 
-        if ( !tryCreatingFolder( root ) ) {
+        if ( !probeCreatingFolder( root ) ) {
             root = new File( "." );
-            if ( !tryCreatingFolder( root ) ) {
+            if ( !probeCreatingFolder( root ) ) {
                 throw new RuntimeException( "Could not create root directory: .polypheny neither in: " + pathVar + " nor \".\"" );
             }
         }
@@ -85,11 +88,19 @@ public class PolyphenyHomeDirManager {
 
     private String getPrefix() {
         VersionCollector collector = VersionCollector.INSTANCE;
-        return mode == PolyphenyMode.PRODUCTION ? collector.version : collector.version + "-" + collector.branch;
+
+        switch ( mode ) {
+            case PRODUCTION:
+                return collector.version;
+            case BENCHMARK:
+                return String.format( "%s-%s", collector.version, collector.hash );
+            default:
+                return String.format( "%s-%s", collector.version, collector.branch );
+        }
     }
 
 
-    private boolean tryCreatingFolder( File file ) {
+    private boolean probeCreatingFolder( File file ) {
         if ( file.isFile() ) {
             return false;
         }

@@ -38,6 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Intersect;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -46,7 +47,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.Intersect} not targeted at any particular engine or calling convention.
  */
-public final class LogicalIntersect extends Intersect {
+public final class LogicalIntersect extends Intersect implements RelAlg {
 
     /**
      * Creates a LogicalIntersect.

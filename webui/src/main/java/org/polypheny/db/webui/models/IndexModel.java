@@ -17,6 +17,8 @@
 package org.polypheny.db.webui.models;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.Getter;
 import lombok.Value;
@@ -37,7 +39,13 @@ public class IndexModel {
     public List<Long> columnIds;
 
 
-    public IndexModel( final Long namespaceId, final Long entityId, final String name, final String method, final List<Long> columnIds ) {
+    @JsonCreator
+    public IndexModel(
+            @JsonProperty("namespaceId") final Long namespaceId,
+            @JsonProperty("entityId") final Long entityId,
+            @JsonProperty("name") final String name,
+            @JsonProperty("method") final String method,
+            @JsonProperty("columnIds") final List<Long> columnIds ) {
         this.namespaceId = namespaceId;
         this.entityId = entityId;
         this.name = name;

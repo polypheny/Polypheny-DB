@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -50,7 +51,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.Sort} not targeted at any particular engine or calling convention.
  */
-public final class LogicalSort extends Sort {
+public final class LogicalSort extends Sort implements RelAlg {
 
     private LogicalSort( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, AlgCollation collation, @Nullable List<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input, collation, fieldExps, offset, fetch );

@@ -39,10 +39,10 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.GraphRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RegisterRequest;
-import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.RequestModel;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
@@ -143,9 +143,9 @@ public class WebSocket implements Consumer<WsConfig> {
             case "EntityRequest":
                 Result<?, ?> result = null;
                 if ( request.type.equals( "RelAlgRequest" ) ) {
-                    RelAlgRequest relAlgRequest = ctx.messageAsClass( RelAlgRequest.class );
+                    AlgRequest algRequest = ctx.messageAsClass( AlgRequest.class );
                     try {
-                        result = crud.executeAlg( relAlgRequest, ctx.session );
+                        result = crud.executeAlg( algRequest, ctx.session );
                     } catch ( Throwable t ) {
                         ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
                         return;

@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.AlgDistributionTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -71,7 +72,7 @@ import org.polypheny.db.schema.trait.ModelTraitDef;
  * <li>{@link org.polypheny.db.algebra.rules.CalcMergeRule} merges two {@code LogicalCalc}s</li>
  * </ul>
  */
-public final class LogicalCalc extends Calc {
+public final class LogicalCalc extends Calc implements RelAlg {
 
     /**
      * Creates a LogicalCalc.

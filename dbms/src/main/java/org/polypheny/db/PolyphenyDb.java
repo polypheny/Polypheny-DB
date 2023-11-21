@@ -214,6 +214,9 @@ public class PolyphenyDb {
             this.splashScreen = new SplashHelper();
         }
 
+        // we have to set the mode before checking
+        PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.setModeAndGetInstance( mode );
+
         // Check if Polypheny is already running
         if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
             if ( openUiInBrowser ) {
@@ -224,31 +227,7 @@ public class PolyphenyDb {
         }
 
         // Restore content of Polypheny folder
-        PolyphenyHomeDirManager phdm = PolyphenyHomeDirManager.setModeAndGetInstance( mode );
-        if ( phdm.checkIfExists( "_test_backup" ) && phdm.getFileIfExists( "_test_backup" ).isDirectory() ) {
-            File backupFolder = phdm.getFileIfExists( "_test_backup" );
-            // Cleanup Polypheny folder
-            for ( File item : phdm.getRootPath().listFiles() ) {
-                if ( item.getName().equals( "_test_backup" ) ) {
-                    continue;
-                }
-                if ( phdm.getFileIfExists( item.getName() ).isFile() ) {
-                    phdm.deleteFile( item.getName() );
-                } else {
-                    phdm.recursiveDeleteFolder( item.getName() );
-                }
-            }
-            // Restore contents from backup
-            for ( File item : backupFolder.listFiles() ) {
-                if ( phdm.checkIfExists( "_test_backup/" + item.getName() ) ) {
-                    if ( !item.renameTo( new File( phdm.getRootPath(), item.getName() ) ) ) {
-                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
-                    }
-                }
-            }
-            backupFolder.delete();
-            log.info( "Restoring the data folder." );
-        }
+        restoreHomeFolderIfNecessary( dirManager );
 
         // Reset catalog, data and configuration
         if ( resetCatalog ) {
@@ -263,11 +242,11 @@ public class PolyphenyDb {
 
         // Backup content of Polypheny folder
         if ( mode == PolyphenyMode.TEST || memoryCatalog ) {
-            if ( phdm.checkIfExists( "_test_backup" ) ) {
+            if ( dirManager.checkIfExists( "_test_backup" ) ) {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
-            File backupFolder = phdm.registerNewFolder( "_test_backup" );
-            for ( File item : phdm.getRootPath().listFiles() ) {
+            File backupFolder = dirManager.registerNewFolder( "_test_backup" );
+            for ( File item : dirManager.getRootPath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
@@ -386,19 +365,8 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
 
-        if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( mode == PolyphenyMode.TEST ) {
-                resetDocker = true;
-                Catalog.resetDocker = true;
-            }
-            boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( mode == PolyphenyMode.TEST && !success ) {
-                // AutoDocker does not work in Windows containers
-                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
-                    log.error( "Failed to connect to docker instance" );
-                    return;
-                }
-            }
+        if ( initializeDockerManager() ) {
+            return;
         }
 
         // Initialize plugin manager
@@ -423,19 +391,14 @@ public class PolyphenyDb {
         // temporary add sql and rel here
         LanguageManager.getINSTANCE().addQueryLanguage(
                 NamespaceType.RELATIONAL,
-                "rel",
-                List.of( "rel", "relational" ),
+                "alg",
+                List.of( "alg", "algebra" ),
                 null,
                 AlgProcessor::new,
                 null );
 
         // Initialize index manager
-        try {
-            IndexManager.getInstance().initialize( transactionManager );
-            IndexManager.getInstance().restoreIndexes();
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
-        }
+        initializeIndexManager();
 
         // Initialize statistic manager
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
@@ -505,6 +468,63 @@ public class PolyphenyDb {
 
         if ( trayMenu ) {
             TrayGui.getInstance().shutdown();
+        }
+    }
+
+
+    private boolean initializeDockerManager() {
+        if ( AutoDocker.getInstance().isAvailable() ) {
+            if ( mode == PolyphenyMode.TEST ) {
+                resetDocker = true;
+                Catalog.resetDocker = true;
+            }
+            boolean success = AutoDocker.getInstance().doAutoConnect();
+            if ( mode == PolyphenyMode.TEST && !success ) {
+                // AutoDocker does not work in Windows containers
+                if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
+                    log.error( "Failed to connect to docker instance" );
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private void initializeIndexManager() {
+        try {
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndexes();
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
+        }
+    }
+
+
+    private static void restoreHomeFolderIfNecessary( PolyphenyHomeDirManager dirManager ) {
+        if ( dirManager.checkIfExists( "_test_backup" ) && dirManager.getFileIfExists( "_test_backup" ).isDirectory() ) {
+            File backupFolder = dirManager.getFileIfExists( "_test_backup" );
+            // Cleanup Polypheny folder
+            for ( File item : dirManager.getRootPath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( dirManager.getFileIfExists( item.getName() ).isFile() ) {
+                    dirManager.deleteFile( item.getName() );
+                } else {
+                    dirManager.recursiveDeleteFolder( item.getName() );
+                }
+            }
+            // Restore contents from backup
+            for ( File item : backupFolder.listFiles() ) {
+                if ( dirManager.checkIfExists( "_test_backup/" + item.getName() ) ) {
+                    if ( !item.renameTo( new File( dirManager.getRootPath(), item.getName() ) ) ) {
+                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
+                    }
+                }
+            }
+            backupFolder.delete();
+            log.info( "Restoring the data folder." );
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.ddl.DdlManager;
@@ -111,11 +112,11 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable catalogTable = failOnEmpty( context, table );
+        LogicalTable catalogTable = getTableFailOnEmpty( context, table );
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( "POLYPHENY" ) ) {
+            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
                 DdlManager.getInstance().createPolyphenyIndex(
                         catalogTable,
                         indexMethodName,

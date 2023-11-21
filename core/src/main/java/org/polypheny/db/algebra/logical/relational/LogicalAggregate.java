@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -58,7 +59,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  * <li>{@link AggregateReduceFunctionsRule}</li>
  * </ul>
  */
-public final class LogicalAggregate extends Aggregate {
+public final class LogicalAggregate extends Aggregate implements RelAlg {
 
     /**
      * Creates a LogicalAggregate.

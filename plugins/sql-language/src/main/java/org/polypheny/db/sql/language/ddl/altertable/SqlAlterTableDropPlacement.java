@@ -79,7 +79,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable logicalTable = failOnEmpty( context, table );
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
         DataStore<?> store = getDataStoreInstance( storeName );
 
         if ( logicalTable.entityType != EntityType.ENTITY ) {

@@ -60,7 +60,7 @@ public class Collation implements Serializable {
         locale = parseValues.getLocale();
         strength = parseValues.getStrength();
         String c = charset.name().toUpperCase( Locale.ROOT ) + "$" + locale.toString();
-        if ( (strength != null) && (strength.length() > 0) ) {
+        if ( (strength != null) && (!strength.isEmpty()) ) {
             c += "$" + strength;
         }
         collationName = c;

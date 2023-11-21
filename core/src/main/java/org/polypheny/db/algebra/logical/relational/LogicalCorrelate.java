@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -58,7 +59,7 @@ import org.polypheny.db.util.Litmus;
  *
  * @see CorrelationId
  */
-public final class LogicalCorrelate extends Correlate {
+public final class LogicalCorrelate extends Correlate implements RelAlg {
 
     /**
      * Creates a LogicalCorrelate.

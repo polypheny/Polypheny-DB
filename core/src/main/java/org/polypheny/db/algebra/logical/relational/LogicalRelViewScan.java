@@ -35,11 +35,10 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 
 
+@Getter
 public class LogicalRelViewScan extends RelScan<LogicalEntity> {
 
-    @Getter
     private final AlgNode algNode;
-    @Getter
     private final AlgCollation algCollation;
 
 

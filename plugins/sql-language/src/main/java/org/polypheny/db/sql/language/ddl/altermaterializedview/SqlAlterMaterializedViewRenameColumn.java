@@ -76,7 +76,7 @@ public class SqlAlterMaterializedViewRenameColumn extends SqlAlterMaterializedVi
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = failOnEmpty( context, materializedView );
+        LogicalTable table = getTableFailOnEmpty( context, materializedView );
 
         if ( table.entityType != EntityType.MATERIALIZED_VIEW ) {
             throw new GenericRuntimeException( "Not Possible to use ALTER MATERIALIZED VIEW because " + table.name + " is not a Materialized View." );

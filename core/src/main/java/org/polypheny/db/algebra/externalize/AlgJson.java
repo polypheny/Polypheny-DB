@@ -335,7 +335,7 @@ public class AlgJson {
                 return map;
             case LITERAL:
                 final RexLiteral literal = (RexLiteral) node;
-                final Object value2 = literal.getValue2();
+                final Object value2 = literal.getValue();
                 if ( value2 == null ) {
                     // Special treatment for null literal because (1) we wouldn't want 'null' to be confused as an empty expression and (2) for null literals we need an explicit type.
                     map = jsonBuilder.map();

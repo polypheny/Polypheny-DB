@@ -168,7 +168,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             } else {
                 d = 0;
                 for ( ImmutableList<RexLiteral> literals : alg.getTuples() ) {
-                    d += typeValueSize( field.getType(), literals.get( i ).getValueAs( Comparable.class ) );
+                    d += typeValueSize( field.getType(), literals.get( i ).getValue() );
                 }
                 d /= alg.getTuples().size();
             }
@@ -409,7 +409,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             case INPUT_REF:
                 return inputColumnSizes.get( ((RexIndexRef) node).getIndex() );
             case LITERAL:
-                return typeValueSize( node.getType(), ((RexLiteral) node).getValueAs( Comparable.class ) );
+                return typeValueSize( node.getType(), ((RexLiteral) node).getValue() );
             default:
                 if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;

@@ -442,7 +442,7 @@ public class RexProgram {
     public boolean isNull( RexNode expr ) {
         switch ( expr.getKind() ) {
             case LITERAL:
-                return ((RexLiteral) expr).getValue2() == null;
+                return ((RexLiteral) expr).getValue() == null;
             case LOCAL_REF:
                 RexLocalRef inputRef = (RexLocalRef) expr;
                 return isNull( exprs.get( inputRef.index ) );

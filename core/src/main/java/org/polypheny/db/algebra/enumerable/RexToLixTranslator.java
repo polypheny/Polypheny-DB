@@ -778,7 +778,7 @@ public class RexToLixTranslator {
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
-                value2 = literal.getValueAs( Integer.class );
+                value2 = literal.getValue( Integer.class );
                 javaClass = int.class;
                 break;
             case TIMESTAMP:
@@ -793,20 +793,20 @@ public class RexToLixTranslator {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                value2 = literal.getValueAs( Long.class );
+                value2 = literal.getValue( Long.class );
                 javaClass = long.class;
                 break;
             case CHAR:
             case VARCHAR:
-                value2 = literal.getValueAs( String.class );
+                value2 = literal.getValue( String.class );
                 break;
             case BINARY:
             case VARBINARY:
                 return Expressions.new_(
                         ByteString.class,
-                        Expressions.constant( literal.getValueAs( byte[].class ), byte[].class ) );
+                        Expressions.constant( literal.getValue( byte[].class ), byte[].class ) );
             case SYMBOL:
-                value2 = literal.getValueAs( Enum.class );
+                value2 = literal.getValue( Enum.class );
                 javaClass = value2.getClass();
                 break;
             case ARRAY:
@@ -816,20 +816,20 @@ public class RexToLixTranslator {
                 } else {
                     componentType = type;
                 }
-                value2 = literal.getValueAs( List.class ).stream().map( e -> translateLiteral( (RexLiteral) e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
+                value2 = literal.getValue( List.class ).stream().map( e -> translateLiteral( (RexLiteral) e, componentType, typeFactory, nullAs ) ).collect( Collectors.toList() );
                 javaClass = List.class;
                 break;
             case EDGE:
-                return literal.getValueAs( PolyEdge.class ).asExpression();
+                return literal.getValue( PolyEdge.class ).asExpression();
             case NODE:
-                return literal.getValueAs( PolyNode.class ).asExpression();
+                return literal.getValue( PolyNode.class ).asExpression();
             case PATH:
-                return literal.getValueAs( PolyPath.class ).asExpression();
+                return literal.getValue( PolyPath.class ).asExpression();
             case DOCUMENT:
                 return ((PolyValue) literal.getValue()).asExpression();
             default:
                 final Primitive primitive = Primitive.ofBoxOr( javaClass );
-                final Comparable<?> value = literal.getValueAs( Comparable.class );
+                final Comparable<?> value = literal.getValue( Comparable.class );
                 if ( primitive != null && value instanceof Number ) {
                     value2 = primitive.number( (Number) value );
                 } else {

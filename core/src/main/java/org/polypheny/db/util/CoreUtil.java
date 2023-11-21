@@ -18,6 +18,7 @@ package org.polypheny.db.util;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.base.Charsets;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
@@ -99,7 +100,7 @@ public class CoreUtil {
             case "UTF8":
                 return "UTF-8";
             case "UTF16":
-                return ConversionUtil.NATIVE_UTF16_CHARSET_NAME;
+                return Charsets.UTF_16.name();
             case "UTF-16BE":
             case "UTF-16LE":
             case "ISO-8859-1":

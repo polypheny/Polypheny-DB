@@ -246,7 +246,7 @@ public class Translator extends RexVisitorImpl<String> {
         RexLiteral rex = (RexLiteral) call.operands.get( 2 );
         String literal = NeoUtil.rexAsString( rex, null, true );
         if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {
-            literal = String.format( "'%s'", rex.getValueAs( String.class ) );
+            literal = String.format( "'%s'", rex.getValue() );
         }
         return String.format( "%s.%s = %s", identifier, key, literal );
     }

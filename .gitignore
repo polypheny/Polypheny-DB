@@ -229,3 +229,6 @@ nbdist/
 /dbms/src/main/resources/acknowledgements.txt
 
 .polypheny/*
+
+## dynamicly generated version information
+/dbms/src/main/resources/version.properties

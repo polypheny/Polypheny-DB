@@ -148,7 +148,7 @@ public class RexCall extends RexNode {
 
     protected @Nonnull String computeDigest( boolean withType ) {
         final StringBuilder sb = new StringBuilder( op.getName() );
-        if ( (operands.size() == 0) && (op.getSyntax() == Syntax.FUNCTION_ID) ) {
+        if ( (operands.isEmpty()) && (op.getSyntax() == Syntax.FUNCTION_ID) ) {
             // Don't print params for empty arg list. For example, we want "SYSTEM_USER", not "SYSTEM_USER()".
         } else {
             sb.append( "(" );

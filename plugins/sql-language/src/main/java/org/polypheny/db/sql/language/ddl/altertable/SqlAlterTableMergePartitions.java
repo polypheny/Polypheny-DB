@@ -77,7 +77,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable table = failOnEmpty( context, this.table );
+        LogicalTable table = getTableFailOnEmpty( context, this.table );
 
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );

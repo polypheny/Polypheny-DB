@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -200,38 +199,38 @@ public class CottontailTypeUtil {
         } else {
             switch ( actualType ) {
                 case BOOLEAN:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Boolean.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case INTEGER:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case BIGINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case DOUBLE:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Double.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case REAL:
                 case FLOAT:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Float.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case VARCHAR:
                 case CHAR:
                 case JSON:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( String.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case DATE:
                 case TIME:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case TIMESTAMP:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case TINYINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Byte.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case SMALLINT:
-                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Short.class ) );
+                    constantExpression = Expressions.constant( rexLiteral.getValue() );
                     break;
                 case DECIMAL:
                     BigDecimal bigDecimal = rexLiteral.value.asNumber().BigDecimalValue();
@@ -494,34 +493,34 @@ public class CottontailTypeUtil {
     private static Object rexLiteralToJavaClass( RexLiteral rexLiteral, PolyType actualType ) {
         switch ( actualType ) {
             case BOOLEAN:
-                return rexLiteral.getValueAs( Boolean.class );
+                return rexLiteral.getValue();
             case INTEGER:
-                return rexLiteral.getValueAs( Integer.class );
+                return rexLiteral.getValue();
             case BIGINT:
-                return rexLiteral.getValueAs( Long.class );
+                return rexLiteral.getValue();
             case DOUBLE:
-                return rexLiteral.getValueAs( Double.class );
+                return rexLiteral.getValue();
             case REAL:
             case FLOAT:
-                return rexLiteral.getValueAs( Float.class );
+                return rexLiteral.getValue();
             case VARCHAR:
             case CHAR:
             case JSON:
-                return rexLiteral.getValueAs( String.class );
+                return rexLiteral.getValue();
             case TIMESTAMP:
-                return rexLiteral.getValueAs( Long.class );
+                return rexLiteral.getValue();
             case DATE:
             case TIME:
-                return rexLiteral.getValueAs( Integer.class );
+                return rexLiteral.getValue();
             case DECIMAL:
-                return rexLiteral.getValueAs( BigDecimal.class );
+                return rexLiteral.getValue();
             case VARBINARY:
             case BINARY:
-                return rexLiteral.getValueAs( ByteString.class );
+                return rexLiteral.getValue();
             case TINYINT:
-                return rexLiteral.getValueAs( Byte.class );
+                return rexLiteral.getValue();
             case SMALLINT:
-                return rexLiteral.getValueAs( Short.class );
+                return rexLiteral.getValue();
             default:
                 throw new GenericRuntimeException( "Type " + actualType + " is not supported by the cottontail adapter." );
         }
@@ -600,7 +599,7 @@ public class CottontailTypeUtil {
      */
     private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {
         if ( node instanceof RexLiteral ) {
-            return Expressions.constant( ((RexLiteral) node).getValue2() );
+            return Expressions.constant( ((RexLiteral) node).getValue() );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
             return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
@@ -623,20 +622,20 @@ public class CottontailTypeUtil {
                 literal = Boolean.parseBoolean( logicalDefaultValue.value.toJson() );
                 break;
             case INTEGER:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Integer.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Integer.class );
                 break;
             case DECIMAL:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( BigDecimal.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( BigDecimal.class );
                 break;
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Long.class );
+                literal = SqlLiteral.createExactNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Long.class );
                 break;
             case REAL:
             case FLOAT:
-                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Float.class );
+                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Float.class );
                 break;
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValueAs( Double.class );
+                literal = SqlLiteral.createApproxNumeric( logicalDefaultValue.value.toJson(), ParserPos.ZERO ).getValue( Double.class );
                 break;
             case VARCHAR:
                 literal = logicalDefaultValue.value;

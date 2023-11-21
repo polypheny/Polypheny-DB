@@ -48,7 +48,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Relational operator that returns the contents of a table.
  */
-public abstract class RelScan<E extends LogicalEntity> extends Scan<E> {
+public abstract class RelScan<E extends LogicalEntity> extends Scan<E> implements RelAlg {
 
     protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );

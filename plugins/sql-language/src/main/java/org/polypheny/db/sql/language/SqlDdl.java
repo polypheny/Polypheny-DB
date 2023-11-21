@@ -86,7 +86,7 @@ public abstract class SqlDdl extends SqlCall {
 
 
     @NotNull
-    protected LogicalTable failOnEmpty( Context context, SqlIdentifier tableName ) {
+    protected LogicalTable getTableFailOnEmpty( Context context, SqlIdentifier tableName ) {
         Optional<LogicalTable> table = searchEntity( context, tableName );
         if ( table.isEmpty() ) {
             throw new GenericRuntimeException( "Could not find table with name: " + String.join( ".", tableName.names ) );

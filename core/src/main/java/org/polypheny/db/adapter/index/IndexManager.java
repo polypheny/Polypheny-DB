@@ -55,6 +55,7 @@ import org.polypheny.db.transaction.TransactionManager;
 
 public class IndexManager {
 
+    public static final String POLYPHENY = "POLYPHENY";
     private static final IndexManager INSTANCE = new IndexManager();
 
     private final AtomicLong indexLookupHitsCounter = new AtomicLong();
@@ -158,7 +159,6 @@ public class IndexManager {
 
 
     public void addIndex( final LogicalIndex index, final Statement statement ) throws TransactionException {
-        // TODO(s3lph): persistent
         addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 

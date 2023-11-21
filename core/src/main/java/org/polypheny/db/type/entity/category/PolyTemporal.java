@@ -39,7 +39,8 @@ public abstract class PolyTemporal extends PolyValue {
 
 
     public long getDaysSinceEpoch() {
-        return getMilliSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
+        long days = getMilliSinceEpoch() / DateTimeUtils.MILLIS_PER_DAY;
+        return days;
     }
 
 

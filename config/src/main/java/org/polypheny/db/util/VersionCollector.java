@@ -28,6 +28,9 @@ public class VersionCollector {
 
     public static final String VERSION = "version";
     public static final String BRANCH = "branch";
+
+    public static final String HASH = "hash";
+
     public static VersionCollector INSTANCE = new VersionCollector();
 
     private final Properties versionProperties = new Properties();
@@ -36,18 +39,20 @@ public class VersionCollector {
 
     final String branch;
 
+    final String hash;
+
     public boolean inJar = false;
 
 
     private VersionCollector() {
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream( "classpath:/version.properties" );
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream( "version.properties" );
 
         try {
             if ( inputStream == null ) {
                 inJar = true;
                 // When running unit tests, no jar is built, so we load a copy of the file that we saved during build.gradle.
                 // Possibly this also is the case during debugging, therefore we save in bin/main instead of bin/test.
-                inputStream = new FileInputStream( "bin/main/version.properties" );
+                inputStream = new FileInputStream( "version.properties" );
             }
 
             versionProperties.load( inputStream );
@@ -56,6 +61,7 @@ public class VersionCollector {
         }
         version = versionProperties.getProperty( VERSION );
         branch = versionProperties.getProperty( BRANCH );
+        hash = versionProperties.getProperty( HASH );
 
     }
 

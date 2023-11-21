@@ -34,7 +34,7 @@ public interface LogicalQueryInformation {
     /**
      * @return A map with tableId as key and a list of partitionIds as value.
      */
-    Map<Integer, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
+    Map<Long, List<Long>> getAccessedPartitions(); // tableId  -> partitionIds
 
     /**
      * @return A map with columnId as key and tableId as value.

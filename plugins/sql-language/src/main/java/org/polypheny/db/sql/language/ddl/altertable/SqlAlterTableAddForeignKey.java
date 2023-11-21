@@ -99,8 +99,8 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        LogicalTable logicalTable = failOnEmpty( context, table );
-        LogicalTable refTable = failOnEmpty( context, referencesTable );
+        LogicalTable logicalTable = getTableFailOnEmpty( context, table );
+        LogicalTable refTable = getTableFailOnEmpty( context, referencesTable );
 
         DdlManager.getInstance().createForeignKey(
                 logicalTable,

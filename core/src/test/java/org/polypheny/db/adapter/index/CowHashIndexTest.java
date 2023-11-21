@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.transaction.PUID;
@@ -30,9 +31,16 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.PolyphenyMode;
 
 
 public class CowHashIndexTest {
+
+    @BeforeClass
+    public static void init() {
+        PolyphenyHomeDirManager.setModeAndGetInstance( PolyphenyMode.TEST );
+    }
 
     @Test
     public void testCopyOnWriteIsolation() {
@@ -40,7 +48,7 @@ public class CowHashIndexTest {
         CoWHashIndex idx = new CoWHashIndex( 42L, "idx_test", null, null, Collections.emptyList(), Collections.emptyList() );
         PolyXid xid1 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         PolyXid xid2 = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
-        Assert.assertEquals( 0, ((List) idx.getRaw()).size() );
+        Assert.assertEquals( 0, idx.getRaw().size() );
         // Insert and delete some values as xid1
         idx.insert( xid1, asPolyValues( 1, 2, 3 ), asPolyValues( 1 ) );
         idx.insertAll( xid1, Arrays.asList(

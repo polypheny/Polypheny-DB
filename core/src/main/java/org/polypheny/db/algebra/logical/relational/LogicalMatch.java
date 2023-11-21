@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Match;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -51,7 +52,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Sub-class of {@link Match} not targeted at any particular engine or calling convention.
  */
-public class LogicalMatch extends Match {
+public class LogicalMatch extends Match implements RelAlg {
 
     /**
      * Creates a LogicalMatch.

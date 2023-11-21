@@ -42,6 +42,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -811,6 +812,7 @@ public class RexBuilder {
     public RexLiteral makeLiteral( PolyValue o, AlgDataType type, PolyType typeName ) {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
+
         /*int p;
         switch ( typeName ) {
             case CHAR:
@@ -1050,7 +1052,7 @@ public class RexBuilder {
     public RexLiteral makeCharLiteral( NlsString str ) {
         assert str != null;
         AlgDataType type = CoreUtil.createNlsStringType( typeFactory, str );
-        return makeLiteral( PolyString.of( str.getValue() ), type, PolyType.CHAR );
+        return makeLiteral( PolyString.of( str.getValue(), str.getCharset() ), type, PolyType.CHAR );
     }
 
 
@@ -1080,7 +1082,7 @@ public class RexBuilder {
 
     public RexLiteral makeTimeLiteral( PolyTime time, int precision ) {
         return makeLiteral(
-                PolyTime.of( time.getMilliSinceEpoch() ),
+                time,
                 typeFactory.createPolyType( PolyType.TIME, precision ),
                 PolyType.TIME );
     }
@@ -1092,6 +1094,14 @@ public class RexBuilder {
     public RexLiteral makeTimeWithLocalTimeZoneLiteral( TimeString time, int precision ) {
         return makeLiteral(
                 PolyTime.of( (long) time.getMillisOfDay() ),
+                typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
+                PolyType.TIME_WITH_LOCAL_TIME_ZONE );
+    }
+
+
+    public RexLiteral makeTimeWithLocalTimeZoneLiteral( PolyTime time, int precision ) {
+        return makeLiteral(
+                time,
                 typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
                 PolyType.TIME_WITH_LOCAL_TIME_ZONE );
     }
@@ -1122,6 +1132,14 @@ public class RexBuilder {
     public RexLiteral makeTimestampWithLocalTimeZoneLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
                 PolyTimeStamp.of( timestamp.getMillisSinceEpoch() ),
+                typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
+                PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+    }
+
+
+    private RexNode makeTimestampWithLocalTimeZoneLiteral( PolyTimeStamp timeStamp, int precision ) {
+        return makeLiteral(
+                timeStamp,
                 typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
                 PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
     }
@@ -1262,52 +1280,54 @@ public class RexBuilder {
             RexNode literalNotNull = makeLiteral( value, typeNotNull, allowCast );
             return makeAbstractCast( type, literalNotNull );
         }
-        value = clean( value, type );
+        PolyValue poly = clean( value, type );
         RexLiteral literal;
         final List<RexNode> operands;
         switch ( type.getPolyType() ) {
             case CHAR:
-                return makeCharLiteral( padRight( (NlsString) value, type.getPrecision() ) );
+                //return makeLiteral( padRight( poly.asString(), type.getPrecision() ), type.getPolyType() );
             case VARCHAR:
-                literal = makeCharLiteral( (NlsString) value );
+                AlgDataType algType = typeFactory.createPolyType( PolyType.CHAR, poly.asString().getValue().length() );
+                type = typeFactory.createTypeWithCharsetAndCollation( algType, poly.asString().charset, type.getCollation() );
+                literal = makeLiteral( poly.asString(), type, type.getPolyType() );
                 if ( allowCast ) {
                     return makeCast( type, literal );
                 } else {
                     return literal;
                 }
             case BINARY:
-                return makeBinaryLiteral( padRight( (ByteString) value, type.getPrecision() ) );
+                return makeLiteral( padRight( poly.asString(), type.getPrecision() ), type, type.getPolyType() );
             case VARBINARY:
-                literal = makeBinaryLiteral( (ByteString) value );
+                literal = makeLiteral( poly, type, type.getPolyType() );
                 if ( allowCast ) {
                     return makeCast( type, literal );
                 } else {
                     return literal;
                 }
             case FILE:
-                return makeFileLiteral( (byte[]) value );
+                return makeLiteral( poly, type, type.getPolyType() );
             case TINYINT:
             case SMALLINT:
             case INTEGER:
             case BIGINT:
             case DECIMAL:
-                return makeExactLiteral( (BigDecimal) value, type );
+                return makeLiteral( poly, type, type.getPolyType() );
             case FLOAT:
             case REAL:
             case DOUBLE:
-                return makeApproxLiteral( (BigDecimal) value, type );
+                return makeLiteral( poly, type, type.getPolyType() );
             case BOOLEAN:
-                return (Boolean) value ? booleanTrue : booleanFalse;
+                return poly.asBoolean().value ? booleanTrue : booleanFalse;
             case TIME:
-                return makeTimeLiteral( (TimeString) value, type.getPrecision() );
+                return makeTimeLiteral( poly.asTime(), type.getPrecision() );
             case TIME_WITH_LOCAL_TIME_ZONE:
-                return makeTimeWithLocalTimeZoneLiteral( (TimeString) value, type.getPrecision() );
+                return makeTimeWithLocalTimeZoneLiteral( poly.asTime(), type.getPrecision() );
             case DATE:
-                return makeDateLiteral( (DateString) value );
+                return makeDateLiteral( poly.asDate() );
             case TIMESTAMP:
-                return makeTimestampLiteral( (TimestampString) value, type.getPrecision() );
+                return makeTimestampLiteral( poly.asTimeStamp(), type.getPrecision() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return makeTimestampWithLocalTimeZoneLiteral( (TimestampString) value, type.getPrecision() );
+                return makeTimestampWithLocalTimeZoneLiteral( poly.asTimeStamp(), type.getPrecision() );
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -1321,7 +1341,7 @@ public class RexBuilder {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return makeIntervalLiteral( (BigDecimal) value, type.getIntervalQualifier() );
+                return makeLiteral( poly, type, type.getPolyType() );
             case MAP:
                 return makeMap( (Map<Object, Object>) value, type, allowCast );
             case ARRAY:
@@ -1423,24 +1443,24 @@ public class RexBuilder {
             case VARCHAR:
                 if ( o instanceof PolyString ) {
                     return (PolyValue) o;
+                } else if ( o instanceof NlsString ) {
+                    return PolyString.of( ((NlsString) o).getValue(), ((NlsString) o).getCharset() );
                 }
+                break;
             case TIME:
+
+            case TIME_WITH_LOCAL_TIME_ZONE:
                 if ( o instanceof PolyTimeStamp ) {
                     return (PolyValue) o;
                 } else if ( o instanceof Calendar ) {
                     if ( !((Calendar) o).getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
                         throw new AssertionError();
                     }
-                    return PolyTimeStamp.of( ((Calendar) o).getTime().getTime() );
-                } else {
-                    return PolyTimeStamp.of( TimeString.fromMillisOfDay( (Integer) o ).toCalendar().getTime().getTime() );
+                    return PolyTime.of( TimeString.fromCalendarFields( (Calendar) o ).getMillisOfDay() );
+                } else if ( o instanceof TimeString ) {
+                    return PolyTime.of( ((TimeString) o).getMillisOfDay() );
                 }
-            case TIME_WITH_LOCAL_TIME_ZONE:
-                if ( o instanceof PolyTime ) {
-                    return (PolyValue) o;
-                } else {
-                    return PolyTimeStamp.of( TimeString.fromMillisOfDay( (Integer) o ).toCalendar().getTime().getTime() );
-                }
+                return PolyTime.of( (Integer) o );
             case DATE:
                 if ( o instanceof PolyDate ) {
                     return (PolyValue) o;
@@ -1448,27 +1468,35 @@ public class RexBuilder {
                     if ( !((Calendar) o).getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
                         throw new AssertionError();
                     }
-                    return PolyTimeStamp.of( DateString.fromCalendarFields( (Calendar) o ).getMillisSinceEpoch() );
-                } else {
-                    return PolyTimeStamp.of( DateString.fromDaysSinceEpoch( (Integer) o ).getMillisSinceEpoch() );
+                    return PolyDate.of( DateString.fromCalendarFields( (Calendar) o ).getMillisSinceEpoch() );
+                } else if ( o instanceof Date ) {
+                    return PolyDate.of( ((Date) o).getTime() );
+                } else if ( o instanceof DateString ) {
+                    return PolyDate.of( ((DateString) o).getMillisSinceEpoch() );
                 }
+                return PolyDate.of( DateString.fromDaysSinceEpoch( (Integer) o ).getMillisSinceEpoch() );
+
             case TIMESTAMP:
                 if ( o instanceof PolyTimeStamp ) {
                     return (PolyValue) o;
                 } else if ( o instanceof Calendar ) {
                     if ( !((Calendar) o).getTimeZone().equals( DateTimeUtils.UTC_ZONE ) ) {
-                        throw new AssertionError();
+                        // we have to shift it to utc
+                        return PolyTimeStamp.of( ((Calendar) o).getTimeInMillis() - ((Calendar) o).getTimeZone().getRawOffset() );
                     }
-                    return PolyTimeStamp.of( TimestampString.fromCalendarFields( (Calendar) o ).getMillisSinceEpoch() );
-                } else {
-                    return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
+                    // we want UTC and but don't want to shift automatically as it is done with the Calendar impl
+                    return PolyTimeStamp.of( ((Calendar) o).getTimeInMillis() );
+                } else if ( o instanceof TimestampString ) {
+                    return PolyTimeStamp.of( ((TimestampString) o).getMillisSinceEpoch() );
                 }
+                return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 if ( o instanceof PolyTimeStamp ) {
                     return (PolyValue) o;
-                } else {
-                    return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
+                } else if ( o instanceof TimestampString ) {
+                    return PolyTimeStamp.of( ((TimestampString) o).getMillisSinceEpoch() );
                 }
+                return PolyTimeStamp.of( TimestampString.fromMillisSinceEpoch( (Long) o ).getMillisSinceEpoch() );
             case ARRAY:
                 ArrayType arrayType = (ArrayType) type;
                 List<PolyValue> list = new ArrayList<>();
@@ -1483,6 +1511,11 @@ public class RexBuilder {
                 }
                 throw new NotImplementedException();
         }
+        throw new
+
+                NotImplementedException();
+
+
     }
 
 
@@ -1510,13 +1543,13 @@ public class RexBuilder {
 
 
     /**
-     * Returns an {@link NlsString} with spaces to make it at least a given length.
+     * Returns an {@link PolyString} with spaces to make it at least a given length.
      */
-    private static NlsString padRight( NlsString s, int length ) {
-        if ( s.getValue().length() >= length ) {
+    private static PolyString padRight( PolyString s, int length ) {
+        if ( s.value.length() >= length ) {
             return s;
         }
-        return s.copy( padRight( s.getValue(), length ) );
+        return PolyString.of( padRight( s.getValue(), length ), s.charset );
     }
 
 

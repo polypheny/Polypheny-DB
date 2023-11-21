@@ -77,7 +77,7 @@ public class BsonFunctionHelper extends BsonDocument {
     public static BsonDocument getFunction( RexCall call, AlgDataType rowType, Implementor implementor ) {
         String function;
         if ( call.operands.size() == 3 && call.operands.get( 2 ) instanceof RexLiteral ) {
-            Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue3();
+            Object funcName = ((RexLiteral) call.operands.get( 2 )).getValue();
             function = getUsedFunction( funcName );
 
             return new BsonDocument().append(

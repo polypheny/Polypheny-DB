@@ -75,7 +75,7 @@ public class WhereClauseVisitor extends RexShuttle {
                 } else if ( call.operands.get( 1 ) instanceof RexIndexRef ) {
                     if ( ((RexIndexRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 0 ) instanceof RexLiteral ) {
-                            value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
+                            value = ((RexLiteral) call.operands.get( 0 )).getValue();
                             values.add( value );
                             valueIdentified = true;
                         } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {

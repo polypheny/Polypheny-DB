@@ -149,7 +149,7 @@ public class DdlManagerImpl extends DdlManager {
 
     private LogicalColumn addDefaultValue( long namespaceId, PolyValue defaultValue, LogicalColumn column ) {
         if ( defaultValue != null ) {
-            return catalog.getLogicalRel( namespaceId ).setDefaultValue( column.id, column.type, PolyValue.fromType( defaultValue, column.type ) );
+            return catalog.getLogicalRel( namespaceId ).setDefaultValue( column.id, column.type, defaultValue );
         }
         return column;
     }
@@ -523,7 +523,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createIndex( LogicalTable table, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore<?> location, Statement statement ) throws TransactionException {
-        List<Long> columnIds = new LinkedList<>();
+        List<Long> columnIds = new ArrayList<>();
         for ( String columnName : columnNames ) {
             LogicalColumn logicalColumn = catalog.getSnapshot().rel().getColumn( table.id, columnName ).orElseThrow();
             columnIds.add( logicalColumn.id );

@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -55,7 +56,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.Values} not targeted at any particular engine or calling convention.
  */
-public class LogicalValues extends Values {
+public class LogicalValues extends Values implements RelAlg {
 
     /**
      * Creates a LogicalValues.

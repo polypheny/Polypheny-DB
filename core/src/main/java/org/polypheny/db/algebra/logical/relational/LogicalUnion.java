@@ -39,6 +39,7 @@ import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -47,7 +48,7 @@ import org.polypheny.db.plan.Convention;
 /**
  * Sub-class of {@link org.polypheny.db.algebra.core.Union} not targeted at any particular engine or calling convention.
  */
-public final class LogicalUnion extends Union {
+public final class LogicalUnion extends Union implements RelAlg {
 
     /**
      * Creates a LogicalUnion.

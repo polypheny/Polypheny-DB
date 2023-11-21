@@ -220,7 +220,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
      */
     private boolean locked;
 
-    final Map<AlgNode, Provenance> provenanceMap = new HashMap<>();
+    final Map<AlgNode, Provenance> provenances = new HashMap<>();
 
     private final Deque<VolcanoRuleCall> ruleCallStack = new ArrayDeque<>();
 
@@ -667,7 +667,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             return;
         }
         pw.println( node );
-        final Provenance o = provenanceMap.get( node );
+        final Provenance o = provenances.get( node );
         Spaces.append( pw, i * 2 + 2 );
         if ( o == Provenance.EMPTY ) {
             pw.println( "no parent" );
@@ -1394,12 +1394,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         // Record its provenance. (Rule call may be null.)
         if ( ruleCallStack.isEmpty() ) {
             if ( LOGGER.isDebugEnabled() ) {
-                provenanceMap.put( alg, Provenance.EMPTY );
+                provenances.put( alg, Provenance.EMPTY );
             }
         } else {
             final VolcanoRuleCall ruleCall = ruleCallStack.peek();
             if ( LOGGER.isDebugEnabled() ) {
-                provenanceMap.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
+                provenances.put( alg, new RuleProvenance( ruleCall.rule, ImmutableList.copyOf( ruleCall.algs ), ruleCall.id ) );
             }
         }
 

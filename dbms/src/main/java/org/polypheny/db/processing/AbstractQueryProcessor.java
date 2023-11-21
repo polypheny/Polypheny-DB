@@ -165,7 +165,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     // This map is required to allow plans with multiple physical placements of the same logical table.
     // scanId -> tableId
-    private final Map<Integer, Long> scanPerTable = new HashMap<>();
+    private final Map<Long, Long> scanPerTable = new HashMap<>();
 
 
     protected AbstractQueryProcessor( Statement statement ) {
@@ -554,7 +554,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Integer, List<Long>> accessedPartitions ) {
+    private void acquireLock( boolean isAnalyze, AlgRoot logicalRoot, Map<Long, List<Long>> accessedPartitions ) {
         // TODO @HENNLO Check if this is this is necessary to pass the partitions explicitly.
         // This currently only works for queries. Since DMLs are evaluated during routing.
         // This SHOULD be adjusted
@@ -1242,8 +1242,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         logicalRoot.alg.accept( analyzer );
 
         // Get partitions of logical information
-        Map<Integer, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
-        Map<Integer, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
+        Map<Long, Set<String>> partitionValueFilterPerScan = analyzer.getPartitionValueFilterPerScan();
+        Map<Long, List<Long>> accessedPartitions = this.getAccessedPartitionsPerScan( logicalRoot.alg, partitionValueFilterPerScan );
 
         // Build queryClass from query-name and partitions.
         String queryHash = analyzer.getQueryName() + accessedPartitions;
@@ -1277,13 +1277,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * @param aggregatedPartitionValues Mapping of Scan Ids to identified partition Values
      * @return Mapping of Scan Ids to identified partition Ids
      */
-    private Map<Integer, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Integer, Set<String>> aggregatedPartitionValues ) {
-        Map<Integer, List<Long>> accessedPartitions = new HashMap<>(); // tableId  -> partitionIds
+    private Map<Long, List<Long>> getAccessedPartitionsPerScan( AlgNode alg, Map<Long, Set<String>> aggregatedPartitionValues ) {
+        Map<Long, List<Long>> accessedPartitions = new HashMap<>(); // tableId  -> partitionIds
         if ( !(alg instanceof LogicalRelScan) ) {
             for ( int i = 0; i < alg.getInputs().size(); i++ ) {
-                Map<Integer, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
+                Map<Long, List<Long>> result = getAccessedPartitionsPerScan( alg.getInput( i ), aggregatedPartitionValues );
                 if ( !result.isEmpty() ) {
-                    for ( Map.Entry<Integer, List<Long>> elem : result.entrySet() ) {
+                    for ( Map.Entry<Long, List<Long>> elem : result.entrySet() ) {
                         accessedPartitions.merge( elem.getKey(), elem.getValue(), ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
                     }
                 }
@@ -1291,17 +1291,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             boolean fallback = false;
             if ( alg.getEntity() != null ) {
-                LogicalEntity table = alg.getEntity();
+                LogicalEntity entity = alg.getEntity();
 
-                int scanId = alg.getId();
-
-                if ( table == null ) {
+                if ( entity == null ) {
                     // todo dl: remove after RowType refactor
                     return accessedPartitions;
                 }
 
+                long scanId = entity.id;
+
                 // Get placements of this table
-                LogicalTable catalogTable = table.unwrap( LogicalTable.class );
+                LogicalTable catalogTable = entity.unwrap( LogicalTable.class );
                 PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
                 fallback = true;
                 // todo dl
@@ -1406,11 +1406,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
      * @param eventData monitoring data to be updated
      */
     private void finalizeAccessedPartitions( StatementEvent eventData ) {
-        Map<Integer, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();
+        Map<Long, List<Long>> partitionsInQueryInformation = eventData.getLogicalQueryInformation().getAccessedPartitions();
         Map<Long, Set<Long>> tempAccessedPartitions = new HashMap<>();
 
-        for ( Entry<Integer, List<Long>> entry : partitionsInQueryInformation.entrySet() ) {
-            Integer scanId = entry.getKey();
+        for ( Entry<Long, List<Long>> entry : partitionsInQueryInformation.entrySet() ) {
+            long scanId = entry.getKey();
             if ( scanPerTable.containsKey( scanId ) ) {
                 Set<Long> partitionIds = new HashSet<>( entry.getValue() );
 

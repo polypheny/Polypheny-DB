@@ -52,7 +52,7 @@ import org.polypheny.db.type.PolyTypeUtil;
  * <li>for {@code UPDATE}, all old values plus updated new values.
  * </ul>
  */
-public abstract class RelModify<E extends LogicalEntity> extends Modify<E> {
+public abstract class RelModify<E extends LogicalEntity> extends Modify<E> implements RelAlg {
 
 
     /**

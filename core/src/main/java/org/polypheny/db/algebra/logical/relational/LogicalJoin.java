@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -62,7 +63,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
  * <li>{@code net.sf.farrago.fennel.alg.FennelCartesianJoinRule} implements a LogicalJoin as a cartesian product.</li>
  * </ul>
  */
-public final class LogicalJoin extends Join {
+public final class LogicalJoin extends Join implements RelAlg {
 
     // NOTE jvs 14-Mar-2006:  Normally we don't use state like this to control rule firing, but due to the non-local nature of semijoin optimizations, it's pretty much required.
     private final boolean semiJoinDone;

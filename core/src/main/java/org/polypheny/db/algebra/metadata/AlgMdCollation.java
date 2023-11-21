@@ -366,8 +366,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
                 return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable<?> c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable<?> c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValue();
+                        final Comparable<?> c2 = o2.get( x ).getValue();
                         return AlgFieldCollation.compare( c1, c2, nullComparison );
                     }
                 };
@@ -375,8 +375,8 @@ public class AlgMdCollation implements MetadataHandler<BuiltInMetadata.Collation
                 return new Ordering<>() {
                     @Override
                     public int compare( List<RexLiteral> o1, List<RexLiteral> o2 ) {
-                        final Comparable<?> c1 = o1.get( x ).getValueAs( Comparable.class );
-                        final Comparable<?> c2 = o2.get( x ).getValueAs( Comparable.class );
+                        final Comparable<?> c1 = o1.get( x ).getValue();
+                        final Comparable<?> c2 = o2.get( x ).getValue();
                         return AlgFieldCollation.compare( c2, c1, -nullComparison );
                     }
                 };

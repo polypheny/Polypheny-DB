@@ -447,28 +447,28 @@ public class BsonUtil {
 
         switch ( finalType ) {
             case BOOLEAN:
-                return el.getValueAs( Boolean.class );
+                return el.getValue();
             case TINYINT:
-                return el.getValueAs( Byte.class );
+                return el.getValue();
             case SMALLINT:
-                return el.getValueAs( Short.class );
+                return el.getValue();
             case INTEGER:
             case DATE:
             case TIME:
-                return el.getValueAs( Integer.class );
+                return el.getValue();
             case BIGINT:
             case TIMESTAMP:
-                return el.getValueAs( Long.class );
+                return el.getValue();
             case DECIMAL:
-                return el.getValueAs( BigDecimal.class ).toString();
+                return el.getValue().toString();
             case FLOAT:
             case REAL:
-                return el.getValueAs( Float.class );
+                return el.getValue();
             case DOUBLE:
-                return el.getValueAs( Double.class );
+                return el.getValue();
             case CHAR:
             case VARCHAR:
-                return el.getValueAs( String.class );
+                return el.getValue();
             case GEOMETRY:
             case FILE:
             case IMAGE:

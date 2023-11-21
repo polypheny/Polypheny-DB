@@ -226,7 +226,7 @@ public class RexImplicationChecker {
         ImmutableList.Builder<Set<Pair<RexIndexRef, RexNode>>> usagesBuilder = ImmutableList.builder();
         for ( Map.Entry<RexIndexRef, InputRefUsage<Operator, RexNode>> entry : firstUsageFinder.usageMap.entrySet() ) {
             ImmutableSet.Builder<Pair<RexIndexRef, RexNode>> usageBuilder = ImmutableSet.builder();
-            if ( entry.getValue().usageList.size() > 0 ) {
+            if ( !entry.getValue().usageList.isEmpty() ) {
                 for ( final Pair<Operator, RexNode> pair : entry.getValue().usageList ) {
                     usageBuilder.add( Pair.of( entry.getKey(), pair.getValue() ) );
                 }

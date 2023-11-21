@@ -260,7 +260,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         assert keys.size() == call.operands.size();
         int pos = 0;
         for ( String key : keys ) {
-            doc.put( key, new BsonString( parentKey + "." + ((RexLiteral) call.operands.get( pos )).getValueAs( String.class ) ) );
+            doc.put( key, new BsonString( parentKey + "." + ((RexLiteral) call.operands.get( pos )).getValue() ) );
             pos++;
         }
 
@@ -329,7 +329,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         return subfield
                 .operands
                 .stream()
-                .map( n -> ((RexLiteral) n).getValueAs( String.class ) )
+                .map( n -> ((RexLiteral) n).getValue() )
                 .map( n -> name + "." + n )
                 .collect( Collectors.toList() );
     }
@@ -355,7 +355,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             } else if ( operand instanceof RexCall ) {
                 array.add( visitCall( implementor, (RexCall) operand, ((RexCall) operand).op.getKind(), type ) );
             } else if ( operand.getKind() == Kind.LITERAL ) {
-                array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValueAs( BsonUtil.getClassFromType( type ) ), type, bucket ) );
+                array.add( BsonUtil.getAsBson( ((RexLiteral) operand).getValue(), type, bucket ) );
             } else if ( operand.getKind() == Kind.DYNAMIC_PARAM ) {
                 array.add( new BsonDynamic( (RexDynamicParam) operand ) );
             } else {

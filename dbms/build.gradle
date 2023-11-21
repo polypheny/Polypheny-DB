@@ -90,7 +90,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources"]
+            srcDirs = ["src/main/resources", "bin/main/"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -145,6 +145,7 @@ licensee {
     allowDependency('javax.servlet', 'javax.servlet-api', '3.1.0') {
         because 'Servlet-api.jar and javax.servlet-*.jar are under the CDDL license, the original source code for this can be found at http://www.eclipse.org/jetty/downloads.php'
     }
+    allowDependency('jakarta.inject', 'jakarta.inject-api', '2.0.1') { because 'Apache 2.0 license ' }
 
     allowDependency('org.ow2.asm', 'asm', '9.4') { because 'BSD 3-Clause' }
     allowDependency('org.ow2.asm', 'asm-tree', '9.4') { because 'BSD 3-Clause' }
@@ -187,6 +188,9 @@ jar {
             include "LICENSE"
             include "NOTICE"
         })
+    }
+    from('/') {
+        include 'dbms/bin/main/version.properties'
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -308,20 +312,28 @@ def getCurrentBranch() {
     branch
 }
 
+def getCurrentHash() {
+    def hash = ""
+    def proc = "git rev-parse --short HEAD".execute()
+    proc.in.eachLine { line -> hash = line }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    hash
+}
+
 task createProperties() {
     doLast {
-        def details = getCurrentBranch();
-        System.out.println("$buildDir")
         new File("$buildDir/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = version
-            p['branch'] = details;
+            p['branch'] = getCurrentBranch()
+            p['hash'] = getCurrentHash()
             p.store w, null
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.
         copy {
             from "$buildDir/version.properties"
-            into "bin/main/"
+            into "src/main/resources"
         }
     }
 }

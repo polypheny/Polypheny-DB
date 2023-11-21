@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.index;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
@@ -227,7 +228,7 @@ public abstract class Index {
 
     public abstract Values getAsValues( final PolyXid xid, AlgBuilder builder, AlgDataType rowType, final List<PolyValue> key );
 
-    abstract Object getRaw();
+    abstract Map<?, ?> getRaw();
 
 
     interface IndexFactory {

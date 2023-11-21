@@ -355,6 +355,8 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
 
         webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
+
+        webuiServer.get( "/getAlgebraNodes", crud.catalogCrud::getAlgebraNodes );
     }
 
 
