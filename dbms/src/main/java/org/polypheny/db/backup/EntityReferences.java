@@ -19,8 +19,7 @@ package org.polypheny.db.backup;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.backup.BackupEntityType;
+import org.polypheny.db.util.Pair;
 
 /**
  * Class that contains entities and by what they are referenced
@@ -32,6 +31,8 @@ public class EntityReferences {
     private List<Long> referencerNamespaces;
     @Getter @Setter
     private List<Long> referencerTables;
+    @Getter @Setter
+    private List<Pair<Long, Long>> referencerNamespaceTablePairs;
 
 
     /**

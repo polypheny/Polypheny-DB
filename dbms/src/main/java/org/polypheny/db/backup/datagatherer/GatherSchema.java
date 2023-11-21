@@ -17,20 +17,15 @@
 package org.polypheny.db.backup.datagatherer;
 
 import com.google.common.collect.ImmutableMap;
-import io.activej.serializer.annotations.Serialize;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.backup.BupInformationObject;
+import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.catalogs.AllocationCatalog;
-import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +39,7 @@ public class GatherSchema {
     //gather the schemas from Polypheny-DB
     private final IdBuilder idBuilder = IdBuilder.getInstance();
     private Snapshot snapshot;
-    private BupInformationObject bupInformationObject;
+    private BackupInformationObject backupInformationObject;
 
     private Catalog catalog = PolyCatalog.getInstance();
 
@@ -83,9 +78,9 @@ public class GatherSchema {
     }
 
 
-    public BupInformationObject start( BupInformationObject bupInformationObject ) {
+    public BackupInformationObject start( BackupInformationObject backupInformationObject ) {
         log.debug( "gather schemas" );
-        this.bupInformationObject = bupInformationObject;
+        this.backupInformationObject = backupInformationObject;
 
         //figure out how to get the snapshot from catalog bzw. how to create a new snapshot, and take infos out of it
         getSnapshot();
@@ -93,7 +88,7 @@ public class GatherSchema {
         getDocSchema();
         getGraphSchema();
         testPrint();
-        return bupInformationObject;
+        return backupInformationObject;
     }
 
 
@@ -109,7 +104,7 @@ public class GatherSchema {
 
         //this.namespaces = ImmutableMap.copyOf( namespaces );
         this.namespaces = snapshot.getNamespaces( null );
-        this.bupInformationObject.setNamespaces( namespaces );
+        this.backupInformationObject.setNamespaces( namespaces );
 
         log.debug( "# namespaces = " + nbrNamespaces );
         log.debug( "# tables from public = " + publicTables );
@@ -134,7 +129,7 @@ public class GatherSchema {
 
         List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL ).collect( Collectors.toList() );
         this.relNamespaces = relNamespaces;
-        this.bupInformationObject.setRelNamespaces( relNamespaces );
+        this.backupInformationObject.setRelNamespaces( relNamespaces );
 
         // go through the list of namespaces and get the id of each namespace, map the tables to the namespace id
         //TODO(FF)?: views - list is just empty, but creates it nontheless, same for constraints, keys
@@ -202,22 +197,22 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.tables = ImmutableMap.copyOf( tables );
-        this.bupInformationObject.setTables( this.tables );
+        this.backupInformationObject.setTables( this.tables );
         this.views = ImmutableMap.copyOf( views );
-        this.bupInformationObject.setViews( this.views );
+        this.backupInformationObject.setViews( this.views );
         this.columns = ImmutableMap.copyOf( columns );
-        this.bupInformationObject.setColumns( this.columns );
+        this.backupInformationObject.setColumns( this.columns );
         this.constraints = ImmutableMap.copyOf( constraints );
-        this.bupInformationObject.setConstraints( this.constraints );
+        this.backupInformationObject.setConstraints( this.constraints );
         //this.keysPerTable = ImmutableMap.copyOf( keysPerTable );
         this.primaryKeysPerTable = ImmutableMap.copyOf( primaryKeysPerTable );
-        this.bupInformationObject.setPrimaryKeysPerTable( this.primaryKeysPerTable );
+        this.backupInformationObject.setPrimaryKeysPerTable( this.primaryKeysPerTable );
         this.foreignKeysPerTable = ImmutableMap.copyOf( foreignKeysPerTable );
-        this.bupInformationObject.setForeignKeysPerTable( this.foreignKeysPerTable );
+        this.backupInformationObject.setForeignKeysPerTable( this.foreignKeysPerTable );
         this.logicalIndexes = ImmutableMap.copyOf( logicalIndex );
-        this.bupInformationObject.setLogicalIndexes( this.logicalIndexes );
+        this.backupInformationObject.setLogicalIndexes( this.logicalIndexes );
 
-        this.bupInformationObject.setCollectedRelSchema( true );
+        this.backupInformationObject.setCollectedRelSchema( true );
 
     }
 
@@ -229,7 +224,7 @@ public class GatherSchema {
 
         List<LogicalNamespace> graphNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.GRAPH ).collect( Collectors.toList() );
         this.graphNamespaces = graphNamespaces;
-        this.bupInformationObject.setGraphNamespaces( graphNamespaces );
+        this.backupInformationObject.setGraphNamespaces( graphNamespaces );
 
         List<LogicalGraph> graphsFromNamespace = snapshot.graph().getGraphs( null );
 
@@ -246,8 +241,8 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.graphs = ImmutableMap.copyOf( nsGraphs );
-        this.bupInformationObject.setGraphs( this.graphs );
-        this.bupInformationObject.setCollectedGraphSchema( true );
+        this.backupInformationObject.setGraphs( this.graphs );
+        this.backupInformationObject.setCollectedGraphSchema( true );
 
     }
 
@@ -260,7 +255,7 @@ public class GatherSchema {
         Map<Long, List<LogicalCollection>> nsCollections = new HashMap<>();
         List<LogicalNamespace> docNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() );
         this.docNamespaces = docNamespaces;
-        this.bupInformationObject.setDocNamespaces( docNamespaces );
+        this.backupInformationObject.setDocNamespaces( docNamespaces );
 
         for ( LogicalNamespace namespace : docNamespaces ) {
             Long namespaceId = namespace.getId();
@@ -272,8 +267,8 @@ public class GatherSchema {
 
         //safes the gathered information in the class variables
         this.collections = ImmutableMap.copyOf( nsCollections );
-        this.bupInformationObject.setCollections( this.collections );
-        this.bupInformationObject.setCollectedDocSchema( true );
+        this.backupInformationObject.setCollections( this.collections );
+        this.backupInformationObject.setCollectedDocSchema( true );
     }
 
     //TODO (FF): either create getters (and setters?) or a "whole" getter class... to pass information to BackupManager

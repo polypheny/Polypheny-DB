@@ -19,19 +19,16 @@ package org.polypheny.db.backup;
 import lombok.Getter;
 import lombok.Setter;
 
-public class BupSuperEntity<E> {
+@Getter @Setter
+public class BackupEntityWrapper<E> {
 
-    @Getter
-    @Setter
     private E entityObject;
 
-    @Getter
-    @Setter
     private Boolean toBeInserted = true;
 
     //default, original name (change if rename needed (options))
-    @Getter
-    @Setter
     private String nameForQuery;
+
+    private EntityReferences entityReferences;
 
 }

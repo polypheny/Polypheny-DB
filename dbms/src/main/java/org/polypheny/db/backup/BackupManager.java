@@ -16,13 +16,22 @@
 
 package org.polypheny.db.backup;
 
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.information.*;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Pair;
 
 
 @Slf4j
@@ -32,7 +41,7 @@ public class BackupManager {
     private static BackupManager INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
-    private BupInformationObject bupInformationObject;
+    private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
     //private final Logger logger;
 
@@ -92,19 +101,81 @@ public class BackupManager {
 
 
     public void startDataGathering() {
-        this.bupInformationObject = new BupInformationObject();
+        this.backupInformationObject = new BackupInformationObject();
         //GatherEntries gatherEntries = new GatherEntries();
         GatherSchema gatherSchema = new GatherSchema();
 
         //gatherEntries.start();
-        this.bupInformationObject = gatherSchema.start( bupInformationObject );
+        this.backupInformationObject = gatherSchema.start( backupInformationObject );
+        wrapEntities();
+    }
+
+
+    private void wrapEntities() {
+        // 1. check for dependencies
+        // 2. wrap namespaces, tables, views, etc
+
+        ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable = backupInformationObject.getForeignKeysPerTable();
+        Map<Long, List<Long>> namespaceDependencies = new HashMap<>();  // key: namespaceId, value: referencedKeySchemaId
+        Map<Long, List<Long>> tableDependencies = new HashMap<>();  // key: tableId, value: referencedKeyTableId
+        Map<Long, List<Pair<Long, Long>>> namespaceTableDependendencies = new HashMap<>();  // key: namespaceId, value: <namespaceId, referencedKeyTableId>
+        Map<Long, List<Long>> viewDependencies = new HashMap<>();
+
+        //go through all foreign keys, and check if the namespaceId equals the referencedKeySchemaId, and if not, add it to the namespaceDependencies map, with the namespaceId as key and the referencedKeySchemaId as value
+        for ( Map.Entry<Long, List<LogicalForeignKey>> entry : foreignKeysPerTable.entrySet() ) {
+            for ( LogicalForeignKey logicalForeignKey : entry.getValue() ) {
+                if ( logicalForeignKey.namespaceId != logicalForeignKey.referencedKeySchemaId ) {
+
+                    // Check for namespace dependencies
+                    if ( namespaceDependencies.containsKey( logicalForeignKey.namespaceId ) ) {
+                        List<Long> temp = namespaceDependencies.get( logicalForeignKey.namespaceId );
+                        //only add it if it isn't already in the list??
+                        temp.add( logicalForeignKey.referencedKeySchemaId );
+                        namespaceDependencies.put( logicalForeignKey.namespaceId, temp );
+                    } else {
+                        List<Long> temp = new ArrayList<>();
+                        temp.add( logicalForeignKey.referencedKeySchemaId );
+                        namespaceDependencies.put( logicalForeignKey.namespaceId, temp );
+                    }
+
+                    // Check for table dependencies
+                    if ( tableDependencies.containsKey( logicalForeignKey.tableId ) ) {
+                        List<Long> temp = tableDependencies.get( logicalForeignKey.tableId );
+                        temp.add( logicalForeignKey.referencedKeyTableId );
+                        tableDependencies.put( logicalForeignKey.tableId, temp );
+
+                        List<Pair<Long, Long>> temp2 = namespaceTableDependendencies.get( logicalForeignKey.namespaceId );
+                        temp2.add( new Pair<>( logicalForeignKey.referencedKeySchemaId, logicalForeignKey.referencedKeyTableId ) );
+                        namespaceTableDependendencies.put( logicalForeignKey.namespaceId, temp2 );
+                    } else {
+                        List<Long> temp = new ArrayList<>();
+                        temp.add( logicalForeignKey.referencedKeyTableId );
+                        tableDependencies.put( logicalForeignKey.tableId, temp );
+
+                        List<Pair<Long, Long>> temp2 = new ArrayList<>();
+                        temp2.add( new Pair<>( logicalForeignKey.referencedKeySchemaId, logicalForeignKey.referencedKeyTableId ) );
+                        namespaceTableDependendencies.put( logicalForeignKey.namespaceId, temp2 );
+                    }
+
+
+                }
+            }
+        }
+
+        // wrap all namespaces with BackupEntityWrapper
+        ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> wrappedNamespaces = backupInformationObject.wrapNamespaces( backupInformationObject.getNamespaces(), namespaceDependencies, tableDependencies, namespaceTableDependendencies);
+        backupInformationObject.setWrappedNamespaces( wrappedNamespaces );
+
+        // wrap all tables with BackupEntityWrapper
+        ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> wrappedTables = backupInformationObject.tempWrapLogicalTables( backupInformationObject.getTables(), tableDependencies, namespaceTableDependendencies, true);
+        backupInformationObject.setWrappedTables( wrappedTables );
     }
 
 
     private void startInserting() {
         InsertSchema insertSchema = new InsertSchema( transactionManager );
 
-        insertSchema.start( bupInformationObject );
+        insertSchema.start( backupInformationObject );
         log.info( "inserting done" );
     }
 
