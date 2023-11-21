@@ -65,7 +65,7 @@ public class AlgNodeModel {
 
 
     public AlgNodeModel( String name ) {
-        this.name = name;
+        this.name = name.replace( "Logical", "" ).replace( "Rel", "" );
     }
 
 

@@ -23,14 +23,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
@@ -165,7 +168,17 @@ public class IdentifierNamespace extends AbstractNamespace {
                 return new EntityNamespace( validator, validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).get( 0 ) );
             }
         } else if ( ns.size() == 2 ) {
-            return new EntityNamespace( validator, validator.snapshot.rel().getTable( ns.get( 0 ), ns.get( 1 ) ).orElseThrow() );
+            LogicalNamespace namespace = validator.snapshot.getNamespace( ns.get( 0 ) ).orElseThrow();
+            LogicalEntity entity = null;
+            if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
+                entity = validator.snapshot.rel().getTable( namespace.id, ns.get( 1 ) ).orElse( null );
+            } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
+                entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
+            } else if ( namespace.namespaceType == NamespaceType.GRAPH ) {
+                throw new NotImplementedException();
+            }
+
+            return new EntityNamespace( validator, entity );
         }
         throw new GenericRuntimeException( "Table not found" );
     }

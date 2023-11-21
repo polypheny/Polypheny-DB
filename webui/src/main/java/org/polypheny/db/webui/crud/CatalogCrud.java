@@ -222,14 +222,16 @@ public class CatalogCrud {
     public void getAlgebraNodes( Context context ) {
         Reflections reflections = new Reflections( "org.polypheny" );
         Map<String, List<AlgNodeModel>> nodes = Map.of(
-                "common", new ArrayList<>(),
-                "relational", new ArrayList<>(),
-                "document", new ArrayList<>(),
-                "graph", new ArrayList<>() );
+                //"common", new ArrayList<>(),
+                "relational", new ArrayList<>()
+                //"document", new ArrayList<>(),
+                /*"graph", new ArrayList<>()*/ );
         reflections.getSubTypesOf( AlgNode.class ).stream()
                 .filter( c -> c.getSimpleName().startsWith( "Logical" ) ).forEach( c -> {
                     AlgNodeModel model = AlgNodeModel.from( c );
-                    nodes.get( model.getModel() ).add( model );
+                    if ( nodes.containsKey( model.getModel() ) ) {
+                        nodes.get( model.getModel() ).add( model );
+                    }
                 } );
 
         context.json( nodes );
