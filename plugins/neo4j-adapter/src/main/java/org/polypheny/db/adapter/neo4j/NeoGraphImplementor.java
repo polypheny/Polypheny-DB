@@ -154,7 +154,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      */
     private List<NeoStatement> getFields( AlgDataType rowType ) {
         List<NeoStatement> statements = new ArrayList<>();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             statements.add( getField( field ) );
         }
 
@@ -177,7 +177,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             case PATH:
                 PathType type = (PathType) field.getType();
                 List<ElementStatement> path = new ArrayList<>();
-                for ( AlgDataTypeField pathPart : type.getFieldList() ) {
+                for ( AlgDataTypeField pathPart : type.getFields() ) {
                     path.add( (ElementStatement) getField( pathPart ) );
                 }
                 return path_( path );

@@ -445,10 +445,10 @@ public abstract class OperandTypes {
                     boolean validationError = false;
                     if ( !type.isStruct() ) {
                         validationError = true;
-                    } else if ( type.getFieldList().size() != 1 ) {
+                    } else if ( type.getFields().size() != 1 ) {
                         validationError = true;
                     } else {
-                        PolyType typeName = type.getFieldList().get( 0 ).getType().getPolyType();
+                        PolyType typeName = type.getFields().get( 0 ).getType().getPolyType();
                         if ( typeName != PolyType.MULTISET && typeName != PolyType.ARRAY ) {
                             validationError = true;
                         }
@@ -518,7 +518,7 @@ public abstract class OperandTypes {
                     boolean validationError = false;
                     if ( !type.isStruct() ) {
                         validationError = true;
-                    } else if ( type.getFieldList().size() != 1 ) {
+                    } else if ( type.getFields().size() != 1 ) {
                         validationError = true;
                     }
 
@@ -578,9 +578,9 @@ public abstract class OperandTypes {
             assert 0 == iFormalOperand;
             AlgDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
             boolean valid = false;
-            if ( type.isStruct() && type.getFieldList().size() == 2 ) {
-                final AlgDataType t0 = type.getFieldList().get( 0 ).getType();
-                final AlgDataType t1 = type.getFieldList().get( 1 ).getType();
+            if ( type.isStruct() && type.getFields().size() == 2 ) {
+                final AlgDataType t0 = type.getFields().get( 0 ).getType();
+                final AlgDataType t1 = type.getFields().get( 1 ).getType();
                 if ( PolyTypeUtil.isDatetime( t0 ) ) {
                     if ( PolyTypeUtil.isDatetime( t1 ) ) {
                         // t0 must be comparable with t1; (DATE, TIMESTAMP) is not valid

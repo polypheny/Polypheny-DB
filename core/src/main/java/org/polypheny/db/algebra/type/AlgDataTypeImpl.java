@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
  */
 public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily {
 
-    protected final List<AlgDataTypeField> fieldList;
+    protected final List<AlgDataTypeField> fields;
     private final List<Long> ids;
     protected String digest;
 
@@ -63,15 +63,15 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     /**
      * Creates a AlgDataTypeImpl.
      *
-     * @param fieldList List of fields
+     * @param fields List of fields
      */
-    protected AlgDataTypeImpl( List<? extends AlgDataTypeField> fieldList ) {
-        if ( fieldList != null ) {
+    protected AlgDataTypeImpl( List<? extends AlgDataTypeField> fields ) {
+        if ( fields != null ) {
             // Create a defensive copy of the list.
-            this.fieldList = ImmutableList.copyOf( fieldList );
-            this.ids = fieldList.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
+            this.fields = ImmutableList.copyOf( fields );
+            this.ids = fields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() );
         } else {
-            this.fieldList = null;
+            this.fields = null;
             this.ids = null;
         }
     }
@@ -90,7 +90,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
     @Override
     public AlgDataTypeField getField( String fieldName, boolean caseSensitive, boolean elideRecord ) {
-        for ( AlgDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fields ) {
             if ( Util.matches( caseSensitive, field.getName(), fieldName ) ) {
                 return field;
             }
@@ -111,15 +111,15 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
             }
         }
         // Extra field
-        if ( !fieldList.isEmpty() ) {
-            final AlgDataTypeField lastField = Iterables.getLast( fieldList );
+        if ( !fields.isEmpty() ) {
+            final AlgDataTypeField lastField = Iterables.getLast( fields );
             if ( lastField.getName().equals( "_extra" ) ) {
                 return new AlgDataTypeFieldImpl( lastField.getId(), fieldName, -1, lastField.getType() );
             }
         }
 
         // a dynamic * field will match any field name.
-        for ( AlgDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fields ) {
             if ( field.isDynamicStar() ) {
                 // the requested field could be in the unresolved star
                 return field;
@@ -135,7 +135,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
             slots.add( new Slot() );
         }
         final Slot slot = slots.get( depth );
-        for ( AlgDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFields() ) {
             if ( Util.matches( caseSensitive, field.getName(), fieldName ) ) {
                 slot.count++;
                 slot.field = field;
@@ -143,7 +143,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
         }
         // No point looking to depth + 1 if there is a hit at depth.
         if ( slot.count == 0 ) {
-            for ( AlgDataTypeField field : type.getFieldList() ) {
+            for ( AlgDataTypeField field : type.getFields() ) {
                 if ( field.getType().isStruct() ) {
                     getFieldRecurse( slots, field.getType(), depth + 1, fieldName, caseSensitive );
                 }
@@ -153,15 +153,15 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
 
     @Override
-    public List<AlgDataTypeField> getFieldList() {
+    public List<AlgDataTypeField> getFields() {
         assert isStruct();
-        return fieldList;
+        return fields;
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        return fieldList.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        return fields.stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 
@@ -174,7 +174,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     public List<String> getPhysicalFieldNames() {
         // TODO MV: Is there a more efficient way for doing this?
         List<String> l = new ArrayList<>();
-        fieldList.forEach( f -> l.add( f.getPhysicalName() ) );
+        fields.forEach( f -> l.add( f.getPhysicalName() ) );
         return l;
     }
 
@@ -182,7 +182,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
     @Override
     public int getFieldCount() {
         assert isStruct() : this;
-        return fieldList.size();
+        return fields.size();
     }
 
 
@@ -201,7 +201,7 @@ public abstract class AlgDataTypeImpl implements AlgDataType, AlgDataTypeFamily 
 
     @Override
     public boolean isStruct() {
-        return fieldList != null;
+        return fields != null;
     }
 
 

@@ -61,7 +61,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 Integer index = subMap.get( names.get( 1 ) );
                 if ( index != null ) {
-                    ret.add( new Pair<>( rowType.getFieldList().get( index ), names.subList( 2, names.size() ) ) );
+                    ret.add( new Pair<>( rowType.getFields().get( index ), names.subList( 2, names.size() ) ) );
                 }
             }
         }
@@ -70,7 +70,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
         final List<String> remainder = names.subList( 1, names.size() );
         Integer index = nameMap.get( columnName );
         if ( index != null ) {
-            ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
+            ret.add( new Pair<>( rowType.getFields().get( index ), remainder ) );
             return ret;
         }
 
@@ -80,7 +80,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             if ( subMap != null ) {
                 index = subMap.get( columnName );
                 if ( index != null ) {
-                    ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
+                    ret.add( new Pair<>( rowType.getFields().get( index ), remainder ) );
                     return ret;
                 }
             }
@@ -91,7 +91,7 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
             }
             index = entry.getValue().get( columnName );
             if ( index != null ) {
-                ret.add( new Pair<>( rowType.getFieldList().get( index ), remainder ) );
+                ret.add( new Pair<>( rowType.getFields().get( index ), remainder ) );
             }
         }
 
@@ -111,8 +111,8 @@ final class CompoundNameColumnResolver implements MockCatalogReader.ColumnResolv
     private static AlgDataType createStructType( final AlgDataType rowType, AlgDataTypeFactory typeFactory, final List<Map.Entry<String, Integer>> entries ) {
         return typeFactory.createStructType(
                 StructKind.PEEK_FIELDS,
-                rowType.getFieldList().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                entries.stream().map( e -> rowType.getFieldList().get( e.getValue() ).getType() ).collect( Collectors.toList() ),
+                rowType.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                entries.stream().map( e -> rowType.getFields().get( e.getValue() ).getType() ).collect( Collectors.toList() ),
                 entries.stream().map( Entry::getKey ).collect( Collectors.toList() ) );
     }
 

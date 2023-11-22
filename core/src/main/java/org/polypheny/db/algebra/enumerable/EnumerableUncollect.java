@@ -87,7 +87,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableAlg {
         final List<Integer> fieldCounts = new ArrayList<>();
         final List<FlatProductInputType> inputTypes = new ArrayList<>();
 
-        for ( AlgDataTypeField field : child.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : child.getRowType().getFields() ) {
             final AlgDataType type = field.getType();
             if ( type instanceof MapPolyType ) {
                 fieldCounts.add( 2 );

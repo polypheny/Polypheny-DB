@@ -184,7 +184,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
     private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
-        final AlgDataType algFieldType = physType.getRowType().getFieldList().get( i ).getType();
+        final AlgDataType algFieldType = physType.getRowType().getFields().get( i ).getType();
         switch ( algFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
@@ -223,7 +223,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
 
     private boolean hasCollectionField( AlgDataType rowType ) {
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             switch ( field.getType().getPolyType() ) {
                 case ARRAY:
                 case MULTISET:

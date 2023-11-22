@@ -188,7 +188,7 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
         // Deduce which fields the table is sorted on.
         int i = -1;
-        for ( AlgDataTypeField field : table.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : table.getRowType().getFields() ) {
             ++i;
             final Monotonicity monotonicity = Util.getMonotonicity( table, field.getName() );
             if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {

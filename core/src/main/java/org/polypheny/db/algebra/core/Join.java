@@ -141,8 +141,8 @@ public abstract class Join extends BiAlg {
                     new RexChecker(
                             getCluster().getTypeFactory().builder()
                                     .addAll( getSystemFieldList() )
-                                    .addAll( getLeft().getRowType().getFieldList() )
-                                    .addAll( getRight().getRowType().getFieldList() )
+                                    .addAll( getLeft().getRowType().getFields() )
+                                    .addAll( getRight().getRowType().getFields() )
                                     .build(),
                             context, litmus );
             condition.accept( checker );

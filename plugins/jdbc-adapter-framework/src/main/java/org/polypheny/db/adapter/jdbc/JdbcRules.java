@@ -603,7 +603,7 @@ public class JdbcRules {
 
 
         private static boolean isStringComparableArrayType( Filter filter ) {
-            for ( AlgDataTypeField dataTypeField : filter.getRowType().getFieldList() ) {
+            for ( AlgDataTypeField dataTypeField : filter.getRowType().getFields() ) {
                 if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
                     switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
                         case BOOLEAN:

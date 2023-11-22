@@ -391,7 +391,7 @@ public class AlgBuilder {
 
 
     private static ImmutableList<RelField> toFields( AlgNode node ) {
-        return ImmutableList.copyOf( node.getRowType().getFieldList().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
+        return ImmutableList.copyOf( node.getRowType().getFields().stream().map( f -> new RelField( ImmutableSet.of(), f ) ).collect( Collectors.toList() ) );
     }
 
 
@@ -580,7 +580,7 @@ public class AlgBuilder {
         if ( fieldOrdinal < 0 || fieldOrdinal > rowType.getFieldCount() ) {
             throw new IllegalArgumentException( "field ordinal [" + fieldOrdinal + "] out of range; input fields are: " + rowType.getFieldNames() );
         }
-        final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
+        final AlgDataTypeField field = rowType.getFields().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
         final RexIndexRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
         if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
@@ -1459,7 +1459,7 @@ public class AlgBuilder {
         RexBuilder rexBuilder = getRexBuilder();
         Operator op = OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_NODE_MATCH );
         AlgDataType nodeType = getTypeFactory().createPolyType( PolyType.NODE );
-        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFieldList().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), PolyList.copyOf( labels ), null ), nodeType, PolyType.NODE ) ) );
+        return (RexCall) rexBuilder.makeCall( nodeType, op, List.of( rexBuilder.makeInputRef( peek().getRowType().getFields().get( 0 ).getType(), 0 ), new RexLiteral( new PolyNode( new PolyDictionary(), PolyList.copyOf( labels ), null ), nodeType, PolyType.NODE ) ) );
     }
 
 
@@ -1597,7 +1597,7 @@ public class AlgBuilder {
             // Carefully build a list of fields, so that table aliases from the input can be seen for fields that are based on a RexInputRef.
             final Frame frame1 = stack.pop();
             final List<RelField> relFields = new ArrayList<>();
-            for ( AlgDataTypeField f : project.getInput().getRowType().getFieldList() ) {
+            for ( AlgDataTypeField f : project.getInput().getRowType().getFields() ) {
                 relFields.add( new RelField( ImmutableSet.of(), f ) );
             }
             for ( Pair<RexNode, RelField> pair : Pair.zip( project.getProjects(), frame1.structured ) ) {
@@ -1766,7 +1766,7 @@ public class AlgBuilder {
             // Special treatment for VALUES. Re-build it rather than add a project.
             final Values v = (Values) build();
             final AlgDataTypeFactory.Builder b = getTypeFactory().builder();
-            for ( Pair<String, AlgDataTypeField> p : Pair.zip( newFieldNames, v.getRowType().getFieldList() ) ) {
+            for ( Pair<String, AlgDataTypeField> p : Pair.zip( newFieldNames, v.getRowType().getFields() ) ) {
                 b.add( null, p.left, null, p.right.getType() );
             }
             return values( v.tuples, b.build() );
@@ -1930,7 +1930,7 @@ public class AlgBuilder {
 
         // build field list
         final ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        final List<AlgDataTypeField> aggregateFields = aggregate.getRowType().getFieldList();
+        final List<AlgDataTypeField> aggregateFields = aggregate.getRowType().getFields();
         int i = 0;
         // first, group fields
         for ( Integer groupField : groupSet.asList() ) {
@@ -2555,8 +2555,8 @@ public class AlgBuilder {
 
         RexNode nodeCondition = builder.makeCall(
                 OperatorRegistry.get( OperatorName.EQUALS ),
-                builder.makeInputRef( nodesScan.getRowType().getFieldList().get( 0 ).getType(), 0 ),
-                builder.makeInputRef( propertiesScan.getRowType().getFieldList().get( 0 ).getType(), nodesScan.getRowType().getFieldList().size() ) );
+                builder.makeInputRef( nodesScan.getRowType().getFields().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( propertiesScan.getRowType().getFields().get( 0 ).getType(), nodesScan.getRowType().getFields().size() ) );
 
         return new LogicalJoin( nodesScan.getCluster(), out, nodesScan, propertiesScan, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
     }
@@ -2628,7 +2628,7 @@ public class AlgBuilder {
             }
 
             final AlgDataType inputRowType = peek().getRowType();
-            for ( AlgDataTypeField fs : inputRowType.getFieldList() ) {
+            for ( AlgDataTypeField fs : inputRowType.getFields() ) {
                 if ( !typeBuilder.nameExists( fs.getName() ) ) {
                     typeBuilder.add( fs );
                 }
@@ -3017,7 +3017,7 @@ public class AlgBuilder {
                 return;
             }
             ImmutableList.Builder<RelField> builder = ImmutableList.builder();
-            for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
+            for ( AlgDataTypeField field : alg.getRowType().getFields() ) {
                 builder.add( new RelField( aliases, field ) );
             }
             this.alg = alg;

@@ -88,7 +88,7 @@ public class RelOptUtilTest {
     private static final AlgDataType EMP_ROW = EMP_SCAN.getRowType();
     private static final AlgDataType DEPT_ROW = DEPT_SCAN.getRowType();
 
-    private static final List<AlgDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFieldList(), DEPT_ROW.getFieldList() ) );
+    private static final List<AlgDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFields(), DEPT_ROW.getFields() ) );
 
 
     public RelOptUtilTest() {

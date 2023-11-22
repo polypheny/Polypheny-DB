@@ -125,7 +125,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 final Step path2 = path.plus( rowType, field0.getIndex(), field0.getName(), StructKind.FULLY_QUALIFIED );
                 resolveInNamespace( ns2, nullable, names.subList( 1, names.size() ), nameMatcher, path2, resolved );
             } else {
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     switch ( field.getType().getStructKind() ) {
                         case PEEK_FIELDS:
                         case PEEK_FIELDS_DEFAULT:
@@ -149,7 +149,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             return;
         }
 
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             colNames.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
         }
     }
@@ -374,7 +374,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         if ( fromPath.stepCount() > 1 ) {
             assert fromRowType != null;
             for ( Step p : fromPath.steps() ) {
-                fromRowType = fromRowType.getFieldList().get( p.i ).getType();
+                fromRowType = fromRowType.getFields().get( p.i ).getType();
             }
             ++i;
         }
@@ -450,7 +450,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             if ( step.i < 0 ) {
                 throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
             }
-            final AlgDataTypeField field0 = step.rowType.getFieldList().get( step.i );
+            final AlgDataTypeField field0 = step.rowType.getFields().get( step.i );
             final String fieldName = field0.getName();
             switch ( step.kind ) {
                 case PEEK_FIELDS:
@@ -521,7 +521,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     private boolean hasAmbiguousUnresolvedStar( AlgDataType rowType, AlgDataTypeField field, String columnName ) {
         if ( field.isDynamicStar() && !DynamicRecordType.isDynamicStarColName( columnName ) ) {
             int count = 0;
-            for ( AlgDataTypeField possibleStar : rowType.getFieldList() ) {
+            for ( AlgDataTypeField possibleStar : rowType.getFields() ) {
                 if ( possibleStar.isDynamicStar() ) {
                     if ( ++count > 1 ) {
                         return true;

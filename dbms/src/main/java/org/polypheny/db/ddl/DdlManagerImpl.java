@@ -1802,7 +1802,7 @@ public class DdlManagerImpl extends DdlManager {
         List<FieldInformation> columns = new ArrayList<>();
 
         int position = 1;
-        for ( AlgDataTypeField alg : fieldList.getFieldList() ) {
+        for ( AlgDataTypeField alg : fieldList.getFields() ) {
             AlgDataType type = alg.getType();
             if ( alg.getType().getPolyType() == PolyType.ARRAY ) {
                 type = alg.getType().getComponentType();
@@ -1874,7 +1874,7 @@ public class DdlManagerImpl extends DdlManager {
         List<String> logicalColumnNames = columns.stream().map( c -> c.name ).collect( Collectors.toList() );
         List<Long> underlyingColumns = new ArrayList<>();
         for ( int i = 0; i < columns.size(); i++ ) {
-            for ( AlgDataTypeField algDataTypeField : fieldList.getFieldList() ) {
+            for ( AlgDataTypeField algDataTypeField : fieldList.getFields() ) {
                 String name = logicalColumnNames.get( i );
                 if ( algDataTypeField.getName().equals( name ) ) {
                     underlyingColumns.add( columns.get( i ).id );

@@ -52,7 +52,7 @@ public class CountingFactory extends NullInitializerExpressionFactory {
 
     @Override
     public ColumnStrategy generationStrategy( LogicalEntity table, int iColumn ) {
-        final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
+        final AlgDataTypeField field = table.getRowType().getFields().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {
             return ColumnStrategy.DEFAULT;
         }
@@ -63,7 +63,7 @@ public class CountingFactory extends NullInitializerExpressionFactory {
     @Override
     public RexNode newColumnDefaultValue( LogicalEntity table, int iColumn, InitializerContext context ) {
         THREAD_CALL_COUNT.get().incrementAndGet();
-        final AlgDataTypeField field = table.getRowType().getFieldList().get( iColumn );
+        final AlgDataTypeField field = table.getRowType().getFields().get( iColumn );
         if ( defaultColumns.contains( field.getName() ) ) {
             final RexBuilder rexBuilder = context.getRexBuilder();
             return rexBuilder.makeExactLiteral( BigDecimal.ONE );

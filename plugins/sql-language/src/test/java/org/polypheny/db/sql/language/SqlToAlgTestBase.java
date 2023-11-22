@@ -299,7 +299,7 @@ public abstract class SqlToAlgTestBase {
 
             // Deduce which fields the table is sorted on.
             int i = -1;
-            for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : rowType.getFields() ) {
                 ++i;
                 final Monotonicity monotonicity = ValidatorTable.getMonotonicity( table, field.getName() );
                 if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {

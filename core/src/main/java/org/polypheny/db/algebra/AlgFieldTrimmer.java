@@ -218,7 +218,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
             return trimResult;
         }
         final AlgDataType rowType = input.getRowType();
-        List<AlgDataTypeField> fieldList = rowType.getFieldList();
+        List<AlgDataTypeField> fieldList = rowType.getFields();
         final List<RexNode> exprList = new ArrayList<>();
         final List<String> nameList = rowType.getFieldNames();
         RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
@@ -275,7 +275,7 @@ public class AlgFieldTrimmer implements ReflectiveVisitor {
                                 final int new_ = mapping.getTarget( old );
                                 final AlgDataTypeFactory.Builder typeBuilder = algBuilder.getTypeFactory().builder();
                                 for ( int target : Util.range( mapping.getTargetCount() ) ) {
-                                    typeBuilder.add( v.getType().getFieldList().get( mapping.getSource( target ) ) );
+                                    typeBuilder.add( v.getType().getFields().get( mapping.getSource( target ) ) );
                                 }
                                 final RexNode newV = rexBuilder.makeCorrel( typeBuilder.build(), v.id );
                                 if ( old != new_ ) {

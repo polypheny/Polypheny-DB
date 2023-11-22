@@ -2588,7 +2588,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;
@@ -2630,7 +2630,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = PlacementType.AUTOMATIC;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;
@@ -2679,7 +2679,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getRowType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField col : polyImplementation.getRowType().getFields() ) {
             header[counter++] = UiColumnDefinition.builder()
                     .name( col.getName() )
                     .dataType( col.getType()
@@ -3038,7 +3038,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         List<UiColumnDefinition> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : implementation.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
             String columnName = metaData.getName();
 
             String filter = "";

@@ -85,7 +85,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
         final LogicalProject project = call.alg( 0 );
         final LogicalWindow window = call.alg( 1 );
         final AlgOptCluster cluster = window.getCluster();
-        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getRowType().getFieldList();
+        final List<AlgDataTypeField> rowTypeWindowInput = window.getInput().getRowType().getFields();
         final int windowInputColumn = rowTypeWindowInput.size();
 
         // Record the window input columns which are actually referred either in the LogicalProject above LogicalWindow or LogicalWindow itself
@@ -145,7 +145,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
 
         int aggCallIndex = windowInputColumn;
         final AlgDataTypeFactory.Builder outputBuilder = cluster.getTypeFactory().builder();
-        outputBuilder.addAll( projectBelowWindow.getRowType().getFieldList() );
+        outputBuilder.addAll( projectBelowWindow.getRowType().getFields() );
         for ( Group group : window.groups ) {
             final ImmutableBitSet.Builder keys = ImmutableBitSet.builder();
             final List<AlgFieldCollation> orderKeys = new ArrayList<>();
@@ -166,7 +166,7 @@ public class ProjectWindowTransposeRule extends AlgOptRule {
             for ( RexWinAggCall rexWinAggCall : group.aggCalls ) {
                 aggCalls.add( (RexWinAggCall) rexWinAggCall.accept( indexAdjustment ) );
 
-                final AlgDataTypeField algDataTypeField = window.getRowType().getFieldList().get( aggCallIndex );
+                final AlgDataTypeField algDataTypeField = window.getRowType().getFields().get( aggCallIndex );
                 outputBuilder.add( algDataTypeField );
                 ++aggCallIndex;
             }

@@ -200,7 +200,7 @@ public abstract class Project extends SingleAlg {
             pw.item( "fields", rowType.getFieldNames() );
             pw.item( "exprs", exps );
         } else {
-            for ( Ord<AlgDataTypeField> field : Ord.zip( rowType.getFieldList() ) ) {
+            for ( Ord<AlgDataTypeField> field : Ord.zip( rowType.getFields() ) ) {
                 String fieldName = field.e.getName();
                 if ( fieldName == null ) {
                     fieldName = "field#" + field.i;

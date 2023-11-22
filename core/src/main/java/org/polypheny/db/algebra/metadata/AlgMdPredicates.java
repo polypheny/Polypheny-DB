@@ -246,7 +246,7 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
         if ( columnsMapped.intersects( rCols ) ) {
             final List<RexNode> list = new ArrayList<>();
             for ( int c : columnsMapped.intersect( rCols ) ) {
-                if ( input.getRowType().getFieldList().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
+                if ( input.getRowType().getFields().get( c ).getType().isNullable() && Strong.isNull( r, ImmutableBitSet.of( c ) ) ) {
                     list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( input, c ) ) );
                 }
             }
@@ -475,8 +475,8 @@ public class AlgMdPredicates implements MetadataHandler<BuiltInMetadata.Predicat
             this.joinRel = joinRel;
             this.isSemiJoin = isSemiJoin;
             this.simplify = simplify;
-            nFieldsLeft = joinRel.getLeft().getRowType().getFieldList().size();
-            nFieldsRight = joinRel.getRight().getRowType().getFieldList().size();
+            nFieldsLeft = joinRel.getLeft().getRowType().getFields().size();
+            nFieldsRight = joinRel.getRight().getRowType().getFields().size();
             nSysFields = joinRel.getSystemFieldList().size();
             leftFieldsBitSet = ImmutableBitSet.range( nSysFields, nSysFields + nFieldsLeft );
             rightFieldsBitSet = ImmutableBitSet.range( nSysFields + nFieldsLeft, nSysFields + nFieldsLeft + nFieldsRight );

@@ -43,14 +43,14 @@ public class JavaRecordType extends AlgRecordType {
     public boolean equals( Object obj ) {
         return this == obj
                 || obj instanceof JavaRecordType
-                && fieldList.equals( ((JavaRecordType) obj).fieldList )
+                && fields.equals( ((JavaRecordType) obj).fields )
                 && clazz == ((JavaRecordType) obj).clazz;
     }
 
 
     @Override
     public int hashCode() {
-        return Objects.hash( fieldList, clazz );
+        return Objects.hash( fields, clazz );
     }
 
 }

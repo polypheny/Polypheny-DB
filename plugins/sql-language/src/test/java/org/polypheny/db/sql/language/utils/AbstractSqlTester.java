@@ -161,7 +161,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
     @Override
     public AlgDataType getColumnType( String sql ) {
         AlgDataType rowType = getResultType( sql );
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
         assertEquals( "expected query to return 1 field", 1, fields.size() );
         return fields.get( 0 ).getType();
     }
@@ -496,7 +496,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
         SqlNode n = parseAndValidate( validator, query );
         final AlgDataType rowType = validator.getValidatedNodeType( n );
         final SqlValidatorNamespace selectNamespace = validator.getSqlNamespace( n );
-        final String field0 = rowType.getFieldList().get( 0 ).getName();
+        final String field0 = rowType.getFields().get( 0 ).getName();
         final Monotonicity monotonicity = selectNamespace.getMonotonicity( field0 );
         assertThat( monotonicity, equalTo( expectedMonotonicity ) );
     }

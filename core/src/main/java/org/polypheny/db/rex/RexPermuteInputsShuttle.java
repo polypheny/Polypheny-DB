@@ -84,7 +84,7 @@ public class RexPermuteInputsShuttle extends RexShuttle {
     private static ImmutableList<AlgDataTypeField> fields( AlgNode[] inputs ) {
         final ImmutableList.Builder<AlgDataTypeField> fields = ImmutableList.builder();
         for ( AlgNode input : inputs ) {
-            fields.addAll( input.getRowType().getFieldList() );
+            fields.addAll( input.getRowType().getFields() );
         }
         return fields.build();
     }

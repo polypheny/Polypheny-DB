@@ -63,7 +63,7 @@ public class MongoRowType extends AlgRecordType {
 
 
     public static AlgRecordType fromRecordType( AlgRecordType rowType, MongoEntity mongoEntity ) {
-        return new MongoRowType( rowType.getStructKind(), rowType.getFieldList(), mongoEntity );
+        return new MongoRowType( rowType.getStructKind(), rowType.getFields(), mongoEntity );
     }
 
 

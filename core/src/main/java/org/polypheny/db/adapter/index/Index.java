@@ -261,7 +261,7 @@ public abstract class Index {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
-            final AlgDataType type = rowType.getFieldList().get( i ).getType();
+            final AlgDataType type = rowType.getFields().get( i ).getType();
             final Pair<PolyValue, PolyType> converted = RexLiteral.convertType( tuple.get( i ), type );
             row.add( new RexLiteral( converted.left, type, converted.right ) );
         }

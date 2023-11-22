@@ -84,7 +84,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFieldList() );
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFields() );
     }
 
 

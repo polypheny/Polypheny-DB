@@ -293,7 +293,7 @@ public class AlgJson {
     private Object toJson( AlgDataType node ) {
         if ( node.isStruct() ) {
             final List<Object> list = jsonBuilder.list();
-            for ( AlgDataTypeField field : node.getFieldList() ) {
+            for ( AlgDataTypeField field : node.getFields() ) {
                 list.add( toJson( field ) );
             }
             return list;

@@ -190,7 +190,7 @@ public class RexExecutorImpl implements RexExecutor {
             Expression recFromCtxCasted = RexToLixTranslator.convert( recFromCtx, Object[].class );
             IndexExpression recordAccess = Expressions.arrayIndex( recFromCtxCasted, Expressions.constant( index ) );
             if ( storageType == null ) {
-                final AlgDataType fieldType = rowType.getFieldList().get( index ).getType();
+                final AlgDataType fieldType = rowType.getFields().get( index ).getType();
                 storageType = ((JavaTypeFactory) typeFactory).getJavaClass( fieldType );
             }
             return RexToLixTranslator.convert( recordAccess, storageType );

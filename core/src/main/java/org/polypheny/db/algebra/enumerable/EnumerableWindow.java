@@ -217,7 +217,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
 
             // The output from this stage is the input plus the aggregate functions.
             final Builder typeBuilder = typeFactory.builder();
-            typeBuilder.addAll( inputPhysType.getRowType().getFieldList() );
+            typeBuilder.addAll( inputPhysType.getRowType().getFields() );
             for ( AggImpState agg : aggs ) {
                 typeBuilder.add( null, agg.call.name, null, agg.call.type );
             }
@@ -856,7 +856,7 @@ public class EnumerableWindow extends Window implements EnumerableAlg {
         assert fieldCollations.size() == 1 : "When using range window specification, ORDER BY should have exactly one expression. Actual collation is " + group.collation();
         // isRange
         int orderKey = fieldCollations.get( 0 ).getFieldIndex();
-        AlgDataType keyType = physType.getRowType().getFieldList().get( orderKey ).getType();
+        AlgDataType keyType = physType.getRowType().getFields().get( orderKey ).getType();
         Type desiredKeyType = translator.typeFactory.getJavaClass( keyType );
         if ( bound.getOffset() == null ) {
             desiredKeyType = Primitive.box( desiredKeyType );

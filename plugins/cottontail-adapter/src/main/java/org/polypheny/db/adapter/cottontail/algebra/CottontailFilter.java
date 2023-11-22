@@ -120,10 +120,10 @@ public class CottontailFilter extends Filter implements CottontailAlg {
 
         public Translator( CottontailImplementContext context, AlgDataType rowType ) {
             this.rowType = rowType;
-            this.fieldNames = rowType.getFieldList().stream()
+            this.fieldNames = rowType.getFields().stream()
                     .map( AlgDataTypeField::getPhysicalName )
                     .collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream()
+            this.columnTypes = rowType.getFields().stream()
                     .map( AlgDataTypeField::getType )
                     .map( AlgDataType::getPolyType )
                     .collect( Collectors.toList() );

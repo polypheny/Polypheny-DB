@@ -241,7 +241,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                     new AggAddContextImpl( builder2, accumulator ) {
                         @Override
                         public List<RexNode> rexArguments() {
-                            List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFieldList();
+                            List<AlgDataTypeField> inputTypes = inputPhysType.getRowType().getFields();
                             List<RexNode> args = new ArrayList<>();
                             for ( int index : agg.call.getArgList() ) {
                                 args.add( RexIndexRef.of( index, inputTypes ) );

@@ -71,7 +71,7 @@ public class PhysTypeImpl implements PhysType {
         this.rowType = rowType;
         this.javaRowClass = javaRowClass;
         this.format = format;
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             fieldClasses.add( EnumUtils.javaRowClass( typeFactory, field.getType() ) );
         }
     }
@@ -121,12 +121,12 @@ public class PhysTypeImpl implements PhysType {
     public PhysType project( List<Integer> integers, boolean indicator, JavaRowFormat format ) {
         final Builder builder = typeFactory.builder();
         for ( int index : integers ) {
-            builder.add( rowType.getFieldList().get( index ) );
+            builder.add( rowType.getFields().get( index ) );
         }
         if ( indicator ) {
             final AlgDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
-                builder.add( null, "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
+                builder.add( null, "i$" + rowType.getFields().get( index ).getName(), null, booleanType );
             }
         }
         AlgDataType projectedRowType = builder.build();
@@ -441,14 +441,14 @@ public class PhysTypeImpl implements PhysType {
 
     @Override
     public PhysType component( int fieldOrdinal ) {
-        final AlgDataTypeField field = rowType.getFieldList().get( fieldOrdinal );
+        final AlgDataTypeField field = rowType.getFields().get( fieldOrdinal );
         return PhysTypeImpl.of( typeFactory, toStruct( field.getType().getComponentType() ), format, false );
     }
 
 
     @Override
     public PhysType field( int ordinal ) {
-        final AlgDataTypeField field = rowType.getFieldList().get( ordinal );
+        final AlgDataTypeField field = rowType.getFields().get( ordinal );
         final AlgDataType type = field.getType();
         return PhysTypeImpl.of( typeFactory, toStruct( type ), format, false );
     }
@@ -494,7 +494,7 @@ public class PhysTypeImpl implements PhysType {
 
     @Override
     public boolean fieldNullable( int field ) {
-        return rowType.getFieldList().get( field ).getType().isNullable();
+        return rowType.getFields().get( field ).getType().isNullable();
     }
 
 

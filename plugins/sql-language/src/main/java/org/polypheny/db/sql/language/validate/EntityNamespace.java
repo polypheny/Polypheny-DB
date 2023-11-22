@@ -67,7 +67,7 @@ class EntityNamespace extends AbstractNamespace {
             return table.getRowType();
         }
         final Builder builder = validator.getTypeFactory().builder();
-        builder.addAll( table.getRowType().getFieldList() );
+        builder.addAll( table.getRowType().getFields() );
         builder.addAll( extendedFields );
         return builder.build();
     }
@@ -125,7 +125,7 @@ class EntityNamespace extends AbstractNamespace {
      */
     private void checkExtendedColumnTypes( SqlNodeList extendList ) {
         final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
-        final List<AlgDataTypeField> baseFields = getBaseRowType().getFieldList();
+        final List<AlgDataTypeField> baseFields = getBaseRowType().getFields();
         final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseFields );
 
         for ( final AlgDataTypeField extendedField : extendedFields ) {

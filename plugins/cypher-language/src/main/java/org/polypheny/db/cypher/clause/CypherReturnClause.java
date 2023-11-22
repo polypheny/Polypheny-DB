@@ -121,7 +121,7 @@ public class CypherReturnClause extends CypherClause {
 
         List<Integer> groupIndexes = node
                 .getRowType()
-                .getFieldList()
+                .getFields()
                 .stream()
                 .filter( f -> !aggNames.contains( f.getName() ) )
                 .map( AlgDataTypeField::getIndex )

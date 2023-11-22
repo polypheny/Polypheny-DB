@@ -1382,7 +1382,7 @@ public class DbmsMeta implements ProtobufMeta {
             @Override
             public Enumerator<Object> enumerator() {
                 List<Function1<PolyValue, Object>> transform = new ArrayList<>();
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     transform.add( PolyValue.wrapNullableIfNecessary( PolyValue.getPolyToJava( field.getType(), true ), field.getType().isNullable() ) );
                 }
                 boolean isSingle = rowType.getFieldCount() == 1;
@@ -1745,7 +1745,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     public List<AvaticaParameter> deriveAvaticaParameters( AlgDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( AlgDataTypeField field : parameterRowType.getFieldList() ) {
+        for ( AlgDataTypeField field : parameterRowType.getFields() ) {
             AlgDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(

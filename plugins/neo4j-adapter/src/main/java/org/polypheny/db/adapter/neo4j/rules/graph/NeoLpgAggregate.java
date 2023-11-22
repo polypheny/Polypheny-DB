@@ -72,7 +72,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
         if ( implementor.getLast() instanceof LpgProject ) {
             OperatorStatement last = implementor.removeLast();
             List<String> finalRow = new ArrayList<>();
-            for ( AlgDataTypeField ignored : getRowType().getFieldList() ) {
+            for ( AlgDataTypeField ignored : getRowType().getFields() ) {
                 finalRow.add( null );
             }
 

@@ -57,7 +57,7 @@ public class CottontailValues extends Values implements CottontailAlg {
         final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
         List<Integer> tupleIndexes = new ArrayList<>();
         int i = 0;
-        for ( AlgDataTypeField field : this.rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : this.rowType.getFields() ) {
             try {
                 physicalColumnNames.add( new Pair<>( context.cottontailTable.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
                 tupleIndexes.add( i );
@@ -74,7 +74,7 @@ public class CottontailValues extends Values implements CottontailAlg {
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             List<RexLiteral> values;
-            if ( this.rowType.getFieldList().size() > physicalColumnNames.size() ) {
+            if ( this.rowType.getFields().size() > physicalColumnNames.size() ) {
                 values = new ArrayList<>();
                 for ( int idx : tupleIndexes ) {
                     values.add( tuple.get( idx ) );

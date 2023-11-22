@@ -186,7 +186,7 @@ public final class LogicalWindow extends Window implements RelAlg {
         // Figure out the type of the inputs to the output program.
         // They are: the inputs to this alg, followed by the outputs of each window.
         final List<Window.RexWinAggCall> flattenedAggCallList = new ArrayList<>();
-        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getRowType().getFieldList() );
+        final List<AlgDataTypeField> fieldList = new ArrayList<>( child.getRowType().getFields() );
         final int offset = fieldList.size();
 
         // Use better field names for agg calls that are projected.
@@ -236,7 +236,7 @@ public final class LogicalWindow extends Window implements RelAlg {
                                 "over",
                                 over.getType(),
                                 "intermed",
-                                intermediateRowType.getFieldList().get( index ).getType(),
+                                intermediateRowType.getFields().get( index ).getType(),
                                 Litmus.THROW );
                         return new RexIndexRef( index, over.getType() );
                     }

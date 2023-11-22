@@ -100,7 +100,7 @@ public class RexIndexRef extends RexSlot {
      * Creates a reference to a given field in a row type.
      */
     public static RexIndexRef of( int index, AlgDataType rowType ) {
-        return of( index, rowType.getFieldList() );
+        return of( index, rowType.getFields() );
     }
 
 

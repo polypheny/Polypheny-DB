@@ -68,7 +68,7 @@ public abstract class InferTypes {
                 for ( int i = 0; i < operandTypes.length; ++i ) {
                     operandTypes[i] =
                             returnType.isStruct()
-                                    ? returnType.getFieldList().get( i ).getType()
+                                    ? returnType.getFields().get( i ).getType()
                                     : returnType;
                 }
             };

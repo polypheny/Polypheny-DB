@@ -39,7 +39,7 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
     @Override
     public ColumnStrategy generationStrategy( LogicalEntity table, int iColumn ) {
-        return table.getRowType().getFieldList().get( iColumn ).getType().isNullable()
+        return table.getRowType().getFields().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
                 : ColumnStrategy.NOT_NULLABLE;
     }

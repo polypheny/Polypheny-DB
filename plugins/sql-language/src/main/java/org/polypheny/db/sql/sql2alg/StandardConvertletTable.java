@@ -384,7 +384,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         final AlgDataType originalType = cx.getValidator().getValidatedNodeType( call );
         RexRangeRef rr = cx.getSubQueryExpr( call );
         assert rr != null;
-        AlgDataType msType = rr.getType().getFieldList().get( 0 ).getType();
+        AlgDataType msType = rr.getType().getFields().get( 0 ).getType();
         RexNode expr = cx.getRexBuilder().makeInputRef( msType, rr.getOffset() );
         assert msType.getComponentType().isStruct();
         if ( !originalType.getComponentType().isStruct() ) {
@@ -411,7 +411,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         final AlgDataType originalType = cx.getValidator().getValidatedNodeType( call );
         RexRangeRef rr = cx.getSubQueryExpr( call );
         assert rr != null;
-        AlgDataType msType = rr.getType().getFieldList().get( 0 ).getType();
+        AlgDataType msType = rr.getType().getFields().get( 0 ).getType();
         RexNode expr = cx.getRexBuilder().makeInputRef( msType, rr.getOffset() );
         assert msType.getComponentType().isStruct();
         if ( !originalType.getComponentType().isStruct() ) {
@@ -474,7 +474,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
             if ( argComponentType.isStruct() && !componentType.isStruct() ) {
                 AlgDataType tt =
                         typeFactory.builder()
-                                .add( null, argComponentType.getFieldList().get( 0 ).getName(), null, componentType )
+                                .add( null, argComponentType.getFields().get( 0 ).getName(), null, componentType )
                                 .build();
                 tt = typeFactory.createTypeWithNullability( tt, componentType.isNullable() );
                 boolean isn = type.isNullable();

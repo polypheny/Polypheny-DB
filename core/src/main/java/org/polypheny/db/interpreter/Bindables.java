@@ -222,7 +222,7 @@ public class Bindables {
         @Override
         public AlgDataType deriveRowType() {
             final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-            final List<AlgDataTypeField> fieldList = entity.getRowType().getFieldList();
+            final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
             for ( int project : projects ) {
                 builder.add( fieldList.get( project ) );
             }

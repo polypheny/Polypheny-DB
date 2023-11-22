@@ -107,7 +107,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
                 break;
         }
         sb.append( "(" );
-        for ( Ord<AlgDataTypeField> ord : Ord.zip( fieldList ) ) {
+        for ( Ord<AlgDataTypeField> ord : Ord.zip( fields ) ) {
             if ( ord.i > 0 ) {
                 sb.append( ", " );
             }
@@ -131,7 +131,7 @@ public class AlgRecordType extends AlgDataTypeImpl implements Serializable {
      * method converts it back to a RelRecordType during deserialization.
      */
     private Object writeReplace() {
-        return new SerializableAlgRecordType( fieldList );
+        return new SerializableAlgRecordType( fields );
     }
 
 

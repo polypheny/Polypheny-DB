@@ -718,7 +718,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             for ( final List<PolyValue> row : rows ) {
                                 final List<RexLiteral> record = new ArrayList<>();
                                 for ( int i = 0; i < row.size(); ++i ) {
-                                    AlgDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
+                                    AlgDataType fieldType = originalProject.getRowType().getFields().get( i ).getType();
                                     Pair<PolyValue, PolyType> converted = RexLiteral.convertType( row.get( i ), fieldType );
                                     record.add( new RexLiteral(
                                             converted.left,
@@ -875,7 +875,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             return super.visit( project );
                         }
                         final RexIndexRef rir = (RexIndexRef) expr;
-                        final AlgDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
+                        final AlgDataTypeField field = scan.getRowType().getFields().get( rir.getIndex() );
                         final String column = field.getName();
                         columns.add( column );
                         ctypes.add( field.getType() );
@@ -1045,7 +1045,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private Pair<AlgRoot, AlgDataType> parameterize( AlgRoot routedRoot, AlgDataType parameterRowType ) {
         AlgNode routed = routedRoot.alg;
         List<AlgDataType> parameterRowTypeList = new ArrayList<>();
-        parameterRowType.getFieldList().forEach( algDataTypeField -> parameterRowTypeList.add( algDataTypeField.getType() ) );
+        parameterRowType.getFields().forEach( algDataTypeField -> parameterRowTypeList.add( algDataTypeField.getType() ) );
 
         // Parameterize
         QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList, routed.getTraitSet().contains( ModelTrait.GRAPH ) );

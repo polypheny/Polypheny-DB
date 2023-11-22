@@ -146,7 +146,7 @@ public class MongoRules {
                 new AbstractList<>() {
                     @Override
                     public String get( int index ) {
-                        final String name = MongoRules.maybeFix( rowType.getFieldList().get( index ).getName() );
+                        final String name = MongoRules.maybeFix( rowType.getFields().get( index ).getName() );
                         return name.startsWith( "$" ) ? "_" + name.substring( 2 ) : name;
                     }
 

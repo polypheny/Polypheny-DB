@@ -235,7 +235,7 @@ public class Cql2RelConverter {
         AtomicReference<RexNode> secondToLastRexNode = new AtomicReference<>();
 
         AlgDataType filtersRowType = baseNode.getRowType();
-        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
         Map<String, AlgDataTypeField> filterMap = new HashMap<>();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
 

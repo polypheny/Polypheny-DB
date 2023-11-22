@@ -231,7 +231,7 @@ public class LanguageCrud {
         }
 
         List<UiColumnDefinition> header = new ArrayList<>();
-        for ( AlgDataTypeField field : implementation.rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : implementation.rowType.getFields() ) {
             String columnName = field.getName();
 
             String filter = getFilter( field, request.filter );
@@ -287,7 +287,7 @@ public class LanguageCrud {
 
         return GraphResult.builder()
                 .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                .header( implementation.rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .query( query )
                 .language( language )
                 .namespaceType( implementation.getNamespaceType() )
@@ -308,7 +308,7 @@ public class LanguageCrud {
         }
 
         return DocResult.builder()
-                .header( implementation.rowType.getFieldList().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                .header( implementation.rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                 .query( query )
                 .language( language )

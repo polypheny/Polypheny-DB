@@ -88,18 +88,18 @@ public class SemiJoinJoinTransposeRule extends AlgOptRule {
         // X is the left child of the join below the semi-join
         // Y is the right child of the join below the semi-join
         // Z is the right child of the semi-join
-        int nFieldsX = join.getLeft().getRowType().getFieldList().size();
-        int nFieldsY = join.getRight().getRowType().getFieldList().size();
-        int nFieldsZ = semiJoin.getRight().getRowType().getFieldList().size();
+        int nFieldsX = join.getLeft().getRowType().getFields().size();
+        int nFieldsY = join.getRight().getRowType().getFields().size();
+        int nFieldsZ = semiJoin.getRight().getRowType().getFields().size();
         int nTotalFields = nFieldsX + nFieldsY + nFieldsZ;
         List<AlgDataTypeField> fields = new ArrayList<>();
 
         // create a list of fields for the full join result; note that we can't simply use the fields from the semi-join because the row-type of a semi-join only includes the left hand side fields
-        List<AlgDataTypeField> joinFields = semiJoin.getRowType().getFieldList();
+        List<AlgDataTypeField> joinFields = semiJoin.getRowType().getFields();
         for ( int i = 0; i < (nFieldsX + nFieldsY); i++ ) {
             fields.add( joinFields.get( i ) );
         }
-        joinFields = semiJoin.getRight().getRowType().getFieldList();
+        joinFields = semiJoin.getRight().getRowType().getFields();
         for ( int i = 0; i < nFieldsZ; i++ ) {
             fields.add( joinFields.get( i ) );
         }

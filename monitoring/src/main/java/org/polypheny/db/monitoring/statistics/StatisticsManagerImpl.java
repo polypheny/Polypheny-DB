@@ -503,7 +503,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                     throw new GenericRuntimeException( "Unknown aggregate is used in Statistic Manager." );
                 }
 
-                AlgDataType relDataType = logicalProject.getRowType().getFieldList().get( 0 ).getType();
+                AlgDataType relDataType = logicalProject.getRowType().getFields().get( 0 ).getType();
                 AlgDataType dataType;
                 if ( relDataType.getPolyType() == PolyType.DECIMAL ) {
                     dataType = cluster.getTypeFactory().createTypeWithNullability(

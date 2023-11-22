@@ -216,7 +216,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      * Generates accessor methods used to access data contained in {@link Tuple}s returned by Cottontail DB.
      */
     private void generateGet( AlgDataType rowType, BlockBuilder blockBuilder, ParameterExpression result_, int i, Expression target ) {
-        final AlgDataType fieldType = rowType.getFieldList().get( i ).getType();
+        final AlgDataType fieldType = rowType.getFields().get( i ).getType();
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`

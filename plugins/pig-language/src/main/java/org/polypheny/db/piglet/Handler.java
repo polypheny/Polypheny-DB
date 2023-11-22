@@ -109,7 +109,7 @@ public class Handler {
                 input = map.get( foreachNested.source.value );
                 builder.push( input );
                 System.out.println( input.getRowType() );
-                for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField field : input.getRowType().getFields() ) {
                     switch ( field.getType().getPolyType() ) {
                         case ARRAY:
                             System.out.println( field );
@@ -226,7 +226,7 @@ public class Handler {
 
     private ImmutableList<RexLiteral> tuple( List<PigNode> pigNodeList, AlgDataType rowType ) {
         final ImmutableList.Builder<RexLiteral> listBuilder = ImmutableList.builder();
-        for ( Pair<PigNode, AlgDataTypeField> pair : Pair.zip( pigNodeList, rowType.getFieldList() ) ) {
+        for ( Pair<PigNode, AlgDataTypeField> pair : Pair.zip( pigNodeList, rowType.getFields() ) ) {
             final PigNode pigNode = pair.left;
             final AlgDataType type = pair.right.getType();
             listBuilder.add( item( pigNode, type ) );

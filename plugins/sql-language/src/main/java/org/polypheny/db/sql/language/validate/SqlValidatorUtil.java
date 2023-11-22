@@ -179,7 +179,7 @@ public class SqlValidatorUtil {
      * @param targetRowType The target to overlay on the source to create the bit set.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, AlgDataType targetRowType ) {
-        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFieldList(), targetRowType );
+        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFields(), targetRowType );
         return getOrdinalBitSet( sourceRowType, indexToField );
     }
 
@@ -191,7 +191,7 @@ public class SqlValidatorUtil {
      * @param indexToField The map of ordinals to target fields.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, Map<Integer, AlgDataTypeField> indexToField ) {
-        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFieldList(), AlgDataTypeField::getIndex ) );
+        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFields(), AlgDataTypeField::getIndex ) );
         ImmutableBitSet target = ImmutableBitSet.of( indexToField.keySet() );
         return source.intersect( target );
     }

@@ -220,7 +220,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         // Build a list of monotonic expressions.
         final ImmutableList.Builder<Pair<SqlNode, Monotonicity>> builder = ImmutableList.builder();
-        List<AlgDataTypeField> fields = rowType.getFieldList();
+        List<AlgDataTypeField> fields = rowType.getFields();
         for ( AlgDataTypeField field : fields ) {
             final String fieldName = field.getName();
             final Monotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );

@@ -99,7 +99,7 @@ public class EnumUtils {
 
     public static Class<?> javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
         if ( type.isStruct() && type.getFieldCount() == 1 && !PolyType.GRAPH_TYPES.contains( type.getPolyType() ) ) {
-            type = type.getFieldList().get( 0 ).getType();
+            type = type.getFields().get( 0 ).getType();
         }
         final Type clazz = typeFactory.getJavaClass( type );
         return clazz instanceof Class ? (Class<?>) clazz : PolyValue[].class;
@@ -123,7 +123,7 @@ public class EnumUtils {
 
 
     static List<AlgDataType> fieldRowTypes( final AlgDataType inputRowType, final List<? extends RexNode> extraInputs, final List<Integer> argList ) {
-        final List<AlgDataTypeField> inputFields = inputRowType.getFieldList();
+        final List<AlgDataTypeField> inputFields = inputRowType.getFields();
         return new AbstractList<>() {
             @Override
             public AlgDataType get( int index ) {
@@ -438,8 +438,8 @@ public class EnumUtils {
         final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaRowType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
-                        .addAll( left.getRowType().getFieldList() )
-                        .addAll( right.getRowType().getFieldList() )
+                        .addAll( left.getRowType().getFields() )
+                        .addAll( right.getRowType().getFields() )
                         .build(),
                 rexBuilder );
         program.addCondition( condition );

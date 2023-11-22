@@ -166,7 +166,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
         private List<PolyType> getComponentType() {
-            return rowType.getFieldList().stream().map( t -> {
+            return rowType.getFields().stream().map( t -> {
                 if ( t.getType().getComponentType() != null ) {
                     return t.getType().getComponentType().getPolyType();
                 }
@@ -176,12 +176,12 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
         private List<PolyType> getTypes() {
-            return rowType.getFieldList().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
+            return rowType.getFields().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
         }
 
 
         private String buildAllQuery() {
-            return rowType.getFieldList().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
+            return rowType.getFields().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
         }
 
 

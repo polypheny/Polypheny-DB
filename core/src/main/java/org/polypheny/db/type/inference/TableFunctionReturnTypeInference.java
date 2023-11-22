@@ -62,7 +62,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
         AlgDataType unexpandedOutputType = protoType.apply( opBinding.getTypeFactory() );
         List<AlgDataType> expandedOutputTypes = new ArrayList<>();
         List<String> expandedFieldNames = new ArrayList<>();
-        for ( AlgDataTypeField field : unexpandedOutputType.getFieldList() ) {
+        for ( AlgDataTypeField field : unexpandedOutputType.getFields() ) {
             AlgDataType fieldType = field.getType();
             String fieldName = field.getName();
             if ( fieldType.getPolyType() != PolyType.CURSOR ) {
@@ -117,7 +117,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 for ( String columnName : columnNames ) {
                     iInputColumn = -1;
                     AlgDataTypeField cursorField = null;
-                    for ( AlgDataTypeField cField : cursorType.getFieldList() ) {
+                    for ( AlgDataTypeField cField : cursorType.getFields() ) {
                         ++iInputColumn;
                         if ( cField.getName().equals( columnName ) ) {
                             cursorField = cField;
@@ -128,7 +128,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 }
             } else {
                 iInputColumn = -1;
-                for ( AlgDataTypeField cursorField : cursorType.getFieldList() ) {
+                for ( AlgDataTypeField cursorField : cursorType.getFields() ) {
                     ++iInputColumn;
                     addOutputColumn( expandedFieldNames, expandedOutputTypes, iInputColumn, iCursor, opBinding, cursorField );
                 }

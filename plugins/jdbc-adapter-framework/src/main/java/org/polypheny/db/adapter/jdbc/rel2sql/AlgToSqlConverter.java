@@ -418,7 +418,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
         if ( stack.size() != 1 && builder.select.getSqlSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
-            for ( AlgDataTypeField field : e.getRowType().getFieldList() ) {
+            for ( AlgDataTypeField field : e.getRowType().getFields() ) {
                 addSelect( selectList, builder.context.field( field.getIndex() ), e.getRowType() );
             }
             builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
@@ -635,9 +635,9 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements Reflec
     @Override
     public void addSelect( List<SqlNode> selectList, SqlNode node, AlgDataType rowType ) {
         //String name = rowType.getFieldNames().get( selectList.size() );
-        String name = rowType.getFieldList().get( selectList.size() ).getPhysicalName();
+        String name = rowType.getFields().get( selectList.size() ).getPhysicalName();
         if ( name == null ) {
-            name = rowType.getFieldList().get( selectList.size() ).getName();
+            name = rowType.getFields().get( selectList.size() ).getName();
         }
         String alias = SqlValidatorUtil.getAlias( node, -1 );
         final String lowerName = name.toLowerCase( Locale.ROOT );

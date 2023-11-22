@@ -95,14 +95,14 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     @Override
-    public List<AlgDataTypeField> getFieldList() {
+    public List<AlgDataTypeField> getFields() {
         return fixedFields;
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        return getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        return getFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 
@@ -114,7 +114,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     @Override
     public int getFieldCount() {
-        return getFieldList().size();
+        return getFields().size();
     }
 
 
@@ -123,7 +123,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
         // everything we ask a document for is there
         int index = getFieldNames().indexOf( fieldName );
         if ( index >= 0 ) {
-            return getFieldList().get( index );
+            return getFields().get( index );
         }
         AlgDataTypeFieldImpl added = new AlgDataTypeFieldImpl( -1L, fieldName, getFieldCount(), new DocumentType() );
         fixedFields.add( added );

@@ -405,7 +405,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
                     final List<ColumnMetaData> columns = new ArrayList<>();
-                    for ( AlgDataTypeField field : type.getFieldList() ) {
+                    for ( AlgDataTypeField field : type.getFields() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );

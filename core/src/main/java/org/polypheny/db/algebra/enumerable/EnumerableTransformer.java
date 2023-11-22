@@ -341,7 +341,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
     private static void attachDocOnRelational( Result impl, List<Expression> expressions, ParameterExpression target ) {
         boolean hasData = false;
-        for ( AlgDataTypeField field : impl.physType.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : impl.physType.getRowType().getFields() ) {
             IndexExpression indexField = Expressions.arrayIndex( target, Expressions.constant( field.getIndex() ) );
             UnaryExpression element = Expressions.convert_( indexField, PolyBinary.class );
             Expression el = Expressions.call( RefactorFunctions.class, "toDocument", element );
@@ -380,7 +380,7 @@ public class EnumerableTransformer extends Transformer implements EnumerableAlg 
 
         ParameterExpression target = Expressions.parameter( Object.class );
 
-        for ( AlgDataTypeField field : getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : getRowType().getFields() ) {
 
             Expression raw;
             Expression element = Expressions.convert_( Expressions.arrayIndex( Expressions.convert_( target, new ArrayType( PolyValue.class ) ), Expressions.constant( 0 ) ), PolyDocument.class );

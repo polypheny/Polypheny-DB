@@ -110,7 +110,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
             return null;
         }
         double d = 0d;
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         for ( Pair<Double, AlgDataTypeField> p : Pair.zip( averageColumnSizes, fields ) ) {
             if ( p.left == null ) {
                 d += averageFieldValueSize( p.right );
@@ -158,7 +158,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( Values alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( int i = 0; i < fields.size(); i++ ) {
             AlgDataTypeField field = fields.get( i );
@@ -179,7 +179,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
 
 
     public List<Double> averageColumnSizes( RelScan alg, AlgMetadataQuery mq ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         final ImmutableList.Builder<Double> list = ImmutableList.builder();
         for ( AlgDataTypeField field : fields ) {
             list.add( averageTypeValueSize( field.getType() ) );
@@ -341,7 +341,7 @@ public class AlgMdSize implements MetadataHandler<BuiltInMetadata.Size> {
                 return Math.min( (double) type.getPrecision() * BYTES_PER_CHARACTER, 100d );
             case ROW:
                 double average = 0.0;
-                for ( AlgDataTypeField field : type.getFieldList() ) {
+                for ( AlgDataTypeField field : type.getFields() ) {
                     average += averageTypeValueSize( field.getType() );
                 }
                 return average;

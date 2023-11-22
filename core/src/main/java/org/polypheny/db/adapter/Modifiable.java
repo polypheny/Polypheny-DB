@@ -78,7 +78,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
@@ -101,7 +101,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -150,7 +150,7 @@ public interface Modifiable extends Scannable {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : provider.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : provider.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyInsert( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -363,7 +363,7 @@ public interface Modifiable extends Scannable {
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
         builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
-        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFieldList().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
+        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
 
     static Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {

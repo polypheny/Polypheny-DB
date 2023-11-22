@@ -137,7 +137,7 @@ public class Uncollect extends SingleAlg {
     public static AlgDataType deriveUncollectRowType( AlgNode alg, boolean withOrdinality ) {
         AlgDataType inputType = alg.getRowType();
         assert inputType.isStruct() : inputType + " is not a struct";
-        final List<AlgDataTypeField> fields = inputType.getFieldList();
+        final List<AlgDataTypeField> fields = inputType.getFields();
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         final AlgDataTypeFactory.Builder builder = typeFactory.builder();
 
@@ -157,7 +157,7 @@ public class Uncollect extends SingleAlg {
                 AlgDataType ret = field.getType().getComponentType();
                 assert null != ret;
                 if ( ret.isStruct() ) {
-                    builder.addAll( ret.getFieldList() );
+                    builder.addAll( ret.getFields() );
                 } else {
                     // Element type is not a record. It may be a scalar type, say "INTEGER". Wrap it in a struct type.
                     builder.add( null, CoreUtil.deriveAliasFromOrdinal( field.getIndex() ), null, ret );

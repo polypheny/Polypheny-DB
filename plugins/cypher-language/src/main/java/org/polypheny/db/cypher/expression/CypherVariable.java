@@ -61,12 +61,12 @@ public class CypherVariable extends CypherExpression {
             // search r  -> RowType(r:Edge)
             return Pair.of(
                     PolyString.of( name ),
-                    context.rexBuilder.makeInputRef( node.getRowType().getFieldList().get( index ).getType(), index ) );
+                    context.rexBuilder.makeInputRef( node.getRowType().getFields().get( index ).getType(), index ) );
         }
 
-        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : node.getRowType().getFields() ) {
             if ( field.getType() instanceof PathType ) {
-                for ( AlgDataTypeField pathField : field.getType().getFieldList() ) {
+                for ( AlgDataTypeField pathField : field.getType().getFields() ) {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))
                         RexIndexRef pathRef = context.rexBuilder.makeInputRef( field.getType(), field.getIndex() );

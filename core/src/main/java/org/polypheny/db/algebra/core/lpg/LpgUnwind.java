@@ -60,10 +60,10 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     private static AlgNode adjustInputIfNecessary( AlgNode input, int index ) {
-        if ( input.getRowType().getFieldList().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
+        if ( input.getRowType().getFields().get( index ).getType().getPolyType() == PolyType.ARRAY ) {
             return input;
         }
-        AlgDataTypeField field = input.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = input.getRowType().getFields().get( index );
         RexNode ref = input.getCluster().getRexBuilder().makeInputRef( field.getType(), field.getIndex() );
         // we wrap the field in a to-list operation, which wraps single values as list, leaves lists and replaces null with an empty list
         AlgDataType arrayType = input.getCluster().getTypeFactory().createArrayType( ref.getType(), -1 );
@@ -84,7 +84,7 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
     @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
-        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getRowType().getFieldList().get( index ).getType().getComponentType() ) );
+        fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getRowType().getFields().get( index ).getType().getComponentType() ) );
         return new AlgRecordType( fields );
     }
 

@@ -102,7 +102,7 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
 
     public Set<AlgColumnOrigin> getColumnOrigins( Join alg, AlgMetadataQuery mq, int iOutputColumn ) {
-        int nLeftColumns = alg.getLeft().getRowType().getFieldList().size();
+        int nLeftColumns = alg.getLeft().getRowType().getFields().size();
         Set<AlgColumnOrigin> set;
         boolean derived = false;
         if ( iOutputColumn < nLeftColumns ) {

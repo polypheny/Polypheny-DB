@@ -568,7 +568,7 @@ public interface AlgDataTypeFactory {
         public AlgDataType buildDynamic() {
             final AlgDataType dynamicType = new DynamicRecordTypeImpl( typeFactory );
             final AlgDataType type = build();
-            dynamicType.getFieldList().addAll( type.getFieldList() );
+            dynamicType.getFields().addAll( type.getFields() );
             return dynamicType;
         }
 

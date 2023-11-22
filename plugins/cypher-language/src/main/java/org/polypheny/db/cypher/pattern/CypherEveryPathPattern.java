@@ -130,7 +130,7 @@ public class CypherEveryPathPattern extends CypherPattern {
         }
         RexNode path = getPathFilter( context );
 
-        String name = path.getType().getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.joining( "-", "$", "$" ) );
+        String name = path.getType().getFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.joining( "-", "$", "$" ) );
 
         return Pair.of( PolyString.of( name ), path );
     }

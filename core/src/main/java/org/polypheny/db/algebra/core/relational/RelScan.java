@@ -129,7 +129,7 @@ public abstract class RelScan<E extends LogicalEntity> extends Scan<E> implement
         final List<RexNode> exprList = new ArrayList<>();
         final List<String> nameList = new ArrayList<>();
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
-        final List<AlgDataTypeField> fields = getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = getRowType().getFields();
 
         // Project the subset of fields.
         for ( int i : fieldsUsed ) {

@@ -63,7 +63,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
             }
 
             // Each operand must have the same number of columns.
-            final List<AlgDataTypeField> fields = argType.getFieldList();
+            final List<AlgDataTypeField> fields = argType.getFields();
             if ( i == 0 ) {
                 colCount = fields.size();
                 continue;
@@ -90,7 +90,7 @@ public class SetopOperandTypeChecker implements PolyOperandTypeChecker {
                             new AbstractList<AlgDataType>() {
                                 @Override
                                 public AlgDataType get( int index ) {
-                                    return argTypes[index].getFieldList().get( i2 ).getType();
+                                    return argTypes[index].getFields().get( i2 ).getType();
                                 }
 
 

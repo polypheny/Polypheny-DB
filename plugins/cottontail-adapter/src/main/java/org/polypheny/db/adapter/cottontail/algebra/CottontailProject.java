@@ -90,7 +90,7 @@ public class CottontailProject extends Project implements CottontailAlg {
             context.visitChild( 0, getInput() );
         }
 
-        final List<AlgDataTypeField> fieldList = context.cottontailTable.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = context.cottontailTable.getRowType().getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
         final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 

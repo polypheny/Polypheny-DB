@@ -1528,7 +1528,7 @@ public class AlgBuilderTest {
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, employee]])\n"
                 + "      LogicalScan(model=[RELATIONAL], table=[[public, department]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
-        final AlgDataTypeField field = root.getRowType().getFieldList().get( 1 );
+        final AlgDataTypeField field = root.getRowType().getFields().get( 1 );
         assertThat( field.getName(), is( "name" ) );
         assertThat( field.getType().isNullable(), is( true ) );
     }

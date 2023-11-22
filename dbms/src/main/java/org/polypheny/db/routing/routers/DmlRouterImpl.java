@@ -344,8 +344,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( modify.getInput() instanceof LogicalValues ) {
             // Get fieldList and map columns to index since they could be in arbitrary order
             int partitionColumnIndex = -1;
-            for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
-                String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
+            for ( int j = 0; j < (modify.getInput()).getRowType().getFields().size(); j++ ) {
+                String columnFieldName = (modify.getInput()).getRowType().getFields().get( j ).getName();
 
                 // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                 int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
@@ -925,7 +925,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
         if ( operand instanceof RexIndexRef ) {
             int index = ((RexIndexRef) operand).getIndex();
-            AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
+            AlgDataTypeField field = node.getInput().getRowType().getFields().get( index );
             LogicalColumn column;
             String columnName;
             String[] columnNames = field.getName().split( "\\." );

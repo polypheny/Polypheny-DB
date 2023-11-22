@@ -186,7 +186,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
                 if ( pos >= rowType.getFieldCount() ) {
                     continue;
                 }
-                props.add( property_( rowType.getFieldList().get( pos ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
+                props.add( property_( rowType.getFields().get( pos ).getPhysicalName(), literal_( NeoUtil.rexAsString( value, null, false ) ) ) );
                 pos++;
             }
             String name = entity.name;
@@ -200,7 +200,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
 
     public static NeoStatements.OperatorStatement create( Function1<ListStatement<?>, OperatorStatement> transformer, NeoProject neoProject, AlgNode last, NeoRelationalImplementor implementor ) {
-        List<AlgDataTypeField> fields = neoProject.getRowType().getFieldList();
+        List<AlgDataTypeField> fields = neoProject.getRowType().getFields();
 
         List<NeoStatements.NeoStatement> nodes = new ArrayList<>();
         int i = 0;
@@ -219,7 +219,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     public static OperatorStatement createProjectValues( NeoProject last, NeoEntity entity, NeoRelationalImplementor implementor ) {
         List<PropertyStatement> properties = new ArrayList<>();
-        List<AlgDataTypeField> fields = entity.getRowType().getFieldList();
+        List<AlgDataTypeField> fields = entity.getRowType().getFields();
 
         int i = 0;
         for ( RexNode project : last.getProjects() ) {
@@ -279,13 +279,13 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
 
     private Map<String, String> getToPhysicalMapping( @Nullable AlgNode node ) {
         Map<String, String> mapping = new HashMap<>();
-        for ( AlgDataTypeField field : entity.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
             mapping.put( field.getName(), entity.name + "." + field.getPhysicalName() );
         }
 
         if ( node instanceof NeoProject ) {
             NeoProject project = (NeoProject) node;
-            for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+            for ( AlgDataTypeField field : project.getRowType().getFields() ) {
                 if ( !mapping.containsKey( field.getName() ) ) {
                     Translator translator = new Translator( project.getRowType(), project.getRowType(), new HashMap<>(), this, null, true );
                     mapping.put( field.getName(), project.getProjects().get( field.getIndex() ).accept( translator ) );

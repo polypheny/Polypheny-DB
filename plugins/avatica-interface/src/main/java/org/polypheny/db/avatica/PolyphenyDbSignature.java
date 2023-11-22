@@ -90,7 +90,7 @@ public class PolyphenyDbSignature extends Meta.Signature {
     public static PolyphenyDbSignature from( PolyImplementation prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
-            for ( AlgDataTypeField field : prepareQuery.rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : prepareQuery.rowType.getFields() ) {
                 AlgDataType type = field.getType();
                 parameters.add(
                         new AvaticaParameter(

@@ -129,7 +129,7 @@ public class CottontailQueryEnumerable extends AbstractEnumerable<PolyValue[]> {
         @Override
         public PolyValue[] apply( Tuple a0 ) {
             final PolyValue[] returnValue = new PolyValue[this.physicalColumnNames.size()];
-            final List<AlgDataTypeField> fieldList = this.rowType.getFieldList();
+            final List<AlgDataTypeField> fieldList = this.rowType.getFields();
             for ( int i = 0; i < fieldList.size(); i++ ) {
                 final AlgDataType type = fieldList.get( i ).getType();
                 returnValue[i] = this.parseSingleField( a0.get( i ), type );

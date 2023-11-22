@@ -144,7 +144,7 @@ public class LogicalStreamer extends Streamer {
         return LogicalProject.create(
                 LogicalValues.createOneRow( input.getCluster() ),
                 input.getRowType()
-                        .getFieldList()
+                        .getFields()
                         .stream()
                         .map( f -> rexBuilder.makeDynamicParam( f.getType(), f.getIndex() ) )
                         .collect( Collectors.toList() ),
@@ -156,9 +156,9 @@ public class LogicalStreamer extends Streamer {
         return modify.getUpdateColumns()
                 .stream()
                 .map( name -> {
-                    int size = modify.getRowType().getFieldList().size();
+                    int size = modify.getRowType().getFields().size();
                     int index = modify.getEntity().getRowType().getFieldNames().indexOf( name );
-                    return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFieldList().get( index ).getType(), size + index );
+                    return rexBuilder.makeDynamicParam( modify.getEntity().getRowType().getFields().get( index ).getType(), size + index );
                 } ).collect( Collectors.toList() );
     }
 
@@ -171,7 +171,7 @@ public class LogicalStreamer extends Streamer {
     public static void attachFilter( LogicalEntity entity, AlgBuilder algBuilder, RexBuilder rexBuilder, List<Integer> indexes ) {
         List<RexNode> fields = new ArrayList<>();
         int i = 0;
-        for ( AlgDataTypeField field : entity.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : entity.getRowType().getFields() ) {
             if ( !indexes.contains( i ) ) {
                 i++;
                 continue;
@@ -209,7 +209,7 @@ public class LogicalStreamer extends Streamer {
 
 
     private static List<RexIndexRef> getOldFieldRefs( AlgDataType rowType ) {
-        return rowType.getFieldList().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
+        return rowType.getFields().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() );
     }
 
 

@@ -405,7 +405,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         // Verify that conversion from SQL to relational algebra did not perturb any type information.
         // (We can't do this if the SQL statement is something like an INSERT which has no
         // validator type information associated with its result, hence the namespace check above.)
-        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList(); // TODO DL read final
+        List<AlgDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFields(); // TODO DL read final
         final AlgDataType validatedRowType =
                 validator.getTypeFactory().createStructType(
                         validatedFields.stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
@@ -418,7 +418,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
         }*/
 
-        final List<AlgDataTypeField> convertedFields = result.getRowType().getFieldList().subList( 0, validatedFields.size() );
+        final List<AlgDataTypeField> convertedFields = result.getRowType().getFields().subList( 0, validatedFields.size() );
         final AlgDataType convertedRowType = validator.getTypeFactory().createStructType( convertedFields );
 
         if ( !AlgOptUtil.equal( "validated row type", validatedRowType, "converted row type", convertedRowType, Litmus.IGNORE ) ) {
@@ -675,7 +675,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
 
             final Map<Integer, Integer> squished = new HashMap<>();
-            final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+            final List<AlgDataTypeField> fields = alg.getRowType().getFields();
             final List<Pair<RexNode, String>> newProjects = new ArrayList<>();
             for ( int i = 0; i < fields.size(); i++ ) {
                 if ( origins.get( i ) == i ) {
@@ -1512,7 +1512,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         if ( !(sqlNode instanceof SqlLiteral) ) {
             return null;
         }
-        AlgDataTypeField field = rowType.getFieldList().get( iField );
+        AlgDataTypeField field = rowType.getFields().get( iField );
         AlgDataType type = field.getType();
         if ( type.isStruct() ) {
             // null literals for weird stuff like UDT's need special handling during type flattening, so don't use LogicalValues for those
@@ -2293,7 +2293,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             while ( topLevelFieldAccess.getReferenceExpr() instanceof RexFieldAccess ) {
                 topLevelFieldAccess = (RexFieldAccess) topLevelFieldAccess.getReferenceExpr();
             }
-            final AlgDataTypeField field = rowType.getFieldList().get( topLevelFieldAccess.getField().getIndex() - namespaceOffset );
+            final AlgDataTypeField field = rowType.getFields().get( topLevelFieldAccess.getField().getIndex() - namespaceOffset );
             int pos = namespaceOffset + field.getIndex();
 
             assert field.getType() == topLevelFieldAccess.getField().getType();
@@ -2424,7 +2424,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 final AlgDataType rowType = n.getRowType();
                 final AlgDataTypeField field = nameMatcher.field( rowType, name );
                 operands.add( rexBuilder.makeInputRef( field.getType(), offset + field.getIndex() ) );
-                offset += rowType.getFieldList().size();
+                offset += rowType.getFields().size();
             }
             list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), operands ) );
         }
@@ -2917,7 +2917,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         int virtualCount = 0;
         final List<RexNode> list = new ArrayList<>();
-        for ( AlgDataTypeField f : table.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField f : table.getRowType().getFields() ) {
             final ColumnStrategy strategy = ief.generationStrategy( table, f.getIndex() );
             switch ( strategy ) {
                 case VIRTUAL:
@@ -2970,7 +2970,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         final LogicalEntity targetTable = getTargetTable( call );
         final AlgDataType targetRowType = targetTable.getRowType();//AlgOptEntityImpl.realRowType( targetTable );
-        final List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
+        final List<AlgDataTypeField> targetFields = targetRowType.getFields();
         boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
@@ -3085,7 +3085,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             if ( validator.getConformance().isInsertSubsetColumnsAllowed() ) {
                 final AlgDataType targetRowType =
                         typeFactory.createStructType(
-                                tableRowType.getFieldList()
+                                tableRowType.getFields()
                                         .subList( 0, sourceRef.getType().getFieldCount() ) );
                 targetColumnNames.addAll( targetRowType.getFieldNames() );
             } else {
@@ -3777,7 +3777,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                                     @Override
                                     public AlgDataTypeField get( int index ) {
                                         return join.getRowType()
-                                                .getFieldList()
+                                                .getFields()
                                                 .get( origLeftInputCount + index );
                                     }
 
@@ -3870,7 +3870,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     return null;
                 } else {
                     final Map<String, Integer> fieldOffsets = new HashMap<>();
-                    for ( AlgDataTypeField f : resolve.rowType().getFieldList() ) {
+                    for ( AlgDataTypeField f : resolve.rowType().getFields() ) {
                         if ( !fieldOffsets.containsKey( f.getName() ) ) {
                             fieldOffsets.put( f.getName(), f.getIndex() );
                         }
@@ -3894,9 +3894,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     int i = 0;
                     int offset = 0;
                     for ( SqlValidatorNamespace c : ancestorScope1.getChildren() ) {
-                        builder.addAll( c.getRowType().getFieldList() );
+                        builder.addAll( c.getRowType().getFields() );
                         if ( i == resolve.path.steps().get( 0 ).i ) {
-                            for ( AlgDataTypeField field : c.getRowType().getFieldList() ) {
+                            for ( AlgDataTypeField field : c.getRowType().getFields() ) {
                                 fields.put( field.getName(), field.getIndex() + offset );
                             }
                         }
@@ -3934,7 +3934,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     return null;
                 }
                 if ( fieldOffset < rowType.getFieldCount() ) {
-                    return rowType.getFieldList().get( fieldOffset );
+                    return rowType.getFields().get( fieldOffset );
                 }
                 fieldOffset -= rowType.getFieldCount();
             }
@@ -4490,7 +4490,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         private void addExpr( RexNode expr, String name ) {
             if ( (name == null) && (expr instanceof RexIndexRef) ) {
                 final int i = ((RexIndexRef) expr).getIndex();
-                name = bb.root.getRowType().getFieldList().get( i ).getName();
+                name = bb.root.getRowType().getFields().get( i ).getName();
             }
             if ( Pair.right( convertedInputExprs ).contains( name ) ) {
                 // In case like 'SELECT ... GROUP BY x, y, x', don't add name 'x' twice.

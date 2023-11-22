@@ -60,8 +60,8 @@ public class LogicalLpgScan extends LpgScan<LogicalEntity> implements Relational
 
         RexNode nodeCondition = builder.makeCall(
                 OperatorRegistry.get( OperatorName.EQUALS ),
-                builder.makeInputRef( nodes.getRowType().getFieldList().get( 0 ).getType(), 0 ),
-                builder.makeInputRef( nodesProperty.getRowType().getFieldList().get( 0 ).getType(), nodes.getRowType().getFieldList().size() ) );
+                builder.makeInputRef( nodes.getRowType().getFields().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( nodesProperty.getRowType().getFields().get( 0 ).getType(), nodes.getRowType().getFields().size() ) );
 
         LogicalJoin nodeJoin = new LogicalJoin( getCluster(), out, nodes, nodesProperty, nodeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
 
@@ -74,8 +74,8 @@ public class LogicalLpgScan extends LpgScan<LogicalEntity> implements Relational
 
         RexNode edgeCondition = builder.makeCall(
                 OperatorRegistry.get( OperatorName.EQUALS ),
-                builder.makeInputRef( edges.getRowType().getFieldList().get( 0 ).getType(), 0 ),
-                builder.makeInputRef( edgesProperty.getRowType().getFieldList().get( 0 ).getType(), edges.getRowType().getFieldList().size() ) );
+                builder.makeInputRef( edges.getRowType().getFields().get( 0 ).getType(), 0 ),
+                builder.makeInputRef( edgesProperty.getRowType().getFields().get( 0 ).getType(), edges.getRowType().getFields().size() ) );
 
         LogicalJoin edgeJoin = new LogicalJoin( getCluster(), out, edges, edgesProperty, edgeCondition, Set.of(), JoinAlgType.LEFT, false, ImmutableList.of() );
 

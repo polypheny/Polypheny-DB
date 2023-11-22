@@ -344,7 +344,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : implementation.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
@@ -390,9 +390,9 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getRowType().getFieldList();
+                    fields = targetAlg.alg.getEntity().getRowType().getFields();
                 } else {
-                    fields = sourceAlg.validatedRowType.getFieldList();
+                    fields = sourceAlg.validatedRowType.getFields();
                 }
 
                 for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
@@ -642,7 +642,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
                         resultColMapping.put( logicalColumn.id, i );
                     }
@@ -968,7 +968,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
                         resultColMapping.put( logicalColumn.id, i );
                     }

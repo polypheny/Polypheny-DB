@@ -203,7 +203,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             return javaType.getJavaClass();
         }
         if ( type.isStruct() && type.getFieldCount() == 1 && type.getPolyType() != PolyType.PATH ) {
-            return getJavaClass( type.getFieldList().get( 0 ).getType() );
+            return getJavaClass( type.getFields().get( 0 ).getType() );
         }
         if ( type instanceof AbstractPolyType || type instanceof DocumentType || type instanceof GraphType ) {
             switch ( type.getPolyType() ) {
@@ -300,8 +300,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
         if ( type instanceof AlgRecordType ) {
             return typeFactory.createStructType(
-                    type.getFieldList().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                    type.getFieldList().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
+                    type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                    type.getFields().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
                     type.getFieldNames() );
         }
         if ( type instanceof JavaType ) {
@@ -357,7 +357,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     private Type createSyntheticType( AlgRecordType type ) {
         final String name = "Record" + type.getFieldCount() + "_" + syntheticTypes.size();
         final SyntheticRecordType syntheticType = new SyntheticRecordType( type, name );
-        for ( final AlgDataTypeField recordField : type.getFieldList() ) {
+        for ( final AlgDataTypeField recordField : type.getFields() ) {
             final Type javaClass = getJavaClass( recordField.getType() );
             syntheticType.fields.add( new RecordFieldImpl( syntheticType, recordField.getName(), javaClass, recordField.getType().isNullable() && !Primitive.is( javaClass ), Modifier.PUBLIC ) );
         }

@@ -157,7 +157,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
         // Create a projection back again.
         List<Pair<RexNode, String>> projects = new ArrayList<>();
         int source = 0;
-        for ( AlgDataTypeField field : aggregate.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : aggregate.getRowType().getFields() ) {
             RexNode expr;
             final int i = field.getIndex();
             if ( i >= groupCount ) {
@@ -167,7 +167,7 @@ public class AggregateProjectPullUpConstantsRule extends AlgOptRule {
                 int pos = aggregate.getGroupSet().nth( i );
                 if ( map.containsKey( pos ) ) {
                     // Re-generate the constant expression in the project.
-                    AlgDataType originalType = aggregate.getRowType().getFieldList().get( projects.size() ).getType();
+                    AlgDataType originalType = aggregate.getRowType().getFields().get( projects.size() ).getType();
                     if ( !originalType.equals( map.get( pos ).getType() ) ) {
                         expr = rexBuilder.makeCast( originalType, map.get( pos ), true );
                     } else {

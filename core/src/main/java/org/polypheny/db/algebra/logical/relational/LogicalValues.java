@@ -114,7 +114,7 @@ public class LogicalValues extends Values implements RelAlg {
                         ImmutableList.of(
                                 cluster.getRexBuilder().makeExactLiteral(
                                         BigDecimal.ZERO,
-                                        rowType.getFieldList().get( 0 ).getType() ) ) );
+                                        rowType.getFields().get( 0 ).getType() ) ) );
         return create( cluster, rowType, tuples );
     }
 

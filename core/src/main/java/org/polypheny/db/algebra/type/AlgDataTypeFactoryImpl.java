@@ -203,7 +203,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             if ( !type.isStruct() ) {
                 return null;
             }
-            if ( type.getFieldList().size() != fieldCount ) {
+            if ( type.getFields().size() != fieldCount ) {
                 return null;
             }
         }
@@ -214,13 +214,13 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
             // REVIEW jvs: Always use the field name from the first type?
             final int k = j;
             builder.add(
-                    null, type0.getFieldList().get( j ).getName(),
+                    null, type0.getFields().get( j ).getName(),
                     null,
                     leastRestrictive(
                             new AbstractList<>() {
                                 @Override
                                 public AlgDataType get( int index ) {
-                                    return types.get( index ).getFieldList().get( k ).getType();
+                                    return types.get( index ).getFields().get( k ).getType();
                                 }
 
 
@@ -262,8 +262,8 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
 
         return createStructType(
                 type.getStructKind(),
-                type.getFieldList().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                type.getFieldList().stream().map( f -> {
+                type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                type.getFields().stream().map( f -> {
                     if ( ignoreNullable ) {
                         return copyType( f.getType() );
                     } else {
@@ -401,7 +401,7 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
                 addFields( type1, fieldList );
             }
         } else {
-            List<AlgDataTypeField> fields = type.getFieldList();
+            List<AlgDataTypeField> fields = type.getFields();
             for ( AlgDataTypeField field : fields ) {
                 if ( field.getIndex() != fieldList.size() ) {
                     field = new AlgDataTypeFieldImpl( field.getId(), field.getName(), fieldList.size(), field.getType() );
@@ -681,12 +681,12 @@ public abstract class AlgDataTypeFactoryImpl implements AlgDataTypeFactory {
         @Override
         public boolean equals( Object obj ) {
             return obj == this
-                    || obj instanceof Key
-                    && ids == ((Key) obj).ids
+                    || (obj instanceof Key
+                    && ids.equals( ((Key) obj).ids )
                     && kind == ((Key) obj).kind
                     && names.equals( ((Key) obj).names )
                     && physicalNames.equals( ((Key) obj).physicalNames )
-                    && types.equals( ((Key) obj).types );
+                    && types.equals( ((Key) obj).types ));
         }
 
     }

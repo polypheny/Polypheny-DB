@@ -1085,7 +1085,7 @@ public class MqlToAlgConverter {
             if ( entry.getKey().equals( "_id" ) ) {
                 if ( entry.getValue().isNull() ) {
                     names.addAll( 0, rowType.getFieldNames() );
-                    nodes.addAll( 0, rowType.getFieldList().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
+                    nodes.addAll( 0, rowType.getFields().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
 
                 } else if ( entry.getValue().isString() ) {
                     names.add( entry.getValue().asString().getValue().substring( 1 ) );
@@ -2207,7 +2207,7 @@ public class MqlToAlgConverter {
                 List<RexNode> values = new ArrayList<>();
                 List<String> names = new ArrayList<>();
 
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     if ( !excludes.contains( field.getName() ) ) {
                         names.add( field.getName() );
                         values.add( RexIndexRef.of( field.getIndex(), rowType ) );
@@ -2227,7 +2227,7 @@ public class MqlToAlgConverter {
 
             for ( Entry<String, RexNode> entry : includes.entrySet() ) {
                 List<RexNode> values = new ArrayList<>();
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
 
                     // we attach the new values to the input bson
                     values.add( new RexCall(

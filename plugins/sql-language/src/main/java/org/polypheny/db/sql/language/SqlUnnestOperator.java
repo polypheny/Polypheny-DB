@@ -75,7 +75,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator implements UnnestOp
             }
 
             if ( type.isStruct() ) {
-                type = type.getFieldList().get( 0 ).getType();
+                type = type.getFields().get( 0 ).getType();
             }
 
             assert type instanceof ArrayType || type instanceof MultisetPolyType || type instanceof MapPolyType;
@@ -84,7 +84,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator implements UnnestOp
                 builder.add( null, UnnestOperator.MAP_VALUE_COLUMN_NAME, null, type.unwrap( MapPolyType.class ).getValueType() );
             } else {
                 if ( type.getComponentType().isStruct() ) {
-                    builder.addAll( type.getComponentType().getFieldList() );
+                    builder.addAll( type.getComponentType().getFields() );
                 } else {
                     builder.add( null, CoreUtil.deriveAliasFromOrdinal( operand ), null, type.getComponentType() );
                 }

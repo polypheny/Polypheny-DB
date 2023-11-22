@@ -115,7 +115,7 @@ public abstract class Window extends SingleAlg {
                     @Override
                     public AlgDataType get( int index ) {
                         return index < childFieldCount
-                                ? childRowType.getFieldList().get( index ).getType()
+                                ? childRowType.getFields().get( index ).getType()
                                 : constants.get( index - childFieldCount ).getType();
                     }
 

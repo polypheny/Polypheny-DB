@@ -273,7 +273,7 @@ public class CypherToAlgConverter {
     private AlgNode removeHiddenRows( CypherContext context, AlgNode node, List<String> missingNames ) {
         List<RexNode> nodes = new ArrayList<>();
         List<PolyString> names = new ArrayList<>();
-        node.getRowType().getFieldList().forEach( f -> {
+        node.getRowType().getFields().forEach( f -> {
             if ( !missingNames.contains( f.getName() ) ) {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
                 names.add( PolyString.of( f.getName() ) );
@@ -293,7 +293,7 @@ public class CypherToAlgConverter {
         }
 
         List<Pair<PolyString, RexNode>> additional = new ArrayList<>();
-        for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : input.getRowType().getFields() ) {
             for ( String name : missingNames ) {
                 String[] split = name.split( "\\." );
                 if ( split.length > 1 && split[0].equals( field.getName() ) ) {
@@ -323,7 +323,7 @@ public class CypherToAlgConverter {
             nodes = new ArrayList<>();
             names = new ArrayList<>();
 
-            node.getRowType().getFieldList().forEach( f -> {
+            node.getRowType().getFields().forEach( f -> {
                 nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
                 names.add( PolyString.of( f.getName() ) );
             } );
@@ -511,8 +511,8 @@ public class CypherToAlgConverter {
         private void addProjectIfNecessary() {
             if ( stack.size() >= 1 && rexQueue.size() > 0 ) {
                 AlgNode node = stack.peek();
-                if ( node.getRowType().getFieldList().size() == 1
-                        && node.getRowType().getFieldList().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
+                if ( node.getRowType().getFields().size() == 1
+                        && node.getRowType().getFields().get( 0 ).getType().getPolyType() == PolyType.GRAPH ) {
                     node = stack.pop();
 
                     List<Pair<PolyString, RexNode>> rex = new ArrayList<>();
@@ -723,7 +723,7 @@ public class CypherToAlgConverter {
 
                 AlgNode node = stack.peek();
                 List<String> names = node.getRowType().getFieldNames();
-                List<AlgDataTypeField> fields = node.getRowType().getFieldList();
+                List<AlgDataTypeField> fields = node.getRowType().getFields();
 
                 // nodes can be added as literals
                 for ( Pair<PolyString, PolyNode> namedNode : nodes ) {
@@ -826,7 +826,7 @@ public class CypherToAlgConverter {
             if ( index < 0 ) {
                 throw new GenericRuntimeException( String.format( "Unknown variable with name %s", variable ) );
             }
-            AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+            AlgDataTypeField field = node.getRowType().getFields().get( index );
 
             if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
                 throw new GenericRuntimeException( "Edges require exactly one label" );

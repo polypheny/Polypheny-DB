@@ -171,7 +171,7 @@ public class RexProgram {
             public Pair<RexLocalRef, String> get( int index ) {
                 return Pair.of(
                         projects.get( index ),
-                        outputRowType.getFieldList().get( index ).getName() );
+                        outputRowType.getFields().get( index ).getName() );
             }
         };
     }
@@ -256,8 +256,8 @@ public class RexProgram {
      * @param pw Plan writer
      */
     public AlgWriter collectExplainTerms( String prefix, AlgWriter pw, ExplainLevel level ) {
-        final List<AlgDataTypeField> inFields = inputRowType.getFieldList();
-        final List<AlgDataTypeField> outFields = outputRowType.getFieldList();
+        final List<AlgDataTypeField> inFields = inputRowType.getFields();
+        final List<AlgDataTypeField> outFields = outputRowType.getFields();
         assert outFields.size() == projects.size() : "outFields.length=" + outFields.size() + ", projects.length=" + projects.size();
         pw.item( prefix + "expr#0" + ((inFields.size() > 1) ? (".." + (inFields.size() - 1)) : ""), "{inputs}" );
         for ( int i = inFields.size(); i < exprs.size(); i++ ) {
@@ -335,7 +335,7 @@ public class RexProgram {
         if ( rowType != outputRowType && !rowType.getFieldNames().equals( outputRowType.getFieldNames() ) ) {
             throw new IllegalArgumentException( "field type mismatch: " + rowType + " vs. " + outputRowType );
         }
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
         final List<RexLocalRef> projectRefs = new ArrayList<>();
         final List<RexIndexRef> refs = new ArrayList<>();
         for ( int i = 0; i < fields.size(); i++ ) {
@@ -644,7 +644,7 @@ public class RexProgram {
      * Returns whether this program is a permutation of its inputs.
      */
     public boolean isPermutation() {
-        if ( projects.size() != inputRowType.getFieldList().size() ) {
+        if ( projects.size() != inputRowType.getFields().size() ) {
             return false;
         }
         for ( int i = 0; i < projects.size(); ++i ) {
@@ -661,7 +661,7 @@ public class RexProgram {
      */
     public Permutation getPermutation() {
         Permutation permutation = new Permutation( projects.size() );
-        if ( projects.size() != inputRowType.getFieldList().size() ) {
+        if ( projects.size() != inputRowType.getFields().size() ) {
             return null;
         }
         for ( int i = 0; i < projects.size(); ++i ) {

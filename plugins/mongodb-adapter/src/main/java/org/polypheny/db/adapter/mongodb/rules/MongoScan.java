@@ -99,7 +99,7 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
             implementor.setStaticRowType( (AlgRecordType) rowType );
             return;
         }
-        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFieldList().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
+        implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );
     }
 
 }

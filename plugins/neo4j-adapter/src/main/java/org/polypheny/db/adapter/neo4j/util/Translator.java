@@ -66,8 +66,8 @@ public class Translator extends RexVisitorImpl<String> {
             @Nullable String mappingLabel,
             boolean useBrackets ) {
         super( true );
-        this.afterFields = afterRowType.getFieldList();
-        this.beforeFields = beforeRowType.getFieldList();
+        this.afterFields = afterRowType.getFields();
+        this.beforeFields = beforeRowType.getFields();
         this.mapping = mapping;
         this.implementor = implementor;
         this.mappingLabel = mappingLabel;

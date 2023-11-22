@@ -384,7 +384,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
 
     private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFieldList().size() == 1 ) {
+        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFields().size() == 1 ) {
             return;
         }
 
@@ -414,7 +414,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             } else if ( rexNode instanceof RexCall ) {
                 PolyType type = this.entity
                         .getRowType( getCluster().getTypeFactory() )
-                        .getFieldList()
+                        .getFields()
                         .get( pos )
                         .getType()
                         .getComponentType()

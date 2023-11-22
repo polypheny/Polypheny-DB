@@ -118,7 +118,7 @@ public class ExploreQueryProcessor {
 
         List<String> typeInfo = new ArrayList<>();
         List<String> name = new ArrayList<>();
-        for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField metaData : result.getRowType().getFields() ) {
             typeInfo.add( metaData.getType().getFullTypeString() );
             name.add( metaData.getName() );
         }
