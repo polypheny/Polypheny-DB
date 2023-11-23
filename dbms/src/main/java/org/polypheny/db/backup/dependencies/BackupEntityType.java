@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup;
+package org.polypheny.db.backup.dependencies;
 
 public enum BackupEntityType {
     NAMESPACE( 1 ),

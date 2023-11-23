@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup;
+package org.polypheny.db.backup.dependencies;
 
 import java.util.List;
 import lombok.Getter;

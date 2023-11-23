@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
@@ -42,6 +43,7 @@ public class BackupManager {
     private static BackupManager INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
+    @Getter
     private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
     //private final Logger logger;

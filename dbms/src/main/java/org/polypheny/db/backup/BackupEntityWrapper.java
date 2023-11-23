@@ -18,8 +18,8 @@ package org.polypheny.db.backup;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.backup.dependencies.EntityReferencer;
 import org.polypheny.db.catalog.entity.LogicalObject;
-import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 
 @Getter @Setter
 public class BackupEntityWrapper<E extends LogicalObject> {

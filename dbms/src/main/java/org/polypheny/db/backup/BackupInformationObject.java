@@ -19,6 +19,8 @@ package org.polypheny.db.backup;
 import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.backup.dependencies.BackupEntityType;
+import org.polypheny.db.backup.dependencies.EntityReferencer;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 

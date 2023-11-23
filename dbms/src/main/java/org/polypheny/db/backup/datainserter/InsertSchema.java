@@ -184,12 +184,15 @@ public class InsertSchema {
 
         //TODO(FF): check if namespaces is empty, throw error if it is
         for ( Map.Entry<Long, BackupEntityWrapper<LogicalNamespace>> ns : namespaces.entrySet() ) {
-            //query = "CREATE " + ns.getValue().getEntityObject().namespaceType.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
-            query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().namespaceType.toString(), ns.getValue().getEntityObject().name );
+            //only insert namespaces that are marked to be inserted
+            if (ns.getValue().getToBeInserted()) {
+                //query = "CREATE " + ns.getValue().getEntityObject().namespaceType.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
+                query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().namespaceType.toString(), ns.getValue().getEntityObject().name );
 
-            //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
-            if ( !ns.getValue().getEntityObject().name.equals( "public" ) ) {
-                executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
+                if ( !ns.getValue().getEntityObject().name.equals( "public" ) ) {
+                    executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().namespaceType );
+                }
             }
         }
 
@@ -211,11 +214,13 @@ public class InsertSchema {
 
             // go through each table in the list (of tables for one namespace)
             for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
-
-                // only create tables that don't (exist by default in polypheny)
-                if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
-                    query = createTableQuery( table, namespaceName );
-                    executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                // only create tables that should be inserted
+                if ( table.getToBeInserted()) {
+                    // only create tables that don't (exist by default in polypheny)
+                    if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
+                        query = createTableQuery( table, namespaceName );
+                        executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                    }
                 }
             }
         }
@@ -235,8 +240,8 @@ public class InsertSchema {
             for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
                 //TODO(FF - cosmetic): exclude source tables (for speed)
 
-                // compare the table id with the constraint keys, and if they are the same, create the constraint
-                if ( constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).getId() ) ) {
+                // compare the table id with the constraint keys, and if they are the same, create the constraint, and check if it schoult be inserted
+                if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).getId() )) && table.getToBeInserted()) {
                     List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
                     List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
 
@@ -266,21 +271,29 @@ public class InsertSchema {
 
         // go through foreign key constraints and collect the necessary data
         for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
-            for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
-                String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
-                String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
-                String constraintName = foreignKey.name;
-                String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
-                String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
-                String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
-                String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
-                String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
-                String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
-                //TODO(FF): enforcementTime (on commit) - how to set?? how to change?? possible to change?
+            Long tableId = fkListPerTable.getKey();
 
-                query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
-                log.info( query );
-                executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+            for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
+                // get the table where the foreign key is safet
+                BackupEntityWrapper<LogicalEntity> table = bupTables.get( backupInformationObject.getWrappedTables().get( tableId ).get( 0 ).getEntityObject().namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
+
+                // check if the table is marked to be inserted
+                if (table.getToBeInserted()) {
+                    String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
+                    String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
+                    String constraintName = foreignKey.name;
+                    String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
+                    String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
+                    String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
+                    String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
+                    String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
+                    String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
+                    //TODO(FF): enforcementTime (on commit) - how to set?? how to change?? possible to change?
+
+                    query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
+                    log.info( query );
+                    executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                }
             }
         }
     }

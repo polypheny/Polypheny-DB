@@ -29,19 +29,25 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.transaction.TransactionManager;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class GeneralTest {
+    //TestHelper testHelper;
+    BackupManager backupManager;
 
     @BeforeClass
-    public static void start() {
+    public void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
+        //this.testHelper = TestHelper.getInstance();
         TestHelper.getInstance();
         //deleteOldData();
+        //this.backupManager = new BackupManager( testHelper.getTransactionManager() );
         addTestData();
+
     }
 
 
@@ -98,6 +104,19 @@ public class GeneralTest {
             log.error( "Exception while deleting old data", e );
         }
     }
+
+    /*
+    @Test
+    public void testGatherData() {
+        TransactionManager transactionManager = TestHelper.getTransactionManager();
+        BackupManager backupManager = new BackupManager( transactionManager );
+
+        backupManager.startDataGathering();
+
+        Assert.assertEquals( 4, backupManager.getBackupInformationObject().getTables().get( 0 ).size());
+    }
+
+     */
 
 
     @Test
