@@ -57,25 +57,25 @@ public class BackupInformationObject {
      */
 
     //namespace id, list of entities for the namespace
-    private ImmutableMap<Long, List<LogicalView>> views;
+    private ImmutableMap<Long, List<LogicalEntity>> views;
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalView>>> wrappedViews;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedViews;
 
-    private ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
+    private ImmutableMap<Long, List<LogicalEntity>> materializedViews;
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalMaterializedView>>> wrappedMaterializedViews;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedMaterializedViews;
 
     private ImmutableMap<Long, List<LogicalEntity>> tables; //TODO: cast all to logicaltable - LogicalEntity.unwrap(logicalTable.class) to get logicalTAble, for everything here logicalEntity
 
     private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedTables;
 
-    private ImmutableMap<Long, List<LogicalCollection>> collections;
+    private ImmutableMap<Long, List<LogicalEntity>> collections;
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalCollection>>> wrappeedCollections;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections;
 
-    private ImmutableMap<Long, LogicalGraph> graphs;
+    private ImmutableMap<Long, LogicalEntity> graphs;
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalGraph>>> wrappedGraphs;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedGraphs;
 
     //table id, list of views for the table
     private ImmutableMap<Long, List<LogicalColumn>> columns;

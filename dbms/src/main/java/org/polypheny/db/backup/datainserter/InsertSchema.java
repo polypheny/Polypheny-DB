@@ -274,9 +274,10 @@ public class InsertSchema {
             Long tableId = fkListPerTable.getKey();
 
             for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
-                // get the table where the foreign key is safet
-                BackupEntityWrapper<LogicalEntity> table = bupTables.get( backupInformationObject.getWrappedTables().get( tableId ).get( 0 ).getEntityObject().namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
-
+                // get the table where the foreign key is saved
+                Long nsId = foreignKey.namespaceId;
+                BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
+                //boolean lol = table.getToBeInserted();
                 // check if the table is marked to be inserted
                 if (table.getToBeInserted()) {
                     String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();

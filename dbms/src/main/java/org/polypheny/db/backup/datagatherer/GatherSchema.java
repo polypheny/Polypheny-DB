@@ -53,10 +53,10 @@ public class GatherSchema {
     //namespace id, list of tables for the namespace
     ImmutableMap<Long, List<LogicalEntity>> tables;
     //TODO(FF): make views and materialized views not (? deleted?)... views and materialized views can be over several tables -> over several namespaces??
-    ImmutableMap<Long, List<LogicalView>> views;
-    ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
-    ImmutableMap<Long, List<LogicalCollection>> collections;
-    ImmutableMap<Long, LogicalGraph> graphs;
+    ImmutableMap<Long, List<LogicalEntity>> views;
+    ImmutableMap<Long, List<LogicalEntity>> materializedViews;
+    ImmutableMap<Long, List<LogicalEntity>> collections;
+    ImmutableMap<Long, LogicalEntity> graphs;
 
     //table id, list of views for the table
     ImmutableMap<Long, List<LogicalColumn>> columns;
@@ -201,7 +201,7 @@ public class GatherSchema {
         //this.tables = ImmutableMap.copyOf( (Map<? extends Long, ? extends List<LogicalEntity>>) tables );
         //this.tables = ImmutableMap.copyOf( (Map<Long, ? extends List<LogicalEntity>>) tables );
         this.backupInformationObject.setTables( this.tables );
-        this.views = ImmutableMap.copyOf( views );
+        this.views = ImmutableMap.copyOf( views.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
         this.backupInformationObject.setViews( this.views );
         this.columns = ImmutableMap.copyOf( columns );
         this.backupInformationObject.setColumns( this.columns );
@@ -269,7 +269,7 @@ public class GatherSchema {
         }
 
         //safes the gathered information in the class variables
-        this.collections = ImmutableMap.copyOf( nsCollections );
+        this.collections = ImmutableMap.copyOf( nsCollections.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
         this.backupInformationObject.setCollections( this.collections );
         this.backupInformationObject.setCollectedDocSchema( true );
     }
