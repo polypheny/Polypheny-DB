@@ -29,6 +29,7 @@ import org.polypheny.db.backup.BackupEntityWrapper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -369,22 +370,29 @@ public class InsertSchema {
         }
         if ( columnDefinitions.length() > 0 ) {
             columnDefinitions = columnDefinitions.substring( 0, columnDefinitions.length() - 2 ); // remove last ", "
+            //FIXME(FF): somehow not removed ",": CREATE TABLE public11.students11 (biigint BIGINT NULL , )
         }
 
+
         // create the primary key constraint statement for the table
-        List<String> colNamesForPK = pksPerTable.get( 0 ).getColumnNames();
-        String listOfCols = new String();
-        for ( String colName : colNamesForPK ) {
-            listOfCols = listOfCols + colName + ", ";
+        if (!(pksPerTable.isEmpty())) {
+            List<String> colNamesForPK = pksPerTable.get( 0 ).getColumnNames(); //FIXME(FF): index out of bounds (if there are no pks at all)
+            String listOfCols = new String();
+            for ( String colName : colNamesForPK ) {
+                listOfCols = listOfCols + colName + ", ";
+            }
+            if ( listOfCols.length() > 0 ) {
+                listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
+                pkConstraint = ", PRIMARY KEY (" + listOfCols + ")";
+            }
         }
-        if ( listOfCols.length() > 0 ) {
-            listOfCols = listOfCols.substring( 0, listOfCols.length() - 2 ); // remove last ", "
-            pkConstraint = "PRIMARY KEY (" + listOfCols + ")";
-        }
+
+
 
         //query to create one table (from the list of tables, from the list of namespaces)
         //TODO(FF): ON STORE storename PARTITION BY partionionInfo
-        query = String.format( "CREATE TABLE %s11.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
+        //query = String.format( "CREATE TABLE %s11.%s11 (%s, %s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
+        query = String.format( "CREATE TABLE %s11.%s11 (%s%s)", namespaceName, table.getNameForQuery(), columnDefinitions, pkConstraint );
         log.info( query );
 
         return query;
@@ -411,8 +419,6 @@ public class InsertSchema {
             regexString = regexString.replaceAll( "\"", "" );
             //TODO(FF): gives an error (with " there is no error?) but works: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered " "DEFAULT" "DEFAULT "" at line 1, column 172.
 
-
-
             PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
 
             if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) ) {
@@ -429,12 +435,73 @@ public class InsertSchema {
             caseSensitivity = String.format( "COLLATE %s", col.collation.collationToString() );
         }
 
-        String varcharLength = new String();
-        if ( !(col.length == null) ) {
-            varcharLength = String.format( "(%s) ", col.length.toString() );
+        //TODO(FF): handle arrays
+        String dataTypeString = new String();
+        switch ( colDataType ) {
+            case "BIGINT":  //FIXME(FF): error query: CREATE TABLE public11.students11 (biigint BIGINT NULL , )
+            case "BOOLEAN":
+            case "DOUBLE":
+            case "INTEGER":
+            case "REAL":
+            case "SMALLINT":
+            case "TINYINT":
+            case "DATE":
+            case "AUDIO":
+            case "FILE":
+            case "IMAGE":
+            case "VIDEO":
+                dataTypeString = colDataType;
+                break;
+
+
+            case "TIME":
+            case "TIMESTAMP":
+                if ( !(col.length == null) ) {
+                    dataTypeString = String.format( "%s(%s) ", colDataType, col.length.toString() );
+                } else {
+                    dataTypeString = colDataType;
+                }
+                break;
+
+
+            case "VARCHAR":
+                dataTypeString = String.format( "%s(%s) ", colDataType, col.length.toString() );
+                break;
+
+
+            case "DECIMAL":
+                if (!(col.length == null))  {
+                    if (!(col.scale == null)) {
+                        dataTypeString = String.format( "%s(%s, %s) ", colDataType, col.length.toString(), col.scale.toString() );
+                    } else {
+                        dataTypeString = String.format( "%s(%s) ", colDataType, col.length.toString() );
+                    }
+                } else {
+                    dataTypeString = colDataType;
+                }
+                break;
+
+            default:
+                throw new GenericRuntimeException( "During backup schema insertions not supported datatype detected" + colDataType);
         }
 
-        columnDefinitionString = String.format( "%s %s%s %s%s %s, ", colName, colDataType, varcharLength, colNullable, defaultValue, caseSensitivity );
+        String arrayString = new String();
+
+        if (!(col.collectionsType == null)) {
+            String collectionsType = col.collectionsType.toString();
+
+            switch ( collectionsType ) {
+                case "ARRAY":
+                    arrayString = String.format( " ARRAY (%s, %s) ", col.dimension.toString(), col.cardinality.toString() );
+                    break;
+
+                default:
+                    throw new GenericRuntimeException( "During backup schema insertions not supported collectionstype detected" + collectionsType);
+            }
+        }
+
+
+        columnDefinitionString = String.format( "%s %s%s %s%s %s, ", colName, dataTypeString, arrayString, colNullable, defaultValue, caseSensitivity );
         //log.info( columnDefinitionString );
 
         return columnDefinitionString;
@@ -517,6 +584,7 @@ public class InsertSchema {
 
         } catch ( Exception e ) {
             log.info( e.getMessage() );
+            log.info( "exception while executing query: "+ query );
             throw new RuntimeException( e );
         }
 
