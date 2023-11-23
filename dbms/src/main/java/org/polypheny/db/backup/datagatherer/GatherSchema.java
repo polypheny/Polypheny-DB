@@ -51,7 +51,7 @@ public class GatherSchema {
     List<LogicalNamespace> docNamespaces;
 
     //namespace id, list of tables for the namespace
-    ImmutableMap<Long, List<LogicalTable>> tables;
+    ImmutableMap<Long, List<LogicalEntity>> tables;
     //TODO(FF): make views and materialized views not (? deleted?)... views and materialized views can be over several tables -> over several namespaces??
     ImmutableMap<Long, List<LogicalView>> views;
     ImmutableMap<Long, List<LogicalMaterializedView>> materializedViews;
@@ -138,6 +138,7 @@ public class GatherSchema {
 
             // get tables from namespace
             List<LogicalTable> tablesFromNamespace = snapshot.rel().getTablesFromNamespace( namespaceId );
+            //List<LogicalEntity> tablesFromNamespace = snapshot.rel().getTables( namespaceId, null ).stream().map( v -> v.unwrap( LogicalEntity.class ) ).collect(Collectors.toList( ));
             tables.put( namespaceId, tablesFromNamespace );
 
             // get other schema information for each table
@@ -196,7 +197,9 @@ public class GatherSchema {
         }
 
         //safes the gathered information in the class variables
-        this.tables = ImmutableMap.copyOf( tables );
+        this.tables = ImmutableMap.copyOf( tables.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )));
+        //this.tables = ImmutableMap.copyOf( (Map<? extends Long, ? extends List<LogicalEntity>>) tables );
+        //this.tables = ImmutableMap.copyOf( (Map<Long, ? extends List<LogicalEntity>>) tables );
         this.backupInformationObject.setTables( this.tables );
         this.views = ImmutableMap.copyOf( views );
         this.backupInformationObject.setViews( this.views );

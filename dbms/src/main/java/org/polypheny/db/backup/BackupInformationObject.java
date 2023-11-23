@@ -63,9 +63,9 @@ public class BackupInformationObject {
 
     private ImmutableMap<Long, List<BackupEntityWrapper<LogicalMaterializedView>>> wrappedMaterializedViews;
 
-    private ImmutableMap<Long, List<LogicalTable>> tables;
+    private ImmutableMap<Long, List<LogicalEntity>> tables; //TODO: cast all to logicaltable - LogicalEntity.unwrap(logicalTable.class) to get logicalTAble, for everything here logicalEntity
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> wrappedTables;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedTables;
 
     private ImmutableMap<Long, List<LogicalCollection>> collections;
 
@@ -100,12 +100,16 @@ public class BackupInformationObject {
 
         ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> resultMap;
         Map<Long, BackupEntityWrapper<LogicalNamespace>> tempNS = new HashMap<>();
-        BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>();
+        //BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>();
 
         for ( LogicalNamespace ns : namespaces ) {
+            /*
             nsBupObj.setEntityObject( ns );
             nsBupObj.setToBeInserted( toBeInserted );
             nsBupObj.setNameForQuery( ns.name );
+             */
+            //E entity, Boolean toBeInserted, String nameForQuery, EntityReferencer entityReferencer
+            BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>(ns, toBeInserted, ns.name, null);
             tempNS.put( ns.id, nsBupObj );
         }
 
@@ -120,9 +124,11 @@ public class BackupInformationObject {
         Map<Long, BackupEntityWrapper<LogicalNamespace>> tempNS = new HashMap<>();
 
         for ( LogicalNamespace ns : namespaces ) {
+            /*
             BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>();
             nsBupObj.setEntityObject( ns );
             nsBupObj.setNameForQuery( ns.name );
+             */
 
             // create entityReferences for each namespace (if there is a reference) with namespacedependencies, and add entityReferences to the backupinformationobject
             if ( namespaceDependencies.containsKey( ns.id ) || namespaceTableDependencies.containsKey( ns.id ) ) {
@@ -140,17 +146,21 @@ public class BackupInformationObject {
                     }
                     entityReferencer.setReferencerTables( tempReferencerTables );
                 }
-                nsBupObj.setEntityReferencer( entityReferencer );
+                BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>(ns, ns.name, entityReferencer);
+                tempNS.put( ns.id, nsBupObj );
+                //nsBupObj.setEntityReferencer( entityReferencer );
+            } else {
+                //E entity, Boolean toBeInserted, String nameForQuery, EntityReferencer entityReferencer
+                BackupEntityWrapper<LogicalNamespace> nsBupObj = new BackupEntityWrapper<>(ns, ns.name, null);
+                tempNS.put( ns.id, nsBupObj );
             }
-
-            tempNS.put( ns.id, nsBupObj );
         }
 
         resultMap = ImmutableMap.copyOf( tempNS );
         return resultMap;
     }
 
-
+    /*
     public ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrapLogicalEntities( ImmutableMap<Long, List<LogicalEntity>> entityMap, Boolean toBeInserted ) {
 
         ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> resultMap;
@@ -202,23 +212,28 @@ public class BackupInformationObject {
         return resultMap;
     }
 
+     */
 
-    public ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tempWrapLogicalTables( ImmutableMap<Long, List<LogicalTable>> entityMap, Map<Long, List<Long>> tableDependencies, Map<Long, List<Pair<Long, Long>>> namespaceTableDependendencies, Boolean toBeInserted ) {
+    public ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrapLogicalEntities( Map<Long, List<LogicalEntity>> entityMap, Map<Long, List<Long>> tableDependencies, Map<Long, List<Pair<Long, Long>>> namespaceTableDependendencies, Boolean toBeInserted ) {
 
-        ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> resultMap;
-        Map<Long, List<BackupEntityWrapper<LogicalTable>>> tempMap = new HashMap<>();
+        ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> resultMap;
+        Map<Long, List<BackupEntityWrapper<LogicalEntity>>> tempMap = new HashMap<>();
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
-        for ( Map.Entry<Long, List<LogicalTable>> entry : entityMap.entrySet() ) {
-            List<LogicalTable> entityList = entry.getValue();
-            List<BackupEntityWrapper<LogicalTable>> bupEntityList = new ArrayList<>();
+        for ( Map.Entry<Long, List<LogicalEntity>> entry : entityMap.entrySet() ) {
+            List<LogicalEntity> entityList = entry.getValue();
+            List<BackupEntityWrapper<LogicalEntity>> bupEntityList = new ArrayList<>();
 
-            for ( LogicalTable entity : entityList ) {
-                BackupEntityWrapper<LogicalTable> tempBupEntity = new BackupEntityWrapper<>();
+            for ( LogicalEntity entity : entityList ) {
+                BackupEntityWrapper<LogicalEntity> tempBupEntity = new BackupEntityWrapper<>(entity, toBeInserted, entity.name, null);
+                /*
                 tempBupEntity.setEntityObject( entity );
                 tempBupEntity.setToBeInserted( toBeInserted );
                 tempBupEntity.setNameForQuery( entity.name );
+
+                 */
                 bupEntityList.add( tempBupEntity );
+
 
                 // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject
                 if (entity.getEntityType().equals( EntityType.ENTITY)) {
@@ -251,6 +266,7 @@ public class BackupInformationObject {
     }
 
 
+    /*
     public List<BackupEntityWrapper<LogicalEntity>> wrapLogicalEntity( List<LogicalEntity> entityList ) {
 
         //go through each element from entityMap, and for each list go through each element and transform it to a BupSuperEntity
@@ -267,5 +283,25 @@ public class BackupInformationObject {
         return bupEntityList;
 
     }
+
+    public ImmutableMap<Integer, ? extends LogicalEntity> test (List<? extends LogicalEntity> entityList) {
+        ImmutableMap<Integer, LogicalEntity> resultMap;
+        Map<Integer, LogicalEntity> tempMap = new HashMap<>();
+        tempMap.put( 1, entityList.get( 0 ) );
+        String name = entityList.get( 0 ).name;
+        resultMap = ImmutableMap.copyOf( tempMap );
+        return resultMap;
+    }
+
+    public Map<Integer, List<LogicalEntity>> test2 (Map<Long, List<LogicalEntity>> entityMap) {
+        ImmutableMap<Integer, List<LogicalEntity>> resultMap;
+        Map<Integer, List <LogicalEntity>> tempMap = new HashMap<>();
+        tempMap.put( 1, entityMap.get( 0 ));
+        String name = entityMap.get( 0 ).get( 0 ).name;
+        resultMap = ImmutableMap.copyOf( tempMap );
+        return resultMap;
+    }
+
+     */
 
 }

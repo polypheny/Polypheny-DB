@@ -17,6 +17,7 @@
 package org.polypheny.db.backup.datainserter;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.stream.Collectors;
@@ -100,6 +101,7 @@ public class InsertSchema {
         Map<Long, List<BackupEntityWrapper<? extends LogicalEntity>>> tempMap = new HashMap<>();
         //luege öbs goht eso (a de räschtleche ort, ond söcht met instance of caste)
 
+        /*
         for ( Map.Entry<Long, List<LogicalTable>> a : backupInformationObject.getTables().entrySet()) {
             List<BackupEntityWrapper<LogicalEntity>> bupEntityList = new ArrayList<>();
             //TODO(FF): doesn't work with return value :(
@@ -108,11 +110,19 @@ public class InsertSchema {
         }
         //bupInformationObject.setBupTables( ImmutableMap.copyOf( tempMap ) );
 
+         */
+
 
         // create table
         //bupInformationObject.transformLogicalEntitiesToBupSuperEntity( bupInformationObject.getTables() );
         //tables = backupInformationObject.tempWrapLogicalTables( backupInformationObject.getTables(), true );
         //backupInformationObject.setWrappedTables( tables );
+
+
+        //LogicalTable lol = backupInformationObject.getWrappedTables().get( 0 ).get( 0 ).getEntityObject().unwrap( LogicalTable.class );
+        //use LogicalEntity.unwrap(LogicalTable.class) for each of the LogicalEntities in wrappedTables
+        //ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tableTables = backupInformationObject.getWrappedTables()
+
         insertCreateTable( backupInformationObject.getWrappedTables() );
 
         // alter table - add unique constraint
@@ -187,20 +197,20 @@ public class InsertSchema {
     }
 
 
-    private void insertCreateTable( ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tables ) {
+    private void insertCreateTable( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> tables ) {
         String query = new String();
 
         // key: namespace id, value: list of tables for the namespace
-        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalTable>>> tablesPerNs : tables.entrySet() ) {
+        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> tablesPerNs : tables.entrySet() ) {
             Long nsID = tablesPerNs.getKey();
             //String namespaceName = bupInformationObject.getBupRelNamespaces().get( nsID ).getNameForQuery();
             //only get rel namespaces from all bup namespaces
             String namespaceName = backupInformationObject.getWrappedNamespaces().get( nsID ).getNameForQuery();
 
-            List<BackupEntityWrapper<LogicalTable>> tablesList = tablesPerNs.getValue();
+            List<BackupEntityWrapper<LogicalEntity>> tablesList = tablesPerNs.getValue();
 
             // go through each table in the list (of tables for one namespace)
-            for ( BackupEntityWrapper<LogicalTable> table : tablesList ) {
+            for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
 
                 // only create tables that don't (exist by default in polypheny)
                 if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
@@ -212,23 +222,23 @@ public class InsertSchema {
     }
 
 
-    private void insertAlterTableUQ( ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> tables, ImmutableMap<Long, List<LogicalConstraint>> constraints ) {
+    private void insertAlterTableUQ( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> tables, ImmutableMap<Long, List<LogicalConstraint>> constraints ) {
         String query = new String();
 
-        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalTable>>> tablesPerNs : tables.entrySet() ) {
+        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> tablesPerNs : tables.entrySet() ) {
             Long nsID = tablesPerNs.getKey();
             String namespaceName = backupInformationObject.getWrappedNamespaces().get( nsID ).getNameForQuery();
 
-            List<BackupEntityWrapper<LogicalTable>> tablesList = tablesPerNs.getValue();
+            List<BackupEntityWrapper<LogicalEntity>> tablesList = tablesPerNs.getValue();
 
             // go through each constraint in the list (of tables for one namespace)
-            for ( BackupEntityWrapper<LogicalTable> table : tablesList ) {
+            for ( BackupEntityWrapper<LogicalEntity> table : tablesList ) {
                 //TODO(FF - cosmetic): exclude source tables (for speed)
 
                 // compare the table id with the constraint keys, and if they are the same, create the constraint
-                if ( constraints.containsKey( table.getEntityObject().getId() ) ) {
-                    List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().getId() );
-                    List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().getId() );
+                if ( constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).getId() ) ) {
+                    List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
+                    List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
 
                     // go through all constraints per table
                     for ( LogicalConstraint constraint : constraintsList ) {
@@ -251,18 +261,18 @@ public class InsertSchema {
     }
 
 
-    private void insertAlterTableFK( ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
+    private void insertAlterTableFK( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
         String query = new String();
 
         // go through foreign key constraints and collect the necessary data
         for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
             for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
                 String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
-                String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
+                String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
                 String constraintName = foreignKey.name;
                 String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
                 String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
-                String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
+                String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
                 String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
                 String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
                 String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
@@ -327,13 +337,13 @@ public class InsertSchema {
     }
 
 
-    private String createTableQuery( BackupEntityWrapper<LogicalTable> table, String namespaceName ) {
+    private String createTableQuery( BackupEntityWrapper<LogicalEntity> table, String namespaceName ) {
         String query = new String();
         String columnDefinitions = new String();
         String pkConstraint = new String();
         ImmutableMap<Long, List<LogicalColumn>> columns = backupInformationObject.getColumns();
         ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeys = backupInformationObject.getPrimaryKeysPerTable();
-        LogicalTable logicalTable = table.getEntityObject();
+        LogicalTable logicalTable = table.getEntityObject().unwrap( LogicalTable.class );
         Long tableID = logicalTable.getId();
         List<LogicalColumn> colsPerTable = columns.get( tableID );
         List<LogicalPrimaryKey> pksPerTable = primaryKeys.get( tableID );
@@ -373,27 +383,31 @@ public class InsertSchema {
         String colDataType = col.getType().toString();
         String colNullable = col.nullableBoolToString();
 
+        //TODO(FF): dröber switche för alli datatypes
+
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
-            PolyValue lool = col.defaultValue.value;
-            PolyType lol = col.defaultValue.value.type; //decimal
-            String type = lol.getTypeName();
-            //PolyString lal = col.defaultValue.value.asString(); // works with varchar
-            //@NotNull PolyUserDefinedValue lkjlkj = col.defaultValue.value.asUserDefinedValue();
-            //String value = lool.asUserDefinedValue().toString();
 
-            //String hahaaaa = lool.asString().asCharset( "UTF-8" ); //signsign hallo
-            //org.polypheny.db.catalog.exceptions.GenericRuntimeException: Cannot parse PolyBigDecimal(value=2) to type PolyString
-            String hahaa = lool.asString().toTypedString( true ); //'hallo'
-            String hahaaa = lool.asString().toTypedString( false ); //hallo
+            String value = col.defaultValue.value.toTypedJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
+            //for string it is this: {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}, figure out regex to only get value
+            //from the string value (in json format), get only the value with regex from string {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}
+            String regexString = value.replaceAll( ".*\"value\":", "" ); //is now value":"hallo","charset":"UTF-16"}, dont want ,"charset":"UTF-16"} part
+            regexString = regexString.replaceAll( ",.*", "" );  //correct for varchar, for int it is still 2}, dont want last }
+            regexString = regexString.replaceAll( "}", "" ); //TODO(FF): what to do if there is a "}" in the value?
+            regexString = regexString.replaceAll( "\"", "" );
+            //TODO(FF): gives an error (with " there is no error?) but works: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered " "DEFAULT" "DEFAULT "" at line 1, column 172.
 
-            String haha = lool.asString().toString();
+
+
+            PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
+
             if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) ) {
-                //defaultValue = String.format( " DEFAULT '%s'", col.defaultValue.value.type.toString() );
+                defaultValue = String.format( " DEFAULT '%s'", regexString );
             } else {
-                //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value.type.toString() );
+                defaultValue = String.format( " DEFAULT %s", regexString );
             }
             //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
+            log.info( regexString );
         }
 
         String caseSensitivity = new String();
@@ -447,6 +461,8 @@ public class InsertSchema {
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
+
+        //TODO: use anyquery, rest not necessary
 
         try {
             // get a transaction and a statement

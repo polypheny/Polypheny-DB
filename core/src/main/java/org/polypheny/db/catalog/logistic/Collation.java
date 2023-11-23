@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.logistic;
 
 import lombok.NonNull;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 public enum Collation {
@@ -64,7 +65,7 @@ public enum Collation {
                 return "CASE INSENSITIVE";
             }
             else {
-                throw new RuntimeException( "Collation not supported" );
+                throw new GenericRuntimeException( "Collation not supported" );
             }
         } catch ( Exception e ) {
             throw new RuntimeException( e );

@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertSchema;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -167,8 +168,20 @@ public class BackupManager {
         backupInformationObject.setWrappedNamespaces( wrappedNamespaces );
 
         // wrap all tables with BackupEntityWrapper
-        ImmutableMap<Long, List<BackupEntityWrapper<LogicalTable>>> wrappedTables = backupInformationObject.tempWrapLogicalTables( backupInformationObject.getTables(), tableDependencies, namespaceTableDependendencies, true);
+        ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedTables = backupInformationObject.wrapLogicalEntities( backupInformationObject.getTables(), tableDependencies, namespaceTableDependendencies, true);
         backupInformationObject.setWrappedTables( wrappedTables );
+
+        /*
+        ArrayList<LogicalTable> lol = new ArrayList<>();
+        lol.add( (LogicalTable) backupInformationObject.getTables().get( 0 ));
+
+        Map<Long, List<LogicalEntity>> lol2 = backupInformationObject.getTables();
+        Map<Integer, List<LogicalEntity>> lol3 =  backupInformationObject.test2(lol2);
+
+
+        //ImmutableMap<Integer, LogicalTable> ha = backupInformationObject.test( lol );
+
+         */
     }
 
 

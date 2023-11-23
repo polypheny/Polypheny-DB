@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.logistic.IndexType;
 @EqualsAndHashCode(callSuper = false)
 @Value
 @SuperBuilder(toBuilder = true)
-public class LogicalIndex implements Serializable {
+public class LogicalIndex implements LogicalObject {
 
     private static final long serialVersionUID = -318228681682792406L;
 
@@ -115,6 +115,18 @@ public class LogicalIndex implements Serializable {
                 null,
                 location,
                 type.getId() };
+    }
+
+
+    @Override
+    public Serializable[] getParameterArray() {
+        return new Serializable[0];
+    }
+
+
+    @Override
+    public Visibility getVisibility() {
+        return LogicalObject.super.getVisibility();
     }
 
 

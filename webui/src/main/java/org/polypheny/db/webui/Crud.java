@@ -2812,7 +2812,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         new QueryRequest(
                                 "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore(),
                                 false,
-                                true, "cypher",
+                                true,
+                                "cypher",
                                 namespace.getName() ),
                         transactionManager,
                         Catalog.defaultUserId,

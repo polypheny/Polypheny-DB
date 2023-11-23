@@ -18,9 +18,11 @@ package org.polypheny.db.backup;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 
 @Getter @Setter
-public class BackupEntityWrapper<E> {
+public class BackupEntityWrapper<E extends LogicalObject> {
 
     private E entityObject;
 
@@ -30,5 +32,19 @@ public class BackupEntityWrapper<E> {
     private String nameForQuery;
 
     private EntityReferencer entityReferencer;
+
+
+    public BackupEntityWrapper( E entity, Boolean toBeInserted, String nameForQuery, EntityReferencer entityReferencer ) {
+        this.entityObject = entity;
+        this.toBeInserted = toBeInserted;
+        this.nameForQuery = nameForQuery;
+        this.entityReferencer = entityReferencer;
+    }
+
+    public BackupEntityWrapper( E entity, String nameForQuery, EntityReferencer entityReferencer ) {
+        this.entityObject = entity;
+        this.nameForQuery = nameForQuery;
+        this.entityReferencer = entityReferencer;
+    }
 
 }
