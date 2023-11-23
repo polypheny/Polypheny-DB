@@ -40,7 +40,7 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.index.Index;

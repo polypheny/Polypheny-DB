@@ -19,14 +19,23 @@ package org.polypheny.db.sql;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Modality;
@@ -34,18 +43,35 @@ import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.LangFunctionOperator;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.LanguageContext;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.ResultContext;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlAsOperator;
 import org.polypheny.db.sql.language.SqlBinaryOperator;
@@ -155,19 +181,27 @@ import org.polypheny.db.sql.language.fun.SqlTimestampDiffFunction;
 import org.polypheny.db.sql.language.fun.SqlTranslate3Function;
 import org.polypheny.db.sql.language.fun.SqlTrimFunction;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
-import org.polypheny.db.webui.Crud;
-import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.Crud.QueryExecutionException;
+import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
+import org.polypheny.db.webui.models.results.RelationalResult;
 
+@Slf4j
 public class SqlLanguagePlugin extends PolyPlugin {
 
     @Getter
@@ -197,17 +231,225 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( "sql", (
-                session,
-                request,
-                transactionManager,
-                userId,
-                databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (Result<?, ?>) r ).collect( Collectors.toList() ) ) );
+        PolyPluginManager.AFTER_INIT.add( () -> {
+            ResultIterator.addLanguage( "sql", new LanguageContext(
+                    queries -> split( queries ),
+                    query -> anySqlQuery( query ),
+                    ( query, iter ) -> computeValues( query, iter ) ) );
+        } );
         LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessor::new, SqlLanguagePlugin::getSqlValidator );
 
         if ( !isInit() ) {
             registerOperators();
+        }
+    }
+
+
+    private static List<List<PolyValue>> computeValues( QueryContext query, ResultContext context ) {
+        LogicalTable table = null;
+        if ( request.entityId != null ) {
+            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
+        }
+
+        List<UiColumnDefinition> header = new ArrayList<>();
+        for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
+            String columnName = metaData.getName();
+
+            String filter = "";
+            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
+                filter = request.filter.get( columnName );
+            }
+
+            SortState sort;
+            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
+                sort = request.sortState.get( columnName );
+            } else {
+                sort = new SortState();
+            }
+
+            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
+                    .name( metaData.getName() )
+                    .dataType( metaData.getType().getPolyType().getTypeName() )
+                    .nullable( metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
+                    .precision( metaData.getType().getPrecision() )
+                    .sort( sort )
+                    .filter( filter );
+
+            // Get column default values
+            if ( table != null ) {
+                Optional<LogicalColumn> logicalColumn = Catalog.snapshot().rel().getColumn( table.id, columnName );
+                if ( logicalColumn.isPresent() ) {
+                    if ( logicalColumn.get().defaultValue != null ) {
+                        dbCol.defaultValue( logicalColumn.get().defaultValue.value.toJson() );
+                    }
+                }
+            }
+            header.add( dbCol.build() );
+        }
+
+        List<String[]> data = computeResultData( rows, header, statement.getTransaction() );
+
+        return RelationalResult.builder()
+                .header( header.toArray( new UiColumnDefinition[0] ) )
+                .data( data.toArray( new String[0][] ) )
+                .namespaceType( implementation.getNamespaceType() )
+                .language( QueryLanguage.from( "sql" ) )
+                .affectedTuples( data.size() )
+                .hasMore( hasMoreRows );
+    }
+
+
+    private static @Nullable List<QueryContext> split( QueryContext queries ) {
+        try {
+            return queries.openTransaction().getProcessor( QueryLanguage.from( "sql" ) ).splitStatements( queries.getQuery() ).stream().map( q -> new QueryContext(
+                    q,
+                    queries.getLanguage(),
+                    queries.isAnalysed(),
+                    queries.isUsesCache(),
+                    queries.getUserId(),
+                    queries.getOrigin(),
+                    queries.getBatch(),
+                    queries.getManager(),
+                    queries.getTransaction() ) ).collect( Collectors.toList() );
+        } catch ( RuntimeException e ) {
+            return null;
+        }
+    }
+
+
+    /**
+     * Run any query coming from the SQL console
+     */
+    public static ResultContext anySqlQuery( final QueryContext context ) {
+        Transaction transaction = context.getTransaction();
+        long executionTime = 0;
+        long temp = 0;
+        boolean noLimit;
+        String query = context.getQuery();
+        Pattern p = Pattern.compile( ".*(COMMIT|ROLLBACK).*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+        if ( p.matcher( context.getQuery() ).matches() ) {
+            temp = System.nanoTime();
+            boolean isCommit = Pattern.matches( "(?si:[\\s]*COMMIT.*)", query );
+            try {
+                if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
+                    transaction.commit();
+                } else {
+                    transaction.rollback();
+                }
+
+                executionTime += System.nanoTime() - temp;
+                return new ResultContext( null, null, context.getQuery(), context.getLanguage(), transaction, executionTime );
+            } catch ( TransactionException e ) {
+                log.error( String.format( "Caught exception while %s a query from the console", isCommit ? "committing" : "rolling back" ), e );
+                executionTime += System.nanoTime() - temp;
+                log.error( e.toString() );
+            }
+        } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
+            try {
+                temp = System.nanoTime();
+                ResultIterator iter = SqlLanguagePlugin.executeSqlSelect( transaction.createStatement(), context );
+                executionTime += System.nanoTime() - temp;
+                return new ResultContext( iter, null, context.getQuery(), context.getLanguage(), transaction, executionTime );
+            } catch ( QueryExecutionException | RuntimeException e ) {
+                log.error( "Caught exception while executing a query from the console", e );
+                executionTime += System.nanoTime() - temp;
+                return new ResultContext( null, e.getCause().getMessage(), context.getQuery(), context.getLanguage(), transaction, executionTime );
+            }
+        }
+        try {
+            temp = System.nanoTime();
+            ResultIterator iterator = SqlLanguagePlugin.executeSqlUpdate( transaction.createStatement(), transaction, context );
+            executionTime += System.nanoTime() - temp;
+
+            return new ResultContext( iterator, null, context.getQuery(), context.getLanguage(), transaction, executionTime );
+        } catch ( QueryExecutionException | RuntimeException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            executionTime += System.nanoTime() - temp;
+            return new ResultContext( null, e.getMessage(), context.getQuery(), context.getLanguage(), transaction, executionTime );
+        }
+
+    }
+
+
+    public static ResultIterator executeSqlSelect( final Statement statement, final QueryContext context ) throws QueryExecutionException {
+        PolyImplementation implementation;
+        boolean isAnalyze = statement.getTransaction().isAnalyze();
+
+        try {
+            implementation = processQuery( statement, context.getQuery(), isAnalyze );
+            return implementation.execute( statement, context.getBatch(), isAnalyze, true, false );
+
+        } catch ( Throwable t ) {
+            if ( statement.getTransaction().isAnalyze() ) {
+                InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
+            throw new GenericRuntimeException( t );
+        }
+    }
+
+
+    private static PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
+        PolyImplementation implementation;
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().start( "Parsing" );
+        }
+        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
+        Node parsed = sqlProcessor.parse( sql ).get( 0 );
+        if ( isAnalyze ) {
+            statement.getOverviewDuration().stop( "Parsing" );
+        }
+        AlgRoot logicalRoot;
+        QueryParameters parameters = new QueryParameters( sql, NamespaceType.RELATIONAL );
+        if ( parsed.isA( Kind.DDL ) ) {
+            implementation = sqlProcessor.prepareDdl( statement, parsed, parameters );
+        } else {
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().start( "Validation" );
+            }
+            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Validation" );
+                statement.getOverviewDuration().start( "Translation" );
+            }
+            logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
+            if ( isAnalyze ) {
+                statement.getOverviewDuration().stop( "Translation" );
+            }
+            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
+        }
+        return implementation;
+    }
+
+
+    private static ResultIterator executeSqlUpdate( final Statement statement, final Transaction transaction, final QueryContext context ) throws QueryExecutionException {
+        PolyImplementation implementation;
+
+        try {
+            implementation = processQuery( statement, context.getQuery(), transaction.isAnalyze() );
+        } catch ( Throwable t ) {
+            if ( transaction.isAnalyze() ) {
+                InformationManager analyzer = transaction.getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
+            throw new GenericRuntimeException( t.getMessage(), t );
+
+
+        }
+        try {
+            return implementation.execute( statement );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
         }
     }
 

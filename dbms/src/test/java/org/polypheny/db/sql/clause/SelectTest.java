@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.algebra.AlgNode;

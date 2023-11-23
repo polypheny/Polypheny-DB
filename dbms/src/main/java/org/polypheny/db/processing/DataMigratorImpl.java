@@ -36,7 +36,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;

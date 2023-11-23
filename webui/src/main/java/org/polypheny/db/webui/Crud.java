@@ -76,7 +76,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter;
@@ -157,6 +157,7 @@ import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -2807,16 +2808,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private void createGraph( Namespace namespace, Context ctx ) {
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
-        ctx.json(
-                LanguageCrud.anyQuery( cypher, null,
-                        new QueryRequest(
-                                "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore(),
-                                false,
-                                true, "cypher",
-                                namespace.getName() ),
-                        transactionManager,
-                        Catalog.defaultUserId,
-                        Catalog.defaultNamespaceId ).get( 0 ) );
+        QueryContext context = new QueryContext( "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore(),
+                cypher,
+                false,
+                true,
+                Catalog.defaultUserId,
+                "Polypheny-UI",
+                -1,
+                transactionManager );
+        ctx.json( LanguageCrud.anyQueryResult( context ).get( 0 ) );
     }
 
 

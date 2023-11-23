@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;

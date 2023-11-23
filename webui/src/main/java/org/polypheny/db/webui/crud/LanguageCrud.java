@@ -24,14 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgRoot;
@@ -53,12 +53,14 @@ import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.IndexModel;
@@ -82,7 +84,7 @@ public class LanguageCrud {
 
     public static Crud crud;
 
-    public final static Map<String, Consumer7<Session, QueryRequest, TransactionManager, Long, Long, Crud, List<Result<?, ?>>>> REGISTER = new HashMap<>();
+    public final static Map<String, BiFunction<QueryContext, ResultIterator, Result<?, ?>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -93,20 +95,15 @@ public class LanguageCrud {
     public static void anyQuery( Context ctx ) {
         QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
         QueryLanguage language = QueryLanguage.from( request.language );
-        Result<?, ?> result = anyQuery( language, null, request, crud.getTransactionManager(), Catalog.defaultUserId, Catalog.defaultNamespaceId ).get( 0 );
-        ctx.json( result );
+        QueryContext context = new QueryContext( request.query, language, request.analyze, request.cache, Catalog.defaultUserId, "Polypheny UI", request.noLimit ? -1 : crud.getPageSize(), crud.getTransactionManager() );
+        ctx.json( anyQueryResult( context ) );
     }
 
 
-    public static List<Result<?, ?>> anyQuery(
-            QueryLanguage language,
-            Session session,
-            QueryRequest request,
-            TransactionManager transactionManager,
-            long userId,
-            long namespaceId ) {
-
-        return REGISTER.get( language.getSerializedName() ).apply( session, request, transactionManager, userId, namespaceId, crud );
+    public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context ) {
+        List<Pair<QueryContext, ResultIterator>> iterators = ResultIterator.anyQuery( context );
+        BiFunction<QueryContext, ResultIterator, Result<?, ?>> resultProducer = REGISTER.get( context.getLanguage() );
+        return iterators.stream().map( p -> resultProducer.apply( p.left, p.right ) ).collect( Collectors.toList() );
     }
 
 
@@ -191,7 +188,6 @@ public class LanguageCrud {
             default:
                 throw new GenericRuntimeException( "Unknown data model." );
         }
-
 
         if ( transaction.isActive() ) {
             try {
@@ -422,32 +418,6 @@ public class LanguageCrud {
         }
 
         context.json( p );
-    }
-
-
-    public void addLanguage(
-            String language,
-            Consumer7<Session,
-                    QueryRequest,
-                    TransactionManager,
-                    Long,
-                    Long,
-                    Crud,
-                    List<Result<?, ?>>> function ) {
-        REGISTER.put( language, function );
-    }
-
-
-    public void removeLanguage( String name ) {
-        REGISTER.remove( name );
-    }
-
-
-    @FunctionalInterface
-    public interface Consumer7<One, Two, Three, Four, Five, Six, Seven> {
-
-        Seven apply( One one, Two two, Three three, Four four, Five five, Six six );
-
     }
 
 

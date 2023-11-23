@@ -16,18 +16,12 @@
 
 package org.polypheny.db;
 
-import static org.reflections.Reflections.log;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -40,8 +34,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -359,122 +351,6 @@ public class PolyImplementation {
                 }
             }
         }
-    }
-
-
-    public static class ResultIterator implements AutoCloseable {
-
-
-        private final Iterator<PolyValue[]> iterator;
-        private final int batch;
-        private final ExecutionTimeMonitor executionTimeMonitor;
-        private final boolean isIndex;
-        private final boolean isTimed;
-        private final AlgDataType rowType;
-
-        private final StatementEvent statementEvent;
-
-
-        private ResultIterator( Iterator<PolyValue[]> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
-            this.iterator = iterator;
-            this.batch = batch;
-            this.isIndex = isIndex;
-            this.isTimed = isTimed;
-            this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
-            this.executionTimeMonitor = executionTimeMonitor;
-            this.rowType = rowType;
-        }
-
-
-        public List<List<PolyValue>> getNextBatch() {
-
-            StopWatch stopWatch = null;
-            try {
-                if ( isTimed ) {
-                    stopWatch = new StopWatch();
-                    stopWatch.start();
-                }
-                List<List<PolyValue>> res = new ArrayList<>();
-                int i = 0;
-                while ( (batch < 0 || i++ < batch) && iterator.hasNext() ) {
-                    res.add( Lists.newArrayList( iterator.next() ) );
-                }
-
-                //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-
-                if ( isTimed ) {
-                    stopWatch.stop();
-                    executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
-                }
-
-                // Only if it is an index
-                if ( statementEvent != null && isIndex ) {
-                    statementEvent.setIndexSize( res.size() );
-                }
-
-                return res;
-            } catch ( Throwable t ) {
-                try {
-                    close();
-                    throw new GenericRuntimeException( t );
-                } catch ( Exception e ) {
-                    throw new GenericRuntimeException( t );
-                }
-
-            }
-        }
-
-
-        public List<List<PolyValue>> getAllRowsAndClose() {
-            List<List<PolyValue>> result = getNextBatch();
-            try {
-                close();
-            } catch ( Exception e ) {
-                throw new GenericRuntimeException( e );
-            }
-            return result;
-        }
-
-
-        public List<PolyValue> getSingleRows() {
-            return getNextBatch( null );
-        }
-
-
-        @NotNull
-        private <D> List<D> getNextBatch( @Nullable Function<PolyValue[], D> transformer ) {
-            final Iterable<PolyValue[]> iterable = () -> iterator;
-
-            if ( transformer == null ) {
-                return (List<D>) StreamSupport
-                        .stream( iterable.spliterator(), false )
-                        .collect( Collectors.toList() );
-            }
-            return StreamSupport
-                    .stream( iterable.spliterator(), false )
-                    .map( transformer )
-                    .collect( Collectors.toList() );
-        }
-
-
-        public List<PolyValue[]> getArrayRows() {
-
-            return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
-
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator", e );
-            }
-        }
-
     }
 
 
