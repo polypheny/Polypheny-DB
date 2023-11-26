@@ -46,6 +46,7 @@ import com.mongodb.client.model.WriteModel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -80,12 +81,18 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -135,6 +142,27 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         this.storeId = physical.adapterId;
         this.collection = namespace.database.getCollection( physical.name );
         this.fields = fields;
+    }
+
+
+    @Override
+    public AlgDataType getRowType() {
+        if ( namespaceType == NamespaceType.RELATIONAL ) {
+            return buildProto().apply( AlgDataTypeFactory.DEFAULT );
+        }
+        return super.getRowType();
+    }
+
+
+    public AlgProtoDataType buildProto() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+            AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() );
     }
 
 
@@ -323,7 +351,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 removes,
                 renames );
     }
-
 
 
     @Override

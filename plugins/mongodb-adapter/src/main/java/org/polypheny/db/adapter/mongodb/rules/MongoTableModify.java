@@ -150,7 +150,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         condImplementor.setStaticRowType( implementor.getStaticRowType() );
         ((MongoAlg) input).implement( condImplementor );
         implementor.filter = condImplementor.filter;
-        assert condImplementor.getStaticRowType() instanceof MongoRowType;
+        //assert condImplementor.getStaticRowType() instanceof MongoRowType;
         MongoRowType rowType = (MongoRowType) condImplementor.getStaticRowType();
         int pos = 0;
         BsonDocument doc = new BsonDocument();

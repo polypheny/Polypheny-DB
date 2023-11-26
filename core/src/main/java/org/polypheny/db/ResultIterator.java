@@ -75,8 +75,6 @@ public class ResultIterator implements AutoCloseable {
                 res.add( Lists.newArrayList( iterator.next() ) );
             }
 
-            //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-
             if ( isTimed ) {
                 stopWatch.stop();
                 executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
@@ -113,11 +111,6 @@ public class ResultIterator implements AutoCloseable {
             throw new GenericRuntimeException( e );
         }
         return result;
-    }
-
-
-    public List<PolyValue> getSingleRows() {
-        return getNextBatch( null );
     }
 
 
