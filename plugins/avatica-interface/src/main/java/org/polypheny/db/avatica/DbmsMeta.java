@@ -73,8 +73,6 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -102,17 +100,17 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -1072,7 +1070,7 @@ public class DbmsMeta implements ProtobufMeta {
             PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setPreparedQuery( sql );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
-            return execute( h, new LinkedList<>(), maxRowsInFirstFrame, connection );
+            return execute( h, new ArrayList<>(), maxRowsInFirstFrame, connection );
         }
     }
 
@@ -1353,24 +1351,15 @@ public class DbmsMeta implements ProtobufMeta {
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
         PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
-        Processor sqlProcessor = statementHandle.getStatement().getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        QueryContext context = QueryContext.builder()
+                .query( sql )
+                .language( language )
+                .origin( "DBMS Meta" )
+                .transactionManager( transactionManager )
+                .build();
 
-        Node parsed = sqlProcessor.parse( sql ).get( 0 );
-
-        PolyphenyDbSignature signature;
-        if ( parsed.isA( Kind.DDL ) ) {
-            signature = PolyphenyDbSignature.from( sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed, new QueryParameters( sql, NamespaceType.RELATIONAL ) ) );
-        } else {
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate(
-                    statementHandle.getStatement().getTransaction(),
-                    parsed,
-                    RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = sqlProcessor.translate( statementHandle.getStatement(), validated.left, null );
-            AlgDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
-
-            // Prepare
-            signature = PolyphenyDbSignature.from( statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true ) );
-        }
+        PolyphenyDbSignature signature = PolyphenyDbSignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement() ).get( 0 ).getImplementation() );
 
         h.signature = signature;
         statementHandle.setSignature( signature );

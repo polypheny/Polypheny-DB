@@ -19,13 +19,13 @@ package org.polypheny.db.mql.mql2alg;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.MockCatalogReaderDocument;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.mql2alg.MqlToAlgConverter;
 import org.polypheny.db.mql.mql.MqlTest;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Contexts;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.test.MockRelOptPlanner;
 
@@ -48,7 +48,12 @@ public abstract class Mql2AlgTest extends MqlTest {
 
 
     public AlgRoot translate( String mql ) {
-        return MQL_TO_ALG_CONVERTER.convert( parse( mql ), new MqlQueryParameters( mql, "private", NamespaceType.DOCUMENT ) );
+        return MQL_TO_ALG_CONVERTER.convert(
+                ParsedQueryContext.builder()
+                        .query( mql )
+                        .queryNode( parse( mql ) )
+                        .language( QueryLanguage.from( "mql" ) )
+                        .origin( "Mql Test" ).build() );
     }
 
 }

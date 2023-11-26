@@ -932,13 +932,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * @param type of the rowCount information
      */
     @Override
-    public void updateRowCountPerTable( long tableId, int number, MonitoringType type ) {
+    public void updateRowCountPerTable( long tableId, long number, MonitoringType type ) {
         StatisticTable table;
         switch ( type ) {
             case INSERT:
                 if ( tableStatistic.containsKey( tableId ) ) {
                     table = tableStatistic.get( tableId );
-                    int totalRows = table.getNumberOfRows() + number;
+                    long totalRows = table.getNumberOfRows() + number;
 
                     table.setNumberOfRows( totalRows );
                 } else {
@@ -949,7 +949,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             case DELETE:
                 if ( tableStatistic.containsKey( tableId ) ) {
                     table = tableStatistic.get( tableId );
-                    int totalRows = table.getNumberOfRows() - number;
+                    long totalRows = table.getNumberOfRows() - number;
 
                     table.setNumberOfRows( totalRows );
                 } else {
@@ -982,7 +982,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
     @Override
     public void setIndexSize( long tableId, int indexSize ) {
         if ( tableStatistic.containsKey( tableId ) ) {
-            int numberOfRows = tableStatistic.remove( tableId ).getNumberOfRows();
+            long numberOfRows = tableStatistic.remove( tableId ).getNumberOfRows();
             if ( numberOfRows != indexSize ) {
                 // Use indexSize because it should be correct
                 StatisticTable statisticTable = tableStatistic.get( tableId );
@@ -1139,7 +1139,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
      * @return the number of rows of a given table
      */
     @Override
-    public synchronized Integer rowCountPerTable( long tableId ) {
+    public synchronized Long rowCountPerTable( long tableId ) {
         if ( tableStatistic.containsKey( tableId ) ) {
             return tableStatistic.get( tableId ).getNumberOfRows();
         } else {

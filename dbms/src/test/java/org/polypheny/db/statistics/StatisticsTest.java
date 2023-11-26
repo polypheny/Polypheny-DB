@@ -253,8 +253,8 @@ public class StatisticsTest {
                 LogicalTable catalogTableNation = snapshot.rel().getTable( "statisticschema", "nation" ).orElseThrow();
                 LogicalTable catalogTableRegion = snapshot.rel().getTable( "statisticschema", "region" ).orElseThrow();
 
-                Integer rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
-                Integer rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
+                Long rowCountNation = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                Long rowCountRegion = StatisticsManager.getInstance().rowCountPerTable( catalogTableRegion.id );
 
                 Assert.assertEquals( Integer.valueOf( 3 ), rowCountNation );
                 Assert.assertEquals( Integer.valueOf( 2 ), rowCountRegion );
@@ -306,7 +306,7 @@ public class StatisticsTest {
                     continue;
                 }
                 LogicalTable catalogTableNation = Catalog.snapshot().rel().getTable( "statisticschema", "nationdelete" ).orElseThrow();
-                Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
+                Long rowCount = StatisticsManager.getInstance().rowCountPerTable( catalogTableNation.id );
                 // potentially table exists not yet in statistics but in catalog
                 if ( rowCount != null && rowCount == target ) {
                     successfull = true;

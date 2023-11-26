@@ -116,7 +116,7 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
 
 
     public double getRowCount() {
-        Integer count = StatisticsManager.getInstance().rowCountPerTable( id );
+        Long count = StatisticsManager.getInstance().rowCountPerTable( id );
         if ( count == null ) {
             return 0;
         }

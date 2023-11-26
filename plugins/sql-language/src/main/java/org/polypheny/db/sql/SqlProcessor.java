@@ -52,6 +52,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -179,7 +180,7 @@ public class SqlProcessor extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -197,7 +198,7 @@ public class SqlProcessor extends Processor {
                         .convertTableAccess( false )
                         .build();
         final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getSnapshot(), cluster, StandardConvertletTable.INSTANCE, config );
-        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
+        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode(), false, true );
 
         // Decorrelate
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );

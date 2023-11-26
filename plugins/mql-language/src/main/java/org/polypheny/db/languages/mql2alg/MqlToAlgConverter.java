@@ -73,7 +73,6 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
@@ -81,12 +80,11 @@ import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlInsert;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -237,11 +235,11 @@ public class MqlToAlgConverter {
     }
 
 
-    public AlgRoot convert( Node query, QueryParameters parameters ) {
+    public AlgRoot convert( ParsedQueryContext context ) {
         resetDefaults();
-        this.namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
-        if ( query instanceof MqlCollectionStatement ) {
-            return convert( (MqlCollectionStatement) query );
+        this.namespaceId = context.getNamespaceId();
+        if ( context.getQueryNode() instanceof MqlCollectionStatement ) {
+            return convert( (MqlCollectionStatement) context.getQueryNode() );
         }
         throw new GenericRuntimeException( "DML or DQL need a collection" );
     }

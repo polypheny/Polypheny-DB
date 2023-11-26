@@ -49,7 +49,7 @@ public abstract class StatementEvent extends BaseEvent {
     protected String description;
     protected List<String> fieldNames;
     protected long executionTime;
-    protected int rowCount;
+    protected long rowCount;
     protected boolean isAnalyze;
     protected boolean isSubQuery;
     protected boolean isCommitted;

@@ -33,8 +33,8 @@ import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
-import org.polypheny.db.processing.ExtendedQueryParameters;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Lock.LockMode;
@@ -94,7 +94,7 @@ public class CypherProcessor extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
 
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
@@ -108,7 +108,7 @@ public class CypherProcessor extends Processor {
 
         final CypherToAlgConverter cypherToAlgConverter = new CypherToAlgConverter( statement, builder, rexBuilder, cluster );
 
-        AlgRoot logicalRoot = cypherToAlgConverter.convert( (CypherNode) query, (ExtendedQueryParameters) parameters, cluster );
+        AlgRoot logicalRoot = cypherToAlgConverter.convert( (CypherNode) context.getQueryNode(), context, cluster );
 
         // Decorrelate
         final AlgBuilder algBuilder = AlgBuilder.create( statement );

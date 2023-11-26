@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -47,6 +48,12 @@ public class MqlAggregate extends MqlCollectionStatement {
     @Override
     public Type getMqlKind() {
         return Type.AGGREGATE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

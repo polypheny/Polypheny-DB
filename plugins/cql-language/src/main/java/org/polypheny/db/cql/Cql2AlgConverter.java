@@ -53,14 +53,14 @@ import org.polypheny.db.util.Pair;
  * to relational algebra ({@link AlgNode}, {@link AlgRoot}, {@link RexNode})
  */
 @Slf4j
-public class Cql2RelConverter {
+public class Cql2AlgConverter {
 
     private final CqlQuery cqlQuery;
     private final Map<Long, Integer> tableScanColumnOrdinalities;
     private final Map<Long, Integer> projectionColumnOrdinalities;
 
 
-    public Cql2RelConverter( final CqlQuery cqlQuery ) {
+    public Cql2AlgConverter( final CqlQuery cqlQuery ) {
         this.cqlQuery = cqlQuery;
         this.tableScanColumnOrdinalities = new HashMap<>();
         this.projectionColumnOrdinalities = new HashMap<>();
@@ -75,7 +75,7 @@ public class Cql2RelConverter {
      * @param rexBuilder {@link RexBuilder}.
      * @return {@link AlgRoot}.
      */
-    public AlgRoot convert2Rel( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
+    public AlgRoot convert2Alg( AlgBuilder algBuilder, RexBuilder rexBuilder ) {
         algBuilder = generateScan( algBuilder, rexBuilder );
         if ( cqlQuery.filters != null ) {
             algBuilder = generateProjections( algBuilder, rexBuilder );

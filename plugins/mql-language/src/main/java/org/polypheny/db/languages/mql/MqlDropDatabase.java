@@ -19,10 +19,10 @@ package org.polypheny.db.languages.mql;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -34,8 +34,8 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Long namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        Long namespaceId = parsedQueryContext.getQueryNode().getNamespaceId();
 
         DdlManager.getInstance().dropNamespace( Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name, true, statement );
     }
@@ -45,5 +45,6 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
     public Type getMqlKind() {
         return Type.DROP_DATABASE;
     }
+
 
 }

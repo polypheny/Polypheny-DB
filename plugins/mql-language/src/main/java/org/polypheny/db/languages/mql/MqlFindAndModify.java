@@ -19,6 +19,7 @@ package org.polypheny.db.languages.mql;
 import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -70,6 +71,12 @@ public class MqlFindAndModify extends MqlCollectionStatement implements MqlQuery
     @Override
     public Type getMqlKind() {
         return Type.FIND_MODIFY;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

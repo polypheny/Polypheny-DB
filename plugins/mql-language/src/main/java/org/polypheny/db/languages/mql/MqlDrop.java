@@ -18,15 +18,16 @@ package org.polypheny.db.languages.mql;
 
 import java.util.List;
 import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,9 +45,9 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager ddlManager = DdlManager.getInstance();
-        Long namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
+        Long namespaceId = parsedQueryContext.getQueryNode().getNamespaceId();
 
         Optional<LogicalNamespace> optionalNamespace = context.getSnapshot().getNamespace( namespaceId );
         if ( optionalNamespace.isEmpty() ) {
@@ -61,6 +62,12 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
             return;
         }
         ddlManager.dropCollection( collections.get( 0 ), statement );
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

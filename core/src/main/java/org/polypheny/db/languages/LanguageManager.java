@@ -20,14 +20,25 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.Getter;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.prepare.Context;
+import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.util.Pair;
 
 public class LanguageManager {
 
@@ -59,8 +70,7 @@ public class LanguageManager {
     }
 
 
-    public void addQueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, Snapshot, Validator> validatorSupplier ) {
-        QueryLanguage language = new QueryLanguage( namespaceType, serializedName, otherNames, factory, processorSupplier, validatorSupplier );
+    public void addQueryLanguage( QueryLanguage language ) {
         REGISTER.add( language );
         listeners.firePropertyChange( "language", null, language );
     }
@@ -68,6 +78,121 @@ public class LanguageManager {
 
     public static void removeQueryLanguage( String name ) {
         REGISTER.remove( QueryLanguage.from( name ) );
+    }
+
+
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
+        //Statement statement = transaction.createStatement();
+        Transaction transaction = statement.getTransaction();
+
+        if ( transaction.isAnalyze() ) {
+            context.getInformationTarget().accept( transaction.getQueryAnalyzer() );
+        }
+
+        if ( transaction.isAnalyze() ) {
+            statement.getOverviewDuration().start( "Parsing" );
+        }
+        List<ParsedQueryContext> parsedQueries = context.getLanguage().getSplitter().apply( context );
+        if ( transaction.isAnalyze() ) {
+            statement.getOverviewDuration().stop( "Parsing" );
+        }
+
+        Processor processor = context.getLanguage().getProcessorSupplier().get();
+        List<ImplementationContext> implementationContexts = new ArrayList<>();
+        for ( ParsedQueryContext parsed : parsedQueries ) {
+            try {
+
+                PolyImplementation implementation;
+                if ( parsed.getQueryNode().isDdl() ) {
+                    implementation = processor.prepareDdl( statement, parsed );
+                } else {
+
+                    if ( context.getLanguage().getValidatorSupplier() != null ) {
+                        if ( transaction.isAnalyze() ) {
+                            statement.getOverviewDuration().start( "Validation" );
+                        }
+                        Pair<Node, AlgDataType> validated = processor.validate(
+                                transaction,
+                                parsed.getQueryNode(),
+                                RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+                        parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, context );
+                        if ( transaction.isAnalyze() ) {
+                            statement.getOverviewDuration().stop( "Validation" );
+                        }
+                    }
+
+                    if ( transaction.isAnalyze() ) {
+                        statement.getOverviewDuration().start( "Translation" );
+                    }
+
+                    AlgRoot root = processor.translate( statement, parsed );
+
+                    if ( transaction.isAnalyze() ) {
+                        statement.getOverviewDuration().stop( "Translation" );
+                    }
+                    implementation = statement.getQueryProcessor().prepareQuery( root, true );
+                }
+                implementationContexts.add( new ImplementationContext( implementation, parsed, statement ) );
+
+            } catch ( Exception e ) {
+                if ( transaction.isAnalyze() ) {
+                    InformationManager analyzer = transaction.getQueryAnalyzer();
+                    InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                    InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                    InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
+                    analyzer.addPage( exceptionPage );
+                    analyzer.addGroup( exceptionGroup );
+                    analyzer.registerInformation( exceptionElement );
+                }
+            }
+        }
+        return implementationContexts;
+    }
+
+
+    public List<ExecutedContext> anyQuery( QueryContext context, Statement statement ) {
+
+        List<ImplementationContext> prepared = anyPrepareQuery( context, statement );
+        Transaction transaction = statement.getTransaction();
+
+        List<ExecutedContext> executedContexts = new ArrayList<>();
+
+        for ( ImplementationContext implementation : prepared ) {
+            try {
+                if ( context.isAnalysed() ) {
+                    implementation.getStatement().getOverviewDuration().start( "Execution" );
+                }
+                executedContexts.add( implementation.execute( implementation.getStatement() ) );
+                if ( context.isAnalysed() ) {
+                    implementation.getStatement().getOverviewDuration().stop( "Execution" );
+                }
+            } catch ( Exception e ) {
+                if ( transaction.isAnalyze() ) {
+                    InformationManager analyzer = transaction.getQueryAnalyzer();
+                    InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                    InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                    InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
+                    analyzer.addPage( exceptionPage );
+                    analyzer.addGroup( exceptionGroup );
+                    analyzer.registerInformation( exceptionElement );
+                }
+                executedContexts.add( ExecutedContext.ofError( e ) );
+                return executedContexts;
+            }
+        }
+
+        return executedContexts;
+    }
+
+
+    public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
+        Processor cypherProcessor = queries.getLanguage().getProcessorSupplier().get();
+        List<? extends Node> statements = cypherProcessor.parse( queries.getQuery() );
+
+        return Pair.zip( statements, List.of( queries.getQuery().split( ";" ) ) )
+                .stream()
+                .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
+                .collect( Collectors.toList() );
     }
 
 }

@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language;
 
 import java.util.List;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -60,6 +61,12 @@ public class SqlUpdate extends SqlCall {
     @Override
     public Kind getKind() {
         return Kind.UPDATE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return targetTable.getEntity();
     }
 
 

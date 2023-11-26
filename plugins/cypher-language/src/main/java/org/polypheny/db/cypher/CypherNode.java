@@ -32,9 +32,9 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.util.Litmus;
 
+@Getter
 public abstract class CypherNode implements Node {
 
-    @Getter
     public final ParserPos pos;
 
     public static final List<CypherKind> DDL = ImmutableList.of( CypherKind.CREATE_DATABASE, CypherKind.DROP, CypherKind.ADMIN_COMMAND );
@@ -107,6 +107,12 @@ public abstract class CypherNode implements Node {
     }
 
 
+    @Override
+    public @Nullable String getEntity() {
+        return null;
+    }
+
+
     public enum CypherKind {
         SCOPE,
         REMOVE,
@@ -128,7 +134,33 @@ public abstract class CypherNode implements Node {
         MATCH,
         MERGE,
         ORDER_ITEM,
-        RETURN, SET, SHOW, TRANSACTION, UNWIND, USE, WAIT, WHERE, WITH, MAP_PROJECTION, YIELD, EITHER, RESOURCE, PRIVILEGE, PATH_LENGTH, CALL_RESULT, HINT, PATH, PERIODIC_COMMIT, UNION, SINGLE, NAMED_PATTERN, NODE_PATTERN, REL_PATTERN, SHORTEST_PATTERN, LITERAL, SET_ITEM
+        RETURN,
+        SET,
+        SHOW,
+        TRANSACTION,
+        UNWIND,
+        USE,
+        WAIT,
+        WHERE,
+        WITH,
+        MAP_PROJECTION,
+        YIELD,
+        EITHER,
+        RESOURCE,
+        PRIVILEGE,
+        PATH_LENGTH,
+        CALL_RESULT,
+        HINT,
+        PATH,
+        PERIODIC_COMMIT,
+        UNION,
+        SINGLE,
+        NAMED_PATTERN,
+        NODE_PATTERN,
+        REL_PATTERN,
+        SHORTEST_PATTERN,
+        LITERAL,
+        SET_ITEM
     }
 
 

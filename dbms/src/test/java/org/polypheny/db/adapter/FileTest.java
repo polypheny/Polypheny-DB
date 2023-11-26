@@ -33,25 +33,21 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
-public class FileAdapterTest {
+@Category(AdapterTestSuite.class)
+public class FileTest {
 
     @BeforeClass
     public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-
-        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
-            Connection connection = jdbcConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER ADAPTERS ADD \"mm\" USING 'File' AS 'Store' WITH '{mode:embedded}'" );
-            }
-        }
     }
 
 

@@ -54,7 +54,7 @@ import org.polypheny.db.util.Util;
  * Unit test for {@link AlgOptUtil} and other classes in this package.
  */
 @Ignore
-public class RelOptUtilTest {
+public class AlgOptUtilTest {
 
     /**
      * Creates a config based on the "scott" schema.
@@ -91,7 +91,7 @@ public class RelOptUtilTest {
     private static final List<AlgDataTypeField> EMP_DEPT_JOIN_REL_FIELDS = Lists.newArrayList( Iterables.concat( EMP_ROW.getFields(), DEPT_ROW.getFields() ) );
 
 
-    public RelOptUtilTest() {
+    public AlgOptUtilTest() {
     }
 
 

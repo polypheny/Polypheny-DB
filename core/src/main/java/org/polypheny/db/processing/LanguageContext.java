@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import lombok.Value;
 import org.polypheny.db.type.entity.PolyValue;
@@ -26,7 +25,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public class LanguageContext {
 
     Function<QueryContext, List<QueryContext>> splitter;
-    Function<QueryContext, ResultContext> toIterator;
-    BiFunction<QueryContext, ResultContext, List<List<PolyValue>>> toPolyValue;
+    Function<QueryContext, ImplementationContext> toIterator;
+    Function<ImplementationContext, List<List<PolyValue>>> toPolyValue;
 
 }

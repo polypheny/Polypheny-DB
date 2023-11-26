@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.DynamicRecordType;
@@ -356,6 +358,12 @@ public class SqlIdentifier extends SqlNode implements Identifier {
             }
         }
         return litmus.succeed();
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return names.stream().collect( Collectors.joining( "." ) );
     }
 
 

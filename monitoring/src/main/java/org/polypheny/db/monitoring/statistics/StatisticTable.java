@@ -52,7 +52,7 @@ public class StatisticTable {
     private EntityType entityType;
 
     @Getter
-    private int numberOfRows;
+    private long numberOfRows;
 
     @Getter
     @Setter
@@ -87,7 +87,7 @@ public class StatisticTable {
     }
 
 
-    public void setNumberOfRows( int rows ) {
+    public void setNumberOfRows( long rows ) {
         this.numberOfRows = Math.max( rows, 0 );
     }
 

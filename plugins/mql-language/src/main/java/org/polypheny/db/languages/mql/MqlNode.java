@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -31,17 +32,15 @@ import org.polypheny.db.nodes.NodeVisitor;
 import org.polypheny.db.util.Litmus;
 
 
+@Getter
 public abstract class MqlNode implements Node {
 
-    @Getter
     protected final ParserPos pos;
 
-    @Getter
     @Setter
     List<String> stores = new ArrayList<>();
 
     @Setter
-    @Getter
     List<String> primary = new ArrayList<>();
 
 
@@ -80,6 +79,12 @@ public abstract class MqlNode implements Node {
         } else {
             return false;
         }
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return null;
     }
 
 
@@ -123,6 +128,16 @@ public abstract class MqlNode implements Node {
 
     @Override
     public Kind getKind() {
+        switch ( getFamily() ) {
+            case DCL:
+                return Kind.OTHER;
+            case DDL:
+                return Kind.OTHER_DDL;
+            case DML:
+                return Kind.INSERT;
+            case DQL:
+                return Kind.SELECT;
+        }
         return Kind.OTHER;
     }
 

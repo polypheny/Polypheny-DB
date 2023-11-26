@@ -90,7 +90,7 @@ public abstract class Result<E, F> {
     /**
      * Number of affected rows
      */
-    public int affectedTuples;
+    public long affectedTuples;
 
 
     /**

@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -57,7 +56,6 @@ import org.pf4j.PluginFactory;
 import org.pf4j.PluginLoader;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -78,9 +76,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     @Getter
     private static PersistentMonitoringRepository PERSISTENT_MONITORING;
-
-    @Getter
-    private static Supplier<Catalog> CATALOG_SUPPLIER;
 
     @Getter
     public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
@@ -312,7 +307,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             return true;
         }
 
-        throw new RuntimeException( "Polypheny dependencies for plugins are not yet supported." );
+        throw new GenericRuntimeException( "Polypheny dependencies for plugins are not yet supported." );
 
     }
 
@@ -333,7 +328,7 @@ public class PolyPluginManager extends DefaultPluginManager {
             case ACTIVE:
                 return org.pf4j.PluginState.STARTED;
             default:
-                throw new RuntimeException( "Could not find the corresponding plugin state." );
+                throw new GenericRuntimeException( "Could not find the corresponding plugin state." );
         }
     }
 
@@ -400,19 +395,6 @@ public class PolyPluginManager extends DefaultPluginManager {
         TransactionExtension.REGISTER.forEach( e -> e.initExtension( transactionManager, authenticator ) );
 
         AFTER_INIT.forEach( Runnable::run );
-    }
-
-
-    /**
-     * Sets a catalog supplier, which allows to load a {@link Catalog} on runtime.
-     *
-     * @param catalogSupplier the supplier, which returns a {@link Catalog} implementation
-     */
-    public static void setCatalogsSupplier( Supplier<Catalog> catalogSupplier ) {
-        if ( CATALOG_SUPPLIER != null ) {
-            throw new RuntimeException( "There is already a catalog supplier set." );
-        }
-        CATALOG_SUPPLIER = catalogSupplier;
     }
 
 
@@ -530,7 +512,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         private VersionDependency getVersionDependencies( Manifest manifest ) {
             String dep = manifest.getMainAttributes().getValue( PLUGIN_POLYPHENY_DEPENDENCIES );
 
-            if ( dep == null || dep.trim().equals( "" ) ) {
+            if ( dep == null || dep.trim().isEmpty() ) {
                 return new VersionDependency( DependencyType.NONE, null );
             }
 
@@ -553,7 +535,7 @@ public class PolyPluginManager extends DefaultPluginManager {
         private List<String> getCategories( Manifest manifest ) {
             String categories = manifest.getMainAttributes().getValue( PLUGIN_CATEGORIES );
 
-            if ( categories == null || categories.trim().equals( "" ) ) {
+            if ( categories == null || categories.trim().isEmpty() ) {
                 return List.of();
             }
 

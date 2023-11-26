@@ -18,6 +18,7 @@ package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -49,6 +50,12 @@ public class MqlFindOneAndReplace extends MqlCollectionStatement implements MqlQ
     @Override
     public Type getMqlKind() {
         return Type.FIND_REPLACE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

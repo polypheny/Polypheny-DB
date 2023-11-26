@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -66,6 +67,12 @@ public class MqlFindOneAndUpdate extends MqlCollectionStatement implements MqlQu
     @Override
     public Type getMqlKind() {
         return Type.FIND_UPDATE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

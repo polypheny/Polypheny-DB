@@ -116,7 +116,7 @@ public abstract class AbstractAdapterSetting {
                 false,
                 Arrays.stream( properties.usedModes() ).map( DeployMode::getName ).collect( Collectors.toList() ),
                 List.of( DeploySetting.ALL ),
-                properties.usedModes()[0].getName(),
+                properties.defaultMode().getName(),
                 0 ) );
 
         return settings;

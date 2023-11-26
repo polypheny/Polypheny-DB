@@ -16,7 +16,12 @@
 
 package org.polypheny.db.webui.crud;
 
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import io.javalin.http.Context;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,17 +29,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.websocket.api.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -47,22 +52,23 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.processing.ExtendedQueryParameters;
-import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
@@ -74,8 +80,10 @@ import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.DocResult;
 import org.polypheny.db.webui.models.results.GraphResult;
+import org.polypheny.db.webui.models.results.GraphResult.GraphResultBuilder;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 
 @Getter
 @Slf4j
@@ -84,7 +92,7 @@ public class LanguageCrud {
 
     public static Crud crud;
 
-    public final static Map<String, BiFunction<QueryContext, ResultIterator, Result<?, ?>>> REGISTER = new HashMap<>();
+    protected final static Map<QueryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>>> REGISTER = new HashMap<>();
 
 
     public LanguageCrud( Crud crud ) {
@@ -92,18 +100,52 @@ public class LanguageCrud {
     }
 
 
-    public static void anyQuery( Context ctx ) {
-        QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
-        QueryLanguage language = QueryLanguage.from( request.language );
-        QueryContext context = new QueryContext( request.query, language, request.analyze, request.cache, Catalog.defaultUserId, "Polypheny UI", request.noLimit ? -1 : crud.getPageSize(), crud.getTransactionManager() );
-        ctx.json( anyQueryResult( context ) );
+    public static void addToResult( QueryLanguage queryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> toResult ) {
+        REGISTER.put( queryLanguage, toResult );
     }
 
 
-    public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context ) {
-        List<Pair<QueryContext, ResultIterator>> iterators = ResultIterator.anyQuery( context );
-        BiFunction<QueryContext, ResultIterator, Result<?, ?>> resultProducer = REGISTER.get( context.getLanguage() );
-        return iterators.stream().map( p -> resultProducer.apply( p.left, p.right ) ).collect( Collectors.toList() );
+    public static TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> getToResult( QueryLanguage queryLanguage ) {
+        return REGISTER.get( queryLanguage );
+    }
+
+
+    public static void deleteToResult( QueryLanguage language ) {
+        REGISTER.remove( language );
+    }
+
+
+    public static void anyQuery( Context ctx ) {
+        QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
+        QueryLanguage language = QueryLanguage.from( request.language );
+        QueryContext context = QueryContext.builder()
+                .query( request.query )
+                .language( language )
+                .isAnalysed( request.analyze )
+                .usesCache( request.cache )
+                .origin( "Polypheny-UI" )
+                .batch( request.noLimit ? -1 : crud.getPageSize() )
+                .transactionManager( crud.getTransactionManager() ).build();
+        ctx.json( anyQueryResult( context, request ) );
+    }
+
+
+    public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
+        Transaction transaction = context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, context.isAnalysed(), context.getOrigin() );
+        attachAnalyzerIfSpecified( context, crud, transaction );
+
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, transaction.createStatement() );
+
+        List<Result<?, ?>> results = new ArrayList<>();
+        TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
+
+        for ( ExecutedContext executedContext : executedContexts ) {
+            results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
+        }
+
+        commitAndFinish( transaction, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
+
+        return results;
     }
 
 
@@ -132,43 +174,40 @@ public class LanguageCrud {
 
 
     @Nullable
-    public static InformationManager attachAnalyzerIfSpecified( QueryRequest request, InformationObserver observer, Transaction transaction ) {
+    public static InformationManager attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
         // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
         // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
-        if ( request.analyze ) {
+        if ( context.isAnalysed() ) {
             queryAnalyzer = transaction.getQueryAnalyzer().observe( observer );
         }
         return queryAnalyzer;
     }
 
 
-    public static PolyGraph getGraph( String namespace, TransactionManager manager ) {
-
+    public static PolyGraph getGraph( String namespace, TransactionManager manager, Session session ) {
+        QueryLanguage language = QueryLanguage.from( "cypher" );
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
-        Processor processor = transaction.getProcessor( QueryLanguage.from( "cypher" ) );
-        Statement statement = transaction.createStatement();
+        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( "MATCH (*) RETURN n" )
+                        .language( language )
+                        .origin( transaction.getOrigin() )
+                        .transactionManager( manager )
+                        .informationTarget( i -> i.setSession( session ) )
+                        .build(), transaction.createStatement() ).get( 0 );
 
-        ExtendedQueryParameters parameters = new ExtendedQueryParameters( namespace );
-        AlgRoot logicalRoot = processor.translate( statement, null, parameters );
-        PolyImplementation polyImplementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-
-        ResultIterator iterator = polyImplementation.execute( statement, 1 );
+        ResultIterator iterator = context.execute( transaction.createStatement() ).getIterator();
         List<List<PolyValue>> res = iterator.getNextBatch();
 
         try {
             iterator.close();
-            statement.getTransaction().commit();
+            transaction.commit();
         } catch ( Exception | TransactionException e ) {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
         return res.get( 0 ).get( 0 ).asGraph();
-    }
-
-
-    public static void printLog( Throwable t, QueryRequest request ) {
-        log.warn( "Failed during execution\nquery:" + request.query + "\nMsg:" + t.getMessage() );
     }
 
 
@@ -202,24 +241,21 @@ public class LanguageCrud {
 
 
     @NotNull
-    public static Result<?, ?> getResult( QueryLanguage language, Statement statement, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, final boolean noLimit ) {
+    public static ResultBuilder<?, ?, ?, ?> getRelResult( ExecutedContext context, UIRequest request, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
-
-        if ( language == QueryLanguage.from( "mongo" ) ) {
-            return getDocResult( statement, language, request, query, implementation, transaction, noLimit );
-        } else if ( language == QueryLanguage.from( "cypher" ) ) {
-            return getGraphResult( statement, language, request, query, implementation, transaction, noLimit );
+        ResultIterator iterator = context.getIterator();
+        List<List<PolyValue>> rows = new ArrayList<>();
+        for ( int i = 0; i < request.currentPage; i++ ) {
+            rows = iterator.getNextBatch();
         }
 
-        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : language == QueryLanguage.from( "cypher" ) ? RuntimeConfig.UI_NODE_AMOUNT.getInteger() : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
-        List<List<PolyValue>> rows = iterator.getNextBatch();
         try {
             iterator.close();
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
 
-        boolean hasMoreRows = implementation.hasMoreRows();
+        boolean hasMoreRows = context.getIterator().hasMoreRows();
 
         LogicalTable table = null;
         if ( request.entityId != null ) {
@@ -227,7 +263,7 @@ public class LanguageCrud {
         }
 
         List<UiColumnDefinition> header = new ArrayList<>();
-        for ( AlgDataTypeField field : implementation.rowType.getFields() ) {
+        for ( AlgDataTypeField field : context.getIterator().getImplementation().rowType.getFields() ) {
             String columnName = field.getName();
 
             String filter = getFilter( field, request.filter );
@@ -254,26 +290,63 @@ public class LanguageCrud {
             header.add( dbCol.build() );
         }
 
-        List<String[]> data = Crud.computeResultData( rows, header, statement.getTransaction() );
+        List<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
         return RelationalResult
                 .builder()
                 .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
-                .namespaceType( implementation.getNamespaceType() )
+                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
                 .namespace( request.namespace )
-                .language( language )
+                .language( context.getQuery().getLanguage() )
                 .affectedTuples( data.size() )
                 .hasMore( hasMoreRows )
-                .xid( transaction.getXid().toString() )
-                .query( query )
-                .build();
+                .xid( statement.getTransaction().getXid().toString() )
+                .query( context.getQuery().getQuery() );
     }
 
 
-    private static GraphResult getGraphResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
+    public static List<String[]> computeResultData( final List<List<PolyValue>> rows, final List<UiColumnDefinition> header, final Transaction transaction ) {
+        List<String[]> data = new ArrayList<>();
+        for ( List<PolyValue> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( PolyValue o : row ) {
+                if ( o == null || o.isNull() ) {
+                    temp[counter] = null;
+                } else {
+                    String columnName = String.valueOf( header.get( counter ).name.hashCode() );
+                    File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                    mmFolder.mkdirs();
+                    ContentInfoUtil util = new ContentInfoUtil();
+                    if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {
+                        ContentInfo info = util.findMatch( o.asBlob().value );
+                        String extension = "";
+                        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
+                            extension = "." + info.getFileExtensions()[0];
+                        }
+                        File f = new File( mmFolder, columnName + "_" + UUID.randomUUID() + extension );
+                        try ( FileOutputStream fos = new FileOutputStream( f ) ) {
+                            fos.write( o.asBlob().value );
+                        } catch ( IOException e ) {
+                            throw new GenericRuntimeException( "Could not place file in mm folder", e );
+                        }
+                        temp[counter] = f.getName();
+                        TemporalFileManager.addFile( transaction.getXid().toString(), f );
+                    } else {
+                        temp[counter] = o.toJson();
+                    }
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+        return data;
+    }
 
-        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+
+    public static ResultBuilder<?, ?, ?, ?> getGraphResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        ResultIterator iterator = context.getIterator();
         List<PolyValue[]> data = iterator.getArrayRows();
         try {
             iterator.close();
@@ -281,21 +354,25 @@ public class LanguageCrud {
             throw new GenericRuntimeException( e );
         }
 
-        return GraphResult.builder()
+        GraphResultBuilder<?, ?> builder = GraphResult.builder()
                 .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .header( implementation.rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .query( query )
-                .language( language )
-                .namespaceType( implementation.getNamespaceType() )
-                .xid( transaction.getXid().toString() )
-                .namespace( request.namespace )
-                .build();
+                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                .query( context.getQuery().getQuery() )
+                .language( context.getQuery().getLanguage() )
+                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
+                .xid( statement.getTransaction().getXid().toString() )
+                .namespace( request.namespace );
+
+        if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+            builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
+        }
+
+        return builder;
     }
 
 
-    private static DocResult getDocResult( Statement statement, QueryLanguage language, QueryRequest request, String query, PolyImplementation implementation, Transaction transaction, boolean noLimit ) {
-
-        ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : RuntimeConfig.UI_PAGE_SIZE.getInteger() );
+    public static ResultBuilder<?, ?, ?, ?> getDocResult( ExecutedContext context, UIRequest request, Statement statement ) {
+        ResultIterator iterator = context.getIterator();
         List<List<PolyValue>> data = iterator.getNextBatch();
         try {
             iterator.close();
@@ -304,14 +381,13 @@ public class LanguageCrud {
         }
 
         return DocResult.builder()
-                .header( implementation.rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
-                .query( query )
-                .language( language )
-                .xid( transaction.getXid().toString() )
-                .namespaceType( implementation.getNamespaceType() )
-                .namespace( request.namespace )
-                .build();
+                .query( context.getQuery().getQuery() )
+                .language( context.getQuery().getLanguage() )
+                .xid( statement.getTransaction().getXid().toString() )
+                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
+                .namespace( request.namespace );
     }
 
 
@@ -420,6 +496,13 @@ public class LanguageCrud {
         context.json( p );
     }
 
+
+    @FunctionalInterface
+    public interface TriFunction<First, Second, Third, Result> {
+
+        Result apply( First first, Second second, Third third );
+
+    }
 
 }
 

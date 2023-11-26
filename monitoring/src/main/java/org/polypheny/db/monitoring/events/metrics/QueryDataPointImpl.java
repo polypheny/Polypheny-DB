@@ -47,7 +47,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     long executionTime;
     boolean isSubQuery;
     boolean isCommitted;
-    int rowCount;
+    long rowCount;
     List<String> fieldNames;
     List<Long> accessedPartitions;
     String algCompareString;

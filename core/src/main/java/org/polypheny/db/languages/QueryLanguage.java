@@ -20,32 +20,53 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.Getter;
+import javax.annotation.Nullable;
+import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 
-@Getter
+@Value
 public class QueryLanguage {
 
-    private final NamespaceType namespaceType;
-    private final String serializedName;
-    private final ParserFactory factory;
-    private final Supplier<Processor> processorSupplier;
-    private final BiFunction<Context, Snapshot, Validator> validatorSupplier;
-    private final List<String> otherNames;
+    @NotNull
+    NamespaceType namespaceType;
+    @NotNull
+    String serializedName;
+    @NotNull
+    List<String> otherNames;
+    @Nullable
+    ParserFactory factory;
+    @NotNull
+    Supplier<Processor> processorSupplier;
+    @Nullable
+    BiFunction<Context, Snapshot, Validator> validatorSupplier;
+    @NotNull
+    Function<QueryContext, List<ParsedQueryContext>> splitter;
 
 
-    public QueryLanguage( NamespaceType namespaceType, String serializedName, List<String> otherNames, ParserFactory factory, Supplier<Processor> processorSupplier, BiFunction<Context, Snapshot, Validator> validatorSupplier ) {
+    public QueryLanguage(
+            @NotNull NamespaceType namespaceType,
+            @NotNull String serializedName,
+            @NotNull List<String> otherNames,
+            @Nullable ParserFactory factory,
+            @NotNull Supplier<Processor> processorSupplier,
+            @Nullable BiFunction<Context, Snapshot, Validator> validatorSupplier,
+            @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter ) {
         this.namespaceType = namespaceType;
         this.serializedName = serializedName;
         this.factory = factory;
         this.processorSupplier = processorSupplier;
         this.validatorSupplier = validatorSupplier;
         this.otherNames = otherNames;
+        this.splitter = splitter;
     }
 
 

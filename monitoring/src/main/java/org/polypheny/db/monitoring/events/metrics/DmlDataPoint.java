@@ -54,7 +54,7 @@ public class DmlDataPoint implements MonitoringDataPoint, Serializable {
     private long executionTime;
     private boolean isSubQuery;
     protected boolean isCommitted;
-    private int rowCount;
+    private long rowCount;
     private List<String> fieldNames;
     private List<Long> accessedPartitions;
     private String queryClass;

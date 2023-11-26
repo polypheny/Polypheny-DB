@@ -20,10 +20,10 @@ import lombok.Getter;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -40,7 +40,7 @@ public class MqlUseDatabase extends MqlNode implements ExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager.getInstance().createNamespace( this.database, NamespaceType.DOCUMENT, true, false );
     }
 

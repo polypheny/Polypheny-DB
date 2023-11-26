@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -41,37 +42,37 @@ public abstract class Processor {
 
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
-    public abstract AlgRoot translate( Statement statement, Node query, QueryParameters parameters );
+    public abstract AlgRoot translate( Statement statement, ParsedQueryContext context );
 
 
-    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
-        if ( parsed instanceof ExecutableStatement ) {
-            try {
-                // Acquire global schema lock
-                lock( statement );
-                // Execute statement
-                return getImplementation( statement, (ExecutableStatement) parsed, parameters );
-            } catch ( DeadlockException e ) {
-                throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( TransactionException e ) {
-                throw new GenericRuntimeException( e );
-            } finally {
-                // Release lock
-                unlock( statement );
-            }
-        } else {
-            throw new GenericRuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + parsed.getClass() );
+    public PolyImplementation prepareDdl( Statement statement, ParsedQueryContext context ) {
+        if ( !(context.getQueryNode() instanceof ExecutableStatement) ) {
+            throw new GenericRuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + context.getQueryNode().getClass() );
         }
+        try {
+            // Acquire global schema lock
+            lock( statement );
+            // Execute statement
+            return getImplementation( statement, context );
+        } catch ( DeadlockException e ) {
+            throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
+        } catch ( TransactionException e ) {
+            throw new GenericRuntimeException( e );
+        } finally {
+            // Release lock
+            unlock( statement );
+        }
+
     }
 
 
-    PolyImplementation getImplementation( Statement statement, ExecutableStatement parsed, QueryParameters parameters ) throws TransactionException {
-        parsed.execute( statement.getPrepareContext(), statement, parameters );
+    PolyImplementation getImplementation( Statement statement, ParsedQueryContext context ) throws TransactionException {
+        ((ExecutableStatement) context.getQueryNode()).execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
         return new PolyImplementation(
                 null,
-                parameters.getNamespaceType(),
+                context.getLanguage().getNamespaceType(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change

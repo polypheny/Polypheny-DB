@@ -35,9 +35,14 @@ package org.polypheny.db.piglet;
 
 
 import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import lombok.Getter;
 import org.apache.calcite.avatica.util.Spacer;
 import org.apache.calcite.linq4j.Ord;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -47,11 +52,6 @@ import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 
 /**
@@ -173,6 +173,12 @@ public class Ast {
 
 
         @Override
+        public @Nullable String getEntity() {
+            return null;
+        }
+
+
+        @Override
         public Node clone( ParserPos pos ) {
             throw new UnsupportedOperationException( "Pig nodes cannot be cloned." );
         }
@@ -249,6 +255,12 @@ public class Ast {
         public LoadStmt( ParserPos pos, Identifier target, Literal name ) {
             super( pos, Op.LOAD, target );
             this.name = Objects.requireNonNull( name );
+        }
+
+
+        @Override
+        public @Nullable String getEntity() {
+            return name.value.toString();
         }
 
     }

@@ -18,15 +18,23 @@ package org.polypheny.db.cql;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.cql.BooleanGroup.ColumnOpsBooleanOperator;
 import org.polypheny.db.cql.utils.Tree;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.nodes.NodeVisitor;
+import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 
 
 /**
  * Packaging all the information in a CQL query together.
  */
-public class CqlQuery {
+public class CqlQuery implements Node {
 
     public final Tree<Combiner, TableIndex> queryRelation;
     public final Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter> filters;
@@ -53,6 +61,30 @@ public class CqlQuery {
 
 
     @Override
+    public Node clone( ParserPos pos ) {
+        return null;
+    }
+
+
+    @Override
+    public Kind getKind() {
+        return Kind.SELECT;
+    }
+
+
+    @Override
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.from( "pig" );
+    }
+
+
+    @Override
+    public boolean isA( Set<Kind> category ) {
+        return false;
+    }
+
+
+    @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -69,6 +101,30 @@ public class CqlQuery {
         }
 
         return stringBuilder.toString();
+    }
+
+
+    @Override
+    public ParserPos getPos() {
+        return null;
+    }
+
+
+    @Override
+    public boolean equalsDeep( Node node, Litmus litmus ) {
+        return false;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return null;
+    }
+
+
+    @Override
+    public <R> R accept( NodeVisitor<R> visitor ) {
+        return null;
     }
 
 }

@@ -37,6 +37,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.interpreter.BindableConvention;
@@ -50,6 +51,8 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
@@ -72,9 +75,6 @@ public class PolyImplementation {
     @Accessors(fluent = true)
     private final boolean isDDL;
     private Iterator<PolyValue[]> iterator;
-    private boolean isOpen;
-    private StatementEvent statementEvent;
-    private int batch;
 
 
     /**
@@ -98,7 +98,7 @@ public class PolyImplementation {
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
-        this.rowType = rowType;
+
         this.namespaceType = namespaceType;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
@@ -106,8 +106,14 @@ public class PolyImplementation {
         this.statement = statement;
         this.resultConvention = resultConvention;
         this.isDDL = Kind.DDL.contains( kind );
+
         if ( this.isDDL ) {
             this.columns = ImmutableList.of();
+            Builder builder = statement.getTransaction().getTypeFactory().builder();
+            builder.add( "ROWTYPE", null, PolyType.BIGINT );
+            this.rowType = builder.build();
+        } else {
+            this.rowType = rowType;
         }
     }
 
@@ -159,7 +165,7 @@ public class PolyImplementation {
 
     public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
-            return null;
+            return dataContext -> Linq4j.singletonEnumerable( new PolyInteger[]{ PolyInteger.of( 1 ) } );
         }
 
         if ( bindable != null ) {
@@ -207,11 +213,6 @@ public class PolyImplementation {
     }
 
 
-    public ResultIterator execute( Statement statement ) {
-        return execute( statement, -1, false, false, false );
-    }
-
-
     public ResultIterator execute( Statement statement, int batch ) {
         return execute( statement, batch, false, false, false );
     }
@@ -226,7 +227,8 @@ public class PolyImplementation {
                 isIndex,
                 isAnalyzed,
                 rowType,
-                executionTimeMonitor );
+                executionTimeMonitor,
+                this );
     }
 
 

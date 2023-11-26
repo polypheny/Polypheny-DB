@@ -16,44 +16,83 @@
 
 package org.polypheny.db.processing;
 
+import java.util.function.Consumer;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import lombok.experimental.SuperBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Value
+@NonFinal
+@SuperBuilder(toBuilder = true)
 public class QueryContext {
 
+
+    @NotNull
     String query;
 
+    @NotNull
     QueryLanguage language;
 
-    boolean isAnalysed;
+    @Builder.Default
+    boolean isAnalysed = false;
 
-    boolean usesCache;
+    @Builder.Default
+    boolean usesCache = true;
 
-    long userId;
+    @Builder.Default
+    long userId = Catalog.defaultUserId;
 
+    @NotNull
     String origin;
 
-    int batch; // -1 for all
+    @Builder.Default
+    int batch = -1; // -1 for all
 
-    TransactionManager manager;
+    @NotNull
+    TransactionManager transactionManager;
 
-    @NonFinal
-    Transaction transaction;
+    @Builder.Default
+    @Nullable
+    Consumer<InformationManager> informationTarget = i -> {
+    };
+
+    @Builder.Default
+    long namespaceId = Catalog.defaultNamespaceId;
 
 
-    public Transaction openTransaction() {
-        return manager.startTransaction( userId, Catalog.defaultNamespaceId, isAnalysed, origin );
+    @EqualsAndHashCode(callSuper = true)
+    @Value
+
+    @SuperBuilder(toBuilder = true)
+    public static class ParsedQueryContext extends QueryContext {
+
+        @NotNull Node queryNode;
+
+
+        public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {
+            return ParsedQueryContext.builder()
+                    .query( query )
+                    .queryNode( queryNode )
+                    .language( context.language )
+                    .isAnalysed( context.isAnalysed )
+                    .usesCache( context.usesCache )
+                    .userId( context.userId )
+                    .origin( context.getOrigin() )
+                    .batch( context.batch )
+                    .namespaceId( context.namespaceId )
+                    .transactionManager( context.transactionManager )
+                    .informationTarget( context.informationTarget ).build();
+        }
+
     }
-
-
-    public Transaction openTransaction( long namespaceId ) {
-        return manager.startTransaction( userId, namespaceId, isAnalysed, origin );
-    }
-
 
 }

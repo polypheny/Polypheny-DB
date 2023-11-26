@@ -62,6 +62,7 @@ import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
@@ -123,7 +124,7 @@ public class PolyphenyDb {
     public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
-    public String defaultStoreName = "hsqldb";
+    public String defaultStoreName = "postgresql";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
@@ -385,13 +386,15 @@ public class PolyphenyDb {
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
         // temporary add sql and rel here
-        LanguageManager.getINSTANCE().addQueryLanguage(
+        QueryLanguage language = new QueryLanguage(
                 NamespaceType.RELATIONAL,
                 "alg",
                 List.of( "alg", "algebra" ),
                 null,
                 AlgProcessor::new,
+                null,
                 null );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager
         initializeIndexManager();

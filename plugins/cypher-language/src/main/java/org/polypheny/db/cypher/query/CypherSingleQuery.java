@@ -23,9 +23,9 @@ import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 @Getter
@@ -70,10 +70,10 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         for ( CypherClause clause : clauses ) {
             if ( clause.isDDL() ) {
-                ((ExecutableStatement) clause).execute( context, statement, parameters );
+                ((ExecutableStatement) clause).execute( context, statement, parsedQueryContext );
             }
         }
     }

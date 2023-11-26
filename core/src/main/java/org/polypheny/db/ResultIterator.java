@@ -20,50 +20,43 @@ import static org.reflections.Reflections.log;
 
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
+import lombok.Value;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.processing.LanguageContext;
-import org.polypheny.db.processing.QueryContext;
-import org.polypheny.db.processing.ResultContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
+@Value
 public class ResultIterator implements AutoCloseable {
 
-    public final static Map<String, LanguageContext> REGISTER = new HashMap<>();
+    Iterator<PolyValue[]> iterator;
+    int batch;
+    ExecutionTimeMonitor executionTimeMonitor;
+    boolean isIndex;
+    boolean isTimed;
+    AlgDataType rowType;
+    StatementEvent statementEvent;
+    PolyImplementation implementation;
 
 
-    private final Iterator<PolyValue[]> iterator;
-    private final int batch;
-    private final ExecutionTimeMonitor executionTimeMonitor;
-    private final boolean isIndex;
-    private final boolean isTimed;
-    private final AlgDataType rowType;
-
-    private final StatementEvent statementEvent;
-
-
-    public ResultIterator( Iterator<PolyValue[]> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
+    public ResultIterator( Iterator<PolyValue[]> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor, PolyImplementation implementation ) {
         this.iterator = iterator;
         this.batch = batch;
         this.isIndex = isIndex;
         this.isTimed = isTimed;
         this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
         this.executionTimeMonitor = executionTimeMonitor;
+        this.implementation = implementation;
         this.rowType = rowType;
     }
 
@@ -104,6 +97,11 @@ public class ResultIterator implements AutoCloseable {
             }
 
         }
+    }
+
+
+    public boolean hasMoreRows() {
+        return implementation.hasMoreRows();
     }
 
 
@@ -156,37 +154,5 @@ public class ResultIterator implements AutoCloseable {
             log.error( "Exception while closing result iterator", e );
         }
     }
-
-
-    public static List<Pair<QueryContext, ResultContext>> anyQuery( QueryContext queries ) {
-        LanguageContext operators = REGISTER.get( queries.getLanguage().getSerializedName() );
-        List<Pair<QueryContext, ResultContext>> iterators = new ArrayList<>();
-        for ( QueryContext query : operators.getSplitter().apply( queries ) ) {
-            iterators.add( Pair.of( query, operators.getToIterator().apply( query ) ) );
-        }
-        return iterators;
-    }
-
-
-    public static List<List<List<PolyValue>>> anyQueryAsValues( QueryContext queries ) {
-        LanguageContext operators = REGISTER.get( queries.getLanguage().getSerializedName() );
-        List<Pair<QueryContext, ResultContext>> iters = anyQuery( queries );
-        BiFunction<QueryContext, ResultContext, List<List<PolyValue>>> operator = operators.getToPolyValue();
-        return iters.stream().map( p -> operator.apply( p.left, p.right ) ).collect( Collectors.toList() );
-
-    }
-
-
-    public static void addLanguage(
-            String language,
-            LanguageContext function ) {
-        REGISTER.put( language, function );
-    }
-
-
-    public static void removeLanguage( String name ) {
-        REGISTER.remove( name );
-    }
-
 
 }

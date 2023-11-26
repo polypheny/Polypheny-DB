@@ -73,7 +73,7 @@ import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.processing.ExtendedQueryParameters;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
@@ -107,12 +107,12 @@ public class CypherToAlgConverter {
     }
 
 
-    public AlgRoot convert( CypherNode query, ExtendedQueryParameters parameters, AlgOptCluster cluster ) {
-        long namespaceId = getNamespaceId( parameters );
+    public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgOptCluster cluster ) {
+        long namespaceId = getNamespaceId( parsedContext );
 
-        LogicalEntity entity = getEntity( namespaceId, parameters );
+        LogicalEntity entity = getEntity( namespaceId );
 
-        if ( parameters.isFullGraph() ) {
+        if ( parsedContext.getQuery().trim().equals( "*" ) ) {
             // simple full graph scan
             return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT );
         }
@@ -130,7 +130,7 @@ public class CypherToAlgConverter {
 
 
     @NotNull
-    private LogicalEntity getEntity( long namespaceId, ExtendedQueryParameters parameters ) {
+    private LogicalEntity getEntity( long namespaceId ) {
         Optional<LogicalGraph> optionalGraph = this.snapshot.graph().getGraph( namespaceId );
         if ( optionalGraph.isPresent() ) {
             return optionalGraph.get();
@@ -154,8 +154,8 @@ public class CypherToAlgConverter {
     }
 
 
-    private long getNamespaceId( ExtendedQueryParameters parameters ) {
-        return snapshot.getNamespace( parameters.namespace ).orElseThrow().id;
+    private long getNamespaceId( ParsedQueryContext context ) {
+        return snapshot.getNamespace( context.getQueryNode().getNamespaceId() ).orElseThrow().id;
     }
 
 

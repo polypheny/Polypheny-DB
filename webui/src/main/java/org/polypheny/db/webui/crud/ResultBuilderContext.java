@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.exploreByExample.requests;
+package org.polypheny.db.webui.crud;
 
-
-import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
+import java.util.function.BiFunction;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.webui.models.requests.UIRequest;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 
+public class ResultBuilderContext {
 
-public class ClassifyAllData extends UIRequest {
-
-    public Integer id;
-    public UiColumnDefinition[] header;
-    public String[][] classified;
-    /**
-     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
-     */
-    public boolean analyze;
-    public int cPage;
+    BiFunction<ParsedQueryContext, UIRequest, ResultBuilder<?, ?, ?, ?>> ddlBuilder;
+    BiFunction<ImplementationContext, UIRequest, ResultBuilder<?, ?, ?, ?>> builder;
 
 }

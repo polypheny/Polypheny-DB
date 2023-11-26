@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.DeadlockException;
@@ -47,9 +48,9 @@ public class AlgProcessor extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
         try {
-            return AlgRoot.of( QueryPlanBuilder.buildFromJsonAlg( statement, parameters.getQuery() ), Kind.SELECT );
+            return AlgRoot.of( QueryPlanBuilder.buildFromJsonAlg( statement, context.getQuery() ), Kind.SELECT );
         } catch ( JsonProcessingException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -57,7 +58,7 @@ public class AlgProcessor extends Processor {
 
 
     @Override
-    public PolyImplementation prepareDdl( Statement statement, Node parsed, QueryParameters parameters ) {
+    public PolyImplementation prepareDdl( Statement statement, ParsedQueryContext context ) {
         throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " AlgProcessor does not support DDLs!" );
     }
 

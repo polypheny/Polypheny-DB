@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.languages.ParserPos;
@@ -65,6 +66,12 @@ public abstract class SqlNode implements Node {
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public Object clone() {
         return clone( getPos() );
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return null;
     }
 
 

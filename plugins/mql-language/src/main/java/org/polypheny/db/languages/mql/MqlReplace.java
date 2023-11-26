@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
 
@@ -35,6 +36,12 @@ public class MqlReplace extends MqlCollectionStatement {
     @Override
     public Type getMqlKind() {
         return Type.REPLACE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return getCollection();
     }
 
 }

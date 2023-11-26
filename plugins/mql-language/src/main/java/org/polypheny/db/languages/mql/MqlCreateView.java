@@ -18,6 +18,7 @@ package org.polypheny.db.languages.mql;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -25,11 +26,10 @@ import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.nodes.ExecutableStatement;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -49,19 +49,14 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
-        Long database = ((MqlQueryParameters) parameters).getNamespaceId();
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
+        Long database = parsedQueryContext.getQueryNode().getNamespaceId();
 
         long schemaId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
 
-        Node mqlNode = statement.getTransaction()
-                .getProcessor( QueryLanguage.from( "mongo" ) )
-                .parse( buildQuery() )
-                .get( 0 );
-
         AlgRoot algRoot = statement.getTransaction()
                 .getProcessor( QueryLanguage.from( "mongo" ) )
-                .translate( statement, mqlNode, parameters );
+                .translate( statement, parsedQueryContext );
         PlacementType placementType = PlacementType.AUTOMATIC;
 
         AlgNode algNode = algRoot.alg;
@@ -96,6 +91,12 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
     @Override
     public Type getMqlKind() {
         return Type.CREATE_VIEW;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return name;
     }
 
 }
