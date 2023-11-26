@@ -40,8 +40,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.schema.SchemaPlus;
@@ -225,7 +223,6 @@ public class PlannerImplMock implements Planner {
     public Node validate( Node sqlNode ) throws ValidationException {
         ensure( State.STATE_3_PARSED );
         final Conformance conformance = conformance();
-        final PolyphenyDbCatalogReader catalogReader = createCatalogReader();
         this.validator = new PolyphenyDbSqlValidator( operatorTable != null ? operatorTable : SqlStdOperatorTable.instance(), Catalog.snapshot(), typeFactory, conformance );
         this.validator.setIdentifierExpansion( true );
         try {
@@ -262,7 +259,7 @@ public class PlannerImplMock implements Planner {
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, createCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        final NodeToAlgConverter sqlToRelConverter = getSqlToRelConverter( (SqlValidator) validator, cluster, StandardConvertletTable.INSTANCE, config );
         root = sqlToRelConverter.convertQuery( validatedSqlNode, false, true );
         root = root.withAlg( sqlToRelConverter.flattenTypes( root.alg, true ) );
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
@@ -274,22 +271,10 @@ public class PlannerImplMock implements Planner {
 
     private SqlToAlgConverter getSqlToRelConverter(
             SqlValidator validator,
-            CatalogReader catalogReader,
             AlgOptCluster cluster,
             SqlRexConvertletTable convertletTable,
             Config config ) {
         return new SqlToAlgConverter( validator, Catalog.snapshot(), cluster, convertletTable, config );
-    }
-
-
-    // PolyphenyDbCatalogReader is stateless; no need to storeId one
-    private PolyphenyDbCatalogReader createCatalogReader() {
-        /*final SchemaPlus rootSchema = rootSchema( Catalog.snapshot() );
-        return new PolyphenyDbCatalogReader(
-                PolyphenyDbSchema.from( rootSchema ),
-                PolyphenyDbSchema.from( defaultSnapshot ).path( null ),
-                typeFactory );*/
-        return null;
     }
 
 

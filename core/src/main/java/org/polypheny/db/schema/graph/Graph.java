@@ -18,7 +18,7 @@ package org.polypheny.db.schema.graph;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.GraphType;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 
 public interface Graph extends Wrapper {

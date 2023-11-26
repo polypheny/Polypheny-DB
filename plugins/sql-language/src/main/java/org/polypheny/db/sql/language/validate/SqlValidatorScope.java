@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorScope;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -167,7 +166,7 @@ public interface SqlValidatorScope extends ValidatorScope {
     /**
      * Looks up a table in this scope from its name. If found, calls {@link Resolved#resolve(List, NameMatcher, boolean, Resolved)}. {@link EntityNamespace} that wraps it. If the "table" is defined in a {@code WITH} clause it may be a query, not a table after all.
      *
-     * The name matcher is not null, and one typically uses {@link ValidatorCatalogReader#nameMatcher}.
+     * The name matcher is not null, and one typically uses {@link org.polypheny.db.catalog.snapshot.Snapshot#nameMatcher}.
      *
      * @param names Name of table, may be qualified or fully-qualified
      * @param nameMatcher Name matcher

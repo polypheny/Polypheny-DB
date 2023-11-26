@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AbstractAlgOptPlanner;
 import org.polypheny.db.plan.AlgOptCostImpl;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
@@ -40,7 +40,7 @@ import org.polypheny.db.util.Pair;
 /**
  * MockRelOptPlanner is a mock implementation of the {@link AlgOptPlanner} interface.
  */
-public class MockRelOptPlanner extends AbstractRelOptPlanner {
+public class MockAlgOptPlanner extends AbstractAlgOptPlanner {
 
     private AlgNode root;
 
@@ -54,7 +54,7 @@ public class MockRelOptPlanner extends AbstractRelOptPlanner {
     /**
      * Creates MockRelOptPlanner.
      */
-    public MockRelOptPlanner( Context context ) {
+    public MockAlgOptPlanner( Context context ) {
         super( AlgOptCostImpl.FACTORY, context );
         setExecutor( new RexExecutorImpl( Schemas.createDataContext( null ) ) );
     }

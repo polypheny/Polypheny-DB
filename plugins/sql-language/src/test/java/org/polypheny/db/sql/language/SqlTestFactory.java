@@ -30,11 +30,8 @@ import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.DelegatingTypeSystem;
-import org.polypheny.db.catalog.MockCatalogReader;
-import org.polypheny.db.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.sql.MockSqlOperatorTable;
 import org.polypheny.db.sql.language.advise.SqlAdvisor;
@@ -67,28 +64,24 @@ public class SqlTestFactory {
     public static final SqlTestFactory INSTANCE = new SqlTestFactory();
 
     private final ImmutableMap<String, Object> options;
-    private final MockCatalogReaderFactory catalogReaderFactory;
     private final ValidatorFactory validatorFactory;
 
     private final Supplier<AlgDataTypeFactory> typeFactory;
     private final Supplier<OperatorTable> operatorTable;
-    private final Supplier<ValidatorCatalogReader> catalogReader;
     private final Supplier<ParserConfig> parserConfig;
 
 
     protected SqlTestFactory() {
-        this( DEFAULT_OPTIONS, MockCatalogReaderSimple::new, null );//SqlValidatorUtil::newValidator );
+        this( DEFAULT_OPTIONS, null );//SqlValidatorUtil::newValidator );
     }
 
 
-    protected SqlTestFactory( ImmutableMap<String, Object> options, MockCatalogReaderFactory catalogReaderFactory, ValidatorFactory validatorFactory ) {
+    protected SqlTestFactory( ImmutableMap<String, Object> options, ValidatorFactory validatorFactory ) {
         this.options = options;
-        this.catalogReaderFactory = catalogReaderFactory;
         this.validatorFactory = validatorFactory;
         this.operatorTable = Suppliers.memoize( () -> createOperatorTable( (OperatorTable) options.get( "operatorTable" ) ) );
         this.typeFactory = Suppliers.memoize( () -> createTypeFactory( (Conformance) options.get( "conformance" ) ) );
         Boolean caseSensitive = (Boolean) options.get( "caseSensitive" );
-        this.catalogReader = Suppliers.memoize( () -> catalogReaderFactory.create( typeFactory.get(), caseSensitive ).init() );
         this.parserConfig = Suppliers.memoize( () -> createParserConfig( options ) );
     }
 
@@ -125,7 +118,7 @@ public class SqlTestFactory {
 
     public SqlValidator getValidator() {
         final Conformance conformance = (Conformance) options.get( "conformance" );
-        return validatorFactory.create( operatorTable.get(), catalogReader.get(), typeFactory.get(), conformance );
+        return validatorFactory.create( operatorTable.get(), typeFactory.get(), conformance );
     }
 
 
@@ -151,17 +144,13 @@ public class SqlTestFactory {
             builder.put( entry );
         }
         builder.put( name, value );
-        return new SqlTestFactory( builder.build(), catalogReaderFactory, validatorFactory );
+        return new SqlTestFactory( builder.build(), validatorFactory );
     }
 
-
-    public SqlTestFactory withCatalogReader( MockCatalogReaderFactory newCatalogReaderFactory ) {
-        return new SqlTestFactory( options, newCatalogReaderFactory, validatorFactory );
-    }
 
 
     public SqlTestFactory withValidator( ValidatorFactory newValidatorFactory ) {
-        return new SqlTestFactory( options, catalogReaderFactory, newValidatorFactory );
+        return new SqlTestFactory( options, newValidatorFactory );
     }
 
 
@@ -196,20 +185,10 @@ public class SqlTestFactory {
      */
     public interface ValidatorFactory {
 
-        SqlValidator create( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance );
+        SqlValidator create( OperatorTable opTab, AlgDataTypeFactory typeFactory, Conformance conformance );
 
     }
 
-
-    /**
-     * Creates {@link MockCatalogReader} for tests.
-     * Note: {@link MockCatalogReader#init()} is to be invoked later, so a typical implementation should be via constructor reference like {@code MockCatalogReaderSimple::new}.
-     */
-    public interface MockCatalogReaderFactory {
-
-        MockCatalogReader create( AlgDataTypeFactory typeFactory, boolean caseSensitive );
-
-    }
 
 }
 

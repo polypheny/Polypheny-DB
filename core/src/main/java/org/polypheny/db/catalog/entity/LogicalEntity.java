@@ -37,10 +37,10 @@ import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
-import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.schema.types.Typed;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.Wrapper;
 
 @Getter
 @SuperBuilder(toBuilder = true)

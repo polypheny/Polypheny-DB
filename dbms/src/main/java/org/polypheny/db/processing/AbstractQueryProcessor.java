@@ -101,7 +101,6 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -1148,24 +1147,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 enumerable = EnumerableCalc.create( enumerable, program );
             }
 
-            try {
-                CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getSnapshot() );
-                final Conformance conformance = statement.getPrepareContext().config().conformance();
+            final Conformance conformance = statement.getPrepareContext().config().conformance();
 
-                final Map<String, Object> internalParameters = new LinkedHashMap<>();
-                internalParameters.put( "_conformance", conformance );
+            final Map<String, Object> internalParameters = new LinkedHashMap<>();
+            internalParameters.put( "_conformance", conformance );
 
-                Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
-                        internalParameters,
-                        enumerable,
-                        prefer,
-                        statement );
-                bindable = implementationPair.left;
-                generatedCode = implementationPair.right;
-                statement.getDataContext().addAll( internalParameters );
-            } finally {
-                CatalogReader.THREAD_LOCAL.remove();
-            }
+            Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
+                    internalParameters,
+                    enumerable,
+                    prefer,
+                    statement );
+            bindable = implementationPair.left;
+            generatedCode = implementationPair.right;
+            statement.getDataContext().addAll( internalParameters );
         }
 
         AlgDataType resultType = root.alg.getRowType();

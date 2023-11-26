@@ -41,14 +41,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.AvaticaType;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
-import org.apache.calcite.avatica.Meta.CursorFactory;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.Blocks;
@@ -61,15 +57,6 @@ import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.ExplainFormat;
-import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg;
-import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
-import org.polypheny.db.algebra.enumerable.EnumerableCalc;
-import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
@@ -106,22 +93,15 @@ import org.polypheny.db.algebra.rules.SortUnionTransposeRule;
 import org.polypheny.db.algebra.rules.ValuesReduceRule;
 import org.polypheny.db.algebra.stream.StreamRules;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Bindables;
-import org.polypheny.db.interpreter.Interpreters;
-import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.RexConvertletTable;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
-import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -129,26 +109,16 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Contexts;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
-import org.polypheny.db.prepare.Prepare.PreparedExplain;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
-import org.polypheny.db.runtime.Typed;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
 
@@ -321,7 +291,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             planner.addRule( preProcessRule, VolcanoPlannerPhase.PRE_PROCESS );
         }
 
-
         for ( AlgOptRule rule : DEFAULT_RULES ) {
             planner.addRule( rule );
         }
@@ -492,182 +461,6 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final AlgOptPlanner planner = createPlanner( prepareContext, action.getConfig().getContext(), action.getConfig().getCostFactory() );
         final AlgOptCluster cluster = createCluster( planner, rexBuilder, null, prepareContext.getDataContext().getSnapshot() );
         return action.apply( cluster, prepareContext.getDataContext().getSnapshot() );
-    }
-
-
-    /**
-     * Holds state for the process of preparing a SQL statement.
-     */
-    public static class PolyphenyDbPreparingStmt extends Prepare<PolyValue> {
-
-        protected final AlgOptPlanner planner;
-        protected final RexBuilder rexBuilder;
-        protected final PolyphenyDbPrepareImpl prepare;
-        protected final PolyphenyDbSchema schema;
-        protected final AlgDataTypeFactory typeFactory;
-        protected final RexConvertletTable convertletTable;
-        private final Prefer prefer;
-        private final Map<String, Object> internalParameters = new LinkedHashMap<>();
-        private int expansionDepth;
-        private Validator sqlValidator;
-
-
-        PolyphenyDbPreparingStmt(
-                PolyphenyDbPrepareImpl prepare,
-                Context context,
-                Snapshot snapshot,
-                AlgDataTypeFactory typeFactory,
-                PolyphenyDbSchema schema,
-                Prefer prefer,
-                AlgOptPlanner planner,
-                Convention resultConvention,
-                RexConvertletTable convertletTable ) {
-            super( context, snapshot, resultConvention );
-            this.prepare = prepare;
-            this.schema = schema;
-            this.prefer = prefer;
-            this.planner = planner;
-            this.typeFactory = typeFactory;
-            this.convertletTable = convertletTable;
-            this.rexBuilder = new RexBuilder( typeFactory );
-        }
-
-
-        @Override
-        protected void init( Class<?> runtimeContextClass ) {
-        }
-
-
-        @Override
-        public AlgNode flattenTypes( AlgNode rootRel, boolean restructure ) {
-            return rootRel;
-        }
-
-
-        @Override
-        protected AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel ) {
-            return sqlToRelConverter.decorrelate( query, rootRel );
-        }
-
-
-        protected Validator createSqlValidator( Snapshot snapshot ) {
-            return QueryLanguage.from( "sql" ).getValidatorSupplier().apply( context, snapshot );
-        }
-
-
-        @Override
-        protected Validator getSqlValidator() {
-            if ( sqlValidator == null ) {
-                sqlValidator = createSqlValidator( snapshot );
-            }
-            return sqlValidator;
-        }
-
-
-        @Override
-        protected PreparedResult<PolyValue> createPreparedExplanation( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
-            return new PolyphenyDbPreparedExplain( resultType, parameterRowType, root, format, detailLevel );
-        }
-
-
-        @Override
-        protected PreparedResult<PolyValue> implement( AlgRoot root ) {
-            AlgDataType resultType = root.alg.getRowType();
-            boolean isDml = root.kind.belongsTo( Kind.DML );
-            final Bindable<PolyValue[]> bindable;
-            final String generatedCode;
-            if ( resultConvention == BindableConvention.INSTANCE ) {
-                bindable = Interpreters.bindable( root.alg );
-                generatedCode = null;
-            } else {
-                EnumerableAlg enumerable = (EnumerableAlg) root.alg;
-                if ( !root.isRefTrivial() ) {
-                    final List<RexNode> projects = new ArrayList<>();
-                    final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
-                    for ( int field : Pair.left( root.fields ) ) {
-                        projects.add( rexBuilder.makeInputRef( enumerable, field ) );
-                    }
-                    RexProgram program = RexProgram.create(
-                            enumerable.getRowType(),
-                            projects,
-                            null,
-                            root.validatedRowType,
-                            rexBuilder );
-                    enumerable = EnumerableCalc.create( enumerable, program );
-                }
-
-                try {
-                    CatalogReader.THREAD_LOCAL.set( snapshot );
-                    final Conformance conformance = context.config().conformance();
-                    internalParameters.put( "_conformance", PolyString.of( conformance.toString() ) );
-                    Pair<Bindable<PolyValue[]>, String> implementationPair = EnumerableInterpretable.toBindable(
-                            internalParameters,
-                            enumerable,
-                            prefer,
-                            null );
-                    bindable = implementationPair.left;
-                    generatedCode = implementationPair.right;
-                } finally {
-                    CatalogReader.THREAD_LOCAL.remove();
-                }
-            }
-
-            if ( timingTracer != null ) {
-                timingTracer.traceTime( "end codegen" );
-            }
-
-            if ( timingTracer != null ) {
-                timingTracer.traceTime( "end compilation" );
-            }
-
-            return new PreparedResultImpl<>(
-                    resultType,
-                    parameterRowType,
-                    fieldOrigins,
-                    root.collation.getFieldCollations().isEmpty()
-                            ? ImmutableList.of()
-                            : ImmutableList.of( root.collation ),
-                    root.alg,
-                    mapTableModOp( isDml, root.kind ),
-                    isDml ) {
-                @Override
-                public String getCode() {
-                    return generatedCode;
-                }
-
-
-                @Override
-                public Bindable<PolyValue[]> getBindable( CursorFactory cursorFactory ) {
-                    return bindable;
-                }
-
-
-                @Override
-                public Type getElementType() {
-                    return ((Typed) bindable).getElementType();
-                }
-            };
-        }
-
-    }
-
-
-    /**
-     * An {@code EXPLAIN} statement, prepared and ready to execute.
-     */
-    private static class PolyphenyDbPreparedExplain extends PreparedExplain {
-
-        PolyphenyDbPreparedExplain( AlgDataType resultType, AlgDataType parameterRowType, AlgRoot root, ExplainFormat format, ExplainLevel detailLevel ) {
-            super( resultType, parameterRowType, root, format, detailLevel );
-        }
-
-
-        @Override
-        public Bindable<PolyValue[]> getBindable( final CursorFactory cursorFactory ) {
-            final String explanation = getCode();
-            return dataContext -> Linq4j.singletonEnumerable( new PolyValue[]{ PolyString.of( explanation ) } );
-        }
-
     }
 
 

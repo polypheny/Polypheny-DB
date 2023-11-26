@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.util.Wrapper;
 
 
 /**

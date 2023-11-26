@@ -168,7 +168,6 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.schema.Entity;
-import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.schema.types.ModifiableTable;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.sql.language.SqlAggFunction;
@@ -242,6 +241,7 @@ import org.polypheny.db.util.NumberUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
+import org.polypheny.db.util.Wrapper;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -383,18 +383,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
      */
     public void setSubQueryConverter( SubQueryConverter converter ) {
         subQueryConverter = converter;
-    }
-
-
-    /**
-     * Sets the number of dynamic parameters in the current EXPLAIN PLAN statement.
-     *
-     * @param explainParamCount number of dynamic parameters in the statement
-     */
-    @Override
-    public void setDynamicParamCountInExplain( int explainParamCount ) {
-        assert config.isExplain();
-        this.explainParamCount = explainParamCount;
     }
 
 

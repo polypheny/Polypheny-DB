@@ -47,8 +47,6 @@ public interface NodeToAlgConverter {
         return new ConfigBuilder();
     }
 
-    void setDynamicParamCountInExplain( int explainParamCount );
-
     AlgNode flattenTypes( AlgNode rootAlg, boolean restructure );
 
     AlgNode decorrelate( Node query, AlgNode rootAlg );

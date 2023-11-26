@@ -47,24 +47,15 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalGraph;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.nodes.validate.Validator;
-import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
 import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptPlanner;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -78,7 +69,6 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.TryThreadLocal;
-import org.polypheny.db.util.trace.PolyphenyDbTimingTracer;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
@@ -96,12 +86,6 @@ public abstract class Prepare<T> {
      * Convention via which results should be returned by execution.
      */
     protected final Convention resultConvention;
-    protected PolyphenyDbTimingTracer timingTracer;
-    protected List<List<String>> fieldOrigins;
-    protected AlgDataType parameterRowType;
-
-    // temporary. for testing.
-    public static final TryThreadLocal<Boolean> THREAD_TRIM = TryThreadLocal.of( false );
 
     /**
      * Temporary, until "Decorrelate sub-queries in Project and Join" is fixed.
@@ -118,14 +102,6 @@ public abstract class Prepare<T> {
         this.snapshot = snapshot;
         this.resultConvention = resultConvention;
     }
-
-
-    protected abstract PreparedResult<T> createPreparedExplanation(
-            AlgDataType resultType,
-            AlgDataType parameterRowType,
-            AlgRoot root,
-            ExplainFormat format,
-            ExplainLevel detailLevel );
 
 
     /**
@@ -199,57 +175,10 @@ public abstract class Prepare<T> {
     protected abstract PreparedResult<T> implement( AlgRoot root );
 
 
-    protected LogicalRelModify.Operation mapTableModOp( boolean isDml, Kind Kind ) {
-        if ( !isDml ) {
-            return null;
-        }
-        switch ( Kind ) {
-            case INSERT:
-                return Modify.Operation.INSERT;
-            case DELETE:
-                return Modify.Operation.DELETE;
-            case MERGE:
-                return Modify.Operation.MERGE;
-            case UPDATE:
-                return Modify.Operation.UPDATE;
-            default:
-                return null;
-        }
-    }
-
-
-    /**
-     * Protected method to allow subclasses to override construction of SqlToRelConverter.
-     */
-    //protected abstract NodeToAlgConverter getSqlToRelConverter( Validator validator, CatalogReader catalogReader, NodeToAlgConverter.Config config );
-    public abstract AlgNode flattenTypes( AlgNode rootRel, boolean restructure );
-
     protected abstract AlgNode decorrelate( NodeToAlgConverter sqlToRelConverter, Node query, AlgNode rootRel );
 
 
     protected abstract void init( Class<?> runtimeContextClass );
-
-    protected abstract Validator getSqlValidator();
-
-
-    /**
-     * Interface by which validator and planner can read table metadata.
-     */
-    public interface CatalogReader extends AlgOptSchema, ValidatorCatalogReader, OperatorTable {
-
-        @Override
-        LogicalTable getTableForMember( List<String> names );
-
-        @Override
-        LogicalTable getTable( List<String> names );
-
-        LogicalCollection getCollection( List<String> names );
-
-        LogicalGraph getGraph( String name );
-
-        ThreadLocal<Snapshot> THREAD_LOCAL = new ThreadLocal<>();
-
-    }
 
 
     /**

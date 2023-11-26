@@ -82,7 +82,7 @@ import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.rules.UnionToDistinctRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AbstractAlgOptPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptListener;
@@ -108,7 +108,7 @@ import org.polypheny.db.util.Util;
  * VolcanoPlanner optimizes queries by transforming expressions selectively according to a dynamic programming algorithm.
  */
 @Slf4j
-public class VolcanoPlanner extends AbstractRelOptPlanner {
+public class VolcanoPlanner extends AbstractAlgOptPlanner {
 
     protected static final double COST_IMPROVEMENT = .5;
 

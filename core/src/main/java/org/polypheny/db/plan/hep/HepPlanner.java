@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.convert.TraitMatchingRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AbstractAlgOptPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptCostImpl;
@@ -81,7 +81,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 /**
  * HepPlanner is a heuristic implementation of the {@link AlgOptPlanner} interface.
  */
-public class HepPlanner extends AbstractRelOptPlanner {
+public class HepPlanner extends AbstractAlgOptPlanner {
 
     private final HepProgram mainProgram;
 
@@ -151,7 +151,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     // implement RelOptPlanner
     @Override
     public void setRoot( AlgNode alg ) {
-        root = addRelToGraph( alg );
+        root = addAlgToGraph( alg );
         dumpGraph();
     }
 
@@ -686,7 +686,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
             parents.add( parent );
         }
 
-        HepAlgVertex newVertex = addRelToGraph( bestRel );
+        HepAlgVertex newVertex = addAlgToGraph( bestRel );
 
         // There's a chance that newVertex is the same as one of the parents due to common subexpression recognition (e.g. the LogicalProject added by JoinCommuteRule).  In that
         // case, treat the transformation as a nop to avoid creating a loop.
@@ -734,7 +734,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private HepAlgVertex addRelToGraph( AlgNode alg ) {
+    private HepAlgVertex addAlgToGraph( AlgNode alg ) {
         // Check if a transformation already produced a reference to an existing vertex.
         if ( graph.vertexSet().contains( alg ) ) {
             return (HepAlgVertex) alg;
@@ -744,7 +744,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         final List<AlgNode> inputs = alg.getInputs();
         final List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input1 : inputs ) {
-            HepAlgVertex childVertex = addRelToGraph( input1 );
+            HepAlgVertex childVertex = addAlgToGraph( input1 );
             newInputs.add( childVertex );
         }
 

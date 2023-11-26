@@ -34,6 +34,13 @@
 package org.polypheny.db.sql;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -50,14 +57,6 @@ import org.polypheny.db.plan.hep.HepProgram;
 import org.polypheny.db.plan.hep.HepProgramBuilder;
 import org.polypheny.db.sql.language.SqlToAlgTestBase;
 import org.polypheny.db.tools.AlgBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 
 /**
@@ -132,7 +131,7 @@ abstract class RelOptTestBase extends SqlToAlgTestBase {
     protected void checkPlanning( Tester tester, HepProgram preProgram, AlgOptPlanner planner, String sql, boolean unchanged ) {
         final DiffRepository diffRepos = getDiffRepos();
         String sql2 = diffRepos.expand( "sql", sql );
-        final AlgRoot root = tester.convertSqlToRel( sql2 );
+        final AlgRoot root = tester.convertSqlToAlg( sql2 );
         final AlgNode algInitial = root.alg;
 
         assertNotNull( algInitial );

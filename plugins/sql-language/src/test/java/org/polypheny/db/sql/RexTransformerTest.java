@@ -72,7 +72,7 @@ public class RexTransformerTest {
     private static AlgNode toAlg( String sql ) {
         final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        return test.createTester().convertSqlToRel( sql ).alg;
+        return test.createTester().convertSqlToAlg( sql ).alg;
     }
 
 

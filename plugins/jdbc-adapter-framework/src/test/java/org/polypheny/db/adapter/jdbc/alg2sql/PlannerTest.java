@@ -21,9 +21,6 @@ import static org.junit.Assert.assertThat;
 
 import java.util.List;
 import org.junit.Test;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.java.ReflectiveSchema;
 import org.polypheny.db.adapter.jdbc.JdbcAlg;
 import org.polypheny.db.adapter.jdbc.JdbcConvention;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
@@ -38,22 +35,16 @@ import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitDef;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.prepare.ContextImpl;
-import org.polypheny.db.prepare.JavaTypeFactoryImpl;
-import org.polypheny.db.schema.HrSchema;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.util.PlannerImplMock;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -107,27 +98,10 @@ public class PlannerTest extends SqlLanguageDependent {
 
 
     private Planner getPlanner( List<AlgTraitDef> traitDefs, ParserConfig parserConfig, Program... programs ) {
-        final SchemaPlus schema = Frameworks
-                .createSnapshot( true )
-                .add( "hr", new ReflectiveSchema( new HrSchema(), -1 ), NamespaceType.RELATIONAL );
 
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( parserConfig )
-                .defaultSnapshot( schema )
-                .traitDefs( traitDefs )
                 .programs( programs )
-                .prepareContext( new ContextImpl(
-                        PolyphenyDbSchema.from( schema ),
-                        new SlimDataContext() {
-                            @Override
-                            public JavaTypeFactory getTypeFactory() {
-                                return new JavaTypeFactoryImpl();
-                            }
-                        },
-                        "",
-                        0,
-                        0,
-                        null ) )
                 .build();
         return new PlannerImplMock( config );
     }
@@ -181,14 +155,14 @@ public class PlannerTest extends SqlLanguageDependent {
      */
     private static class MockJdbcScan extends RelScan implements JdbcAlg {
 
-        MockJdbcScan( AlgOptCluster cluster, AlgOptEntity table, JdbcConvention jdbcConvention ) {
+        MockJdbcScan( AlgOptCluster cluster, LogicalEntity table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MockJdbcScan( getCluster(), table, (JdbcConvention) getConvention() );
+            return new MockJdbcScan( getCluster(), entity, (JdbcConvention) getConvention() );
         }
 
 

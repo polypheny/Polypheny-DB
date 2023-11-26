@@ -66,7 +66,6 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.rules.SortRemoveRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.PolyphenyDbServerStatement;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -75,7 +74,6 @@ import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
-import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -85,10 +83,8 @@ import org.polypheny.db.plan.volcano.AbstractConverter.ExpandConversionRule;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Context;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.volcano.TraitPropagationTest.PropAction.Phys;
 import org.polypheny.db.sql.volcano.TraitPropagationTest.PropAction.PhysAggRule;
 import org.polypheny.db.sql.volcano.TraitPropagationTest.PropAction.PhysProjRule;
@@ -98,7 +94,6 @@ import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -129,70 +124,6 @@ public class TraitPropagationTest {
      * Materialized anonymous class for simplicity
      */
     static class PropAction {
-
-        public AlgNode apply( AlgOptCluster cluster, AlgOptSchema algOptSchema, SchemaPlus rootSchema ) {
-            final AlgDataTypeFactory typeFactory = cluster.getTypeFactory();
-            final RexBuilder rexBuilder = cluster.getRexBuilder();
-            final AlgOptPlanner planner = cluster.getPlanner();
-
-            final AlgDataType stringType = typeFactory.createJavaType( String.class );
-            final AlgDataType integerType = typeFactory.createJavaType( Integer.class );
-            final AlgDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
-
-            // SELECT * from T;
-            /*final Entity entity = new AbstractEntity() {
-                @Override
-                public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-                    return typeFactory.builder()
-                            .add( "s", null, stringType )
-                            .add( "i", null, integerType ).build();
-                }
-
-
-                @Override
-                public Statistic getStatistic() {
-                    return Statistics.of( 100d, ImmutableList.of(), ImmutableList.of( COLLATION ) );
-                }
-            };
-
-            final AlgOptAbstractEntity t1 = new AlgOptAbstractEntity( algOptSchema, "t1", entity.getRowType( typeFactory ) ) {
-                @Override
-                public LogicalTable getCatalogTable() {
-                    return null;
-                }
-
-
-                @Override
-                public <T> T unwrap( Class<T> clazz ) {
-                    return clazz.isInstance( entity )
-                            ? clazz.cast( entity )
-                            : super.unwrap( clazz );
-                }
-            };
-
-            final AlgNode rt1 = EnumerableScan.create( cluster, t1 );
-
-            // project s column
-            AlgNode project = LogicalProject.create(
-                    rt1,
-                    ImmutableList.of( (RexNode) rexBuilder.makeInputRef( stringType, 0 ), rexBuilder.makeInputRef( integerType, 1 ) ),
-                    typeFactory.builder().add( "s", null, stringType ).add( "i", null, integerType ).build() );
-
-            // aggregate on s, count
-            AggregateCall aggCall = AggregateCall.create( OperatorRegistry.getAgg( OperatorName.COUNT ), false, false, Collections.singletonList( 1 ), -1, AlgCollations.EMPTY, sqlBigInt, "cnt" );
-            AlgNode agg = new LogicalAggregate( cluster, cluster.traitSetOf( Convention.NONE ), project, false, ImmutableBitSet.of( 0 ), null, Collections.singletonList( aggCall ) );
-
-            final AlgNode rootRel = agg;
-
-            AlgOptUtil.dumpPlan( "LOGICAL PLAN", rootRel, ExplainFormat.TEXT, ExplainLevel.DIGEST_ATTRIBUTES );
-
-            AlgTraitSet desiredTraits = rootRel.getTraitSet().replace( PHYSICAL );
-            final AlgNode rootRel2 = planner.changeTraits( rootRel, desiredTraits );
-            planner.setRoot( rootRel2 );
-            return planner.findBestExp();
-        }*/
-            return null;
-        }
 
         // RULES
 
@@ -449,7 +380,6 @@ public class TraitPropagationTest {
             final PolyphenyDbServerStatement statement = connection.createStatement().unwrap( PolyphenyDbServerStatement.class );
             final Context prepareContext = statement.createPrepareContext();
             final JavaTypeFactory typeFactory = prepareContext.getTypeFactory();
-            PolyphenyDbCatalogReader catalogReader = new PolyphenyDbCatalogReader( prepareContext.getSnapshot(), typeFactory );
             final RexBuilder rexBuilder = new RexBuilder( typeFactory );
             final AlgOptPlanner planner = new VolcanoPlanner( config.getCostFactory(), config.getContext() );
 
@@ -463,8 +393,7 @@ public class TraitPropagationTest {
                 planner.addRule( r );
             }
 
-            final AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, planner.emptyTraitSet(), Catalog.snapshot() );
-            return action.apply( cluster, catalogReader, null );
+            return null;
         }
 
     }

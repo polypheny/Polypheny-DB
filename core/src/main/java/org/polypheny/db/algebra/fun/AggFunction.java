@@ -18,7 +18,7 @@ package org.polypheny.db.algebra.fun;
 
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.nodes.Function;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 public interface AggFunction extends Function, Wrapper {
 

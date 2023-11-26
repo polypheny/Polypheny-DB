@@ -43,7 +43,7 @@ import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TableType;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 
 /**

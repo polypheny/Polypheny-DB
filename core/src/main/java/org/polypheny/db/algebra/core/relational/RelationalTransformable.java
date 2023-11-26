@@ -22,7 +22,6 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.types.ModifiableTable;
 
 
@@ -30,10 +29,6 @@ import org.polypheny.db.schema.types.ModifiableTable;
  * This interface marks classes, which can be transformed to relational ones.
  */
 public interface RelationalTransformable {
-
-    default CatalogReader getCatalogReader() {
-        throw new UnsupportedOperationException();
-    }
 
 
     List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<LogicalEntity> entities, Snapshot snapshot );

@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql;
-
-import org.polypheny.db.TestHelper;
-
-public class SqlLanguageDependent {
+package org.polypheny.db.util;
 
 
-    static {
-        TestHelper.getInstance();
-        //SqlLanguagePlugin.startup();
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Mix-in interface that allows you to find sub-objects.
+ */
+public interface Wrapper {
+
+    default @Nullable <C> C unwrap( Class<C> aClass ) {
+        if ( aClass.isInstance( this ) ) {
+            return aClass.cast( this );
+        }
+        return null;
     }
 
 }
+
