@@ -35,7 +35,7 @@ public class MqlDropDatabase extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Long namespaceId = parsedQueryContext.getQueryNode().getNamespaceId();
+        Long namespaceId = parsedQueryContext.getNamespaceId();
 
         DdlManager.getInstance().dropNamespace( Catalog.snapshot().getNamespace( namespaceId ).orElseThrow().name, true, statement );
     }

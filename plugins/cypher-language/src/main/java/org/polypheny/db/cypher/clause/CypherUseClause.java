@@ -44,7 +44,7 @@ public class CypherUseClause extends CypherClause implements ExecutableStatement
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

@@ -47,7 +47,7 @@ public abstract class CypherNode implements Node {
 
     @Override
     public Kind getKind() {
-        return Kind.OTHER;
+        return isDdl() ? Kind.OTHER_DDL : Kind.OTHER;
     }
 
 
@@ -89,7 +89,8 @@ public abstract class CypherNode implements Node {
     }
 
 
-    public boolean isDDL() {
+    @Override
+    public boolean isDdl() {
         return DDL.contains( getCypherKind() );
     }
 

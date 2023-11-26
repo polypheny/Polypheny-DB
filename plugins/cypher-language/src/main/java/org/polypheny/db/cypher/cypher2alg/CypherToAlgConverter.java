@@ -108,7 +108,7 @@ public class CypherToAlgConverter {
 
 
     public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgOptCluster cluster ) {
-        long namespaceId = getNamespaceId( parsedContext );
+        long namespaceId = parsedContext.getNamespaceId();
 
         LogicalEntity entity = getEntity( namespaceId );
 
@@ -154,9 +154,6 @@ public class CypherToAlgConverter {
     }
 
 
-    private long getNamespaceId( ParsedQueryContext context ) {
-        return snapshot.getNamespace( context.getQueryNode().getNamespaceId() ).orElseThrow().id;
-    }
 
 
     private void convertQuery( CypherNode node, CypherContext context ) {

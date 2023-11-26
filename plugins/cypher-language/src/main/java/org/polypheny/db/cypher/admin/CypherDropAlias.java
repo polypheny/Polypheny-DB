@@ -56,7 +56,7 @@ public class CypherDropAlias extends CypherAdminCommand implements ExecutableSta
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

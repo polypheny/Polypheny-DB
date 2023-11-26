@@ -23,7 +23,6 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -57,11 +56,10 @@ public class QueryContext {
     @Builder.Default
     int batch = -1; // -1 for all
 
-    @NotNull
     TransactionManager transactionManager;
 
     @Builder.Default
-    @Nullable
+    @NotNull
     Consumer<InformationManager> informationTarget = i -> {
     };
 

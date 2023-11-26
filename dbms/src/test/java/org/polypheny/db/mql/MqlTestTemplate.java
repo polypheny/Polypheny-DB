@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.MongoConnection;
@@ -39,6 +40,28 @@ public class MqlTestTemplate {
     public static void start() {
         TestHelper.getInstance();
         initDatabase();
+    }
+
+
+    @Before
+    public void initCollection() {
+        initCollection( database );
+    }
+
+
+    @After
+    public void dropCollection() {
+        dropCollection( database );
+    }
+
+
+    public static void dropCollection( String collection ) {
+        MongoConnection.executeGetResponse( "db." + collection + ".drop()" );
+    }
+
+
+    public static void initCollection( String collection ) {
+        MongoConnection.executeGetResponse( "db.createCollection(" + collection + ")" );
     }
 
 

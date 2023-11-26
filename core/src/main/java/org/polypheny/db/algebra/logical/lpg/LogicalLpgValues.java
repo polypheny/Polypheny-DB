@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,15 +49,19 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Pair;
 
 
 @Getter
 public class LogicalLpgValues extends LpgValues implements RelationalTransformable {
 
-    public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 );
-    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
-    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 );
+    public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 )
+            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
+    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
+    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+            .createWithCharsetAndCollation( Charsets.UTF_16, Collation.IMPLICIT );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
     private final ImmutableList<ImmutableList<RexLiteral>> values;
@@ -140,7 +145,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     private ImmutableList<ImmutableList<RexLiteral>> getNodeValues( ImmutableList<PolyNode> nodes ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
-            RexLiteral id = getNls( node.id.value, ID_TYPE );
+            RexLiteral id = getStringLiteral( node.id.value, ID_TYPE );
             // empty node without label, as non label nodes are permitted (use $, as null is not possible for pk)
             ImmutableList.Builder<RexLiteral> idRow = ImmutableList.builder();
             idRow.add( id );
@@ -150,7 +155,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             for ( PolyString label : node.labels ) {
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
-                row.add( getNls( label.value, LABEL_TYPE ) );
+                row.add( getStringLiteral( label.value, LABEL_TYPE ) );
                 rows.add( row.build() );
             }
         }
@@ -161,13 +166,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     private ImmutableList<ImmutableList<RexLiteral>> getNodePropertyValues( ImmutableList<PolyNode> nodes ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyNode node : nodes ) {
-            RexLiteral id = getNls( node.id.value, ID_TYPE );
+            RexLiteral id = getStringLiteral( node.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : node.properties.entrySet() ) {
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
-                row.add( getNls( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getNls( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
+                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }
@@ -175,8 +180,8 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     }
 
 
-    private static RexLiteral getNls( String value, BasicPolyType type ) {
-        return new RexLiteral( PolyString.of( value ), type, PolyType.CHAR );
+    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
+        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
     }
 
 
@@ -184,11 +189,11 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyEdge edge : edges ) {
             ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
-            row.add( getNls( edge.id.value, ID_TYPE ) );
-            row.add( getNls( edge.labels.get( 0 ).value, LABEL_TYPE ) );
+            row.add( getStringLiteral( edge.id.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.labels.get( 0 ).value, LABEL_TYPE ) );
 
-            row.add( getNls( edge.source.value, ID_TYPE ) );
-            row.add( getNls( edge.target.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.source.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.target.value, ID_TYPE ) );
             rows.add( row.build() );
         }
 
@@ -199,13 +204,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     private ImmutableList<ImmutableList<RexLiteral>> getEdgePropertyValues( ImmutableList<PolyEdge> edges ) {
         ImmutableList.Builder<ImmutableList<RexLiteral>> rows = ImmutableList.builder();
         for ( PolyEdge edge : edges ) {
-            RexLiteral id = getNls( edge.id.value, ID_TYPE );
+            RexLiteral id = getStringLiteral( edge.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : edge.properties.entrySet() ) {
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
-                row.add( getNls( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getNls( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
+                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

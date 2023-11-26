@@ -79,7 +79,7 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

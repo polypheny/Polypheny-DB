@@ -1289,7 +1289,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 }
             }
         } else {
-            boolean fallback = false;
+            boolean fallback;
             if ( alg.getEntity() != null ) {
                 LogicalEntity entity = alg.getEntity();
 
@@ -1301,10 +1301,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 long scanId = entity.id;
 
                 // Get placements of this table
-                LogicalTable catalogTable = entity.unwrap( LogicalTable.class );
-                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( catalogTable.id ).orElseThrow();
+                LogicalTable table = entity.unwrap( LogicalTable.class );
+
+                if ( table == null ) {
+                    return accessedPartitions;
+                }
+
+                PartitionProperty property = Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
                 fallback = true;
-                // todo dl
+
                 if ( aggregatedPartitionValues.containsKey( scanId ) && aggregatedPartitionValues.get( scanId ) != null && !aggregatedPartitionValues.get( scanId ).isEmpty() ) {
                     fallback = false;
                     List<String> partitionValues = new ArrayList<>( aggregatedPartitionValues.get( scanId ) );
@@ -1312,7 +1317,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( log.isDebugEnabled() ) {
                         log.debug(
                                 "TableID: {} is partitioned on column: {} - {}",
-                                catalogTable.id,
+                                table.id,
                                 property.partitionColumnId,
                                 Catalog.getInstance().getSnapshot().rel().getColumn( property.partitionColumnId ).orElseThrow().name );
 
@@ -1324,7 +1329,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         }
                         long identifiedPartition = PartitionManagerFactory.getInstance()
                                 .getPartitionManager( property.partitionType )
-                                .getTargetPartitionId( catalogTable, property, partitionValue );
+                                .getTargetPartitionId( table, property, partitionValue );
 
                         identifiedPartitions.add( identifiedPartition );
                         if ( log.isDebugEnabled() ) {
@@ -1336,7 +1341,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             scanId,
                             identifiedPartitions,
                             ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                    scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                    scanPerTable.putIfAbsent( scanId, table.id );
                     // Fallback all partitionIds are needed
                 }
 
@@ -1345,7 +1350,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             scanId,
                             property.partitionIds,
                             ( l1, l2 ) -> Stream.concat( l1.stream(), l2.stream() ).collect( Collectors.toList() ) );
-                    scanPerTable.putIfAbsent( scanId, catalogTable.id );
+                    scanPerTable.putIfAbsent( scanId, table.id );
                 }
 
             }

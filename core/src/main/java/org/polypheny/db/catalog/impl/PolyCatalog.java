@@ -242,7 +242,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     private void validateNamespaceType( long id, NamespaceType type ) {
         if ( logicalCatalogs.get( id ).getLogicalNamespace().namespaceType != type ) {
-            throw new GenericRuntimeException( "error while retrieving catalog" );
+            throw new GenericRuntimeException( "Error while retrieving namespace type" );
         }
     }
 

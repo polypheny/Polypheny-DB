@@ -66,7 +66,7 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

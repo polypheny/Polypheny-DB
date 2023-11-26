@@ -17,13 +17,21 @@
 package org.polypheny.db.languages;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.languages.mql.MqlCreateCollection;
+import org.polypheny.db.languages.mql.MqlCreateView;
 import org.polypheny.db.mql.parser.MqlParserImpl;
 import org.polypheny.db.nodes.DeserializeFunctionOperator;
 import org.polypheny.db.nodes.LangFunctionOperator;
@@ -31,6 +39,9 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.plugins.PolyPluginManager;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 
 @Slf4j
@@ -72,7 +83,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 MqlParserImpl.FACTORY,
                 MqlProcessor::new,
                 null,
-                LanguageManager::toQueryNodes );
+                MongoLanguagePlugin::anyQuerySplitter );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getDocResult ) );
@@ -81,6 +92,46 @@ public class MongoLanguagePlugin extends PolyPlugin {
         }
     }
 
+
+    private static List<ParsedQueryContext> anyQuerySplitter( QueryContext context ) {
+        List<ParsedQueryContext> queries = new ArrayList<>( LanguageManager.toQueryNodes( context ) );
+        Snapshot snapshot = Catalog.snapshot();
+        List<Pair<Long, String>> toCreate = new ArrayList<>();
+        List<Pair<Long, String>> created = new ArrayList<>();
+        for ( ParsedQueryContext query : queries ) {
+            if ( query.getQueryNode().getEntity() == null ) {
+                continue;
+            }
+            Optional<LogicalCollection> collection = snapshot.doc().getCollection( query.getNamespaceId(), query.getQueryNode().getEntity() );
+            if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), query.getQueryNode().getEntity() ) ) ) {
+                if ( query.getQueryNode() instanceof MqlCreateCollection || query.getQueryNode() instanceof MqlCreateView ) {
+                    // entity was created during this query
+                    created.add( Pair.of( context.getNamespaceId(), query.getQueryNode().getEntity() ) );
+                } else {
+                    // we have to create this query manually
+                    toCreate.add( 0, Pair.of( query.getNamespaceId(), query.getQueryNode().getEntity() ) );
+                }
+            }
+        }
+
+        List<List<ParsedQueryContext>> toCreateQueries = toCreate.stream().map( p ->
+                QueryContext.builder()
+                        .query( "db.createCollection(" + p.right + ")" )
+                        .namespaceId( p.left )
+                        .language( context.getLanguage() )
+                        .transactionManager( context.getTransactionManager() )
+                        .origin( context.getOrigin() )
+                        .informationTarget( context.getInformationTarget() )
+                        .build() ).map( LanguageManager::toQueryNodes ).collect( Collectors.toList() );
+
+        for ( List<ParsedQueryContext> toCreateQuery : toCreateQueries ) {
+            for ( int i = toCreateQueries.size() - 1; i >= 0; i-- ) {
+                queries.add( 0, toCreateQuery.get( i ) );
+            }
+        }
+
+        return queries;
+    }
 
 
     public static void registerOperators() {

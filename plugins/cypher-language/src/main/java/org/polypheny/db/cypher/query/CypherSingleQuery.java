@@ -58,11 +58,11 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
 
 
     @Override
-    public boolean isDDL() {
-        if ( clauses.stream().allMatch( CypherNode::isDDL ) ) {
+    public boolean isDdl() {
+        if ( clauses.stream().allMatch( CypherNode::isDdl ) ) {
             return true;
         }
-        if ( clauses.stream().noneMatch( CypherNode::isDDL ) ) {
+        if ( clauses.stream().noneMatch( CypherNode::isDdl ) ) {
             return false;
         }
         throw new GenericRuntimeException( "The mixed query is not supported" );
@@ -72,7 +72,7 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         for ( CypherClause clause : clauses ) {
-            if ( clause.isDDL() ) {
+            if ( clause.isDdl() ) {
                 ((ExecutableStatement) clause).execute( context, statement, parsedQueryContext );
             }
         }
