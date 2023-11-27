@@ -23,10 +23,10 @@ import com.github.rvesse.airline.types.DefaultTypeConverter;
 import com.github.rvesse.airline.types.TypeConverter;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 
 @Slf4j
-public class PolyphenyModesConverter extends DefaultTypeConverter {
+public class PolyModesConverter extends DefaultTypeConverter {
 
     @Override
     public <T> TypeConverter getTypeConverter( OptionMetadata option, ParseState<T> state ) {
@@ -44,22 +44,22 @@ public class PolyphenyModesConverter extends DefaultTypeConverter {
     public Object convert( String name, Class<?> type, String value ) {
         String adjustedName = value.toUpperCase();
 
-        if ( Arrays.stream( PolyphenyMode.values() ).anyMatch( v -> v.name().equals( adjustedName ) ) ) {
-            return PolyphenyMode.valueOf( adjustedName.toUpperCase() );
+        if ( Arrays.stream( PolyMode.values() ).anyMatch( v -> v.name().equals( adjustedName ) ) ) {
+            return PolyMode.valueOf( adjustedName.toUpperCase() );
         }
 
         switch ( adjustedName.toLowerCase() ) {
             case "t":
-                return PolyphenyMode.TEST;
+                return PolyMode.TEST;
             case "b":
             case "bench":
-                return PolyphenyMode.BENCHMARK;
+                return PolyMode.BENCHMARK;
             case "d":
             case "dev":
-                return PolyphenyMode.DEVELOPMENT;
+                return PolyMode.DEVELOPMENT;
         }
         log.warn( "Could not find the mode: " + adjustedName );
-        return PolyphenyMode.PRODUCTION;
+        return PolyMode.PRODUCTION;
     }
 
 }

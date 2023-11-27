@@ -59,7 +59,7 @@ import org.polypheny.db.tools.Planner;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.ValidationException;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.SourceStringReader;
 
 
@@ -69,7 +69,7 @@ import org.polypheny.db.util.SourceStringReader;
 public class PlannerImplMock implements Planner {
 
     static {
-        Catalog.mode = PolyphenyMode.TEST;
+        Catalog.mode = PolyMode.TEST;
     }
 
 

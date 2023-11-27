@@ -66,7 +66,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
@@ -399,7 +399,7 @@ public class LanguageCrud {
     private static String toJson( @Nullable PolyValue src ) {
         return src == null
                 ? null
-                : Catalog.mode == PolyphenyMode.TEST ? src.toTypedJson() : src.toJson();
+                : Catalog.mode == PolyMode.TEST ? src.toTypedJson() : src.toJson();
     }
 
 

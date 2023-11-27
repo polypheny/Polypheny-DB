@@ -115,7 +115,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.Util;
 
 
@@ -125,7 +125,7 @@ import org.polypheny.db.util.Util;
 public class PlannerTest extends SqlLanguageDependent {
 
     static {
-        Catalog.mode = PolyphenyMode.TEST;
+        Catalog.mode = PolyMode.TEST;
     }
 
 

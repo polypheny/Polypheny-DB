@@ -48,7 +48,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -69,7 +69,7 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static PolyphenyMode mode;
+    public static PolyMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
