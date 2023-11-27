@@ -104,7 +104,6 @@ public interface MongoAlg extends AlgNode {
         @Getter
         public boolean hasProject = false;
 
-        MongoEntity mongoEntity;
         @Setter
         @Getter
         private boolean isDML;
@@ -136,9 +135,9 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            int index = mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
+            int index = entity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
             if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
+                return MongoStore.getPhysicalColumnName( entity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
             }
             throw new GenericRuntimeException( "This column is not part of the table." );
         }
@@ -201,14 +200,13 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getNecessaryPhysicalFields() {
-            return new ArrayList<>( physicalMapper );
+            return new ArrayList<>( entity.getRowType().getFieldNames() );
         }
 
 
         public List<String> reorderPhysical() {
             // this is only needed if there is a basic scan without project or group,
             // where we cannot be sure if the fields are all ordered as intended
-            assert entity.getRowType().getFieldCount() == physicalMapper.size();
             return entity.getRowType().getFieldNames();
         }
 

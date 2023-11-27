@@ -51,7 +51,7 @@ public class MongoSort extends Sort implements MongoAlg {
 
     @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> fieldExps, RexNode offset, RexNode fetch ) {
-        return new MongoSort( getCluster(), traitSet, input, collation, fieldExps, offset, fetch );
+        return new MongoSort( getCluster(), traitSet, newInput, collation, fieldExps, offset, fetch );
     }
 
 
@@ -88,10 +88,10 @@ public class MongoSort extends Sort implements MongoAlg {
             implementor.add( null, "{$sort: " + Util.toString( keys, "{", ", ", "}" ) + "}" );
         }
         if ( offset != null ) {
-            implementor.add( null, "{$skip: " + ((RexLiteral) offset).getValue() + "}" );
+            implementor.add( null, "{$skip: " + ((RexLiteral) offset).getValue().toJson() + "}" );
         }
         if ( fetch != null ) {
-            implementor.add( null, "{$limit: " + ((RexLiteral) fetch).getValue() + "}" );
+            implementor.add( null, "{$limit: " + ((RexLiteral) fetch).getValue().toJson() + "}" );
         }
     }
 

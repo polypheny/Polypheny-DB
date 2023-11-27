@@ -132,6 +132,7 @@ public class LanguageCrud {
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
         Transaction transaction = context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, context.isAnalysed(), context.getOrigin() );
+        transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
         List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, transaction.createStatement() );

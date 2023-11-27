@@ -17,10 +17,11 @@
 package org.polypheny.db.sql;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -108,9 +109,15 @@ public class SqlProcessor extends Processor {
 
     @Override
     public List<? extends Node> parse( String query ) {
+        // todo we should not split the query here, but rather in the parser
+        return Arrays.stream( query.split( ";" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).collect( Collectors.toList() );
+    }
+
+
+    public Node parseSingle( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
-            log.debug( "Parsing PolySQL statement ..." );
+            log.debug( "Parsing SQL statement ..." );
         }
         stopWatch.start();
         Node parsed;
@@ -131,9 +138,9 @@ public class SqlProcessor extends Processor {
             log.trace( "Parsed query: [{}]", parsed );
         }
         if ( log.isDebugEnabled() ) {
-            log.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
+            log.debug( "Parsing SQL statement ... done. [{}]", stopWatch );
         }
-        return ImmutableList.of( parsed );
+        return parsed;
     }
 
 

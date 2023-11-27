@@ -499,6 +499,12 @@ public interface AlgDataTypeFactory {
         }
 
 
+        public Builder add( String name, String physicalName, AlgDataType type ) {
+            add( null, name, physicalName, type );
+            return this;
+        }
+
+
         /**
          * Changes the nullability of the last field added.
          *

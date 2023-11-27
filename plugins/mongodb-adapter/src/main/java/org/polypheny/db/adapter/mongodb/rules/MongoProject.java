@@ -33,11 +33,14 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.util.Pair;
@@ -50,9 +53,24 @@ import org.polypheny.db.util.Util;
 public class MongoProject extends Project implements MongoAlg {
 
     public MongoProject( AlgOptCluster cluster, AlgTraitSet traitSet, AlgNode input, List<? extends RexNode> projects, AlgDataType rowType ) {
-        super( cluster, traitSet, input, projects, rowType );
+        super( cluster, traitSet, input, projects, adjustRowType( rowType, projects, input ) );
         assert getConvention() == CONVENTION;
         //assert getConvention() == input.getConvention(); // TODO DL fix logicalFilter bug
+    }
+
+
+    private static AlgDataType adjustRowType( AlgDataType rowType, List<? extends RexNode> projects, AlgNode input ) {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( Pair<AlgDataTypeField, ? extends RexNode> pair : Pair.zip( rowType.getFields(), projects ) ) {
+            fieldInfo.add(
+                    pair.left.getName(),
+                    pair.right instanceof RexIndexRef
+                            ? input.getRowType().getFields().get( ((RexIndexRef) pair.right).getIndex() ).getPhysicalName()
+                            : pair.left.getPhysicalName(),
+                    pair.right.getType() );
+        }
+        return fieldInfo.build();
     }
 
 

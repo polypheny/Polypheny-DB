@@ -62,7 +62,7 @@ public class ImplementationContext {
 
 
     public Optional<Exception> getException() {
-        return Optional.of( exception );
+        return Optional.ofNullable( exception );
     }
 
 
@@ -93,7 +93,7 @@ public class ImplementationContext {
 
 
         public Optional<Exception> getError() {
-            return Optional.of( error );
+            return Optional.ofNullable( error );
         }
 
     }

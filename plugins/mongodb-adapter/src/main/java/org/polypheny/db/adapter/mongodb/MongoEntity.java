@@ -387,6 +387,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     }
 
 
+    public String getPhysicalName( String logicalName ) {
+        return fields.stream().filter( f -> f.logicalName.equals( logicalName ) ).map( f -> f.name ).findFirst().orElse( null );
+    }
+
+
 
 
     /*@Override
@@ -485,17 +490,16 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
-            MongoEntity mongoEntity = getEntity();
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) mongoEntity.getStoreId() ) );
-            GridFSBucket bucket = mongoEntity.getMongoNamespace().getBucket();
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ) );
+            GridFSBucket bucket = entity.getMongoNamespace().getBucket();
 
             try {
-                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, mongoEntity, xid, bucket );
+                final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket );
 
                 return Linq4j.asEnumerable( Collections.singletonList( PolyLong.of( changes ) ) );
             } catch ( MongoException e ) {
-                mongoEntity.getTransactionProvider().rollback( xid );
+                entity.getTransactionProvider().rollback( xid );
                 log.warn( "Failed" );
                 log.warn( String.format( "op: %s\nfilter: %s\nops: [%s]", operation.name(), filter, String.join( ";", operations ) ) );
                 log.warn( e.getMessage() );
@@ -504,8 +508,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         }
 
 
-        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, MongoEntity mongoEntity, PolyXid xid, GridFSBucket bucket ) {
-            ClientSession session = mongoEntity.getTransactionProvider().startTransaction( xid, true );
+        private long doDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument, PolyXid xid, GridFSBucket bucket ) {
+            ClientSession session = entity.getTransactionProvider().startTransaction( xid, true );
 
             long changes = 0;
             switch ( operation ) {
@@ -515,12 +519,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         // prepared
                         MongoDynamic util = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
-                        mongoEntity.getCollection().insertMany( session, inserts );
+                        entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
                     } else {
                         // direct
                         List<Document> docs = operations.stream().map( BsonDocument::parse ).map( BsonUtil::asDocument ).collect( Collectors.toList() );
-                        mongoEntity.getCollection().insertMany( session, docs );
+                        entity.getCollection().insertMany( session, docs );
                         return docs.size();
                     }
 
@@ -534,24 +538,24 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         for ( Map<Long, PolyValue> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
                                 if ( needsDocument ) {
-                                    changes += mongoEntity
+                                    changes += entity
                                             .getCollection()
                                             .updateOne( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
                                             .getModifiedCount();
                                 } else {
-                                    changes += mongoEntity
+                                    changes += entity
                                             .getCollection()
                                             .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
                                 }
                             } else {
                                 if ( needsDocument ) {
-                                    changes += mongoEntity
+                                    changes += entity
                                             .getCollection()
                                             .updateMany( session, filterUtil.insert( parameterValue ), docUtil.insert( parameterValue ) )
                                             .getModifiedCount();
                                 } else {
-                                    changes += mongoEntity
+                                    changes += entity
                                             .getCollection()
                                             .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
@@ -561,12 +565,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     } else {
                         // direct
                         if ( onlyOne ) {
-                            changes = mongoEntity
+                            changes = entity
                                     .getCollection()
                                     .updateOne( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
                                     .getModifiedCount();
                         } else {
-                            changes = mongoEntity
+                            changes = entity
                                     .getCollection()
                                     .updateMany( session, BsonDocument.parse( filter ), BsonDocument.parse( operations.get( 0 ) ) )
                                     .getModifiedCount();
@@ -586,16 +590,16 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                             filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteManyModel::new );
                         }
 
-                        changes = mongoEntity.getCollection().bulkWrite( session, filters ).getDeletedCount();
+                        changes = entity.getCollection().bulkWrite( session, filters ).getDeletedCount();
                     } else {
                         // direct
                         if ( onlyOne ) {
-                            changes = mongoEntity
+                            changes = entity
                                     .getCollection()
                                     .deleteOne( session, BsonDocument.parse( filter ) )
                                     .getDeletedCount();
                         } else {
-                            changes = mongoEntity
+                            changes = entity
                                     .getCollection()
                                     .deleteMany( session, BsonDocument.parse( filter ) )
                                     .getDeletedCount();

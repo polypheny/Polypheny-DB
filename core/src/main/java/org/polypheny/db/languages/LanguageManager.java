@@ -19,6 +19,7 @@ package org.polypheny.db.languages;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -154,15 +155,9 @@ public class LanguageManager {
                 if ( implementation.getException().isPresent() ) {
                     throw implementation.getException().get();
                 }
-                if ( context.isAnalysed() ) {
-                    implementation.getStatement().getOverviewDuration().start( "Execution" );
-                }
                 executedContexts.add( implementation.execute( implementation.getStatement() ) );
-                if ( context.isAnalysed() ) {
-                    implementation.getStatement().getOverviewDuration().stop( "Execution" );
-                }
             } catch ( Exception e ) {
-                if ( transaction.isAnalyze() ) {
+                if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
                 executedContexts.add( ExecutedContext.ofError( e, implementation ) );
@@ -175,10 +170,10 @@ public class LanguageManager {
 
 
     public static List<ParsedQueryContext> toQueryNodes( QueryContext queries ) {
-        Processor cypherProcessor = queries.getLanguage().getProcessorSupplier().get();
-        List<? extends Node> statements = cypherProcessor.parse( queries.getQuery() );
+        Processor processor = queries.getLanguage().getProcessorSupplier().get();
+        List<? extends Node> statements = processor.parse( queries.getQuery() );
 
-        return Pair.zip( statements, List.of( queries.getQuery().split( ";" ) ) )
+        return Pair.zip( statements, Arrays.stream( queries.getQuery().split( ";" ) ).filter( q -> !q.trim().isEmpty() ).collect( Collectors.toList() ) )
                 .stream()
                 .map( p -> ParsedQueryContext.fromQuery( p.right, p.left, queries ) )
                 .collect( Collectors.toList() );

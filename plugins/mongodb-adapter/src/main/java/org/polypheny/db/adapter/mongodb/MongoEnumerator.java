@@ -49,10 +49,13 @@ import org.bson.Document;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -252,11 +255,19 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
             case BIGINT:
                 return PolyLong.of( o.asNumber().longValue() );
             case INTEGER:
+            case SMALLINT:
+            case TINYINT:
                 return PolyInteger.of( o.asNumber().longValue() );
             case VARCHAR:
                 return PolyString.of( o.asString().getValue() );
             case DECIMAL:
                 return PolyBigDecimal.of( o.asNumber().decimal128Value().bigDecimalValue() );
+            case TIMESTAMP:
+                return PolyTimeStamp.of( o.asNumber().longValue() );
+            case TIME:
+                return PolyTime.of( o.asNumber().longValue() );
+            case DATE:
+                return PolyDate.of( o.asNumber().longValue() );
         }
         throw new NotImplementedException();
 

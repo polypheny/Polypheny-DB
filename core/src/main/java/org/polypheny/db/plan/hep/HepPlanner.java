@@ -148,7 +148,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void setRoot( AlgNode alg ) {
         root = addAlgToGraph( alg );
@@ -156,7 +156,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode getRoot() {
         return root;
@@ -169,7 +169,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public boolean addRule( AlgOptRule rule ) {
         boolean added = allRules.add( rule );
@@ -202,7 +202,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits ) {
         // Ignore traits, except for the root, where we remember what the final conversion should be.
@@ -213,7 +213,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode findBestExp() {
         assert root != null;
@@ -552,12 +552,12 @@ public class HepPlanner extends AbstractAlgOptPlanner {
         AlgTrait outTrait = converterRule.getOutTrait();
         List<HepAlgVertex> parents = Graphs.predecessorListOf( graph, vertex );
         for ( HepAlgVertex parent : parents ) {
-            AlgNode parentRel = parent.getCurrentAlg();
-            if ( parentRel instanceof Converter ) {
+            AlgNode parentAlg = parent.getCurrentAlg();
+            if ( parentAlg instanceof Converter ) {
                 // We don't support converter chains.
                 continue;
             }
-            if ( parentRel.getTraitSet().contains( outTrait ) ) {
+            if ( parentAlg.getTraitSet().contains( outTrait ) ) {
                 // This parent wants the traits produced by the converter.
                 return true;
             }
@@ -645,7 +645,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
         AlgNode bestAlg = null;
 
         if ( call.getResults().size() == 1 ) {
-            // No costing required; skip it to minimize the chance of hitting rels without cost information.
+            // No costing required; skip it to minimize the chance of hitting Algs without cost information.
             bestAlg = call.getResults().get( 0 );
         } else {
             AlgOptCost bestCost = null;
@@ -816,7 +816,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
     private void updateVertex( HepAlgVertex vertex, AlgNode alg ) {
         if ( alg != vertex.getCurrentAlg() ) {
             // REVIEW jvs: We'll do this again later during garbage collection.  Or we could get rid of mark/sweep garbage collection and do it precisely
-            // at this point by walking down to all rels which are only reachable from here.
+            // at this point by walking down to all Algs which are only reachable from here.
             notifyDiscard( vertex.getCurrentAlg() );
         }
         String oldDigest = vertex.getCurrentAlg().toString();
@@ -839,7 +839,7 @@ public class HepPlanner extends AbstractAlgOptPlanner {
 
         notifyChosen( alg );
 
-        // Recursively process children, replacing this rel's inputs with corresponding child rels.
+        // Recursively process children, replacing this Alg's inputs with corresponding child Algs.
         List<AlgNode> inputs = alg.getInputs();
         for ( int i = 0; i < inputs.size(); ++i ) {
             AlgNode child = inputs.get( i );

@@ -655,7 +655,7 @@ public class MongoRules {
                             && !containsIncompatible( project ) && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
-                    "MongoProjectRule" );
+                    MongoProjectRule.class.getSimpleName() );
         }
 
 

@@ -96,7 +96,7 @@ public class PolyBigDecimal extends PolyNumber {
 
     @Override
     public @Nullable String toJson() {
-        return value == null ? JsonToken.VALUE_NULL.asString() : value.toString();
+        return value == null ? JsonToken.VALUE_NULL.asString() : value.toPlainString();
     }
 
 
