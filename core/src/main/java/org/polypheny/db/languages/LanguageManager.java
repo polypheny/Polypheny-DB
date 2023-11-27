@@ -26,10 +26,6 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -132,18 +128,14 @@ public class LanguageManager {
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
-                implementationContexts.add( new ImplementationContext( implementation, parsed, statement ) );
+                implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Exception e ) {
                 if ( transaction.isAnalyze() ) {
-                    InformationManager analyzer = transaction.getQueryAnalyzer();
-                    InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
-                    InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
-                    InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
-                    analyzer.addPage( exceptionPage );
-                    analyzer.addGroup( exceptionGroup );
-                    analyzer.registerInformation( exceptionElement );
+                    transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
+                implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
+                return implementationContexts;
             }
         }
         return implementationContexts;
@@ -159,6 +151,9 @@ public class LanguageManager {
 
         for ( ImplementationContext implementation : prepared ) {
             try {
+                if ( implementation.getException().isPresent() ) {
+                    throw implementation.getException().get();
+                }
                 if ( context.isAnalysed() ) {
                     implementation.getStatement().getOverviewDuration().start( "Execution" );
                 }
@@ -168,15 +163,9 @@ public class LanguageManager {
                 }
             } catch ( Exception e ) {
                 if ( transaction.isAnalyze() ) {
-                    InformationManager analyzer = transaction.getQueryAnalyzer();
-                    InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
-                    InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
-                    InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
-                    analyzer.addPage( exceptionPage );
-                    analyzer.addGroup( exceptionGroup );
-                    analyzer.registerInformation( exceptionElement );
+                    transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
-                executedContexts.add( ExecutedContext.ofError( e ) );
+                executedContexts.add( ExecutedContext.ofError( e, implementation ) );
                 return executedContexts;
             }
         }

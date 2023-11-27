@@ -213,7 +213,7 @@ public class Bindables {
         public static BindableScan create( AlgOptCluster cluster, LogicalEntity entity, List<RexNode> filters, List<Integer> projects ) {
             final AlgTraitSet traitSet =
                     cluster.traitSetOf( BindableConvention.INSTANCE )
-                            .replace( entity.namespaceType.getModelTrait() )
+                            .replace( entity.dataModel.getModelTrait() )
                             .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
             return new BindableScan( cluster, traitSet, entity, ImmutableList.copyOf( filters ), ImmutableList.copyOf( projects ) );
         }

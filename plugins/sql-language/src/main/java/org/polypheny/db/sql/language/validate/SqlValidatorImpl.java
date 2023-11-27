@@ -75,7 +75,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -4061,7 +4061,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         null,
                         null );
 
-        boolean allowDynamic = insert.getSchemaType() == NamespaceType.DOCUMENT;
+        boolean allowDynamic = insert.getSchemaType() == DataModel.DOCUMENT;
 
         // INSERT has an optional column name list.  If present then reduce the rowtype to the columns specified.  If not present then the entire target rowtype is used.
         final AlgDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false, allowDynamic );

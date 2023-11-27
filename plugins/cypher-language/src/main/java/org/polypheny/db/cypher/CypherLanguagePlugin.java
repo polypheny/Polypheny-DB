@@ -17,7 +17,7 @@
 package org.polypheny.db.cypher;
 
 import java.util.List;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cypher.parser.CypherParserImpl;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -44,7 +44,7 @@ public class CypherLanguagePlugin extends PolyPlugin {
     @Override
     public void start() {
         QueryLanguage language = new QueryLanguage(
-                NamespaceType.GRAPH,
+                DataModel.GRAPH,
                 NAME,
                 List.of( NAME, "opencypher" ),
                 CypherParserImpl.FACTORY,

@@ -20,7 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 @Getter
-public enum NamespaceType {
+public enum DataModel {
     RELATIONAL( 1 ),
     DOCUMENT( 2 ),
     GRAPH( 3 );
@@ -29,19 +29,19 @@ public enum NamespaceType {
     public final int id;
 
 
-    NamespaceType( int id ) {
+    DataModel( int id ) {
         this.id = id;
     }
 
 
-    public static NamespaceType getDefault() {
+    public static DataModel getDefault() {
         //return (NamespaceType) ConfigManager.getInstance().getConfig( "runtime/defaultSchemaModel" ).getEnum();
-        return NamespaceType.RELATIONAL;
+        return DataModel.RELATIONAL;
     }
 
 
-    public static NamespaceType getById( final int id ) {
-        for ( NamespaceType t : values() ) {
+    public static DataModel getById( final int id ) {
+        for ( DataModel t : values() ) {
             if ( t.id == id ) {
                 return t;
             }
@@ -50,8 +50,8 @@ public enum NamespaceType {
     }
 
 
-    public static NamespaceType getByName( final String name ) {
-        for ( NamespaceType t : values() ) {
+    public static DataModel getByName( final String name ) {
+        for ( DataModel t : values() ) {
             if ( t.name().equalsIgnoreCase( name ) ) {
                 return t;
             }
@@ -61,11 +61,11 @@ public enum NamespaceType {
 
 
     public ModelTrait getModelTrait() {
-        if ( this == NamespaceType.RELATIONAL ) {
+        if ( this == DataModel.RELATIONAL ) {
             return ModelTrait.RELATIONAL;
-        } else if ( this == NamespaceType.DOCUMENT ) {
+        } else if ( this == DataModel.DOCUMENT ) {
             return ModelTrait.DOCUMENT;
-        } else if ( this == NamespaceType.GRAPH ) {
+        } else if ( this == DataModel.GRAPH ) {
             return ModelTrait.GRAPH;
         }
         throw new RuntimeException( "Not found a suitable NamespaceType." );

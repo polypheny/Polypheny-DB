@@ -65,7 +65,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -435,7 +435,7 @@ public abstract class BaseRouter implements Router {
 
         AllocationColumn placement = new ArrayList<>( partitionsColumnsPlacements.values() ).get( 0 ).get( 0 );
         // todo dl: remove after RowType refactor
-        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),

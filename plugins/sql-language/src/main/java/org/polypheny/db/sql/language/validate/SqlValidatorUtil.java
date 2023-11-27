@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
@@ -623,7 +623,7 @@ public class SqlValidatorUtil {
             namespace = Catalog.defaultNamespaceName;
         }
 
-        return validator.snapshot.getNamespace( namespace ).orElseThrow().namespaceType != NamespaceType.RELATIONAL;
+        return validator.snapshot.getNamespace( namespace ).orElseThrow().dataModel != DataModel.RELATIONAL;
     }
 
 

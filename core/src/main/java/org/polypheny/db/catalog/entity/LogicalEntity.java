@@ -32,8 +32,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.refactor.CatalogType;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
@@ -55,7 +55,7 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
     public EntityType entityType;
 
     @Serialize
-    public NamespaceType namespaceType;
+    public DataModel dataModel;
 
     @Serialize
     @SerializeNullable
@@ -73,19 +73,19 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
             String name,
             long namespaceId,
             EntityType type,
-            NamespaceType namespaceType,
+            DataModel dataModel,
             boolean modifiable ) {
         this.id = id;
         this.namespaceId = namespaceId;
         this.name = name;
         this.entityType = type;
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
         this.modifiable = modifiable;
     }
 
 
     public AlgDataType getRowType() {
-        switch ( namespaceType ) {
+        switch ( dataModel ) {
             case RELATIONAL:
                 throw new UnsupportedOperationException( "Should be overwritten by child" );
             case DOCUMENT:

@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
@@ -199,7 +199,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
     public static void startup() {
         // add language to general processing
         QueryLanguage language = new QueryLanguage(
-                NamespaceType.RELATIONAL,
+                DataModel.RELATIONAL,
                 "sql",
                 List.of( "sql" ),
                 SqlParserImpl.FACTORY,

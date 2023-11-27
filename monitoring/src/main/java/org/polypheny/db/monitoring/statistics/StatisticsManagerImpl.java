@@ -721,7 +721,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             } );
 
             tableStatistic.forEach( ( k, v ) -> {
-                tableInformation.addRow( v.getTable(), v.getNamespaceType(), v.getNumberOfRows() );
+                tableInformation.addRow( v.getTable(), v.getDataModel(), v.getNumberOfRows() );
 
                 if ( RuntimeConfig.ACTIVE_TRACKING.getBoolean() && v.getEntityType() != EntityType.MATERIALIZED_VIEW ) {
                     tableSelectInformation.addRow(

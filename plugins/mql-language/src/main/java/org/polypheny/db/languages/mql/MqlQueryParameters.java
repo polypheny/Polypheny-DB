@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryParameters;
 
 @Getter
@@ -26,8 +26,8 @@ public class MqlQueryParameters extends QueryParameters {
     final Long namespaceId;
 
 
-    public MqlQueryParameters( String query, Long namespaceId, NamespaceType namespaceType ) {
-        super( query, namespaceType );
+    public MqlQueryParameters( String query, Long namespaceId, DataModel dataModel ) {
+        super( query, dataModel );
         this.namespaceId = namespaceId;
     }
 

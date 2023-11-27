@@ -27,12 +27,12 @@ import org.polypheny.db.transaction.Statement;
  *
  */
 @Getter
-public class PolyphenyDbStatementHandle<E> {
+public class PolyStatementHandle<E> {
 
     private final PolyphenyDbConnectionHandle connection;
     private final int statementId;
     private volatile transient Iterator<E> openResultSet;
-    private volatile transient PolyphenyDbSignature signature;
+    private volatile transient PolySignature signature;
     @Setter
     private volatile transient String preparedQuery;
     @Setter
@@ -45,7 +45,7 @@ public class PolyphenyDbStatementHandle<E> {
     private final StopWatch executionStopWatch = new StopWatch();
 
 
-    public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
+    public PolyStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
         this.connection = connection;
         this.statementId = statementId;
     }
@@ -59,7 +59,7 @@ public class PolyphenyDbStatementHandle<E> {
     }
 
 
-    public synchronized void setSignature( PolyphenyDbSignature signature ) {
+    public synchronized void setSignature( PolySignature signature ) {
         this.signature = signature;
         this.openResultSet = null;
         executionStopWatch.reset();

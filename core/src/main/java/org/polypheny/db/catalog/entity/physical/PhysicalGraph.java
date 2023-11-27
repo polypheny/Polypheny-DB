@@ -24,7 +24,7 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -37,7 +37,7 @@ public class PhysicalGraph extends PhysicalEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("name") String name,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, id, name, NamespaceType.GRAPH, adapterId ); // for graph both name and namespaceName are the same
+        super( id, allocationId, logicalId, name, id, name, DataModel.GRAPH, adapterId ); // for graph both name and namespaceName are the same
     }
 
 

@@ -18,7 +18,7 @@ package org.polypheny.db;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.piglet.PigProcessor;
@@ -45,7 +45,7 @@ public class PigLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        QueryLanguage language = new QueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessor::new, null, LanguageManager::toQueryNodes );
+        QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME, "piglet" ), null, PigProcessor::new, null, LanguageManager::toQueryNodes );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );
 

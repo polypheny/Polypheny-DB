@@ -127,8 +127,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -2959,7 +2959,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final LogicalEntity targetTable = getTargetTable( call );
         final AlgDataType targetRowType = targetTable.getRowType();//AlgOptEntityImpl.realRowType( targetTable );
         final List<AlgDataTypeField> targetFields = targetRowType.getFields();
-        boolean isDocument = call.getSchemaType() == NamespaceType.DOCUMENT;
+        boolean isDocument = call.getSchemaType() == DataModel.DOCUMENT;
 
         List<RexNode> sourceExps = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) );
         List<String> fieldNames = new ArrayList<>( Collections.nCopies( targetFields.size(), null ) ); // TODO DL: reevaluate and make final again?
@@ -3082,7 +3082,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         } else {
 
             boolean allowDynamic = false;
-            if ( call.getSchemaType() == NamespaceType.DOCUMENT ) {
+            if ( call.getSchemaType() == DataModel.DOCUMENT ) {
                 allowDynamic = true;
             }
 

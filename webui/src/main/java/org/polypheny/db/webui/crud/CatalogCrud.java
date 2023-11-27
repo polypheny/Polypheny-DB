@@ -29,8 +29,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.models.AlgNodeModel;
@@ -67,7 +67,7 @@ public class CatalogCrud {
         ctx.json( Catalog.snapshot()
                 .getNamespaces( null )
                 .stream()
-                .collect( Collectors.toMap( LogicalNamespace::getName, LogicalNamespace::getNamespaceType ) ) );
+                .collect( Collectors.toMap( LogicalNamespace::getName, LogicalNamespace::getDataModel ) ) );
     }
 
 
@@ -82,12 +82,12 @@ public class CatalogCrud {
 
         List<LogicalNamespace> namespaces = Catalog.snapshot().getNamespaces( null );
         // remove unwanted namespaces
-        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.namespaceType ) ).collect( Collectors.toList() );
+        namespaces = namespaces.stream().filter( s -> request.dataModels.contains( s.dataModel ) ).collect( Collectors.toList() );
         for ( LogicalNamespace namespace : namespaces ) {
-            SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.namespaceType, "", getIconName( namespace.namespaceType ) );
+            SidebarElement schemaTree = new SidebarElement( namespace.name, namespace.name, namespace.dataModel, "", getIconName( namespace.dataModel ) );
 
             if ( request.depth > 1 ) {
-                switch ( namespace.namespaceType ) {
+                switch ( namespace.dataModel ) {
                     case RELATIONAL:
                         attachTreeElements( namespace, request, schemaTree );
                         break;
@@ -117,7 +117,7 @@ public class CatalogCrud {
         }
 
         if ( request.showTable ) {
-            schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+            schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.dataModel, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
         } else {
             schemaTree.addChildren( collectionTree ).setRouterLink( "" );
         }
@@ -133,7 +133,7 @@ public class CatalogCrud {
             icon = "icon-eye";
         }
 
-        SidebarElement tableElement = new SidebarElement( namespace.name + "." + collection.name, collection.name, namespace.namespaceType, request.routerLinkRoot, icon );
+        SidebarElement tableElement = new SidebarElement( namespace.name + "." + collection.name, collection.name, namespace.dataModel, request.routerLinkRoot, icon );
 
         if ( request.views ) {
             if ( collection.entityType == EntityType.ENTITY || collection.entityType == EntityType.SOURCE ) {
@@ -158,15 +158,15 @@ public class CatalogCrud {
             } else if ( table.entityType == EntityType.VIEW ) {
                 icon = "icon-eye";
             }
-            if ( table.entityType != EntityType.VIEW && namespace.namespaceType == NamespaceType.DOCUMENT ) {
+            if ( table.entityType != EntityType.VIEW && namespace.dataModel == DataModel.DOCUMENT ) {
                 icon = "cui-description";
             }
 
-            SidebarElement tableElement = new SidebarElement( namespace.name + "." + table.name, table.name, namespace.namespaceType, request.routerLinkRoot, icon );
+            SidebarElement tableElement = new SidebarElement( namespace.name + "." + table.name, table.name, namespace.dataModel, request.routerLinkRoot, icon );
             if ( request.depth > 2 ) {
                 List<LogicalColumn> columns = Catalog.snapshot().rel().getColumns( table.id );
                 for ( LogicalColumn column : columns ) {
-                    tableElement.addChild( new SidebarElement( namespace.name + "." + table.name + "." + column.name, column.name, namespace.namespaceType, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
+                    tableElement.addChild( new SidebarElement( namespace.name + "." + table.name + "." + column.name, column.name, namespace.dataModel, request.routerLinkRoot, icon ).setCssClass( "sidebarColumn" ) );
                 }
             }
 
@@ -184,15 +184,15 @@ public class CatalogCrud {
         }
 
         if ( request.showTable ) {
-            schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.namespaceType, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
+            schemaTree.addChild( new SidebarElement( namespace.name + ".tables", "tables", namespace.dataModel, request.routerLinkRoot, "fa fa-table" ).addChildren( collectionTree ).setRouterLink( "" ) );
         } else {
             schemaTree.addChildren( collectionTree ).setRouterLink( "" );
         }
     }
 
 
-    private String getIconName( NamespaceType namespaceType ) {
-        switch ( namespaceType ) {
+    private String getIconName( DataModel dataModel ) {
+        switch ( dataModel ) {
             case RELATIONAL:
                 return "cui-layers";
             case DOCUMENT:

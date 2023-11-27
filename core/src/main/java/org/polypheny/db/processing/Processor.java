@@ -72,7 +72,7 @@ public abstract class Processor {
         Catalog.getInstance().commit();
         return new PolyImplementation(
                 null,
-                context.getLanguage().getNamespaceType(),
+                context.getLanguage().getDataModel(),
                 new ExecutionTimeMonitor(),
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change

@@ -24,7 +24,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
@@ -61,7 +61,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
     @JsonCreator
     public RelationalResult(
-            @JsonProperty("namespaceType") NamespaceType namespaceType,
+            @JsonProperty("dataModel") DataModel dataModel,
             @JsonProperty("namespace") String namespace,
             @JsonProperty("data") String[][] data,
             @JsonProperty("UiColumnDefinition") UiColumnDefinition[] header,
@@ -78,7 +78,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("ResultType") ResultType type,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language ) {
-        super( namespaceType, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
+        super( dataModel, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
         this.table = table;
         this.tables = tables;
         this.request = request;

@@ -25,8 +25,8 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -59,7 +59,7 @@ public abstract class AllocationEntity extends LogicalEntity {
             long logicalId,
             long namespaceId,
             long adapterId,
-            NamespaceType type ) {
+            DataModel type ) {
         super( id, null, namespaceId, EntityType.ENTITY, type, true );
         this.adapterId = adapterId;
         this.logicalId = logicalId;

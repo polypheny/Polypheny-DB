@@ -45,7 +45,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.LogicalEntity;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -359,7 +359,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
         return this;
     }
 
-    default NamespaceType getModel() {
+    default DataModel getModel() {
         return Objects.requireNonNull( getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).getDataModel();
     }
 

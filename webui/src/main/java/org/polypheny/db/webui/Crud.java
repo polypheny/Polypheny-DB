@@ -113,10 +113,10 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NameGenerator;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
@@ -300,7 +300,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         // determine if it is a view or a table
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
-        resultBuilder.namespaceType( table.namespaceType );
+        resultBuilder.dataModel( table.dataModel );
         if ( table.modifiable ) {
             resultBuilder.type( ResultType.TABLE );
         } else {
@@ -367,7 +367,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElseThrow();
 
         List<? extends LogicalEntity> entities = List.of();
-        switch ( namespace.namespaceType ) {
+        switch ( namespace.dataModel ) {
             case RELATIONAL:
                 entities = Catalog.snapshot().rel().getTables( namespace.id, null );
                 break;
@@ -2578,18 +2578,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void namespaceRequest( final Context ctx ) {
         Namespace namespace = ctx.bodyAsClass( Namespace.class );
 
-        if ( namespace.getType() == NamespaceType.GRAPH ) {
+        if ( namespace.getType() == DataModel.GRAPH ) {
             createGraph( namespace, ctx );
             return;
         }
 
-        NamespaceType type = namespace.getType();
+        DataModel type = namespace.getType();
 
         // create namespace
         if ( namespace.isCreate() && !namespace.isDrop() ) {
 
             StringBuilder query = new StringBuilder( "CREATE " );
-            if ( Objects.requireNonNull( namespace.getType() ) == NamespaceType.DOCUMENT ) {
+            if ( Objects.requireNonNull( namespace.getType() ) == DataModel.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
 
@@ -2685,7 +2685,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         List<SidebarElement> nodes = new ArrayList<>();
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), NamespaceType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), DataModel.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
         WebSocket.sendMessage( session, gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }

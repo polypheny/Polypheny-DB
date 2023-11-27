@@ -92,7 +92,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -135,7 +135,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * Creates a MongoTable.
      */
     MongoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, MongoNamespace namespace, TransactionProvider transactionProvider ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
         this.physical = physical;
         this.mongoNamespace = namespace;
         this.transactionProvider = transactionProvider;
@@ -147,7 +147,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
     @Override
     public AlgDataType getRowType() {
-        if ( namespaceType == NamespaceType.RELATIONAL ) {
+        if ( dataModel == DataModel.RELATIONAL ) {
             return buildProto().apply( AlgDataTypeFactory.DEFAULT );
         }
         return super.getRowType();

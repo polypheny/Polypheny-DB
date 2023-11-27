@@ -50,8 +50,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.LanguageManager;
@@ -140,6 +140,11 @@ public class LanguageCrud {
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
 
         for ( ExecutedContext executedContext : executedContexts ) {
+            if ( executedContext.getError().isPresent() ) {
+                attachError( transaction, results, executedContext.getQuery().getQuery(), executedContext.getQuery().getLanguage().getDataModel(), executedContext.getError().get() );
+                continue;
+            }
+
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
@@ -211,7 +216,7 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, NamespaceType model, Throwable t ) {
+    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, DataModel model, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
         Result<?, ?> result;
         switch ( model ) {
@@ -296,7 +301,7 @@ public class LanguageCrud {
                 .builder()
                 .header( header.toArray( new UiColumnDefinition[0] ) )
                 .data( data.toArray( new String[0][] ) )
-                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
+                .dataModel( context.getIterator().getImplementation().getDataModel() )
                 .namespace( request.namespace )
                 .language( context.getQuery().getLanguage() )
                 .affectedTuples( data.size() )
@@ -359,7 +364,7 @@ public class LanguageCrud {
                 .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
-                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
+                .dataModel( context.getIterator().getImplementation().getDataModel() )
                 .xid( statement.getTransaction().getXid().toString() )
                 .namespace( request.namespace );
 
@@ -386,7 +391,7 @@ public class LanguageCrud {
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
                 .xid( statement.getTransaction().getXid().toString() )
-                .namespaceType( context.getIterator().getImplementation().getNamespaceType() )
+                .dataModel( context.getIterator().getImplementation().getDataModel() )
                 .namespace( request.namespace );
     }
 
@@ -422,7 +427,7 @@ public class LanguageCrud {
         Map<String, String> names = Catalog.getInstance().getSnapshot()
                 .getNamespaces( null )
                 .stream()
-                .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.namespaceType.name() ) );
+                .collect( Collectors.toMap( LogicalNamespace::getName, s -> s.dataModel.name() ) );
 
         String[][] data = names.entrySet().stream().map( n -> new String[]{ n.getKey(), n.getValue() } ).toArray( String[][]::new );
         ctx.json( RelationalResult

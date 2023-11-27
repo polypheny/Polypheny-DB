@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
@@ -30,7 +30,7 @@ import org.polypheny.db.webui.models.catalog.FieldDefinition;
 public class DocResult extends Result<String, FieldDefinition> {
 
     public DocResult(
-            @JsonProperty("namespaceType") NamespaceType namespaceType,
+            @JsonProperty("dataModel") DataModel dataModel,
             @JsonProperty("namespace") String namespace,
             @JsonProperty("data") String[] data,
             @JsonProperty("header") FieldDefinition[] header,
@@ -44,7 +44,7 @@ public class DocResult extends Result<String, FieldDefinition> {
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("affectedTuples") int affectedTuples ) {
         super(
-                namespaceType,
+                dataModel,
                 namespace,
                 data,
                 header,

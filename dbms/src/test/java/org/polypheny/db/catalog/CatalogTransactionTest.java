@@ -23,8 +23,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.type.PolyType;
 
 public class CatalogTransactionTest {
@@ -40,7 +40,7 @@ public class CatalogTransactionTest {
     public void simpleRollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", NamespaceType.RELATIONAL, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false );
 
         catalog.commit();
 
@@ -61,7 +61,7 @@ public class CatalogTransactionTest {
     public void rollbackTest() {
         PolyCatalog catalog = new PolyCatalog();
 
-        long namespaceId = catalog.createNamespace( "test", NamespaceType.RELATIONAL, false );
+        long namespaceId = catalog.createNamespace( "test", DataModel.RELATIONAL, false );
 
         catalog.commit();
 

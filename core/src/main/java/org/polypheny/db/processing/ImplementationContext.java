@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 
+import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -37,6 +38,14 @@ public class ImplementationContext {
 
     Statement statement;
 
+    @Nullable
+    Exception exception;
+
+
+    public static ImplementationContext ofError( Exception e, ParsedQueryContext parsed, Statement statement ) {
+        return new ImplementationContext( null, parsed, statement, e );
+    }
+
 
     public ExecutedContext execute( Statement statement ) {
         long time = System.nanoTime();
@@ -46,9 +55,14 @@ public class ImplementationContext {
             return new ExecutedContext( implementation, null, query, time, result, statement );
         } catch ( Exception e ) {
             time = System.nanoTime() - time;
-            return new ExecutedContext( implementation, e.getMessage(), query, time, null, statement );
+            return new ExecutedContext( implementation, e, query, time, null, statement );
         }
 
+    }
+
+
+    public Optional<Exception> getException() {
+        return Optional.of( exception );
     }
 
 
@@ -56,25 +70,30 @@ public class ImplementationContext {
     @Value
     public static class ExecutedContext extends ImplementationContext {
 
-        @Nullable
-        String error;
-
-        long executionTime;
-
         @NotNull
         ResultIterator iterator;
 
+        long executionTime;
 
-        private ExecutedContext( PolyImplementation implementation, String error, ParsedQueryContext query, long executionTime, ResultIterator iterator, Statement statement ) {
-            super( implementation, query, statement );
+        @Nullable
+        Exception error;
+
+
+        private ExecutedContext( PolyImplementation implementation, @Nullable Exception error, ParsedQueryContext query, long executionTime, ResultIterator iterator, Statement statement ) {
+            super( implementation, query, statement, error );
             this.executionTime = executionTime;
             this.iterator = iterator;
             this.error = error;
         }
 
 
-        public static ExecutedContext ofError( Exception e ) {
-            return new ExecutedContext( null, e.getMessage(), null, 0l, null, null );
+        public static ExecutedContext ofError( Exception e, ImplementationContext implementation ) {
+            return new ExecutedContext( implementation.implementation, e, implementation.query, 0l, null, implementation.statement );
+        }
+
+
+        public Optional<Exception> getError() {
+            return Optional.of( error );
         }
 
     }

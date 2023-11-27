@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 
 /**
@@ -35,7 +35,7 @@ public class Namespace {
     @JsonProperty
     String name;
     @JsonProperty
-    NamespaceType type;
+    DataModel type;
     @JsonProperty
     String store;
 
@@ -64,12 +64,12 @@ public class Namespace {
      */
     public Namespace(
             @JsonProperty("name") String name,
-            @JsonProperty("type") final NamespaceType type,
+            @JsonProperty("type") final DataModel type,
             @JsonProperty("store") @Nullable final String store ) {
         this.name = name;
         this.type = type;
 
-        if ( type == NamespaceType.GRAPH ) {
+        if ( type == DataModel.GRAPH ) {
             assert store != null;
             this.store = store;
         } else {

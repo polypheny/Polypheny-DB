@@ -32,7 +32,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.LogicalObject;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
 
 
@@ -88,7 +88,7 @@ public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
     @SerializeNullable
     public LogicalDefaultValue defaultValue;
 
-    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
+    public DataModel dataModel = DataModel.RELATIONAL;
 
 
     public LogicalColumn(

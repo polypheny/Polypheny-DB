@@ -25,8 +25,8 @@ import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -55,9 +55,9 @@ public abstract class PhysicalField extends LogicalEntity {
             final long allocId,
             final long entityId,
             final long adapterId,
-            final NamespaceType namespaceType,
+            final DataModel dataModel,
             final boolean modifiable ) {
-        super( id, name, allocId, EntityType.ENTITY, namespaceType, modifiable );
+        super( id, name, allocId, EntityType.ENTITY, dataModel, modifiable );
         this.entityId = entityId;
         this.allocId = allocId;
         this.adapterId = adapterId;

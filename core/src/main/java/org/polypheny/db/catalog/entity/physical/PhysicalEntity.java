@@ -23,8 +23,8 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -46,8 +46,8 @@ public abstract class PhysicalEntity extends LogicalEntity {
     public long logicalId;
 
 
-    protected PhysicalEntity( long id, long allocationId, long logicalId, String name, long namespaceId, String namespaceName, NamespaceType namespaceType, long adapterId ) {
-        super( id, name, namespaceId, EntityType.ENTITY, namespaceType, true );
+    protected PhysicalEntity( long id, long allocationId, long logicalId, String name, long namespaceId, String namespaceName, DataModel dataModel, long adapterId ) {
+        super( id, name, namespaceId, EntityType.ENTITY, dataModel, true );
         this.allocationId = allocationId;
         this.namespaceName = namespaceName;
         this.adapterId = adapterId;

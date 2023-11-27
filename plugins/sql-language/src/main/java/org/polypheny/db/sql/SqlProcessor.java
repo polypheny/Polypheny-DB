@@ -38,7 +38,7 @@ import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -256,13 +256,13 @@ public class SqlProcessor extends Processor {
 
         if ( oldColumnList != null ) {
             LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().namespaceType;
+            DataModel dataModel = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();
-            if ( namespaceType == NamespaceType.DOCUMENT ) {
+            if ( dataModel == DataModel.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
                 size += (int) oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
@@ -325,7 +325,7 @@ public class SqlProcessor extends Processor {
             }
 
             // add doc values back TODO DL: change
-            if ( namespaceType == NamespaceType.DOCUMENT ) {
+            if ( dataModel == DataModel.DOCUMENT ) {
                 List<SqlIdentifier> documentColumns = new ArrayList<>();
                 for ( Node column : oldColumnList.getSqlList() ) {
                     if ( newColumnList.getSqlList()

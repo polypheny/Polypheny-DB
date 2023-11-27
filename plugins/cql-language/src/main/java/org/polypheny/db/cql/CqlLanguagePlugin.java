@@ -18,7 +18,7 @@ package org.polypheny.db.cql;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plugins.PluginContext;
@@ -44,7 +44,7 @@ public class CqlLanguagePlugin extends PolyPlugin {
 
     @Override
     public void start() {
-        QueryLanguage language = new QueryLanguage( NamespaceType.RELATIONAL, NAME, List.of( NAME ), null, CqlProcessor::new, null, CqlQueryBuilder::splitter );
+        QueryLanguage language = new QueryLanguage( DataModel.RELATIONAL, NAME, List.of( NAME ), null, CqlProcessor::new, null, CqlQueryBuilder::splitter );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
         PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.addToResult( language, LanguageCrud::getRelResult ) );
     }

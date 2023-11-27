@@ -35,7 +35,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
@@ -48,7 +48,7 @@ import org.polypheny.db.type.entity.PolyValue;
  *
  */
 @Getter
-public class PolyphenyDbSignature extends Meta.Signature {
+public class PolySignature extends Meta.Signature {
 
     @JsonIgnore
     public final AlgDataType rowType;
@@ -58,11 +58,11 @@ public class PolyphenyDbSignature extends Meta.Signature {
     private final List<AlgCollation> collationList;
     private final long maxRowCount;
     private final Bindable<PolyValue[]> bindable;
-    private final NamespaceType namespaceType;
+    private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
 
 
-    public PolyphenyDbSignature(
+    public PolySignature(
             String sql,
             List<AvaticaParameter> parameterList,
             Map<String, Object> internalParameters,
@@ -75,7 +75,7 @@ public class PolyphenyDbSignature extends Meta.Signature {
             Bindable<PolyValue[]> bindable,
             StatementType statementType,
             ExecutionTimeMonitor executionTimeMonitor,
-            NamespaceType namespaceType ) {
+            DataModel dataModel ) {
         super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
         this.rowType = rowType;
         this.rootSchema = rootSchema;
@@ -83,11 +83,11 @@ public class PolyphenyDbSignature extends Meta.Signature {
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
         this.executionTimeMonitor = executionTimeMonitor;
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
     }
 
 
-    public static PolyphenyDbSignature from( PolyImplementation prepareQuery ) {
+    public static PolySignature from( PolyImplementation prepareQuery ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         if ( prepareQuery.rowType != null ) {
             for ( AlgDataTypeField field : prepareQuery.rowType.getFields() ) {
@@ -103,7 +103,7 @@ public class PolyphenyDbSignature extends Meta.Signature {
                                 field.getName() ) );
             }
         }
-        return new PolyphenyDbSignature(
+        return new PolySignature(
                 "",
                 parameters,
                 new HashMap<>(),
@@ -116,7 +116,7 @@ public class PolyphenyDbSignature extends Meta.Signature {
                 prepareQuery.getBindable(),
                 prepareQuery.getStatementType(),
                 prepareQuery.getExecutionTimeMonitor(),
-                prepareQuery.getNamespaceType()
+                prepareQuery.getDataModel()
         );
     }
 

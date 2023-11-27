@@ -25,8 +25,8 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -42,7 +42,7 @@ public class LogicalCollection extends LogicalEntity implements LogicalObject {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("entityType") EntityType entityType,
             @Deserialize("modifiable") boolean modifiable ) {
-        super( id, name, namespaceId, entityType, NamespaceType.DOCUMENT, modifiable );
+        super( id, name, namespaceId, entityType, DataModel.DOCUMENT, modifiable );
     }
 
 

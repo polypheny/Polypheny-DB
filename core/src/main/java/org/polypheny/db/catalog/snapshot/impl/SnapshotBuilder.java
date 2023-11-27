@@ -27,7 +27,7 @@ import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalGraphSnapshot;
@@ -57,7 +57,7 @@ public class SnapshotBuilder {
         return new LogicalGraphSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
-                .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.GRAPH )
+                .filter( e -> e.getValue().getLogicalNamespace().dataModel == DataModel.GRAPH )
                 .collect( Collectors.toMap( Entry::getKey, e -> (LogicalGraphCatalog) e.getValue() ) ) );
     }
 
@@ -66,7 +66,7 @@ public class SnapshotBuilder {
         return new LogicalDocSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
-                .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.DOCUMENT )
+                .filter( e -> e.getValue().getLogicalNamespace().dataModel == DataModel.DOCUMENT )
                 .collect( Collectors.toMap( Entry::getKey, e -> (LogicalDocumentCatalog) e.getValue() ) ) );
     }
 
@@ -75,7 +75,7 @@ public class SnapshotBuilder {
         return new LogicalRelSnapshotImpl( logicalCatalogs
                 .entrySet()
                 .stream()
-                .filter( e -> e.getValue().getLogicalNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .filter( e -> e.getValue().getLogicalNamespace().dataModel == DataModel.RELATIONAL )
                 .collect( Collectors.toMap( Entry::getKey, e -> (LogicalRelationalCatalog) e.getValue() ) ) );
     }
 

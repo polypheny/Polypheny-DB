@@ -45,8 +45,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.cli.PolyphenyModesConverter;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.cli.PolyModesConverter;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -114,7 +114,7 @@ public class PolyphenyDb {
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyphenyModesConverter.class)
+    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
     public PolyphenyMode mode = PolyphenyMode.PRODUCTION;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
@@ -124,7 +124,7 @@ public class PolyphenyDb {
     public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
-    public String defaultStoreName = "hsqldb";
+    public String defaultStoreName = "monetdb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
@@ -387,7 +387,7 @@ public class PolyphenyDb {
 
         // temporary add sql and rel here
         QueryLanguage language = new QueryLanguage(
-                NamespaceType.RELATIONAL,
+                DataModel.RELATIONAL,
                 "alg",
                 List.of( "alg", "algebra" ),
                 null,

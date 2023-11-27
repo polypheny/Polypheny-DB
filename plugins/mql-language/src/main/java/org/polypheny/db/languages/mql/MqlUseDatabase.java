@@ -17,7 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import lombok.Getter;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.mql.Mql.Type;
@@ -41,7 +41,7 @@ public class MqlUseDatabase extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        DdlManager.getInstance().createNamespace( this.database, NamespaceType.DOCUMENT, true, false );
+        DdlManager.getInstance().createNamespace( this.database, DataModel.DOCUMENT, true, false );
     }
 
 

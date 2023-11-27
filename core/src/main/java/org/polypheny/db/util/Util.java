@@ -104,7 +104,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.BasicNodeVisitor;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Literal;
@@ -2023,7 +2023,7 @@ public class Util {
 
 
     public static Monotonicity getMonotonicity( LogicalEntity entity, String columnName ) {
-        if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
+        if ( entity.dataModel != DataModel.RELATIONAL ) {
             return Monotonicity.NOT_MONOTONIC;
         }
 

@@ -22,7 +22,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.metrics.DmlDataPoint;
@@ -50,7 +50,7 @@ public class DashboardInformation {
 
     private final Map<String, Pair<String, AdapterType>> availableAdapter = new HashMap<>();
 
-    private final Map<Long, Pair<String, NamespaceType>> availableSchemas = new HashMap<>();
+    private final Map<Long, Pair<String, DataModel>> availableSchemas = new HashMap<>();
 
     private boolean catalogPersistent;
 
@@ -78,7 +78,7 @@ public class DashboardInformation {
             this.availableAdapter.put( v.uniqueName, Pair.of( v.adapterTypeName, v.type ) );
         } );
         snapshot.getNamespaces( null ).forEach( v -> {
-            availableSchemas.put( v.id, Pair.of( v.name, v.namespaceType ) );
+            availableSchemas.put( v.id, Pair.of( v.name, v.dataModel ) );
         } );
     }
 

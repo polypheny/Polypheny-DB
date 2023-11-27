@@ -37,8 +37,8 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.schema.ColumnStrategy;
 
 @EqualsAndHashCode(callSuper = false)
@@ -60,7 +60,7 @@ public class LogicalTable extends LogicalEntity {
             @Deserialize("entityType") @NonNull final EntityType type,
             @Deserialize("primaryKey") final Long primaryKey,
             @Deserialize("modifiable") boolean modifiable ) {
-        super( id, name, namespaceId, type, NamespaceType.RELATIONAL, modifiable );
+        super( id, name, namespaceId, type, DataModel.RELATIONAL, modifiable );
         this.primaryKey = primaryKey;
 
         if ( type == EntityType.ENTITY && !modifiable ) {
@@ -164,7 +164,7 @@ public class LogicalTable extends LogicalEntity {
                 "primaryKey=" + primaryKey +
                 ", id=" + id +
                 ", entityType=" + entityType +
-                ", namespaceType=" + namespaceType +
+                ", namespaceType=" + dataModel +
                 ", name='" + name + '\'' +
                 '}';
     }

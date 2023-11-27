@@ -157,7 +157,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
                         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        switch ( namespace.namespaceType ) {
+                        switch ( namespace.dataModel ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );
                                 break;

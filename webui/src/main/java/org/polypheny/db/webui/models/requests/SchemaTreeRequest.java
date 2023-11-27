@@ -18,7 +18,7 @@ package org.polypheny.db.webui.models.requests;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 public class SchemaTreeRequest extends UIRequest {
 
@@ -27,7 +27,7 @@ public class SchemaTreeRequest extends UIRequest {
     public int depth;
     public boolean showTable;
 
-    public List<NamespaceType> dataModels;
+    public List<DataModel> dataModels;
 
 
 }

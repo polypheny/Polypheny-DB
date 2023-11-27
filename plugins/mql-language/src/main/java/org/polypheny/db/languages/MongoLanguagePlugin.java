@@ -28,7 +28,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
 import org.polypheny.db.languages.mql.MqlCreateView;
@@ -77,7 +77,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
     public static void startup() {
         QueryLanguage language = new QueryLanguage(
-                NamespaceType.DOCUMENT,
+                DataModel.DOCUMENT,
                 "mongo",
                 List.of( "mongo", "mql" ),
                 MqlParserImpl.FACTORY,

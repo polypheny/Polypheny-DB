@@ -81,7 +81,7 @@ import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationCode;
@@ -1202,11 +1202,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private <T> PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, NamespaceType namespaceType ) {
+    private <T> PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation(
                 jdbcType,
-                namespaceType,
+                dataModel,
                 executionTimeMonitor,
                 preparedResult,
                 kind,

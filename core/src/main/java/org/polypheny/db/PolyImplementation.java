@@ -39,7 +39,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -64,7 +64,7 @@ public class PolyImplementation {
     private final long maxRowCount = -1;
     private final Kind kind;
     private Bindable<PolyValue[]> bindable;
-    private final NamespaceType namespaceType;
+    private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
@@ -83,7 +83,7 @@ public class PolyImplementation {
      * on access e.g. {@link #getColumns()}
      *
      * @param rowType defines the types of the result
-     * @param namespaceType type of the
+     * @param dataModel type of the
      * @param executionTimeMonitor to keep track of different execution times
      * @param preparedResult nullable result, which holds all info from the execution
      * @param kind of initial query, which is used to get type of result e.g. DDL, DQL,...
@@ -92,14 +92,14 @@ public class PolyImplementation {
      */
     public PolyImplementation(
             @Nullable AlgDataType rowType,
-            NamespaceType namespaceType,
+            DataModel dataModel,
             ExecutionTimeMonitor executionTimeMonitor,
             @Nullable PreparedResult<PolyValue> preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
 
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;

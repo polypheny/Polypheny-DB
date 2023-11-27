@@ -80,12 +80,12 @@ import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.IndexType;
 import org.polypheny.db.catalog.logistic.NameGenerator;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -172,7 +172,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace ) {
+    public long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace ) {
         name = name.toLowerCase();
         // Check if there is already a namespace with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( name );
@@ -869,14 +869,14 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private void checkModelLogic( LogicalTable catalogTable ) {
-        if ( catalogTable.namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalogTable.dataModel == DataModel.DOCUMENT ) {
             throw new GenericRuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
     }
 
 
     private void checkModelLogic( LogicalTable catalogTable, String columnName ) {
-        if ( catalogTable.namespaceType == NamespaceType.DOCUMENT
+        if ( catalogTable.dataModel == DataModel.DOCUMENT
                 && (columnName.equals( "_data" ) || columnName.equals( "_id" )) ) {
             throw new GenericRuntimeException( "Modification operation is not allowed by schema type DOCUMENT" );
         }
@@ -1648,10 +1648,10 @@ public class DdlManagerImpl extends DdlManager {
 
     private void checkModelLangCompatibility( QueryLanguage language, long namespaceId ) {
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        if ( namespace.namespaceType != language.getNamespaceType() ) {
+        if ( namespace.dataModel != language.getDataModel() ) {
             throw new GenericRuntimeException(
                     "The used language cannot execute schema changing queries on this entity with the data model %s.",
-                    namespace.getNamespaceType() );
+                    namespace.getDataModel() );
         }
     }
 
@@ -1675,7 +1675,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         // add general graph
-        long graphId = catalog.createNamespace( adjustedName, NamespaceType.GRAPH, caseSensitive );
+        long graphId = catalog.createNamespace( adjustedName, DataModel.GRAPH, caseSensitive );
 
         // add specialized graph
         LogicalGraph logical = catalog.getLogicalGraph( graphId ).addGraph( graphId, adjustedName, modifiable );
@@ -2034,9 +2034,9 @@ public class DdlManagerImpl extends DdlManager {
         Snapshot snapshot = catalog.getSnapshot();
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
         // Check if there is already an entity with this name
-        if ( (namespace.namespaceType == NamespaceType.RELATIONAL && snapshot.rel().getTable( namespaceId, name ).isPresent())
-                || (namespace.namespaceType == NamespaceType.DOCUMENT && snapshot.doc().getCollection( namespaceId, name ).isPresent())
-                || (namespace.namespaceType == NamespaceType.GRAPH && snapshot.graph().getGraph( namespaceId ).isPresent()) ) {
+        if ( (namespace.dataModel == DataModel.RELATIONAL && snapshot.rel().getTable( namespaceId, name ).isPresent())
+                || (namespace.dataModel == DataModel.DOCUMENT && snapshot.doc().getCollection( namespaceId, name ).isPresent())
+                || (namespace.dataModel == DataModel.GRAPH && snapshot.graph().getGraph( namespaceId ).isPresent()) ) {
             if ( ifNotExists ) {
                 // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
                 return true;

@@ -35,7 +35,7 @@ package org.polypheny.db.schema;
 
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -112,8 +112,8 @@ public interface Entity {
     boolean rolledUpColumnValidInsideAgg( String column, Call call, Node parent );
 
 
-    default NamespaceType getNamespaceType() {
-        return NamespaceType.RELATIONAL;
+    default DataModel getNamespaceType() {
+        return DataModel.RELATIONAL;
     }
 
     interface Table {

@@ -33,7 +33,7 @@ import org.polypheny.db.catalog.entity.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
@@ -170,11 +170,11 @@ public class IdentifierNamespace extends AbstractNamespace {
         } else if ( ns.size() == 2 ) {
             LogicalNamespace namespace = validator.snapshot.getNamespace( ns.get( 0 ) ).orElseThrow();
             LogicalEntity entity = null;
-            if ( namespace.namespaceType == NamespaceType.RELATIONAL ) {
+            if ( namespace.dataModel == DataModel.RELATIONAL ) {
                 entity = validator.snapshot.rel().getTable( namespace.id, ns.get( 1 ) ).orElse( null );
-            } else if ( namespace.namespaceType == NamespaceType.DOCUMENT ) {
+            } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
                 entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
-            } else if ( namespace.namespaceType == NamespaceType.GRAPH ) {
+            } else if ( namespace.dataModel == DataModel.GRAPH ) {
                 throw new NotImplementedException();
             }
 

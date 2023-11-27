@@ -110,7 +110,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -583,7 +583,7 @@ public class AlgBuilder {
         final AlgDataTypeField field = rowType.getFields().get( fieldOrdinal );
         final int offset = inputOffset( inputCount, inputOrdinal );
         final RexIndexRef ref = cluster.getRexBuilder().makeInputRef( field.getType(), offset + fieldOrdinal );
-        if ( frame.alg.getModel() == NamespaceType.DOCUMENT ) {
+        if ( frame.alg.getModel() == DataModel.DOCUMENT ) {
             return ref;
         }
         final AlgDataTypeField aliasField = frame.relFields().get( fieldOrdinal );

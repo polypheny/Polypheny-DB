@@ -70,7 +70,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
         this.fields = fields;
         this.namespace = namespace;
     }

@@ -24,7 +24,7 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -38,7 +38,7 @@ public class AllocationCollection extends AllocationEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, NamespaceType.DOCUMENT );
+        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, DataModel.DOCUMENT );
     }
 
 

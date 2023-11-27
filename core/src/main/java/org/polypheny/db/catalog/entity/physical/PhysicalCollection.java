@@ -24,7 +24,7 @@ import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -39,7 +39,7 @@ public class PhysicalCollection extends PhysicalEntity {
             @Deserialize("name") String name,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, NamespaceType.DOCUMENT, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.DOCUMENT, adapterId );
     }
 
 

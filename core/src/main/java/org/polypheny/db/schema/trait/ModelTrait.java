@@ -18,7 +18,7 @@ package org.polypheny.db.schema.trait;
 
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.Convention;
@@ -31,16 +31,16 @@ import org.polypheny.db.plan.Convention;
 @Getter
 public class ModelTrait implements AlgTrait<ModelTraitDef> {
 
-    public static final ModelTrait RELATIONAL = new ModelTrait( NamespaceType.RELATIONAL );
+    public static final ModelTrait RELATIONAL = new ModelTrait( DataModel.RELATIONAL );
 
-    public static final ModelTrait DOCUMENT = new ModelTrait( NamespaceType.DOCUMENT );
+    public static final ModelTrait DOCUMENT = new ModelTrait( DataModel.DOCUMENT );
 
-    public static final ModelTrait GRAPH = new ModelTrait( NamespaceType.GRAPH );
+    public static final ModelTrait GRAPH = new ModelTrait( DataModel.GRAPH );
 
-    private final NamespaceType dataModel;
+    private final DataModel dataModel;
 
 
-    public ModelTrait( NamespaceType dataModel ) {
+    public ModelTrait( DataModel dataModel ) {
         this.dataModel = dataModel;
     }
 

@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 
 /**
@@ -63,9 +63,9 @@ public interface LogicalQueryInformation {
      */
     String getQueryHash();
 
-    ImmutableMap<NamespaceType, Set<Long>> getScannedEntities();
+    ImmutableMap<DataModel, Set<Long>> getScannedEntities();
 
-    ImmutableMap<NamespaceType, Set<Long>> getModifiedEntities();
+    ImmutableMap<DataModel, Set<Long>> getModifiedEntities();
 
     ImmutableSet<Long> getAllModifiedEntities();
 

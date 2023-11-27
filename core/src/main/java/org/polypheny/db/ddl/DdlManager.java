@@ -34,8 +34,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.DataTypeSpec;
@@ -94,7 +94,7 @@ public abstract class DdlManager {
      * @param ifNotExists whether to silently ignore if a namespace with this name does already exist
      * @param replace whether to replace an existing namespace with this name
      */
-    public abstract long createNamespace( String name, NamespaceType type, boolean ifNotExists, boolean replace );
+    public abstract long createNamespace( String name, DataModel type, boolean ifNotExists, boolean replace );
 
     /**
      * Adds a new adapter (data store or data source)

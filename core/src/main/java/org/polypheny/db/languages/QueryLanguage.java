@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.validate.Validator;
 import org.polypheny.db.prepare.Context;
@@ -37,7 +37,7 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 public class QueryLanguage {
 
     @NotNull
-    NamespaceType namespaceType;
+    DataModel dataModel;
     @NotNull
     String serializedName;
     @NotNull
@@ -53,14 +53,14 @@ public class QueryLanguage {
 
 
     public QueryLanguage(
-            @NotNull NamespaceType namespaceType,
+            @NotNull DataModel dataModel,
             @NotNull String serializedName,
             @NotNull List<String> otherNames,
             @Nullable ParserFactory factory,
             @NotNull Supplier<Processor> processorSupplier,
             @Nullable BiFunction<Context, Snapshot, Validator> validatorSupplier,
             @NotNull Function<QueryContext, List<ParsedQueryContext>> splitter ) {
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
         this.serializedName = serializedName;
         this.factory = factory;
         this.processorSupplier = processorSupplier;

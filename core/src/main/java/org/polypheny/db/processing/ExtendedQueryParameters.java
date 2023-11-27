@@ -21,7 +21,7 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryParameters;
 
 
@@ -36,15 +36,15 @@ public class ExtendedQueryParameters extends QueryParameters {
     public boolean fullGraph;
 
 
-    public ExtendedQueryParameters( String query, NamespaceType namespaceType, String namespace ) {
-        super( query, namespaceType );
+    public ExtendedQueryParameters( String query, DataModel dataModel, String namespace ) {
+        super( query, dataModel );
         this.namespace = namespace;
         this.fullGraph = false;
     }
 
 
     public ExtendedQueryParameters( String namespace ) {
-        super( "*", NamespaceType.GRAPH );
+        super( "*", DataModel.GRAPH );
         this.namespace = namespace;
         this.fullGraph = true;
     }

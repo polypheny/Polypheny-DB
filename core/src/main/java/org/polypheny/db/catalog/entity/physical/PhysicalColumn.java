@@ -31,7 +31,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
 
 @EqualsAndHashCode(callSuper = true)
@@ -101,7 +101,7 @@ public class PhysicalColumn extends PhysicalField {
             @Deserialize("nullable") final boolean nullable,
             @Deserialize("collation") final Collation collation,
             @Deserialize("defaultValue") LogicalDefaultValue defaultValue ) {
-        super( id, name, logicalName, allocId, tableId, adapterId, NamespaceType.RELATIONAL, true );
+        super( id, name, logicalName, allocId, tableId, adapterId, DataModel.RELATIONAL, true );
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;

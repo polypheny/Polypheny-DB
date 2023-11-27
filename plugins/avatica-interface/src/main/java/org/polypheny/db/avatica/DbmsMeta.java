@@ -96,9 +96,9 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey.LogicalPrimaryK
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.EntityType.PrimitiveTableType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -147,7 +147,7 @@ public class DbmsMeta implements ProtobufMeta {
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
 
     private final ConcurrentMap<String, PolyphenyDbConnectionHandle> openConnections = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, PolyphenyDbStatementHandle> openStatements = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyStatementHandle> openStatements = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
     private final Catalog catalog = Catalog.getInstance();
@@ -203,8 +203,8 @@ public class DbmsMeta implements ProtobufMeta {
             List<ColumnMetaData> columns,
             CursorFactory cursorFactory,
             final Iterable<PolyValue[]> firstFrame ) {
-        final PolyphenyDbSignature signature =
-                new PolyphenyDbSignature(
+        final PolySignature signature =
+                new PolySignature(
                         "",
                         ImmutableList.of(),
                         internalParameters,
@@ -217,7 +217,7 @@ public class DbmsMeta implements ProtobufMeta {
                         null,
                         StatementType.SELECT,
                         new ExecutionTimeMonitor(),
-                        NamespaceType.RELATIONAL ) {
+                        DataModel.RELATIONAL ) {
                     @Override
                     public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame );
@@ -906,7 +906,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
             }
 
-            final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
             Map<Long, List<PolyValue>> values = new HashMap<>();
@@ -988,7 +988,7 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             StatementHandle h = createStatement( ch );
-            PolyphenyDbStatementHandle<?> polyphenyDbStatement;
+            PolyStatementHandle<?> polyphenyDbStatement;
             try {
                 polyphenyDbStatement = getPolyphenyDbStatementHandle( h );
             } catch ( NoSuchStatementException e ) {
@@ -1007,7 +1007,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             List<AvaticaParameter> avaticaParameters = deriveAvaticaParameters( parameterRowType );
 
-            PolyphenyDbSignature signature = new PolyphenyDbSignature(
+            PolySignature signature = new PolySignature(
                     sql,
                     avaticaParameters,
                     ImmutableMap.of(),
@@ -1020,7 +1020,7 @@ public class DbmsMeta implements ProtobufMeta {
                     null,
                     StatementType.SELECT,
                     null,
-                    NamespaceType.RELATIONAL );
+                    DataModel.RELATIONAL );
             h.signature = signature;
             polyphenyDbStatement.setSignature( signature );
 
@@ -1067,7 +1067,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
             }
 
-            PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+            PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setPreparedQuery( sql );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, new ArrayList<>(), maxRowsInFirstFrame, connection );
@@ -1135,9 +1135,9 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
             }
 
-            final PolyphenyDbStatementHandle<Object> statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<Object> statementHandle = getPolyphenyDbStatementHandle( h );
 
-            final PolyphenyDbSignature signature = statementHandle.getSignature();
+            final PolySignature signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
             if ( statementHandle.getOpenResultSet() == null ) {
                 final Iterable<Object> iterable = createExternalIterable( statementHandle.getStatement().getDataContext(), signature );
@@ -1169,7 +1169,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private Iterable<Object> createExternalIterable( DataContext dataContext, PolyphenyDbSignature signature ) {
+    private Iterable<Object> createExternalIterable( DataContext dataContext, PolySignature signature ) {
         return externalize( signature.enumerable( dataContext ), signature.rowType );
     }
 
@@ -1209,7 +1209,7 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
             }
-            final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+            final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, parameterValues, maxRowsInFirstFrame, connection );
         }
@@ -1217,7 +1217,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+        final PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
 
         long index = 0;
         for ( TypedValue v : parameterValues ) {
@@ -1300,7 +1300,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private PolyList<PolyValue> convertList( List<TypedValue> list ) {
-        List<PolyValue> newList = new LinkedList<>();
+        List<PolyValue> newList = new ArrayList<>();
         for ( TypedValue o : list ) {
             newList.add( toPolyValue( o ) );
         }
@@ -1350,7 +1350,7 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
-        PolyphenyDbStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
+        PolyStatementHandle<?> statementHandle = getPolyphenyDbStatementHandle( h );
         QueryLanguage language = QueryLanguage.from( "sql" );
         QueryContext context = QueryContext.builder()
                 .query( sql )
@@ -1359,7 +1359,7 @@ public class DbmsMeta implements ProtobufMeta {
                 .transactionManager( transactionManager )
                 .build();
 
-        PolyphenyDbSignature signature = PolyphenyDbSignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement() ).get( 0 ).getImplementation() );
+        PolySignature signature = PolySignature.from( LanguageManager.getINSTANCE().anyPrepareQuery( context, statementHandle.getStatement() ).get( 0 ).getImplementation() );
 
         h.signature = signature;
         statementHandle.setSignature( signature );
@@ -1394,7 +1394,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle<?> statementHandle, int maxRowsInFirstFrame ) {
+    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyStatementHandle<?> statementHandle, int maxRowsInFirstFrame ) {
         List<MetaResultSet> resultSets;
         if ( statementHandle.getSignature().statementType == StatementType.OTHER_DDL ) {
             MetaResultSet resultSet = MetaResultSet.count( statementHandle.getConnection().getConnectionId().toString(), h.id, 1 );
@@ -1447,10 +1447,10 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
             }
 
-            final PolyphenyDbStatementHandle<?> statement;
+            final PolyStatementHandle<?> statement;
 
             final int id = statementIdGenerator.getAndIncrement();
-            statement = new PolyphenyDbStatementHandle<>( connection, id );
+            statement = new PolyStatementHandle<>( connection, id );
             openStatements.put( ch.id + "::" + id, statement );
 
             StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
@@ -1475,7 +1475,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "closeStatement( StatementHandle {} )", statementHandle );
             }
 
-            final PolyphenyDbStatementHandle<?> toClose = openStatements.remove( statementHandle.connectionId + "::" + statementHandle.id );
+            final PolyStatementHandle<?> toClose = openStatements.remove( statementHandle.connectionId + "::" + statementHandle.id );
             if ( toClose != null ) {
                 if ( toClose.getOpenResultSet() != null && toClose.getOpenResultSet() instanceof AutoCloseable ) {
                     try {
@@ -1588,7 +1588,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             for ( final String key : openStatements.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    PolyphenyDbStatementHandle<?> statementHandle = openStatements.remove( key );
+                    PolyStatementHandle<?> statementHandle = openStatements.remove( key );
                     statementHandle.unset();
                 }
             }
@@ -1607,8 +1607,8 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private PolyphenyDbStatementHandle<Object> getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle<Object> statement;
+    private PolyStatementHandle<Object> getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
+        final PolyStatementHandle<Object> statement;
         if ( openStatements.containsKey( h.connectionId + "::" + h.id ) ) {
             statement = openStatements.get( h.connectionId + "::" + h.id );
         } else {

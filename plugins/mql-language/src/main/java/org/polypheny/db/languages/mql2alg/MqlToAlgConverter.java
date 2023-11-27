@@ -69,7 +69,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -260,7 +260,7 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        if ( entity.namespaceType == NamespaceType.RELATIONAL ) {
+        if ( entity.dataModel == DataModel.RELATIONAL ) {
             _dataExists = false;
         }
 

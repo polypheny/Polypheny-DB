@@ -62,8 +62,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
     /**
      * Creates a PolyphenyDbResultSet.
      */
-    public PolyphenyDbResultSet( AvaticaStatement statement, PolyphenyDbSignature polyphenyDbSignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
-        super( statement, null, polyphenyDbSignature, resultSetMetaData, timeZone, firstFrame );
+    public PolyphenyDbResultSet( AvaticaStatement statement, PolySignature polySignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
+        super( statement, null, polySignature, resultSetMetaData, timeZone, firstFrame );
     }
 
 
@@ -75,9 +75,9 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
         } else {
             columnMetaDataList = ImmutableList.of( ColumnMetaData.dummy( elementType, false ) );
         }
-        final PolyphenyDbSignature signature = (PolyphenyDbSignature) this.signature;
-        final PolyphenyDbSignature newSignature =
-                new PolyphenyDbSignature(
+        final PolySignature signature = (PolySignature) this.signature;
+        final PolySignature newSignature =
+                new PolySignature(
                         signature.sql,
                         signature.parameters,
                         signature.internalParameters,
@@ -90,7 +90,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
                         null,
                         statement.getStatementType(),
                         new ExecutionTimeMonitor(),
-                        signature.getNamespaceType() );
+                        signature.getDataModel() );
         ResultSetMetaData subResultSetMetaData = new AvaticaResultSetMetaData( statement, null, newSignature );
         final PolyphenyDbResultSet resultSet = new PolyphenyDbResultSet( statement, signature, subResultSetMetaData, localCalendar.getTimeZone(), new Meta.Frame( 0, true, iterable ) );
         final Cursor cursor = resultSet.createCursor( elementType, iterable );
@@ -108,8 +108,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
 
 
     // Do not make public
-    PolyphenyDbSignature getSignature() {
-        return (PolyphenyDbSignature) signature;
+    PolySignature getSignature() {
+        return (PolySignature) signature;
     }
 
 }
