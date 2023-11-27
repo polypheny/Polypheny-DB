@@ -420,19 +420,29 @@ public class InsertSchema {
             //TODO(FF): gives an error (with " there is no error?) but works: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered " "DEFAULT" "DEFAULT "" at line 1, column 172.
 
             PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
+            Boolean testing = PolyType.DATETIME_TYPES.contains( col.defaultValue.type );
 
-            if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) ) {
+            if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) || PolyType.DATETIME_TYPES.contains( col.defaultValue.type ) ) {
                 defaultValue = String.format( " DEFAULT '%s'", regexString );
+                String test = " DEFAULT '" + regexString + "'";
             } else {
                 defaultValue = String.format( " DEFAULT %s", regexString );
             }
             //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
-            log.info( regexString );
+            log.info( "default for " + colDataType + ": " + defaultValue );
         }
 
         String caseSensitivity = new String();
         if ( !(col.collation == null) ) {
             caseSensitivity = String.format( "COLLATE %s", col.collation.collationToString() );
+        }
+
+        if (colNullable.equals( "NULL" )) {
+            colNullable = "";
+        } else if (colNullable.equals( "NOT NULL" )) {
+            colNullable = String.format( " %s ", colNullable );
+        } else {
+            throw new GenericRuntimeException( "During backup schema insertions not supported nullable value detected" + colNullable);
         }
 
         //TODO(FF): handle arrays
@@ -501,7 +511,7 @@ public class InsertSchema {
         }
 
 
-        columnDefinitionString = String.format( "%s %s%s %s%s %s, ", colName, dataTypeString, arrayString, colNullable, defaultValue, caseSensitivity );
+        columnDefinitionString = String.format( "%s %s%s%s%s %s, ", colName, dataTypeString, arrayString, colNullable, defaultValue, caseSensitivity );
         //log.info( columnDefinitionString );
 
         return columnDefinitionString;
