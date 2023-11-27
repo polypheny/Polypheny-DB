@@ -48,13 +48,12 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.impl.Expressible;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
@@ -73,10 +72,10 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
     private final Convention convention = MongoAlg.CONVENTION;
 
     @Getter
-    private final Map<String, Entity> tableMap = new HashMap<>();
+    private final Map<String, org.polypheny.db.schema.Entity> tableMap = new HashMap<>();
 
     @Getter
-    private final Map<String, Entity> collectionMap = new HashMap<>();
+    private final Map<String, org.polypheny.db.schema.Entity> collectionMap = new HashMap<>();
     private final MongoClient connection;
     private final TransactionProvider transactionProvider;
     @Getter
@@ -122,7 +121,7 @@ public class MongoNamespace implements Namespace, Schema, Expressible {
 
 
     @Override
-    public LogicalEntity getEntity( String name ) {
+    public Entity getEntity( String name ) {
         return null;
     }
 

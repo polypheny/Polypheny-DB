@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -31,7 +31,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 /**
  * Sub-class of {@link RelModify} not targeted at any particular engine or calling convention.
  */
-public final class LogicalRelModify extends RelModify<LogicalEntity> {
+public final class LogicalRelModify extends RelModify<Entity> {
 
 
     /**
@@ -42,7 +42,7 @@ public final class LogicalRelModify extends RelModify<LogicalEntity> {
     public LogicalRelModify(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumns,
@@ -54,7 +54,7 @@ public final class LogicalRelModify extends RelModify<LogicalEntity> {
 
     public LogicalRelModify(
             AlgTraitSet traits,
-            LogicalEntity table,
+            Entity table,
             AlgNode child,
             Operation operation,
             List<String> targets,
@@ -67,7 +67,7 @@ public final class LogicalRelModify extends RelModify<LogicalEntity> {
      * Creates a LogicalModify.
      */
     public static LogicalRelModify create(
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumns,

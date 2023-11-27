@@ -77,7 +77,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -1285,7 +1285,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             boolean fallback;
             if ( alg.getEntity() != null ) {
-                LogicalEntity entity = alg.getEntity();
+                Entity entity = alg.getEntity();
 
                 if ( entity == null ) {
                     // todo dl: remove after RowType refactor

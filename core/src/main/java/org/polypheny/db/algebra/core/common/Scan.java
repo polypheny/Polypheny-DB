@@ -18,12 +18,12 @@ package org.polypheny.db.algebra.core.common;
 
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @Getter
-public abstract class Scan<E extends LogicalEntity> extends AbstractAlgNode {
+public abstract class Scan<E extends Entity> extends AbstractAlgNode {
 
     public final E entity;
 

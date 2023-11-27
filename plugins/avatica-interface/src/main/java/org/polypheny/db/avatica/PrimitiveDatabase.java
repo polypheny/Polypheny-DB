@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The Polypheny Project
+ * Copyright 2019-2023 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,35 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity;
+package org.polypheny.db.avatica;
 
+import lombok.RequiredArgsConstructor;
 
-import java.io.Serializable;
+@RequiredArgsConstructor
+public class PrimitiveDatabase {
 
-
-/**
- *
- */
-public interface LogicalObject extends Serializable {
-
-    Serializable[] getParameterArray();
-
-    default Visibility getVisibility() {
-        return Visibility.EXTERNAL;
-    }
-
-
-    static String getEnumNameOrNull( Enum<?> theEnum ) {
-        if ( theEnum == null ) {
-            return null;
-        } else {
-            return theEnum.name();
-        }
-    }
-
-    enum Visibility {
-        INTERNAL,
-        EXTERNAL
-    }
+    public final String tableCat;
+    public final String owner;
+    public final String defaultSchema;
 
 }

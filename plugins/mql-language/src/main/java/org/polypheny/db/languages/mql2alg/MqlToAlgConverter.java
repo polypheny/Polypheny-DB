@@ -63,7 +63,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -209,7 +209,7 @@ public class MqlToAlgConverter {
     private long namespaceId;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private LogicalEntity entity;
+    private Entity entity;
 
 
     public MqlToAlgConverter( Snapshot snapshot, AlgOptCluster cluster ) {
@@ -307,7 +307,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private LogicalEntity getEntity( MqlCollectionStatement query, long namespaceId ) {
+    private Entity getEntity( MqlCollectionStatement query, long namespaceId ) {
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
 
         Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
@@ -329,7 +329,7 @@ public class MqlToAlgConverter {
     /**
      * Starts converting a db.collection.update();
      */
-    private AlgNode convertUpdate( MqlUpdate query, LogicalEntity entity, AlgNode node ) {
+    private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getRowType(), node );
             if ( query.isOnlyOne() ) {
@@ -352,7 +352,7 @@ public class MqlToAlgConverter {
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
-    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
+    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, Entity entity ) {
         Map<String, List<RexNode>> updates = new HashMap<>();
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
@@ -637,7 +637,7 @@ public class MqlToAlgConverter {
     /**
      * Starts translating an update pipeline
      */
-    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
+    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, Entity entity ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -688,7 +688,7 @@ public class MqlToAlgConverter {
     /**
      * Translates a delete operation from its MqlNode format to the {@link AlgNode} form
      */
-    private AlgNode convertDelete( MqlDelete query, LogicalEntity table, AlgNode node ) {
+    private AlgNode convertDelete( MqlDelete query, Entity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
         }
@@ -713,7 +713,7 @@ public class MqlToAlgConverter {
      * @param entity the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private AlgNode convertInsert( MqlInsert query, LogicalEntity entity ) {
+    private AlgNode convertInsert( MqlInsert query, Entity entity ) {
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues(), entity.getRowType() ),

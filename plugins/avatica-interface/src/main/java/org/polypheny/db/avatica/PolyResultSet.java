@@ -57,12 +57,12 @@ import org.polypheny.db.runtime.ObjectEnumeratorCursor;
 /**
  * Implementation of {@link ResultSet} for the Polypheny-DB engine.
  */
-public class PolyphenyDbResultSet extends AvaticaResultSet {
+public class PolyResultSet extends AvaticaResultSet {
 
     /**
      * Creates a PolyphenyDbResultSet.
      */
-    public PolyphenyDbResultSet( AvaticaStatement statement, PolySignature polySignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
+    public PolyResultSet( AvaticaStatement statement, PolySignature polySignature, ResultSetMetaData resultSetMetaData, TimeZone timeZone, Meta.Frame firstFrame ) throws SQLException {
         super( statement, null, polySignature, resultSetMetaData, timeZone, firstFrame );
     }
 
@@ -92,7 +92,7 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
                         new ExecutionTimeMonitor(),
                         signature.getDataModel() );
         ResultSetMetaData subResultSetMetaData = new AvaticaResultSetMetaData( statement, null, newSignature );
-        final PolyphenyDbResultSet resultSet = new PolyphenyDbResultSet( statement, signature, subResultSetMetaData, localCalendar.getTimeZone(), new Meta.Frame( 0, true, iterable ) );
+        final PolyResultSet resultSet = new PolyResultSet( statement, signature, subResultSetMetaData, localCalendar.getTimeZone(), new Meta.Frame( 0, true, iterable ) );
         final Cursor cursor = resultSet.createCursor( elementType, iterable );
         return resultSet.execute2( cursor, columnMetaDataList );
     }

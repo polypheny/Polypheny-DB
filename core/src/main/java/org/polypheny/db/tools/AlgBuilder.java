@@ -105,7 +105,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -1371,7 +1371,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder scan( @Nonnull LogicalEntity entity ) {
+    public AlgBuilder scan( @Nonnull Entity entity ) {
         final AlgNode scan = scanFactory.createScan( cluster, entity );
         push( scan );
         rename( entity.getRowType().getFieldNames() );
@@ -1412,7 +1412,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder documentScan( LogicalEntity collection ) {
+    public AlgBuilder documentScan( Entity collection ) {
         stack.add( new Frame( new LogicalDocumentScan( cluster, cluster.traitSet().replace( ModelTrait.DOCUMENT ), collection ) ) );
         return this;
     }
@@ -1437,7 +1437,7 @@ public class AlgBuilder {
     }
 
 
-    public AlgBuilder lpgScan( LogicalEntity entity ) {
+    public AlgBuilder lpgScan( Entity entity ) {
         stack.add( new Frame( new LogicalLpgScan( cluster, cluster.traitSet().replace( ModelTrait.GRAPH ), entity, entity.getRowType() ) ) );
         return this;
     }

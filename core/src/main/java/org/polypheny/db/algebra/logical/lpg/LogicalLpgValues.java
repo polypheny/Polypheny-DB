@@ -36,7 +36,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -118,7 +118,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<LogicalEntity> entities, Snapshot snapshot ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
 
         AlgOptCluster cluster = AlgOptCluster.create( getCluster().getPlanner(), getCluster().getRexBuilder(), out, snapshot );

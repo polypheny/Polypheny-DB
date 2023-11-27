@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -147,7 +147,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
 
 
     @Override
-    public LogicalEntity getTable() {
+    public Entity getTable() {
         return null;
     }
 

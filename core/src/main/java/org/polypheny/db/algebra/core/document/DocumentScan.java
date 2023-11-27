@@ -18,13 +18,13 @@ package org.polypheny.db.algebra.core.document;
 
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
-public abstract class DocumentScan<E extends LogicalEntity> extends Scan<E> implements DocumentAlg {
+public abstract class DocumentScan<E extends Entity> extends Scan<E> implements DocumentAlg {
 
 
     /**

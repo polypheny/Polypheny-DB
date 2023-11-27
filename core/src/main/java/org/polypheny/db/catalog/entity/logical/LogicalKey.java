@@ -27,7 +27,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -35,7 +35,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 @Value
 @NonFinal
 @SerializeClass(subclasses = { LogicalGenericKey.class, LogicalPrimaryKey.class, LogicalForeignKey.class })
-public abstract class LogicalKey implements LogicalObject, Comparable<LogicalKey> {
+public abstract class LogicalKey implements PolyObject, Comparable<LogicalKey> {
 
     private static final long serialVersionUID = -5803762884192662540L;
 

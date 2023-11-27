@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -125,7 +125,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
     }
 
 
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<LogicalEntity> entities, Snapshot snapshot ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         return List.of( getRelationalEquivalent() );
     }
 

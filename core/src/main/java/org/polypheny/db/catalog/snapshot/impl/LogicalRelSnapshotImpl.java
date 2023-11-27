@@ -53,6 +53,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalNamespace> namespaces;
 
     ImmutableMap<String, LogicalNamespace> namespaceNames;
+
     ImmutableMap<Long, Boolean> namespaceCaseSensitive;
 
     ImmutableMap<Long, LogicalTable> tables;
@@ -64,6 +65,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, List<LogicalTable>> tablesNamespace;
 
     ImmutableMap<Long, TreeSet<LogicalColumn>> tableColumns;
+
     ImmutableMap<Long, LogicalColumn> columns;
 
     ImmutableMap<Pair<Long, String>, LogicalColumn> columnNames;
@@ -71,6 +73,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalKey> keys;
 
     ImmutableMap<Long, List<LogicalKey>> tableKeys;
+
     ImmutableMap<long[], LogicalKey> columnsKey;
 
     ImmutableMap<Long, LogicalIndex> index;
@@ -78,6 +81,7 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Long, LogicalConstraint> constraints;
 
     ImmutableMap<Long, LogicalForeignKey> foreignKeys;
+
     ImmutableMap<Long, LogicalPrimaryKey> primaryKeys;
 
     ImmutableMap<Long, List<LogicalIndex>> keyToIndexes;
@@ -87,9 +91,13 @@ public class LogicalRelSnapshotImpl implements LogicalRelSnapshot {
     ImmutableMap<Pair<Long, Pair<String, String>>, LogicalColumn> tableColumnNameColumn;
 
     ImmutableMap<Pair<Long, String>, LogicalColumn> tableIdColumnNameColumn;
+
     ImmutableMap<Long, List<LogicalConstraint>> tableConstraints;
+
     ImmutableMap<Long, List<LogicalForeignKey>> tableForeignKeys;
+
     ImmutableMap<Long, AlgNode> nodes;
+
     ImmutableMap<Long, List<LogicalView>> connectedViews;
 
 

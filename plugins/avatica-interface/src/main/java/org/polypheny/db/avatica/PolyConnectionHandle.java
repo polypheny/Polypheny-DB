@@ -24,7 +24,6 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.Meta.ConnectionHandle;
 import org.apache.calcite.avatica.Meta.ConnectionProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalDatabase;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.transaction.PUID.ConnectionId;
@@ -36,7 +35,7 @@ import org.polypheny.db.transaction.TransactionManager;
 /**
  *
  */
-public class PolyphenyDbConnectionHandle {
+public class PolyConnectionHandle {
 
     private final Meta.ConnectionHandle handle;
 
@@ -44,38 +43,24 @@ public class PolyphenyDbConnectionHandle {
 
     @Getter
     private final LogicalUser user;
-    private final LogicalDatabase database;
     private final LogicalNamespace namespace;
 
     @Getter
     private final ConnectionId connectionId;
     private Transaction currentTransaction;
-    private PolyphenyDbResultSet currentOpenResultSet;
+    private PolyResultSet currentOpenResultSet;
 
     private final TransactionManager transactionManager;
 
     private final ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, Catalog.DATABASE_NAME, Catalog.defaultNamespaceName );
 
 
-    public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final LogicalUser logicalUser, final ConnectionId connectionId, final LogicalDatabase database, final LogicalNamespace namespace, final TransactionManager transactionManager ) {
+    public PolyConnectionHandle( final ConnectionHandle handle, final LogicalUser logicalUser, final String connectionId, final LogicalNamespace namespace, final TransactionManager transactionManager ) {
         this.handle = handle;
 
-        this.userId = UserId.fromString( logicalUser.name ); // TODO: refactor CatalogUser
-        this.user = logicalUser;
-        this.connectionId = connectionId;
-        this.database = database;
-        this.namespace = namespace;
-        this.transactionManager = transactionManager;
-    }
-
-
-    public PolyphenyDbConnectionHandle( final ConnectionHandle handle, final LogicalUser logicalUser, final String connectionId, final LogicalDatabase database, final LogicalNamespace namespace, final TransactionManager transactionManager ) {
-        this.handle = handle;
-
-        this.userId = UserId.fromString( logicalUser.name ); // TODO: refactor CatalogUser
+        this.userId = UserId.fromString( logicalUser.name );
         this.user = logicalUser;
         this.connectionId = ConnectionId.fromString( connectionId );
-        this.database = database;
         this.namespace = namespace;
         this.transactionManager = transactionManager;
     }
@@ -107,7 +92,7 @@ public class PolyphenyDbConnectionHandle {
     }
 
 
-    public void setCurrentOpenResultSet( PolyphenyDbResultSet resultSet ) {
+    public void setCurrentOpenResultSet( PolyResultSet resultSet ) {
         this.currentOpenResultSet = resultSet;
     }
 
@@ -135,7 +120,7 @@ public class PolyphenyDbConnectionHandle {
         if ( o == null || getClass() != o.getClass() ) {
             return false;
         }
-        PolyphenyDbConnectionHandle that = (PolyphenyDbConnectionHandle) o;
+        PolyConnectionHandle that = (PolyConnectionHandle) o;
         return Objects.equals( connectionId, that.connectionId );
     }
 

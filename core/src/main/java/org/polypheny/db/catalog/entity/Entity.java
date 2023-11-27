@@ -25,6 +25,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.StatisticsManager;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -46,7 +47,7 @@ import org.polypheny.db.util.Wrapper;
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
-public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<LogicalEntity> {
+public abstract class Entity implements PolyObject, Wrapper, Serializable, CatalogType, Expressible, Typed, Comparable<Entity> {
 
     @Serialize
     public long id;
@@ -59,6 +60,7 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
 
     @Serialize
     @SerializeNullable
+    @Nullable
     public String name;
 
     @Serialize
@@ -68,9 +70,9 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
     public boolean modifiable;
 
 
-    public LogicalEntity(
+    public Entity(
             long id,
-            String name,
+            @Nullable String name,
             long namespaceId,
             EntityType type,
             DataModel dataModel,
@@ -150,7 +152,7 @@ public abstract class LogicalEntity implements LogicalObject, Wrapper, Serializa
 
 
     @Override
-    public int compareTo( @NotNull LogicalEntity o ) {
+    public int compareTo( @NotNull Entity o ) {
         if ( !this.getClass().getSimpleName().equals( o.getClass().getSimpleName() ) ) {
             return -1;
         }

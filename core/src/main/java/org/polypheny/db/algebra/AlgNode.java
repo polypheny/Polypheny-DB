@@ -44,7 +44,7 @@ import org.polypheny.db.algebra.externalize.AlgWriterImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgImplementor;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -262,7 +262,7 @@ public interface AlgNode extends AlgOptNode, Cloneable {
      *
      * @return If this relational expression represents an access to a table, returns that table, otherwise returns null
      */
-    LogicalEntity getEntity();
+    Entity getEntity();
 
     /**
      * Returns the name of this relational expression's class, sans package name, for use in explain. For example, for a

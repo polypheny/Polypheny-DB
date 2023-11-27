@@ -86,7 +86,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -315,7 +315,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traitSet,
-            LogicalEntity table,
+            Entity table,
             AlgNode child,
             Operation operation,
             List<String> updateColumnList,
@@ -335,7 +335,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public Modify<?> toModificationCollection(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity collection,
+            Entity collection,
             AlgNode child,
             Operation operation,
             Map<String, ? extends RexNode> updates,

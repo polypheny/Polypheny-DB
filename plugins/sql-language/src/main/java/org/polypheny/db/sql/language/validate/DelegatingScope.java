@@ -31,12 +31,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -102,9 +101,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
         final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
-            LogicalEntity validatorTable = ns.getTable();
+            Entity validatorTable = ns.getTable();
             if ( validatorTable instanceof PreparingEntity ) {
-                Entity t = validatorTable.unwrap( Entity.class );
+                org.polypheny.db.schema.Entity t = validatorTable.unwrap( org.polypheny.db.schema.Entity.class );
                 if ( t instanceof CustomColumnResolvingEntity ) {
                     final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, validator.getTypeFactory(), names );
                     for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {

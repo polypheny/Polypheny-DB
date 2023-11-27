@@ -113,7 +113,7 @@ public class HepAlgVertex extends AbstractAlgNode {
      *
      * @param newRel new expression
      */
-    void replaceRel( AlgNode newRel ) {
+    void replaceAlg( AlgNode newRel ) {
         currentAlg = newRel;
     }
 

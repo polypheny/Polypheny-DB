@@ -32,7 +32,7 @@ import org.polypheny.db.adapter.DeployMode;
 @EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
-public class LogicalAdapter implements LogicalObject {
+public class LogicalAdapter implements PolyObject {
 
     private static final long serialVersionUID = -6140489767408917639L;
 

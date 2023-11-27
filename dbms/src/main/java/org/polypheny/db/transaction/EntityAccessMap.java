@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -228,7 +228,7 @@ public class EntityAccessMap {
      * @param table table of interest
      * @return qualified name
      */
-    public EntityIdentifier getQualifiedName( LogicalEntity table, long partitionId ) {
+    public EntityIdentifier getQualifiedName( Entity table, long partitionId ) {
         return new EntityIdentifier( table.id, partitionId, NamespaceLevel.ENTITY_LEVEL );
     }
 
@@ -242,7 +242,7 @@ public class EntityAccessMap {
         @Override
         public void visit( AlgNode p, int ordinal, AlgNode parent ) {
             super.visit( p, ordinal, parent );
-            LogicalEntity table = p.getEntity();
+            Entity table = p.getEntity();
             if ( table == null ) {
                 return;
             }

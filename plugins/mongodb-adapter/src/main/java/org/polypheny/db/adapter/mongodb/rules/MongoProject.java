@@ -27,7 +27,6 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
-import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -78,10 +77,10 @@ public class MongoProject extends Project implements MongoAlg {
         final List<String> excludes = new ArrayList<>();
         final List<String> unwinds = new ArrayList<>();
         // We use our specialized rowType to derive the mapped underlying column identifiers
-        MongoRowType mongoRowType = null;
-        if ( implementor.getStaticRowType() instanceof MongoRowType ) {
+        AlgDataType mongoRowType = implementor.getRowType();
+        /*if ( implementor.getStaticRowType() instanceof MongoRowType ) {
             mongoRowType = ((MongoRowType) implementor.getStaticRowType());
-        }
+        }*/
 
         BsonDocument documents = new BsonDocument();
 

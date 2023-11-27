@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -202,7 +202,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,

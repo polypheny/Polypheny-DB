@@ -37,6 +37,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
     private final GridFSBucket bucket;
     private Implementor implementor;
 
+
     protected MongoDocumentModify(
             AlgTraitSet traits,
             MongoEntity collection,
@@ -55,7 +56,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         implementor.setDML( true );
         this.implementor = implementor;
 
-        implementor.entity = entity;
+        implementor.setEntity( entity );
         implementor.setOperation( this.getOperation() );
 
         switch ( this.getOperation() ) {

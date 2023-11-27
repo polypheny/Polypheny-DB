@@ -25,8 +25,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.LogicalEntity;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -42,21 +41,21 @@ import org.polypheny.db.util.ValidatorUtil;
 class EntityNamespace extends AbstractNamespace {
 
     @Getter
-    private final LogicalEntity table;
+    private final Entity table;
     public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private EntityNamespace( SqlValidatorImpl validator, LogicalEntity entity, List<AlgDataTypeField> fields ) {
+    private EntityNamespace( SqlValidatorImpl validator, Entity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
         this.table = entity;
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    EntityNamespace( SqlValidatorImpl validator, LogicalEntity table ) {
+    EntityNamespace( SqlValidatorImpl validator, Entity table ) {
         this( validator, table, ImmutableList.of() );
     }
 
@@ -83,7 +82,7 @@ class EntityNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final LogicalEntity table = getTable();
+        final Entity table = getTable();
         return Util.getMonotonicity( table, columnName );
     }
 
@@ -100,7 +99,7 @@ class EntityNamespace extends AbstractNamespace {
         builder.addAll( this.extendedFields );
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
-        final Entity schemaEntity = table.unwrap( Entity.class );
+        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
         if ( schemaEntity != null && schemaEntity instanceof ExtensibleEntity ) {
             checkExtendedColumnTypes( extendList );
             //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
@@ -115,7 +114,7 @@ class EntityNamespace extends AbstractNamespace {
      * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
      */
     private AlgDataType getBaseRowType() {
-        final Entity schemaEntity = table.unwrap( Entity.class );
+        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
         return schemaEntity.getRowType( validator.typeFactory );
     }
 

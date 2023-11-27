@@ -27,7 +27,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -89,7 +89,7 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,

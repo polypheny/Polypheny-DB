@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.EnumerableScan;
 import org.polypheny.db.algebra.rules.FilterMergeRule;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.Parser.ParserConfig;
 import org.polypheny.db.nodes.Node;
@@ -155,7 +155,7 @@ public class PlannerTest extends SqlLanguageDependent {
      */
     private static class MockJdbcScan extends RelScan implements JdbcAlg {
 
-        MockJdbcScan( AlgOptCluster cluster, LogicalEntity table, JdbcConvention jdbcConvention ) {
+        MockJdbcScan( AlgOptCluster cluster, Entity table, JdbcConvention jdbcConvention ) {
             super( cluster, cluster.traitSetOf( jdbcConvention ), table );
         }
 

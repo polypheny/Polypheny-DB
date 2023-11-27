@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.impl.AbstractEntity;
@@ -46,7 +46,7 @@ public class JdbcTest {
         //@Override
         public RelModify<?> toModificationAlg(
                 AlgOptCluster cluster,
-                LogicalEntity entity,
+                Entity entity,
                 AlgNode child,
                 RelModify.Operation operation,
                 List<String> updateColumnList,

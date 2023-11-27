@@ -72,7 +72,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -105,7 +105,6 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -2999,7 +2998,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // if it's not a SqlIdentifier then that's fine, it'll be validated somewhere else.
         if ( leftOrRight instanceof SqlIdentifier ) {
             SqlIdentifier from = (SqlIdentifier) leftOrRight;
-            LogicalEntity entity = findTable(
+            Entity entity = findTable(
                     Util.last( from.names ),
                     snapshot.nameMatcher.isCaseSensitive() );
             String name = Util.last( identifier.names );
@@ -3365,7 +3364,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         String tableAlias = pair.left;
 
-        LogicalEntity entity = findTable( tableAlias );
+        Entity entity = findTable( tableAlias );
         if ( entity != null ) {
             return entity.rolledUpColumnValidInsideAgg();
         }
@@ -3384,7 +3383,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         String tableAlias = pair.left;
         String columnName = pair.right;
 
-        LogicalEntity entity = findTable( tableAlias );
+        Entity entity = findTable( tableAlias );
         if ( entity != null ) {
             return entity.isRolledUp( columnName );
         }
@@ -3393,15 +3392,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Nullable
-    private LogicalEntity findTable( String tableName, boolean caseSensitive ) {
+    private Entity findTable( String tableName, boolean caseSensitive ) {
         return snapshot.rel().getTable( Catalog.defaultNamespaceId, tableName ).orElse( null );
     }
 
 
     /**
-     * Given a table alias, find the corresponding {@link Entity} associated with it
+     * Given a table alias, find the corresponding {@link org.polypheny.db.schema.Entity} associated with it
      */
-    private LogicalEntity findTable( String alias ) {
+    private Entity findTable( String alias ) {
         return findTable( alias, snapshot.nameMatcher.isCaseSensitive() );
     }
 
@@ -3998,7 +3997,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    protected AlgDataType createTargetRowType( LogicalEntity table, SqlNodeList targetColumnList, boolean append ) {
+    protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append ) {
         return createTargetRowType( table, targetColumnList, append, false );
     }
 
@@ -4011,7 +4010,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param append Whether to append fields to those in <code>baseRowType</code>
      * @return Rowtype
      */
-    protected AlgDataType createTargetRowType( LogicalEntity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
+    protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
         AlgDataType baseRowType = table.getRowType();
         if ( targetColumnList == null ) {
             return baseRowType;
@@ -4054,7 +4053,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table =
+        final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
                         snapshot,
@@ -4101,7 +4100,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void checkFieldCount( SqlNode node, LogicalEntity table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
+    private void checkFieldCount( SqlNode node, Entity table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
         final int sourceFieldCount = logicalSourceRowType.getFieldCount();
         final int targetFieldCount = logicalTargetRowType.getFieldCount();
         if ( sourceFieldCount != targetFieldCount ) {
@@ -4321,7 +4320,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table = targetNamespace.getTable();
+        final Entity table = targetNamespace.getTable();
 
         validateAccess( call.getTargetTable(), table, AccessEnum.DELETE );
     }
@@ -4331,7 +4330,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table =
+        final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
                         snapshot,
@@ -4366,7 +4365,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getSqlNamespace( call.getTargetTable() );
         validateNamespace( targetNamespace, unknownType );
 
-        LogicalEntity table = targetNamespace.getTable();
+        Entity table = targetNamespace.getTable();
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
 
         AlgDataType targetRowType = unknownType;
@@ -4403,7 +4402,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param table Table
      * @param requiredAccess Access requested on table
      */
-    private void validateAccess( SqlNode node, LogicalEntity table, AccessEnum requiredAccess ) {
+    private void validateAccess( SqlNode node, Entity table, AccessEnum requiredAccess ) {
         if ( table != null ) {
             AccessType access = AccessType.ALL;
             if ( !access.allowsAccess( requiredAccess ) ) {
@@ -5064,7 +5063,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( selectItem instanceof SqlIdentifier ) {
                 final SqlQualified qualified = scope.fullyQualify( (SqlIdentifier) selectItem );
                 SqlValidatorNamespace namespace = qualified.namespace;
-                final LogicalEntity table = namespace.getTable();
+                final Entity table = namespace.getTable();
                 if ( table == null ) {
                     return null;
                 }

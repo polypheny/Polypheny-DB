@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -33,17 +33,17 @@ import org.polypheny.db.rex.RexNode;
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class LogicalDocumentModify extends DocumentModify<LogicalEntity> implements RelationalTransformable {
+public class LogicalDocumentModify extends DocumentModify<Entity> implements RelationalTransformable {
 
     /**
      * Subclass of {@link DocumentModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalDocumentModify( AlgTraitSet traits, LogicalEntity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
+    public LogicalDocumentModify( AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
         super( traits, entity, input, operation, updates, removes, renames );
     }
 
 
-    public static LogicalDocumentModify create( LogicalEntity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
+    public static LogicalDocumentModify create( Entity entity, AlgNode input, Operation operation, Map<String, ? extends RexNode> updates, List<String> removes, Map<String, String> renames ) {
         return new LogicalDocumentModify( input.getTraitSet(), entity, input, operation, updates, removes, renames );
     }
 
@@ -55,7 +55,7 @@ public class LogicalDocumentModify extends DocumentModify<LogicalEntity> impleme
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<LogicalEntity> entities, Snapshot snapshot ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         return List.of( RelationalTransformable.getModify( entities.get( 0 ), values.get( 0 ), operation ) );
     }
 

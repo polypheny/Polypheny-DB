@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
@@ -89,10 +89,10 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
      * @param operation the operation type
      */
     @Override
-    public Modify<LogicalEntity> toModificationTable(
+    public Modify<Entity> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity physical,
+            Entity physical,
             AlgNode child,
             Operation operation,
             List<String> targets,

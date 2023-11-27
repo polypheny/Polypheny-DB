@@ -64,7 +64,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -459,7 +459,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        LogicalEntity table = filter.getInput().getEntity();
+        Entity table = filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
@@ -468,7 +468,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
+    private void handleIfPartitioned( AlgNode node, Entity logicalEntity ) {
         // Only if table is partitioned
         if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
                 || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
@@ -495,22 +495,22 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        LogicalEntity entity = filter.getInput().getEntity();
+        Entity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( Entity.class ) );
     }
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        LogicalEntity entity = filter.getInput().getEntity();
+        Entity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( Entity.class ) );
 
     }
 

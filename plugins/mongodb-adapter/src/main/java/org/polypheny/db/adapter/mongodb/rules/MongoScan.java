@@ -28,7 +28,6 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -91,12 +90,11 @@ public class MongoScan extends RelScan<MongoEntity> implements MongoAlg {
 
     @Override
     public void implement( Implementor implementor ) {
-        implementor.entity = entity;
+        implementor.setEntity( entity );
         //implementor.setStaticRowType( (AlgRecordType) rowType );
         //implementor.physicalMapper.addAll( rowType.getFieldNames() );
 
         if ( implementor.isDML() ) {
-            implementor.setStaticRowType( (AlgRecordType) rowType );
             return;
         }
         implementor.list.add( Pair.of( null, new BsonDocument( "$project", new BsonDocument( rowType.getFields().stream().map( p -> new BsonElement( p.getName(), new BsonString( "$" + p.getPhysicalName() ) ) ).collect( Collectors.toList() ) ) ).toJson() ) );

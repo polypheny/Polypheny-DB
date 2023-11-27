@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -33,13 +33,13 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 
 
-public class LogicalLpgModify extends LpgModify<LogicalEntity> implements RelationalTransformable {
+public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTransformable {
 
 
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
-    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, LogicalEntity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
+    public LogicalLpgModify( AlgOptCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
         super( cluster, traits, entity, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
     }
 
@@ -51,7 +51,7 @@ public class LogicalLpgModify extends LpgModify<LogicalEntity> implements Relati
 
 
     @Override
-    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<LogicalEntity> entities, Snapshot snapshot ) {
+    public List<AlgNode> getRelationalEquivalent( List<AlgNode> inputs, List<Entity> entities, Snapshot snapshot ) {
         List<AlgNode> modifies = new ArrayList<>();
 
         // modify of nodes

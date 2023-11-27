@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -228,7 +228,7 @@ public abstract class BaseRouter implements Router {
     public RoutedAlgBuilder handleRelScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            LogicalEntity entity ) {
+            Entity entity ) {
 
         org.polypheny.db.catalog.entity.logical.LogicalEntity table;
 
@@ -255,7 +255,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public DocumentScan<LogicalEntity> handleDocScan(
+    public DocumentScan<Entity> handleDocScan(
             DocumentScan<?> scan,
             Statement statement,
             @Nullable List<Long> excludedPlacements ) {

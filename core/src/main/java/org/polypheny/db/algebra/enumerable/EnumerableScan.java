@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -78,7 +78,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Creates an EnumerableScan.
      */
-    public static EnumerableScan create( AlgOptCluster cluster, LogicalEntity entity ) {
+    public static EnumerableScan create( AlgOptCluster cluster, Entity entity ) {
         PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class );
         Class<?> elementType = EnumerableScan.deduceElementType( physicalTable );
         final AlgTraitSet traitSet =
@@ -105,7 +105,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Returns whether EnumerableScan can generate code to handle a particular variant of the Table SPI.
      */
-    public static boolean canHandle( LogicalEntity entity ) {
+    public static boolean canHandle( Entity entity ) {
         // FilterableTable and ProjectableFilterableTable cannot be handled in/ enumerable convention because they might reject filters and those filters would need to be handled dynamically.
         return entity instanceof QueryableEntity || entity instanceof ScannableEntity;
     }

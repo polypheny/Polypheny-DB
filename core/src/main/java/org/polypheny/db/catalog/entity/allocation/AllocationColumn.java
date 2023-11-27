@@ -26,14 +26,14 @@ import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.PlacementType;
 
 
 @EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
-public class AllocationColumn implements LogicalObject {
+public class AllocationColumn implements PolyObject {
 
     private static final long serialVersionUID = -1909757888176291095L;
 

@@ -21,7 +21,7 @@ import java.util.List;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.nodes.validate.ValidatorNamespace;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -54,7 +54,7 @@ public interface SqlValidatorNamespace extends ValidatorNamespace {
     /**
      * Returns the underlying table, or null if there is none.
      */
-    LogicalEntity getTable();
+    Entity getTable();
 
     /**
      * Returns the type of this namespace.
