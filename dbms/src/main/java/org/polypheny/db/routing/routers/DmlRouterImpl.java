@@ -61,6 +61,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -794,7 +795,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            return handleRelScan( builder, statement, allocEntity != null ? allocEntity : ((LogicalRelScan) node).entity );
+            return handleRelScan( builder, statement, getParentOrCurrent( allocEntity, ((LogicalRelScan) node).entity ) );
         } else if ( node instanceof LogicalDocumentValues ) {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
@@ -806,6 +807,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return super.handleGeneric( node, builder );
         }
+    }
+
+
+    private Entity getParentOrCurrent( AllocationEntity allocEntity, Entity entity ) {
+        if ( allocEntity == null || allocEntity.logicalId != entity.id ) {
+            return entity;
+        }
+        return allocEntity;
     }
 
 

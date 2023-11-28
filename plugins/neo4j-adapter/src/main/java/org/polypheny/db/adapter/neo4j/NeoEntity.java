@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.neo4j;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +42,16 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -143,6 +149,25 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
         return new PhysicalGraph( id, allocationId, logicalId, name, adapterId );
     }
 
+
+    public AlgDataType getRowType() {
+        if ( dataModel == DataModel.RELATIONAL ) {
+            return buildProto().apply( AlgDataTypeFactory.DEFAULT );
+        }
+        return super.getRowType();
+    }
+
+
+    public AlgProtoDataType buildProto() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+            AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() );
+    }
 
     public static class NeoQueryable extends AbstractEntityQueryable<PolyValue[], NeoEntity> {
 

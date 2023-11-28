@@ -61,6 +61,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -230,12 +231,11 @@ public abstract class BaseRouter implements Router {
             Statement statement,
             Entity entity ) {
 
-        org.polypheny.db.catalog.entity.logical.LogicalEntity table;
+        LogicalEntity table;
 
         if ( entity.unwrap( LogicalTable.class ) != null ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-
-            table = entity.unwrap( org.polypheny.db.catalog.entity.logical.LogicalEntity.class );
+            table = entity.unwrap( LogicalEntity.class );
             builder.scan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ) != null ) {
             builder.scan( entity.unwrap( AllocationTable.class ) );
