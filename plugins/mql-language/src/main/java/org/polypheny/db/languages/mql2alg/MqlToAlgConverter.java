@@ -238,8 +238,8 @@ public class MqlToAlgConverter {
     public AlgRoot convert( ParsedQueryContext context ) {
         resetDefaults();
         this.namespaceId = context.getNamespaceId();
-        if ( context.getQueryNode() instanceof MqlCollectionStatement ) {
-            return convert( (MqlCollectionStatement) context.getQueryNode() );
+        if ( context.getQueryNode().orElseThrow() instanceof MqlCollectionStatement ) {
+            return convert( (MqlCollectionStatement) context.getQueryNode().orElseThrow() );
         }
         throw new GenericRuntimeException( "DML or DQL need a collection" );
     }

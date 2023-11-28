@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
+import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
@@ -58,7 +59,7 @@ public class AlgProcessor extends Processor {
 
 
     @Override
-    public PolyImplementation prepareDdl( Statement statement, ParsedQueryContext context ) {
+    public PolyImplementation prepareDdl( Statement statement, ExecutableStatement node, ParsedQueryContext context ) {
         throw new GenericRuntimeException( AlgProcessor.class.getSimpleName() + " AlgProcessor does not support DDLs!" );
     }
 

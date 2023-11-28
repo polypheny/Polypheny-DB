@@ -23,11 +23,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
@@ -81,7 +84,6 @@ public class LanguageManager {
 
 
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
-        //Statement statement = transaction.createStatement();
         Transaction transaction = statement.getTransaction();
 
         if ( transaction.isAnalyze() ) {
@@ -91,7 +93,18 @@ public class LanguageManager {
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().start( "Parsing" );
         }
-        List<ParsedQueryContext> parsedQueries = context.getLanguage().getSplitter().apply( context );
+        List<ParsedQueryContext> parsedQueries;
+
+        try {
+            parsedQueries = context.getLanguage().getSplitter().apply( context );
+        } catch ( Exception e ) {
+            if ( transaction.isAnalyze() ) {
+                transaction.getQueryAnalyzer().attachStacktrace( e );
+            }
+            cancelTransaction( transaction );
+            return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
+        }
+
         if ( transaction.isAnalyze() ) {
             statement.getOverviewDuration().stop( "Parsing" );
         }
@@ -100,10 +113,25 @@ public class LanguageManager {
         List<ImplementationContext> implementationContexts = new ArrayList<>();
         for ( ParsedQueryContext parsed : parsedQueries ) {
             try {
+                // test if parsing was successful
+                if ( parsed.getQueryNode().isEmpty() ) {
+                    Exception e = new GenericRuntimeException( "Error during parsing of query \"" + context.getQuery() + "\"" );
+                    return handleParseException( statement, parsed, transaction, e, implementationContexts );
+                }
 
                 PolyImplementation implementation;
-                if ( parsed.getQueryNode().isDdl() ) {
-                    implementation = processor.prepareDdl( statement, parsed );
+                // routing to appropriate handler
+                if ( parsed.getQueryNode().get().isDdl() ) {
+                    // check if statement is executable
+                    if ( !(parsed.getQueryNode().get() instanceof ExecutableStatement) ) {
+                        return handleParseException(
+                                statement,
+                                parsed,
+                                transaction,
+                                new GenericRuntimeException( "DDL statement is not executable" ),
+                                implementationContexts );
+                    }
+                    implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
                 } else {
 
                     if ( context.getLanguage().getValidatorSupplier() != null ) {
@@ -112,7 +140,7 @@ public class LanguageManager {
                         }
                         Pair<Node, AlgDataType> validated = processor.validate(
                                 transaction,
-                                parsed.getQueryNode(),
+                                parsed.getQueryNode().get(),
                                 RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
                         parsed = ParsedQueryContext.fromQuery( parsed.getQuery(), validated.left, context );
                         if ( transaction.isAnalyze() ) {
@@ -134,7 +162,7 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Exception e ) {
-                if ( transaction != null && transaction.isAnalyze() ) {
+                if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
                 cancelTransaction( transaction );
@@ -142,6 +170,16 @@ public class LanguageManager {
                 return implementationContexts;
             }
         }
+        return implementationContexts;
+    }
+
+
+    @NotNull
+    private static List<ImplementationContext> handleParseException( Statement statement, ParsedQueryContext parsed, Transaction transaction, Exception e, List<ImplementationContext> implementationContexts ) {
+        if ( transaction.isAnalyze() ) {
+            transaction.getQueryAnalyzer().attachStacktrace( e );
+        }
+        implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
         return implementationContexts;
     }
 

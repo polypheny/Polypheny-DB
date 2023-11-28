@@ -108,7 +108,7 @@ public class CypherProcessor extends Processor {
 
         final CypherToAlgConverter cypherToAlgConverter = new CypherToAlgConverter( statement, builder, rexBuilder, cluster );
 
-        AlgRoot logicalRoot = cypherToAlgConverter.convert( (CypherNode) context.getQueryNode(), context, cluster );
+        AlgRoot logicalRoot = cypherToAlgConverter.convert( (CypherNode) context.getQueryNode().orElseThrow(), context, cluster );
 
         // Decorrelate
         final AlgBuilder algBuilder = AlgBuilder.create( statement );

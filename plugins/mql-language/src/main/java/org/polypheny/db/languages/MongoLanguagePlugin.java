@@ -35,6 +35,7 @@ import org.polypheny.db.languages.mql.MqlCreateView;
 import org.polypheny.db.mql.parser.MqlParserImpl;
 import org.polypheny.db.nodes.DeserializeFunctionOperator;
 import org.polypheny.db.nodes.LangFunctionOperator;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
@@ -99,17 +100,18 @@ public class MongoLanguagePlugin extends PolyPlugin {
         List<Pair<Long, String>> toCreate = new ArrayList<>();
         List<Pair<Long, String>> created = new ArrayList<>();
         for ( ParsedQueryContext query : queries ) {
-            if ( query.getQueryNode().getEntity() == null ) {
+            Node queryNode = query.getQueryNode().orElseThrow();
+            if ( queryNode.getEntity() == null ) {
                 continue;
             }
-            Optional<LogicalCollection> collection = snapshot.doc().getCollection( query.getNamespaceId(), query.getQueryNode().getEntity() );
-            if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), query.getQueryNode().getEntity() ) ) ) {
-                if ( query.getQueryNode() instanceof MqlCreateCollection || query.getQueryNode() instanceof MqlCreateView ) {
+            Optional<LogicalCollection> collection = snapshot.doc().getCollection( query.getNamespaceId(), queryNode.getEntity() );
+            if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) ) ) {
+                if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
                     // entity was created during this query
-                    created.add( Pair.of( context.getNamespaceId(), query.getQueryNode().getEntity() ) );
+                    created.add( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 } else {
                     // we have to create this query manually
-                    toCreate.add( 0, Pair.of( query.getNamespaceId(), query.getQueryNode().getEntity() ) );
+                    toCreate.add( 0, Pair.of( query.getNamespaceId(), queryNode.getEntity() ) );
                 }
             }
         }

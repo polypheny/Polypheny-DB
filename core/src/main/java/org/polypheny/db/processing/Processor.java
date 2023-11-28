@@ -45,15 +45,12 @@ public abstract class Processor {
     public abstract AlgRoot translate( Statement statement, ParsedQueryContext context );
 
 
-    public PolyImplementation prepareDdl( Statement statement, ParsedQueryContext context ) {
-        if ( !(context.getQueryNode() instanceof ExecutableStatement) ) {
-            throw new GenericRuntimeException( "All DDL queries should be of a type that inherits ExecutableStatement. But this one is of type " + context.getQueryNode().getClass() );
-        }
+    public PolyImplementation prepareDdl( Statement statement, ExecutableStatement node, ParsedQueryContext context ) {
         try {
             // Acquire global schema lock
             lock( statement );
             // Execute statement
-            return getImplementation( statement, context );
+            return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
         } catch ( TransactionException e ) {
@@ -66,8 +63,8 @@ public abstract class Processor {
     }
 
 
-    PolyImplementation getImplementation( Statement statement, ParsedQueryContext context ) throws TransactionException {
-        ((ExecutableStatement) context.getQueryNode()).execute( statement.getPrepareContext(), statement, context );
+    PolyImplementation getImplementation( Statement statement, ExecutableStatement node, ParsedQueryContext context ) throws TransactionException {
+        node.execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
         Catalog.getInstance().commit();
         return new PolyImplementation(

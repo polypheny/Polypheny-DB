@@ -50,7 +50,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
@@ -142,8 +141,8 @@ public class LanguageCrud {
 
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getError().isPresent() ) {
-                attachError( transaction, results, executedContext.getQuery().getQuery(), executedContext.getQuery().getLanguage().getDataModel(), executedContext.getError().get() );
-                continue;
+                attachError( transaction, results, executedContext, executedContext.getError().get() );
+                return results;
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
@@ -217,18 +216,18 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<Result<?, ?>> results, String query, DataModel model, Throwable t ) {
+    public static void attachError( Transaction transaction, List<Result<?, ?>> results, ExecutedContext context, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
         Result<?, ?> result;
-        switch ( model ) {
+        switch ( context.getQuery().getLanguage().getDataModel() ) {
             case RELATIONAL:
-                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
                 break;
             case DOCUMENT:
-                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
                 break;
             case GRAPH:
-                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( query ).xid( transaction.getXid().toString() ).build();
+                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
                 break;
             default:
                 throw new GenericRuntimeException( "Unknown data model." );

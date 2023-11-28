@@ -16,6 +16,7 @@
 
 package org.polypheny.db.processing;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -23,6 +24,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -73,7 +75,7 @@ public class QueryContext {
     @SuperBuilder(toBuilder = true)
     public static class ParsedQueryContext extends QueryContext {
 
-        @NotNull Node queryNode;
+        @Nullable Node queryNode;
 
 
         public static ParsedQueryContext fromQuery( String query, Node queryNode, QueryContext context ) {
@@ -89,6 +91,11 @@ public class QueryContext {
                     .namespaceId( context.namespaceId )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget ).build();
+        }
+
+
+        public Optional<Node> getQueryNode() {
+            return Optional.ofNullable( queryNode );
         }
 
     }

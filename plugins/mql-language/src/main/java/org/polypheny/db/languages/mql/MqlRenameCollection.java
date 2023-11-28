@@ -48,7 +48,7 @@ public class MqlRenameCollection extends MqlCollectionStatement implements Execu
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        Long namespaceId = parsedQueryContext.getQueryNode().getNamespaceId();
+        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
 
         LogicalCollection collection = context.getSnapshot().doc().getCollection( namespaceId, getCollection() ).orElseThrow();
 

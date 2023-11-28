@@ -84,7 +84,7 @@ public class PigProcessor extends Processor {
     @Override
     public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
         final PigAlgBuilder builder = PigAlgBuilder.create( statement );
-        new Handler( builder ).handle( (PigNode) context.getQueryNode() );
+        new Handler( builder ).handle( (PigNode) context.getQueryNode().orElseThrow() );
         return AlgRoot.of( builder.build(), Kind.SELECT );
     }
 

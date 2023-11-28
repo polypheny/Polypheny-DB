@@ -33,9 +33,11 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
@@ -138,7 +140,7 @@ public class PolySignature extends Meta.Signature {
                 ImmutableList.of(),
                 -1,
                 null,
-                PolyImplementation.toStatementType( prepareQuery.getQuery().getQueryNode().getKind() ),
+                PolyImplementation.toStatementType( prepareQuery.getQuery().getQueryNode().map( Node::getKind ).orElse( Kind.SELECT ) ),
                 null,
                 prepareQuery.getQuery().getLanguage().getDataModel()
         );

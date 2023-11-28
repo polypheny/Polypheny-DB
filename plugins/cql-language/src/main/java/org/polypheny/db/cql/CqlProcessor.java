@@ -64,7 +64,7 @@ public class CqlProcessor extends Processor {
         JavaTypeFactory typeFactory = statement.getTransaction().getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        Cql2AlgConverter cql2AlgConverter = new Cql2AlgConverter( (CqlQuery) context.getQueryNode() );
+        Cql2AlgConverter cql2AlgConverter = new Cql2AlgConverter( (CqlQuery) context.getQueryNode().orElseThrow() );
         return cql2AlgConverter.convert2Alg( algBuilder, rexBuilder );
     }
 

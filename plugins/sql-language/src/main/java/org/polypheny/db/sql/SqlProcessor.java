@@ -110,7 +110,7 @@ public class SqlProcessor extends Processor {
     @Override
     public List<? extends Node> parse( String query ) {
         // todo we should not split the query here, but rather in the parser
-        return Arrays.stream( query.split( ";" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).collect( Collectors.toList() );
+        return Arrays.stream( query.split( ";\n" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).collect( Collectors.toList() );
     }
 
 
@@ -205,7 +205,7 @@ public class SqlProcessor extends Processor {
                         .convertTableAccess( false )
                         .build();
         final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getSnapshot(), cluster, StandardConvertletTable.INSTANCE, config );
-        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode(), false, true );
+        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode().orElseThrow(), false, true );
 
         // Decorrelate
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
