@@ -35,11 +35,10 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
-@Category({ AdapterTestSuite.class, CassandraExcluded.class }) // cassandra can only compare primary key equality, but for streamer each key has to be compared
+@Category({ AdapterTestSuite.class })
 public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";

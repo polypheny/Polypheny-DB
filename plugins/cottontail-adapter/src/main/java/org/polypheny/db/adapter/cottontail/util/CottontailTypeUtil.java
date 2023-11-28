@@ -70,7 +70,7 @@ public class CottontailTypeUtil {
     public static final Method COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
             "toData",
-            Object.class, PolyType.class, PolyType.class );
+            PolyValue.class, PolyType.class, PolyType.class );
 
     public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
@@ -179,10 +179,10 @@ public class CottontailTypeUtil {
     public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_, PolyType actualType ) {
         return Expressions.call(
                 COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
-                Expressions.call(
+                Expressions.convert_( Expressions.call(
                         dynamicParameterMap_,
                         BuiltInMethod.MAP_GET.method,
-                        Expressions.constant( dynamicParam.getIndex() ) ),
+                        Expressions.constant( dynamicParam.getIndex() ) ), PolyValue.class ),
                 Expressions.constant( actualType ),
                 Expressions.constant( dynamicParam.getType() != null ?
                         dynamicParam.getType().getComponentType() != null ?

@@ -29,7 +29,6 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.HsqldbExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
@@ -122,7 +121,6 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
     public void arrayTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -183,7 +181,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class })
     public void arrayTypesViewTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -245,7 +243,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class })
     public void arrayTypesMaterializedTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -307,7 +305,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class })
     public void itemOperatorTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -342,7 +340,7 @@ public class JdbcArrayTest {
 
     @Test
     //@Ignore
-    @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class, HsqldbExcluded.class, MonetdbExcluded.class })
     public void itemOperatorTest2() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -372,7 +370,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class })
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -396,7 +394,7 @@ public class JdbcArrayTest {
 
 
     @Test
-    @Category({ FileExcluded.class, CassandraExcluded.class })
+    @Category({ FileExcluded.class })
     public void arrayFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

@@ -59,7 +59,7 @@ public class CottontailValues extends Values implements CottontailAlg {
         int i = 0;
         for ( AlgDataTypeField field : this.rowType.getFields() ) {
             try {
-                physicalColumnNames.add( new Pair<>( context.cottontailTable.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
+                physicalColumnNames.add( new Pair<>( context.table.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
                 tupleIndexes.add( i );
             } catch ( IndexOutOfBoundsException e ) {
                 // ignore; this table seems to be vertically partitioned and this store does not have all columns

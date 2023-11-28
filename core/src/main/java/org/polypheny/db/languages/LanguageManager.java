@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -35,6 +36,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 
 public class LanguageManager {
@@ -132,14 +134,26 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Exception e ) {
-                if ( transaction.isAnalyze() ) {
+                if ( transaction != null && transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
+                cancelTransaction( transaction );
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
         }
         return implementationContexts;
+    }
+
+
+    private static void cancelTransaction( @Nullable Transaction transaction ) {
+        if ( transaction != null && transaction.isActive() ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                // Ignore
+            }
+        }
     }
 
 
@@ -160,6 +174,8 @@ public class LanguageManager {
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
+                cancelTransaction( transaction );
+
                 executedContexts.add( ExecutedContext.ofError( e, implementation ) );
                 return executedContexts;
             }

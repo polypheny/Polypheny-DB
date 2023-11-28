@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -54,7 +55,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
     private final PhysicalTable table;
+    private final CottontailStore store;
     private AlgProtoDataType protoRowType;
+    @Getter
     private CottontailNamespace cottontailNamespace;
 
     @Getter
@@ -70,7 +73,8 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     protected CottontailEntity(
             CottontailNamespace cottontailNamespace,
             String physicalSchemaName,
-            PhysicalTable physical ) {
+            PhysicalTable physical,
+            CottontailStore cottontailStore ) {
         super( physical.id,
                 physical.allocationId,
                 physical.logicalId,
@@ -80,6 +84,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                 physical.namespaceName,
                 physical.adapterId );
 
+        this.store = cottontailStore;
         this.cottontailNamespace = cottontailNamespace;
         this.table = physical;
 
@@ -139,6 +144,12 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
     public CottontailConvention getUnderlyingConvention() {
         return this.cottontailNamespace.getConvention();
+    }
+
+
+    @SuppressWarnings("unused")
+    public void registerStore( DataContext dataContext ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.store );
     }
 
 

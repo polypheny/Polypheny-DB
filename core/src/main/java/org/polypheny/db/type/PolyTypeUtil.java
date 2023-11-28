@@ -70,6 +70,7 @@ import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
@@ -1354,6 +1355,8 @@ public abstract class PolyTypeUtil {
                 return PolyFloat.of( Float.parseFloat( s ) );
             case DECIMAL:
                 return PolyBigDecimal.of( new BigDecimal( s ) );
+            case VARCHAR:
+                return PolyString.of( s );
             //case ARRAY:
             default:
                 throw new NotImplementedException();

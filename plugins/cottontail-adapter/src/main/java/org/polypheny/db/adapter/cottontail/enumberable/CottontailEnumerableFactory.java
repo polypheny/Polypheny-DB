@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -62,7 +63,7 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "query",
-            String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
+            String.class, String.class, Map.class, Map.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailEntity.class );
 
     /**
      * Method signature for building INSERT of values.
@@ -70,7 +71,7 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_INSERT_VALUES = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "insertFromValues",
-            String.class, String.class, List.class, DataContext.class, CottontailWrapper.class );
+            String.class, String.class, List.class, DataContext.class, CottontailEntity.class );
 
     /**
      * Method signature for building INSERT for prepared statements.
@@ -78,7 +79,7 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_INSERT_PREPARED = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "insertFromPreparedStatements",
-            String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            String.class, String.class, Function1.class, DataContext.class, CottontailEntity.class );
 
     /**
      * Method signature for building UPDATE with values.
@@ -86,9 +87,10 @@ public class CottontailEnumerableFactory {
     public static final Method CREATE_UPDATE_METHOD = Types.lookupMethod(
             CottontailEnumerableFactory.class,
             "updateFromValues",
-            String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
+            String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailEntity.class );
 
 
+    @SuppressWarnings("unused")
     public static CottontailQueryEnumerable query(
             String from,
             String schema,
@@ -99,9 +101,9 @@ public class CottontailEnumerableFactory {
             Function1<Map<Long, PolyValue>, Where> whereBuilder,
             DataContext dataContext,
             Function1<Tuple, PolyValue[]> rowParser,
-            CottontailWrapper wrapper
+            CottontailEntity entity
     ) {
-
+        CottontailWrapper wrapper = entity.getCottontailNamespace().getWrapper();
         /* Begin or continue Cottontail DB transaction. */
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
@@ -211,13 +213,14 @@ public class CottontailEnumerableFactory {
 
 
     @SuppressWarnings("unused") // Used via reflection
-    public static AbstractEnumerable<Long> insertFromValues(
+    public static AbstractEnumerable<PolyValue[]> insertFromValues(
             String from,
             String schema,
             List<Map<String, Literal>> values,
             DataContext dataContext,
-            CottontailWrapper wrapper
+            CottontailEntity entity
     ) {
+        CottontailWrapper wrapper = entity.getCottontailNamespace().getWrapper();
         /* Begin or continue Cottontail DB transaction. */
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
@@ -237,13 +240,14 @@ public class CottontailEnumerableFactory {
 
 
     @SuppressWarnings("unused") // Used via reflection
-    public static AbstractEnumerable<Long> insertFromPreparedStatements(
+    public static AbstractEnumerable<PolyValue[]> insertFromPreparedStatements(
             String from,
             String schema,
             Function1<Map<Long, PolyValue>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             DataContext dataContext,
-            CottontailWrapper wrapper
+            CottontailEntity entity
     ) {
+        CottontailWrapper wrapper = entity.getCottontailNamespace().getWrapper();
         /* Begin or continue Cottontail DB transaction. */
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 
@@ -311,8 +315,9 @@ public class CottontailEnumerableFactory {
             Function1<Map<Long, PolyValue>, Where> whereBuilder,
             Function1<Map<Long, PolyValue>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             DataContext dataContext,
-            CottontailWrapper wrapper
+            CottontailEntity cottontail
     ) {
+        CottontailWrapper wrapper = cottontail.getCottontailNamespace().getWrapper();
         /* Begin or continue Cottontail DB transaction. */
         final long txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
 

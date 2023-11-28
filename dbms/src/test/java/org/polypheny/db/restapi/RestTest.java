@@ -47,7 +47,6 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
@@ -182,7 +181,6 @@ public class RestTest {
 
 
     @Test // this needs to be rewritten
-    @Category({ CassandraExcluded.class })
     public void testOperations() {
         // Insert
         HttpRequest<?> request = buildRestInsert( "restschema.resttest", ImmutableList.of( getTestRow() ) );

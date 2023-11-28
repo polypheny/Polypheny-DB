@@ -301,9 +301,10 @@ public interface NeoUtil {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
+                return literal.getValue().toString();
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return literal.getValue().toString();
+                return literal.value.asTemporal().getMilliSinceEpoch().toString();
             case DECIMAL:
             case FLOAT:
             case REAL:

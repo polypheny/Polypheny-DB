@@ -46,7 +46,7 @@ public class CottontailTableModificationRule extends CottontailConverterRule {
 
     @Override
     public boolean matches( AlgOptRuleCall call ) {
-        final RelModify modify = call.alg( 0 );
+        final RelModify<?> modify = call.alg( 0 );
         if ( modify.getEntity().unwrap( CottontailEntity.class ) == null ) {
             return false;
         }

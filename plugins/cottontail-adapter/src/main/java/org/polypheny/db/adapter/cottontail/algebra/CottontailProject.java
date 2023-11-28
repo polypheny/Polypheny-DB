@@ -90,12 +90,12 @@ public class CottontailProject extends Project implements CottontailAlg {
             context.visitChild( 0, getInput() );
         }
 
-        final List<AlgDataTypeField> fieldList = context.cottontailTable.getRowType().getFields();
+        final List<AlgDataTypeField> fieldList = context.table.getRowType().getFields();
         final List<String> physicalColumnNames = new ArrayList<>( fieldList.size() );
         final List<PolyType> columnTypes = new ArrayList<>( fieldList.size() );
 
         for ( AlgDataTypeField field : fieldList ) {
-            physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            physicalColumnNames.add( field.getPhysicalName() );
             if ( field.getType().getComponentType() != null ) {
                 columnTypes.add( field.getType().getComponentType().getPolyType() );
             } else {

@@ -101,6 +101,7 @@ public class CottontailNamespace extends AbstractNamespace implements Schema {
     }
 
 
+    @SuppressWarnings("unused")
     public void registerStore( DataContext dataContext ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cottontailStore );
     }
