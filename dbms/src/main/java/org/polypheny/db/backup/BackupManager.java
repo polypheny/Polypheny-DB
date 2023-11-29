@@ -26,6 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertSchema;
+import org.polypheny.db.backup.dependencies.DependencyAssembler;
+import org.polypheny.db.backup.dependencies.DependencyManager;
+import org.polypheny.db.backup.dependencies.EntityReferencer;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -184,6 +187,22 @@ public class BackupManager {
         //ImmutableMap<Integer, LogicalTable> ha = backupInformationObject.test( lol );
 
          */
+
+        // testing
+        DependencyManager dependencyManager = new DependencyManager();
+        EntityReferencer entityReferencer = null;
+        List<EntityReferencer> allTableReferencers = backupInformationObject.getAllTableReferencers();
+        Map<Long, List<Long>> test = new HashMap<>();
+        if (entityReferencer != null) {
+            for ( EntityReferencer tableReferencer : allTableReferencers ) {
+                //FIXME(FF): nullpointerexception
+                List<Long> lol = dependencyManager.getReferencedEntities(entityReferencer, allTableReferencers );
+                test.put( tableReferencer.getEntityId(), lol );
+            }
+        }
+
+
+
     }
 
 

@@ -261,6 +261,24 @@ public class BackupInformationObject {
     }
 
 
+    /**
+     * Creates a list of all entityReferencers for all tables
+     * @return list of all entityReferencers of the BackupEntityType table
+     */
+    public List<EntityReferencer> getAllTableReferencers() {
+        //TODO(FF): test if this does the correct thing
+        List<EntityReferencer> tableReferencers = new ArrayList<>();
+        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> entry : wrappedTables.entrySet() ) {
+            for ( BackupEntityWrapper<LogicalEntity> entityWrapper : entry.getValue() ) {
+                if ( entityWrapper.getEntityReferencer() != null ) {
+                    tableReferencers.add( entityWrapper.getEntityReferencer() );
+                }
+            }
+        }
+        return tableReferencers;
+    }
+
+
     public void transformationManager() {
         //ImmutableMap<Long, List<LogicalEntity>> entityMap = getTables();
         //transformLogicalEntitiesToBupSuperEntity( getTables(), true );

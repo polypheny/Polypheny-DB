@@ -25,10 +25,12 @@ import org.polypheny.db.util.Pair;
  * Class that contains entities and by what they are referenced
  */
 public class EntityReferencer {
+    @Getter
     private Long entityId;
+    @Getter
     private BackupEntityType entityType;
     @Getter @Setter
-    private List<Long> referencerNamespaces;
+    private List<Long> referencerNamespaces;    //TODO(FF): is self included?
     @Getter @Setter
     private List<Long> referencerTables;
     @Getter @Setter

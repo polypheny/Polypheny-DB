@@ -290,7 +290,7 @@ public class InsertSchema {
                     String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
                     String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
                     String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
-                    //TODO(FF): enforcementTime (on commit) - how to set?? how to change?? possible to change?
+                    //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
 
                     query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
                     log.info( query );
@@ -370,7 +370,6 @@ public class InsertSchema {
         }
         if ( columnDefinitions.length() > 0 ) {
             columnDefinitions = columnDefinitions.substring( 0, columnDefinitions.length() - 2 ); // remove last ", "
-            //FIXME(FF): somehow not removed ",": CREATE TABLE public11.students11 (biigint BIGINT NULL , )
         }
 
 
@@ -405,7 +404,6 @@ public class InsertSchema {
         String colDataType = col.getType().toString();
         String colNullable = col.nullableBoolToString();
 
-        //TODO(FF): dröber switche för alli datatypes
 
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
@@ -417,7 +415,6 @@ public class InsertSchema {
             regexString = regexString.replaceAll( ",.*", "" );  //correct for varchar, for int it is still 2}, dont want last }
             regexString = regexString.replaceAll( "}", "" ); //TODO(FF): what to do if there is a "}" in the value?
             regexString = regexString.replaceAll( "\"", "" );
-            //TODO(FF): gives an error (with " there is no error?) but works: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered " "DEFAULT" "DEFAULT "" at line 1, column 172.
 
             PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
             Boolean testing = PolyType.DATETIME_TYPES.contains( col.defaultValue.type );
@@ -429,7 +426,7 @@ public class InsertSchema {
                 defaultValue = String.format( " DEFAULT %s", regexString );
             }
             //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
-            log.info( "default for " + colDataType + ": " + defaultValue );
+            //log.info( "default for " + colDataType + ": " + defaultValue );
         }
 
         String caseSensitivity = new String();
@@ -445,10 +442,9 @@ public class InsertSchema {
             throw new GenericRuntimeException( "During backup schema insertions not supported nullable value detected" + colNullable);
         }
 
-        //TODO(FF): handle arrays
         String dataTypeString = new String();
         switch ( colDataType ) {
-            case "BIGINT":  //FIXME(FF): error query: CREATE TABLE public11.students11 (biigint BIGINT NULL , )
+            case "BIGINT":
             case "BOOLEAN":
             case "DOUBLE":
             case "INTEGER":
