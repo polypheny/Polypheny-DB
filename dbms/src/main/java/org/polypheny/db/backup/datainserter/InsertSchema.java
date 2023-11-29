@@ -196,7 +196,33 @@ public class InsertSchema {
 
                 //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
                 if ( !ns.getValue().getEntityObject().name.equals( "public" ) ) {
-                    executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().dataModel );
+
+                    switch ( ns.getValue().getEntityObject().dataModel ) {
+                        case RELATIONAL:
+                            query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
+                            executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
+                            break;
+
+                        case DOCUMENT:
+                            query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
+                            executeStatementInPolypheny( query, ns.getKey(), DataModel.RELATIONAL );
+                            break;
+
+                        case GRAPH:
+                            query = String.format( "CREATE DATABASE %s11", ns.getValue().getEntityObject().name );
+                            executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
+                            break;
+                        default:
+                            throw new GenericRuntimeException( "During backup schema insertions not supported data model detected" + ns.getValue().getEntityObject().dataModel );
+                    }
+
+
+
+                    //executeStatementInPolypheny( "CREATE DATABASE product2 IF NOT EXISTS", Catalog.defaultNamespaceId, DataModel.GRAPH );
+                    //executeStatementInPolypheny( query, ns.getKey(), ns.getValue().getEntityObject().dataModel );
+
+                    //executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().dataModel );
+
                 }
             }
         }
@@ -224,7 +250,7 @@ public class InsertSchema {
                     // only create tables that don't (exist by default in polypheny)
                     if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
                         query = createTableQuery( table, namespaceName );
-                        executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
+                        executeStatementInPolypheny( query, nsID, DataModel.RELATIONAL );
                     }
                 }
             }
@@ -263,7 +289,7 @@ public class InsertSchema {
 
                         query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
                         log.info( query );
-                        executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
+                        executeStatementInPolypheny( query, nsID, DataModel.RELATIONAL );
                     }
                 }
             }
@@ -298,7 +324,7 @@ public class InsertSchema {
 
                     query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
                     log.info( query );
-                    executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
+                    executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
                 }
             }
         }
@@ -322,7 +348,7 @@ public class InsertSchema {
          */
         //TODO(FF): how to set namespace??? (trhourgh settings? see below for try, but would require dependency)
 
-        executeStatementInPolypheny( "db.createCollection(\"users\")", "mql", DataModel.DOCUMENT );
+        executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
     }
 
 
@@ -412,29 +438,38 @@ public class InsertSchema {
         String defaultValue = new String();
         if ( !(col.defaultValue == null) ) {
 
+            /*
             String value = col.defaultValue.value.toTypedJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
-            String value2 = col.defaultValue.value.toJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
+            String value2 = col.defaultValue.value.toJson( );
+            String value3 = value2.replaceAll( "\"", "''" );
+            value2 = value2.replaceAll( "'", "''" );
             //for string it is this: {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}, figure out regex to only get value
             //from the string value (in json format), get only the value with regex from string {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}
             String regexString = value.replaceAll( ".*\"value\":", "" ); //is now value":"hallo","charset":"UTF-16"}, dont want ,"charset":"UTF-16"} part
             regexString = regexString.replaceAll( ",.*", "" );  //correct for varchar, for int it is still 2}, dont want last }
-            regexString = regexString.replaceAll( "}", "" ); //TODO(FF): what to do if there is a "}" in the value?
+            regexString = regexString.replaceAll( "}", "" );
             regexString = regexString.replaceAll( "\"", "" );
+
 
             PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
             Boolean testing = PolyType.DATETIME_TYPES.contains( col.defaultValue.type );
+            */
 
-            //todo: replace ' to '', wenn " in default denne esch
+            //replace ' to '', in case there is a " in the default value
+            String value = col.defaultValue.value.toJson( );
+            value = value.replaceAll( "'", "''" );
 
             if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) || PolyType.DATETIME_TYPES.contains( col.defaultValue.type ) ) {
-                //to quotedJson
-                defaultValue = String.format( " DEFAULT '%s'", regexString );
-                String test = " DEFAULT '" + regexString + "'";
+                //defaultValue = String.format( " DEFAULT '%s'", regexString );
+                defaultValue = String.format( " DEFAULT '%s'", value );
+                //String test = " DEFAULT '" + regexString + "'";
+                String test = " DEFAULT '" + value + "'";
             } else {
-                defaultValue = String.format( " DEFAULT %s", regexString );
+                defaultValue = String.format( " DEFAULT %s", value );
             }
             //defaultValue = String.format( " DEFAULT %s", col.defaultValue.value );
-            //log.info( "default for " + colDataType + ": " + defaultValue );
+            //log.info( "default for " + colDataType + ": " + value2 + " || " + value3);
+            //log.info( "default for " + colDataType + ": " + value);
         }
 
         String caseSensitivity = new String();
@@ -552,27 +587,75 @@ public class InsertSchema {
      */
 
 
-    private void executeStatementInPolypheny( String query, String queryLanguageType, DataModel dataModel ) {
+    private void executeStatementInPolypheny( String query, Long namespaceId, DataModel dataModel ) {
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
 
         //TODO: use anyquery, rest not necessary
 
-        try {
-            // get a transaction and a statement
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
-            statement = transaction.createStatement();
-            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
-            ResultIterator iter = executedQuery.getIterator();
-            while ( iter.hasMoreRows() ) {
-                // liste mit tuples
-                iter.getNextBatch();
-            }
+        switch ( dataModel ) {
+            case RELATIONAL:
+                try {
+                    // get a transaction and a statement
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
+                    statement = transaction.createStatement();
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
 
-        } catch ( Exception e ) {
-            throw new RuntimeException( "Error while starting transaction", e );
+                } catch ( Exception e ) {
+                    throw new RuntimeException( "Error while starting transaction", e );
+                }
+                break;
+
+            case DOCUMENT:
+                try {
+                    // get a transaction and a statement
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
+                    statement = transaction.createStatement();
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+
+                } catch ( Exception e ) {
+                    throw new RuntimeException( "Error while starting transaction", e );
+                }
+                break;
+
+            case GRAPH:
+                try {
+                    // get a transaction and a statement
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
+                    statement = transaction.createStatement();
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "cypher" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+
+                } catch ( Exception e ) {
+                    throw new RuntimeException( "Error while starting transaction", e );
+                }
+                break;
+
+            default:
+                throw new RuntimeException( "Backup - InsertSchema: DataModel not supported" );
         }
+
+        //just to keep it
+        int i = 1;
+        if(i == 0) {
+            try {
+                // get a transaction and a statement
+                transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
+                statement = transaction.createStatement();
+                ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
+                // in case of results
+                ResultIterator iter = executedQuery.getIterator();
+                while ( iter.hasMoreRows() ) {
+                    // liste mit tuples
+                    iter.getNextBatch();
+                }
+
+            } catch ( Exception e ) {
+                throw new RuntimeException( "Error while starting transaction", e );
+            }
+        }
+
+        /*
 
         try {
             // get algRoot
@@ -590,8 +673,7 @@ public class InsertSchema {
             //result = queryProcessor.prepareDdl( statement, parsed, parameters );
 
 
-
-            /*
+            //from here on again comment
             AlgRoot algRoot = queryProcessor.translate(
                     statement,
                     queryProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
@@ -600,13 +682,14 @@ public class InsertSchema {
             //get PolyResult from AlgRoot
             final QueryProcessor processor = statement.getQueryProcessor();
             result = processor.prepareQuery( algRoot, true );
-             */
+
 
         } catch ( Exception e ) {
             log.info( e.getMessage() );
             log.info( "exception while executing query: "+ query );
             throw new RuntimeException( e );
         }
+        */
 
     }
 

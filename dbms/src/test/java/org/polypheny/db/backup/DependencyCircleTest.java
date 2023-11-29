@@ -37,7 +37,7 @@ import org.polypheny.db.transaction.TransactionManager;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @Category({ AdapterTestSuite.class })
-public class GeneralTest {
+public class DependencyCircleTest {
     static TestHelper testHelper;
     BackupManager backupManager;
 
@@ -49,14 +49,15 @@ public class GeneralTest {
         testHelper = TestHelper.getInstance();
         //deleteOldData();
         //this.backupManager = new BackupManager( testHelper.getTransactionManager() );
-        addTestData();
+        //addTestData();
+        addDependenyTestData();
 
     }
 
 
     @AfterClass
     public static void stop() {
-        deleteOldData();
+        deleteDependencyTestData();
     }
 
 
@@ -120,6 +121,66 @@ public class GeneralTest {
     }
 
 
+
+
+
+    private static void addDependenyTestData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE NAMESPACE reli" );
+                statement.executeUpdate( "CREATE NAMESPACE temp" );
+                statement.executeUpdate( "CREATE NAMESPACE lol" );
+                statement.executeUpdate( "create table reli.t1 (t1pk integer not null, t1fk integer not null)" );
+                statement.executeUpdate( "create table reli.t2 (t2pk integer not null, t2fk integer not null)" );
+                statement.executeUpdate( "create table reli.t3 (t2pk integer not null)" );
+                statement.executeUpdate( "create table temp.t4 (t4pk integer not null,t4fk integer not null)" );
+                statement.executeUpdate( "create table temp.t5 (t5pk integer not null,t5fk integer not null)" );
+                statement.executeUpdate( "create table temp.t6 (t6pk integer not null, t6fk integer not null)" );
+                statement.executeUpdate( "alter table reli.t1 add constraint test foreign key (t1fk) references temp.t6 (t6pk) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                statement.executeUpdate( "alter table reli.t2 add constraint test foreign key (t2fk) references reli.t1 (t1pk) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                statement.executeUpdate( "alter table temp.t4 add constraint test foreign key (t4fk) references reli.t1 (t1pk) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                statement.executeUpdate( "alter table temp.t5 add constraint test foreign key (t5fk) references temp.t4 (t4pk) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                statement.executeUpdate( "alter table temp.t6 add constraint test foreign key (t6fk) references temp.t5 (t5pk) ON UPDATE RESTRICT ON DELETE RESTRICT" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while adding test data", e );
+        }
+    }
+
+    private static void deleteDependencyTestData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                /*
+                try {
+                    statement.executeUpdate( "ALTER TABLE schema1.table2 DROP FOREIGN KEY fk_id" );
+                    statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX index1" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                try {
+                    statement.executeUpdate( "DROP TABLE schema1.table1" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                try {
+                    statement.executeUpdate( "DROP TABLE schema1.table2" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+
+                 */
+                statement.executeUpdate( "DROP SCHEMA reli" );
+                statement.executeUpdate( "DROP SCHEMA temp" );
+                statement.executeUpdate( "DROP SCHEMA lol" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while deleting old data", e );
+        }
+    }
 
 
     @Test
