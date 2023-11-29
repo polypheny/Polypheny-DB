@@ -30,7 +30,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
@@ -84,7 +84,7 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFieldList() );
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFields() );
     }
 
 
@@ -104,9 +104,9 @@ public class GoogleSheetTable extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
         // Request all fields.
-        return new GoogleSheetTableScanProject( context.getCluster(), this, this, fields );
+        return new GoogleSheetTableScanProject( cluster, this, this, fields );
     }
 
 

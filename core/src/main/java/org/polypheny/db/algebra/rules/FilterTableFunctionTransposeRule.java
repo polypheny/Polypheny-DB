@@ -104,11 +104,11 @@ public class FilterTableFunctionTransposeRule extends AlgOptRule {
 
         // create filters on top of each func input, modifying the filter condition to reference the child instead
         RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-        List<AlgDataTypeField> origFields = funcRel.getRowType().getFieldList();
+        List<AlgDataTypeField> origFields = funcRel.getRowType().getFields();
         // TODO:  these need to be non-zero once we support arbitrary mappings
         int[] adjustments = new int[origFields.size()];
         for ( AlgNode funcInput : funcInputs ) {
-            RexNode newCondition = condition.accept( new RexInputConverter( rexBuilder, origFields, funcInput.getRowType().getFieldList(), adjustments ) );
+            RexNode newCondition = condition.accept( new RexInputConverter( rexBuilder, origFields, funcInput.getRowType().getFields(), adjustments ) );
             newFuncInputs.add( LogicalFilter.create( funcInput, newCondition ) );
         }
 

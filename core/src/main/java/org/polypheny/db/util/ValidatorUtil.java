@@ -104,9 +104,9 @@ public class ValidatorUtil {
                         ? new HashSet<>()
                         : new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
         addFields( systemFieldList, typeList, nameList, ids, uniqueNameList );
-        addFields( leftType.getFieldList(), typeList, nameList, ids, uniqueNameList );
+        addFields( leftType.getFields(), typeList, nameList, ids, uniqueNameList );
         if ( rightType != null ) {
-            addFields( rightType.getFieldList(), typeList, nameList, ids, uniqueNameList );
+            addFields( rightType.getFields(), typeList, nameList, ids, uniqueNameList );
         }
         if ( fieldNameList != null ) {
             assert fieldNameList.size() == nameList.size();
@@ -275,7 +275,7 @@ public class ValidatorUtil {
         final List<AlgDataTypeField> fields = new ArrayList<>( columnNameList.size() );
         for ( String name : columnNameList ) {
             AlgDataTypeField field = type.getField( name, caseSensitive, false );
-            fields.add( type.getFieldList().get( field.getIndex() ) );
+            fields.add( type.getFields().get( field.getIndex() ) );
         }
         return typeFactory.createStructType( fields );
     }

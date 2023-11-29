@@ -70,7 +70,7 @@ public class EthereumTable extends PhysicalTable implements FilterableEntity {
 
     @Override
     public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFieldList() );
+        return typeFactory.createStructType( this.protoRowType.apply( typeFactory ).getFields() );
     }
 
 

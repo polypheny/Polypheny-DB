@@ -53,14 +53,13 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -122,7 +121,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
     private List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses( final JavaTypeFactory typeFactory ) {
         final AlgDataType rowType = getRowType();
-        return rowType.getFieldList().stream().map( f -> {
+        return rowType.getFields().stream().map( f -> {
             final AlgDataType type = f.getType();
             final Class<?> clazz = (Class<?>) typeFactory.getJavaClass( type );
             final Rep rep = Util.first( Rep.of( clazz ), Rep.OBJECT );
@@ -176,9 +175,9 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        jdbcSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new JdbcScan( context.getCluster(), this, jdbcSchema.getConvention() );
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        jdbcSchema.getConvention().register( cluster.getPlanner() );
+        return new JdbcScan( cluster, this, jdbcSchema.getConvention() );
     }
 
 
@@ -203,7 +202,7 @@ public class JdbcTable extends PhysicalTable implements TranslatableEntity, Scan
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,

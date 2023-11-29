@@ -31,7 +31,6 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 
@@ -40,7 +39,7 @@ import org.polypheny.db.excluded.MonetdbExcluded;
  */
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class })
 public class ComplexViewTest {
 
     private final static String DROP_TABLES_NATION = "DROP TABLE IF EXISTS nation";

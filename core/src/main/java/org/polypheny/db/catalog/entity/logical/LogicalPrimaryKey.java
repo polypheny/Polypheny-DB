@@ -27,7 +27,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 
 
 @Value
@@ -68,7 +68,7 @@ public class LogicalPrimaryKey extends LogicalKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class LogicalPrimaryKeyColumn implements LogicalObject {
+    public static class LogicalPrimaryKeyColumn implements PolyObject {
 
         private static final long serialVersionUID = -2669773639977732201L;
 

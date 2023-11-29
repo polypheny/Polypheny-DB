@@ -105,7 +105,7 @@ public final class LogicalProject extends Project implements RelAlg {
                 input,
                 IntStream.range( 0, input.getRowType().getFieldCount() )
                         .mapToObj( i ->
-                                new RexIndexRef( i, input.getRowType().getFieldList().get( i ).getType() )
+                                new RexIndexRef( i, input.getRowType().getFields().get( i ).getType() )
                         )
                         .collect( Collectors.toList() ),
                 input.getRowType()

@@ -164,11 +164,11 @@ public class RexChecker extends RexVisitorImpl<Boolean> {
         assert refType.isStruct();
         final AlgDataTypeField field = fieldAccess.getField();
         final int index = field.getIndex();
-        if ( (index < 0) || (index > refType.getFieldList().size()) ) {
+        if ( (index < 0) || (index > refType.getFields().size()) ) {
             ++failCount;
             return litmus.fail( null );
         }
-        final AlgDataTypeField typeField = refType.getFieldList().get( index );
+        final AlgDataTypeField typeField = refType.getFields().get( index );
         if ( !AlgOptUtil.eq( "type1", typeField.getType(), "type2", fieldAccess.getType(), litmus ) ) {
             ++failCount;
             return litmus.fail( null );

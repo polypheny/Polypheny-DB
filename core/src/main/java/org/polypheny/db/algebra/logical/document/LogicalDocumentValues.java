@@ -22,7 +22,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -83,8 +83,8 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
 
 
     @Override
-    public NamespaceType getModel() {
-        return NamespaceType.DOCUMENT;
+    public DataModel getModel() {
+        return DataModel.DOCUMENT;
     }
 
 

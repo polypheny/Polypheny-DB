@@ -119,7 +119,7 @@ public abstract class Values extends AbstractAlgNode {
     private boolean assertRowType() {
         for ( List<RexLiteral> tuple : tuples ) {
             assert tuple.size() == rowType.getFieldCount();
-            for ( Pair<RexLiteral, AlgDataTypeField> pair : Pair.zip( tuple, rowType.getFieldList() ) ) {
+            for ( Pair<RexLiteral, AlgDataTypeField> pair : Pair.zip( tuple, rowType.getFields() ) ) {
                 RexLiteral literal = pair.left;
                 AlgDataType fieldType = pair.right.getType();
 
@@ -164,7 +164,7 @@ public abstract class Values extends AbstractAlgNode {
         AlgWriter algWriter = super.explainTerms( pw )
                 // For alg digest, include the row type since a rendered literal may leave the type ambiguous (e.g. "null").
                 .itemIf( "type", rowType, pw.getDetailLevel() == ExplainLevel.DIGEST_ATTRIBUTES )
-                .itemIf( "type", rowType.getFieldList(), pw.nest() );
+                .itemIf( "type", rowType.getFields(), pw.nest() );
         if ( pw.nest() ) {
             pw.item( "tuples", tuples );
         } else {

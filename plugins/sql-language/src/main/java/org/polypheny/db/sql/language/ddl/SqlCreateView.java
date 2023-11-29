@@ -34,11 +34,11 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlCreate;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -96,7 +96,7 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         String viewName;
         long namespaceId;
 
@@ -112,10 +112,17 @@ public class SqlCreateView extends SqlCreate implements ExecutableStatement {
 
         PlacementType placementType = PlacementType.AUTOMATIC;
 
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
-        AlgRoot algRoot = sqlProcessor.translate(
-                statement,
-                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left, null );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Processor sqlProcessor = statement.getTransaction().getProcessor( language );
+        AlgRoot algRoot = sqlProcessor.translate( statement,
+                ParsedQueryContext.builder()
+                        .query( query.toString() )
+                        .language( language )
+                        .queryNode(
+                                sqlProcessor.validate(
+                                        statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )
+                        .origin( statement.getTransaction().getOrigin() )
+                        .build() );
 
         AlgNode algNode = algRoot.alg;
         AlgCollation algCollation = algRoot.collation;

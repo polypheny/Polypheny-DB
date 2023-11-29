@@ -24,7 +24,7 @@ import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 
 /**
@@ -43,7 +43,7 @@ public class StatisticTable {
     private TableCalls calls;
 
     @Getter
-    private NamespaceType namespaceType;
+    private DataModel dataModel;
 
     @Getter
     private final List<Integer> availableAdapters = new ArrayList<>();
@@ -52,7 +52,7 @@ public class StatisticTable {
     private EntityType entityType;
 
     @Getter
-    private int numberOfRows;
+    private long numberOfRows;
 
     @Getter
     @Setter
@@ -74,7 +74,7 @@ public class StatisticTable {
         if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
             LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
             this.table = catalogTable.name;
-            this.namespaceType = catalogTable.namespaceType;
+            this.dataModel = catalogTable.dataModel;
             //this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );
             this.entityType = catalogTable.entityType;
         }
@@ -87,7 +87,7 @@ public class StatisticTable {
     }
 
 
-    public void setNumberOfRows( int rows ) {
+    public void setNumberOfRows( long rows ) {
         this.numberOfRows = Math.max( rows, 0 );
     }
 

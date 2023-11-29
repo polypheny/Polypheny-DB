@@ -79,7 +79,7 @@ public class AliasNamespace extends AbstractNamespace {
             throw validator.newValidationError( node, RESOURCE.aliasListDegree( rowType.getFieldCount(), getString( rowType ), nameList.size() ) );
         }
         final List<AlgDataType> typeList = new ArrayList<>();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             typeList.add( field.getType() );
         }
         return validator.getTypeFactory().createStructType( null, typeList, nameList );
@@ -89,7 +89,7 @@ public class AliasNamespace extends AbstractNamespace {
     private String getString( AlgDataType rowType ) {
         StringBuilder buf = new StringBuilder();
         buf.append( "(" );
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getIndex() > 0 ) {
                 buf.append( ", " );
             }
@@ -112,9 +112,9 @@ public class AliasNamespace extends AbstractNamespace {
     public String translate( String name ) {
         final AlgDataType underlyingRowType = validator.getValidatedNodeType( call.operand( 0 ) );
         int i = 0;
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getName().equals( name ) ) {
-                return underlyingRowType.getFieldList().get( i ).getName();
+                return underlyingRowType.getFields().get( i ).getName();
             }
             ++i;
         }

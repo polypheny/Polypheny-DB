@@ -45,10 +45,10 @@ import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
@@ -69,7 +69,7 @@ public abstract class Catalog implements ExtensionPoint {
     private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
-    public static PolyphenyMode mode;
+    public static PolyMode mode;
 
     public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
 
@@ -178,11 +178,11 @@ public abstract class Catalog implements ExtensionPoint {
      * Adds a schema in a specified database
      *
      * @param name The name of the schema
-     * @param namespaceType The type of this schema
+     * @param dataModel The type of this schema
      * @param caseSensitive
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive );
 
     /**
      * Add an adapter

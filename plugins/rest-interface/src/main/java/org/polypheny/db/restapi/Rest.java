@@ -174,7 +174,7 @@ public class Rest {
 
         // Values
         AlgDataType tableRowType = table.getRowType();
-        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
+        List<AlgDataTypeField> tableRows = tableRowType.getFields();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
         List<RexNode> rexValues = this.valuesNode( statement, algBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
@@ -271,7 +271,7 @@ public class Rest {
 
         // Values
         AlgDataType tableRowType = table.getRowType();
-        List<AlgDataTypeField> tableRows = tableRowType.getFieldList();
+        List<AlgDataTypeField> tableRows = tableRowType.getFields();
 
         AlgOptPlanner planner = statement.getQueryProcessor().getPlanner();
         AlgOptCluster cluster = AlgOptCluster.create( planner, rexBuilder, null, Catalog.getInstance().getSnapshot() );
@@ -334,7 +334,7 @@ public class Rest {
             List<RexNode> filterNodes = new ArrayList<>();
             AlgNode baseNodeForFilters = algBuilder.peek();
             AlgDataType filtersRowType = baseNodeForFilters.getRowType();
-            List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+            List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
             Map<String, AlgDataTypeField> filterMap = new HashMap<>();
             filtersRows.forEach( ( r ) -> filterMap.put( r.getName(), r ) );
             int index = 0;

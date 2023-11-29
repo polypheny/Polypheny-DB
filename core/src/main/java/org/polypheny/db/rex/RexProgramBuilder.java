@@ -87,7 +87,7 @@ public class RexProgramBuilder {
 
         // Pre-create an expression for each input field.
         if ( inputRowType.isStruct() ) {
-            final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+            final List<AlgDataTypeField> fields = inputRowType.getFields();
             for ( int i = 0; i < fields.size(); i++ ) {
                 registerInternal( RexIndexRef.of( i, fields ), false );
             }
@@ -123,7 +123,7 @@ public class RexProgramBuilder {
         final RexShuttle expander = new RexProgram.ExpansionShuttle( exprList );
 
         // Register project expressions and create a named project item.
-        final List<AlgDataTypeField> fieldList = outputRowType.getFieldList();
+        final List<AlgDataTypeField> fieldList = outputRowType.getFields();
         for ( Pair<? extends RexNode, AlgDataTypeField> pair : Pair.zip( projectList, fieldList ) ) {
             final RexNode project;
             if ( simplify != null ) {
@@ -169,7 +169,7 @@ public class RexProgramBuilder {
                     @Override
                     public Void visitIndexRef( RexIndexRef input ) {
                         final int index = input.getIndex();
-                        final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+                        final List<AlgDataTypeField> fields = inputRowType.getFields();
                         if ( index < fields.size() ) {
                             final AlgDataTypeField inputField = fields.get( index );
                             if ( input.getType() != inputField.getType() ) {
@@ -560,7 +560,7 @@ public class RexProgramBuilder {
      * @param updateRefs Whether to update references that changes as a result of rewrites made by the shuttle
      */
     private void add( List<RexNode> exprList, List<RexLocalRef> projectRefList, RexLocalRef conditionRef, final AlgDataType outputRowType, RexShuttle shuttle, boolean updateRefs ) {
-        final List<AlgDataTypeField> outFields = outputRowType.getFieldList();
+        final List<AlgDataTypeField> outFields = outputRowType.getFields();
         final RexShuttle registerInputShuttle = new RegisterInputShuttle( false );
 
         // For each common expression, first apply the user's shuttle, then register the result.
@@ -754,7 +754,7 @@ public class RexProgramBuilder {
      */
     public void addIdentity() {
         assert projectRefList.isEmpty();
-        for ( AlgDataTypeField field : inputRowType.getFieldList() ) {
+        for ( AlgDataTypeField field : inputRowType.getFields() ) {
             addProject(
                     new RexIndexRef( field.getIndex(), field.getType() ),
                     field.getName() );
@@ -769,7 +769,7 @@ public class RexProgramBuilder {
      * @return Reference to input field
      */
     public RexLocalRef makeInputRef( int index ) {
-        final List<AlgDataTypeField> fields = inputRowType.getFieldList();
+        final List<AlgDataTypeField> fields = inputRowType.getFields();
         assert index < fields.size();
         final AlgDataTypeField field = fields.get( index );
         return new RexLocalRef( index, field.getType() );
@@ -867,7 +867,7 @@ public class RexProgramBuilder {
                         "type1",
                         input.getType(),
                         "type2",
-                        inputRowType.getFieldList().get( index ).getType(),
+                        inputRowType.getFields().get( index ).getType(),
                         Litmus.THROW );
             }
 

@@ -20,74 +20,65 @@ package org.polypheny.db.sql.language;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
-import org.polypheny.db.algebra.AlgCollation;
-import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgDistribution;
-import org.polypheny.db.algebra.AlgDistributions;
-import org.polypheny.db.algebra.AlgFieldCollation;
+import org.junit.BeforeClass;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.MockCatalogReader;
-import org.polypheny.db.catalog.MockCatalogReaderDynamic;
-import org.polypheny.db.catalog.MockCatalogReaderSimple;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.config.PolyphenyDbConnectionConfig;
-import org.polypheny.db.languages.NodeToAlgConverter;
 import org.polypheny.db.languages.NodeToAlgConverter.Config;
-import org.polypheny.db.languages.Parser;
-import org.polypheny.db.languages.Parser.ParserConfig;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.validate.ValidatorCatalogReader;
-import org.polypheny.db.nodes.validate.ValidatorTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgOptSchemaWithSampling;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.DiffRepository;
 import org.polypheny.db.sql.MockSqlOperatorTable;
+import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
-import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorImpl;
-import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
-import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
-import org.polypheny.db.test.MockRelOptPlanner;
+import org.polypheny.db.test.MockAlgOptPlanner;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Conformance;
-import org.polypheny.db.util.ImmutableBitSet;
-import org.polypheny.db.util.SourceStringReader;
+import org.polypheny.db.util.Pair;
 
 
 /**
  * SqlToAlgTestBase is an abstract base for tests which involve conversion from SQL to relational algebra.
  *
- * SQL statements to be translated can use the schema defined in {@link MockCatalogReader}; note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
+ * SQL statements to be translated can use the schema defined in note that this is slightly different from Farrago's SALES schema. If you get a parser or validator
  * error from your test SQL, look down in the stack until you see "Caused by", which will usually tell you the real error.
  */
-public abstract class SqlToAlgTestBase {
+public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
+
+    private static TestHelper testHelper;
+
+
+    @BeforeClass
+    public static void start() {
+        testHelper = TestHelper.getInstance();
+    }
+
 
     protected static final String NL = System.getProperty( "line.separator" );
 
@@ -100,17 +91,7 @@ public abstract class SqlToAlgTestBase {
 
 
     public Tester createTester() {
-        return new TesterImpl( getDiffRepos(), false, false, true, false, null, null, Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.empty() );
-    }
-
-
-    protected Tester createTester( Conformance conformance ) {
-        return new TesterImpl( getDiffRepos(), false, false, true, false, null, null, Config.DEFAULT, conformance, Contexts.empty() );
-    }
-
-
-    protected Tester getTesterWithDynamicTable() {
-        return tester.withCatalogReaderFactory( MockCatalogReaderDynamic::new );
+        return new TesterImpl( getDiffRepos(), false, false, true, false, null, Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.empty() );
     }
 
 
@@ -155,40 +136,12 @@ public abstract class SqlToAlgTestBase {
          * @param sql SQL statement
          * @return Relational expression, never null
          */
-        AlgRoot convertSqlToRel( String sql );
-
-        SqlNode parseQuery( String sql ) throws Exception;
-
-        /**
-         * Factory method to create a {@link SqlValidator}.
-         */
-        SqlValidator createValidator( ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory );
-
-        /**
-         * Factory method for a
-         * {@link Prepare.CatalogReader}.
-         */
-        Prepare.CatalogReader createCatalogReader( AlgDataTypeFactory typeFactory );
-
-        AlgOptPlanner createPlanner();
-
-        /**
-         * Returns the {@link OperatorTable} to use.
-         */
-        OperatorTable getOperatorTable();
+        AlgRoot convertSqlToAlg( String sql );
 
         /**
          * Returns the SQL dialect to test.
          */
         Conformance getConformance();
-
-        /**
-         * Checks that a SQL statement converts to a given plan.
-         *
-         * @param sql SQL query
-         * @param plan Expected plan
-         */
-        void assertConvertsTo( String sql, String plan );
 
         /**
          * Checks that a SQL statement converts to a given plan, optionally trimming columns that are not needed.
@@ -198,13 +151,6 @@ public abstract class SqlToAlgTestBase {
          * @param trim Whether to trim columns that are not needed
          */
         void assertConvertsTo( String sql, String plan, boolean trim );
-
-        /**
-         * Returns the diff repository.
-         *
-         * @return Diff repository
-         */
-        DiffRepository getDiffRepos();
 
         /**
          * Returns the validator.
@@ -217,11 +163,6 @@ public abstract class SqlToAlgTestBase {
          * Returns a tester that optionally decorrelates queries.
          */
         Tester withDecorrelation( boolean enable );
-
-        /**
-         * Returns a tester that optionally decorrelates queries after planner rules have fired.
-         */
-        Tester withLateDecorrelation( boolean enable );
 
         /**
          * Returns a tester that optionally expands sub-queries. If {@code expand} is false, the plan contains a {@link org.polypheny.db.rex.RexSubQuery} for each sub-query.
@@ -240,21 +181,7 @@ public abstract class SqlToAlgTestBase {
          */
         Tester withConformance( Conformance conformance );
 
-        Tester withCatalogReaderFactory( SqlTestFactory.MockCatalogReaderFactory factory );
-
-        /**
-         * Returns a tester that optionally trims unused fields.
-         */
-        Tester withTrim( boolean enable );
-
-        Tester withClusterFactory( Function<AlgOptCluster, AlgOptCluster> function );
-
         boolean isLateDecorrelate();
-
-        /**
-         * Returns a tester that uses a given context.
-         */
-        Tester withContext( Context context );
 
     }
 
@@ -264,280 +191,19 @@ public abstract class SqlToAlgTestBase {
      */
     protected static class MockRelOptSchema implements AlgOptSchemaWithSampling {
 
-        private final ValidatorCatalogReader catalogReader;
-        private final AlgDataTypeFactory typeFactory;
-
 
         public MockRelOptSchema( ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory ) {
-            this.catalogReader = catalogReader;
-            this.typeFactory = typeFactory;
         }
 
-
-        @Override
-        public LogicalTable getTableForMember( List<String> names ) {
-            final LogicalTable table = catalogReader.getTable( names );
-            final AlgDataType rowType = table.getRowType();
-            final List<AlgCollation> collationList = deduceMonotonicity( table );
-            if ( names.size() < 3 ) {
-                String[] newNames2 = { "CATALOG", "SALES", "" };
-                List<String> newNames = new ArrayList<>();
-                int i = 0;
-                while ( newNames.size() < newNames2.length ) {
-                    newNames.add( i, newNames2[i] );
-                    ++i;
-                }
-                names = newNames;
-            }
-            return createColumnSet( table, names, rowType, collationList );
-        }
-
-
-        private List<AlgCollation> deduceMonotonicity( LogicalTable table ) {
-            final AlgDataType rowType = table.getRowType();
-            final List<AlgCollation> collationList = new ArrayList<>();
-
-            // Deduce which fields the table is sorted on.
-            int i = -1;
-            for ( AlgDataTypeField field : rowType.getFieldList() ) {
-                ++i;
-                final Monotonicity monotonicity = ValidatorTable.getMonotonicity( table, field.getName() );
-                if ( monotonicity != Monotonicity.NOT_MONOTONIC ) {
-                    final AlgFieldCollation.Direction direction =
-                            monotonicity.isDecreasing()
-                                    ? AlgFieldCollation.Direction.DESCENDING
-                                    : AlgFieldCollation.Direction.ASCENDING;
-                    collationList.add( AlgCollations.of( new AlgFieldCollation( i, direction ) ) );
-                }
-            }
-            return collationList;
-        }
-
-
-        protected MockColumnSet createColumnSet( LogicalTable table, List<String> names, final AlgDataType rowType, final List<AlgCollation> collationList ) {
-            return new MockColumnSet( names, rowType, collationList );
-        }
-
-
-        /**
-         * Mock column set.
-         */
-        protected class MockColumnSet extends LogicalTable {
-
-            private final List<String> names;
-            private final AlgDataType rowType;
-            private final List<AlgCollation> collationList;
-
-
-            protected MockColumnSet( List<String> names, AlgDataType rowType, final List<AlgCollation> collationList ) {
-                super( null );
-                this.names = ImmutableList.copyOf( names );
-                this.rowType = rowType;
-                this.collationList = collationList;
-            }
-
-
-            @Override
-            public <T> T unwrap( Class<T> clazz ) {
-                if ( clazz.isInstance( this ) ) {
-                    return clazz.cast( this );
-                }
-                return null;
-            }
-
-
-            @Override
-            public double getRowCount() {
-                // use something other than 0 to give costing tests some room, and make emps bigger than depts for join asymmetry
-                if ( Iterables.getLast( names ).equals( "EMP" ) ) {
-                    return 1000;
-                } else {
-                    return 100;
-                }
-            }
-
-
-            @Override
-            public AlgDataType getRowType() {
-                return rowType;
-            }
-
-
-            /*@Override
-            public AlgOptSchema getRelOptSchema() {
-                return MockRelOptSchema.this;
-            }
-
-
-            @Override
-            public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-                return LogicalRelScan.create( context.getCluster(), this );
-            }
-
-
-            @Override
-            public List<AlgCollation> getCollationList() {
-                return collationList;
-            }*/
-
-
-            @Override
-            public AlgDistribution getDistribution() {
-                return AlgDistributions.BROADCAST_DISTRIBUTED;
-            }
-
-
-            @Override
-            public Boolean isKey( ImmutableBitSet columns ) {
-                return false;
-            }
-
-
-            /*@Override
-            public List<AlgReferentialConstraint> getReferentialConstraints() {
-                return ImmutableList.of();
-            }*/
-
-
-            @Override
-            public List<ColumnStrategy> getColumnStrategies() {
-                throw new UnsupportedOperationException();
-            }
-
-
-            /*@Override
-            public CatalogEntity getCatalogEntity() {
-                return null;
-            }
-
-
-            @Override
-            public CatalogEntityPlacement getPartitionPlacement() {
-                return null;
-            }
-
-
-            @Override
-            public Expression getExpression( Class<?> clazz ) {
-                return null;
-            }
-
-
-            @Override
-            public AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
-                final AlgDataType extendedRowType = AlgDataTypeFactory.DEFAULT.builder()
-                        .addAll( rowType.getFieldList() )
-                        .addAll( extendedFields )
-                        .build();
-                return new MockColumnSet( names, extendedRowType, collationList );
-            }*/
-
-        }
 
     }
 
-    /**
-     * Table that delegates to a given table.
-     */
-    /*private static class DelegatingRelOptEntity implements AlgOptEntity {
-
-        private final AlgOptEntity parent;
-
-
-        DelegatingRelOptEntity( AlgOptEntity parent ) {
-            this.parent = parent;
-        }
-
-
-        @Override
-        public <T> T unwrap( Class<T> clazz ) {
-            if ( clazz.isInstance( this ) ) {
-                return clazz.cast( this );
-            }
-            return parent.unwrap( clazz );
-        }
-
-
-        @Override
-        public Expression getExpression( Class<?> clazz ) {
-            return parent.getExpression( clazz );
-        }
-
-
-        @Override
-        public AlgOptEntity extend( List<AlgDataTypeField> extendedFields ) {
-            return parent.extend( extendedFields );
-        }
-
-
-        @Override
-        public double getRowCount() {
-            return parent.getRowCount();
-        }
-
-
-        @Override
-        public AlgDataType getRowType() {
-            return parent.getRowType();
-        }
-
-
-        @Override
-        public AlgOptSchema getRelOptSchema() {
-            return parent.getRelOptSchema();
-        }
-
-
-        @Override
-        public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-            return LogicalRelScan.create( context.getCluster(), this );
-        }
-
-
-        @Override
-        public List<AlgCollation> getCollationList() {
-            return parent.getCollationList();
-        }
-
-
-        @Override
-        public AlgDistribution getDistribution() {
-            return parent.getDistribution();
-        }
-
-
-        @Override
-        public boolean isKey( ImmutableBitSet columns ) {
-            return parent.isKey( columns );
-        }
-
-
-        @Override
-        public List<AlgReferentialConstraint> getReferentialConstraints() {
-            return parent.getReferentialConstraints();
-        }
-
-
-        @Override
-        public List<ColumnStrategy> getColumnStrategies() {
-            return parent.getColumnStrategies();
-        }
-
-
-        @Override
-        public CatalogEntity getCatalogEntity() {
-            return null;
-        }
-
-    }*/
-
 
     /**
-     * Default implementation of {@link Tester}, using mock classes {@link MockRelOptSchema} and {@link MockRelOptPlanner}.
+     * Default implementation of {@link Tester}, using mock classes and {@link MockAlgOptPlanner}.
      */
     public static class TesterImpl implements Tester {
 
-        private AlgOptPlanner planner;
         private OperatorTable opTab;
         private final DiffRepository diffRepos;
         private final boolean enableDecorrelate;
@@ -545,7 +211,6 @@ public abstract class SqlToAlgTestBase {
         private final boolean enableTrim;
         private final boolean enableExpand;
         private final Conformance conformance;
-        private final SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory;
         private final Function<AlgOptCluster, AlgOptCluster> clusterFactory;
         private AlgDataTypeFactory typeFactory;
         public final Config config;
@@ -559,7 +224,6 @@ public abstract class SqlToAlgTestBase {
          * @param enableDecorrelate Whether to decorrelate
          * @param enableTrim Whether to trim unused fields
          * @param enableExpand Whether to expand sub-queries
-         * @param catalogReaderFactory Function to create catalog reader, or null
          * @param clusterFactory Called after a cluster has been created
          */
         protected TesterImpl(
@@ -568,7 +232,6 @@ public abstract class SqlToAlgTestBase {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
                 Function<AlgOptCluster,
                         AlgOptCluster> clusterFactory ) {
             this(
@@ -577,7 +240,6 @@ public abstract class SqlToAlgTestBase {
                     enableTrim,
                     enableExpand,
                     enableLateDecorrelate,
-                    catalogReaderFactory,
                     clusterFactory,
                     Config.DEFAULT,
                     ConformanceEnum.DEFAULT,
@@ -591,7 +253,6 @@ public abstract class SqlToAlgTestBase {
                 boolean enableTrim,
                 boolean enableExpand,
                 boolean enableLateDecorrelate,
-                SqlTestFactory.MockCatalogReaderFactory catalogReaderFactory,
                 Function<AlgOptCluster, AlgOptCluster> clusterFactory,
                 Config config,
                 Conformance conformance,
@@ -601,7 +262,6 @@ public abstract class SqlToAlgTestBase {
             this.enableTrim = enableTrim;
             this.enableExpand = enableExpand;
             this.enableLateDecorrelate = enableLateDecorrelate;
-            this.catalogReaderFactory = catalogReaderFactory;
             this.clusterFactory = clusterFactory;
             this.config = config;
             this.conformance = conformance;
@@ -610,55 +270,25 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public AlgRoot convertSqlToRel( String sql ) {
-            Objects.requireNonNull( sql );
-            final SqlNode sqlQuery;
-            final Config localConfig;
-            try {
-                sqlQuery = parseQuery( sql );
-            } catch ( RuntimeException | Error e ) {
-                throw e;
-            } catch ( Exception e ) {
-                throw new RuntimeException( e );
-            }
-            final AlgDataTypeFactory typeFactory = getTypeFactory();
-            final Prepare.CatalogReader catalogReader = createCatalogReader( typeFactory );
-            final SqlValidator validator = createValidator( catalogReader, typeFactory );
-            final PolyphenyDbConnectionConfig polyphenyDbConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
-            if ( polyphenyDbConfig != null ) {
-                validator.setDefaultNullCollation( polyphenyDbConfig.defaultNullCollation() );
-            }
-            if ( config == Config.DEFAULT ) {
-                localConfig = NodeToAlgConverter.configBuilder().trimUnusedFields( true ).expand( enableExpand ).build();
-            } else {
-                localConfig = config;
-            }
+        public AlgRoot convertSqlToAlg( String sql ) {
+            QueryLanguage language = QueryLanguage.from( "sql" );
 
-            final SqlToAlgConverter converter = createSqlToRelConverter( validator, catalogReader, typeFactory, localConfig );
+            Processor processor = language.getProcessorSupplier().get();
 
-            final SqlNode validatedQuery = validator.validateSql( sqlQuery );
-            AlgRoot root = converter.convertQuery( validatedQuery, false, true );
-            assert root != null;
-            if ( enableDecorrelate || enableTrim ) {
-                root = root.withAlg( converter.flattenTypes( root.alg, true ) );
-            }
-            if ( enableDecorrelate ) {
-                root = root.withAlg( converter.decorrelate( sqlQuery, root.alg ) );
-            }
-            if ( enableTrim ) {
-                root = root.withAlg( converter.trimUnusedFields( true, root.alg ) );
+            List<? extends Node> nodes = processor.parse( sql );
+
+            TransactionManager transactionManager = testHelper.getTransactionManager();
+
+            Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+
+            AlgRoot root = null;
+            for ( Node node : nodes ) {
+                Pair<Node, AlgDataType> validated = processor.validate( transaction, node, true );
+
+                Statement statement = transaction.createStatement();
+                root = processor.translate( statement, ParsedQueryContext.builder().origin( "Sql Test" ).query( sql ).queryNode( validated.left ).build() );
             }
             return root;
-        }
-
-
-        protected SqlToAlgConverter createSqlToRelConverter( final SqlValidator validator, final Prepare.CatalogReader catalogReader, final AlgDataTypeFactory typeFactory, final Config config ) {
-            final RexBuilder rexBuilder = new RexBuilder( typeFactory );
-            AlgOptCluster cluster = AlgOptCluster.create( getPlanner(), rexBuilder, getPlanner().emptyTraitSet(), Catalog.snapshot() );
-            if ( clusterFactory != null ) {
-                cluster = clusterFactory.apply( cluster );
-            }
-            return new SqlToAlgConverter( validator, Catalog.snapshot(), cluster, StandardConvertletTable.INSTANCE, config );
         }
 
 
@@ -675,39 +305,18 @@ public abstract class SqlToAlgTestBase {
         }
 
 
-        protected final AlgOptPlanner getPlanner() {
-            if ( planner == null ) {
-                planner = createPlanner();
-            }
-            return planner;
-        }
-
-
-        @Override
-        public SqlNode parseQuery( String sql ) throws Exception {
-            final ParserConfig sqlParserConfig = Parser.configBuilder().setConformance( getConformance() ).build();
-
-            SqlAbstractParserImpl parserImpl = (SqlAbstractParserImpl) sqlParserConfig.parserFactory().getParser( new SourceStringReader( sql ) );
-
-            Parser parser = new SqlParser( parserImpl, sqlParserConfig );
-            return (SqlNode) parser.parseQuery();
-        }
-
-
         @Override
         public Conformance getConformance() {
             return conformance;
         }
 
 
-        @Override
-        public SqlValidator createValidator( ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory ) {
-            return new FarragoTestValidator( getOperatorTable(), catalogReader, typeFactory, getConformance() );
+        private SqlValidator createValidator( AlgDataTypeFactory typeFactory ) {
+            return new FarragoTestValidator( getOperatorTable(), typeFactory, getConformance() );
         }
 
 
-        @Override
-        public final OperatorTable getOperatorTable() {
+        private OperatorTable getOperatorTable() {
             if ( opTab == null ) {
                 opTab = createOperatorTable();
             }
@@ -728,33 +337,9 @@ public abstract class SqlToAlgTestBase {
 
 
         @Override
-        public Prepare.CatalogReader createCatalogReader( AlgDataTypeFactory typeFactory ) {
-            MockCatalogReader catalogReader;
-            if ( this.catalogReaderFactory != null ) {
-                catalogReader = catalogReaderFactory.create( typeFactory, true );
-            } else {
-                catalogReader = new MockCatalogReaderSimple( typeFactory, true );
-            }
-            return catalogReader.init();
-        }
-
-
-        @Override
-        public AlgOptPlanner createPlanner() {
-            return new MockRelOptPlanner( context );
-        }
-
-
-        @Override
-        public void assertConvertsTo( String sql, String plan ) {
-            assertConvertsTo( sql, plan, false );
-        }
-
-
-        @Override
         public void assertConvertsTo( String sql, String plan, boolean trim ) {
             String sql2 = getDiffRepos().expand( "sql", sql );
-            AlgNode alg = convertSqlToRel( sql2 ).project();
+            AlgNode alg = convertSqlToAlg( sql2 ).project();
 
             assertNotNull( alg );
             assertValid( alg );
@@ -784,8 +369,7 @@ public abstract class SqlToAlgTestBase {
         }
 
 
-        @Override
-        public DiffRepository getDiffRepos() {
+        private DiffRepository getDiffRepos() {
             return diffRepos;
         }
 
@@ -793,8 +377,7 @@ public abstract class SqlToAlgTestBase {
         @Override
         public SqlValidator getValidator() {
             final AlgDataTypeFactory typeFactory = getTypeFactory();
-            final ValidatorCatalogReader catalogReader = createCatalogReader( typeFactory );
-            return createValidator( catalogReader, typeFactory );
+            return createValidator( typeFactory );
         }
 
 
@@ -802,15 +385,7 @@ public abstract class SqlToAlgTestBase {
         public TesterImpl withDecorrelation( boolean enableDecorrelate ) {
             return this.enableDecorrelate == enableDecorrelate
                     ? this
-                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
-        }
-
-
-        @Override
-        public Tester withLateDecorrelation( boolean enableLateDecorrelate ) {
-            return this.enableLateDecorrelate == enableLateDecorrelate
-                    ? this
-                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
+                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, clusterFactory, config, conformance, context );
         }
 
 
@@ -818,15 +393,7 @@ public abstract class SqlToAlgTestBase {
         public TesterImpl withConfig( Config config ) {
             return this.config == config
                     ? this
-                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
-        }
-
-
-        @Override
-        public Tester withTrim( boolean enableTrim ) {
-            return this.enableTrim == enableTrim
-                    ? this
-                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
+                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, clusterFactory, config, conformance, context );
         }
 
 
@@ -834,31 +401,13 @@ public abstract class SqlToAlgTestBase {
         public Tester withExpand( boolean enableExpand ) {
             return this.enableExpand == enableExpand
                     ? this
-                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
+                    : new TesterImpl( diffRepos, enableDecorrelate, enableTrim, enableExpand, enableLateDecorrelate, clusterFactory, config, conformance, context );
         }
 
 
         @Override
         public Tester withConformance( Conformance conformance ) {
-            return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
-        }
-
-
-        @Override
-        public Tester withCatalogReaderFactory( SqlTestFactory.MockCatalogReaderFactory factory ) {
-            return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, factory, clusterFactory, config, conformance, context );
-        }
-
-
-        @Override
-        public Tester withClusterFactory( Function<AlgOptCluster, AlgOptCluster> clusterFactory ) {
-            return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
-        }
-
-
-        @Override
-        public Tester withContext( Context context ) {
-            return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, catalogReaderFactory, clusterFactory, config, conformance, context );
+            return new TesterImpl( diffRepos, enableDecorrelate, false, enableExpand, enableLateDecorrelate, clusterFactory, config, conformance, context );
         }
 
 
@@ -875,7 +424,7 @@ public abstract class SqlToAlgTestBase {
      */
     private static class FarragoTestValidator extends SqlValidatorImpl {
 
-        FarragoTestValidator( OperatorTable opTab, ValidatorCatalogReader catalogReader, AlgDataTypeFactory typeFactory, Conformance conformance ) {
+        FarragoTestValidator( OperatorTable opTab, AlgDataTypeFactory typeFactory, Conformance conformance ) {
             super( opTab, Catalog.snapshot(), typeFactory, conformance );
         }
 

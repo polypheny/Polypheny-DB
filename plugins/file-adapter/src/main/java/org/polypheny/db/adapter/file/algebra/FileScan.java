@@ -25,7 +25,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -38,7 +38,7 @@ public class FileScan extends RelScan<FileTranslatableEntity> implements FileAlg
     private final FileTranslatableEntity fileTable;
 
 
-    public FileScan( AlgOptCluster cluster, LogicalEntity table, FileTranslatableEntity fileTable ) {
+    public FileScan( AlgOptCluster cluster, Entity table, FileTranslatableEntity fileTable ) {
         //convention was: EnumerableConvention.INSTANCE
         super( cluster, cluster.traitSetOf( fileTable.getFileSchema().getConvention() ).replace( ModelTrait.RELATIONAL ), fileTable );
         this.fileTable = fileTable;

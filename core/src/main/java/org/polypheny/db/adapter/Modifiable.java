@@ -46,7 +46,7 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -73,12 +73,12 @@ import org.polypheny.db.util.Pair;
 public interface Modifiable extends Scannable {
 
 
-    static AlgNode attachRelationalGraphUpdate( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder builder, LogicalEntity nodesTable, LogicalEntity nodePropertiesTable, LogicalEntity edgesTable, LogicalEntity edgePropertiesTable ) {
+    static AlgNode attachRelationalGraphUpdate( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
@@ -96,12 +96,12 @@ public interface Modifiable extends Scannable {
 
     }
 
-    static AlgNode attachRelationalGraphDelete( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, LogicalEntity nodesTable, LogicalEntity nodePropertiesTable, LogicalEntity edgesTable, LogicalEntity edgePropertiesTable ) {
+    static AlgNode attachRelationalGraphDelete( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : project.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -117,7 +117,7 @@ public interface Modifiable extends Scannable {
 
     }
 
-    static List<AlgNode> attachPreparedGraphNodeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, LogicalEntity nodesTable, LogicalEntity nodePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphNodeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -146,11 +146,11 @@ public interface Modifiable extends Scannable {
         return inputs;
     }
 
-    static AlgNode attachRelationalRelatedInsert( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, LogicalEntity nodesTable, LogicalEntity nodePropertiesTable, LogicalEntity edgesTable, LogicalEntity edgePropertiesTable ) {
+    static AlgNode attachRelationalRelatedInsert( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
 
         List<AlgNode> inputs = new ArrayList<>();
         List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : provider.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : provider.getRowType().getFields() ) {
             sequence.add( field.getType().getPolyType() );
             if ( field.getType().getPolyType() == PolyType.EDGE ) {
                 inputs.addAll( attachPreparedGraphEdgeModifyInsert( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
@@ -165,7 +165,7 @@ public interface Modifiable extends Scannable {
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), provider, transformer );
     }
 
-    static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, LogicalEntity nodesTable, LogicalEntity nodePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -192,7 +192,7 @@ public interface Modifiable extends Scannable {
         return inputs;
     }
 
-    static List<AlgNode> attachPreparedGraphEdgeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, LogicalEntity edgesTable, LogicalEntity edgePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphEdgeModifyDelete( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -218,7 +218,7 @@ public interface Modifiable extends Scannable {
         return inputs;
     }
 
-    static List<AlgNode> attachPreparedGraphEdgeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, LogicalEntity edgesTable, LogicalEntity edgePropertiesTable, AlgBuilder algBuilder ) {
+    static List<AlgNode> attachPreparedGraphEdgeModifyInsert( Modifiable modifiable, AlgOptCluster cluster, Entity edgesTable, Entity edgePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
         AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
@@ -248,7 +248,7 @@ public interface Modifiable extends Scannable {
 
     }
 
-    static Modify<?> getModify( LogicalEntity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
+    static Modify<?> getModify( Entity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
         return table.unwrap( ModifiableTable.class ).toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
@@ -363,7 +363,7 @@ public interface Modifiable extends Scannable {
     static Pair<List<String>, List<RexNode>> replaceUpdates( Pair<List<String>, List<RexNode>> updates, AlgBuilder builder ) {
         builder.documentProject( Pair.zip( updates.left, updates.right ).stream().collect( Collectors.toMap( e -> null, e -> e.right ) ), List.of() );
 
-        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFieldList().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
+        return Pair.of( updates.left, updates.right.stream().map( u -> new RexDynamicParam( DocumentType.asRelational().getFields().get( 1 ).getType(), 1 ) ).collect( Collectors.toList() ) );
     }
 
     static Pair<List<String>, List<RexNode>> getRelationalDocumentModify( DocumentModify<?> modify ) {

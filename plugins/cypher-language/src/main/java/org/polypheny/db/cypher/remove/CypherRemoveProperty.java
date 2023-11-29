@@ -50,7 +50,7 @@ public class CypherRemoveProperty extends CypherRemoveItem {
         if ( index < 0 ) {
             throw new GenericRuntimeException( String.format( "Unknown variable with name %s", nodeName ) );
         }
-        AlgDataTypeField field = node.getRowType().getFieldList().get( index );
+        AlgDataTypeField field = node.getRowType().getFields().get( index );
 
         RexNode ref = context.getRexNode( nodeName );
         if ( ref == null ) {

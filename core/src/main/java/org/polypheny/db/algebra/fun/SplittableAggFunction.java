@@ -170,7 +170,7 @@ public interface SplittableAggFunction {
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final List<RexNode> predicates = new ArrayList<>();
             for ( Integer arg : aggregateCall.getArgList() ) {
-                final AlgDataType type = inputRowType.getFieldList().get( arg ).getType();
+                final AlgDataType type = inputRowType.getFields().get( arg ).getType();
                 if ( type.isNullable() ) {
                     predicates.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( type, arg ) ) );
                 }
@@ -203,7 +203,7 @@ public interface SplittableAggFunction {
         @Override
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFields().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -239,7 +239,7 @@ public interface SplittableAggFunction {
         @Override
         public RexNode singleton( RexBuilder rexBuilder, AlgDataType inputRowType, AggregateCall aggregateCall ) {
             final int arg = aggregateCall.getArgList().get( 0 );
-            final AlgDataTypeField field = inputRowType.getFieldList().get( arg );
+            final AlgDataTypeField field = inputRowType.getFields().get( arg );
             return rexBuilder.makeInputRef( field.getType(), arg );
         }
 
@@ -267,7 +267,7 @@ public interface SplittableAggFunction {
         @Override
         public AggregateCall topSplit( RexBuilder rexBuilder, Registry<RexNode> extra, int offset, AlgDataType inputRowType, AggregateCall aggregateCall, int leftSubTotal, int rightSubTotal ) {
             final List<RexNode> merges = new ArrayList<>();
-            final List<AlgDataTypeField> fieldList = inputRowType.getFieldList();
+            final List<AlgDataTypeField> fieldList = inputRowType.getFields();
             if ( leftSubTotal >= 0 ) {
                 final AlgDataType type = fieldList.get( leftSubTotal ).getType();
                 merges.add( rexBuilder.makeInputRef( type, leftSubTotal ) );

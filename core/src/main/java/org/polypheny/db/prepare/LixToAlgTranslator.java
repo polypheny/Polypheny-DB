@@ -49,7 +49,6 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
@@ -71,10 +70,6 @@ class LixToAlgTranslator {
         this.typeFactory = (JavaTypeFactory) cluster.getTypeFactory();
     }
 
-
-    ToAlgContext toAlgContext() {
-        return () -> cluster;
-    }
 
 
 

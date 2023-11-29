@@ -106,10 +106,10 @@ public class QueryProcessorHelpers {
 
     public static List<ColumnMetaData> getColumnMetaDataList( JavaTypeFactory typeFactory, AlgDataType x, AlgDataType jdbcType, List<List<String>> originList ) {
         final List<ColumnMetaData> columns = new ArrayList<>();
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFieldList() ) ) {
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( jdbcType.getFields() ) ) {
             final AlgDataTypeField field = pair.e;
             final AlgDataType type = field.getType();
-            final AlgDataType fieldType = x.isStruct() ? x.getFieldList().get( pair.i ).getType() : type;
+            final AlgDataType fieldType = x.isStruct() ? x.getFields().get( pair.i ).getType() : type;
             columns.add( QueryProcessorHelpers.metaData( typeFactory, columns.size(), field.getName(), type, fieldType, originList.get( pair.i ) ) );
         }
         return columns;
@@ -133,7 +133,7 @@ public class QueryProcessorHelpers {
             switch ( typeOrdinal ) {
                 case Types.STRUCT:
                     final List<ColumnMetaData> columns = new ArrayList<>();
-                    for ( AlgDataTypeField field : type.getFieldList() ) {
+                    for ( AlgDataTypeField field : type.getFields() ) {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );

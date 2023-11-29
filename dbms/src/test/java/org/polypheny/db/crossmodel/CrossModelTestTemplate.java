@@ -24,9 +24,8 @@ import java.util.function.BiConsumer;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class })
 public class CrossModelTestTemplate {
 
     public static void executeStatements( SqlConsumer... statementConsumers ) {

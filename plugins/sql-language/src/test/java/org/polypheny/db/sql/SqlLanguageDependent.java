@@ -16,10 +16,14 @@
 
 package org.polypheny.db.sql;
 
+import org.polypheny.db.TestHelper;
+
 public class SqlLanguageDependent {
 
+
     static {
-        SqlLanguagePlugin.startup();
+        TestHelper.getInstance();
+        //SqlLanguagePlugin.startup();
     }
 
 }

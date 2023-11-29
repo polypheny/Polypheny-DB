@@ -1115,7 +1115,7 @@ public class SubstitutionVisitor {
             }
             final List<RexNode> exprList = new ArrayList<>();
             final RexBuilder rexBuilder = model.cluster.getRexBuilder();
-            for ( AlgDataTypeField field : model.rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : model.rowType.getFields() ) {
                 exprList.add( rexBuilder.makeZeroLiteral( field.getType() ) );
             }
             for ( Ord<RexNode> expr : Ord.zip( project.projects ) ) {
@@ -1655,7 +1655,7 @@ public class SubstitutionVisitor {
             final AlgOptCluster cluster = filter.getCluster();
             AlgDataType newRowType =
                     cluster.getTypeFactory().builder()
-                            .addAll( project.getRowType().getFieldList() )
+                            .addAll( project.getRowType().getFields() )
                             .add( null, "condition", null, Util.last( newProjects ).getType() )
                             .build();
             final AlgNode newProject =

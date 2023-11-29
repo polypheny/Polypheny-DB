@@ -72,10 +72,10 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -105,7 +105,6 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.runtime.Resources.ExInst;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -505,7 +504,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final SqlValidatorNamespace fromNs = getNamespace( from, scope );
                     assert fromNs != null;
                     final AlgDataType rowType = fromNs.getRowType();
-                    for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                    for ( AlgDataTypeField field : rowType.getFields() ) {
                         String columnName = field.getName();
 
                         // TODO: do real implicit collation here
@@ -562,7 +561,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     scope,
                     includeSystemVars );
         } else if ( rowType.isStruct() ) {
-            for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : rowType.getFields() ) {
                 String columnName = field.getName();
 
                 // TODO: do real implicit collation here
@@ -789,7 +788,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( ns != null ) {
                 AlgDataType rowType = ns.getRowType();
                 if ( rowType.isStruct() ) {
-                    for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                    for ( AlgDataTypeField field : rowType.getFields() ) {
                         hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
                     }
                 }
@@ -805,7 +804,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             SelectScope selectScope = SqlValidatorUtil.getEnclosingSelectScope( scope );
             if ( (selectScope != null) && (selectScope.getChildren().size() == 1) ) {
                 AlgDataType rowType = selectScope.getChildren().get( 0 ).getRowType();
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     hintList.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
                 }
             }
@@ -1395,7 +1394,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         SqlNode source = (SqlNode) updateCall.getTargetTable().clone( ParserPos.ZERO );
         final SqlNodeList selectList = new SqlNodeList( ParserPos.ZERO );
         int i = 1;
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             SqlIdentifier col = new SqlIdentifier( field.getName(), ParserPos.ZERO );
             selectList.add( SqlValidatorUtil.addAlias( col, UPDATE_ANON_PREFIX + i ) );
             ++i;
@@ -1725,7 +1724,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( Node child : nodeList ) {
                 AlgDataType type;
                 if ( inferredType.isStruct() ) {
-                    type = inferredType.getFieldList().get( i ).getType();
+                    type = inferredType.getFields().get( i ).getType();
                     ++i;
                 } else {
                     type = inferredType;
@@ -2999,7 +2998,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         // if it's not a SqlIdentifier then that's fine, it'll be validated somewhere else.
         if ( leftOrRight instanceof SqlIdentifier ) {
             SqlIdentifier from = (SqlIdentifier) leftOrRight;
-            LogicalEntity entity = findTable(
+            Entity entity = findTable(
                     Util.last( from.names ),
                     snapshot.nameMatcher.isCaseSensitive() );
             String name = Util.last( identifier.names );
@@ -3365,7 +3364,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         String tableAlias = pair.left;
 
-        LogicalEntity entity = findTable( tableAlias );
+        Entity entity = findTable( tableAlias );
         if ( entity != null ) {
             return entity.rolledUpColumnValidInsideAgg();
         }
@@ -3384,7 +3383,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         String tableAlias = pair.left;
         String columnName = pair.right;
 
-        LogicalEntity entity = findTable( tableAlias );
+        Entity entity = findTable( tableAlias );
         if ( entity != null ) {
             return entity.isRolledUp( columnName );
         }
@@ -3393,15 +3392,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
 
     @Nullable
-    private LogicalEntity findTable( String tableName, boolean caseSensitive ) {
+    private Entity findTable( String tableName, boolean caseSensitive ) {
         return snapshot.rel().getTable( Catalog.defaultNamespaceId, tableName ).orElse( null );
     }
 
 
     /**
-     * Given a table alias, find the corresponding {@link Entity} associated with it
+     * Given a table alias, find the corresponding {@link org.polypheny.db.schema.Entity} associated with it
      */
-    private LogicalEntity findTable( String alias ) {
+    private Entity findTable( String alias ) {
         return findTable( alias, snapshot.nameMatcher.isCaseSensitive() );
     }
 
@@ -3911,7 +3910,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         (SqlNode) selectItem,
                         select,
                         targetRowType.isStruct() && targetRowType.getFieldCount() >= i
-                                ? targetRowType.getFieldList().get( i ).getType()
+                                ? targetRowType.getFields().get( i ).getType()
                                 : unknownType,
                         expandedSelectItems,
                         aliases,
@@ -3992,13 +3991,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         assert type instanceof AlgRecordType;
         AlgRecordType rec = (AlgRecordType) type;
 
-        AlgDataType nodeType = rec.getFieldList().get( 0 ).getType();
+        AlgDataType nodeType = rec.getFields().get( 0 ).getType();
         nodeType = typeFactory.createTypeWithNullability( nodeType, true );
         fieldList.add( new AlgDataTypeFieldImpl( 1L, alias, 0, nodeType ) );
     }
 
 
-    protected AlgDataType createTargetRowType( LogicalEntity table, SqlNodeList targetColumnList, boolean append ) {
+    protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append ) {
         return createTargetRowType( table, targetColumnList, append, false );
     }
 
@@ -4011,12 +4010,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param append Whether to append fields to those in <code>baseRowType</code>
      * @return Rowtype
      */
-    protected AlgDataType createTargetRowType( LogicalEntity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
+    protected AlgDataType createTargetRowType( Entity table, SqlNodeList targetColumnList, boolean append, boolean allowDynamic ) {
         AlgDataType baseRowType = table.getRowType();
         if ( targetColumnList == null ) {
             return baseRowType;
         }
-        List<AlgDataTypeField> targetFields = baseRowType.getFieldList();
+        List<AlgDataTypeField> targetFields = baseRowType.getFields();
         final List<AlgDataTypeField> fields = new ArrayList<>();
         if ( append ) {
             for ( AlgDataTypeField targetField : targetFields ) {
@@ -4054,14 +4053,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateInsert( SqlInsert insert ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table =
+        final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
                         snapshot,
                         null,
                         null );
 
-        boolean allowDynamic = insert.getSchemaType() == NamespaceType.DOCUMENT;
+        boolean allowDynamic = insert.getSchemaType() == DataModel.DOCUMENT;
 
         // INSERT has an optional column name list.  If present then reduce the rowtype to the columns specified.  If not present then the entire target rowtype is used.
         final AlgDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false, allowDynamic );
@@ -4101,7 +4100,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
 
 
-    private void checkFieldCount( SqlNode node, LogicalEntity table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
+    private void checkFieldCount( SqlNode node, Entity table, SqlNode source, AlgDataType logicalSourceRowType, AlgDataType logicalTargetRowType ) {
         final int sourceFieldCount = logicalSourceRowType.getFieldCount();
         final int targetFieldCount = logicalTargetRowType.getFieldCount();
         if ( sourceFieldCount != targetFieldCount ) {
@@ -4122,7 +4121,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     }
                 };
         final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).getColumnStrategies();
-        for ( final AlgDataTypeField field : table.getRowType().getFieldList() ) {
+        for ( final AlgDataTypeField field : table.getRowType().getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
@@ -4177,7 +4176,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             final SqlNode source = insert.getSource();
             final AlgDataType sourceRowType = getSqlNamespace( source ).getRowType();
             final AlgDataType logicalSourceRowType = getLogicalSourceRowType( sourceRowType, insert );
-            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFieldList().subList( 0, logicalSourceRowType.getFieldCount() ) );
+            final AlgDataType implicitTargetRowType = typeFactory.createStructType( targetRowType.getFields().subList( 0, logicalSourceRowType.getFieldCount() ) );
             final SqlValidatorNamespace targetNamespace = getSqlNamespace( insert );
             validateNamespace( targetNamespace, implicitTargetRowType );
             return implicitTargetRowType;
@@ -4195,8 +4194,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     protected void checkTypeAssignment( AlgDataType sourceRowType, AlgDataType targetRowType, final SqlNode query ) {
         // NOTE jvs 23-Feb-2006: subclasses may allow for extra targets representing system-maintained columns, so stop after all sources matched
-        List<AlgDataTypeField> sourceFields = sourceRowType.getFieldList();
-        List<AlgDataTypeField> targetFields = targetRowType.getFieldList();
+        List<AlgDataTypeField> sourceFields = sourceRowType.getFields();
+        List<AlgDataTypeField> targetFields = targetRowType.getFields();
         final int sourceCount = sourceFields.size();
         for ( int i = 0; i < sourceCount; ++i ) {
             AlgDataType sourceType = sourceFields.get( i ).getType();
@@ -4321,7 +4320,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table = targetNamespace.getTable();
+        final Entity table = targetNamespace.getTable();
 
         validateAccess( call.getTargetTable(), table, AccessEnum.DELETE );
     }
@@ -4331,7 +4330,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     public void validateUpdate( SqlUpdate call ) {
         final SqlValidatorNamespace targetNamespace = getSqlNamespace( call );
         validateNamespace( targetNamespace, unknownType );
-        final LogicalEntity table =
+        final Entity table =
                 SqlValidatorUtil.getLogicalEntity(
                         targetNamespace,
                         snapshot,
@@ -4366,7 +4365,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         IdentifierNamespace targetNamespace = (IdentifierNamespace) getSqlNamespace( call.getTargetTable() );
         validateNamespace( targetNamespace, unknownType );
 
-        LogicalEntity table = targetNamespace.getTable();
+        Entity table = targetNamespace.getTable();
         validateAccess( call.getTargetTable(), table, AccessEnum.UPDATE );
 
         AlgDataType targetRowType = unknownType;
@@ -4403,7 +4402,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
      * @param table Table
      * @param requiredAccess Access requested on table
      */
-    private void validateAccess( SqlNode node, LogicalEntity table, AccessEnum requiredAccess ) {
+    private void validateAccess( SqlNode node, Entity table, AccessEnum requiredAccess ) {
         if ( table != null ) {
             AccessType access = AccessType.ALL;
             if ( !access.allowsAccess( requiredAccess ) ) {
@@ -4431,7 +4430,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             SqlCall rowConstructor = (SqlCall) operand;
             if ( conformance.isInsertSubsetColumnsAllowed() && targetRowType.isStruct() && rowConstructor.operandCount() < targetRowType.getFieldCount() ) {
-                targetRowType = typeFactory.createStructType( targetRowType.getFieldList().subList( 0, rowConstructor.operandCount() ) );
+                targetRowType = typeFactory.createStructType( targetRowType.getFields().subList( 0, rowConstructor.operandCount() ) );
             } else if ( targetRowType.isStruct() && rowConstructor.operandCount() != targetRowType.getFieldCount() ) {
                 return;
             }
@@ -4439,7 +4438,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             inferUnknownTypes( targetRowType, scope, rowConstructor );
 
             if ( targetRowType.isStruct() ) {
-                for ( Pair<Node, AlgDataTypeField> pair : Pair.zip( rowConstructor.getOperandList(), targetRowType.getFieldList() ) ) {
+                for ( Pair<Node, AlgDataTypeField> pair : Pair.zip( rowConstructor.getOperandList(), targetRowType.getFields() ) ) {
                     if ( !pair.right.getType().isNullable() && CoreUtil.isNullLiteral( pair.left, false ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
                     }
@@ -4702,7 +4701,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         if ( allRows ) {
             final SqlValidatorNamespace sqlNs = getSqlNamespace( matchRecognize.getTableRef() );
             final AlgDataType inputDataType = sqlNs.getRowType();
-            for ( AlgDataTypeField fs : inputDataType.getFieldList() ) {
+            for ( AlgDataTypeField fs : inputDataType.getFields() ) {
                 if ( !typeBuilder.nameExists( fs.getName() ) ) {
                     typeBuilder.add( fs );
                 }
@@ -5064,7 +5063,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             if ( selectItem instanceof SqlIdentifier ) {
                 final SqlQualified qualified = scope.fullyQualify( (SqlIdentifier) selectItem );
                 SqlValidatorNamespace namespace = qualified.namespace;
-                final LogicalEntity table = namespace.getTable();
+                final Entity table = namespace.getTable();
                 if ( table == null ) {
                     return null;
                 }
@@ -6065,7 +6064,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 case JOIN:
                     final SqlJoin join = (SqlJoin) from;
                     final Permute left = new Permute( join.getLeft(), offset );
-                    final int fieldCount = getValidatedNodeType( join.getLeft() ).getFieldList().size();
+                    final int fieldCount = getValidatedNodeType( join.getLeft() ).getFields().size();
                     final Permute right = new Permute( join.getRight(), offset + fieldCount );
                     final List<String> names = usingNames( join );
                     final List<ImmutableList<Integer>> sources = new ArrayList<>();
@@ -6088,14 +6087,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             b.add( f ).nullable( nullable );
                         }
                     }
-                    for ( AlgDataTypeField f : left.rowType.getFieldList() ) {
+                    for ( AlgDataTypeField f : left.rowType.getFields() ) {
                         final ImmutableList<Integer> source = left.sources.get( f.getIndex() );
                         if ( sourceSet.add( source ) ) {
                             sources.add( source );
                             b.add( f );
                         }
                     }
-                    for ( AlgDataTypeField f : right.rowType.getFieldList() ) {
+                    for ( AlgDataTypeField f : right.rowType.getFields() ) {
                         final ImmutableList<Integer> source = right.sources.get( f.getIndex() );
                         if ( sourceSet.add( source ) ) {
                             sources.add( source );

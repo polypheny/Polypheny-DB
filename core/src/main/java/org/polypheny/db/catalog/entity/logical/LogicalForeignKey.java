@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
@@ -136,7 +136,7 @@ public class LogicalForeignKey extends LogicalKey {
 
     // Used for creating ResultSets
     @RequiredArgsConstructor
-    public static class LogicalForeignKeyColumn implements LogicalObject {
+    public static class LogicalForeignKeyColumn implements PolyObject {
 
         private static final long serialVersionUID = 3287177728197412000L;
 

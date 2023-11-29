@@ -33,10 +33,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.AlgRequest;
@@ -54,6 +54,7 @@ import org.polypheny.db.webui.models.results.Result;
 public class WebSocket implements Consumer<WsConfig> {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    public static final String POLYPHENY_UI = "Polypheny-UI";
     private final Crud crud;
     private final ConcurrentHashMap<String, Set<String>> queryAnalyzers = new ConcurrentHashMap<>();
 
@@ -108,7 +109,7 @@ public class WebSocket implements Consumer<WsConfig> {
         switch ( request.type ) {
             case "GraphRequest":
                 GraphRequest graphRequest = ctx.messageAsClass( GraphRequest.class );
-                PolyGraph graph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager() );
+                PolyGraph graph = LanguageCrud.getGraph( Catalog.snapshot().getNamespace( graphRequest.namespace ).orElseThrow().name, crud.getTransactionManager(), ctx.session );
 
                 ctx.send( graph.toJson() );
 
@@ -117,13 +118,15 @@ public class WebSocket implements Consumer<WsConfig> {
                 QueryRequest queryRequest = ctx.messageAsClass( QueryRequest.class );
                 QueryLanguage language = QueryLanguage.from( queryRequest.language );
 
-                List<Result<?, ?>> results = LanguageCrud.anyQuery(
-                        language,
-                        ctx.session,
-                        queryRequest,
-                        crud.getTransactionManager(),
-                        Catalog.defaultUserId,
-                        Catalog.defaultNamespaceId );
+                List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
+                        QueryContext.builder()
+                                .query( queryRequest.query )
+                                .language( language )
+                                .isAnalysed( queryRequest.analyze )
+                                .usesCache( queryRequest.cache )
+                                .origin( POLYPHENY_UI ).batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
+                                .transactionManager( crud.getTransactionManager() )
+                                .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );
 
                 for ( Result<?, ?> result : results ) {
                     if ( !(result instanceof RelationalResult) ) {
@@ -153,31 +156,32 @@ public class WebSocket implements Consumer<WsConfig> {
                 } else {//TableRequest, is equal to UIRequest
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
-                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElseThrow();
-                        switch ( namespace.namespaceType ) {
+                        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
+                        switch ( namespace.dataModel ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
-                                LogicalCollection collection = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).orElseThrow();
-                                result = LanguageCrud.anyQuery(
-                                        QueryLanguage.from( "mongo" ),
-                                        ctx.session,
-                                        new QueryRequest( String.format( "db.%s.find({})", collection.name ), false, false, "mql", namespace.name ),
-                                        crud.getTransactionManager(),
-                                        Catalog.defaultUserId,
-                                        Catalog.defaultNamespaceId
-                                ).get( 0 );
+                                result = LanguageCrud.anyQueryResult(
+                                        QueryContext.builder()
+                                                .query( "db.%s.find({})" )
+                                                .language( QueryLanguage.from( "mongo" ) )
+                                                .origin( POLYPHENY_UI )
+                                                .transactionManager( crud.getTransactionManager() )
+                                                .informationTarget( i -> i.setSession( ctx.session ) )
+                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                                .build(), uiRequest ).get( 0 );
                                 break;
                             case GRAPH:
-                                result = LanguageCrud.anyQuery(
-                                        QueryLanguage.from( "cypher" ),
-                                        ctx.session,
-                                        new QueryRequest( "MATCH (n) RETURN n", false, false, "mql", namespace.name ),
-                                        crud.getTransactionManager(),
-                                        Catalog.defaultUserId,
-                                        Catalog.defaultNamespaceId
-                                ).get( 0 );
+                                result = LanguageCrud.anyQueryResult(
+                                        QueryContext.builder()
+                                                .query( "MATCH (n) RETURN n" )
+                                                .language( QueryLanguage.from( "cypher" ) )
+                                                .origin( POLYPHENY_UI )
+                                                .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                                                .transactionManager( crud.getTransactionManager() )
+                                                .informationTarget( i -> i.setSession( ctx.session ) )
+                                                .build(), uiRequest ).get( 0 );
                                 break;
                         }
                         if ( result == null ) {

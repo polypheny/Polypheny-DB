@@ -25,7 +25,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.entity.PolyValue;
@@ -69,8 +69,8 @@ public class ExcelTranslatableTable extends ExcelTable implements TranslatableEn
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return new ExcelTableScan( this, context.getCluster(), this, fields );
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        return new ExcelTableScan( this, cluster, this, fields );
     }
 
 }

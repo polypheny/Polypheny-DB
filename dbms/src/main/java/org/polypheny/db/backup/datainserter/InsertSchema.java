@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.backup.BackupEntityWrapper;
 import org.polypheny.db.catalog.Catalog;
@@ -31,11 +32,14 @@ import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
@@ -89,9 +93,9 @@ public class InsertSchema {
         insertCreateNamespace( backupInformationObject.getWrappedNamespaces() );
         /*
         String query = String.format("CREATE GRAPH NAMESPACE testGraph");
-        executeStatementInPolypheny( query, "sql", NamespaceType.GRAPH);
+        executeStatementInPolypheny( query, "sql", DataModel.GRAPH);
         String queery = "CREATE PLACEMENT OF testGraph ON STORE hsqldb"; //error: Caused by: org.polypheny.db.languages.sql.parser.impl.ParseException: Encountered "" at line 1, column 1.
-        executeStatementInPolypheny( queery, "sql", NamespaceType.GRAPH);
+        executeStatementInPolypheny( queery, "sql", DataModel.GRAPH);
          */
 
         //tables = bupInformationObject.transformLogicalEntitiesToBupSuperEntityyy( bupInformationObject.getTables() );
@@ -187,12 +191,12 @@ public class InsertSchema {
         for ( Map.Entry<Long, BackupEntityWrapper<LogicalNamespace>> ns : namespaces.entrySet() ) {
             //only insert namespaces that are marked to be inserted
             if (ns.getValue().getToBeInserted()) {
-                //query = "CREATE " + ns.getValue().getEntityObject().namespaceType.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
-                query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().namespaceType.toString(), ns.getValue().getEntityObject().name );
+                //query = "CREATE " + ns.getValue().getEntityObject().dataModel.toString() + " NAMESPACE " + ns.getValue().getEntityObject().name + ";";
+                query = String.format( "CREATE %s NAMESPACE %s11", ns.getValue().getEntityObject().dataModel.toString(), ns.getValue().getEntityObject().name );
 
                 //TODO(FF): execute query in polypheny, alter owner, set case sensitivity (how?)
                 if ( !ns.getValue().getEntityObject().name.equals( "public" ) ) {
-                    executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().namespaceType );
+                    executeStatementInPolypheny( query, "sql", ns.getValue().getEntityObject().dataModel );
                 }
             }
         }
@@ -220,7 +224,7 @@ public class InsertSchema {
                     // only create tables that don't (exist by default in polypheny)
                     if ( !(table.getEntityObject().entityType.equals( EntityType.SOURCE )) ) {
                         query = createTableQuery( table, namespaceName );
-                        executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                        executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
                     }
                 }
             }
@@ -259,7 +263,7 @@ public class InsertSchema {
 
                         query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s UNIQUE (%s)", namespaceName, tableName, constraintName, listOfCols );
                         log.info( query );
-                        executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                        executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
                     }
                 }
             }
@@ -294,7 +298,7 @@ public class InsertSchema {
 
                     query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
                     log.info( query );
-                    executeStatementInPolypheny( query, "sql", NamespaceType.RELATIONAL );
+                    executeStatementInPolypheny( query, "sql", DataModel.RELATIONAL );
                 }
             }
         }
@@ -318,7 +322,7 @@ public class InsertSchema {
          */
         //TODO(FF): how to set namespace??? (trhourgh settings? see below for try, but would require dependency)
 
-        executeStatementInPolypheny( "db.createCollection(\"users\")", "mql", NamespaceType.DOCUMENT );
+        executeStatementInPolypheny( "db.createCollection(\"users\")", "mql", DataModel.DOCUMENT );
     }
 
 
@@ -409,6 +413,7 @@ public class InsertSchema {
         if ( !(col.defaultValue == null) ) {
 
             String value = col.defaultValue.value.toTypedJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
+            String value2 = col.defaultValue.value.toJson( ); //'hallo', {"@class":"org.polypheny.db.type.entity.PolyBigDecimal","value":2}
             //for string it is this: {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}, figure out regex to only get value
             //from the string value (in json format), get only the value with regex from string {"@class":"org.polypheny.db.type.entity.PolyString","value":"hallo","charset":"UTF-16"}
             String regexString = value.replaceAll( ".*\"value\":", "" ); //is now value":"hallo","charset":"UTF-16"}, dont want ,"charset":"UTF-16"} part
@@ -419,7 +424,10 @@ public class InsertSchema {
             PolyValue reverse = PolyValue.fromTypedJson( value, PolyValue.class );
             Boolean testing = PolyType.DATETIME_TYPES.contains( col.defaultValue.type );
 
+            //todo: replace ' to '', wenn " in default denne esch
+
             if (PolyType.CHAR_TYPES.contains( col.defaultValue.type ) || PolyType.DATETIME_TYPES.contains( col.defaultValue.type ) ) {
+                //to quotedJson
                 defaultValue = String.format( " DEFAULT '%s'", regexString );
                 String test = " DEFAULT '" + regexString + "'";
             } else {
@@ -544,7 +552,7 @@ public class InsertSchema {
      */
 
 
-    private void executeStatementInPolypheny( String query, String queryLanguageType, NamespaceType namespaceType ) {
+    private void executeStatementInPolypheny( String query, String queryLanguageType, DataModel dataModel ) {
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;
@@ -555,6 +563,12 @@ public class InsertSchema {
             // get a transaction and a statement
             transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
             statement = transaction.createStatement();
+            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
+            ResultIterator iter = executedQuery.getIterator();
+            while ( iter.hasMoreRows() ) {
+                // liste mit tuples
+                iter.getNextBatch();
+            }
 
         } catch ( Exception e ) {
             throw new RuntimeException( "Error while starting transaction", e );
@@ -565,15 +579,15 @@ public class InsertSchema {
             Processor queryProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( queryLanguageType ) );
             Node parsed = queryProcessor.parse( query ).get( 0 );
 
-            if ( namespaceType == NamespaceType.RELATIONAL ) {
+            if ( dataModel == DataModel.RELATIONAL ) {
                 //TODO(FF): MqlQueryParamters would require dependency... am i allwoed?
                 //MqlQueryParameters parameters = new MqlQueryParameters
             }
 
-            QueryParameters parameters = new QueryParameters( query, namespaceType );
+            QueryParameters parameters = new QueryParameters( query, dataModel );
 
             //ddl?
-            result = queryProcessor.prepareDdl( statement, parsed, parameters );
+            //result = queryProcessor.prepareDdl( statement, parsed, parameters );
 
 
 
@@ -581,7 +595,7 @@ public class InsertSchema {
             AlgRoot algRoot = queryProcessor.translate(
                     statement,
                     queryProcessor.validate( statement.getTransaction(), sqlNode, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean()).left,
-                    new QueryParameters( query, NamespaceType.RELATIONAL )
+                    new QueryParameters( query, DataModel.RELATIONAL )
             );
             //get PolyResult from AlgRoot
             final QueryProcessor processor = statement.getQueryProcessor();

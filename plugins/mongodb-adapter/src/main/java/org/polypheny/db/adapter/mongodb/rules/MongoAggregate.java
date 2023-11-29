@@ -17,9 +17,10 @@
 package org.polypheny.db.adapter.mongodb.rules;
 
 
-import java.util.AbstractList;
+import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
@@ -100,19 +101,7 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
         final List<String> fixups;
         if ( groupSet.cardinality() == 1 ) {
-            fixups = new AbstractList<>() {
-                @Override
-                public String get( int index ) {
-                    final String outName = outNames.get( index );
-                    return MongoRules.maybeQuote( outName ) + ": " + MongoRules.maybeQuote( "$" + (index == 0 ? "_id" : outName) );
-                }
-
-
-                @Override
-                public int size() {
-                    return outNames.size();
-                }
-            };
+            fixups = Streams.mapWithIndex( outNames.stream(), ( n, j ) -> MongoRules.maybeQuote( n ) + ": " + MongoRules.maybeQuote( "$" + (j == 0 ? "_id" : n) ) ).collect( Collectors.toList() );
         } else {
             fixups = new ArrayList<>();
             fixups.add( "_id: 0" );
@@ -134,7 +123,7 @@ public class MongoAggregate extends Aggregate implements MongoAlg {
 
     private String toMongo( AggFunction aggregation, List<String> inNames, List<Integer> args, Implementor implementor ) {
         if ( aggregation.getOperatorName() == OperatorName.COUNT ) {
-            if ( args.size() == 0 ) {
+            if ( args.isEmpty() ) {
                 return "{$sum: 1}";
             } else {
                 assert args.size() == 1;

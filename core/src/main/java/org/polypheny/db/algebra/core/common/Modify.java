@@ -22,12 +22,12 @@ import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
 @SuperBuilder(toBuilder = true)
-public abstract class Modify<E extends LogicalEntity> extends SingleAlg {
+public abstract class Modify<E extends Entity> extends SingleAlg {
 
     @Getter
     public final E entity;

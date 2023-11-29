@@ -20,7 +20,6 @@ package org.polypheny.db.algebra.rules;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -29,7 +28,7 @@ import org.polypheny.db.tools.AlgBuilderFactory;
 
 
 /**
- * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link TranslatableEntity#toAlg(ToAlgContext, AlgTraitSet)}.
+ * Planner rule that converts a {@link LogicalRelScan} to the result of calling {@link TranslatableEntity#toAlg(org.polypheny.db.plan.AlgOptCluster, AlgTraitSet)}.
  */
 public class ScanRule extends AlgOptRule {
 
@@ -52,7 +51,7 @@ public class ScanRule extends AlgOptRule {
         if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ) == null ) {
             return;
         }
-        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).toAlg( oldAlg::getCluster, oldAlg.getTraitSet() );
+        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).toAlg( oldAlg.getCluster(), oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }
 

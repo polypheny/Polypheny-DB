@@ -128,7 +128,7 @@ public class HepPlannerTest extends RelOptTestBase {
             sb.append( " union all select name from sales.dept" );
         }
         sb.append( ")" );
-        AlgRoot root = tester.convertSqlToRel( sb.toString() );
+        AlgRoot root = tester.convertSqlToAlg( sb.toString() );
         planner.setRoot( root.alg );
         AlgNode best = planner.findBestExp();
 
@@ -218,7 +218,7 @@ public class HepPlannerTest extends RelOptTestBase {
         planner.addListener( listener );
 
         final String sql = "(select 1 from dept where abs(-1)=20)\n" + "union all\n" + "(select 1 from dept where abs(-1)=20)";
-        planner.setRoot( tester.convertSqlToRel( sql ).alg );
+        planner.setRoot( tester.convertSqlToAlg( sql ).alg );
         AlgNode bestRel = planner.findBestExp();
 
         assertThat( bestRel.getInput( 0 ).equals( bestRel.getInput( 1 ) ), is( true ) );
@@ -266,10 +266,10 @@ public class HepPlannerTest extends RelOptTestBase {
         programBuilder.addRuleInstance( FilterToCalcRule.INSTANCE );
 
         HepPlanner planner = new HepPlanner( programBuilder.build() );
-        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).alg );
+        planner.setRoot( tester.convertSqlToAlg( "select upper(name) from dept where deptno=20" ).alg );
         planner.findBestExp();
         // Reuse of HepPlanner (should trigger GC).
-        planner.setRoot( tester.convertSqlToRel( "select upper(name) from dept where deptno=20" ).alg );
+        planner.setRoot( tester.convertSqlToAlg( "select upper(name) from dept where deptno=20" ).alg );
         planner.findBestExp();
     }
 
@@ -293,7 +293,7 @@ public class HepPlannerTest extends RelOptTestBase {
         final HepTestListener listener = new HepTestListener( 0 );
         HepPlanner planner = new HepPlanner( programBuilder.build() );
         planner.addListener( listener );
-        planner.setRoot( tester.convertSqlToRel( COMPLEX_UNION_TREE ).alg );
+        planner.setRoot( tester.convertSqlToAlg( COMPLEX_UNION_TREE ).alg );
         planner.findBestExp();
         return listener.getApplyTimes();
     }

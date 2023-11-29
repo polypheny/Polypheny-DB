@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -261,7 +261,7 @@ public abstract class Index {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
-            final AlgDataType type = rowType.getFieldList().get( i ).getType();
+            final AlgDataType type = rowType.getFields().get( i ).getType();
             final Pair<PolyValue, PolyType> converted = RexLiteral.convertType( tuple.get( i ), type );
             row.add( new RexLiteral( converted.left, type, converted.right ) );
         }

@@ -36,7 +36,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -117,7 +117,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
@@ -182,7 +182,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
@@ -344,7 +344,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( AllocationColumn column : selectedColumns ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : implementation.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : implementation.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( column.getLogicalColumnName() ) ) {
                         resultColMapping.put( column.getColumnId(), i );
                     }
@@ -390,9 +390,9 @@ public class DataMigratorImpl implements DataMigrator {
                 }
                 List<AlgDataTypeField> fields;
                 if ( isMaterializedView ) {
-                    fields = targetAlg.alg.getEntity().getRowType().getFieldList();
+                    fields = targetAlg.alg.getEntity().getRowType().getFields();
                 } else {
-                    fields = sourceAlg.validatedRowType.getFieldList();
+                    fields = sourceAlg.validatedRowType.getFields();
                 }
 
                 for ( Map.Entry<Long, List<PolyValue>> v : values.entrySet() ) {
@@ -518,7 +518,7 @@ public class DataMigratorImpl implements DataMigrator {
         AlgStructuredTypeFlattener typeFlattener = new AlgStructuredTypeFlattener(
                 AlgBuilder.create( statement, algRoot.alg.getCluster() ),
                 algRoot.alg.getCluster().getRexBuilder(),
-                algRoot.alg::getCluster,
+                algRoot.alg.getCluster(),
                 true );
         return algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
     }
@@ -642,7 +642,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
                         resultColMapping.put( logicalColumn.id, i );
                     }
@@ -968,7 +968,7 @@ public class DataMigratorImpl implements DataMigrator {
             Map<Long, Integer> resultColMapping = new HashMap<>();
             for ( LogicalColumn logicalColumn : selectColumnList ) {
                 int i = 0;
-                for ( AlgDataTypeField metaData : result.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField metaData : result.getRowType().getFields() ) {
                     if ( metaData.getName().equalsIgnoreCase( logicalColumn.name ) ) {
                         resultColMapping.put( logicalColumn.id, i );
                     }

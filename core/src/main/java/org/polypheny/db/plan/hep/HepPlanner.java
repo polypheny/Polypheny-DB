@@ -54,7 +54,7 @@ import org.polypheny.db.algebra.convert.TraitMatchingRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
-import org.polypheny.db.plan.AbstractRelOptPlanner;
+import org.polypheny.db.plan.AbstractAlgOptPlanner;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptCostFactory;
 import org.polypheny.db.plan.AlgOptCostImpl;
@@ -81,7 +81,7 @@ import org.polypheny.db.util.graph.TopologicalOrderIterator;
 /**
  * HepPlanner is a heuristic implementation of the {@link AlgOptPlanner} interface.
  */
-public class HepPlanner extends AbstractRelOptPlanner {
+public class HepPlanner extends AbstractAlgOptPlanner {
 
     private final HepProgram mainProgram;
 
@@ -148,15 +148,15 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void setRoot( AlgNode alg ) {
-        root = addRelToGraph( alg );
+        root = addAlgToGraph( alg );
         dumpGraph();
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode getRoot() {
         return root;
@@ -169,7 +169,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public boolean addRule( AlgOptRule rule ) {
         boolean added = allRules.add( rule );
@@ -202,7 +202,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode changeTraits( AlgNode alg, AlgTraitSet toTraits ) {
         // Ignore traits, except for the root, where we remember what the final conversion should be.
@@ -213,7 +213,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode findBestExp() {
         assert root != null;
@@ -552,12 +552,12 @@ public class HepPlanner extends AbstractRelOptPlanner {
         AlgTrait outTrait = converterRule.getOutTrait();
         List<HepAlgVertex> parents = Graphs.predecessorListOf( graph, vertex );
         for ( HepAlgVertex parent : parents ) {
-            AlgNode parentRel = parent.getCurrentAlg();
-            if ( parentRel instanceof Converter ) {
+            AlgNode parentAlg = parent.getCurrentAlg();
+            if ( parentAlg instanceof Converter ) {
                 // We don't support converter chains.
                 continue;
             }
-            if ( parentRel.getTraitSet().contains( outTrait ) ) {
+            if ( parentAlg.getTraitSet().contains( outTrait ) ) {
                 // This parent wants the traits produced by the converter.
                 return true;
             }
@@ -597,7 +597,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         }
         bindings.add( alg );
         @SuppressWarnings("unchecked")
-        List<HepAlgVertex> childRels = (List) alg.getInputs();
+        List<HepAlgVertex> childAlgs = (List) alg.getInputs();
         switch ( operand.childPolicy ) {
             case ANY:
                 return true;
@@ -605,8 +605,8 @@ public class HepPlanner extends AbstractRelOptPlanner {
                 // For each operand, at least one child must match. If matchAnyChildren, usually there's just one operand.
                 for ( AlgOptRuleOperand childOperand : operand.getChildOperands() ) {
                     boolean match = false;
-                    for ( HepAlgVertex childRel : childRels ) {
-                        match = matchOperands( childOperand, childRel.getCurrentAlg(), bindings, nodeChildren );
+                    for ( HepAlgVertex childAlg : childAlgs ) {
+                        match = matchOperands( childOperand, childAlg.getCurrentAlg(), bindings, nodeChildren );
                         if ( match ) {
                             break;
                         }
@@ -615,18 +615,18 @@ public class HepPlanner extends AbstractRelOptPlanner {
                         return false;
                     }
                 }
-                final List<AlgNode> children = new ArrayList<>( childRels.size() );
-                for ( HepAlgVertex childRel : childRels ) {
-                    children.add( childRel.getCurrentAlg() );
+                final List<AlgNode> children = new ArrayList<>( childAlgs.size() );
+                for ( HepAlgVertex childAlg : childAlgs ) {
+                    children.add( childAlg.getCurrentAlg() );
                 }
                 nodeChildren.put( alg, children );
                 return true;
             default:
                 int n = operand.getChildOperands().size();
-                if ( childRels.size() < n ) {
+                if ( childAlgs.size() < n ) {
                     return false;
                 }
-                for ( Pair<HepAlgVertex, AlgOptRuleOperand> pair : Pair.zip( childRels, operand.getChildOperands() ) ) {
+                for ( Pair<HepAlgVertex, AlgOptRuleOperand> pair : Pair.zip( childAlgs, operand.getChildOperands() ) ) {
                     boolean match = matchOperands( pair.right, pair.left.getCurrentAlg(), bindings, nodeChildren );
                     if ( !match ) {
                         return false;
@@ -637,16 +637,16 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    private HepAlgVertex applyTransformationResults( HepAlgVertex vertex, HepRuleCall call, AlgTrait parentTrait ) {
+    private HepAlgVertex applyTransformationResults( HepAlgVertex vertex, HepRuleCall call, AlgTrait<?> parentTrait ) {
         // TODO jvs 5-Apr-2006:  Take the one that gives the best global cost rather than the best local cost.  That requires "tentative" graph edits.
 
         assert !call.getResults().isEmpty();
 
-        AlgNode bestRel = null;
+        AlgNode bestAlg = null;
 
         if ( call.getResults().size() == 1 ) {
-            // No costing required; skip it to minimize the chance of hitting rels without cost information.
-            bestRel = call.getResults().get( 0 );
+            // No costing required; skip it to minimize the chance of hitting Algs without cost information.
+            bestAlg = call.getResults().get( 0 );
         } else {
             AlgOptCost bestCost = null;
             final AlgMetadataQuery mq = call.getMetadataQuery();
@@ -656,15 +656,15 @@ public class HepPlanner extends AbstractRelOptPlanner {
                     // Keep in the isTraceEnabled for the getRowCount method call
                     LOGGER.trace( "considering {} with cumulative cost={} and rowcount={}", alg, thisCost, mq.getRowCount( alg ) );
                 }
-                if ( (bestRel == null) || thisCost.isLt( bestCost ) ) {
-                    bestRel = alg;
+                if ( (bestAlg == null) || thisCost.isLt( bestCost ) ) {
+                    bestAlg = alg;
                     bestCost = thisCost;
                 }
             }
         }
 
         ++nTransformations;
-        notifyTransformation( call, bestRel, true );
+        notifyTransformation( call, bestAlg, true );
 
         // Before we add the result, make a copy of the list of vertex's parents.  We'll need this later during contraction so that we only update the existing parents, not the new parents (otherwise loops can result).
         // Also take care of filtering out parents by traits in case we're dealing with a converter rule.
@@ -672,13 +672,13 @@ public class HepPlanner extends AbstractRelOptPlanner {
         final List<HepAlgVertex> parents = new ArrayList<>();
         for ( HepAlgVertex parent : allParents ) {
             if ( parentTrait != null ) {
-                AlgNode parentRel = parent.getCurrentAlg();
-                if ( parentRel instanceof Converter ) {
+                AlgNode parentAlg = parent.getCurrentAlg();
+                if ( parentAlg instanceof Converter ) {
                     // We don't support automatically chaining conversions. Treating a converter as a candidate parent here can cause the "iParentMatch" check below to
                     // throw away a new converter needed in the multi-parent DAG case.
                     continue;
                 }
-                if ( !parentRel.getTraitSet().contains( parentTrait ) ) {
+                if ( !parentAlg.getTraitSet().contains( parentTrait ) ) {
                     // This parent does not want the converted result.
                     continue;
                 }
@@ -686,7 +686,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
             parents.add( parent );
         }
 
-        HepAlgVertex newVertex = addRelToGraph( bestRel );
+        HepAlgVertex newVertex = addAlgToGraph( bestAlg );
 
         // There's a chance that newVertex is the same as one of the parents due to common subexpression recognition (e.g. the LogicalProject added by JoinCommuteRule).  In that
         // case, treat the transformation as a nop to avoid creating a loop.
@@ -700,13 +700,13 @@ public class HepPlanner extends AbstractRelOptPlanner {
             // Assume listener doesn't want to see garbage.
             collectGarbage();
         }
-        notifyTransformation( call, bestRel, false );
+        notifyTransformation( call, bestAlg, false );
         dumpGraph();
         return newVertex;
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode register( AlgNode alg, AlgNode equivAlg ) {
         // Ignore; this call is mostly to tell Volcano how to avoid infinite loops.
@@ -720,38 +720,38 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public AlgNode ensureRegistered( AlgNode alg, AlgNode equivAlg ) {
         return alg;
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public boolean isRegistered( AlgNode alg ) {
         return true;
     }
 
 
-    private HepAlgVertex addRelToGraph( AlgNode alg ) {
+    private HepAlgVertex addAlgToGraph( AlgNode alg ) {
         // Check if a transformation already produced a reference to an existing vertex.
         if ( graph.vertexSet().contains( alg ) ) {
             return (HepAlgVertex) alg;
         }
 
-        // Recursively add children, replacing this rel's inputs with corresponding child vertices.
+        // Recursively add children, replacing this algs inputs with corresponding child vertices.
         final List<AlgNode> inputs = alg.getInputs();
         final List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input1 : inputs ) {
-            HepAlgVertex childVertex = addRelToGraph( input1 );
+            HepAlgVertex childVertex = addAlgToGraph( input1 );
             newInputs.add( childVertex );
         }
 
         if ( !Util.equalShallow( inputs, newInputs ) ) {
-            AlgNode oldRel = alg;
+            AlgNode oldAlg = alg;
             alg = alg.copy( alg.getTraitSet(), newInputs );
-            onCopy( oldRel, alg );
+            onCopy( oldAlg, alg );
         }
         // Compute digest first time we add to DAG, otherwise can't get equivVertex for common sub-expression
         alg.recomputeDigest();
@@ -792,18 +792,18 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
         // Update specified parents of discardedVertex.
         for ( HepAlgVertex parent : parents ) {
-            AlgNode parentRel = parent.getCurrentAlg();
-            List<AlgNode> inputs = parentRel.getInputs();
+            AlgNode parentAlg = parent.getCurrentAlg();
+            List<AlgNode> inputs = parentAlg.getInputs();
             for ( int i = 0; i < inputs.size(); ++i ) {
                 AlgNode child = inputs.get( i );
                 if ( child != discardedVertex ) {
                     continue;
                 }
-                parentRel.replaceInput( i, preservedVertex );
+                parentAlg.replaceInput( i, preservedVertex );
             }
             graph.removeEdge( parent, discardedVertex );
             graph.addEdge( parent, preservedVertex );
-            updateVertex( parent, parentRel );
+            updateVertex( parent, parentAlg );
         }
 
         // NOTE:  we don't actually do graph.removeVertex(discardedVertex), because it might still be reachable from preservedVertex. Leave that job for garbage collection.
@@ -816,7 +816,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
     private void updateVertex( HepAlgVertex vertex, AlgNode alg ) {
         if ( alg != vertex.getCurrentAlg() ) {
             // REVIEW jvs: We'll do this again later during garbage collection.  Or we could get rid of mark/sweep garbage collection and do it precisely
-            // at this point by walking down to all rels which are only reachable from here.
+            // at this point by walking down to all Algs which are only reachable from here.
             notifyDiscard( vertex.getCurrentAlg() );
         }
         String oldDigest = vertex.getCurrentAlg().toString();
@@ -828,7 +828,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
         // otherwise the digest will be removed wrongly in the mapDigestToVertex  when collectGC so it must update the digest that map to vertex
         mapDigestToVertex.put( newDigest, vertex );
         if ( alg != vertex.getCurrentAlg() ) {
-            vertex.replaceRel( alg );
+            vertex.replaceAlg( alg );
         }
         notifyEquivalence( alg, vertex, false );
     }
@@ -839,7 +839,7 @@ public class HepPlanner extends AbstractRelOptPlanner {
 
         notifyChosen( alg );
 
-        // Recursively process children, replacing this rel's inputs with corresponding child rels.
+        // Recursively process children, replacing this Alg's inputs with corresponding child Algs.
         List<AlgNode> inputs = alg.getInputs();
         for ( int i = 0; i < inputs.size(); ++i ) {
             AlgNode child = inputs.get( i );
@@ -936,14 +936,14 @@ public class HepPlanner extends AbstractRelOptPlanner {
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public void registerMetadataProviders( List<AlgMetadataProvider> list ) {
         list.add( 0, new HepAlgMetadataProvider() );
     }
 
 
-    // implement RelOptPlanner
+    // implement AlgOptPlanner
     @Override
     public long getAlgMetadataTimestamp( AlgNode alg ) {
         // TODO jvs 20-Apr-2006: This is overly conservative.  Better would be to keep a timestamp per HepAlgVertex, and update only affected vertices and all ancestors on each transformation.

@@ -63,17 +63,16 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.languages.mql.Mql.Type;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCollectionStatement;
@@ -81,12 +80,11 @@ import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlDelete;
 import org.polypheny.db.languages.mql.MqlFind;
 import org.polypheny.db.languages.mql.MqlInsert;
-import org.polypheny.db.languages.mql.MqlQueryParameters;
 import org.polypheny.db.languages.mql.MqlQueryStatement;
 import org.polypheny.db.languages.mql.MqlUpdate;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -211,7 +209,7 @@ public class MqlToAlgConverter {
     private long namespaceId;
     private boolean notActive = false;
     private boolean usesDocumentModel;
-    private LogicalEntity entity;
+    private Entity entity;
 
 
     public MqlToAlgConverter( Snapshot snapshot, AlgOptCluster cluster ) {
@@ -237,11 +235,11 @@ public class MqlToAlgConverter {
     }
 
 
-    public AlgRoot convert( Node query, QueryParameters parameters ) {
+    public AlgRoot convert( ParsedQueryContext context ) {
         resetDefaults();
-        this.namespaceId = ((MqlQueryParameters) parameters).getNamespaceId();
-        if ( query instanceof MqlCollectionStatement ) {
-            return convert( (MqlCollectionStatement) query );
+        this.namespaceId = context.getNamespaceId();
+        if ( context.getQueryNode().orElseThrow() instanceof MqlCollectionStatement ) {
+            return convert( (MqlCollectionStatement) context.getQueryNode().orElseThrow() );
         }
         throw new GenericRuntimeException( "DML or DQL need a collection" );
     }
@@ -262,7 +260,7 @@ public class MqlToAlgConverter {
 
         AlgNode node;
 
-        if ( entity.namespaceType == NamespaceType.RELATIONAL ) {
+        if ( entity.dataModel == DataModel.RELATIONAL ) {
             _dataExists = false;
         }
 
@@ -309,7 +307,7 @@ public class MqlToAlgConverter {
     }
 
 
-    private LogicalEntity getEntity( MqlCollectionStatement query, long namespaceId ) {
+    private Entity getEntity( MqlCollectionStatement query, long namespaceId ) {
         LogicalNamespace namespace = snapshot.getNamespace( namespaceId ).orElseThrow();
 
         Optional<LogicalCollection> optionalDoc = snapshot.doc().getCollection( namespace.id, query.getCollection() );
@@ -331,7 +329,7 @@ public class MqlToAlgConverter {
     /**
      * Starts converting a db.collection.update();
      */
-    private AlgNode convertUpdate( MqlUpdate query, LogicalEntity entity, AlgNode node ) {
+    private AlgNode convertUpdate( MqlUpdate query, Entity entity, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, entity.getRowType(), node );
             if ( query.isOnlyOne() ) {
@@ -354,7 +352,7 @@ public class MqlToAlgConverter {
      * this method is implemented like the reduced update pipeline,
      * but in fact could be combined and therefore optimized a lot more
      */
-    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
+    private AlgNode translateUpdate( MqlUpdate query, AlgDataType rowType, AlgNode node, Entity entity ) {
         Map<String, List<RexNode>> updates = new HashMap<>();
         Map<String, RexNode> removes = new HashMap<>();
         Map<String, String> renames = new HashMap<>();
@@ -639,7 +637,7 @@ public class MqlToAlgConverter {
     /**
      * Starts translating an update pipeline
      */
-    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, LogicalEntity entity ) {
+    private AlgNode convertReducedPipeline( MqlUpdate query, AlgDataType rowType, AlgNode node, Entity entity ) {
         Map<String, RexNode> updates = new HashMap<>();
         Map<UpdateOperation, List<Pair<String, RexNode>>> mergedUpdates = new HashMap<>();
         mergedUpdates.put( UpdateOperation.REMOVE, new ArrayList<>() );
@@ -690,7 +688,7 @@ public class MqlToAlgConverter {
     /**
      * Translates a delete operation from its MqlNode format to the {@link AlgNode} form
      */
-    private AlgNode convertDelete( MqlDelete query, LogicalEntity table, AlgNode node ) {
+    private AlgNode convertDelete( MqlDelete query, Entity table, AlgNode node ) {
         if ( !query.getQuery().isEmpty() ) {
             node = convertQuery( query, table.getRowType(), node );
         }
@@ -715,7 +713,7 @@ public class MqlToAlgConverter {
      * @param entity the table/collection into which the values are inserted
      * @return the modified AlgNode
      */
-    private AlgNode convertInsert( MqlInsert query, LogicalEntity entity ) {
+    private AlgNode convertInsert( MqlInsert query, Entity entity ) {
         return LogicalDocumentModify.create(
                 entity,
                 convertMultipleValues( query.getValues(), entity.getRowType() ),
@@ -1085,7 +1083,7 @@ public class MqlToAlgConverter {
             if ( entry.getKey().equals( "_id" ) ) {
                 if ( entry.getValue().isNull() ) {
                     names.addAll( 0, rowType.getFieldNames() );
-                    nodes.addAll( 0, rowType.getFieldList().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
+                    nodes.addAll( 0, rowType.getFields().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
 
                 } else if ( entry.getValue().isString() ) {
                     names.add( entry.getValue().asString().getValue().substring( 1 ) );
@@ -2207,7 +2205,7 @@ public class MqlToAlgConverter {
                 List<RexNode> values = new ArrayList<>();
                 List<String> names = new ArrayList<>();
 
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     if ( !excludes.contains( field.getName() ) ) {
                         names.add( field.getName() );
                         values.add( RexIndexRef.of( field.getIndex(), rowType ) );
@@ -2227,7 +2225,7 @@ public class MqlToAlgConverter {
 
             for ( Entry<String, RexNode> entry : includes.entrySet() ) {
                 List<RexNode> values = new ArrayList<>();
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
 
                     // we attach the new values to the input bson
                     values.add( new RexCall(

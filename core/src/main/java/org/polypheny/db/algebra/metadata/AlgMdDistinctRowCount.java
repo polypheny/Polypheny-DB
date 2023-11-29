@@ -107,7 +107,7 @@ public class AlgMdDistinctRowCount implements MetadataHandler<BuiltInMetadata.Di
                                 new AlgOptUtil.RexInputConverter(
                                         rexBuilder,
                                         null,
-                                        input.getRowType().getFieldList(),
+                                        input.getRowType().getFields(),
                                         adjustments ) );
             }
             Double partialRowCount = mq.getDistinctRowCount( input, groupKey, modifiedPred );

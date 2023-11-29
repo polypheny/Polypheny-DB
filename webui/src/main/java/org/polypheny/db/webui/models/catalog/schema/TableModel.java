@@ -18,19 +18,19 @@ package org.polypheny.db.webui.models.catalog.schema;
 
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 
 public class TableModel extends EntityModel {
 
 
-    public TableModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
-        super( id, name, namespaceId, modifiable, namespaceType, entityType );
+    public TableModel( @Nullable Long id, @Nullable String name, Long namespaceId, boolean modifiable, DataModel dataModel, EntityType entityType ) {
+        super( id, name, namespaceId, modifiable, dataModel, entityType );
     }
 
 
     public static TableModel from( LogicalTable table ) {
-        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.namespaceType, table.entityType );
+        return new TableModel( table.id, table.name, table.namespaceId, table.modifiable, table.dataModel, table.entityType );
     }
 
 }

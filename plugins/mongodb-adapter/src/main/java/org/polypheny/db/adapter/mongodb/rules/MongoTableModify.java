@@ -32,7 +32,6 @@ import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
-import org.polypheny.db.adapter.mongodb.MongoRowType;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -42,8 +41,6 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -74,10 +71,10 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             MongoEntity entity,
             AlgNode input,
             Operation operation,
-            List<String> updateColumnList,
-            List<? extends RexNode> sourceExpressionList,
+            List<String> updateColumns,
+            List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
-        super( cluster, traitSet, entity, input, operation, updateColumnList, sourceExpressionList, flattened );
+        super( cluster, traitSet, entity, input, operation, updateColumns, sourceExpressions, flattened );
         this.bucket = entity.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
     }
 
@@ -107,7 +104,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         implementor.setDML( true );
         this.implementor = implementor;
 
-        implementor.entity = entity;
+        implementor.setEntity( entity );
         implementor.setOperation( this.getOperation() );
 
         switch ( this.getOperation() ) {
@@ -136,7 +133,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
     private void handleDelete( Implementor implementor ) {
         Implementor filterCollector = new Implementor( true );
-        filterCollector.setStaticRowType( implementor.getStaticRowType() );
+        filterCollector.setEntity( entity );
         ((MongoAlg) input).implement( filterCollector );
         implementor.filter = filterCollector.filter;
         if ( Pair.right( filterCollector.list ).contains( "{$limit: 1}" ) ) {
@@ -147,43 +144,43 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
     private void handleUpdate( Implementor implementor ) {
         Implementor condImplementor = new Implementor( true );
-        condImplementor.setStaticRowType( implementor.getStaticRowType() );
+        condImplementor.setEntity( entity );
         ((MongoAlg) input).implement( condImplementor );
         implementor.filter = condImplementor.filter;
-        assert condImplementor.getStaticRowType() instanceof MongoRowType;
-        MongoRowType rowType = (MongoRowType) condImplementor.getStaticRowType();
+        //assert condImplementor.getStaticRowType() instanceof MongoRowType;
+        AlgDataType rowType = condImplementor.getRowType();
         int pos = 0;
         BsonDocument doc = new BsonDocument();
         List<BsonDocument> docDocs = new ArrayList<>();
         GridFSBucket bucket = implementor.getBucket();
         for ( RexNode el : getSourceExpressions() ) {
+            String physicalName = entity.getPhysicalName( getUpdateColumns().get( pos ) );
             if ( el.isA( Kind.LITERAL ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
+                        physicalName,//getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         BsonUtil.getAsBson( (RexLiteral) el, bucket ) );
             } else if ( el instanceof RexCall ) {
                 RexCall call = ((RexCall) el);
                 if ( Arrays.asList( Kind.PLUS, Kind.PLUS, Kind.TIMES, Kind.DIVIDE ).contains( call.op.getKind() ) ) {
                     doc.append(
-                            rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
+                            physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                             visitCall( implementor, (RexCall) el, call.op.getKind(), el.getType().getPolyType() ) );
                 } else if ( call.op.getKind().belongsTo( Kind.MQL_KIND ) ) {
                     docDocs.add( handleDocumentUpdate( (RexCall) el, bucket, rowType ) );
                 } else {
                     doc.append(
-                            rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
+                            physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                             BsonUtil.getBsonArray( call, bucket ) );
                 }
             } else if ( el.isA( Kind.DYNAMIC_PARAM ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
+                        physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonDynamic( (RexDynamicParam) el ) );
             } else if ( el.isA( Kind.FIELD_ACCESS ) ) {
                 doc.append(
-                        rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
+                        physicalName,//rowType.getPhysicalName( getUpdateColumns().get( pos ), implementor ),
                         new BsonString(
-                                "$" + rowType.getPhysicalName(
-                                        ((RexFieldAccess) el).getField().getName(), implementor ) ) );
+                                "$" + physicalName ) );//rowType.getPhysicalName( ((RexFieldAccess) el).getField().getName(), implementor ) ) );
             }
             pos++;
         }
@@ -201,7 +198,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
     }
 
 
-    private BsonDocument handleDocumentUpdate( RexCall el, GridFSBucket bucket, MongoRowType rowType ) {
+    private BsonDocument handleDocumentUpdate( RexCall el, GridFSBucket bucket, AlgDataType rowType ) {
         if ( el.op.getKind() == Kind.MQL_JSONIFY ) {
             assert el.getOperands().size() == 1;
             return handleDocumentUpdate( (RexCall) el.getOperands().get( 0 ), bucket, rowType );
@@ -218,7 +215,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
     }
 
 
-    private void attachUpdateStep( BsonDocument doc, RexCall el, MongoRowType rowType, String key ) {
+    private void attachUpdateStep( BsonDocument doc, RexCall el, AlgDataType rowType, String key ) {
         List<String> keys = getDocUpdateKey( (RexIndexRef) el.operands.get( 0 ), (RexCall) el.operands.get( 1 ), rowType );
         switch ( el.op.getKind() ) {
             case MQL_UPDATE_REPLACE:
@@ -250,7 +247,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
     }
 
 
-    private String getDocParentKey( RexIndexRef rexInputRef, MongoRowType rowType ) {
+    private String getDocParentKey( RexIndexRef rexInputRef, AlgDataType rowType ) {
         return rowType.getFieldNames().get( rexInputRef.getIndex() );
     }
 
@@ -324,7 +321,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
     }
 
 
-    private List<String> getDocUpdateKey( RexIndexRef row, RexCall subfield, MongoRowType rowType ) {
+    private List<String> getDocUpdateKey( RexIndexRef row, RexCall subfield, AlgDataType rowType ) {
         String name = rowType.getFieldNames().get( row.getIndex() );
         return subfield
                 .operands
@@ -384,12 +381,12 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
 
     private void handlePreparedInsert( Implementor implementor, MongoProject input ) {
-        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFieldList().size() == 1 ) {
+        if ( !(input.getInput() instanceof MongoValues || input.getInput() instanceof MongoDocuments) && input.getInput().getRowType().getFields().size() == 1 ) {
             return;
         }
 
         BsonDocument doc = new BsonDocument();
-        MongoEntity entity = implementor.entity.unwrap( MongoEntity.class );
+        MongoEntity entity = implementor.getEntity().unwrap( MongoEntity.class );
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
         assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
@@ -401,26 +398,26 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         } else {
             throw new GenericRuntimeException( "Mapping for physical mongo fields not found" );
         }*/
-
-        implementor.setStaticRowType( (AlgRecordType) input.getRowType() );
+        implementor.setEntity( entity );
 
         int pos = 0;
         for ( RexNode rexNode : input.getChildExps() ) {
+            String physicalName = entity.getPhysicalName( input.getRowType().getFields().get( pos ).getName() );
             if ( rexNode instanceof RexDynamicParam ) {
                 // preparedInsert
-                doc.append( entity.fields.get( pos ).name, new BsonDynamic( (RexDynamicParam) rexNode ) );
+                doc.append( physicalName, new BsonDynamic( (RexDynamicParam) rexNode ) );
             } else if ( rexNode instanceof RexLiteral ) {
-                doc.append( entity.fields.get( pos ).name, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
+                doc.append( physicalName, BsonUtil.getAsBson( (RexLiteral) rexNode, bucket ) );
             } else if ( rexNode instanceof RexCall ) {
                 PolyType type = this.entity
                         .getRowType( getCluster().getTypeFactory() )
-                        .getFieldList()
+                        .getFields()
                         .get( pos )
                         .getType()
                         .getComponentType()
                         .getPolyType();
 
-                doc.append( entity.fields.get( pos ).name, getBsonArray( (RexCall) rexNode, type, bucket ) );
+                doc.append( physicalName, getBsonArray( (RexCall) rexNode, type, bucket ) );
 
             } else if ( rexNode.getKind() == Kind.INPUT_REF && input.getInput() instanceof MongoValues ) {
                 handleDirectInsert( implementor, (MongoValues) input.getInput() );
@@ -461,7 +458,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
 
     private void handleDirectInsert( Implementor implementor, MongoValues values ) {
         List<BsonDocument> docs = new ArrayList<>();
-        LogicalTable catalogTable = implementor.entity.unwrap( LogicalTable.class );
+        MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.bucket;
 
         AlgDataType valRowType = rowType;
@@ -470,8 +467,8 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             valRowType = values.getRowType();
         }
 
-        List<String> columnNames = catalogTable.getColumnNames();
-        List<Long> columnIds = catalogTable.getColumnIds();
+        List<String> columnNames = entity.getRowType().getFieldNames();
+        List<Long> columnIds = entity.getRowType().getFieldIds();
         for ( ImmutableList<RexLiteral> literals : values.tuples ) {
             BsonDocument doc = new BsonDocument();
             int pos = 0;

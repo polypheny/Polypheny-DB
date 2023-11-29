@@ -341,7 +341,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public String getDefaultPhysicalNamespaceName() {
-        return "public" + getAdapterId();
+        return "public";
     }
 
 

@@ -70,6 +70,7 @@ import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
@@ -248,7 +249,7 @@ public abstract class PolyTypeUtil {
         if ( !type.isStruct() ) {
             return false;
         }
-        for ( AlgDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFields() ) {
             if ( containsNullable( field.getType() ) ) {
                 return true;
             }
@@ -511,8 +512,8 @@ public abstract class PolyTypeUtil {
             if ( t1.getFieldCount() != t2.getFieldCount() ) {
                 return false;
             }
-            List<AlgDataTypeField> fields1 = t1.getFieldList();
-            List<AlgDataTypeField> fields2 = t2.getFieldList();
+            List<AlgDataTypeField> fields1 = t1.getFields();
+            List<AlgDataTypeField> fields2 = t2.getFields();
             for ( int i = 0; i < fields1.size(); ++i ) {
                 if ( !sameNamedType( fields1.get( i ).getType(), fields2.get( i ).getType() ) ) {
                     return false;
@@ -722,9 +723,9 @@ public abstract class PolyTypeUtil {
                     // can't cast between different distinct types
                     return false;
                 }
-                return canCastFrom( toType.getFieldList().get( 0 ).getType(), fromType, coerce );
+                return canCastFrom( toType.getFields().get( 0 ).getType(), fromType, coerce );
             } else if ( fromTypeName == PolyType.DISTINCT ) {
-                return canCastFrom( toType, fromType.getFieldList().get( 0 ).getType(), coerce );
+                return canCastFrom( toType, fromType.getFields().get( 0 ).getType(), coerce );
             } else if ( toTypeName == PolyType.ROW ) {
                 if ( fromTypeName != PolyType.ROW ) {
                     return false;
@@ -734,8 +735,8 @@ public abstract class PolyTypeUtil {
                     return false;
                 }
                 for ( int i = 0; i < n; ++i ) {
-                    AlgDataTypeField toField = toType.getFieldList().get( i );
-                    AlgDataTypeField fromField = fromType.getFieldList().get( i );
+                    AlgDataTypeField toField = toType.getFields().get( i );
+                    AlgDataTypeField fromField = fromType.getFields().get( i );
                     if ( !canCastFrom( toField.getType(), fromField.getType(), coerce ) ) {
                         return false;
                     }
@@ -833,7 +834,7 @@ public abstract class PolyTypeUtil {
             list.add( nullIndicatorField );
             nested = true;
         }
-        for ( AlgDataTypeField field : type.getFieldList() ) {
+        for ( AlgDataTypeField field : type.getFields() ) {
             if ( flatteningMap != null ) {
                 flatteningMap[field.getIndex()] = list.size();
             }
@@ -940,7 +941,7 @@ public abstract class PolyTypeUtil {
      * @return Ordinal of field
      */
     public static int findField( AlgDataType type, String fieldName ) {
-        List<AlgDataTypeField> fields = type.getFieldList();
+        List<AlgDataTypeField> fields = type.getFields();
         for ( int i = 0; i < fields.size(); i++ ) {
             AlgDataTypeField field = fields.get( i );
             if ( field.getName().equals( fieldName ) ) {
@@ -961,7 +962,7 @@ public abstract class PolyTypeUtil {
      * @return list of data types that are requested by requiredFields
      */
     public static List<AlgDataType> projectTypes( final AlgDataType rowType, final List<? extends Number> requiredFields ) {
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
 
         return new AbstractList<>() {
             @Override
@@ -995,7 +996,7 @@ public abstract class PolyTypeUtil {
      */
     public static boolean isFlat( AlgDataType type ) {
         if ( type.isStruct() ) {
-            for ( AlgDataTypeField field : type.getFieldList() ) {
+            for ( AlgDataTypeField field : type.getFields() ) {
                 if ( field.getType().isStruct() ) {
                     return false;
                 }
@@ -1023,7 +1024,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
                 if ( !isComparable( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1151,7 +1152,7 @@ public abstract class PolyTypeUtil {
             if ( n != type2.getFieldCount() ) {
                 return false;
             }
-            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFieldList(), type2.getFieldList() ) ) {
+            for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( type1.getFields(), type2.getFields() ) ) {
                 if ( !isSameFamily( pair.left.getType(), pair.right.getType() ) ) {
                     return false;
                 }
@@ -1354,6 +1355,8 @@ public abstract class PolyTypeUtil {
                 return PolyFloat.of( Float.parseFloat( s ) );
             case DECIMAL:
                 return PolyBigDecimal.of( new BigDecimal( s ) );
+            case VARCHAR:
+                return PolyString.of( s );
             //case ARRAY:
             default:
                 throw new NotImplementedException();

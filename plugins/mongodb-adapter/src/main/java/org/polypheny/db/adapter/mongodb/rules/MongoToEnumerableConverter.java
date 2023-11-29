@@ -81,13 +81,13 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         final AlgDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
-        if ( mongoImplementor.entity == null ) {
+        if ( mongoImplementor.getEntity() == null ) {
             return implementor.result( physType, new BlockBuilder().toBlock() );
         }
 
         final Expression tupleTypes = MongoTupleType.from( rowType ).asExpression();
 
-        final Expression table = list.append( "table", mongoImplementor.entity.asExpression()/*.getExpression( MongoEntity.MongoQueryable.class )*/ );
+        final Expression table = list.append( "table", mongoImplementor.getEntity().asExpression()/*.getExpression( MongoEntity.MongoQueryable.class )*/ );
 
         List<String> opList = Pair.right( mongoImplementor.list );
 

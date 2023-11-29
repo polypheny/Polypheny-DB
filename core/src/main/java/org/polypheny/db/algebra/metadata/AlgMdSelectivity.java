@@ -87,7 +87,7 @@ public class AlgMdSelectivity implements MetadataHandler<BuiltInMetadata.Selecti
             }
 
             // convert the predicate to reference the types of the union child
-            RexNode modifiedPred = predicate.accept( new AlgOptUtil.RexInputConverter( rexBuilder, null, input.getRowType().getFieldList(), adjustments ) );
+            RexNode modifiedPred = predicate.accept( new AlgOptUtil.RexInputConverter( rexBuilder, null, input.getRowType().getFields(), adjustments ) );
             double sel = mq.getSelectivity( input, modifiedPred );
 
             sumRows += nRows;

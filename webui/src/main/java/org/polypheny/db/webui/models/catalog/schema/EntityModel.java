@@ -18,14 +18,14 @@ package org.polypheny.db.webui.models.catalog.schema;
 
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
 public class EntityModel extends IdEntity {
 
 
-    public final NamespaceType namespaceType;
+    public final DataModel dataModel;
 
     public final EntityType entityType;
 
@@ -34,17 +34,17 @@ public class EntityModel extends IdEntity {
     public final boolean modifiable;
 
 
-    public EntityModel( @Nullable Long id, @Nullable String name, @Nullable Long namespaceId, boolean modifiable, NamespaceType namespaceType, EntityType entityType ) {
+    public EntityModel( @Nullable Long id, @Nullable String name, @Nullable Long namespaceId, boolean modifiable, DataModel dataModel, EntityType entityType ) {
         super( id, name );
         this.namespaceId = namespaceId;
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
         this.entityType = entityType;
         this.modifiable = modifiable;
     }
 
 
     public static EntityModel from( LogicalEntity entity ) {
-        return new EntityModel( entity.id, entity.name, entity.namespaceId, entity.modifiable, entity.namespaceType, entity.entityType );
+        return new EntityModel( entity.id, entity.name, entity.namespaceId, entity.modifiable, entity.dataModel, entity.entityType );
     }
 
 

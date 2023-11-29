@@ -39,16 +39,14 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
@@ -79,14 +77,14 @@ public class SqlValidatorUtil {
 
 
     /**
-     * Converts a {@link SqlValidatorScope} into a {@link AlgOptEntity}. This is only possible if the scope represents an identifier, such as "sales.emp".
+     * Converts a {@link SqlValidatorScope} into a {@link Entity}. This is only possible if the scope represents an identifier, such as "sales.emp".
      * Otherwise, returns null.
      *
      * @param namespace Namespace
      * @param datasetName Name of sample dataset to substitute, or null to use the regular table
      * @param usedDataset Output parameter which is set to true if a sample dataset is found; may be null
      */
-    public static LogicalEntity getLogicalEntity( SqlValidatorNamespace namespace, Snapshot snapshot, String datasetName, boolean[] usedDataset ) {
+    public static Entity getLogicalEntity( SqlValidatorNamespace namespace, Snapshot snapshot, String datasetName, boolean[] usedDataset ) {
 
         if ( namespace.isWrapperFor( SqlValidatorImpl.DmlNamespace.class ) ) {
             final SqlValidatorImpl.DmlNamespace dmlNamespace = namespace.unwrap( SqlValidatorImpl.DmlNamespace.class );
@@ -129,7 +127,7 @@ public class SqlValidatorUtil {
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
-    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, LogicalEntity table, SqlNodeList extendedColumns ) {
+    public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, Entity table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
         final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class );
         int extendedFieldOffset =
@@ -180,7 +178,7 @@ public class SqlValidatorUtil {
      * @param targetRowType The target to overlay on the source to create the bit set.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, AlgDataType targetRowType ) {
-        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFieldList(), targetRowType );
+        Map<Integer, AlgDataTypeField> indexToField = getIndexToFieldMap( sourceRowType.getFields(), targetRowType );
         return getOrdinalBitSet( sourceRowType, indexToField );
     }
 
@@ -192,7 +190,7 @@ public class SqlValidatorUtil {
      * @param indexToField The map of ordinals to target fields.
      */
     public static ImmutableBitSet getOrdinalBitSet( AlgDataType sourceRowType, Map<Integer, AlgDataTypeField> indexToField ) {
-        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFieldList(), AlgDataTypeField::getIndex ) );
+        ImmutableBitSet source = ImmutableBitSet.of( Lists.transform( sourceRowType.getFields(), AlgDataTypeField::getIndex ) );
         ImmutableBitSet target = ImmutableBitSet.of( indexToField.keySet() );
         return source.intersect( target );
     }
@@ -265,7 +263,7 @@ public class SqlValidatorUtil {
     }
 
 
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, LogicalEntity table ) {
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table ) {
         return getTargetField( rowType, typeFactory, id, snapshot, table, false );
     }
 
@@ -278,8 +276,8 @@ public class SqlValidatorUtil {
      * @param table the target table or null if it is not a RelOptTable instance
      * @return the target field or null if the name cannot be resolved
      */
-    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, LogicalEntity table, boolean isDocument ) {
-        final Entity t = table == null ? null : table.unwrap( Entity.class );
+    public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table, boolean isDocument ) {
+        final org.polypheny.db.schema.Entity t = table == null ? null : table.unwrap( org.polypheny.db.schema.Entity.class );
 
         if ( !(t instanceof CustomColumnResolvingEntity) ) {
             final NameMatcher nameMatcher = snapshot.nameMatcher;
@@ -624,7 +622,7 @@ public class SqlValidatorUtil {
             namespace = Catalog.defaultNamespaceName;
         }
 
-        return validator.snapshot.getNamespace( namespace ).orElseThrow().namespaceType != NamespaceType.RELATIONAL;
+        return validator.snapshot.getNamespace( namespace ).orElseThrow().dataModel != DataModel.RELATIONAL;
     }
 
 

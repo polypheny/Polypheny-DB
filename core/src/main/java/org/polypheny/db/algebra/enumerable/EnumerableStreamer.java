@@ -91,7 +91,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "query" + System.nanoTime() ), query.block ),
                 exp,
-                Expressions.constant( getLeft().getRowType().getFieldList().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
+                Expressions.constant( getLeft().getRowType().getFields().stream().map( f -> f.getType().getPolyType() ).collect( Collectors.toList() ) ) );
 
         builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 

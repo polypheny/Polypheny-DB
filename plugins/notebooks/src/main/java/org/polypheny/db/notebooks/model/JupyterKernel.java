@@ -43,6 +43,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage;
 import org.polypheny.db.notebooks.model.language.JupyterKernelLanguage.JupyterQueryPart;
 import org.polypheny.db.notebooks.model.language.JupyterLanguageFactory;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.results.Result;
@@ -249,14 +250,13 @@ public class JupyterKernel {
      */
     private String anyQuery( String query, String language, String namespace ) {
         QueryRequest queryRequest = new QueryRequest( query, false, true, language, namespace );
-        List<Result<?, ?>> results = LanguageCrud.anyQuery(
-                QueryLanguage.from( language ),
-                null,
-                queryRequest,
-                jsm.getTransactionManager(),
-                Catalog.defaultUserId,
-                Catalog.defaultNamespaceId
-        );
+        List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( QueryLanguage.from( language ) )
+                        .origin( "Notebooks" )
+                        .transactionManager( jsm.getTransactionManager() )
+                        .build(), queryRequest );
         return resultSetGson.toJson( results );
     }
 

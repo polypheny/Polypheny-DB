@@ -58,7 +58,7 @@ import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
 import org.polypheny.db.catalog.impl.logical.DocumentCatalog;
 import org.polypheny.db.catalog.impl.logical.GraphCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
@@ -240,51 +240,51 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    private void validateNamespaceType( long id, NamespaceType type ) {
-        if ( logicalCatalogs.get( id ).getLogicalNamespace().namespaceType != type ) {
-            throw new GenericRuntimeException( "error while retrieving catalog" );
+    private void validateNamespaceType( long id, DataModel type ) {
+        if ( logicalCatalogs.get( id ).getLogicalNamespace().dataModel != type ) {
+            throw new GenericRuntimeException( "Error while retrieving namespace type" );
         }
     }
 
 
     @Override
     public LogicalRelationalCatalog getLogicalRel( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.RELATIONAL );
+        validateNamespaceType( namespaceId, DataModel.RELATIONAL );
         return (LogicalRelationalCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
     public LogicalDocumentCatalog getLogicalDoc( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.DOCUMENT );
+        validateNamespaceType( namespaceId, DataModel.DOCUMENT );
         return (LogicalDocumentCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
     public LogicalGraphCatalog getLogicalGraph( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.GRAPH );
+        validateNamespaceType( namespaceId, DataModel.GRAPH );
         return (LogicalGraphCatalog) logicalCatalogs.get( namespaceId );
     }
 
 
     @Override
     public AllocationRelationalCatalog getAllocRel( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.RELATIONAL );
+        validateNamespaceType( namespaceId, DataModel.RELATIONAL );
         return (AllocationRelationalCatalog) allocationCatalogs.get( namespaceId );
     }
 
 
     @Override
     public AllocationDocumentCatalog getAllocDoc( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.DOCUMENT );
+        validateNamespaceType( namespaceId, DataModel.DOCUMENT );
         return (AllocationDocumentCatalog) allocationCatalogs.get( namespaceId );
     }
 
 
     @Override
     public AllocationGraphCatalog getAllocGraph( long namespaceId ) {
-        validateNamespaceType( namespaceId, NamespaceType.GRAPH );
+        validateNamespaceType( namespaceId, DataModel.GRAPH );
         return (AllocationGraphCatalog) allocationCatalogs.get( namespaceId );
     }
 
@@ -309,12 +309,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     }
 
 
-    public long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
         // cannot separate namespace and entity ids, as there are models which have their entity on the namespace level
         long id = idBuilder.getNewLogicalId();
-        LogicalNamespace namespace = new LogicalNamespace( id, name, namespaceType, caseSensitive );
+        LogicalNamespace namespace = new LogicalNamespace( id, name, dataModel, caseSensitive );
 
-        switch ( namespaceType ) {
+        switch ( dataModel ) {
             case RELATIONAL:
                 logicalCatalogs.put( id, new RelationalCatalog( namespace ) );
                 allocationCatalogs.put( id, new PolyAllocRelCatalog( namespace ) );

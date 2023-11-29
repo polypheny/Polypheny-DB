@@ -34,7 +34,7 @@
 package org.polypheny.db.plan;
 
 
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 
 /**

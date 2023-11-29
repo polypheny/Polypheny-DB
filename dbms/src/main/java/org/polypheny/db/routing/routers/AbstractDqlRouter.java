@@ -42,7 +42,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.LogicalQueryInformation;
@@ -195,7 +195,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
                 throw new GenericRuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
-            if ( logicalTable.getNamespaceType() == NamespaceType.GRAPH ) {
+            if ( logicalTable.getDataModel() == DataModel.GRAPH ) {
                 return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
             }
 

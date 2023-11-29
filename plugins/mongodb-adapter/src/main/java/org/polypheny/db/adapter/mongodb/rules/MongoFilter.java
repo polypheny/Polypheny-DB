@@ -1217,8 +1217,8 @@ public class MongoFilter extends Filter implements MongoAlg {
             // DML (and also DDL) have to use the physical name, as they do not allow
             // to use projections beforehand
             if ( implementor.isDML() ) {
-                if ( rowType != null && rowType.getFieldList().get( input.getIndex() ) != null ) {
-                    name = rowType.getFieldList().get( input.getIndex() ).getPhysicalName();
+                if ( rowType != null && rowType.getFields().get( input.getIndex() ) != null ) {
+                    name = rowType.getFields().get( input.getIndex() ).getPhysicalName();
                 }
                 return name;
             }

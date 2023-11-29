@@ -515,7 +515,7 @@ public abstract class CalcAlgSplitter {
     private String deriveFieldName( RexNode expr, int ordinal ) {
         if ( expr instanceof RexIndexRef ) {
             int inputIndex = ((RexIndexRef) expr).getIndex();
-            String fieldName = child.getRowType().getFieldList().get( inputIndex ).getName();
+            String fieldName = child.getRowType().getFields().get( inputIndex ).getName();
             // Don't inherit field names like '$3' from child: that's confusing.
             if ( !fieldName.startsWith( "$" ) || fieldName.startsWith( "$EXPR" ) ) {
                 return fieldName;

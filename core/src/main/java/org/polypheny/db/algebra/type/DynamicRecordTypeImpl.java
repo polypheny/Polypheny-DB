@@ -62,7 +62,7 @@ public class DynamicRecordTypeImpl extends DynamicRecordType {
 
 
     @Override
-    public List<AlgDataTypeField> getFieldList() {
+    public List<AlgDataTypeField> getFields() {
         return holder.getFieldList();
     }
 

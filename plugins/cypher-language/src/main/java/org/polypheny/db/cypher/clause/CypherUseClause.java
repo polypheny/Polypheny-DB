@@ -19,9 +19,9 @@ package org.polypheny.db.cypher.clause;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -44,13 +44,13 @@ public class CypherUseClause extends CypherClause implements ExecutableStatement
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
 
     }
 

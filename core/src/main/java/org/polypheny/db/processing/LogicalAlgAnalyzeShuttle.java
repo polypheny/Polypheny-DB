@@ -64,11 +64,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalSort;
 import org.polypheny.db.algebra.logical.relational.LogicalUnion;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -90,9 +90,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     public Map<Long, Long> availableColumnsWithTable = new HashMap<>(); // columnId -> tableId
 
-    public Map<NamespaceType, Set<Long>> modifiedEntities = new HashMap<>();
+    public Map<DataModel, Set<Long>> modifiedEntities = new HashMap<>();
 
-    public Map<NamespaceType, Set<Long>> scannedEntities = new HashMap<>();
+    public Map<DataModel, Set<Long>> scannedEntities = new HashMap<>();
 
     public List<Long> entityIds = new ArrayList<>();
 
@@ -143,7 +143,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void addScannedEntity( NamespaceType type, long entityId ) {
+    private void addScannedEntity( DataModel type, long entityId ) {
         if ( !scannedEntities.containsKey( type ) ) {
             scannedEntities.put( type, new HashSet<>() );
         }
@@ -151,7 +151,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void addModifiedEntity( NamespaceType type, long entityId ) {
+    private void addModifiedEntity( DataModel type, long entityId ) {
         if ( !modifiedEntities.containsKey( type ) ) {
             modifiedEntities.put( type, new HashSet<>() );
         }
@@ -170,7 +170,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalLpgModify modify ) {
         hashBasis.add( modify.getClass().getSimpleName() );
 
-        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
 
         return super.visit( modify );
     }
@@ -180,7 +180,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalLpgScan scan ) {
         hashBasis.add( scan.getClass().getSimpleName() + "#" + scan.entity.id );
 
-        addScannedEntity( scan.getEntity().namespaceType, scan.entity.id );
+        addScannedEntity( scan.getEntity().dataModel, scan.entity.id );
 
         return super.visit( scan );
     }
@@ -247,7 +247,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentModify modify ) {
         hashBasis.add( "LogicalDocumentModify" );
 
-        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
 
         return super.visit( modify );
     }
@@ -285,7 +285,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalDocumentScan scan ) {
         hashBasis.add( "LogicalDocumentScan#" + scan.entity.id );
 
-        addScannedEntity( scan.entity.namespaceType, getLogicalId( scan ) );
+        addScannedEntity( scan.entity.dataModel, getLogicalId( scan ) );
 
         return super.visit( scan );
     }
@@ -326,7 +326,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
         }
         hashBasis.add( "Scan#" + scan.getEntity().id );
 
-        addScannedEntity( scan.getEntity().namespaceType, getLogicalId( scan ) );
+        addScannedEntity( scan.getEntity().dataModel, getLogicalId( scan ) );
 
         // get available columns for every table scan
         this.getAvailableColumns( scan );
@@ -428,7 +428,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     public AlgNode visit( LogicalRelModify modify ) {
         hashBasis.add( "LogicalModify" );
 
-        addModifiedEntity( modify.getEntity().namespaceType, getLogicalId( modify ) );
+        addModifiedEntity( modify.getEntity().dataModel, getLogicalId( modify ) );
 
         // e.g. inserts only have underlying values and need to attach the table correctly
         this.getAvailableColumns( modify );
@@ -459,7 +459,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalFilter filter ) {
-        LogicalEntity table = filter.getInput().getEntity();
+        Entity table = filter.getInput().getEntity();
         if ( table == null ) {
             return;
         }
@@ -468,7 +468,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
     }
 
 
-    private void handleIfPartitioned( AlgNode node, LogicalEntity logicalEntity ) {
+    private void handleIfPartitioned( AlgNode node, Entity logicalEntity ) {
         // Only if table is partitioned
         if ( Catalog.snapshot().alloc().getPlacementsFromLogical( logicalEntity.id ).size() > 1
                 || Catalog.snapshot().alloc().getPartitionsFromLogical( logicalEntity.id ).size() > 1 ) {
@@ -495,22 +495,22 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private void getPartitioningInfo( LogicalDocumentFilter filter ) {
-        LogicalEntity entity = filter.getInput().getEntity();
+        Entity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( Entity.class ) );
     }
 
 
     private void getPartitioningInfo( LogicalLpgFilter filter ) {
-        LogicalEntity entity = filter.getInput().getEntity();
+        Entity entity = filter.getInput().getEntity();
         if ( entity == null ) {
             return;
         }
 
-        handleIfPartitioned( filter, entity.unwrap( LogicalEntity.class ) );
+        handleIfPartitioned( filter, entity.unwrap( Entity.class ) );
 
     }
 

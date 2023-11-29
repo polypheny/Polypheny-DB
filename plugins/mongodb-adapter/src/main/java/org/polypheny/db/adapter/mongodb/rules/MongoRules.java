@@ -146,7 +146,7 @@ public class MongoRules {
                 new AbstractList<>() {
                     @Override
                     public String get( int index ) {
-                        final String name = MongoRules.maybeFix( rowType.getFieldList().get( index ).getName() );
+                        final String name = MongoRules.maybeFix( rowType.getFields().get( index ).getName() );
                         return name.startsWith( "$" ) ? "_" + name.substring( 2 ) : name;
                     }
 
@@ -443,7 +443,7 @@ public class MongoRules {
                 array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
                 return array.toString();
             } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
-                return translateDocValueAsKey( implementor.getStaticRowType(), call, "$" );
+                return translateDocValueAsKey( implementor.getRowType(), call, "$" );
             } else if ( call.isA( Kind.MQL_ITEM ) ) {
                 RexNode leftPre = call.operands.get( 0 );
                 String left = leftPre.accept( this );
@@ -459,7 +459,7 @@ public class MongoRules {
                 return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
             } else if ( call.isA( Kind.MQL_EXCLUDE ) ) {
                 String parent = implementor
-                        .getStaticRowType()
+                        .getRowType()
                         .getFieldNames()
                         .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
 
@@ -655,7 +655,7 @@ public class MongoRules {
                             && !containsIncompatible( project ) && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
-                    "MongoProjectRule" );
+                    MongoProjectRule.class.getSimpleName() );
         }
 
 

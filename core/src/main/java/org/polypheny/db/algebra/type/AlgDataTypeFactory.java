@@ -499,6 +499,12 @@ public interface AlgDataTypeFactory {
         }
 
 
+        public Builder add( String name, String physicalName, AlgDataType type ) {
+            add( null, name, physicalName, type );
+            return this;
+        }
+
+
         /**
          * Changes the nullability of the last field added.
          *
@@ -568,7 +574,7 @@ public interface AlgDataTypeFactory {
         public AlgDataType buildDynamic() {
             final AlgDataType dynamicType = new DynamicRecordTypeImpl( typeFactory );
             final AlgDataType type = build();
-            dynamicType.getFieldList().addAll( type.getFieldList() );
+            dynamicType.getFields().addAll( type.getFields() );
             return dynamicType;
         }
 

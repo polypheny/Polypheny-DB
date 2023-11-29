@@ -55,7 +55,7 @@ public class FileValues extends Values implements FileAlg {
             return;
         }
         List<String> columns = new ArrayList<>();
-        for ( AlgDataTypeField type : recordType.getFieldList() ) {
+        for ( AlgDataTypeField type : recordType.getFields() ) {
             columns.add( type.getName() );
         }
         implementor.setColumnNames( columns );

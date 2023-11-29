@@ -31,12 +31,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.algebra.type.StructKind;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.prepare.Prepare.PreparingEntity;
 import org.polypheny.db.schema.CustomColumnResolvingEntity;
-import org.polypheny.db.schema.Entity;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -102,9 +101,9 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         }
         final AlgDataType rowType = ns.getRowType();
         if ( rowType.isStruct() ) {
-            LogicalEntity validatorTable = ns.getTable();
+            Entity validatorTable = ns.getTable();
             if ( validatorTable instanceof PreparingEntity ) {
-                Entity t = ((PreparingEntity) validatorTable).unwrap( Entity.class );
+                org.polypheny.db.schema.Entity t = validatorTable.unwrap( org.polypheny.db.schema.Entity.class );
                 if ( t instanceof CustomColumnResolvingEntity ) {
                     final List<Pair<AlgDataTypeField, List<String>>> entries = ((CustomColumnResolvingEntity) t).resolveColumn( rowType, validator.getTypeFactory(), names );
                     for ( Pair<AlgDataTypeField, List<String>> entry : entries ) {
@@ -125,7 +124,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
                 final Step path2 = path.plus( rowType, field0.getIndex(), field0.getName(), StructKind.FULLY_QUALIFIED );
                 resolveInNamespace( ns2, nullable, names.subList( 1, names.size() ), nameMatcher, path2, resolved );
             } else {
-                for ( AlgDataTypeField field : rowType.getFieldList() ) {
+                for ( AlgDataTypeField field : rowType.getFields() ) {
                     switch ( field.getType().getStructKind() ) {
                         case PEEK_FIELDS:
                         case PEEK_FIELDS_DEFAULT:
@@ -149,7 +148,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             return;
         }
 
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             colNames.add( new MonikerImpl( field.getName(), MonikerType.COLUMN ) );
         }
     }
@@ -374,7 +373,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
         if ( fromPath.stepCount() > 1 ) {
             assert fromRowType != null;
             for ( Step p : fromPath.steps() ) {
-                fromRowType = fromRowType.getFieldList().get( p.i ).getType();
+                fromRowType = fromRowType.getFields().get( p.i ).getType();
             }
             ++i;
         }
@@ -450,7 +449,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
             if ( step.i < 0 ) {
                 throw validator.newValidationError( identifier, Static.RESOURCE.columnNotFound( name ) );
             }
-            final AlgDataTypeField field0 = step.rowType.getFieldList().get( step.i );
+            final AlgDataTypeField field0 = step.rowType.getFields().get( step.i );
             final String fieldName = field0.getName();
             switch ( step.kind ) {
                 case PEEK_FIELDS:
@@ -521,7 +520,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
     private boolean hasAmbiguousUnresolvedStar( AlgDataType rowType, AlgDataTypeField field, String columnName ) {
         if ( field.isDynamicStar() && !DynamicRecordType.isDynamicStarColName( columnName ) ) {
             int count = 0;
-            for ( AlgDataTypeField possibleStar : rowType.getFieldList() ) {
+            for ( AlgDataTypeField possibleStar : rowType.getFields() ) {
                 if ( possibleStar.isDynamicStar() ) {
                     if ( ++count > 1 ) {
                         return true;

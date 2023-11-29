@@ -44,7 +44,7 @@ public class CypherAlterDatabase extends CypherAdminCommand implements Unsupport
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 

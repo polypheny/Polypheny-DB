@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.admin;
 
 import java.util.List;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -25,9 +26,9 @@ import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -55,7 +56,7 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( targetName ) );
         if ( graphs.size() != 1 ) {
             throw new GenericRuntimeException( "Error while creating a new graph database alias." );
@@ -65,8 +66,14 @@ public class CypherCreateDatabaseAlias extends CypherAdminCommand implements Exe
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return targetName;
     }
 
 }

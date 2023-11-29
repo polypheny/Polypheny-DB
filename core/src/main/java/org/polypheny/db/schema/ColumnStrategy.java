@@ -34,7 +34,6 @@
 package org.polypheny.db.schema;
 
 
-import org.polypheny.db.plan.AlgOptEntity;
 import org.polypheny.db.util.InitializerExpressionFactory;
 
 
@@ -42,7 +41,6 @@ import org.polypheny.db.util.InitializerExpressionFactory;
  * Describes how a column gets populated.
  *
  * @see InitializerExpressionFactory#generationStrategy
- * @see AlgOptEntity#getColumnStrategies()
  */
 public enum ColumnStrategy {
 

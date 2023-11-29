@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
@@ -94,6 +95,12 @@ public class SqlSelect extends SqlCall implements Select {
     @Override
     public Kind getKind() {
         return Kind.SELECT;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return from.getEntity();
     }
 
 

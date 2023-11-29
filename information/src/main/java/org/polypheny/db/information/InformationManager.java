@@ -320,4 +320,14 @@ public class InformationManager {
         }
     }
 
+
+    public void attachStacktrace( Exception e ) {
+        InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+        InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+        InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
+        this.addPage( exceptionPage );
+        this.addGroup( exceptionGroup );
+        this.registerInformation( exceptionElement );
+    }
+
 }

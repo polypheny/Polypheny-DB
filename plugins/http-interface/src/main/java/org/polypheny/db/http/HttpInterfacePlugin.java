@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Extension;
 import org.polypheny.db.StatusService;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -53,6 +54,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.Crud;
@@ -69,7 +71,6 @@ public class HttpInterfacePlugin extends PolyPlugin {
     public HttpInterfacePlugin( PluginContext context ) {
         super( context );
     }
-
 
 
     @Override
@@ -163,7 +164,7 @@ public class HttpInterfacePlugin extends PolyPlugin {
                 StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
             } );
 
-            LanguageCrud.REGISTER.forEach( ( key, value ) -> addRoute( QueryLanguage.from( key ) ) );
+            LanguageManager.getLanguages().forEach( this::addRoute );
         }
 
 
@@ -179,15 +180,17 @@ public class HttpInterfacePlugin extends PolyPlugin {
             QueryRequest query = ctx.bodyAsClass( QueryRequest.class );
             String sessionId = ctx.req.getSession().getId();
             Crud.cleanupOldSession( sessionXids, sessionId );
+            LogicalNamespace namespace = Catalog.snapshot().getNamespace( query.namespace ).orElse( null );
 
-            List<Result<?, ?>> results = LanguageCrud.anyQuery(
-                    language,
-                    null,
-                    query,
-                    transactionManager,
-                    Catalog.defaultUserId,
-                    Catalog.defaultNamespaceId
-            );
+            List<? extends Result<?, ?>> results = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query.query )
+                            .language( language )
+                            .userId( Catalog.defaultUserId )
+                            .origin( "Http Interface" )
+                            .transactionManager( transactionManager )
+                            .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
+                            .build(), query );
             ctx.json( results.toArray( new Result[0] ) );
 
             if ( !statementCounters.containsKey( language ) ) {

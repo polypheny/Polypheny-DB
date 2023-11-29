@@ -61,6 +61,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -344,8 +345,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( modify.getInput() instanceof LogicalValues ) {
             // Get fieldList and map columns to index since they could be in arbitrary order
             int partitionColumnIndex = -1;
-            for ( int j = 0; j < (modify.getInput()).getRowType().getFieldList().size(); j++ ) {
-                String columnFieldName = (modify.getInput()).getRowType().getFieldList().get( j ).getName();
+            for ( int j = 0; j < (modify.getInput()).getRowType().getFields().size(); j++ ) {
+                String columnFieldName = (modify.getInput()).getRowType().getFields().get( j ).getName();
 
                 // Retrieve columnId of fieldName and map it to its fieldList location of INSERT Stmt
                 int columnIndex = columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( columnFieldName );
@@ -794,7 +795,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         if ( node instanceof LogicalDocumentScan ) {
             return handleLogicalDocumentScan( builder, statement );
         } else if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            return handleRelScan( builder, statement, allocEntity != null ? allocEntity : ((LogicalRelScan) node).entity );
+            return handleRelScan( builder, statement, getParentOrCurrent( allocEntity, ((LogicalRelScan) node).entity ) );
         } else if ( node instanceof LogicalDocumentValues ) {
             return handleDocuments( (LogicalDocumentValues) node, builder );
         } else if ( node instanceof Values ) {
@@ -806,6 +807,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return super.handleGeneric( node, builder );
         }
+    }
+
+
+    private Entity getParentOrCurrent( AllocationEntity allocEntity, Entity entity ) {
+        if ( allocEntity == null || allocEntity.logicalId != entity.id ) {
+            return entity;
+        }
+        return allocEntity;
     }
 
 
@@ -925,7 +934,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     private void dmlConditionCheck( LogicalFilter node, LogicalTable catalogTable, List<AllocationColumn> placements, RexNode operand ) {
         if ( operand instanceof RexIndexRef ) {
             int index = ((RexIndexRef) operand).getIndex();
-            AlgDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
+            AlgDataTypeField field = node.getInput().getRowType().getFields().get( index );
             LogicalColumn column;
             String columnName;
             String[] columnNames = field.getName().split( "\\." );

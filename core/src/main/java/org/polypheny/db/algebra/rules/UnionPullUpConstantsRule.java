@@ -106,7 +106,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         }
 
         // Create expressions for Project operators before and after the Union
-        List<AlgDataTypeField> fields = union.getRowType().getFieldList();
+        List<AlgDataTypeField> fields = union.getRowType().getFields();
         List<RexNode> topChildExprs = new ArrayList<>();
         List<String> topChildExprsFields = new ArrayList<>();
         List<RexNode> refs = new ArrayList<>();
@@ -135,7 +135,7 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
         for ( AlgNode input : union.getInputs() ) {
             List<Pair<RexNode, String>> newChildExprs = new ArrayList<>();
             for ( int j : refsIndex ) {
-                newChildExprs.add( Pair.of( rexBuilder.makeInputRef( input, j ), input.getRowType().getFieldList().get( j ).getName() ) );
+                newChildExprs.add( Pair.of( rexBuilder.makeInputRef( input, j ), input.getRowType().getFields().get( j ).getName() ) );
             }
             if ( newChildExprs.isEmpty() ) {
                 // At least a single item in project is required.

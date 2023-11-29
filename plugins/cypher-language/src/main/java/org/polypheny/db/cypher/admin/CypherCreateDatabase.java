@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.admin;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
@@ -28,9 +29,9 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -64,7 +65,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         AdapterManager manager = AdapterManager.getInstance();
         if ( wait != null && wait.isWait() ) {
             try {
@@ -98,7 +99,7 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
     }
 
@@ -106,6 +107,12 @@ public class CypherCreateDatabase extends CypherAdminCommand implements Executab
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.CREATE_DATABASE;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return databaseName;
     }
 
 }

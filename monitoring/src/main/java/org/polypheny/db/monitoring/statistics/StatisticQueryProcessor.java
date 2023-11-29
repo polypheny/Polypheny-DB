@@ -23,14 +23,14 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -86,7 +86,7 @@ public class StatisticQueryProcessor {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         return snapshot.getNamespaces( null )
                 .stream()
-                .filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
+                .filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .collect( Collectors.toList() );
@@ -100,7 +100,7 @@ public class StatisticQueryProcessor {
      */
     public List<LogicalTable> getAllTable() {
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
-        return snapshot.getNamespaces( null ).stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL )
+        return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
                 .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
     }
 

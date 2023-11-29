@@ -152,7 +152,7 @@ public class VisitorDataContext implements DataContext {
 
 
     public static DataContext of( AlgDataType rowType, RexNode rex ) {
-        final int size = rowType.getFieldList().size();
+        final int size = rowType.getFields().size();
         final Object[] values = new Object[size];
         final List<RexNode> operands = ((RexCall) rex).getOperands();
         final RexNode firstOperand = operands.get( 0 );
@@ -169,7 +169,7 @@ public class VisitorDataContext implements DataContext {
 
 
     public static DataContext of( AlgDataType rowType, List<Pair<RexIndexRef, RexNode>> usageList ) {
-        final int size = rowType.getFieldList().size();
+        final int size = rowType.getFields().size();
         final Object[] values = new Object[size];
         for ( Pair<RexIndexRef, RexNode> elem : usageList ) {
             Pair<Integer, ?> value = getValue( elem.getKey(), elem.getValue() );

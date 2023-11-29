@@ -43,7 +43,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableEntity;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.schema.types.QueryableEntity;
 
@@ -55,7 +55,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
  *
  * @param <T> element type
  */
-public abstract class AbstractEntityQueryable<T, K extends LogicalEntity & QueryableEntity> extends AbstractQueryable<T> {
+public abstract class AbstractEntityQueryable<T, K extends Entity & QueryableEntity> extends AbstractQueryable<T> {
 
     public final DataContext dataContext;
     public final Snapshot snapshot;

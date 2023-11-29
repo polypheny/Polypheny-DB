@@ -102,7 +102,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.Operator;
@@ -191,7 +191,7 @@ public abstract class AlgOptUtil {
     /**
      * Returns a set of tables used by this expression or its children
      */
-    public static Set<LogicalEntity> findTables( AlgNode alg ) {
+    public static Set<Entity> findTables( AlgNode alg ) {
         return new LinkedHashSet<>( findAllTables( alg ) );
     }
 
@@ -199,9 +199,9 @@ public abstract class AlgOptUtil {
     /**
      * Returns a list of all tables used by this expression or its children
      */
-    public static List<LogicalEntity> findAllTables( AlgNode alg ) {
+    public static List<Entity> findAllTables( AlgNode alg ) {
         final Multimap<Class<? extends AlgNode>, AlgNode> nodes = AlgMetadataQuery.instance().getNodeTypes( alg );
-        final List<LogicalEntity> usedTables = new ArrayList<>();
+        final List<Entity> usedTables = new ArrayList<>();
         for ( Entry<Class<? extends AlgNode>, Collection<AlgNode>> e : nodes.asMap().entrySet() ) {
             if ( RelScan.class.isAssignableFrom( e.getKey() ) ) {
                 for ( AlgNode node : e.getValue() ) {
@@ -286,7 +286,7 @@ public abstract class AlgOptUtil {
      * @see AlgDataType#getFieldNames()
      */
     public static List<AlgDataType> getFieldTypeList( final AlgDataType type ) {
-        return Lists.transform( type.getFieldList(), AlgDataTypeField::getType );
+        return Lists.transform( type.getFields(), AlgDataTypeField::getType );
     }
 
 
@@ -304,8 +304,8 @@ public abstract class AlgOptUtil {
         if ( rowType2.getFieldCount() != rowType1.getFieldCount() ) {
             return false;
         }
-        final List<AlgDataTypeField> f1 = rowType1.getFieldList();
-        final List<AlgDataTypeField> f2 = rowType2.getFieldList();
+        final List<AlgDataTypeField> f1 = rowType1.getFields();
+        final List<AlgDataTypeField> f2 = rowType2.getFields();
         for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( f1, f2 ) ) {
             final AlgDataType type1 = pair.left.getType();
             final AlgDataType type2 = pair.right.getType();
@@ -521,10 +521,10 @@ public abstract class AlgOptUtil {
     @Deprecated // to be removed before 2.0
     public static AlgNode createRenameRel( AlgDataType outputType, AlgNode alg ) {
         AlgDataType inputType = alg.getRowType();
-        List<AlgDataTypeField> inputFields = inputType.getFieldList();
+        List<AlgDataTypeField> inputFields = inputType.getFields();
         int n = inputFields.size();
 
-        List<AlgDataTypeField> outputFields = outputType.getFieldList();
+        List<AlgDataTypeField> outputFields = outputType.getFields();
         assert outputFields.size() == n
                 : "rename: field count mismatch: in=" + inputType + ", out" + outputType;
 
@@ -592,7 +592,7 @@ public abstract class AlgOptUtil {
         } else {
             n = rowType.getFieldCount();
         }
-        List<AlgDataTypeField> fields = rowType.getFieldList();
+        List<AlgDataTypeField> fields = rowType.getFields();
         for ( int i = 0; i < n; ++i ) {
             int iField;
             if ( fieldOrdinals != null ) {
@@ -850,11 +850,11 @@ public abstract class AlgOptUtil {
                         if ( leftKey == null ) {
                             leftKey = op0;
                             leftInput = i;
-                            leftFields = inputs.get( leftInput ).getRowType().getFieldList();
+                            leftFields = inputs.get( leftInput ).getRowType().getFields();
                         } else {
                             rightKey = op0;
                             rightInput = i;
-                            rightFields = inputs.get( rightInput ).getRowType().getFieldList();
+                            rightFields = inputs.get( rightInput ).getRowType().getFields();
                             reverse = true;
                             foundBothInputs = true;
                         }
@@ -863,11 +863,11 @@ public abstract class AlgOptUtil {
                         if ( leftKey == null ) {
                             leftKey = op1;
                             leftInput = i;
-                            leftFields = inputs.get( leftInput ).getRowType().getFieldList();
+                            leftFields = inputs.get( leftInput ).getRowType().getFields();
                         } else {
                             rightKey = op1;
                             rightInput = i;
-                            rightFields = inputs.get( rightInput ).getRowType().getFieldList();
+                            rightFields = inputs.get( rightInput ).getRowType().getFields();
                             foundBothInputs = true;
                         }
                     }
@@ -914,7 +914,7 @@ public abstract class AlgOptUtil {
                 for ( int i = 0; i < inputs.size() && !foundInput; i++ ) {
                     if ( inputsRange[i].contains( projRefs ) ) {
                         leftInput = i;
-                        leftFields = inputs.get( leftInput ).getRowType().getFieldList();
+                        leftFields = inputs.get( leftInput ).getRowType().getFields();
 
                         leftKey = condition.accept( new AlgOptUtil.RexInputConverter( rexBuilder, leftFields, leftFields, adjustments ) );
 
@@ -1238,7 +1238,7 @@ public abstract class AlgOptUtil {
         }
 
         for ( i = 0; i < origLeftInputSize; i++ ) {
-            final AlgDataTypeField field = leftRel.getRowType().getFieldList().get( i );
+            final AlgDataTypeField field = leftRel.getRowType().getFields().get( i );
             newLeftFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newLeftFieldNames.add( field.getName() );
             outputProj.add( systemColCount + i );
@@ -1261,7 +1261,7 @@ public abstract class AlgOptUtil {
 
         int leftFieldCount = origLeftInputSize + newLeftKeyCount;
         for ( i = 0; i < origRightInputSize; i++ ) {
-            final AlgDataTypeField field = rightRel.getRowType().getFieldList().get( i );
+            final AlgDataTypeField field = rightRel.getRowType().getFields().get( i );
             newRightFields.add( rexBuilder.makeInputRef( field.getType(), i ) );
             newRightFieldNames.add( field.getName() );
             outputProj.add( systemColCount + leftFieldCount + i );
@@ -1305,7 +1305,7 @@ public abstract class AlgOptUtil {
     @Deprecated // to be removed before 2.0
     public static AlgNode createProjectJoinRel( List<Integer> outputProj, AlgNode joinRel ) {
         int newProjectOutputSize = outputProj.size();
-        List<AlgDataTypeField> joinOutputFields = joinRel.getRowType().getFieldList();
+        List<AlgDataTypeField> joinOutputFields = joinRel.getRowType().getFields();
 
         // If no projection was passed in, or the number of desired projection columns is the same as the number of columns returned from the join, then no need to create a projection
         if ( (newProjectOutputSize > 0) && (newProjectOutputSize < joinOutputFields.size()) ) {
@@ -1506,8 +1506,8 @@ public abstract class AlgOptUtil {
         RexNode ret = null;
         if ( x.getType().isStruct() ) {
             assert y.getType().isStruct();
-            List<AlgDataTypeField> xFields = x.getType().getFieldList();
-            List<AlgDataTypeField> yFields = y.getType().getFieldList();
+            List<AlgDataTypeField> xFields = x.getType().getFields();
+            List<AlgDataTypeField> yFields = y.getType().getFields();
             assert xFields.size() == yFields.size();
             for ( Pair<AlgDataTypeField, AlgDataTypeField> pair : Pair.zip( xFields, yFields ) ) {
                 AlgDataTypeField xField = pair.left;
@@ -1608,7 +1608,7 @@ public abstract class AlgOptUtil {
         final PrintWriter pw = new PrintWriter( sw );
         final TypeDumper typeDumper = new TypeDumper( pw );
         if ( type.isStruct() ) {
-            typeDumper.acceptFields( type.getFieldList() );
+            typeDumper.acceptFields( type.getFields() );
         } else {
             typeDumper.accept( type );
         }
@@ -1886,12 +1886,12 @@ public abstract class AlgOptUtil {
      */
     public static boolean classifyFilters( AlgNode joinRel, List<RexNode> filters, JoinAlgType joinType, boolean pushInto, boolean pushLeft, boolean pushRight, List<RexNode> joinFilters, List<RexNode> leftFilters, List<RexNode> rightFilters ) {
         RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
-        List<AlgDataTypeField> joinFields = joinRel.getRowType().getFieldList();
+        List<AlgDataTypeField> joinFields = joinRel.getRowType().getFields();
         final int nTotalFields = joinFields.size();
         final int nSysFields = 0; // joinRel.getSystemFieldList().size();
-        final List<AlgDataTypeField> leftFields = joinRel.getInputs().get( 0 ).getRowType().getFieldList();
+        final List<AlgDataTypeField> leftFields = joinRel.getInputs().get( 0 ).getRowType().getFields();
         final int nFieldsLeft = leftFields.size();
-        final List<AlgDataTypeField> rightFields = joinRel.getInputs().get( 1 ).getRowType().getFieldList();
+        final List<AlgDataTypeField> rightFields = joinRel.getInputs().get( 1 ).getRowType().getFields();
         final int nFieldsRight = rightFields.size();
         assert nTotalFields ==
                 (joinRel instanceof SemiJoin
@@ -1985,11 +1985,11 @@ public abstract class AlgOptUtil {
     public static boolean checkProjAndChildInputs( Project project, boolean checkNames ) {
         int n = project.getProjects().size();
         AlgDataType inputType = project.getInput().getRowType();
-        if ( inputType.getFieldList().size() != n ) {
+        if ( inputType.getFields().size() != n ) {
             return false;
         }
-        List<AlgDataTypeField> projFields = project.getRowType().getFieldList();
-        List<AlgDataTypeField> inputFields = inputType.getFieldList();
+        List<AlgDataTypeField> projFields = project.getRowType().getFields();
+        List<AlgDataTypeField> inputFields = inputType.getFields();
         boolean namesDifferent = false;
         for ( int i = 0; i < n; ++i ) {
             RexNode exp = project.getProjects().get( i );
@@ -2024,7 +2024,7 @@ public abstract class AlgOptUtil {
      * @return array of expression representing the swapped join inputs
      */
     public static List<RexNode> createSwappedJoinExprs( AlgNode newJoin, Join origJoin, boolean origOrder ) {
-        final List<AlgDataTypeField> newJoinFields = newJoin.getRowType().getFieldList();
+        final List<AlgDataTypeField> newJoinFields = newJoin.getRowType().getFields();
         final RexBuilder rexBuilder = newJoin.getCluster().getRexBuilder();
         final List<RexNode> exps = new ArrayList<>();
         final int nFields =
@@ -2261,7 +2261,7 @@ public abstract class AlgOptUtil {
      * Permutes a record type according to a mapping.
      */
     public static AlgDataType permute( AlgDataTypeFactory typeFactory, AlgDataType rowType, Mapping mapping ) {
-        return typeFactory.createStructType( Mappings.apply3( mapping, rowType.getFieldList() ) );
+        return typeFactory.createStructType( Mappings.apply3( mapping, rowType.getFields() ) );
     }
 
 
@@ -2299,7 +2299,7 @@ public abstract class AlgOptUtil {
 
     @Deprecated // to be removed before 2.0
     public static AlgNode createRename( AlgNode alg, List<String> fieldNames ) {
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         assert fieldNames.size() == fields.size();
         final List<RexNode> refs =
                 new AbstractList<RexNode>() {
@@ -2361,7 +2361,7 @@ public abstract class AlgOptUtil {
         final List<String> outputNameList = new ArrayList<>();
         final List<RexNode> exprList = new ArrayList<>();
         final List<RexLocalRef> projectRefList = new ArrayList<>();
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         final AlgOptCluster cluster = alg.getCluster();
         for ( int i = 0; i < permutation.getTargetCount(); i++ ) {
             int target = permutation.getTarget( i );
@@ -2443,7 +2443,7 @@ public abstract class AlgOptUtil {
         }
         final List<String> outputNameList = new ArrayList<>();
         final List<RexNode> exprList = new ArrayList<>();
-        final List<AlgDataTypeField> fields = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = alg.getRowType().getFields();
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         for ( int i = 0; i < mapping.getTargetCount(); i++ ) {
             final int source = mapping.getSource( i );
@@ -2586,7 +2586,7 @@ public abstract class AlgOptUtil {
 
         algBuilder.push( originalJoin.getLeft() );
         if ( !extraLeftExprs.isEmpty() ) {
-            final List<AlgDataTypeField> fields = algBuilder.peek().getRowType().getFieldList();
+            final List<AlgDataTypeField> fields = algBuilder.peek().getRowType().getFields();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
                         @Override
@@ -2610,7 +2610,7 @@ public abstract class AlgOptUtil {
 
         algBuilder.push( originalJoin.getRight() );
         if ( !extraRightExprs.isEmpty() ) {
-            final List<AlgDataTypeField> fields = algBuilder.peek().getRowType().getFieldList();
+            final List<AlgDataTypeField> fields = algBuilder.peek().getRowType().getFields();
             final int newLeftCount = leftCount + extraLeftExprs.size();
             final List<Pair<RexNode, String>> pairs =
                     new AbstractList<Pair<RexNode, String>>() {
@@ -2755,7 +2755,7 @@ public abstract class AlgOptUtil {
         final AlgDataType rowType = r.getRowType();
         final List<RexNode> list = new ArrayList<>();
         final AlgMetadataQuery mq = r.getCluster().getMetadataQuery();
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             if ( field.getType().isNullable() ) {
                 list.add( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
             }
@@ -2883,7 +2883,7 @@ public abstract class AlgOptUtil {
 
         void accept( AlgDataType type ) {
             if ( type.isStruct() ) {
-                final List<AlgDataTypeField> fields = type.getFieldList();
+                final List<AlgDataTypeField> fields = type.getFields();
 
                 // RECORD (
                 //   I INTEGER NOT NULL,

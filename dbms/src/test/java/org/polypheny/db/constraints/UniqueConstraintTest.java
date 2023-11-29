@@ -35,7 +35,6 @@ import org.junit.runners.Parameterized.Parameters;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 
@@ -43,7 +42,7 @@ import org.polypheny.db.excluded.FileExcluded;
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 @RunWith(Parameterized.class)
-@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, CottontailExcluded.class, FileExcluded.class })
 public class UniqueConstraintTest {
 
     @Parameters(name = "Create Indexes: {0}")

@@ -163,7 +163,7 @@ public abstract class Aggregate extends SingleAlg {
 
 
     private boolean isPredicate( AlgNode input, int index ) {
-        final AlgDataType type = input.getRowType().getFieldList().get( index ).getType();
+        final AlgDataType type = input.getRowType().getFields().get( index ).getType();
         return type.getPolyType() == PolyType.BOOLEAN && !type.isNullable();
     }
 
@@ -327,7 +327,7 @@ public abstract class Aggregate extends SingleAlg {
         final List<Integer> groupList = groupSet.asList();
         assert groupList.size() == groupSet.cardinality();
         final AlgDataTypeFactory.Builder builder = typeFactory.builder();
-        final List<AlgDataTypeField> fieldList = inputRowType.getFieldList();
+        final List<AlgDataTypeField> fieldList = inputRowType.getFields();
         final Set<String> containedNames = new HashSet<>();
         for ( int groupKey : groupList ) {
             final AlgDataTypeField field = fieldList.get( groupKey );

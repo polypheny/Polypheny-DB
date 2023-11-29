@@ -29,6 +29,8 @@ import org.polypheny.db.cql.BooleanGroup.TableOpsBooleanOperator;
 import org.polypheny.db.cql.exception.InvalidModifierException;
 import org.polypheny.db.cql.exception.UnknownIndexException;
 import org.polypheny.db.cql.utils.Tree;
+import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.util.Pair;
 
 
@@ -39,10 +41,8 @@ import org.polypheny.db.util.Pair;
 @Slf4j
 public class CqlQueryBuilder {
 
-    private final String databaseName;
     private final Stack<Tree<BooleanGroup<ColumnOpsBooleanOperator>, Filter>> filters;
     private final Map<String, TableIndex> tableIndexMapping;
-    private final Map<String, TableIndex> tableAliases;
     private final Map<String, ColumnIndex> columnIndexMapping;
     private final List<Pair<ColumnIndex, Map<String, Modifier>>> sortSpecifications;
     private final Projections projections;
@@ -51,10 +51,9 @@ public class CqlQueryBuilder {
 
 
     public CqlQueryBuilder( String databaseName ) {
-        this.databaseName = databaseName;
         this.filters = new Stack<>();
         this.tableIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        this.tableAliases = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
+        Map<String, TableIndex> tableAliases = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.columnIndexMapping = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
         this.sortSpecifications = new ArrayList<>();
         this.projections = new Projections();
@@ -72,7 +71,7 @@ public class CqlQueryBuilder {
      */
     public CqlQuery build() throws Exception {
         log.debug( "Building CqlQuery." );
-        if ( queryRelation == null && filters.size() == 0 ) {
+        if ( queryRelation == null && filters.isEmpty() ) {
             log.error( "Query relations and filters cannot both be empty." );
             throw new Exception( "Query relations and filters cannot both be empty." );
         }
@@ -295,6 +294,11 @@ public class CqlQueryBuilder {
      */
     public void addProjection( ColumnIndex columnIndex, Map<String, Modifier> modifiers ) {
         projections.add( columnIndex, modifiers );
+    }
+
+
+    public static List<ParsedQueryContext> splitter( QueryContext queryContext ) {
+        return null;
     }
 
 }

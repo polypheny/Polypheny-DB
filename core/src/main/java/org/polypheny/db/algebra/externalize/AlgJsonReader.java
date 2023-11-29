@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptSchema;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -127,7 +127,7 @@ public class AlgJsonReader {
 
 
             @Override
-            public LogicalEntity getEntity( String entity ) {
+            public Entity getEntity( String entity ) {
                 final List<String> list;
                 if ( jsonAlg.get( entity ) instanceof String ) {
                     String str = (String) jsonAlg.get( entity );

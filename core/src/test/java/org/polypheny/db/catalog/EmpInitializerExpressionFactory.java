@@ -19,7 +19,7 @@ package org.polypheny.db.catalog;
 
 import java.math.BigDecimal;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
@@ -34,7 +34,7 @@ import org.polypheny.db.util.NullInitializerExpressionFactory;
 class EmpInitializerExpressionFactory extends NullInitializerExpressionFactory {
 
     @Override
-    public ColumnStrategy generationStrategy( LogicalEntity table, int iColumn ) {
+    public ColumnStrategy generationStrategy( Entity table, int iColumn ) {
         switch ( iColumn ) {
             case 0:
             case 1:
@@ -47,7 +47,7 @@ class EmpInitializerExpressionFactory extends NullInitializerExpressionFactory {
 
 
     @Override
-    public RexNode newColumnDefaultValue( LogicalEntity table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( Entity table, int iColumn, InitializerContext context ) {
         final RexBuilder rexBuilder = context.getRexBuilder();
         final AlgDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
         switch ( iColumn ) {

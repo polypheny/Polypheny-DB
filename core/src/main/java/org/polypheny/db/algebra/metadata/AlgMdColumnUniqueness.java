@@ -71,7 +71,7 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * RelMdColumnUniqueness supplies a default implementation of {@link AlgMetadataQuery#areColumnsUnique} for the standard logical algebra.
+ * {@link AlgMdColumnUniqueness} supplies a default implementation of {@link AlgMetadataQuery#areColumnsUnique} for the standard logical algebra.
  */
 public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.ColumnUniqueness> {
 
@@ -212,10 +212,9 @@ public class AlgMdColumnUniqueness implements MetadataHandler<BuiltInMetadata.Co
                 if ( castType.equals( origType ) ) {
                     childColumns.set( ((RexIndexRef) castOperand).getIndex() );
                 }
-            } else {
-                // If the expression will not influence uniqueness of the projection, then skip it.
-                continue;
             }
+            // If the expression does not influence uniqueness of the projection, then skip it.
+            continue;
         }
 
         // If no columns can affect uniqueness, then return unknown

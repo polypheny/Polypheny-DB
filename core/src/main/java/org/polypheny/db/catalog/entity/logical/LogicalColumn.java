@@ -30,9 +30,9 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.Collation;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
 
 
@@ -40,7 +40,7 @@ import org.polypheny.db.type.PolyType;
 @Value
 @SuperBuilder(toBuilder = true)
 @NonFinal
-public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
+public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
 
     private static final long serialVersionUID = -4792846455300897399L;
 
@@ -88,7 +88,7 @@ public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
     @SerializeNullable
     public LogicalDefaultValue defaultValue;
 
-    public NamespaceType namespaceType = NamespaceType.RELATIONAL;
+    public DataModel dataModel = DataModel.RELATIONAL;
 
 
     public LogicalColumn(
@@ -183,7 +183,7 @@ public class LogicalColumn implements LogicalObject, Comparable<LogicalColumn> {
                 null,
                 position,
                 nullable ? "YES" : "NO",
-                LogicalObject.getEnumNameOrNull( collation ) };
+                PolyObject.getEnumNameOrNull( collation ) };
     }
 
 

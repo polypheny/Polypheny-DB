@@ -17,25 +17,25 @@
 package org.polypheny.db.webui.models.catalog.schema;
 
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.webui.models.catalog.IdEntity;
 
 public class NamespaceModel extends IdEntity {
 
     public final boolean caseSensitive;
 
-    public final NamespaceType namespaceType;
+    public final DataModel dataModel;
 
 
-    public NamespaceModel( long id, String name, NamespaceType type, boolean caseSensitive ) {
+    public NamespaceModel( long id, String name, DataModel type, boolean caseSensitive ) {
         super( id, name );
-        this.namespaceType = type;
+        this.dataModel = type;
         this.caseSensitive = caseSensitive;
     }
 
 
     public static NamespaceModel from( LogicalNamespace namespace ) {
-        return new NamespaceModel( namespace.id, namespace.name, namespace.namespaceType, namespace.caseSensitive );
+        return new NamespaceModel( namespace.id, namespace.name, namespace.dataModel, namespace.caseSensitive );
     }
 
 }

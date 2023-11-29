@@ -230,7 +230,7 @@ public class ScanNode implements Node {
                 final Mapping mapping = Mappings.target( acceptedProjects, alg.getEntity().getRowType().getFieldCount() );
                 filter2 = RexUtil.apply( mapping, filter );
                 final AlgDataTypeFactory.Builder builder = alg.getCluster().getTypeFactory().builder();
-                final List<AlgDataTypeField> fieldList = alg.getEntity().getRowType().getFieldList();
+                final List<AlgDataTypeField> fieldList = alg.getEntity().getRowType().getFields();
                 for ( int acceptedProject : acceptedProjects ) {
                     builder.add( fieldList.get( acceptedProject ) );
                 }

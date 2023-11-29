@@ -23,14 +23,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.constant.Modality;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.sql.language.SqlCall;
@@ -165,7 +168,17 @@ public class IdentifierNamespace extends AbstractNamespace {
                 return new EntityNamespace( validator, validator.snapshot.rel().getTables( null, Pattern.of( ns.get( 0 ) ) ).get( 0 ) );
             }
         } else if ( ns.size() == 2 ) {
-            return new EntityNamespace( validator, validator.snapshot.rel().getTable( ns.get( 0 ), ns.get( 1 ) ).orElseThrow() );
+            LogicalNamespace namespace = validator.snapshot.getNamespace( ns.get( 0 ) ).orElseThrow();
+            Entity entity = null;
+            if ( namespace.dataModel == DataModel.RELATIONAL ) {
+                entity = validator.snapshot.rel().getTable( namespace.id, ns.get( 1 ) ).orElse( null );
+            } else if ( namespace.dataModel == DataModel.DOCUMENT ) {
+                entity = validator.snapshot.doc().getCollection( namespace.id, ns.get( 1 ) ).orElse( null );
+            } else if ( namespace.dataModel == DataModel.GRAPH ) {
+                throw new NotImplementedException();
+            }
+
+            return new EntityNamespace( validator, entity );
         }
         throw new GenericRuntimeException( "Table not found" );
     }
@@ -175,7 +188,7 @@ public class IdentifierNamespace extends AbstractNamespace {
     public AlgDataType validateImpl( AlgDataType targetRowType ) {
         resolvedNamespace = Objects.requireNonNull( resolveImpl( id ) );
         if ( resolvedNamespace instanceof EntityNamespace ) {
-            LogicalEntity table = resolvedNamespace.getTable();
+            Entity table = resolvedNamespace.getTable();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
                 List<String> qualifiedNames = List.of( table.name );
@@ -207,7 +220,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
         // Build a list of monotonic expressions.
         final ImmutableList.Builder<Pair<SqlNode, Monotonicity>> builder = ImmutableList.builder();
-        List<AlgDataTypeField> fields = rowType.getFieldList();
+        List<AlgDataTypeField> fields = rowType.getFields();
         for ( AlgDataTypeField field : fields ) {
             final String fieldName = field.getName();
             final Monotonicity monotonicity = resolvedNamespace.getMonotonicity( fieldName );
@@ -241,7 +254,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
 
     @Override
-    public LogicalEntity getTable() {
+    public Entity getTable() {
         return resolvedNamespace == null ? null : resolve().getTable();
     }
 
@@ -254,14 +267,14 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final LogicalEntity table = getTable();
+        final Entity table = getTable();
         return Util.getMonotonicity( table, columnName );
     }
 
 
     @Override
     public boolean supportsModality( Modality modality ) {
-        final LogicalEntity table = getTable();
+        final Entity table = getTable();
         if ( table == null ) {
             return modality == Modality.RELATION;
         }

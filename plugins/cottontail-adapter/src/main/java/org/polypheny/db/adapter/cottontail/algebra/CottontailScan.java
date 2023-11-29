@@ -58,7 +58,7 @@ public class CottontailScan extends RelScan<CottontailEntity> implements Cottont
     public void implement( CottontailImplementContext context ) {
 //        context.from = From.newBuilder().setEntity( this.cottontailTable.getLogicalTable() ).build();
         if ( context.queryType == null ) {
-            context.cottontailTable = this.cottontailTable;
+            context.table = this.cottontailTable;
             context.schemaName = this.cottontailTable.getPhysicalSchemaName();
             context.tableName = this.cottontailTable.getPhysicalTableName();
             context.queryType = QueryType.SELECT;

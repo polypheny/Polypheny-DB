@@ -32,6 +32,7 @@ import org.polypheny.db.piglet.Ast.Program;
 import org.polypheny.db.piglet.parser.ParseException;
 import org.polypheny.db.piglet.parser.PigletParser;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.tools.PigAlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -81,9 +82,9 @@ public class PigProcessor extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
         final PigAlgBuilder builder = PigAlgBuilder.create( statement );
-        new Handler( builder ).handle( (PigNode) query );
+        new Handler( builder ).handle( (PigNode) context.getQueryNode().orElseThrow() );
         return AlgRoot.of( builder.build(), Kind.SELECT );
     }
 

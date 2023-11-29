@@ -48,7 +48,7 @@ public enum JavaRowFormat {
 
         @Override
         Type javaFieldClass( JavaTypeFactory typeFactory, AlgDataType type, int index ) {
-            return typeFactory.getJavaClass( type.getFieldList().get( index ).getType() );
+            return typeFactory.getJavaClass( type.getFields().get( index ).getType() );
         }
 
 
@@ -81,7 +81,7 @@ public enum JavaRowFormat {
         @Override
         Type javaRowClass( JavaTypeFactory typeFactory, AlgDataType type ) {
             assert type.getFieldCount() == 1;
-            return typeFactory.getJavaClass( type.getFieldList().get( 0 ).getType() );
+            return typeFactory.getJavaClass( type.getFields().get( 0 ).getType() );
         }
 
 

@@ -64,14 +64,14 @@ public class GraphType implements Serializable, AlgDataType, AlgDataTypeFamily {
 
 
     @Override
-    public List<AlgDataTypeField> getFieldList() {
+    public List<AlgDataTypeField> getFields() {
         return fixedFields;
     }
 
 
     @Override
     public List<String> getFieldNames() {
-        return getFieldList().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
+        return getFields().stream().map( AlgDataTypeField::getName ).collect( Collectors.toList() );
     }
 
 

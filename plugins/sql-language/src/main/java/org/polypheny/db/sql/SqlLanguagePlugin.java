@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -35,11 +35,12 @@ import org.polypheny.db.algebra.operators.ChainedOperatorTable;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.operators.OperatorTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.languages.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.nodes.LangFunctionOperator;
 import org.polypheny.db.nodes.Operator;
@@ -164,10 +165,9 @@ import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
-import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.crud.LanguageCrud;
-import org.polypheny.db.webui.models.results.Result;
 
+@Slf4j
 public class SqlLanguagePlugin extends PolyPlugin {
 
     @Getter
@@ -197,14 +197,20 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
 
     public static void startup() {
-        PolyPluginManager.AFTER_INIT.add( () -> LanguageCrud.crud.languageCrud.addLanguage( "sql", (
-                session,
-                request,
-                transactionManager,
-                userId,
-                databaseId,
-                c ) -> Crud.anySqlQuery( request, session, c ).stream().map( r -> (Result<?, ?>) r ).collect( Collectors.toList() ) ) );
-        LanguageManager.getINSTANCE().addQueryLanguage( NamespaceType.RELATIONAL, "sql", List.of( "sql" ), SqlParserImpl.FACTORY, SqlProcessor::new, SqlLanguagePlugin::getSqlValidator );
+        // add language to general processing
+        QueryLanguage language = new QueryLanguage(
+                DataModel.RELATIONAL,
+                "sql",
+                List.of( "sql" ),
+                SqlParserImpl.FACTORY,
+                SqlProcessor::new,
+                SqlLanguagePlugin::getValidator,
+                LanguageManager::toQueryNodes );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
+        PolyPluginManager.AFTER_INIT.add( () -> {
+            // add language to webui
+            LanguageCrud.addToResult( language, LanguageCrud::getRelResult );
+        } );
 
         if ( !isInit() ) {
             registerOperators();
@@ -212,7 +218,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
     }
 
 
-    public static PolyphenyDbSqlValidator getSqlValidator( org.polypheny.db.prepare.Context context, Snapshot snapshot ) {
+    public static PolyphenyDbSqlValidator getValidator( org.polypheny.db.prepare.Context context, Snapshot snapshot ) {
 
         final OperatorTable opTab0 = fun( OperatorTable.class, SqlStdOperatorTable.instance() );
         final OperatorTable opTab = ChainedOperatorTable.of( opTab0, snapshot );

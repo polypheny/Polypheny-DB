@@ -41,7 +41,6 @@ import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.ConfigManager;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.partition.PartitionManager;
@@ -52,7 +51,7 @@ import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
 
 @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
-@Category({ AdapterTestSuite.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class })
 public class HorizontalPartitioningTest {
 
     @BeforeClass
@@ -498,7 +497,6 @@ public class HorizontalPartitioningTest {
 
 
     @Test
-    @Category(CassandraExcluded.class)
     public void rangePartitioningTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

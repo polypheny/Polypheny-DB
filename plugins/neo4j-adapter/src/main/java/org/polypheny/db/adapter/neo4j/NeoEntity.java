@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.neo4j;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,14 +42,18 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeImpl;
+import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -71,15 +76,14 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
     protected NeoEntity( PhysicalEntity physical, List<? extends PhysicalField> fields, NeoNamespace namespace ) {
-        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.namespaceType, physical.adapterId );
+        super( physical.id, physical.allocationId, physical.logicalId, physical.name, physical.namespaceId, physical.namespaceName, physical.dataModel, physical.adapterId );
         this.fields = fields;
         this.namespace = namespace;
     }
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        final AlgOptCluster cluster = context.getCluster();
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
         return new NeoScan( cluster, traitSet.replace( NeoConvention.INSTANCE ), this );
     }
 
@@ -91,10 +95,10 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
      * @param operation the operation type
      */
     @Override
-    public Modify<LogicalEntity> toModificationTable(
+    public Modify<Entity> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity physical,
+            Entity physical,
             AlgNode child,
             Operation operation,
             List<String> targets,
@@ -146,6 +150,25 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
     }
 
 
+    public AlgDataType getRowType() {
+        if ( dataModel == DataModel.RELATIONAL ) {
+            return buildProto().apply( AlgDataTypeFactory.DEFAULT );
+        }
+        return super.getRowType();
+    }
+
+
+    public AlgProtoDataType buildProto() {
+        final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
+
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+            AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
+            fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
+        }
+
+        return AlgDataTypeImpl.proto( fieldInfo.build() );
+    }
+
     public static class NeoQueryable extends AbstractEntityQueryable<PolyValue[], NeoEntity> {
 
         private final AlgDataType rowType;
@@ -168,7 +191,7 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
         private List<PolyType> getComponentType() {
-            return rowType.getFieldList().stream().map( t -> {
+            return rowType.getFields().stream().map( t -> {
                 if ( t.getType().getComponentType() != null ) {
                     return t.getType().getComponentType().getPolyType();
                 }
@@ -178,12 +201,12 @@ public class NeoEntity extends PhysicalEntity implements TranslatableEntity, Mod
 
 
         private List<PolyType> getTypes() {
-            return rowType.getFieldList().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
+            return rowType.getFields().stream().map( t -> t.getType().getPolyType() ).collect( Collectors.toList() );
         }
 
 
         private String buildAllQuery() {
-            return rowType.getFieldList().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
+            return rowType.getFields().stream().map( f -> "n." + f.getPhysicalName() ).collect( Collectors.joining( ", " ) );
         }
 
 

@@ -43,6 +43,7 @@ import org.polypheny.db.util.Pair;
 public class BackupManager {
 
 
+    @Getter
     private static BackupManager INSTANCE = null;
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;

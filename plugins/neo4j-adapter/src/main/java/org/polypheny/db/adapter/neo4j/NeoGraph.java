@@ -48,14 +48,13 @@ import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -108,7 +107,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity table,
+            Entity table,
             AlgNode child,
             Operation operation,
             List<String> targets,
@@ -130,7 +129,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
     public Modify<?> toModificationGraph(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity graph,
+            Entity graph,
             AlgNode child,
             Operation operation,
             List<PolyString> targets,
@@ -148,8 +147,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        final AlgOptCluster cluster = context.getCluster();
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
 

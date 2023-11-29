@@ -19,14 +19,11 @@ package org.polypheny.db.catalog.snapshot;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Syntax;
 import org.polypheny.db.algebra.operators.OperatorTable;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
@@ -47,10 +44,6 @@ public interface Snapshot extends OperatorTable {
     NameMatcher nameMatcher = NameMatchers.withCaseSensitive( RuntimeConfig.RELATIONAL_CASE_SENSITIVE.getBoolean() );
 
     long id();
-
-    default Expression getSnapshotExpression( long id ) {
-        return Expressions.call( Catalog.CATALOG_EXPRESSION, "getSnapshot", Expressions.constant( id ) );
-    }
 
 
     /**

@@ -26,7 +26,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.CottontailNamespace;
+import org.polypheny.db.adapter.cottontail.CottontailEntity;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailAlg.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailEnumerableFactory;
@@ -47,9 +47,9 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.ConventionTraitDef;
-import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.client.iterators.Tuple;
 
@@ -114,7 +114,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
                 final Expression values_ = builder.append(
                         "values",
-                        Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+                        Expressions.newArrayBounds( PolyValue.class, 1, Expressions.constant( fieldCount ) ) );
                 for ( int i = 0; i < fieldCount; i++ ) {
                     this.generateGet( rowType, builder, resultMap_, i, Expressions.arrayIndex( values_, Expressions.constant( i ) ) );
                 }
@@ -136,7 +136,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.filterBuilder ), // WHERE
                                 DataContext.ROOT,
                                 rowBuilder_,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
+                                cottontailContext.table.asExpression( CottontailEntity.class )
                         ) );
                 break;
 
@@ -150,7 +150,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.valuesHashMapList,
                                     DataContext.ROOT,
-                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
+                                    cottontailContext.table.asExpression( CottontailEntity.class )
                             )
                     );
                 } else {
@@ -162,7 +162,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.preparedValuesMapBuilder,
                                     DataContext.ROOT,
-                                    Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
+                                    cottontailContext.table.asExpression( CottontailEntity.class )
                             )
                     );
                 }
@@ -178,7 +178,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 cottontailContext.preparedValuesMapBuilder,
                                 DataContext.ROOT,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
+                                cottontailContext.table.asExpression( CottontailEntity.class )
                         )
                 );
                 break;
@@ -192,7 +192,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
                                 DataContext.ROOT,
-                                Expressions.call( Schemas.unwrap( convention.expression, CottontailNamespace.class ), "getWrapper" )
+                                cottontailContext.table.asExpression( CottontailEntity.class )
                         )
                 );
                 break;
@@ -201,10 +201,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 enumerable = null;
         }
 
-        list.add( Expressions.statement( Expressions.call(
-                Schemas.unwrap( convention.expression, CottontailNamespace.class ),
-                "registerStore",
-                DataContext.ROOT ) ) );
+        list.add( Expressions.statement(
+                Expressions.call(
+                        cottontailContext.table.asExpression( CottontailEntity.class ),
+                        "registerStore",
+                        DataContext.ROOT ) ) );
 
         list.add( Expressions.return_( null, enumerable ) );
 
@@ -216,7 +217,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
      * Generates accessor methods used to access data contained in {@link Tuple}s returned by Cottontail DB.
      */
     private void generateGet( AlgDataType rowType, BlockBuilder blockBuilder, ParameterExpression result_, int i, Expression target ) {
-        final AlgDataType fieldType = rowType.getFieldList().get( i ).getType();
+        final AlgDataType fieldType = rowType.getFields().get( i ).getType();
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`
@@ -231,13 +232,27 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final Expression source;
         switch ( fieldType.getPolyType() ) {
             case BOOLEAN:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBoolData", Object.class ), getDataFromMap_ );
+                break;
             case INTEGER:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getIntData", Object.class ), getDataFromMap_ );
+                break;
             case BIGINT:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getBigIntData", Object.class ), getDataFromMap_ );
+                break;
             case FLOAT:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getFloatData", Object.class ), getDataFromMap_ );
+                break;
             case REAL:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getRealData", Object.class ), getDataFromMap_ );
+                break;
             case DOUBLE:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getDoubleData", Object.class ), getDataFromMap_ );
+                break;
             case CHAR:
             case VARCHAR:
+                source = Expressions.call( Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class ), getDataFromMap_ );
+                break;
             case NULL:
                 source = getDataFromMap_;
                 break;

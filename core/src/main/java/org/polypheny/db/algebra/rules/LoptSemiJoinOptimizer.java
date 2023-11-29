@@ -52,9 +52,9 @@ import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.metadata.AlgMdUtil;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -228,9 +228,9 @@ public class LoptSemiJoinOptimizer {
                         factIdx,
                         dimIdx );
 
-        AlgNode factRel = multiJoin.getJoinFactor( factIdx );
+        AlgNode factAlg = multiJoin.getJoinFactor( factIdx );
         AlgNode dimRel = multiJoin.getJoinFactor( dimIdx );
-        final JoinInfo joinInfo = JoinInfo.of( factRel, dimRel, semiJoinCondition );
+        final JoinInfo joinInfo = JoinInfo.of( factAlg, dimRel, semiJoinCondition );
         assert joinInfo.leftKeys.size() > 0;
 
         // mutable copies
@@ -239,14 +239,14 @@ public class LoptSemiJoinOptimizer {
 
         // Make sure all the fact table keys originate from the same table and are simple column references
         final List<Integer> actualLeftKeys = new ArrayList<>();
-        LcsEntity factTable = validateKeys( factRel, leftKeys, rightKeys, actualLeftKeys );
+        LcsEntity factTable = validateKeys( factAlg, leftKeys, rightKeys, actualLeftKeys );
         if ( factTable == null ) {
             return null;
         }
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factRel::getCluster, factRel.getTraitSet() );
+        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factAlg.getCluster(), factAlg.getTraitSet() );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =
@@ -281,7 +281,7 @@ public class LoptSemiJoinOptimizer {
                             semiJoinCondition );
         }
         return SemiJoin.create(
-                factRel,
+                factAlg,
                 dimRel,
                 semiJoinCondition,
                 ImmutableList.copyOf( truncatedLeftKeys ),
@@ -342,7 +342,7 @@ public class LoptSemiJoinOptimizer {
      */
     private LcsEntity validateKeys( AlgNode factRel, List<Integer> leftKeys, List<Integer> rightKeys, List<Integer> actualLeftKeys ) {
         int keyIdx = 0;
-        LogicalEntity theTable = null;
+        Entity theTable = null;
         ListIterator<Integer> keyIter = leftKeys.listIterator();
         while ( keyIter.hasNext() ) {
             boolean removeKey = false;
@@ -352,7 +352,7 @@ public class LoptSemiJoinOptimizer {
             if ( (colOrigin == null) || LucidDbSpecialOperators.isLcsRidColumnId( colOrigin.getOriginColumnOrdinal() ) ) {
                 removeKey = true;
             } else {
-                LogicalEntity table = colOrigin.getOriginTable();
+                Entity table = colOrigin.getOriginTable();
                 if ( theTable == null ) {
                     if ( !(table instanceof LcsEntity) ) {
                         // not a column store table
@@ -666,10 +666,10 @@ public class LoptSemiJoinOptimizer {
     /**
      * Dummy class to allow code to compile.
      */
-    private abstract static class LcsEntity extends LogicalEntity {
+    private abstract static class LcsEntity extends Entity {
 
         protected LcsEntity() {
-            super( -1, "lcs", -1, EntityType.ENTITY, NamespaceType.RELATIONAL, false );
+            super( -1, "lcs", -1, EntityType.ENTITY, DataModel.RELATIONAL, false );
         }
 
     }

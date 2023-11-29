@@ -425,7 +425,7 @@ public class Interpreter extends AbstractEnumerable<PolyValue[]> implements Auto
         public AlgDataType combinedRowType( List<AlgNode> inputs ) {
             final Builder builder = interpreter.dataContext.getTypeFactory().builder();
             for ( AlgNode input : inputs ) {
-                builder.addAll( input.getRowType().getFieldList() );
+                builder.addAll( input.getRowType().getFields() );
             }
             return builder.build();
         }

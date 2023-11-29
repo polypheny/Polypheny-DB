@@ -43,7 +43,7 @@ import org.polypheny.db.schema.Entity;
 import org.polypheny.db.schema.Statistic;
 import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TableType;
-import org.polypheny.db.schema.Wrapper;
+import org.polypheny.db.util.Wrapper;
 
 
 /**
@@ -106,7 +106,7 @@ public abstract class AbstractEntity implements Entity, Wrapper {
         if ( id == null ) {
             return Statistics.UNKNOWN;
         }
-        Integer rowCount = StatisticsManager.getInstance().rowCountPerTable( id );
+        Long rowCount = StatisticsManager.getInstance().rowCountPerTable( id );
 
         if ( rowCount == null ) {
             return Statistics.UNKNOWN;

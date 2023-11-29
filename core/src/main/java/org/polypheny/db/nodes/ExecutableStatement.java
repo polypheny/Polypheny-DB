@@ -17,8 +17,8 @@
 package org.polypheny.db.nodes;
 
 
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -27,7 +27,7 @@ import org.polypheny.db.transaction.Statement;
  */
 public interface ExecutableStatement {
 
-    void execute( Context context, Statement statement, QueryParameters parameters );
+    void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext );
 
 
 }

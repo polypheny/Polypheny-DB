@@ -168,8 +168,8 @@ public class JoinCommuteRule extends AlgOptRule {
 
         VariableReplacer( RexBuilder rexBuilder, AlgDataType leftType, AlgDataType rightType ) {
             this.rexBuilder = rexBuilder;
-            this.leftFields = leftType.getFieldList();
-            this.rightFields = rightType.getFieldList();
+            this.leftFields = leftType.getFields();
+            this.rightFields = rightType.getFields();
         }
 
 

@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.logistic.PlacementType;
  * This class is considered the logical representation of a physical table on a specific store.
  */
 @Value
-public class AllocationPartition implements LogicalObject {
+public class AllocationPartition implements PolyObject {
 
     private static final long serialVersionUID = 8835793248417591036L;
 

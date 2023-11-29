@@ -141,7 +141,7 @@ public class BsonFunctionHelper extends BsonDocument {
     private static BsonValue getVal( RexNode rexNode, AlgDataType rowType, Implementor implementor ) {
         if ( rexNode.isA( Kind.INPUT_REF ) ) {
             RexIndexRef rex = (RexIndexRef) rexNode;
-            return new BsonString( "$" + rowType.getFieldList().get( rex.getIndex() ).getPhysicalName() );
+            return new BsonString( "$" + rowType.getFields().get( rex.getIndex() ).getPhysicalName() );
         } else if ( rexNode.isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
             RexCall rex = (RexCall) rexNode;
             return BsonUtil.getBsonArray( rex, implementor.getBucket() );

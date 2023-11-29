@@ -98,7 +98,7 @@ public class CottontailSort extends Sort implements CottontailAlg {
             final String logicalName = columnNames.get( c.getFieldIndex() );
             String physicalName;
             try {
-                physicalName = context.cottontailTable.getPhysicalColumnName( logicalName );
+                physicalName = context.table.getPhysicalColumnName( logicalName );
             } catch ( IndexOutOfBoundsException e ) {
                 physicalName = logicalName; /* Case of column being calculated and there being no physical column. */
             }

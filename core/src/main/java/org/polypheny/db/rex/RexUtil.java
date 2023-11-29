@@ -122,7 +122,7 @@ public class RexUtil {
      * @return cast expressions
      */
     public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, AlgDataType lhsRowType, AlgDataType rhsRowType ) {
-        final List<AlgDataTypeField> fieldList = rhsRowType.getFieldList();
+        final List<AlgDataTypeField> fieldList = rhsRowType.getFields();
         int n = fieldList.size();
         assert n == lhsRowType.getFieldCount() : "field count: lhs [" + lhsRowType + "] rhs [" + rhsRowType + "]";
         List<RexNode> rhsExps = new ArrayList<>();
@@ -142,7 +142,7 @@ public class RexUtil {
      * @return cast expressions
      */
     public static List<RexNode> generateCastExpressions( RexBuilder rexBuilder, AlgDataType lhsRowType, List<RexNode> rhsExps ) {
-        List<AlgDataTypeField> lhsFields = lhsRowType.getFieldList();
+        List<AlgDataTypeField> lhsFields = lhsRowType.getFields();
         List<RexNode> castExps = new ArrayList<>();
         for ( Pair<AlgDataTypeField, RexNode> pair : Pair.zip( lhsFields, rhsExps, true ) ) {
             AlgDataTypeField lhsField = pair.left;
@@ -953,7 +953,7 @@ public class RexUtil {
      * @see AlgOptUtil#eq(String, AlgDataType, String, AlgDataType, org.polypheny.db.util.Litmus)
      */
     public static boolean compatibleTypes( List<RexNode> exprs, AlgDataType type, Litmus litmus ) {
-        final List<AlgDataTypeField> fields = type.getFieldList();
+        final List<AlgDataTypeField> fields = type.getFields();
         if ( exprs.size() != fields.size() ) {
             return litmus.fail( "rowtype mismatches expressions" );
         }
@@ -981,7 +981,7 @@ public class RexUtil {
      * Returns whether the leading edge of a given array of expressions is wholly {@link RexIndexRef} objects with types corresponding to the underlying datatype.
      */
     public static boolean containIdentity( List<? extends RexNode> exprs, AlgDataType rowType, Litmus litmus ) {
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
         if ( exprs.size() < fields.size() ) {
             return litmus.fail( "exprs/rowType length mismatch" );
         }

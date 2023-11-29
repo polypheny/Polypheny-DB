@@ -59,8 +59,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -642,7 +642,7 @@ public class ConstraintEnforceAttacher {
                             .getNamespaces( null )
                             .stream()
                             .flatMap( n -> Catalog.getInstance().getSnapshot().rel().getTables( n.id, null ).stream() )
-                            .filter( t -> t.entityType == EntityType.ENTITY && t.getNamespaceType() == NamespaceType.RELATIONAL )
+                            .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
                             .collect( Collectors.toList() );
                     Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, false, "ConstraintEnforcement" );
                     Statement statement = transaction.createStatement();

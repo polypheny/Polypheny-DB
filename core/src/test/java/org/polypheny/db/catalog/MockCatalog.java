@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 
@@ -145,7 +145,7 @@ public abstract class MockCatalog extends Catalog {
     }
 
     @Override
-    public long createNamespace( String name, NamespaceType namespaceType, boolean caseSensitive ) {
+    public long createNamespace( String name, DataModel dataModel, boolean caseSensitive ) {
         throw new NotImplementedException();
     }
 

@@ -56,7 +56,7 @@ import org.polypheny.db.rex.RexNode;
 public class ViewManager {
 
     public static LogicalSort orderMaterialized( AlgNode other ) {
-        int positionPrimary = other.getRowType().getFieldList().size() - 1;
+        int positionPrimary = other.getRowType().getFields().size() - 1;
         AlgFieldCollation algFieldCollation = new AlgFieldCollation( positionPrimary, Direction.ASCENDING );
         AlgCollations.of( algFieldCollation );
 

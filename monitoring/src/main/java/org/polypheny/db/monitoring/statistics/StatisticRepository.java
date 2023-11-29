@@ -101,7 +101,7 @@ public class StatisticRepository implements MonitoringRepository {
                 }
             } else {
                 for ( long id : values ) {
-                    if ( catalog.getSnapshot().getLogicalEntity( id ) != null ) {
+                    if ( catalog.getSnapshot().getLogicalEntity( id ).isPresent() ) {
                         statisticsManager.setTableCalls( id, dataPoint.getMonitoringType() );
                     }
                 }
@@ -127,7 +127,7 @@ public class StatisticRepository implements MonitoringRepository {
                 return;
             }
             if ( dataPoint.getMonitoringType() == MonitoringType.INSERT ) {
-                int added = dataPoint.getRowCount();
+                long added = dataPoint.getRowCount();
                 statisticsManager.tablesToUpdate(
                         tableId,
                         dataPoint.getChangedValues(),
@@ -135,7 +135,7 @@ public class StatisticRepository implements MonitoringRepository {
                         catalog.getSnapshot().getLogicalEntity( tableId ).orElseThrow().namespaceId );
                 statisticsManager.updateRowCountPerTable( tableId, added, dataPoint.getMonitoringType() );
             } else if ( dataPoint.getMonitoringType() == MonitoringType.DELETE ) {
-                int deleted = dataPoint.getRowCount();
+                long deleted = dataPoint.getRowCount();
                 statisticsManager.updateRowCountPerTable( tableId, deleted, dataPoint.getMonitoringType() );
                 // After a delete, it is not clear what exactly was deleted, so the statistics of the table are updated
                 statisticsManager.tablesToUpdate( tableId );

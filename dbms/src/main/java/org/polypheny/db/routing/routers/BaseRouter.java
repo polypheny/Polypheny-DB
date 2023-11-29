@@ -53,7 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -61,11 +61,12 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -228,14 +229,13 @@ public abstract class BaseRouter implements Router {
     public RoutedAlgBuilder handleRelScan(
             RoutedAlgBuilder builder,
             Statement statement,
-            LogicalEntity entity ) {
+            Entity entity ) {
 
-        org.polypheny.db.catalog.entity.logical.LogicalEntity table;
+        LogicalEntity table;
 
         if ( entity.unwrap( LogicalTable.class ) != null ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-
-            table = entity.unwrap( org.polypheny.db.catalog.entity.logical.LogicalEntity.class );
+            table = entity.unwrap( LogicalEntity.class );
             builder.scan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ) != null ) {
             builder.scan( entity.unwrap( AllocationTable.class ) );
@@ -246,8 +246,8 @@ public abstract class BaseRouter implements Router {
 
         if ( table.getRowType().getFieldCount() == builder.peek().getRowType().getFieldCount() && !table.getRowType().equals( builder.peek().getRowType() ) ) {
             // we adjust the
-            Map<String, Integer> namesIndexMapping = table.getRowType().getFieldList().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
-            List<Integer> target = builder.peek().getRowType().getFieldList().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
+            Map<String, Integer> namesIndexMapping = table.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, AlgDataTypeField::getIndex ) );
+            List<Integer> target = builder.peek().getRowType().getFields().stream().map( f -> namesIndexMapping.get( f.getName() ) ).collect( Collectors.toList() );
             builder.permute( Mappings.bijection( target ) );
         }
 
@@ -255,7 +255,7 @@ public abstract class BaseRouter implements Router {
     }
 
 
-    public DocumentScan<LogicalEntity> handleDocScan(
+    public DocumentScan<Entity> handleDocScan(
             DocumentScan<?> scan,
             Statement statement,
             @Nullable List<Long> excludedPlacements ) {
@@ -435,7 +435,7 @@ public abstract class BaseRouter implements Router {
 
         AllocationColumn placement = new ArrayList<>( partitionsColumnsPlacements.values() ).get( 0 ).get( 0 );
         // todo dl: remove after RowType refactor
-        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().namespaceType == NamespaceType.DOCUMENT ) {
+        if ( catalog.getSnapshot().getNamespace( placement.namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, cluster.getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( new LogicalTransformer(
                     node.getCluster(),

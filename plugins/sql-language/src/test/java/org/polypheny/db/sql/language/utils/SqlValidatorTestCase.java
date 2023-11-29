@@ -17,23 +17,15 @@
 package org.polypheny.db.sql.language.utils;
 
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.nio.charset.Charset;
 import org.junit.rules.MethodRule;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.polypheny.db.algebra.constant.ConformanceEnum;
-import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlTestFactory;
 import org.polypheny.db.sql.language.parser.SqlParserUtil;
 import org.polypheny.db.sql.language.validate.SqlValidator;
-import org.polypheny.db.util.Collation.Coercibility;
 import org.polypheny.db.util.Conformance;
 
 
@@ -46,10 +38,6 @@ import org.polypheny.db.util.Conformance;
  */
 public class SqlValidatorTestCase {
 
-    private static final SqlTestFactory EXTENDED_TEST_FACTORY = SqlTestFactory.INSTANCE.withCatalogReader( MockCatalogReaderExtended::new );
-    static final SqlTester EXTENDED_CATALOG_TESTER = new SqlValidatorTester( EXTENDED_TEST_FACTORY );
-    static final SqlTester EXTENDED_CATALOG_TESTER_2003 = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( ConformanceEnum.PRAGMATIC_2003 );
-    static final SqlTester EXTENDED_CATALOG_TESTER_LENIENT = new SqlValidatorTester( EXTENDED_TEST_FACTORY ).withConformance( ConformanceEnum.LENIENT );
     public static final MethodRule TESTER_CONFIGURATION_RULE = new TesterConfigurationRule();
 
     protected SqlTester tester;
@@ -81,33 +69,8 @@ public class SqlValidatorTestCase {
     }
 
 
-    public final Sql winSql( String sql ) {
-        return sql( sql );
-    }
-
-
-    public final Sql win( String sql ) {
-        return sql( "select * from emp " + sql );
-    }
-
-
-    public Sql winExp( String sql ) {
-        return winSql( "select " + sql + " from emp window w as (order by deptno)" );
-    }
-
-
-    public Sql winExp2( String sql ) {
-        return winSql( "select " + sql + " from emp" );
-    }
-
-
     public void check( String sql ) {
         sql( sql ).ok();
-    }
-
-
-    public void checkExp( String sql ) {
-        tester.assertExceptionIsThrown( AbstractSqlTester.buildQuery( sql ), null );
     }
 
 
@@ -116,83 +79,6 @@ public class SqlValidatorTestCase {
      */
     public final void checkFails( String sql, String expected ) {
         sql( sql ).fails( expected );
-    }
-
-
-    /**
-     * Checks that a SQL expression gives a particular error.
-     */
-    public final void checkExpFails( String sql, String expected ) {
-        tester.assertExceptionIsThrown( AbstractSqlTester.buildQuery( sql ), expected );
-    }
-
-
-    /**
-     * Checks that a SQL expression gives a particular error, and that the location of the error is the whole expression.
-     */
-    public final void checkWholeExpFails( String sql, String expected ) {
-        assert sql.indexOf( '^' ) < 0;
-        checkExpFails( "^" + sql + "^", expected );
-    }
-
-
-    public final void checkExpType( String sql, String expected ) {
-        checkColumnType( AbstractSqlTester.buildQuery( sql ), expected );
-    }
-
-
-    /**
-     * Checks that a query returns a single column, and that the column has the expected type. For example,
-     *
-     * <code>checkColumnType("SELECT empno FROM Emp", "INTEGER NOT NULL");</code>
-     *
-     * @param sql Query
-     * @param expected Expected type, including nullability
-     */
-    public final void checkColumnType( String sql, String expected ) {
-        tester.checkColumnType( sql, expected );
-    }
-
-
-    /**
-     * Checks that a query returns a row of the expected type. For example,
-     *
-     * <code>checkResultType("select empno, name from emp","{EMPNO INTEGER NOT NULL, NAME VARCHAR(10) NOT NULL}");</code>
-     *
-     * @param sql Query
-     * @param expected Expected row type
-     */
-    public final void checkResultType( String sql, String expected ) {
-        tester.checkResultType( sql, expected );
-    }
-
-
-    /**
-     * Checks that the first column returned by a query has the expected type. For example,
-     *
-     * <code>checkQueryType("SELECT empno FROM Emp", "INTEGER NOT NULL");</code>
-     *
-     * @param sql Query
-     * @param expected Expected type, including nullability
-     */
-    public final void checkIntervalConv( String sql, String expected ) {
-        tester.checkIntervalConv( AbstractSqlTester.buildQuery( sql ), expected );
-    }
-
-
-    protected final void assertExceptionIsThrown( String sql, String expectedMsgPattern ) {
-        assert expectedMsgPattern != null;
-        tester.assertExceptionIsThrown( sql, expectedMsgPattern );
-    }
-
-
-    public void checkCharset( String sql, Charset expectedCharset ) {
-        tester.checkCharset( sql, expectedCharset );
-    }
-
-
-    public void checkCollation( String sql, String expectedCollationName, Coercibility expectedCoercibility ) {
-        tester.checkCollation( sql, expectedCollationName, expectedCoercibility );
     }
 
 
@@ -251,49 +137,15 @@ public class SqlValidatorTestCase {
          */
         AlgDataType getResultType( String sql );
 
-        void checkCollation( String sql, String expectedCollationName, Coercibility expectedCoercibility );
-
-        void checkCharset( String sql, Charset expectedCharset );
-
         /**
          * Checks that a query returns one column of an expected type. For example, <code>checkType("VALUES (1 + 2)", "INTEGER NOT NULL")</code>.
          */
         void checkColumnType( String sql, String expected );
 
         /**
-         * Given a SQL query, returns a list of the origins of each result field.
-         *
-         * @param sql SQL query
-         * @param fieldOriginList Field origin list, e.g. "{(CATALOG.SALES.EMP.EMPNO, null)}"
-         */
-        void checkFieldOrigin( String sql, String fieldOriginList );
-
-        /**
-         * Checks that a query gets rewritten to an expected form.
-         *
-         * @param validator validator to use; null for default
-         * @param query query to test
-         * @param expectedRewrite expected SQL text after rewrite and unparse
-         */
-        void checkRewrite( SqlValidator validator, String query, String expectedRewrite );
-
-        /**
          * Checks that a query returns one column of an expected type. For example, <code>checkType("select empno, name from emp""{EMPNO INTEGER NOT NULL, NAME VARCHAR(10) NOT NULL}")</code>.
          */
         void checkResultType( String sql, String expected );
-
-        /**
-         * Checks if the interval value conversion to milliseconds is valid. For example, <code>checkIntervalConv(VALUES (INTERVAL '1' Minute), "60000")</code>.
-         */
-        void checkIntervalConv( String sql, String expected );
-
-        /**
-         * Given a SQL query, returns the monotonicity of the first item in the SELECT clause.
-         *
-         * @param sql SQL query
-         * @return Monotonicity
-         */
-        Monotonicity getMonotonicity( String sql );
 
         Conformance getConformance();
 
@@ -322,28 +174,8 @@ public class SqlValidatorTestCase {
         }
 
 
-        Sql tester( SqlTester tester ) {
-            return new Sql( tester, sql, true );
-        }
-
-
         public Sql sql( String sql ) {
             return new Sql( tester, sql, true );
-        }
-
-
-        Sql withExtendedCatalog() {
-            return tester( EXTENDED_CATALOG_TESTER );
-        }
-
-
-        Sql withExtendedCatalog2003() {
-            return tester( EXTENDED_CATALOG_TESTER_2003 );
-        }
-
-
-        Sql withExtendedCatalogLenient() {
-            return tester( EXTENDED_CATALOG_TESTER_LENIENT );
         }
 
 
@@ -359,47 +191,11 @@ public class SqlValidatorTestCase {
         }
 
 
-        Sql failsIf( boolean b, String expected ) {
-            if ( b ) {
-                fails( expected );
-            } else {
-                ok();
-            }
-            return this;
-        }
-
-
         public Sql type( String expectedType ) {
             tester.checkResultType( sql, expectedType );
             return this;
         }
 
-
-        public Sql columnType( String expectedType ) {
-            tester.checkColumnType( sql, expectedType );
-            return this;
-        }
-
-
-        public Sql monotonic( Monotonicity expectedMonotonicity ) {
-            tester.checkMonotonic( sql, expectedMonotonicity );
-            return this;
-        }
-
-
-        public Sql bindType( final String bindType ) {
-            tester.check( sql, null, parameterRowType -> assertThat( parameterRowType.toString(), is( bindType ) ), result -> {
-            } );
-            return this;
-        }
-
-
-        /**
-         * Removes the carets from the SQL string. Useful if you want to run a test once at a conformance level where it fails, then run it again at a conformance level where it succeeds.
-         */
-        public Sql sansCarets() {
-            return new Sql( tester, sql.replace( "^", "" ), true );
-        }
 
     }
 

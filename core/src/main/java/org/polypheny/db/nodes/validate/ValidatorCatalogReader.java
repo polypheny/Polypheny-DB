@@ -22,8 +22,8 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.nodes.Identifier;
-import org.polypheny.db.schema.Wrapper;
 import org.polypheny.db.util.Moniker;
+import org.polypheny.db.util.Wrapper;
 
 
 /**

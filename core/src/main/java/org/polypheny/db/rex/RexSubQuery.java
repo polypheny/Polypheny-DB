@@ -96,7 +96,7 @@ public class RexSubQuery extends RexCall {
                 nullable = true;
             }
         }
-        for ( AlgDataTypeField field : alg.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : alg.getRowType().getFields() ) {
             if ( field.getType().isNullable() ) {
                 nullable = true;
             }
@@ -119,7 +119,7 @@ public class RexSubQuery extends RexCall {
      * Creates a scalar sub-query.
      */
     public static RexSubQuery scalar( AlgNode alg ) {
-        final List<AlgDataTypeField> fieldList = alg.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = alg.getRowType().getFields();
         assert fieldList.size() == 1;
         final AlgDataTypeFactory typeFactory = alg.getCluster().getTypeFactory();
         final AlgDataType type = typeFactory.createTypeWithNullability( fieldList.get( 0 ).getType(), true );

@@ -39,7 +39,7 @@ import java.util.Objects;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -48,14 +48,14 @@ import org.polypheny.db.rex.RexNode;
  */
 public class MutableTableModify extends MutableSingleAlg {
 
-    public final LogicalEntity table;
+    public final Entity table;
     public final Operation operation;
     public final List<String> updateColumnList;
     public final List<RexNode> sourceExpressionList;
     public final boolean flattened;
 
 
-    private MutableTableModify( AlgDataType rowType, MutableAlg input, LogicalEntity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    private MutableTableModify( AlgDataType rowType, MutableAlg input, Entity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         super( MutableAlgType.TABLE_MODIFY, rowType, input );
         this.table = table;
         this.operation = operation;
@@ -76,7 +76,7 @@ public class MutableTableModify extends MutableSingleAlg {
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
      * @param flattened Whether set flattens the input row type
      */
-    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, LogicalEntity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
+    public static MutableTableModify of( AlgDataType rowType, MutableAlg input, Entity table, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         return new MutableTableModify( rowType, input, table, operation, updateColumnList, sourceExpressionList, flattened );
     }
 

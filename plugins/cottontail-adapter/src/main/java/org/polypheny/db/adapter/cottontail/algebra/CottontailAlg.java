@@ -49,7 +49,6 @@ public interface CottontailAlg extends AlgNode {
         public String tableName;
 
         public CottontailEntity table;
-        public CottontailEntity cottontailTable;
 
         public Expression filterBuilder;
 

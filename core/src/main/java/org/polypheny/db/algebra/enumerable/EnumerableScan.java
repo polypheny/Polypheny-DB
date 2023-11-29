@@ -38,7 +38,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.plan.AlgOptCluster;
@@ -52,7 +52,7 @@ import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.StreamableEntity;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.PolyphenyMode;
+import org.polypheny.db.util.PolyMode;
 
 
 /**
@@ -78,7 +78,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Creates an EnumerableScan.
      */
-    public static EnumerableScan create( AlgOptCluster cluster, LogicalEntity entity ) {
+    public static EnumerableScan create( AlgOptCluster cluster, Entity entity ) {
         PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class );
         Class<?> elementType = EnumerableScan.deduceElementType( physicalTable );
         final AlgTraitSet traitSet =
@@ -105,7 +105,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
     /**
      * Returns whether EnumerableScan can generate code to handle a particular variant of the Table SPI.
      */
-    public static boolean canHandle( LogicalEntity entity ) {
+    public static boolean canHandle( Entity entity ) {
         // FilterableTable and ProjectableFilterableTable cannot be handled in/ enumerable convention because they might reject filters and those filters would need to be handled dynamically.
         return entity instanceof QueryableEntity || entity instanceof ScannableEntity;
     }
@@ -184,7 +184,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
     private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
-        final AlgDataType algFieldType = physType.getRowType().getFieldList().get( i ).getType();
+        final AlgDataType algFieldType = physType.getRowType().getFields().get( i ).getType();
         switch ( algFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
@@ -223,7 +223,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
 
     private boolean hasCollectionField( AlgDataType rowType ) {
-        for ( AlgDataTypeField field : rowType.getFieldList() ) {
+        for ( AlgDataTypeField field : rowType.getFields() ) {
             switch ( field.getType().getPolyType() ) {
                 case ARRAY:
                 case MULTISET:
@@ -256,7 +256,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
 
     @Override
     public AlgOptCost computeSelfCost( AlgOptPlanner planner, AlgMetadataQuery mq ) {
-        if ( Catalog.mode == PolyphenyMode.TEST ) {
+        if ( Catalog.mode == PolyMode.TEST ) {
             // normally this enumerable is not used by Polypheny and is therefore "removed" by an infinite cost,
             // but theoretically it is able to handle scans on the application layer
             // this is tested by different instances and should then lead to a finite selfCost

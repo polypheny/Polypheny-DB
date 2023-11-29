@@ -59,7 +59,7 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract void deleteTableToUpdate( long tableId );
 
-    public abstract void updateRowCountPerTable( long tableId, int number, MonitoringType type );
+    public abstract void updateRowCountPerTable( long tableId, long number, MonitoringType type );
 
     public abstract void setIndexSize( long tableId, int indexSize );
 
@@ -73,9 +73,9 @@ public abstract class StatisticsManager implements PropertyChangeListener {
 
     public abstract Map<?, ?> getQualifiedStatisticMap();
 
-    public abstract <T extends Comparable<T>> Object getTableStatistic( long schemaId, long tableId );
+    public abstract Object getTableStatistic( long schemaId, long tableId );
 
-    public abstract Integer rowCountPerTable( long tableId );
+    public abstract Long rowCountPerTable( long tableId );
 
     public abstract void updateCommitRollback( boolean committed );
 

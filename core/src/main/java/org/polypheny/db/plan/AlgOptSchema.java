@@ -34,24 +34,9 @@
 package org.polypheny.db.plan;
 
 
-import java.util.List;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-
-
 /**
- * A <code>RelOptSchema</code> is a set of {@link AlgOptEntity} objects.
+ * A <code>RelOptSchema</code> is a set of objects.
  */
 public interface AlgOptSchema {
-
-    /**
-     * Retrieves a {@link AlgOptEntity} based upon a member access.
-     *
-     * For example, the Saffron expression <code>salesSchema.emps</code> would be resolved using a call to <code>salesSchema.getTableForMember(new String[]{"emps" })</code>.
-     *
-     * Note that name.length is only greater than 1 for queries originating from JDBC.
-     *
-     * @param names Qualified name
-     */
-    LogicalTable getTableForMember( List<String> names );
 
 }

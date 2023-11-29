@@ -64,7 +64,7 @@ public interface AlgDataType {
      *
      * @return read-only list of fields
      */
-    List<AlgDataTypeField> getFieldList();
+    List<AlgDataTypeField> getFields();
 
     /**
      * Returns the names of the fields in a struct type. The field count is equal to the size of the returned list.
@@ -79,7 +79,7 @@ public interface AlgDataType {
     /**
      * Returns the number of fields in a struct type.
      *
-     * This method is equivalent to <code>{@link #getFieldList}.size()</code>.
+     * This method is equivalent to <code>{@link #getFields}.size()</code>.
      */
     int getFieldCount();
 

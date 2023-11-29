@@ -243,6 +243,9 @@ public class CottontailPlugin extends PolyPlugin {
             if ( !success ) {
                 throw new GenericRuntimeException( "Unable to create table." );
             }
+
+            storeCatalog.replacePhysical( new CottontailEntity( currentNamespace, this.currentNamespace.getCottontailSchema().getName(), table, this ) );
+
             return List.of( table );
         }
 

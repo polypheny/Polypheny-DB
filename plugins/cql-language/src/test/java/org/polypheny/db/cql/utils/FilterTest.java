@@ -45,7 +45,7 @@ public class FilterTest extends AlgBuildTestHelper {
         super( AlgBuildLevel.INITIAL_PROJECTION );
         baseNode = algBuilder.peek();
         AlgDataType filtersRowType = baseNode.getRowType();
-        List<AlgDataTypeField> filtersRows = filtersRowType.getFieldList();
+        List<AlgDataTypeField> filtersRows = filtersRowType.getFields();
         filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
     }
 

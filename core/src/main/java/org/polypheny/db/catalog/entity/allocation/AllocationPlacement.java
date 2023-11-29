@@ -20,10 +20,10 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.io.Serializable;
 import lombok.Value;
-import org.polypheny.db.catalog.entity.LogicalObject;
+import org.polypheny.db.catalog.entity.PolyObject;
 
 @Value
-public class AllocationPlacement implements LogicalObject {
+public class AllocationPlacement implements PolyObject {
 
     @Serialize
     public long id;

@@ -33,10 +33,10 @@ import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.externalize.AlgXmlWriter;
-import org.polypheny.db.catalog.MockCatalogReaderExtended;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.PolyphenyDbConnectionProperty;
 import org.polypheny.db.languages.NodeToAlgConverter;
+import org.polypheny.db.languages.NodeToAlgConverter.Config;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.Contexts;
 import org.polypheny.db.sql.DiffRepository;
@@ -71,7 +71,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
      * Sets the SQL statement for a test.
      */
     public final Sql sql( String sql ) {
-        return new Sql( sql, true, true, tester, false, SqlToAlgConverter.Config.DEFAULT, tester.getConformance() );
+        return new Sql( sql, true, true, tester, false, Config.DEFAULT, tester.getConformance() );
     }
 
 
@@ -155,7 +155,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql = "select * from SALES.NATION t1\n"
                 + "join SALES.NATION t2\n"
                 + "using (n_nationkey)";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -1261,7 +1261,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql = "select d.deptno, e2.empno\n"
                 + "from dept_nested as d,\n"
                 + " UNNEST(d.employees) e2";
-        sql( sql ).with( getExtendedTester() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -1271,7 +1271,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql = "select d.deptno, e2.empno\n"
                 + "from dept_nested as d,\n"
                 + " UNNEST(d.employees) as e2(empno, y, z)";
-        sql( sql ).with( getExtendedTester() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2070,7 +2070,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testExplainAsXml() {
         String sql = "select 1 + 2, 3 from (values (true))";
-        final AlgNode alg = tester.convertSqlToRel( sql ).alg;
+        final AlgNode alg = tester.convertSqlToAlg( sql ).alg;
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter( sw );
         AlgXmlWriter planWriter = new AlgXmlWriter( pw, ExplainLevel.EXPPLAN_ATTRIBUTES );
@@ -2720,7 +2720,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testSelectFromDynamicTable() throws Exception {
         final String sql = "select n_nationkey, n_name from SALES.NATION";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2730,7 +2730,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testSelectStarFromDynamicTable() throws Exception {
         final String sql = "select * from SALES.NATION";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2744,7 +2744,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                 + "WHERE n_name NOT IN\n"
                 + "    (SELECT ''\n"
                 + "     FROM SALES.NATION)";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2756,7 +2756,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql = "select n_nationkey, n_name\n"
                 + "from (select * from SALES.NATION)\n"
                 + "order by n_regionkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2769,7 +2769,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                 + " (select * from SALES.NATION) T1, "
                 + " (SELECT * from SALES.CUSTOMER) T2 "
                 + " where T1.n_nationkey = T2.c_nationkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2779,7 +2779,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                 + "from (\n"
                 + "  select t2.fake_col as fake_q1\n"
                 + "  from SALES.CUSTOMER as t2) as t3";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2789,7 +2789,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                 + "from SALES.CUSTOMER as t1,\n"
                 + "lateral (select t2.\"$unnest\" as fake_col3\n"
                 + "         from unnest(t1.fake_col) as t2) as t3";
-        sql( sql3 ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql3 ).ok();
     }
 
 
@@ -2799,7 +2799,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
                 + "from SALES.CUSTOMER as t1,\n"
                 + "lateral (select t2.\"$unnest\" as fake_col3\n"
                 + "         from unnest(t1.fake_col) as t2) as t3";
-        sql( sql3 ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql3 ).ok();
     }
 
 
@@ -2808,7 +2808,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql3 = "select *\n"
                 + "from SALES.CUSTOMER as t1,\n"
                 + "unnest(t1.fake_col) as t2";
-        sql( sql3 ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql3 ).ok();
     }
 
 
@@ -2817,7 +2817,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         String sql3 = "select t2.c1\n"
                 + "from (select * from SALES.CUSTOMER) as t1,\n"
                 + "unnest(t1.fake_col) as t2(c1)";
-        sql( sql3 ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql3 ).ok();
     }
 
 
@@ -2827,7 +2827,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testReferDynamicStarInSelectWhereGB() throws Exception {
         final String sql = "select n_regionkey, count(*) as cnt from (select * from SALES.NATION) where n_nationkey > 5 group by n_regionkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2837,7 +2837,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testDynamicStarInJoinAndSubQ() throws Exception {
         final String sql = "select * from (select * from SALES.NATION T1, SALES.CUSTOMER T2 where T1.n_nationkey = T2.c_nationkey)";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2847,7 +2847,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testStarJoinStaticDynTable() throws Exception {
         final String sql = "select * from SALES.NATION N, SALES.REGION as R where N.n_regionkey = R.r_regionkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2857,7 +2857,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testGrpByColFromStarInSubQuery() throws Exception {
         final String sql = "SELECT n.n_nationkey AS col from (SELECT * FROM SALES.NATION) as n group by n.n_nationkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2868,7 +2868,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     public void testDynStarInExistSubQ() throws Exception {
         final String sql = "select *\n"
                 + "from SALES.REGION where exists (select * from SALES.NATION)";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2878,7 +2878,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     @Test
     public void testSelectDynamicStarOrderBy() throws Exception {
         final String sql = "SELECT * from SALES.NATION order by n_nationkey";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2907,7 +2907,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         final String sql = "SELECT SUM(n_nationkey) OVER w\n"
                 + "FROM (SELECT * FROM SALES.NATION) subQry\n"
                 + "WINDOW w AS (PARTITION BY REGION ORDER BY n_nationkey)";
-        sql( sql ).with( getTesterWithDynamicTable() ).ok();
+        sql( sql ).ok();
     }
 
 
@@ -2924,7 +2924,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
             public boolean isGroupByAlias() {
                 return true;
             }
-        } ).with( getTesterWithDynamicTable() ).ok();
+        } ).ok();
     }
 
 
@@ -2944,10 +2944,6 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         sql( sql ).ok();
     }
 
-
-    private Tester getExtendedTester() {
-        return tester.withCatalogReaderFactory( MockCatalogReaderExtended::new );
-    }
 
 
     /* // TODO MV: FIX
@@ -3153,7 +3149,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
         Properties properties = new Properties();
         properties.setProperty( PolyphenyDbConnectionProperty.DEFAULT_NULL_COLLATION.camelName(), NullCollation.LOW.name() );
         PolyphenyDbConnectionConfigImpl connectionConfig = new PolyphenyDbConnectionConfigImpl( properties );
-        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, null, SqlToAlgConverter.Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.of( connectionConfig ) );
+        TesterImpl tester = new TesterImpl( getDiffRepos(), false, false, true, false, null, SqlToAlgConverter.Config.DEFAULT, ConformanceEnum.DEFAULT, Contexts.of( connectionConfig ) );
         sql( sql ).with( tester ).ok();
     }
 
@@ -3326,7 +3322,7 @@ public class SqlToAlgConverterTest extends SqlToAlgTestBase {
     /**
      * Allows fluent testing.
      */
-    public class Sql {
+    public static class Sql {
 
         private final String sql;
         private final boolean expand;

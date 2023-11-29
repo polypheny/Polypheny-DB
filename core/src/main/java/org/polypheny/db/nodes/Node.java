@@ -18,7 +18,9 @@ package org.polypheny.db.nodes;
 
 import java.util.List;
 import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.util.Litmus;
@@ -81,6 +83,14 @@ public interface Node extends Cloneable, Visitable {
 
     ParserPos getPos();
 
+    default boolean isDdl() {
+        return Kind.DDL.contains( getKind() );
+    }
+
+    default long getNamespaceId() {
+        return Catalog.defaultNamespaceId;
+    }
+
     /**
      * Returns whether this node is structurally equivalent to another node.
      * Some examples:
@@ -91,5 +101,7 @@ public interface Node extends Cloneable, Visitable {
      * </ul>
      */
     boolean equalsDeep( Node node, Litmus litmus );
+
+    @Nullable String getEntity();
 
 }

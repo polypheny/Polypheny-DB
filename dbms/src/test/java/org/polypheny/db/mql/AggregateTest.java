@@ -26,14 +26,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.excluded.CottontailExcluded;
 import org.polypheny.db.excluded.FileExcluded;
 import org.polypheny.db.excluded.MonetdbExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 
-@Category({ AdapterTestSuite.class, FileExcluded.class, CassandraExcluded.class })
+@Category({ AdapterTestSuite.class, FileExcluded.class })
 public class AggregateTest extends MqlTestTemplate {
 
 

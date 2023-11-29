@@ -132,8 +132,8 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
         for ( int idx : inputFieldsUsed ) {
             final RexNode inputRef = RexTableIndexRef.of(
                     AlgTableRef.of( alg.getEntity(), 0 ),
-                    RexIndexRef.of( idx, alg.getRowType().getFieldList() ) );
-            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFieldList() );
+                    RexIndexRef.of( idx, alg.getRowType().getFields() ) );
+            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFields() );
             mapping.put( ref, ImmutableSet.of( inputRef ) );
         }
 
@@ -164,13 +164,13 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
         // Infer column origin expressions for given references
         final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexIndexRef inputRef = RexIndexRef.of( alg.getGroupSet().nth( idx ), input.getRowType().getFieldList() );
+            final RexIndexRef inputRef = RexIndexRef.of( alg.getGroupSet().nth( idx ), input.getRowType().getFields() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( input, inputRef );
             if ( originalExprs == null ) {
                 // Bail out
                 return null;
             }
-            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFields() );
             mapping.put( ref, originalExprs );
         }
 
@@ -188,7 +188,7 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
         final RexBuilder rexBuilder = alg.getCluster().getRexBuilder();
         final AlgNode leftInput = alg.getLeft();
         final AlgNode rightInput = alg.getRight();
-        final int nLeftColumns = leftInput.getRowType().getFieldList().size();
+        final int nLeftColumns = leftInput.getRowType().getFields().size();
 
         // Extract input fields referenced by expression
         final ImmutableBitSet inputFieldsUsed = extractInputRefs( outputExpression );
@@ -242,17 +242,17 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
         final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
             if ( idx < nLeftColumns ) {
-                final RexIndexRef inputRef = RexIndexRef.of( idx, leftInput.getRowType().getFieldList() );
+                final RexIndexRef inputRef = RexIndexRef.of( idx, leftInput.getRowType().getFields() );
                 final Set<RexNode> originalExprs = mq.getExpressionLineage( leftInput, inputRef );
                 if ( originalExprs == null ) {
                     // Bail out
                     return null;
                 }
                 // Left input references remain unchanged
-                mapping.put( RexIndexRef.of( idx, alg.getRowType().getFieldList() ), originalExprs );
+                mapping.put( RexIndexRef.of( idx, alg.getRowType().getFields() ), originalExprs );
             } else {
                 // Right input.
-                final RexIndexRef inputRef = RexIndexRef.of( idx - nLeftColumns, rightInput.getRowType().getFieldList() );
+                final RexIndexRef inputRef = RexIndexRef.of( idx - nLeftColumns, rightInput.getRowType().getFields() );
                 final Set<RexNode> originalExprs = mq.getExpressionLineage( rightInput, inputRef );
                 if ( originalExprs == null ) {
                     // Bail out
@@ -260,7 +260,7 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
                 }
                 // Right input references might need to be updated if there are table names clashes with left input
                 final Set<RexNode> updatedExprs = ImmutableSet.copyOf( Iterables.transform( originalExprs, e -> RexUtil.swapTableReferences( rexBuilder, e, currentTablesMapping ) ) );
-                mapping.put( RexIndexRef.of( idx, alg.getRowType().getFieldList() ), updatedExprs );
+                mapping.put( RexIndexRef.of( idx, alg.getRowType().getFields() ), updatedExprs );
             }
         }
 
@@ -301,14 +301,14 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
             }
             // Map references
             for ( int idx : inputFieldsUsed ) {
-                final RexIndexRef inputRef = RexIndexRef.of( idx, input.getRowType().getFieldList() );
+                final RexIndexRef inputRef = RexIndexRef.of( idx, input.getRowType().getFields() );
                 final Set<RexNode> originalExprs = mq.getExpressionLineage( input, inputRef );
                 if ( originalExprs == null ) {
                     // Bail out
                     return null;
                 }
                 // References might need to be updated
-                final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFieldList() );
+                final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFields() );
                 final Set<RexNode> updatedExprs =
                         originalExprs.stream()
                                 .map( e -> RexUtil.swapTableReferences( rexBuilder, e, currentTablesMapping ) )
@@ -350,7 +350,7 @@ public class AlgMdExpressionLineage implements MetadataHandler<BuiltInMetadata.E
                 // Bail out
                 return null;
             }
-            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, alg.getRowType().getFields() );
             mapping.put( ref, originalExprs );
         }
 

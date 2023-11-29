@@ -339,7 +339,7 @@ public class MongoPlugin extends PolyPlugin {
         public void dropTable( Context context, long allocId ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
+            PhysicalEntity physical = storeCatalog.fromAllocation( allocId, PhysicalEntity.class );
 
             this.currentNamespace.database.getCollection( physical.name ).drop();
             storeCatalog.removeAllocAndPhysical( allocId );
@@ -599,10 +599,10 @@ public class MongoPlugin extends PolyPlugin {
             DEFAULT,
             COMPOUND,
             SINGLE;
-        /*MULTIKEY,
-        GEOSPATIAL,
-        TEXT,
-        HASHED;*/
+            /*MULTIKEY,
+            GEOSPATIAL,
+            TEXT,
+            HASHED;*/
 
 
             public IndexMethodModel asMethod() {

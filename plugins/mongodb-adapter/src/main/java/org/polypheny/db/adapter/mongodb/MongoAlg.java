@@ -53,8 +53,7 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.type.AlgRecordType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
@@ -71,7 +70,7 @@ public interface MongoAlg extends AlgNode {
     /**
      * Calling convention for relational operations that occur in MongoDB.
      */
-    Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoRel.class );
+    Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoAlg.class );
 
 
     /**
@@ -81,6 +80,7 @@ public interface MongoAlg extends AlgNode {
 
         public final List<Pair<String, String>> list = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
+
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
@@ -93,12 +93,17 @@ public interface MongoAlg extends AlgNode {
         public boolean onlyOne = false;
         public boolean isDocumentUpdate = false;
 
-        public LogicalEntity entity;
+        @Getter
+        private MongoEntity entity;
+
+        @Getter
+        @Setter
+        private AlgDataType rowType;
+
         @Setter
         @Getter
         public boolean hasProject = false;
 
-        MongoEntity mongoEntity;
         @Setter
         @Getter
         private boolean isDML;
@@ -106,9 +111,6 @@ public interface MongoAlg extends AlgNode {
         @Getter
         @Setter
         private Operation operation;
-
-        @Getter
-        private AlgRecordType staticRowType;
 
 
         public Implementor() {
@@ -132,24 +134,18 @@ public interface MongoAlg extends AlgNode {
         }
 
 
-        public void setStaticRowType( AlgRecordType staticRowType ) {
-            if ( this.staticRowType != null ) {
-                return;
+        public String getPhysicalName( String name ) {
+            int index = entity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
+            if ( index != -1 ) {
+                return MongoStore.getPhysicalColumnName( entity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
             }
-            if ( mongoEntity != null ) {
-                this.staticRowType = MongoRowType.fromRecordType( staticRowType, mongoEntity );
-            } else {
-                this.staticRowType = staticRowType;
-            }
+            throw new GenericRuntimeException( "This column is not part of the table." );
         }
 
 
-        public String getPhysicalName( String name ) {
-            int index = mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.name ).collect( Collectors.toList() ).indexOf( name );
-            if ( index != -1 ) {
-                return MongoStore.getPhysicalColumnName( mongoEntity.physical.unwrap( PhysicalTable.class ).columns.stream().map( c -> c.id ).collect( Collectors.toList() ).get( index ) );
-            }
-            throw new GenericRuntimeException( "This column is not part of the table." );
+        public void setEntity( MongoEntity entity ) {
+            this.entity = entity;
+            this.rowType = entity.getRowType();
         }
 
 
@@ -204,14 +200,13 @@ public interface MongoAlg extends AlgNode {
 
 
         public List<String> getNecessaryPhysicalFields() {
-            return new ArrayList<>( physicalMapper );
+            return new ArrayList<>( entity.getRowType().getFieldNames() );
         }
 
 
         public List<String> reorderPhysical() {
             // this is only needed if there is a basic scan without project or group,
             // where we cannot be sure if the fields are all ordered as intended
-            assert entity.getRowType().getFieldCount() == physicalMapper.size();
             return entity.getRowType().getFieldNames();
         }
 

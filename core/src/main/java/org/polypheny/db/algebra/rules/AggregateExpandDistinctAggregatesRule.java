@@ -169,7 +169,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         }
 
         // Create a list of the expressions which will yield the final result. Initially, the expressions point to the input field.
-        final List<AlgDataTypeField> aggFields = aggregate.getRowType().getFieldList();
+        final List<AlgDataTypeField> aggFields = aggregate.getRowType().getFields();
         final List<RexIndexRef> refs = new ArrayList<>();
         final List<String> fieldNames = aggregate.getRowType().getFieldNames();
         final ImmutableBitSet groupSet = aggregate.getGroupSet();
@@ -488,7 +488,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         if ( n == 0 ) {
             leftFields = null;
         } else {
-            leftFields = algBuilder.peek().getRowType().getFieldList();
+            leftFields = algBuilder.peek().getRowType().getFields();
         }
 
         // Aggregate(
@@ -596,7 +596,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         // Create the join condition. It is of the form
         //  'left.f0 = right.f0 and left.f1 = right.f1 and ...'
         // where {f0, f1, ...} are the GROUP BY fields.
-        final List<AlgDataTypeField> distinctFields = algBuilder.peek().getRowType().getFieldList();
+        final List<AlgDataTypeField> distinctFields = algBuilder.peek().getRowType().getFields();
         final List<RexNode> conditions = new ArrayList<>();
         for ( i = 0; i < groupAndIndicatorCount; ++i ) {
             // null values form its own group use "is not distinct from" so that the join condition allows null values to match.
@@ -673,7 +673,7 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
     private AlgBuilder createSelectDistinct( AlgBuilder algBuilder, Aggregate aggregate, List<Integer> argList, int filterArg, Map<Integer, Integer> sourceOf ) {
         algBuilder.push( aggregate.getInput() );
         final List<Pair<RexNode, String>> projects = new ArrayList<>();
-        final List<AlgDataTypeField> childFields = algBuilder.peek().getRowType().getFieldList();
+        final List<AlgDataTypeField> childFields = algBuilder.peek().getRowType().getFields();
         for ( int i : aggregate.getGroupSet() ) {
             sourceOf.put( i, projects.size() );
             projects.add( RexIndexRef.of2( i, childFields ) );

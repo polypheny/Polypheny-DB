@@ -41,7 +41,7 @@ import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -73,7 +73,7 @@ import org.polypheny.db.view.ViewManager;
  *
  * can. It is the optimizer's responsibility to find these ways, by applying transformation rules.
  */
-public final class LogicalRelScan extends RelScan<LogicalEntity> {
+public final class LogicalRelScan extends RelScan<Entity> {
 
 
     /**
@@ -81,7 +81,7 @@ public final class LogicalRelScan extends RelScan<LogicalEntity> {
      *
      * Use {@link #create} unless you know what you're doing.
      */
-    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, LogicalEntity table ) {
+    public LogicalRelScan( AlgOptCluster cluster, AlgTraitSet traitSet, Entity table ) {
         super( cluster, traitSet, table );
     }
 
@@ -107,7 +107,7 @@ public final class LogicalRelScan extends RelScan<LogicalEntity> {
      *
      * @param cluster Cluster
      */
-    public static LogicalRelScan create( AlgOptCluster cluster, final LogicalEntity entity ) {
+    public static LogicalRelScan create( AlgOptCluster cluster, final Entity entity ) {
 
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )

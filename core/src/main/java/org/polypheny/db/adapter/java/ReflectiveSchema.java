@@ -43,31 +43,19 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.commons.lang3.NotImplementedException;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgReferentialConstraint;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.catalog.entity.LogicalEntity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.Namespace.Schema;
-import org.polypheny.db.schema.Statistic;
-import org.polypheny.db.schema.Statistics;
 import org.polypheny.db.schema.TableMacro;
 import org.polypheny.db.schema.impl.AbstractNamespace;
 import org.polypheny.db.schema.impl.ReflectiveFunctionBase;
-import org.polypheny.db.schema.types.ScannableEntity;
 import org.polypheny.db.schema.types.TranslatableEntity;
-import org.polypheny.db.type.entity.PolyValue;
 
 
 /**
@@ -77,7 +65,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
     private final Class clazz;
     private Object target;
-    private Map<String, LogicalEntity> tableMap;
+    private Map<String, Entity> tableMap;
     private Multimap<String, Function> functionMap;
 
 
@@ -111,7 +99,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
     @Override
-    public Map<String, LogicalEntity> getTables() {
+    public Map<String, Entity> getTables() {
         if ( tableMap == null ) {
             tableMap = createTableMap();
         }
@@ -119,17 +107,17 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     }
 
 
-    private Map<String, LogicalEntity> createTableMap() {
-        final ImmutableMap.Builder<String, LogicalEntity> builder = ImmutableMap.builder();
+    private Map<String, Entity> createTableMap() {
+        final ImmutableMap.Builder<String, Entity> builder = ImmutableMap.builder();
         for ( Field field : clazz.getFields() ) {
             final String fieldName = field.getName();
-            final LogicalEntity entity = fieldRelation( field );
+            final Entity entity = fieldRelation( field );
             if ( entity == null ) {
                 continue;
             }
             builder.put( fieldName, entity );
         }
-        Map<String, LogicalEntity> tableMap = builder.build();
+        Map<String, Entity> tableMap = builder.build();
         // Unique-Key - Foreign-Key
         for ( Field field : clazz.getFields() ) {
             if ( AlgReferentialConstraint.class.isAssignableFrom( field.getType() ) ) {
@@ -177,7 +165,7 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
     /**
      * Returns a table based on a particular field of this schema. If the field is not of the right type to be a relation, returns null.
      */
-    private <T> LogicalEntity fieldRelation( final Field field ) {
+    private <T> Entity fieldRelation( final Field field ) {
         final Type elementType = getElementType( field.getType() );
         if ( elementType == null ) {
             return null;
@@ -224,64 +212,6 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
 
     /**
-     * Table that is implemented by reading from a Java object.
-     */
-    @Slf4j
-    private static class ReflectiveEntity extends LogicalTable implements ScannableEntity {
-
-        private final Type elementType;
-        private final Enumerable<PolyValue[]> enumerable;
-
-
-        ReflectiveEntity( Type elementType, Enumerable<PolyValue[]> enumerable, Long id, Long partitionId, Long adapterId ) {
-            super( id, "test", -1, EntityType.ENTITY, null, false );
-            this.elementType = elementType;
-            this.enumerable = enumerable;
-            throw new NotImplementedException();
-        }
-
-
-        @Override
-        public Statistic getStatistic() {
-            return Statistics.UNKNOWN;
-        }
-
-
-        @Override
-        public Enumerable<PolyValue[]> scan( DataContext root ) {
-            if ( elementType == PolyValue[].class ) {
-                return enumerable;
-            } else {
-                //noinspection unchecked
-                //return enumerable.select( new FieldSelector( (Class<?>) elementType ) );
-
-                log.warn( "todo 23f23" );
-                return null;
-            }
-        }
-
-
-        @Override
-        public AlgDataType getRowType( AlgDataTypeFactory typeFactory ) {
-            return getRowType();
-        }
-
-
-        /*@Override
-        public <T> Queryable<T> asQueryable( DataContext dataContext, Snapshot snapshot, String tableName ) {
-            return new AbstractTableQueryable<T>( dataContext, snapshot, this, tableName ) {
-                @Override
-                @SuppressWarnings("unchecked")
-                public Enumerator<T> enumerator() {
-                    return (Enumerator<T>) enumerable.enumerator();
-                }
-            };
-        }*/
-
-    }
-
-
-    /**
      * Table macro based on a Java method.
      */
     private static class MethodTableMacro extends ReflectiveFunctionBase implements TableMacro {
@@ -313,71 +243,6 @@ public class ReflectiveSchema extends AbstractNamespace implements Schema {
 
     }
 
-
-    /**
-     * Table based on a Java field.
-     *
-     * @param <T> element type
-     */
-    private static class FieldEntity<T extends PolyValue> extends ReflectiveEntity {
-
-        private final Field field;
-        private Statistic statistic;
-
-
-        FieldEntity( Field field, Type elementType, Enumerable<PolyValue[]> enumerable, Long id, Long partitionId, Long adapterId ) {
-            this( field, elementType, enumerable, Statistics.UNKNOWN, id, partitionId, adapterId );
-        }
-
-
-        FieldEntity( Field field, Type elementType, Enumerable<PolyValue[]> enumerable, Statistic statistic, Long id, Long partitionId, Long adapterId ) {
-            super( elementType, enumerable, id, partitionId, adapterId );
-            this.field = field;
-            this.statistic = statistic;
-        }
-
-
-        public String toString() {
-            return "Relation {field=" + field.getName() + "}";
-        }
-
-
-        @Override
-        public Statistic getStatistic() {
-            return statistic;
-        }
-
-
-    }
-
-
-    /**
-     * Function that returns an array of a given object's field values.
-     */
-    private static class FieldSelector implements Function1<Object, Object[]> {
-
-        private final Field[] fields;
-
-
-        FieldSelector( Class elementType ) {
-            this.fields = elementType.getFields();
-        }
-
-
-        @Override
-        public Object[] apply( Object o ) {
-            try {
-                final Object[] objects = new Object[fields.length];
-                for ( int i = 0; i < fields.length; i++ ) {
-                    objects[i] = fields[i].get( o );
-                }
-                return objects;
-            } catch ( IllegalAccessException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
-    }
 
 }
 

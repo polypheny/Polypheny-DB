@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.util.Pair;
@@ -87,27 +87,27 @@ public class AllocSnapshotImpl implements AllocSnapshot {
         this.tables = buildTables( allocationCatalogs
                 .values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .filter( a -> a.getNamespace().dataModel == DataModel.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
                 .collect( Collectors.toList() ) );
 
         this.collections = buildCollections( allocationCatalogs
                 .values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.DOCUMENT )
+                .filter( a -> a.getNamespace().dataModel == DataModel.DOCUMENT )
                 .map( c -> (AllocationDocumentCatalog) c )
                 .collect( Collectors.toList() ) );
 
         this.graphs = buildGraphs( allocationCatalogs
                 .values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.GRAPH )
+                .filter( a -> a.getNamespace().dataModel == DataModel.GRAPH )
                 .map( c -> (AllocationGraphCatalog) c )
                 .collect( Collectors.toList() ) );
 
         this.columns = buildPlacementColumns( allocationCatalogs.values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .filter( a -> a.getNamespace().dataModel == DataModel.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
                 .map( AllocationRelationalCatalog::getColumns )
                 .flatMap( c -> c.values().stream() )
@@ -129,7 +129,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
 
         this.properties = ImmutableMap.copyOf( allocationCatalogs.values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .filter( a -> a.getNamespace().dataModel == DataModel.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
                 .map( AllocationRelationalCatalog::getProperties )
                 .flatMap( c -> c.values().stream() )
@@ -251,7 +251,7 @@ public class AllocSnapshotImpl implements AllocSnapshot {
     private ImmutableMap<Long, AllocationPartitionGroup> buildPartitionGroups( Map<Long, AllocationCatalog> allocationCatalogs ) {
         return ImmutableMap.copyOf( allocationCatalogs.values()
                 .stream()
-                .filter( a -> a.getNamespace().namespaceType == NamespaceType.RELATIONAL )
+                .filter( a -> a.getNamespace().dataModel == DataModel.RELATIONAL )
                 .map( c -> (AllocationRelationalCatalog) c )
                 .map( AllocationRelationalCatalog::getPartitionGroups )
                 .flatMap( c -> c.values().stream() )

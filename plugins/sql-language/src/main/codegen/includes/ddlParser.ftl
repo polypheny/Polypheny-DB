@@ -39,17 +39,17 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
-    final NamespaceType namespaceType;
+    final DataModel dataModel;
 }
 {
     (
-        <DOCUMENT> { namespaceType = NamespaceType.DOCUMENT; }
+        <DOCUMENT> { dataModel = DataModel.DOCUMENT; }
         |
-        { namespaceType = NamespaceType.RELATIONAL; }
+        { dataModel = DataModel.RELATIONAL; }
     )
     <SCHEMA> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
-        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, namespaceType);
+        return SqlDdlNodes.createSchema(s.end(this), replace, ifNotExists, id, dataModel);
     }
 }
 

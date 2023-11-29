@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Value;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.routing.LogicalQueryInformation;
 
 @Value
@@ -37,8 +37,8 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
     public ImmutableMap<Long, String> availableColumns; // column id -> schemaName.tableName.ColumnName
     public ImmutableMap<Long, Long> availableColumnsWithTable; // columnId -> tableId
     public ImmutableMap<Long, String> usedColumns;
-    public ImmutableMap<NamespaceType, Set<Long>> scannedEntities;
-    public ImmutableMap<NamespaceType, Set<Long>> modifiedEntities;
+    public ImmutableMap<DataModel, Set<Long>> scannedEntities;
+    public ImmutableMap<DataModel, Set<Long>> modifiedEntities;
     public ImmutableSet<Long> allModifiedEntities;
     public ImmutableSet<Long> allScannedEntities;
     public ImmutableSet<Long> allEntities;
@@ -50,8 +50,8 @@ public class LogicalQueryInformationImpl implements LogicalQueryInformation {
             Map<Long, String> availableColumns,
             Map<Long, Long> availableColumnsWithTable,
             Map<Long, String> usedColumns,
-            Map<NamespaceType, Set<Long>> scannedEntities,
-            Map<NamespaceType, Set<Long>> modifiedEntities ) {
+            Map<DataModel, Set<Long>> scannedEntities,
+            Map<DataModel, Set<Long>> modifiedEntities ) {
         this.queryHash = queryHash;
         this.accessedPartitions = ImmutableMap.copyOf( accessedPartitions );
         this.availableColumns = ImmutableMap.copyOf( availableColumns );

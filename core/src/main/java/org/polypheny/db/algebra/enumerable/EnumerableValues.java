@@ -95,7 +95,7 @@ public class EnumerableValues extends Values implements EnumerableAlg {
         final Type rowClass = physType.getJavaRowType();
 
         final List<Expression> expressions = new ArrayList<>();
-        final List<AlgDataTypeField> fields = rowType.getFieldList();
+        final List<AlgDataTypeField> fields = rowType.getFields();
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
             for ( Pair<AlgDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {

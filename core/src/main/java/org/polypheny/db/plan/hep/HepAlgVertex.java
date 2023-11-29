@@ -35,6 +35,7 @@ package org.polypheny.db.plan.hep;
 
 
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -48,11 +49,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 /**
  * HepAlgVertex wraps a real {@link AlgNode} as a vertex in a DAG representing the entire query expression.
  */
+@Getter
 public class HepAlgVertex extends AbstractAlgNode {
 
-    /**
-     * Wrapped alg currently chosen for implementation of expression.
-     */
     private AlgNode currentAlg;
 
 
@@ -113,17 +112,10 @@ public class HepAlgVertex extends AbstractAlgNode {
      *
      * @param newRel new expression
      */
-    void replaceRel( AlgNode newRel ) {
+    void replaceAlg( AlgNode newRel ) {
         currentAlg = newRel;
     }
 
-
-    /**
-     * @return current implementation chosen for this vertex
-     */
-    public AlgNode getCurrentAlg() {
-        return currentAlg;
-    }
 
 }
 

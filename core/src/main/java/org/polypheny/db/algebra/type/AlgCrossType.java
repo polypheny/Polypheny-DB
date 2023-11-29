@@ -71,8 +71,8 @@ public class AlgCrossType extends AlgDataTypeImpl {
 
 
     @Override
-    public List<AlgDataTypeField> getFieldList() {
-        return fieldList;
+    public List<AlgDataTypeField> getFields() {
+        return fields;
     }
 
 

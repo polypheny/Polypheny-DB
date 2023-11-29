@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.admin;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -26,9 +27,9 @@ import org.polypheny.db.cypher.CypherSimpleEither;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 
 
@@ -55,7 +56,7 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         if ( wait != null && wait.isWait() ) {
             try {
                 Thread.sleep( TimeUnit.MILLISECONDS.convert( wait.getNanos(), TimeUnit.NANOSECONDS ) );
@@ -78,8 +79,14 @@ public class CypherDropDatabase extends CypherAdminCommand implements Executable
 
 
     @Override
-    public boolean isDDL() {
+    public boolean isDdl() {
         return true;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return databaseName;
     }
 
 }

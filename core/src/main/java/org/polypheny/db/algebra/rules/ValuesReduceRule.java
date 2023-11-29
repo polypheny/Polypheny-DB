@@ -176,7 +176,7 @@ public abstract class ValuesReduceRule extends AlgOptRule {
                     ++k;
                     RexNode e = projectExpr.accept( shuttle );
                     if ( RexLiteral.isNullLiteral( e ) ) {
-                        e = rexBuilder.makeAbstractCast( project.getRowType().getFieldList().get( k ).getType(), e );
+                        e = rexBuilder.makeAbstractCast( project.getRowType().getFields().get( k ).getType(), e );
                     }
                     reducibleExps.add( e );
                 }

@@ -33,7 +33,7 @@ import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPlanner;
@@ -48,7 +48,7 @@ import org.polypheny.db.util.ImmutableBitSet;
 /**
  * Relational operator that returns the contents of a table.
  */
-public abstract class RelScan<E extends LogicalEntity> extends Scan<E> implements RelAlg {
+public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAlg {
 
     protected RelScan( AlgOptCluster cluster, AlgTraitSet traitSet, @NonNull E entity ) {
         super( cluster, traitSet.replace( ModelTrait.RELATIONAL ), entity );
@@ -87,7 +87,7 @@ public abstract class RelScan<E extends LogicalEntity> extends Scan<E> implement
     /**
      * Returns an identity projection for the given table.
      */
-    public static ImmutableList<Integer> identity( LogicalEntity entity ) {
+    public static ImmutableList<Integer> identity( Entity entity ) {
         return ImmutableList.copyOf( IntStream.range( 0, entity.getRowType().getFieldCount() ).boxed().collect( Collectors.toList() ) );
     }
 
@@ -129,7 +129,7 @@ public abstract class RelScan<E extends LogicalEntity> extends Scan<E> implement
         final List<RexNode> exprList = new ArrayList<>();
         final List<String> nameList = new ArrayList<>();
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
-        final List<AlgDataTypeField> fields = getRowType().getFieldList();
+        final List<AlgDataTypeField> fields = getRowType().getFields();
 
         // Project the subset of fields.
         for ( int i : fieldsUsed ) {

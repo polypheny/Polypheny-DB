@@ -45,7 +45,7 @@ public class CypherStarReturn extends CypherReturn {
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         AlgNode node = context.peek();
 
-        for ( AlgDataTypeField field : node.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField field : node.getRowType().getFields() ) {
             context.add( Pair.of( PolyString.of( field.getName() ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
         }
 

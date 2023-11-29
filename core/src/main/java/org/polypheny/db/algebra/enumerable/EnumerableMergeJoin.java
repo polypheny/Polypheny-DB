@@ -114,7 +114,7 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableAlg {
         final List<Expression> leftExpressions = new ArrayList<>();
         final List<Expression> rightExpressions = new ArrayList<>();
         for ( Pair<Integer, Integer> pair : Pair.zip( leftKeys, rightKeys ) ) {
-            final AlgDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getRowType().getFieldList().get( pair.left ).getType(), right.getRowType().getFieldList().get( pair.right ).getType() ) );
+            final AlgDataType keyType = typeFactory.leastRestrictive( ImmutableList.of( left.getRowType().getFields().get( pair.left ).getType(), right.getRowType().getFields().get( pair.right ).getType() ) );
             final Type keyClass = typeFactory.getJavaClass( keyType );
             leftExpressions.add( Types.castIfNecessary( keyClass, leftResult.physType.fieldReference( left_, pair.left ) ) );
             rightExpressions.add( Types.castIfNecessary( keyClass, rightResult.physType.fieldReference( right_, pair.right ) ) );

@@ -20,7 +20,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -30,7 +30,7 @@ public interface ModifiableTable extends Typed {
     Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet traits,
-            LogicalEntity physicalEntity,
+            Entity physicalEntity,
             AlgNode child,
             Operation operation,
             List<String> targets,

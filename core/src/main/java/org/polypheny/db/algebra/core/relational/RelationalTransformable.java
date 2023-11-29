@@ -20,9 +20,8 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.schema.types.ModifiableTable;
 
 
@@ -31,15 +30,11 @@ import org.polypheny.db.schema.types.ModifiableTable;
  */
 public interface RelationalTransformable {
 
-    default CatalogReader getCatalogReader() {
-        throw new UnsupportedOperationException();
-    }
+
+    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot );
 
 
-    List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<LogicalEntity> entities, Snapshot snapshot );
-
-
-    static Modify<?> getModify( LogicalEntity entity, AlgNode alg, Operation operation ) {
+    static Modify<?> getModify( Entity entity, AlgNode alg, Operation operation ) {
         return entity.unwrap( ModifiableTable.class ).toModificationTable( alg.getCluster(), alg.getTraitSet(), entity, alg, operation, null, null );
     }
 

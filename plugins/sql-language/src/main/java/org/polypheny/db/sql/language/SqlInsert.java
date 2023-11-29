@@ -19,8 +19,9 @@ package org.polypheny.db.sql.language;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
@@ -58,6 +59,12 @@ public class SqlInsert extends SqlCall {
     @Override
     public Kind getKind() {
         return Kind.INSERT;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return targetTable.getEntity();
     }
 
 
@@ -159,8 +166,8 @@ public class SqlInsert extends SqlCall {
     }
 
 
-    public NamespaceType getSchemaType() {
-        return NamespaceType.RELATIONAL;
+    public DataModel getSchemaType() {
+        return DataModel.RELATIONAL;
     }
 
 }

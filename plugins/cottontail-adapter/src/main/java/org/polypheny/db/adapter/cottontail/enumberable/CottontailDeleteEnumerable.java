@@ -29,13 +29,14 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.type.entity.PolyLong;
 import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Metadata;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
-public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
+public class CottontailDeleteEnumerable extends AbstractEnumerable<PolyValue[]> {
 
     public static final Method CREATE_DELETE_METHOD = Types.lookupMethod(
             CottontailDeleteEnumerable.class,
@@ -53,12 +54,13 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
 
 
     @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailDeleteEnumerator<>( deletes, wrapper );
+    public Enumerator<PolyValue[]> enumerator() {
+        return new CottontailDeleteEnumerator( deletes, wrapper );
     }
 
 
-    public static CottontailDeleteEnumerable<Object> delete(
+    @SuppressWarnings("unused")
+    public static CottontailDeleteEnumerable delete(
             String entity,
             String schema,
             Function1<Map<Long, PolyValue>, Where> whereBuilder,
@@ -86,7 +88,7 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             }
         }
 
-        return new CottontailDeleteEnumerable<>( deleteMessages, dataContext, wrapper );
+        return new CottontailDeleteEnumerable( deleteMessages, dataContext, wrapper );
     }
 
 
@@ -107,10 +109,10 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    private static class CottontailDeleteEnumerator<T> implements Enumerator<T> {
+    private static class CottontailDeleteEnumerator implements Enumerator<PolyValue[]> {
 
         Iterator<DeleteMessage> deleteMessageIterator;
-        Long currentResult;
+        PolyValue[] currentResult;
         CottontailWrapper wrapper;
 
 
@@ -121,8 +123,8 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
 
 
         @Override
-        public T current() {
-            return (T) currentResult;
+        public PolyValue[] current() {
+            return currentResult;
         }
 
 
@@ -131,9 +133,9 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             if ( deleteMessageIterator.hasNext() ) {
                 DeleteMessage deleteMessage = deleteMessageIterator.next();
 
-                this.currentResult = wrapper.delete( deleteMessage );
+                this.currentResult = new PolyValue[]{ PolyLong.of( wrapper.delete( deleteMessage ) ) };
 
-                return !this.currentResult.equals( -1L );
+                return !this.currentResult.equals( PolyLong.of( -1L ) );
             }
             return false;
         }

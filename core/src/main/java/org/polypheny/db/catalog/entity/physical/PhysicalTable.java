@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.StoreCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -57,7 +57,7 @@ public class PhysicalTable extends PhysicalEntity {
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("namespaceName") String namespaceName,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, allocationId, logicalId, name, namespaceId, namespaceName, NamespaceType.RELATIONAL, adapterId );
+        super( id, allocationId, logicalId, name, namespaceId, namespaceName, DataModel.RELATIONAL, adapterId );
         this.columns = ImmutableList.copyOf( columns.stream().sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) );
     }
 

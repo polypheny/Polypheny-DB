@@ -120,7 +120,7 @@ public class FileProject extends Project implements FileAlg {
         if ( inputRefsOnly ) {
             implementor.project( null, mapping );
         } else {
-            for ( AlgDataTypeField field : rowType.getFieldList() ) {
+            for ( AlgDataTypeField field : rowType.getFields() ) {
                 if ( field.getName().startsWith( "EXPR$" ) ) {
                     //don't set EXPR-columns in FileImplementor
                     return;

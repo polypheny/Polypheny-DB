@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.externalize.AlgJsonWriter;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Hook.Closeable;
 
@@ -58,7 +58,7 @@ public class SqlToRelConverterExtendedTest extends SqlToAlgConverterTest {
         final String json = writer.asString();
 
         // Find the schema. If there are no tables in the plan, we won't need one.
-        final LogicalEntity[] entities = { null };
+        final Entity[] entities = { null };
         alg.accept( new AlgShuttleImpl() {
             @Override
             public AlgNode visit( RelScan<?> scan ) {

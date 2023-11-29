@@ -124,7 +124,7 @@ public class RestResult {
 
             HashMap<String, Object> temp = new HashMap<>();
             int i = 0;
-            for ( AlgDataTypeField type : dataType.getFieldList() ) {
+            for ( AlgDataTypeField type : dataType.getFields() ) {
                 PolyValue o = row[i];
 
                 String columnName = columns.get( i ).columnName;

@@ -37,7 +37,7 @@ public class PathType extends AbstractPolyType {
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
         int i = 0;
         sb.append( " Path(" );
-        for ( AlgDataTypeField field : fieldList ) {
+        for ( AlgDataTypeField field : fields ) {
             if ( i != 0 ) {
                 sb.append( ", " );
             }

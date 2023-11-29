@@ -150,7 +150,7 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         // Infer column origin expressions for given references
         final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexIndexRef ref = RexIndexRef.of( idx, filter.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, filter.getRowType().getFields() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( filter, ref );
             if ( originalExprs == null ) {
                 // Bail out
@@ -221,13 +221,13 @@ public class AlgMdAllPredicates implements MetadataHandler<BuiltInMetadata.AllPr
         // Infer column origin expressions for given references
         final Map<RexIndexRef, Set<RexNode>> mapping = new LinkedHashMap<>();
         for ( int idx : inputFieldsUsed ) {
-            final RexIndexRef inputRef = RexIndexRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef inputRef = RexIndexRef.of( idx, join.getRowType().getFields() );
             final Set<RexNode> originalExprs = mq.getExpressionLineage( join, inputRef );
             if ( originalExprs == null ) {
                 // Bail out
                 return null;
             }
-            final RexIndexRef ref = RexIndexRef.of( idx, join.getRowType().getFieldList() );
+            final RexIndexRef ref = RexIndexRef.of( idx, join.getRowType().getFields() );
             mapping.put( ref, originalExprs );
         }
 

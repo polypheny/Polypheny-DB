@@ -46,8 +46,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
-import org.polypheny.db.cli.PolyphenyModesConverter;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.cli.PolyModesConverter;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -63,6 +63,7 @@ import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
@@ -80,8 +81,8 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
-import org.polypheny.db.util.PolyphenyMode;
 import org.polypheny.db.view.MaterializedViewManager;
 import org.polypheny.db.view.MaterializedViewManagerImpl;
 import org.polypheny.db.webui.ConfigService;
@@ -114,8 +115,8 @@ public class PolyphenyDb {
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyphenyModesConverter.class)
-    public PolyphenyMode mode = PolyphenyMode.PRODUCTION;
+    @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
+    public PolyMode mode = PolyMode.PRODUCTION;
 
     @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
     public boolean desktopMode = false;
@@ -184,7 +185,7 @@ public class PolyphenyDb {
         }
 
         // Configuration shall not be persisted
-        ConfigManager.memoryMode = (mode == PolyphenyMode.TEST || memoryCatalog);
+        ConfigManager.memoryMode = (mode == PolyMode.TEST || memoryCatalog);
         ConfigManager.resetCatalogOnStartup = resetCatalog;
 
         // Select behavior depending on arguments
@@ -241,7 +242,7 @@ public class PolyphenyDb {
         }
 
         // Backup content of Polypheny folder
-        if ( mode == PolyphenyMode.TEST || memoryCatalog ) {
+        if ( mode == PolyMode.TEST || memoryCatalog ) {
             if ( dirManager.checkIfExists( "_test_backup" ) ) {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
@@ -287,7 +288,7 @@ public class PolyphenyDb {
             }
         }
 
-        if ( mode == PolyphenyMode.TEST ) {
+        if ( mode == PolyMode.TEST ) {
             uuid = "polypheny-test";
         }
 
@@ -389,13 +390,15 @@ public class PolyphenyDb {
         FrequencyMap.setAndGetInstance( new FrequencyMapImpl( catalog ) );
 
         // temporary add sql and rel here
-        LanguageManager.getINSTANCE().addQueryLanguage(
-                NamespaceType.RELATIONAL,
+        QueryLanguage language = new QueryLanguage(
+                DataModel.RELATIONAL,
                 "alg",
                 List.of( "alg", "algebra" ),
                 null,
                 AlgProcessor::new,
+                null,
                 null );
+        LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager
         initializeIndexManager();
@@ -411,7 +414,7 @@ public class PolyphenyDb {
         DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Add config and monitoring test page for UI testing
-        if ( mode == PolyphenyMode.TEST ) {
+        if ( mode == PolyMode.TEST ) {
             new UiTestingConfigPage();
             new UiTestingMonitoringPage();
         }
@@ -474,12 +477,12 @@ public class PolyphenyDb {
 
     private boolean initializeDockerManager() {
         if ( AutoDocker.getInstance().isAvailable() ) {
-            if ( mode == PolyphenyMode.TEST ) {
+            if ( mode == PolyMode.TEST ) {
                 resetDocker = true;
                 Catalog.resetDocker = true;
             }
             boolean success = AutoDocker.getInstance().doAutoConnect();
-            if ( mode == PolyphenyMode.TEST && !success ) {
+            if ( mode == PolyMode.TEST && !success ) {
                 // AutoDocker does not work in Windows containers
                 if ( !System.getenv( "RUNNER_OS" ).equals( "Windows" ) ) {
                     log.error( "Failed to connect to docker instance" );
@@ -560,7 +563,7 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        if ( !resetCatalog && mode != PolyphenyMode.TEST ) {
+        if ( !resetCatalog && mode != PolyMode.TEST ) {
             Catalog.getInstance().restore();
         }
         Catalog.getInstance().updateSnapshot();

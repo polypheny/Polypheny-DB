@@ -20,13 +20,13 @@ package org.polypheny.db.sql.language.ddl;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlCreate;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -44,7 +44,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
     private final SqlIdentifier name;
 
-    private final NamespaceType type;
+    private final DataModel type;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE NAMESPACE", Kind.CREATE_NAMESPACE );
 
@@ -52,10 +52,10 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
     /**
      * Creates a SqlCreateNamespace.
      */
-    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
+    SqlCreateNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.type = namespaceType;
+        this.type = dataModel;
     }
 
 
@@ -86,7 +86,7 @@ public class SqlCreateNamespace extends SqlCreate implements ExecutableStatement
 
 
     @Override
-    public void execute( Context context, Statement statement, QueryParameters parameters ) {
+    public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager.getInstance().createNamespace( name.getSimple(), type, ifNotExists, replace );
     }
 

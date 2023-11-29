@@ -218,7 +218,7 @@ public class MutableRelTest {
     private static void checkConvertMutableAlg( String alg, String sql, boolean decorrelate, List<AlgOptRule> rules ) {
         final SqlToAlgTestBase test = new SqlToAlgTestBase() {
         };
-        AlgNode origRel = test.createTester().convertSqlToRel( sql ).alg;
+        AlgNode origRel = test.createTester().convertSqlToAlg( sql ).alg;
         if ( decorrelate ) {
             final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( origRel.getCluster(), null );
             origRel = AlgDecorrelator.decorrelateQuery( origRel, algBuilder );

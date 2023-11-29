@@ -290,8 +290,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             Expression calendar_,
             CalendarPolicy calendarPolicy,
             SqlDialect dialect ) {
-        final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ), rowType.getFieldList().get( i ).getType().getPolyType() ) );
-        final AlgDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
+        final Primitive primitive = Primitive.ofBoxOr( PolyValue.ofPrimitive( physType.fieldClass( i ), rowType.getFields().get( i ).getType().getPolyType() ) );
+        final AlgDataType fieldType = physType.getRowType().getFields().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
         PolyType polyType = fieldType.getPolyType();

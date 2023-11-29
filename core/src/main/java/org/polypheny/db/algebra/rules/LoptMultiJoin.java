@@ -289,7 +289,7 @@ public class LoptMultiJoin {
      * Returns array of fields contained within the multi-join
      */
     public List<AlgDataTypeField> getMultiJoinFields() {
-        return multiJoin.getRowType().getFieldList();
+        return multiJoin.getRowType().getFields();
     }
 
 
@@ -599,7 +599,7 @@ public class LoptMultiJoin {
                 factory.createJoinType(
                         left.getJoinTree().getRowType(),
                         right.getJoinTree().getRowType() );
-        return rowType.getFieldList();
+        return rowType.getFields();
     }
 
 

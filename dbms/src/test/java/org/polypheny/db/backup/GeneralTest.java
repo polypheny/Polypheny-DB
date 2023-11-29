@@ -27,6 +27,8 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.transaction.TransactionManager;
@@ -34,16 +36,17 @@ import org.polypheny.db.transaction.TransactionManager;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
+@Category({ AdapterTestSuite.class })
 public class GeneralTest {
-    //TestHelper testHelper;
+    static TestHelper testHelper;
     BackupManager backupManager;
 
     @BeforeClass
-    public void start() {
+    public static void start() {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         //this.testHelper = TestHelper.getInstance();
-        TestHelper.getInstance();
+        testHelper = TestHelper.getInstance();
         //deleteOldData();
         //this.backupManager = new BackupManager( testHelper.getTransactionManager() );
         addTestData();
@@ -105,18 +108,18 @@ public class GeneralTest {
         }
     }
 
-    /*
+
     @Test
     public void testGatherData() {
-        TransactionManager transactionManager = TestHelper.getTransactionManager();
-        BackupManager backupManager = new BackupManager( transactionManager );
+        TransactionManager transactionManager = testHelper.getTransactionManager();
+        BackupManager backupManager = BackupManager.getINSTANCE();
 
         backupManager.startDataGathering();
 
         Assert.assertEquals( 4, backupManager.getBackupInformationObject().getTables().get( 0 ).size());
     }
 
-     */
+
 
 
     @Test

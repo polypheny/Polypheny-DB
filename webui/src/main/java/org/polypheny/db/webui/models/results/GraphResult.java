@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
@@ -30,7 +30,7 @@ import org.polypheny.db.webui.models.catalog.FieldDefinition;
 public class GraphResult extends Result<String[], FieldDefinition> {
 
     public GraphResult(
-            @JsonProperty("namespaceType") NamespaceType namespaceType,
+            @JsonProperty("dataModel") DataModel dataModel,
             @JsonProperty("namespace") String namespace,
             @JsonProperty("data") String[][] data,
             @JsonProperty("header") FieldDefinition[] header,
@@ -43,7 +43,7 @@ public class GraphResult extends Result<String[], FieldDefinition> {
             @JsonProperty("hasMore") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("affectedTuples") int affectedTuples ) {
-        super( namespaceType, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
+        super( dataModel, namespace, data, header, exception, query, xid, error, currentPage, highestPage, hasMore, language, affectedTuples );
     }
 
     public static abstract class GraphResultBuilder<C extends GraphResult, B extends GraphResultBuilder<C, B>> extends ResultBuilder<String[], FieldDefinition, C, B> {

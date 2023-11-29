@@ -29,7 +29,6 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.excluded.CassandraExcluded;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @Category({ AdapterTestSuite.class })
@@ -116,7 +115,6 @@ public class DdlTest extends CypherTestTemplate {
 
 
     @Test
-    @Category(CassandraExcluded.class)
     public void deletePlacementTest() throws SQLException {
         try {
             Catalog catalog = Catalog.getInstance();
@@ -149,7 +147,6 @@ public class DdlTest extends CypherTestTemplate {
 
 
     @Test
-    @Category(CassandraExcluded.class)
     public void deletePlacementDataTest() throws SQLException {
 
         execute( "CREATE DATABASE " + graphName + " IF NOT EXISTS" );

@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -92,6 +93,12 @@ public class MockIdentifier implements Identifier, Node {
     @Override
     public boolean equalsDeep( Node node, Litmus litmus ) {
         return false;
+    }
+
+
+    @Override
+    public @Nullable String getEntity() {
+        return null;
     }
 
 

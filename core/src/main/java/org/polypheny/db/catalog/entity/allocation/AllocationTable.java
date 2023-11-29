@@ -32,7 +32,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -47,7 +47,7 @@ public class AllocationTable extends AllocationEntity {
             @Deserialize("logicalId") long logicalId,
             @Deserialize("namespaceId") long namespaceId,
             @Deserialize("adapterId") long adapterId ) {
-        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, NamespaceType.RELATIONAL );
+        super( id, placementId, partitionId, logicalId, namespaceId, adapterId, DataModel.RELATIONAL );
     }
 
 

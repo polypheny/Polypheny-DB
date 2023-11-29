@@ -16,18 +16,12 @@
 
 package org.polypheny.db;
 
-import static org.reflections.Reflections.log;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -40,13 +34,12 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -58,6 +51,8 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
@@ -69,7 +64,7 @@ public class PolyImplementation {
     private final long maxRowCount = -1;
     private final Kind kind;
     private Bindable<PolyValue[]> bindable;
-    private final NamespaceType namespaceType;
+    private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
     private CursorFactory cursorFactory;
     private final Convention resultConvention;
@@ -80,9 +75,6 @@ public class PolyImplementation {
     @Accessors(fluent = true)
     private final boolean isDDL;
     private Iterator<PolyValue[]> iterator;
-    private boolean isOpen;
-    private StatementEvent statementEvent;
-    private int batch;
 
 
     /**
@@ -91,7 +83,7 @@ public class PolyImplementation {
      * on access e.g. {@link #getColumns()}
      *
      * @param rowType defines the types of the result
-     * @param namespaceType type of the
+     * @param dataModel type of the
      * @param executionTimeMonitor to keep track of different execution times
      * @param preparedResult nullable result, which holds all info from the execution
      * @param kind of initial query, which is used to get type of result e.g. DDL, DQL,...
@@ -100,22 +92,28 @@ public class PolyImplementation {
      */
     public PolyImplementation(
             @Nullable AlgDataType rowType,
-            NamespaceType namespaceType,
+            DataModel dataModel,
             ExecutionTimeMonitor executionTimeMonitor,
             @Nullable PreparedResult<PolyValue> preparedResult,
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
-        this.rowType = rowType;
-        this.namespaceType = namespaceType;
+
+        this.dataModel = dataModel;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;
         this.statement = statement;
         this.resultConvention = resultConvention;
         this.isDDL = Kind.DDL.contains( kind );
+
         if ( this.isDDL ) {
             this.columns = ImmutableList.of();
+            Builder builder = statement.getTransaction().getTypeFactory().builder();
+            builder.add( "ROWTYPE", null, PolyType.BIGINT );
+            this.rowType = builder.build();
+        } else {
+            this.rowType = rowType;
         }
     }
 
@@ -167,7 +165,7 @@ public class PolyImplementation {
 
     public Bindable<PolyValue[]> getBindable() {
         if ( Kind.DDL.contains( kind ) ) {
-            return null;
+            return dataContext -> Linq4j.singletonEnumerable( new PolyInteger[]{ PolyInteger.of( 1 ) } );
         }
 
         if ( bindable != null ) {
@@ -215,11 +213,6 @@ public class PolyImplementation {
     }
 
 
-    public ResultIterator execute( Statement statement ) {
-        return execute( statement, -1, false, false, false );
-    }
-
-
     public ResultIterator execute( Statement statement, int batch ) {
         return execute( statement, batch, false, false, false );
     }
@@ -234,7 +227,8 @@ public class PolyImplementation {
                 isIndex,
                 isAnalyzed,
                 rowType,
-                executionTimeMonitor );
+                executionTimeMonitor,
+                this );
     }
 
 
@@ -359,122 +353,6 @@ public class PolyImplementation {
                 }
             }
         }
-    }
-
-
-    public static class ResultIterator implements AutoCloseable {
-
-
-        private final Iterator<PolyValue[]> iterator;
-        private final int batch;
-        private final ExecutionTimeMonitor executionTimeMonitor;
-        private final boolean isIndex;
-        private final boolean isTimed;
-        private final AlgDataType rowType;
-
-        private final StatementEvent statementEvent;
-
-
-        private ResultIterator( Iterator<PolyValue[]> iterator, Statement statement, int batch, boolean isTimed, boolean isIndex, boolean isAnalyzed, AlgDataType rowType, ExecutionTimeMonitor executionTimeMonitor ) {
-            this.iterator = iterator;
-            this.batch = batch;
-            this.isIndex = isIndex;
-            this.isTimed = isTimed;
-            this.statementEvent = isAnalyzed ? statement.getMonitoringEvent() : null;
-            this.executionTimeMonitor = executionTimeMonitor;
-            this.rowType = rowType;
-        }
-
-
-        public List<List<PolyValue>> getNextBatch() {
-
-            StopWatch stopWatch = null;
-            try {
-                if ( isTimed ) {
-                    stopWatch = new StopWatch();
-                    stopWatch.start();
-                }
-                List<List<PolyValue>> res = new ArrayList<>();
-                int i = 0;
-                while ( (batch < 0 || i++ < batch) && iterator.hasNext() ) {
-                    res.add( Lists.newArrayList( iterator.next() ) );
-                }
-
-                //List<List<T>> res = MetaImpl.collect( cursorFactory, (Iterator<Object>) iterator., new ArrayList<>() ).stream().map( e -> (List<T>) e ).collect( Collectors.toList() );
-
-                if ( isTimed ) {
-                    stopWatch.stop();
-                    executionTimeMonitor.setExecutionTime( stopWatch.getNanoTime() );
-                }
-
-                // Only if it is an index
-                if ( statementEvent != null && isIndex ) {
-                    statementEvent.setIndexSize( res.size() );
-                }
-
-                return res;
-            } catch ( Throwable t ) {
-                try {
-                    close();
-                    throw new GenericRuntimeException( t );
-                } catch ( Exception e ) {
-                    throw new GenericRuntimeException( t );
-                }
-
-            }
-        }
-
-
-        public List<List<PolyValue>> getAllRowsAndClose() {
-            List<List<PolyValue>> result = getNextBatch();
-            try {
-                close();
-            } catch ( Exception e ) {
-                throw new GenericRuntimeException( e );
-            }
-            return result;
-        }
-
-
-        public List<PolyValue> getSingleRows() {
-            return getNextBatch( null );
-        }
-
-
-        @NotNull
-        private <D> List<D> getNextBatch( @Nullable Function<PolyValue[], D> transformer ) {
-            final Iterable<PolyValue[]> iterable = () -> iterator;
-
-            if ( transformer == null ) {
-                return (List<D>) StreamSupport
-                        .stream( iterable.spliterator(), false )
-                        .collect( Collectors.toList() );
-            }
-            return StreamSupport
-                    .stream( iterable.spliterator(), false )
-                    .map( transformer )
-                    .collect( Collectors.toList() );
-        }
-
-
-        public List<PolyValue[]> getArrayRows() {
-
-            return getNextBatch( rowType.getFieldCount() == 1 ? e -> (PolyValue[]) e : null );
-
-        }
-
-
-        @Override
-        public void close() throws Exception {
-            try {
-                if ( iterator instanceof AutoCloseable ) {
-                    ((AutoCloseable) iterator).close();
-                }
-            } catch ( Exception e ) {
-                log.error( "Exception while closing result iterator", e );
-            }
-        }
-
     }
 
 

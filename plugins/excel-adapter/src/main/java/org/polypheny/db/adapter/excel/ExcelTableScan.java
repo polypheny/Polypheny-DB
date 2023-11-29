@@ -67,7 +67,7 @@ public class ExcelTableScan extends RelScan<ExcelTable> implements EnumerableAlg
 
     @Override
     public AlgDataType deriveRowType() {
-        final List<AlgDataTypeField> fieldList = entity.getRowType().getFieldList();
+        final List<AlgDataTypeField> fieldList = entity.getRowType().getFields();
         final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         for ( int field : fields ) {
             builder.add( fieldList.get( field ) );

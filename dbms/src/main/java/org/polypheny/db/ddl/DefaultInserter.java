@@ -21,7 +21,7 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 
 @Deterministic
@@ -42,7 +42,7 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.createNamespace( "public", NamespaceType.getDefault(), false );
+            catalog.createNamespace( "public", DataModel.getDefault(), false );
         }
 
         //////////////

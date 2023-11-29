@@ -27,14 +27,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalObject;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.entity.PolyObject;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 
 @EqualsAndHashCode(callSuper = false)
 @With
 @Value
-public class LogicalNamespace implements LogicalObject, Comparable<LogicalNamespace> {
+public class LogicalNamespace implements PolyObject, Comparable<LogicalNamespace> {
 
     private static final long serialVersionUID = 3090632164988970558L;
 
@@ -46,7 +46,7 @@ public class LogicalNamespace implements LogicalObject, Comparable<LogicalNamesp
     @Serialize
     @Getter
     @EqualsAndHashCode.Exclude
-    public NamespaceType namespaceType;
+    public DataModel dataModel;
     @Serialize
     public boolean caseSensitive;
 
@@ -54,11 +54,11 @@ public class LogicalNamespace implements LogicalObject, Comparable<LogicalNamesp
     public LogicalNamespace(
             @Deserialize("id") final long id,
             @Deserialize("name") @NonNull final String name,
-            @Deserialize("namespaceType") @NonNull final NamespaceType namespaceType,
+            @Deserialize("dataModel") @NonNull final DataModel dataModel,
             @Deserialize("caseSensitive") boolean caseSensitive ) {
         this.id = id;
         this.name = name;
-        this.namespaceType = namespaceType;
+        this.dataModel = dataModel;
         this.caseSensitive = caseSensitive;
     }
 
@@ -66,7 +66,7 @@ public class LogicalNamespace implements LogicalObject, Comparable<LogicalNamesp
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, Catalog.DATABASE_NAME, Catalog.USER_NAME, LogicalObject.getEnumNameOrNull( namespaceType ) };
+        return new Serializable[]{ name, Catalog.DATABASE_NAME, Catalog.USER_NAME, PolyObject.getEnumNameOrNull( dataModel ) };
     }
 
 

@@ -1035,7 +1035,7 @@ public abstract class SqlImplementor {
         @Override
         public SqlNode field( int ordinal ) {
             for ( Map.Entry<String, AlgDataType> alias : aliases.entrySet() ) {
-                final List<AlgDataTypeField> fields = alias.getValue().getFieldList();
+                final List<AlgDataTypeField> fields = alias.getValue().getFields();
                 if ( ordinal < fields.size() ) {
                     AlgDataTypeField field = fields.get( ordinal );
                     final SqlNode mappedSqlNode = ordinalMap.get( field.getName().toLowerCase( Locale.ROOT ) );

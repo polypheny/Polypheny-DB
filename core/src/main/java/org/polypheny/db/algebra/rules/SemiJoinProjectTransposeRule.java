@@ -143,7 +143,7 @@ public class SemiJoinProjectTransposeRule extends AlgOptRule {
             bottomProgramBuilder.addProject( pair.left, pair.right );
         }
         int nLeftFields = project.getInput().getRowType().getFieldCount();
-        List<AlgDataTypeField> rightFields = rightChild.getRowType().getFieldList();
+        List<AlgDataTypeField> rightFields = rightChild.getRowType().getFields();
         int nRightFields = rightFields.size();
         for ( int i = 0; i < nRightFields; i++ ) {
             final AlgDataTypeField field = rightFields.get( i );

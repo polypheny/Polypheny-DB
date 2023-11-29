@@ -22,6 +22,7 @@ import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.CottontailPlugin.CottontailStore;
 import org.polypheny.db.adapter.cottontail.algebra.CottontailScan;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -30,11 +31,10 @@ import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -55,7 +55,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
 public class CottontailEntity extends PhysicalTable implements TranslatableEntity, ModifiableTable, QueryableEntity {
 
     private final PhysicalTable table;
+    private final CottontailStore store;
     private AlgProtoDataType protoRowType;
+    @Getter
     private CottontailNamespace cottontailNamespace;
 
     @Getter
@@ -71,7 +73,8 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     protected CottontailEntity(
             CottontailNamespace cottontailNamespace,
             String physicalSchemaName,
-            PhysicalTable physical ) {
+            PhysicalTable physical,
+            CottontailStore cottontailStore ) {
         super( physical.id,
                 physical.allocationId,
                 physical.logicalId,
@@ -81,6 +84,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
                 physical.namespaceName,
                 physical.adapterId );
 
+        this.store = cottontailStore;
         this.cottontailNamespace = cottontailNamespace;
         this.table = physical;
 
@@ -110,7 +114,7 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,
@@ -133,13 +137,19 @@ public class CottontailEntity extends PhysicalTable implements TranslatableEntit
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        return new CottontailScan( context.getCluster(), this, traitSet, this.cottontailNamespace.getConvention() );
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        return new CottontailScan( cluster, this, traitSet, this.cottontailNamespace.getConvention() );
     }
 
 
     public CottontailConvention getUnderlyingConvention() {
         return this.cottontailNamespace.getConvention();
+    }
+
+
+    @SuppressWarnings("unused")
+    public void registerStore( DataContext dataContext ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.store );
     }
 
 

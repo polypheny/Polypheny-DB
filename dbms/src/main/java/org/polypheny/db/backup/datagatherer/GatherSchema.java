@@ -24,7 +24,7 @@ import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.*;
 import org.polypheny.db.catalog.impl.PolyCatalog;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 
 import java.util.HashMap;
@@ -127,7 +127,7 @@ public class GatherSchema {
         Map<Long, List<LogicalIndex>> logicalIndex = new HashMap<>();
         //List<LogicalView> getConnectedViews( long id );
 
-        List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.RELATIONAL ).collect( Collectors.toList() );
+        List<LogicalNamespace> relNamespaces = namespaces.stream().filter( n -> n.dataModel == DataModel.RELATIONAL ).collect( Collectors.toList() );
         this.relNamespaces = relNamespaces;
         this.backupInformationObject.setRelNamespaces( relNamespaces );
 
@@ -225,7 +225,7 @@ public class GatherSchema {
      */
     private void getGraphSchema() {
 
-        List<LogicalNamespace> graphNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.GRAPH ).collect( Collectors.toList() );
+        List<LogicalNamespace> graphNamespaces = namespaces.stream().filter( n -> n.dataModel == DataModel.GRAPH ).collect( Collectors.toList() );
         this.graphNamespaces = graphNamespaces;
         this.backupInformationObject.setGraphNamespaces( graphNamespaces );
 
@@ -256,7 +256,7 @@ public class GatherSchema {
     private void getDocSchema() {
 
         Map<Long, List<LogicalCollection>> nsCollections = new HashMap<>();
-        List<LogicalNamespace> docNamespaces = namespaces.stream().filter( n -> n.namespaceType == NamespaceType.DOCUMENT ).collect( Collectors.toList() );
+        List<LogicalNamespace> docNamespaces = namespaces.stream().filter( n -> n.dataModel == DataModel.DOCUMENT ).collect( Collectors.toList() );
         this.docNamespaces = docNamespaces;
         this.backupInformationObject.setDocNamespaces( docNamespaces );
 

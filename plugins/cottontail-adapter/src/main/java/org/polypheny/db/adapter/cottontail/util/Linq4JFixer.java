@@ -21,12 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.entity.PolyBigDecimal;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyDate;
 import org.polypheny.db.type.entity.PolyDouble;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyLong;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyTime;
+import org.polypheny.db.type.entity.PolyTimeStamp;
+import org.polypheny.db.type.entity.PolyValue;
 import org.vitrivr.cottontail.client.language.basics.Distances;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanPredicate;
@@ -55,11 +62,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Byte}.
      * @return {@link Byte}
      */
-    public static Byte getTinyIntData( Object data ) {
+    public static PolyValue getTinyIntData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return ((Integer) data).byteValue();
+        return PolyInteger.of( ((Integer) data) );
     }
 
 
@@ -69,11 +76,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Short}.
      * @return {@link Short}
      */
-    public static Short getSmallIntData( Object data ) {
+    public static PolyInteger getSmallIntData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return ((Integer) data).shortValue();
+        return PolyInteger.of( (Integer) data );
     }
 
 
@@ -83,11 +90,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link String}
      */
-    public static String getStringData( Object data ) {
+    public static PolyString getStringData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return (String) data;
+        return PolyString.of( (String) data );
     }
 
 
@@ -97,11 +104,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link BigDecimal}
      */
-    public static BigDecimal getDecimalData( Object data ) {
+    public static PolyBigDecimal getDecimalData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return new BigDecimal( (String) data );
+        return PolyBigDecimal.of( (String) data );
     }
 
 
@@ -111,11 +118,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link String}.
      * @return {@link ByteString}
      */
-    public static byte[] getBinaryData( Object data ) {
+    public static PolyBinary getBinaryData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return ByteString.parseBase64( (String) data );
+        return PolyBinary.of( ByteString.parseBase64( (String) data ) );
     }
 
 
@@ -125,13 +132,26 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
-    public static Integer getTimeData( Object data ) {
+    public static PolyTime getTimeData( Object data ) {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return (Integer) data;
+        return PolyTime.of( (Integer) data );
     }
 
+
+    /**
+     * Converts the given object and returns it as {@link Double} object.
+     *
+     * @param data The data, expected to be {@link Double}.
+     * @return {@link PolyDouble}
+     */
+    public static PolyDouble getDoubleData( Object data ) {
+        if ( !(data instanceof Double) ) {
+            return null;
+        }
+        return PolyDouble.of( (Double) data );
+    }
 
     /**
      * Converts the given object and returns it as {@link Integer} object.
@@ -139,11 +159,11 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link Integer}.
      * @return {@link Integer}
      */
-    public static Integer getDateData( Object data ) {
+    public static PolyDate getDateData( Object data ) {
         if ( !(data instanceof Integer) ) {
             return null;
         }
-        return (Integer) data;
+        return PolyDate.of( (Integer) data );
     }
 
 
@@ -153,12 +173,45 @@ public class Linq4JFixer {
      * @param data The data, expected to be {@link java.util.Date}.
      * @return {@link Integer}
      */
-    public static Long getTimestampData( Object data ) {
+    public static PolyTimeStamp getTimestampData( Object data ) {
         if ( data == null ) {
             return null;
         }
-        return ((java.util.Date) data).getTime();
+        return PolyTimeStamp.of( (java.util.Date) data );
     }
+
+
+    public static PolyFloat getRealData( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        return PolyFloat.of( (Number) data );
+    }
+
+
+    public static PolyLong getBigIntData( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        return PolyLong.of( (Number) data );
+    }
+
+
+    public static PolyInteger getIntData( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        return PolyInteger.of( (Integer) data );
+    }
+
+
+    public static PolyBoolean getBoolData( Object data ) {
+        if ( data == null ) {
+            return null;
+        }
+        return PolyBoolean.of( (Boolean) data );
+    }
+
 
 
     public static PolyList<PolyBoolean> getBoolVector( Object data ) {

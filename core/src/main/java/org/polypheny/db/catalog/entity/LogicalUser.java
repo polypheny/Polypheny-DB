@@ -26,7 +26,7 @@ import lombok.Value;
 
 @EqualsAndHashCode
 @Value
-public class LogicalUser implements LogicalObject, Comparable<LogicalUser> {
+public class LogicalUser implements PolyObject, Comparable<LogicalUser> {
 
     private static final long serialVersionUID = 5022567585804699491L;
 

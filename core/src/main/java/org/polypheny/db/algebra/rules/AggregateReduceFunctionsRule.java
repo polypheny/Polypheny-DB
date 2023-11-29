@@ -725,7 +725,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
 
     private AlgDataType getFieldType( AlgNode algNode, int i ) {
-        final AlgDataTypeField inputField = algNode.getRowType().getFieldList().get( i );
+        final AlgDataTypeField inputField = algNode.getRowType().getFields().get( i );
         return inputField.getType();
     }
 

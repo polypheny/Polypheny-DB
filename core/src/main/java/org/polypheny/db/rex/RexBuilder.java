@@ -162,7 +162,7 @@ public class RexBuilder {
      * Creates a list of {@link RexIndexRef} expressions, projecting the fields of a given record type.
      */
     public List<? extends RexNode> identityProjects( final AlgDataType rowType ) {
-        return rowType.getFieldList().stream().map( input -> new RexIndexRef( input.getIndex(), input.getType() ) ).collect( Collectors.toList() );
+        return rowType.getFields().stream().map( input -> new RexIndexRef( input.getIndex(), input.getType() ) ).collect( Collectors.toList() );
     }
 
 
@@ -206,7 +206,7 @@ public class RexBuilder {
      */
     public RexNode makeFieldAccess( RexNode expr, int i ) {
         final AlgDataType type = expr.getType();
-        final List<AlgDataTypeField> fields = type.getFieldList();
+        final List<AlgDataTypeField> fields = type.getFields();
         if ( (i < 0) || (i >= fields.size()) ) {
             throw new AssertionError( "Field ordinal " + i + " is invalid for type '" + type + "'" );
         }
@@ -771,7 +771,7 @@ public class RexBuilder {
      * @see #identityProjects(AlgDataType)
      */
     public RexIndexRef makeInputRef( AlgNode input, int i ) {
-        return makeInputRef( input.getRowType().getFieldList().get( i ).getType(), i );
+        return makeInputRef( input.getRowType().getFields().get( i ).getType(), i );
     }
 
 
@@ -1365,7 +1365,7 @@ public class RexBuilder {
             case ROW:
                 operands = new ArrayList<>();
                 //noinspection unchecked
-                for ( Pair<AlgDataTypeField, Object> pair : Pair.zip( type.getFieldList(), (List<Object>) value ) ) {
+                for ( Pair<AlgDataTypeField, Object> pair : Pair.zip( type.getFields(), (List<Object>) value ) ) {
                     final RexNode e =
                             pair.right instanceof RexLiteral
                                     ? (RexNode) pair.right

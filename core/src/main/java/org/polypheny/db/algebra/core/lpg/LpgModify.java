@@ -21,7 +21,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -29,7 +29,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.PolyString;
 
 
-public abstract class LpgModify<E extends LogicalEntity> extends Modify<E> implements LpgAlg {
+public abstract class LpgModify<E extends Entity> extends Modify<E> implements LpgAlg {
 
     @Getter
     public final Operation operation;

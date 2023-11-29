@@ -19,7 +19,7 @@ package org.polypheny.db.util;
 
 import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ColumnStrategy;
@@ -38,15 +38,15 @@ public class NullInitializerExpressionFactory implements InitializerExpressionFa
 
 
     @Override
-    public ColumnStrategy generationStrategy( LogicalEntity table, int iColumn ) {
-        return table.getRowType().getFieldList().get( iColumn ).getType().isNullable()
+    public ColumnStrategy generationStrategy( Entity table, int iColumn ) {
+        return table.getRowType().getFields().get( iColumn ).getType().isNullable()
                 ? ColumnStrategy.NULLABLE
                 : ColumnStrategy.NOT_NULLABLE;
     }
 
 
     @Override
-    public RexNode newColumnDefaultValue( LogicalEntity table, int iColumn, InitializerContext context ) {
+    public RexNode newColumnDefaultValue( Entity table, int iColumn, InitializerContext context ) {
         return context.getRexBuilder().constantNull();
     }
 

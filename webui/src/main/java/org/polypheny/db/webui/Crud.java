@@ -32,7 +32,6 @@ import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -42,7 +41,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -71,12 +69,11 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter;
@@ -116,10 +113,10 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.NameGenerator;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
@@ -143,12 +140,10 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.monitoring.events.StatementEvent;
-import org.polypheny.db.nodes.Node;
 import org.polypheny.db.partition.PartitionFunctionInfo;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
@@ -156,7 +151,9 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.plugins.PolyPluginManager;
 import org.polypheny.db.plugins.PolyPluginManager.PluginStatus;
-import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.security.SecurityManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -167,6 +164,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.Pair;
@@ -174,6 +172,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.auth.AuthCrud;
 import org.polypheny.db.webui.crud.CatalogCrud;
 import org.polypheny.db.webui.crud.LanguageCrud;
+import org.polypheny.db.webui.crud.LanguageCrud.TriFunction;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.ForeignKey;
@@ -199,7 +198,6 @@ import org.polypheny.db.webui.models.catalog.AdapterModel.AdapterSettingValueMod
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
-import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.AlgRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
@@ -208,10 +206,11 @@ import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
-import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.RelationalResult.RelationalResultBuilder;
+import org.polypheny.db.webui.models.results.Result;
+import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 import org.polypheny.db.webui.models.results.ResultType;
 
 
@@ -220,6 +219,7 @@ import org.polypheny.db.webui.models.results.ResultType;
 public class Crud implements InformationObserver, PropertyChangeListener {
 
     private static final Gson gson = new Gson();
+    public static final String ORIGIN = "Polypheny-UI";
     private final TransactionManager transactionManager;
 
     public final LanguageCrud languageCrud;
@@ -267,6 +267,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     RelationalResult getTable( final UIRequest request ) {
         Transaction transaction = getTransaction();
         RelationalResultBuilder<?, ?> resultBuilder;
+        QueryLanguage language = QueryLanguage.from( "sql" );
 
         StringBuilder query = new StringBuilder();
         String where = "";
@@ -283,34 +284,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 .append( fullTableName )
                 .append( where )
                 .append( orderBy );
-        if ( false && !request.noLimit ) {
-            query.append( " LIMIT " )
-                    .append( getPageSize() )
-                    .append( " OFFSET " )
-                    .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
-        }
 
-        try {
-            resultBuilder = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
-            resultBuilder.xid( transaction.getXid().toString() );
-        } catch ( Exception e ) {
-            if ( request.filter != null ) {
-                resultBuilder = RelationalResult.builder().error( "Error while filtering table " + request.entityId );
-            } else {
-                resultBuilder = RelationalResult.builder().error( "Could not fetch table " + request.entityId );
-                log.error( "Caught exception while fetching a table", e );
-            }
-            try {
-                transaction.rollback();
-                return resultBuilder.build();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
+        TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = LanguageCrud.getToResult( language );
+
+        Statement statement = transaction.createStatement();
+        ImplementationContext implementationContext = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( query.toString() )
+                        .language( language )
+                        .origin( transaction.getOrigin() )
+                        .batch( request.noLimit ? -1 : getPageSize() )
+                        .transactionManager( transactionManager )
+                        .build(), statement ).get( 0 );
+        resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( implementationContext.execute( statement ), request, statement );//.executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit, this );
 
         // determine if it is a view or a table
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
-        resultBuilder.namespaceType( table.namespaceType );
+        resultBuilder.dataModel( table.dataModel );
         if ( table.modifiable ) {
             resultBuilder.type( ResultType.TABLE );
         } else {
@@ -347,7 +337,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         resultBuilder.header( cols.toArray( new UiColumnDefinition[0] ) );
 
         resultBuilder.currentPage( request.currentPage ).table( table.name );
-        int tableSize = 0;
+        long tableSize = 0;
         try {
             tableSize = getTableSize( transaction, request );
         } catch ( Exception e ) {
@@ -377,7 +367,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElseThrow();
 
         List<? extends LogicalEntity> entities = List.of();
-        switch ( namespace.namespaceType ) {
+        switch ( namespace.dataModel ) {
             case RELATIONAL:
                 entities = Catalog.snapshot().rel().getTables( namespace.id, null );
                 break;
@@ -400,20 +390,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void renameTable( final Context ctx ) {
         IndexModel table = ctx.bodyAsClass( IndexModel.class );
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getNamespaceId(), table.getEntityId(), table.getName() );
-        Transaction transaction = getTransaction();
-        RelationalResult result;
-        try {
-            int rows = executeSqlUpdate( transaction, query );
-            result = RelationalResult.builder().affectedTuples( rows ).query( query ).build();
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+
         ctx.json( result );
     }
 
@@ -423,8 +408,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void dropTruncateTable( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
-        Transaction transaction = getTransaction();
-        RelationalResult result;
+
         StringBuilder query = new StringBuilder();
         if ( request.tableType != null && request.action.equalsIgnoreCase( "drop" ) && request.tableType == EntityType.VIEW ) {
             query.append( "DROP VIEW " );
@@ -438,23 +422,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         String fullTableName = String.format( "\"%s\".\"%s\"", namespaceTable.left.name, namespaceTable.right.name );
         query.append( fullTableName );
-        try {
-            int updates = executeSqlUpdate( transaction, query.toString() );
-            result = RelationalResult.builder()
-                    .affectedTuples( updates )
-                    .query( query.toString() )
-                    .table( fullTableName )
-                    .build();
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while dropping or truncating a table", e );
-            result = RelationalResult.builder().error( e.getMessage() ).query( query.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query.toString() )
+                        .language( language )
+                        .userId( Catalog.defaultUserId )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
         ctx.json( result );
     }
 
@@ -488,7 +464,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void createTable( final Context ctx ) {
         EditTableRequest request = ctx.bodyAsClass( EditTableRequest.class );
-        Transaction transaction = getTransaction();
+
         StringBuilder query = new StringBuilder();
         StringJoiner colJoiner = new StringJoiner( "," );
         LogicalNamespace namespace = getNamespace( request );
@@ -496,7 +472,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String fullTableName = String.format( "\"%s\".\"%s\"", namespace.name, request.entityName );
         query.append( "CREATE TABLE " ).append( fullTableName ).append( "(" );
         StringBuilder colBuilder;
-        RelationalResult result;
+
         StringJoiner primaryKeys = new StringJoiner( ",", "PRIMARY KEY (", ")" );
         int primaryCounter = 0;
         for ( UiColumnDefinition col : request.columns ) {
@@ -553,20 +529,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             LogicalAdapter adapter = Catalog.snapshot().getAdapter( request.storeId ).orElseThrow();
             query.append( String.format( " ON STORE \"%s\"", adapter.uniqueName ) );
         }
-
-        try {
-            int a = executeSqlUpdate( transaction, query.toString() );
-            result = RelationalResult.builder().affectedTuples( a ).query( query.toString() ).build();
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while creating a table", e );
-            result = RelationalResult.builder().error( e.getMessage() ).query( query.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback CREATE TABLE statement: {}", ex.getMessage(), ex );
-            }
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query.toString() )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
         ctx.json( result );
     }
 
@@ -644,27 +614,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
-        try {
-            int numRows = executeSqlUpdate( statement, transaction, query );
-            transaction.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( numRows ).query( query ).build() );
-        } catch ( Exception | TransactionException e ) {
-            log.info( "Generated query: {}", query );
-            log.error( "Could not insert row", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e2 ) {
-                log.error( "Caught error while rolling back transaction", e2 );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( language )
+                .origin( ORIGIN )
+                .transactionManager( transactionManager )
+                .build();
+
+        Result<?, ?> result = LanguageCrud.anyQueryResult( context, new UIRequest() ).get( 0 );//executeSqlUpdate( statement, transaction, query );
+        ctx.json( result );
+
     }
 
 
     /**
      * Run any query coming from the SQL console
      */
-    public static List<RelationalResult> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
+    /*public static List<RelationalResult> anySqlQuery( final QueryRequest request, final Session session, Crud crud ) {
         Transaction transaction = getTransaction( request.analyze, request.cache, crud );
 
         if ( request.analyze ) {
@@ -806,9 +773,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         return results;
-    }
-
-
+    }*/
     public static void attachQueryAnalyzer( InformationManager queryAnalyzer, long executionTime, String commitStatus, int numberOfQueries ) {
         InformationPage p1 = new InformationPage( "Transaction", "Analysis of the transaction." );
         queryAnalyzer.addPage( p1 );
@@ -820,7 +785,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else {
             long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
             // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
-            //noinspection SuspiciousDateFormat
             DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
             String durationText = df.format( new Date( millis ) );
             text1 = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
@@ -901,29 +865,24 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void deleteTuple( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
         Transaction transaction = getTransaction();
-        RelationalResult result;
-        StringBuilder builder = new StringBuilder();
+
+        StringBuilder query = new StringBuilder();
 
         String tableId = getFullEntityName( request.entityId );
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( table, request.data ) );
-        try {
-            int numOfRows = executeSqlUpdate( transaction, builder.toString() );
-            if ( statisticCrud.isActiveTracking() ) {
-                transaction.addChangedTable( tableId );
-            }
+        query.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( table, request.data ) );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query.toString() )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
 
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( numOfRows ).build();
-        } catch ( TransactionException | Exception e ) {
-            log.error( "Caught exception while deleting a row", e );
-            result = RelationalResult.builder().error( e.getMessage() ).query( builder.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
+        if ( result.error == null && statisticCrud.isActiveTracking() ) {
+            transaction.addChangedTable( tableId );
         }
         ctx.json( result );
     }
@@ -972,36 +931,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         }
 
-        StringBuilder builder = new StringBuilder();
-        builder
-                .append( "UPDATE " )
-                .append( fullName )
-                .append( " SET " )
-                .append( setStatements )
-                .append( computeWherePK( Catalog.snapshot().rel().getTable( logicalColumns.get( 0 ).tableId ).orElseThrow(), oldValues ) );
+        String query = "UPDATE "
+                + fullName
+                + " SET "
+                + setStatements
+                + computeWherePK( Catalog.snapshot().rel().getTable( logicalColumns.get( 0 ).tableId ).orElseThrow(), oldValues );
 
-        RelationalResult result;
-        try {
-            int numOfTuples = executeSqlUpdate( statement, transaction, builder.toString() );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> result = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
 
-            if ( numOfTuples == 1 ) {
-                if ( statisticCrud.isActiveTracking() ) {
-                    transaction.addChangedTable( fullName );
-                }
-                transaction.commit();
-                result = RelationalResult.builder().affectedTuples( numOfTuples ).build();
-            } else {
-                transaction.rollback();
-                result = RelationalResult.builder().error( "Attempt to update " + numOfTuples + " tuples was blocked." ).query( builder.toString() ).build();
-            }
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while updating a row", e );
-            result = RelationalResult.builder().error( e.getMessage() ).query( builder.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
+        if ( result.error == null && result.data.length == 1 && statisticCrud.isActiveTracking() ) {
+            transaction.addChangedTable( fullName );
         }
         ctx.json( result );
     }
@@ -1017,25 +963,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         Transaction transaction = getTransaction();
         Statement statement;
-        int totalRows = 0;
-        try {
-            for ( Update update : request.updates ) {
-                statement = transaction.createStatement();
-                String query = update.getQuery( request.tableId, statement, ctx.req );
-                totalRows += executeSqlUpdate( statement, transaction, query );
-            }
-            transaction.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( totalRows ).build() );
-        } catch ( IOException | QueryExecutionException | TransactionException e ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Could not rollback", e );
-                ctx.status( 500 ).json( RelationalResult.builder().error( e.getMessage() ).build() );
-            }
-            log.error( "The batch update failed", e );
-            ctx.status( 500 ).json( RelationalResult.builder().error( e.getMessage() ).build() );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        List<Result<?, ?>> results = new ArrayList<>();
+        for ( Update update : request.updates ) {
+            statement = transaction.createStatement();
+            String query = update.getQuery( request.tableId, statement, ctx.req );
+
+            results.add( LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 ) );
         }
+        ctx.json( results );
     }
 
 
@@ -1223,8 +1165,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void updateMaterialized( final Context ctx ) {
         UIRequest request = ctx.bodyAsClass( UIRequest.class );
-        Transaction transaction = getTransaction();
-        RelationalResult result;
+
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -1233,35 +1174,28 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String query = String.format( "ALTER MATERIALIZED VIEW %s FRESHNESS MANUAL", tableId );
         queries.add( query );
 
-        result = RelationalResult.builder().affectedTuples( 1 ).query( queries.toString() ).build();
-        try {
-            for ( String q : queries ) {
-                sBuilder.append( q );
-                executeSqlUpdate( transaction, q );
-            }
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while updating a column", e );
-            result = RelationalResult.builder().error( e.getMessage() ).affectedTuples( 0 ).query( sBuilder.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e2 ) {
-                log.error( "Caught exception during rollback", e2 );
-                result = RelationalResult.builder().error( e2.getMessage() ).affectedTuples( 0 ).query( sBuilder.toString() ).build();
-            }
-        }
+        for ( String q : queries ) {
+            sBuilder.append( q );
 
-        ctx.json( result );
+            QueryLanguage language = QueryLanguage.from( "sql" );
+            Result<?, ?> result = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 );
+            ctx.json( result );
+
+        }
     }
 
 
     void updateColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
-        Transaction transaction = getTransaction();
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
-        RelationalResult result;
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -1342,7 +1276,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             case "TINYINT":
                                 String defaultValue = request.newColumn.defaultValue.replace( ",", "." );
                                 BigDecimal b = new BigDecimal( defaultValue );
-                                query = query + b.toString();
+                                query = query + b;
                                 break;
                             case "VARCHAR":
                                 query = query + String.format( "'%s'", request.newColumn.defaultValue );
@@ -1356,25 +1290,20 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
         }
 
-        result = RelationalResult.builder().affectedTuples( 1 ).query( queries.toString() ).build();
-        try {
-            for ( String query : queries ) {
-                sBuilder.append( query );
-                executeSqlUpdate( transaction, query );
-            }
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while updating a column", e );
-            result = RelationalResult.builder().error( e.getMessage() ).affectedTuples( 0 ).query( sBuilder.toString() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e2 ) {
-                log.error( "Caught exception during rollback", e2 );
-                result = RelationalResult.builder().error( e2.getMessage() ).affectedTuples( 0 ).query( sBuilder.toString() ).build();
-            }
+        for ( String query : queries ) {
+            sBuilder.append( query );
+            QueryLanguage language = QueryLanguage.from( "sql" );
+            Result<?, ?> result = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 );
+            ctx.json( result );
         }
 
-        ctx.json( result );
+
     }
 
 
@@ -1383,7 +1312,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
-        Transaction transaction = getTransaction();
 
         String tableId = getFullEntityName( request.entityId );
 
@@ -1404,7 +1332,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
                 query = query + ")";
             }
-            if ( !request.newColumn.collectionsType.isEmpty() ) {
+            if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.isEmpty() ) {
                 query = query + " " + request.newColumn.collectionsType;
                 int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
                 int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
@@ -1443,21 +1371,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 }
             }
         }
-        RelationalResult result;
-        try {
-            int affectedTuples = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( affectedTuples ).query( query ).build();
-        } catch ( TransactionException | QueryExecutionException e ) {
-            log.error( "Caught exception while adding a column", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -1466,26 +1388,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void dropColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
-        Transaction transaction = getTransaction();
 
         String tableId = getFullEntityName( request.entityId );
-
-        RelationalResult result;
         String query = String.format( "ALTER TABLE %s DROP COLUMN \"%s\"", tableId, request.oldColumn.name );
-        try {
-            int affectedTuples = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( affectedTuples ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while dropping a column", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -1553,7 +1467,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     void dropConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
-        Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
@@ -1566,21 +1479,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         } else {
             query = String.format( "ALTER TABLE %s DROP CONSTRAINT \"%s\"", tableId, request.constraint.name );
         }
-        RelationalResult result;
-        try {
-            int rows = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( rows ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while dropping a constraint", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -1589,7 +1496,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addPrimaryKey( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
-        Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
@@ -1605,21 +1511,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             joiner.add( "\"" + s + "\"" );
         }
         String query = "ALTER TABLE " + tableId + " ADD PRIMARY KEY " + joiner;
-        try {
-            int rows = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( rows ).query( query ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while adding a primary key", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
 
-        ctx.json( result );
+        ctx.json( res );
     }
 
 
@@ -1628,31 +1529,25 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addUniqueConstraint( final Context ctx ) {
         ConstraintRequest request = ctx.bodyAsClass( ConstraintRequest.class );
-        Transaction transaction = getTransaction();
 
         String[] t = request.table.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        RelationalResult result;
+        Result<?, ?> result;
         if ( request.constraint.columns.length > 0 ) {
             StringJoiner joiner = new StringJoiner( ",", "(", ")" );
             for ( String s : request.constraint.columns ) {
                 joiner.add( "\"" + s + "\"" );
             }
-            String query = "ALTER TABLE " + tableId + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner.toString();
-            try {
-                int rows = executeSqlUpdate( transaction, query );
-                transaction.commit();
-                result = RelationalResult.builder().affectedTuples( rows ).query( query ).build();
-            } catch ( QueryExecutionException | TransactionException e ) {
-                log.error( "Caught exception while adding a unique constraint", e );
-                result = RelationalResult.builder().error( e.getMessage() ).build();
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-            }
+            String query = "ALTER TABLE " + tableId + " ADD CONSTRAINT \"" + request.constraint.name + "\" UNIQUE " + joiner;
+            QueryLanguage language = QueryLanguage.from( "sql" );
+            result = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 );
         } else {
             result = RelationalResult.builder().error( "Cannot add unique constraint if no columns are provided." ).build();
         }
@@ -1724,30 +1619,21 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     /**
      * Drop an index of a table
-     *
-     * @param ctx
      */
     void dropIndex( final Context ctx ) {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
-        Transaction transaction = getTransaction();
 
         String tableName = getFullEntityName( index.entityId );
         String query = String.format( "ALTER TABLE %s DROP INDEX \"%s\"", tableName, index.getName() );
-        RelationalResult result;
-        try {
-            int a = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( a ).query( query ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while dropping an index", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -1756,13 +1642,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void createIndex( final Context ctx ) {
         IndexModel index = ctx.bodyAsClass( IndexModel.class );
-        Transaction transaction = getTransaction();
 
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( index.namespaceId ).orElseThrow();
         LogicalTable table = Catalog.snapshot().rel().getTable( index.entityId ).orElseThrow();
 
         String tableId = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
-        RelationalResult result;
         StringJoiner colJoiner = new StringJoiner( ",", "(", ")" );
         for ( long col : index.columnIds ) {
             colJoiner.add( "\"" + Catalog.snapshot().rel().getColumn( col ).orElseThrow().name + "\"" );
@@ -1774,20 +1658,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String onStore = String.format( "ON STORE \"%s\"", store );
 
         String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner, index.getMethod(), onStore );
-        try {
-            int a = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( a ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while creating an index", e );
-            result = RelationalResult.builder().error( e.getMessage() ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -1875,20 +1754,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 index.getMethod().toUpperCase(),
                 columnListStr,
                 index.getStoreUniqueName() );
-        Transaction transaction = getTransaction();
-        int affectedTuples = 0;
-        try {
-            affectedTuples = executeSqlUpdate( transaction, query );
-            transaction.commit();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-        }
-        ctx.json( RelationalResult.builder().affectedTuples( affectedTuples ).query( query ).build() );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2042,42 +1916,32 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         //Changes to extensions to this model now have to be made on two parts
 
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
-                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content.toString() );
+                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
 
-        Transaction trx = getTransaction();
-        try {
-            int i = executeSqlUpdate( trx, query );
-            trx.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( i ).query( query ).build() );
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Could not partition table", e );
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
     void mergePartitions( final Context ctx ) {
         PartitioningRequest request = ctx.bodyAsClass( PartitioningRequest.class );
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" MERGE PARTITIONS", request.schemaName, request.tableName );
-        Transaction trx = getTransaction();
-        try {
-            int i = executeSqlUpdate( trx, query );
-            trx.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( i ).query( query ).build() );
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Could not merge partitions", e );
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2087,21 +1951,16 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         for ( String partition : request.partitions ) {
             partitions.add( "\"" + partition + "\"" );
         }
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MODIFY PARTITIONS(%s) ON STORE %s", request.schemaName, request.tableName, partitions.toString(), request.storeUniqueName );
-        Transaction trx = getTransaction();
-        try {
-            int i = executeSqlUpdate( trx, query );
-            trx.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( i ).query( query ).build() );
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Could not modify partitions", e );
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MODIFY PARTITIONS(%s) ON STORE %s", request.schemaName, request.tableName, partitions, request.storeUniqueName );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2255,20 +2114,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' AS '%s' WITH '%s'", a.name, a.adapterName, a.type, Crud.gson.toJson( settings ) );
-        Transaction transaction = getTransaction();
-        try {
-            int numRows = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( numRows ).query( query ).build() );
-        } catch ( Throwable e ) {
-            log.error( "Could not deploy data storeId", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2319,20 +2173,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void removeAdapter( final Context ctx ) {
         String uniqueName = ctx.body();
         String query = String.format( "ALTER ADAPTERS DROP \"%s\"", uniqueName );
-        Transaction transaction = getTransaction();
-        try {
-            int a = executeSqlUpdate( transaction, query );
-            transaction.commit();
-            ctx.json( RelationalResult.builder().affectedTuples( a ).query( query ).build() );
-        } catch ( TransactionException | QueryExecutionException e ) {
-            log.error( "Could not remove storeId {}", ctx.body(), e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Exception while rollback", transactionException );
-            }
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).query( query ).build() );
-        }
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2481,30 +2330,23 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     void addForeignKey( final Context ctx ) {
         ForeignKey fk = ctx.bodyAsClass( ForeignKey.class );
-        Transaction transaction = getTransaction();
 
         String[] t = fk.getSourceTable().split( "\\." );
         String fkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         t = fk.getTargetTable().split( "\\." );
         String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        RelationalResult result;
         String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
                 fkTable, fk.getFkName(), fk.getSourceColumn(), pkTable, fk.getTargetColumn(), fk.getOnUpdate(), fk.getOnDelete() );
-        try {
-            executeSqlUpdate( transaction, sql );
-            transaction.commit();
-            result = RelationalResult.builder().affectedTuples( 1 ).query( sql ).build();
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Caught exception while adding a foreign key", e );
-            result = RelationalResult.builder().error( e.getMessage() ).query( sql ).build();
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-        }
-        ctx.json( result );
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        Result<?, ?> res = LanguageCrud.anyQueryResult(
+                QueryContext.builder()
+                        .query( sql )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager )
+                        .build(), new UIRequest() ).get( 0 );
+        ctx.json( res );
     }
 
 
@@ -2588,7 +2430,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;
@@ -2630,7 +2472,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 PlacementType placementType = PlacementType.AUTOMATIC;
 
                 List<String> columns = new ArrayList<>();
-                root.alg.getRowType().getFieldList().forEach( f -> columns.add( f.getName() ) );
+                root.alg.getRowType().getFields().forEach( f -> columns.add( f.getName() ) );
 
                 // Default Namespace
                 long namespaceId = transaction.getDefaultNamespace().id;
@@ -2679,16 +2521,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition[] header = new UiColumnDefinition[polyImplementation.getRowType().getFieldCount()];
         int counter = 0;
-        for ( AlgDataTypeField col : polyImplementation.getRowType().getFieldList() ) {
+        for ( AlgDataTypeField col : polyImplementation.getRowType().getFields() ) {
             header[counter++] = UiColumnDefinition.builder()
                     .name( col.getName() )
-                    .dataType( col.getType()
-                            .getFullTypeString() ).nullable( col.getType()
-                            .isNullable() == (ResultSetMetaData.columnNullable == 1) ).precision( col.getType()
-                            .getPrecision() ).build();
+                    .dataType( col.getType().getFullTypeString() )
+                    .nullable( col.getType().isNullable() )
+                    .precision( col.getType().getPrecision() ).build();
         }
 
-        List<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
+        List<String[]> data = LanguageCrud.computeResultData( rows, List.of( header ), statement.getTransaction() );
 
         try {
             executionTime += System.nanoTime() - temp;
@@ -2737,20 +2578,18 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void namespaceRequest( final Context ctx ) {
         Namespace namespace = ctx.bodyAsClass( Namespace.class );
 
-        if ( namespace.getType() == NamespaceType.GRAPH ) {
+        if ( namespace.getType() == DataModel.GRAPH ) {
             createGraph( namespace, ctx );
             return;
         }
 
-        Transaction transaction = getTransaction();
-
-        NamespaceType type = namespace.getType();
+        DataModel type = namespace.getType();
 
         // create namespace
         if ( namespace.isCreate() && !namespace.isDrop() ) {
 
             StringBuilder query = new StringBuilder( "CREATE " );
-            if ( Objects.requireNonNull( namespace.getType() ) == NamespaceType.DOCUMENT ) {
+            if ( Objects.requireNonNull( namespace.getType() ) == DataModel.DOCUMENT ) {
                 query.append( "DOCUMENT " );
             }
 
@@ -2760,19 +2599,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( namespace.getAuthorization() != null && !namespace.getAuthorization().isEmpty() ) {
                 query.append( " AUTHORIZATION " ).append( namespace.getAuthorization() );
             }
-            try {
-                int rows = executeSqlUpdate( transaction, query.toString() );
-                transaction.commit();
-                ctx.json( RelationalResult.builder().affectedTuples( rows ).build() );
-            } catch ( QueryExecutionException | TransactionException e ) {
-                log.error( "Caught exception while creating a namespace", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-                ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-            }
+            QueryLanguage language = QueryLanguage.from( "sql" );
+            Result<?, ?> res = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query.toString() )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 );
+            ctx.json( res );
         }
         // drop namespace
         else if ( !namespace.isCreate() && namespace.isDrop() ) {
@@ -2786,19 +2621,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             if ( namespace.isCascade() ) {
                 query.append( " CASCADE" );
             }
-            try {
-                int rows = executeSqlUpdate( transaction, query.toString() );
-                transaction.commit();
-                ctx.json( RelationalResult.builder().affectedTuples( rows ).build() );
-            } catch ( TransactionException | QueryExecutionException e ) {
-                log.error( "Caught exception while dropping a namespace", e );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Could not rollback", ex );
-                }
-                ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-            }
+            QueryLanguage language = QueryLanguage.from( "sql" );
+            Result<?, ?> res = LanguageCrud.anyQueryResult(
+                    QueryContext.builder()
+                            .query( query.toString() )
+                            .language( language )
+                            .origin( ORIGIN )
+                            .transactionManager( transactionManager )
+                            .build(), new UIRequest() ).get( 0 );
+            ctx.json( res );
         } else {
             ctx.json( RelationalResult.builder().error( "Neither the field 'create' nor the field 'drop' was set." ).build() );
         }
@@ -2807,17 +2638,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     private void createGraph( Namespace namespace, Context ctx ) {
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
-        ctx.json(
-                LanguageCrud.anyQuery( cypher, null,
-                        new QueryRequest(
-                                "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore(),
-                                false,
-                                true,
-                                "cypher",
-                                namespace.getName() ),
-                        transactionManager,
-                        Catalog.defaultUserId,
-                        Catalog.defaultNamespaceId ).get( 0 ) );
+        QueryContext context = QueryContext.builder()
+                .query( "CREATE DATABASE " + namespace.getName() + " ON STORE " + namespace.getStore() )
+                .language( cypher )
+                .origin( ORIGIN )
+                .transactionManager( transactionManager )
+                .build();
+        ctx.json( LanguageCrud.anyQueryResult( context, new UIRequest() ).get( 0 ) );
     }
 
 
@@ -2858,7 +2685,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         List<SidebarElement> nodes = new ArrayList<>();
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), NamespaceType.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), DataModel.RELATIONAL, analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
         }
         WebSocket.sendMessage( session, gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
@@ -2973,7 +2800,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void getDirectory( File dir, Context ctx ) {
         ctx.header( "Content-ExpressionType", "application/zip" );
         ctx.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
-        String zipFileName = UUID.randomUUID().toString() + ".zip";
+        String zipFileName = UUID.randomUUID() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
         try ( ZipOutputStream zipOut = new ZipOutputStream( Files.newOutputStream( zipFile.toPath() ) ) ) {
             zipDirectory( "", dir, zipOut );
@@ -2998,227 +2825,33 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * Execute a select statement with default limit
-     */
-    public RelationalResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( statement, request, sqlSelect, false, this );
-    }
-
-
-    public static RelationalResultBuilder<?, ?> executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit, Crud crud ) throws QueryExecutionException {
-        PolyImplementation implementation;
-        List<List<PolyValue>> rows = List.of();
-        boolean hasMoreRows;
-        boolean isAnalyze = statement.getTransaction().isAnalyze();
-
-        try {
-            implementation = crud.processQuery( statement, sqlSelect, isAnalyze );
-            ResultIterator iterator = implementation.execute( statement, noLimit ? -1 : crud.getPageSize(), isAnalyze, true, false );
-            for ( int i = 0; i < request.currentPage; i++ ) {
-                rows = iterator.getNextBatch();
-            }
-            iterator.close();
-            hasMoreRows = implementation.hasMoreRows();
-
-        } catch ( Throwable t ) {
-            if ( statement.getTransaction().isAnalyze() ) {
-                InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
-                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
-                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
-                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
-                analyzer.addPage( exceptionPage );
-                analyzer.addGroup( exceptionGroup );
-                analyzer.registerInformation( exceptionElement );
-            }
-            throw new QueryExecutionException( t );
-        }
-
-        LogicalTable table = null;
-        if ( request.entityId != null ) {
-            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
-        }
-
-        List<UiColumnDefinition> header = new ArrayList<>();
-        for ( AlgDataTypeField metaData : implementation.getRowType().getFieldList() ) {
-            String columnName = metaData.getName();
-
-            String filter = "";
-            if ( request.filter != null && request.filter.containsKey( columnName ) ) {
-                filter = request.filter.get( columnName );
-            }
-
-            SortState sort;
-            if ( request.sortState != null && request.sortState.containsKey( columnName ) ) {
-                sort = request.sortState.get( columnName );
-            } else {
-                sort = new SortState();
-            }
-
-            UiColumnDefinitionBuilder<?, ?> dbCol = UiColumnDefinition.builder()
-                    .name( metaData.getName() )
-                    .dataType( metaData.getType().getPolyType().getTypeName() )
-                    .nullable( metaData.getType().isNullable() == (ResultSetMetaData.columnNullable == 1) )
-                    .precision( metaData.getType().getPrecision() )
-                    .sort( sort )
-                    .filter( filter );
-
-            // Get column default values
-            if ( table != null ) {
-                Optional<LogicalColumn> logicalColumn = Catalog.snapshot().rel().getColumn( table.id, columnName );
-                if ( logicalColumn.isPresent() ) {
-                    if ( logicalColumn.get().defaultValue != null ) {
-                        dbCol.defaultValue( logicalColumn.get().defaultValue.value.toJson() );
-                    }
-                }
-            }
-            header.add( dbCol.build() );
-        }
-
-        List<String[]> data = computeResultData( rows, header, statement.getTransaction() );
-
-        return RelationalResult.builder()
-                .header( header.toArray( new UiColumnDefinition[0] ) )
-                .data( data.toArray( new String[0][] ) )
-                .namespaceType( implementation.getNamespaceType() )
-                .language( QueryLanguage.from( "sql" ) )
-                .affectedTuples( data.size() )
-                .hasMore( hasMoreRows );
-    }
-
-
-    /**
-     * Convert data from a query result to Strings readable in the UI
-     *
-     * @param rows Rows from the enumerable iterator
-     * @param header Header from the UI-ResultSet
-     */
-    public static List<String[]> computeResultData( final List<List<PolyValue>> rows, final List<UiColumnDefinition> header, final Transaction transaction ) {
-        List<String[]> data = new ArrayList<>();
-        for ( List<PolyValue> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( PolyValue o : row ) {
-                if ( o == null || o.isNull() ) {
-                    temp[counter] = null;
-                } else {
-                    String columnName = String.valueOf( header.get( counter ).name.hashCode() );
-                    File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
-                    mmFolder.mkdirs();
-                    ContentInfoUtil util = new ContentInfoUtil();
-                    if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {
-                        ContentInfo info = util.findMatch( o.asBlob().value );
-                        String extension = "";
-                        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
-                            extension = "." + info.getFileExtensions()[0];
-                        }
-                        File f = new File( mmFolder, columnName + "_" + UUID.randomUUID() + extension );
-                        try ( FileOutputStream fos = new FileOutputStream( f ) ) {
-                            fos.write( o.asBlob().value );
-                        } catch ( IOException e ) {
-                            throw new GenericRuntimeException( "Could not place file in mm folder", e );
-                        }
-                        temp[counter] = f.getName();
-                        TemporalFileManager.addFile( transaction.getXid().toString(), f );
-                    } else {
-                        temp[counter] = o.toJson();
-                    }
-                }
-                counter++;
-            }
-            data.add( temp );
-        }
-        return data;
-    }
-
-
-    private PolyImplementation processQuery( Statement statement, String sql, boolean isAnalyze ) {
-        PolyImplementation implementation;
-        if ( isAnalyze ) {
-            statement.getOverviewDuration().start( "Parsing" );
-        }
-        Processor sqlProcessor = statement.getTransaction().getProcessor( QueryLanguage.from( "sql" ) );
-        Node parsed = sqlProcessor.parse( sql ).get( 0 );
-        if ( isAnalyze ) {
-            statement.getOverviewDuration().stop( "Parsing" );
-        }
-        AlgRoot logicalRoot;
-        QueryParameters parameters = new QueryParameters( sql, NamespaceType.RELATIONAL );
-        if ( parsed.isA( Kind.DDL ) ) {
-            implementation = sqlProcessor.prepareDdl( statement, parsed, parameters );
-        } else {
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().start( "Validation" );
-            }
-            Pair<Node, AlgDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().stop( "Validation" );
-                statement.getOverviewDuration().start( "Translation" );
-            }
-            logicalRoot = sqlProcessor.translate( statement, validated.left, parameters );
-            if ( isAnalyze ) {
-                statement.getOverviewDuration().stop( "Translation" );
-            }
-            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, true );
-        }
-        return implementation;
-    }
-
-
-    public int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        return executeSqlUpdate( transaction.createStatement(), transaction, sqlUpdate );
-    }
-
-
-    private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        PolyImplementation implementation;
-
-        try {
-            implementation = processQuery( statement, sqlUpdate, transaction.isAnalyze() );
-        } catch ( Throwable t ) {
-            if ( transaction.isAnalyze() ) {
-                InformationManager analyzer = transaction.getQueryAnalyzer();
-                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
-                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
-                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
-                analyzer.addPage( exceptionPage );
-                analyzer.addGroup( exceptionGroup );
-                analyzer.registerInformation( exceptionElement );
-            }
-            if ( t instanceof AvaticaRuntimeException ) {
-                throw new QueryExecutionException( ((AvaticaRuntimeException) t).getErrorMessage(), t );
-            } else {
-                throw new QueryExecutionException( t.getMessage(), t );
-            }
-
-        }
-        try {
-            return implementation.getRowsChanged( statement );
-        } catch ( Exception e ) {
-            throw new QueryExecutionException( e );
-        }
-    }
-
-
-    /**
      * Get the Number of rows in a table
      */
-    private int getTableSize( Transaction transaction, final UIRequest request ) throws QueryExecutionException {
+    private long getTableSize( Transaction transaction, final UIRequest request ) {
         String tableId = getFullEntityName( request.entityId );
         String query = "SELECT count(*) FROM " + tableId;
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
         Statement statement = transaction.createStatement();
-        RelationalResult result = executeSqlSelect( statement, request.toBuilder().currentPage( 1 ).build(), query ).build();
+        QueryLanguage language = QueryLanguage.from( "sql" );
+        ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
+                QueryContext.builder()
+                        .query( query )
+                        .language( language )
+                        .origin( ORIGIN )
+                        .transactionManager( transactionManager ).build(), statement ).get( 0 );
+        List<List<PolyValue>> values = context.execute( statement ).getIterator().getNextBatch();
         // We expect the result to be in the first column of the first row
-        if ( result.data.length == 0 ) {
+        if ( values.isEmpty() || values.get( 0 ).isEmpty() ) {
             return 0;
         } else {
+            PolyNumber number = values.get( 0 ).get( 0 ).asNumber();
             if ( statement.getMonitoringEvent() != null ) {
                 StatementEvent eventData = statement.getMonitoringEvent();
-                eventData.setRowCount( Integer.parseInt( result.data[0][0] ) );
+                eventData.setRowCount( number.longValue() );
             }
-            return Integer.parseInt( result.getData()[0][0] );
+            return number.longValue();
         }
     }
 
@@ -3280,7 +2913,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     public static Transaction getTransaction( boolean analyze, boolean useCache, TransactionManager transactionManager, long userId, long databaseId ) {
-        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, "Polypheny-UI" );
+        return getTransaction( analyze, useCache, transactionManager, userId, databaseId, ORIGIN );
     }
 
 
@@ -3298,26 +2931,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
     public static Transaction getTransaction( boolean analyze, boolean useCache, Crud crud ) {
         return getTransaction( analyze, useCache, crud.transactionManager, Catalog.defaultUserId, Catalog.defaultNamespaceId );
-    }
-
-
-    /**
-     * Get the data types of each column of a table
-     *
-     * @param namespaceName name of the namespace
-     * @param tableName name of the table
-     * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql ExpressionType (java.sql.Types).
-     */
-    private Map<String, LogicalColumn> getColumns( String namespaceName, String tableName ) {
-        Map<String, LogicalColumn> dataTypes = new HashMap<>();
-
-        LogicalTable table = getLogicalTable( namespaceName, tableName );
-        List<LogicalColumn> logicalColumns = Catalog.snapshot().rel().getColumns( table.id );
-        for ( LogicalColumn logicalColumn : logicalColumns ) {
-            dataTypes.put( logicalColumn.name, logicalColumn );
-        }
-
-        return dataTypes;
     }
 
 

@@ -25,9 +25,7 @@ import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.LogicalEntity;
-import org.polypheny.db.plan.AlgOptEntity;
-import org.polypheny.db.schema.Entity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.schema.types.ExtensibleEntity;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -43,21 +41,21 @@ import org.polypheny.db.util.ValidatorUtil;
 class EntityNamespace extends AbstractNamespace {
 
     @Getter
-    private final LogicalEntity table;
+    private final Entity table;
     public final ImmutableList<AlgDataTypeField> extendedFields;
 
 
     /**
      * Creates a TableNamespace.
      */
-    private EntityNamespace( SqlValidatorImpl validator, LogicalEntity entity, List<AlgDataTypeField> fields ) {
+    private EntityNamespace( SqlValidatorImpl validator, Entity entity, List<AlgDataTypeField> fields ) {
         super( validator, null );
         this.table = entity;
         this.extendedFields = ImmutableList.copyOf( fields );
     }
 
 
-    EntityNamespace( SqlValidatorImpl validator, LogicalEntity table ) {
+    EntityNamespace( SqlValidatorImpl validator, Entity table ) {
         this( validator, table, ImmutableList.of() );
     }
 
@@ -68,7 +66,7 @@ class EntityNamespace extends AbstractNamespace {
             return table.getRowType();
         }
         final Builder builder = validator.getTypeFactory().builder();
-        builder.addAll( table.getRowType().getFieldList() );
+        builder.addAll( table.getRowType().getFields() );
         builder.addAll( extendedFields );
         return builder.build();
     }
@@ -84,7 +82,7 @@ class EntityNamespace extends AbstractNamespace {
 
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
-        final LogicalEntity table = getTable();
+        final Entity table = getTable();
         return Util.getMonotonicity( table, columnName );
     }
 
@@ -101,8 +99,8 @@ class EntityNamespace extends AbstractNamespace {
         builder.addAll( this.extendedFields );
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
-        final Entity schemaEntity = table.unwrap( Entity.class );
-        if ( schemaEntity != null && table instanceof AlgOptEntity && schemaEntity instanceof ExtensibleEntity ) {
+        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
+        if ( schemaEntity != null && schemaEntity instanceof ExtensibleEntity ) {
             checkExtendedColumnTypes( extendList );
             //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
             //final CatalogEntity validatorTable = algOptEntity.unwrap( ValidatorTable.class );
@@ -116,7 +114,7 @@ class EntityNamespace extends AbstractNamespace {
      * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
      */
     private AlgDataType getBaseRowType() {
-        final Entity schemaEntity = table.unwrap( Entity.class );
+        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
         return schemaEntity.getRowType( validator.typeFactory );
     }
 
@@ -126,7 +124,7 @@ class EntityNamespace extends AbstractNamespace {
      */
     private void checkExtendedColumnTypes( SqlNodeList extendList ) {
         final List<AlgDataTypeField> extendedFields = SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), table, extendList );
-        final List<AlgDataTypeField> baseFields = getBaseRowType().getFieldList();
+        final List<AlgDataTypeField> baseFields = getBaseRowType().getFields();
         final Map<String, Integer> nameToIndex = ValidatorUtil.mapNameToIndex( baseFields );
 
         for ( final AlgDataTypeField extendedField : extendedFields ) {

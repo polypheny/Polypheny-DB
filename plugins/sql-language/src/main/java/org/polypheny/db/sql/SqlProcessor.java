@@ -17,10 +17,11 @@
 package org.polypheny.db.sql;
 
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
@@ -38,7 +39,7 @@ import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.NodeParseException;
@@ -52,6 +53,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -107,9 +109,15 @@ public class SqlProcessor extends Processor {
 
     @Override
     public List<? extends Node> parse( String query ) {
+        // todo we should not split the query here, but rather in the parser
+        return Arrays.stream( query.split( ";\n" ) ).filter( s -> !s.trim().isEmpty() ).map( this::parseSingle ).collect( Collectors.toList() );
+    }
+
+
+    public Node parseSingle( String query ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
-            log.debug( "Parsing PolySQL statement ..." );
+            log.debug( "Parsing SQL statement ..." );
         }
         stopWatch.start();
         Node parsed;
@@ -130,9 +138,9 @@ public class SqlProcessor extends Processor {
             log.trace( "Parsed query: [{}]", parsed );
         }
         if ( log.isDebugEnabled() ) {
-            log.debug( "Parsing PolySQL statement ... done. [{}]", stopWatch );
+            log.debug( "Parsing SQL statement ... done. [{}]", stopWatch );
         }
-        return ImmutableList.of( parsed );
+        return parsed;
     }
 
 
@@ -179,7 +187,7 @@ public class SqlProcessor extends Processor {
 
 
     @Override
-    public AlgRoot translate( Statement statement, Node query, QueryParameters parameters ) {
+    public AlgRoot translate( Statement statement, ParsedQueryContext context ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -197,7 +205,7 @@ public class SqlProcessor extends Processor {
                         .convertTableAccess( false )
                         .build();
         final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getSnapshot(), cluster, StandardConvertletTable.INSTANCE, config );
-        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
+        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode().orElseThrow(), false, true );
 
         // Decorrelate
         final AlgBuilder algBuilder = config.getAlgBuilderFactory().create( cluster, null );
@@ -255,13 +263,13 @@ public class SqlProcessor extends Processor {
 
         if ( oldColumnList != null ) {
             LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            NamespaceType namespaceType = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().namespaceType;
+            DataModel dataModel = Catalog.getInstance().getSnapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();
-            if ( namespaceType == NamespaceType.DOCUMENT ) {
+            if ( dataModel == DataModel.DOCUMENT ) {
                 List<String> columnNames = catalogTable.getColumnNames();
                 size += (int) oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
@@ -324,7 +332,7 @@ public class SqlProcessor extends Processor {
             }
 
             // add doc values back TODO DL: change
-            if ( namespaceType == NamespaceType.DOCUMENT ) {
+            if ( dataModel == DataModel.DOCUMENT ) {
                 List<SqlIdentifier> documentColumns = new ArrayList<>();
                 for ( Node column : oldColumnList.getSqlList() ) {
                     if ( newColumnList.getSqlList()

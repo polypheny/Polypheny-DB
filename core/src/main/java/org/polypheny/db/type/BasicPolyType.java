@@ -159,7 +159,7 @@ public class BasicPolyType extends AbstractPolyType {
      * <p>
      * This must be a character type.
      */
-    BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
+    public BasicPolyType createWithCharsetAndCollation( Charset charset, Collation collation ) {
         Preconditions.checkArgument( PolyTypeUtil.inCharFamily( this ) );
         return new BasicPolyType(
                 this.typeSystem,

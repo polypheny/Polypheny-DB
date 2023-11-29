@@ -18,12 +18,12 @@ package org.polypheny.db.webui.models.catalog.requests;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 
 @AllArgsConstructor
 public class NamespaceRequest {
 
-    public List<NamespaceType> namespaceTypes;
+    public List<DataModel> dataModels;
 
     public String pattern;
 

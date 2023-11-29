@@ -27,10 +27,9 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plan.AlgOptCluster;
-import org.polypheny.db.plan.AlgOptEntity.ToAlgContext;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -80,9 +79,9 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
 
 
     @Override
-    public AlgNode toAlg( ToAlgContext context, AlgTraitSet traitSet ) {
-        fileSchema.getConvention().register( context.getCluster().getPlanner() );
-        return new FileScan( context.getCluster(), physical, this );
+    public AlgNode toAlg( AlgOptCluster cluster, AlgTraitSet traitSet ) {
+        fileSchema.getConvention().register( cluster.getPlanner() );
+        return new FileScan( cluster, physical, this );
     }
 
 
@@ -90,7 +89,7 @@ public class FileTranslatableEntity extends PhysicalTable implements Translatabl
     public Modify<?> toModificationTable(
             AlgOptCluster cluster,
             AlgTraitSet algTraits,
-            LogicalEntity table,
+            Entity table,
             AlgNode input,
             Operation operation,
             List<String> updateColumnList,

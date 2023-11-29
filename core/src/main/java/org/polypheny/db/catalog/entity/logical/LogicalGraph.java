@@ -24,8 +24,8 @@ import lombok.Value;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -42,7 +42,7 @@ public class LogicalGraph extends LogicalEntity {
             @Deserialize("name") String name,
             @Deserialize("modifiable") boolean modifiable,
             @Deserialize("caseSensitive") boolean caseSensitive ) {
-        super( id, name, id, EntityType.ENTITY, NamespaceType.GRAPH, modifiable );
+        super( id, name, id, EntityType.ENTITY, DataModel.GRAPH, modifiable );
         this.caseSensitive = caseSensitive;
     }
 

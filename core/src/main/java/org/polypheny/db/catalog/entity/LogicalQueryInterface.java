@@ -31,7 +31,7 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode
 @Value
 @SuperBuilder(toBuilder = true)
-public class LogicalQueryInterface implements LogicalObject {
+public class LogicalQueryInterface implements PolyObject {
 
     private static final long serialVersionUID = 7212289724539530050L;
 

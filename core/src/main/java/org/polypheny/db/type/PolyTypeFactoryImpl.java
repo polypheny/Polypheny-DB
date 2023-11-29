@@ -494,7 +494,7 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         return new ObjectPolyType(
                 type.getPolyType(),
                 nullable,
-                type.getFieldList(),
+                type.getFields(),
                 type.getComparability() );
     }
 

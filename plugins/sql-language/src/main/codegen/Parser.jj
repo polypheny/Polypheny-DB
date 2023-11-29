@@ -145,7 +145,7 @@ import java.util.HashMap;
 import org.polypheny.db.util.CoreUtil;
 
 
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.languages.NodeParseException;
@@ -1850,21 +1850,21 @@ SqlCreate SqlCreateNamespace(Span s, boolean replace) :
 {
     final boolean ifNotExists;
     final SqlIdentifier id;
-    final NamespaceType namespaceType;
+    final DataModel dataModel;
 }
 {
     (
-        <RELATIONAL> { namespaceType = NamespaceType.RELATIONAL; }
+        <RELATIONAL> { dataModel = DataModel.RELATIONAL; }
         |
-        <DOCUMENT> { namespaceType = NamespaceType.DOCUMENT; }
+        <DOCUMENT> { dataModel = DataModel.DOCUMENT; }
         |
-        <GRAPH> { namespaceType = NamespaceType.GRAPH; }
+        <GRAPH> { dataModel = DataModel.GRAPH; }
         |
-        { namespaceType = NamespaceType.RELATIONAL; }
+        { dataModel = DataModel.RELATIONAL; }
     )
     (<NAMESPACE> | <SCHEMA>) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     {
-    return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, namespaceType);
+    return SqlDdlNodes.createNamespace(s.end(this), replace, ifNotExists, id, dataModel);
 }
 }
 

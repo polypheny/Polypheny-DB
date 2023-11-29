@@ -541,7 +541,7 @@ public abstract class ReturnTypes {
         final AlgDataType recordMultisetType = opBinding.getOperandType( 0 );
         AlgDataType multisetType = recordMultisetType.getComponentType();
         assert multisetType != null : "expected a multiset type: " + recordMultisetType;
-        final List<AlgDataTypeField> fields = multisetType.getFieldList();
+        final List<AlgDataTypeField> fields = multisetType.getFields();
         assert fields.size() > 0;
         final AlgDataType firstColType = fields.get( 0 ).getType();
         return opBinding.getTypeFactory().createMultisetType( firstColType, -1 );
@@ -573,7 +573,7 @@ public abstract class ReturnTypes {
 
         assert isStruct && (fieldCount == 1);
 
-        AlgDataTypeField fieldType = recordType.getFieldList().get( 0 );
+        AlgDataTypeField fieldType = recordType.getFields().get( 0 );
         assert fieldType != null : "expected a record type with one field: " + recordType;
         final AlgDataType firstColType = fieldType.getType();
         return opBinding.getTypeFactory().createTypeWithNullability( firstColType, true );

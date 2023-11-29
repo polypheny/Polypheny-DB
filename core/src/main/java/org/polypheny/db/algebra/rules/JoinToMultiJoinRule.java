@@ -239,8 +239,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                             (MultiJoin) right,
                             joinSpecs,
                             left.getRowType().getFieldCount(),
-                            right.getRowType().getFieldList(),
-                            joinRel.getRowType().getFieldList() );
+                            right.getRowType().getFields(),
+                            joinRel.getRowType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -261,8 +261,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                             (MultiJoin) right,
                             joinSpecs,
                             left.getRowType().getFieldCount(),
-                            right.getRowType().getFieldList(),
-                            joinRel.getRowType().getFieldList() );
+                            right.getRowType().getFields(),
+                            joinRel.getRowType().getFields() );
                 } else {
                     joinSpecs.add( Pair.of( JoinAlgType.INNER, (RexNode) null ) );
                 }
@@ -366,8 +366,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
             return null;
         }
 
-        int nFieldsOnLeft = left.getRowType().getFieldList().size();
-        int nFieldsOnRight = right.getRowType().getFieldList().size();
+        int nFieldsOnLeft = left.getRowType().getFields().size();
+        int nFieldsOnRight = right.getRowType().getFields().size();
         int[] adjustments = new int[nFieldsOnRight];
         for ( int i = 0; i < nFieldsOnRight; i++ ) {
             adjustments[i] = nFieldsOnLeft;
@@ -376,8 +376,8 @@ public class JoinToMultiJoinRule extends AlgOptRule {
                 rightFilter.accept(
                         new AlgOptUtil.RexInputConverter(
                                 joinRel.getCluster().getRexBuilder(),
-                                right.getRowType().getFieldList(),
-                                joinRel.getRowType().getFieldList(),
+                                right.getRowType().getFields(),
+                                joinRel.getRowType().getFields(),
                                 adjustments ) );
         return rightFilter;
     }

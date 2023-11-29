@@ -168,7 +168,7 @@ public abstract class PolyTypeTransforms {
      */
     public static final PolyTypeTransform ONLY_COLUMN =
             ( opBinding, typeToTransform ) -> {
-                final List<AlgDataTypeField> fields = typeToTransform.getFieldList();
+                final List<AlgDataTypeField> fields = typeToTransform.getFields();
                 assert fields.size() == 1;
                 return fields.get( 0 ).getType();
             };

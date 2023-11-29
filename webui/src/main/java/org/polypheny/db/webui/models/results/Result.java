@@ -31,7 +31,7 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 
 
@@ -44,7 +44,7 @@ public abstract class Result<E, F> {
     /**
      * namespace type of result DOCUMENT/RELATIONAL
      */
-    public NamespaceType namespaceType;
+    public DataModel dataModel;
 
     public String namespace;
 
@@ -90,7 +90,7 @@ public abstract class Result<E, F> {
     /**
      * Number of affected rows
      */
-    public int affectedTuples;
+    public long affectedTuples;
 
 
     /**
@@ -103,7 +103,7 @@ public abstract class Result<E, F> {
          */
         protected B $fillValuesFrom( C instance ) {
             this.data = instance.data;
-            this.namespaceType = instance.namespaceType;
+            this.dataModel = instance.dataModel;
             this.xid = instance.xid;
             this.error = instance.error;
             this.namespace = instance.namespace;

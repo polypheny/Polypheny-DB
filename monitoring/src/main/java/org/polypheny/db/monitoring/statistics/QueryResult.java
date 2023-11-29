@@ -19,7 +19,7 @@ package org.polypheny.db.monitoring.statistics;
 import lombok.Data;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.LogicalEntity;
+import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 
 
@@ -30,11 +30,11 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 @Data
 class QueryResult {
 
-    private final LogicalEntity entity;
+    private final Entity entity;
     private final LogicalColumn column;
 
 
-    QueryResult( LogicalEntity entity, LogicalColumn column ) {
+    QueryResult( Entity entity, LogicalColumn column ) {
         this.entity = entity;
         this.column = column;
     }

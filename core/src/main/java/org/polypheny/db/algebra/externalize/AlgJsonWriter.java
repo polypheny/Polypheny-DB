@@ -115,14 +115,14 @@ public class AlgJsonWriter implements AlgWriter {
         if ( str.contains( "$" ) ) {
             int offset = 0;
             for ( AlgNode input : alg.getInputs() ) {
-                for ( AlgDataTypeField field : input.getRowType().getFieldList() ) {
+                for ( AlgDataTypeField field : input.getRowType().getFields() ) {
                     String searchStr = "$" + (offset + field.getIndex());
                     int position = str.indexOf( searchStr );
                     if ( position >= 0 && (str.length() >= position + searchStr.length()) ) {
                         str = str.replace( searchStr, field.getName() );
                     }
                 }
-                offset = input.getRowType().getFieldList().size();
+                offset = input.getRowType().getFields().size();
             }
         }
         return str;

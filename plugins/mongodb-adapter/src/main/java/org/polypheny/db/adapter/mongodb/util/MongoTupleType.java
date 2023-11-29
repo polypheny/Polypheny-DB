@@ -59,7 +59,7 @@ public class MongoTupleType implements Expressible {
         List<MongoTupleType> types = new ArrayList<>();
         switch ( type.getPolyType() ) {
             case ROW:
-                type.getFieldList().forEach( field -> types.add( from( field ) ) );
+                type.getFields().forEach( field -> types.add( from( field ) ) );
         }
         return new MongoTupleType( null, type.getPolyType(), types, type.isNullable() );
     }

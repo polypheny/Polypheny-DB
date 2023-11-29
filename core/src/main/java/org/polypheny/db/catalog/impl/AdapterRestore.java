@@ -70,7 +70,7 @@ public class AdapterRestore {
     public void activate( Adapter<?> adapter ) {
         physicals.forEach( ( allocId, physicals ) -> {
             AllocationEntity entity = allocations.get( allocId );
-            switch ( entity.namespaceType ) {
+            switch ( entity.dataModel ) {
 
                 case RELATIONAL:
                     adapter.restoreTable( entity.unwrap( AllocationTable.class ), physicals );

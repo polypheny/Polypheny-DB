@@ -37,7 +37,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
@@ -271,7 +271,7 @@ public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expr
             List<PhysicalEntity> physicalsOnAdapter = new ArrayList<>();//snapshot.physical().getPhysicalsOnAdapter( adapterId );
 
             for ( PhysicalEntity entity : physicalsOnAdapter ) {
-                if ( entity.namespaceType != NamespaceType.RELATIONAL ) {
+                if ( entity.dataModel != DataModel.RELATIONAL ) {
                     continue;
                 }
                 PhysicalTable physicalTable = (PhysicalTable) entity;

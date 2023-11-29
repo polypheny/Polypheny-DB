@@ -228,7 +228,7 @@ public class NeoToEnumerableConverter extends ConverterImpl implements Enumerabl
         return builder.append(
                 builder.newName( "fields" ),
                 EnumUtils.constantArrayList( rowType
-                        .getFieldList()
+                        .getFields()
                         .stream()
                         .map( f -> typeGetter.apply( f.getType() ) )
                         .collect( Collectors.toList() ), PolyType.class ) );

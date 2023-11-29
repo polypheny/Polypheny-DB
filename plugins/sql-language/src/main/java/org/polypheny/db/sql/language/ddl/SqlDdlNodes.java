@@ -18,7 +18,7 @@ package org.polypheny.db.sql.language.ddl;
 
 
 import java.util.List;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.partition.raw.RawPartitionInformation;
@@ -43,8 +43,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE NAMESPACE.
      */
-    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, NamespaceType namespaceType ) {
-        return new SqlCreateNamespace( pos, replace, ifNotExists, name, namespaceType );
+    public static SqlCreateNamespace createNamespace( ParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, DataModel dataModel ) {
+        return new SqlCreateNamespace( pos, replace, ifNotExists, name, dataModel );
     }
 
 
