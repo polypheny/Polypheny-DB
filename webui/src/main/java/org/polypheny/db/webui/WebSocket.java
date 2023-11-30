@@ -125,6 +125,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 .language( language )
                                 .isAnalysed( queryRequest.analyze )
                                 .usesCache( queryRequest.cache )
+                                .namespaceId( LanguageCrud.getNamespaceIdOrDefault( queryRequest.namespace ) )
                                 .origin( POLYPHENY_UI ).batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
                                 .transactionManager( crud.getTransactionManager() )
                                 .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );

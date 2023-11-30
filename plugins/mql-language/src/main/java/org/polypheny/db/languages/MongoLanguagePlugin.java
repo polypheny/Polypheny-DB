@@ -104,14 +104,14 @@ public class MongoLanguagePlugin extends PolyPlugin {
             if ( queryNode.getEntity() == null ) {
                 continue;
             }
-            Optional<LogicalCollection> collection = snapshot.doc().getCollection( query.getNamespaceId(), queryNode.getEntity() );
+            Optional<LogicalCollection> collection = snapshot.doc().getCollection( context.getNamespaceId(), queryNode.getEntity() );
             if ( collection.isEmpty() && !created.contains( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) ) ) {
                 if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
                     // entity was created during this query
                     created.add( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 } else {
                     // we have to create this query manually
-                    toCreate.add( 0, Pair.of( query.getNamespaceId(), queryNode.getEntity() ) );
+                    toCreate.add( 0, Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 }
             }
         }
