@@ -81,14 +81,14 @@ public class HsqldbSqlDialect extends SqlDialect {
         String castSpec;
         switch ( type.getPolyType() ) {
             case ARRAY:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_LONGVARCHAR";
                 break;
             case FILE:
             case IMAGE:
             case VIDEO:
             case AUDIO:
-                // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
+                // We need to flag the type with an underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_BLOB";
                 break;
             case INTERVAL_YEAR_MONTH:

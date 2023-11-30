@@ -372,6 +372,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 return "DECIMAL";
             case VARCHAR:
                 return "VARCHAR";
+            case GEOMETRY:
             case JSON:
                 return "TEXT";
             case DATE:

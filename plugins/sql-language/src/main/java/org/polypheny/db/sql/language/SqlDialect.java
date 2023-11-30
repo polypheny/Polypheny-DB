@@ -19,6 +19,7 @@ package org.polypheny.db.sql.language;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
@@ -572,11 +573,7 @@ public class SqlDialect {
     public SqlNode getCastSpec( AlgDataType type ) {
         if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
-            if ( type.getPolyType() == PolyType.JSON ) {
-                precision = 2024;
-                type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
-            }
-            if ( type.getPolyType() == PolyType.NODE ) {
+            if ( List.of( PolyType.JSON, PolyType.NODE, PolyType.GEOMETRY ).contains( type.getPolyType() ) ) {
                 precision = 2024;
                 type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.VARCHAR, precision );
             }
