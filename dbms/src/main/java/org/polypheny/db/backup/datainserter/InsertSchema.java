@@ -331,24 +331,17 @@ public class InsertSchema {
     }
 
 
-    private void insertCreateCollection() {
+    private void insertCreateCollection(ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections, ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> wrappedNamespaces) {
+        String query = new String();
+
+        // go through all collections per namespace and create and execute a query
+
+
+
+
+
         //db.createCollection('users')
-        //createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement );
-
-        /*
-        //from mqlCreateCollection
-        DdlManager.getInstance().createCollection(
-                namespaceId,
-                name,
-                true,
-                dataStores.isEmpty() ? null : dataStores,
-                placementType,
-                statement );
-
-         */
-        //TODO(FF): how to set namespace??? (trhourgh settings? see below for try, but would require dependency)
-
-        executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
+        //executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
     }
 
 
