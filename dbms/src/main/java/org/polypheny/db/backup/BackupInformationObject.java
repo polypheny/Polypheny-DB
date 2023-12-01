@@ -84,9 +84,9 @@ public class BackupInformationObject {
 
     private ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable;
 
-    private ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    private ImmutableMap<Long, List<LogicalEntity>> logicalIndexes;
 
-    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalIndex>>> wrappedLogicalIndexes;
+    private ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedLogicalIndexes;
 
     private ImmutableMap<Long, List<LogicalConstraint>> constraints;
 

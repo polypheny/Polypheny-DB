@@ -134,6 +134,9 @@ public class InsertSchema {
         insertAlterTableUQ( backupInformationObject.getWrappedTables(), backupInformationObject.getConstraints() );
         insertAlterTableFK( backupInformationObject.getWrappedTables(), backupInformationObject.getForeignKeysPerTable() );
 
+        // create Collections
+        insertCreateCollection( backupInformationObject.getWrappedCollections());
+
         //TODO(FF): create something to test that only available data is tried to be inserted
         //TODO(FF): don't insert tables from source (check for entityType SOURCE (not default is ENTITY))
 
@@ -331,17 +334,29 @@ public class InsertSchema {
     }
 
 
-    private void insertCreateCollection(ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections, ImmutableMap<Long, BackupEntityWrapper<LogicalNamespace>> wrappedNamespaces) {
+    private void insertCreateCollection(ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections) {
         String query = new String();
 
         // go through all collections per namespace and create and execute a query
+        for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> collectionsPerNs : wrappedCollections.entrySet() ) {
+            Long nsID = collectionsPerNs.getKey();
+            String namespaceName = backupInformationObject.getWrappedNamespaces().get( nsID ).getNameForQuery();
 
+            List<BackupEntityWrapper<LogicalEntity>> collectionsList = collectionsPerNs.getValue();
 
+            // go through each collection in the list (of collections for one namespace)
+            for ( BackupEntityWrapper<LogicalEntity> collection : collectionsList ) {
+                // only create collections that should be inserted
+                if ( collection.getToBeInserted()) {
+                    // only create tables that don't (exist by default in polypheny)
+                    query = String.format( "db.createCollection(\"%s\")", collection.getNameForQuery() );
+                    executeStatementInPolypheny( query, nsID, DataModel.DOCUMENT );
 
-
-
+                }
+            }
+        }
         //db.createCollection('users')
-        //executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
+        executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
     }
 
 

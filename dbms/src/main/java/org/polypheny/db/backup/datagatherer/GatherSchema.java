@@ -65,7 +65,7 @@ public class GatherSchema {
     //ImmutableMap<Long, List<LogicalKey>> keysPerTable;
     // uufspliite en pk, fk, constraints, indexes
     // index -> can only be created per (one) table
-    ImmutableMap<Long, List<LogicalIndex>> logicalIndexes;
+    ImmutableMap<Long, List<LogicalEntity>> logicalIndexes;
     //TODO(FF): if there exist constraint that go over several tables, need other way to signify it... rather use constraints per table, not per namespace! (but gets the right amount of constraints) --> constr only 1 table (?), views can be sever tables
     ImmutableMap<Long, List<LogicalConstraint>> constraints;
 
@@ -212,8 +212,12 @@ public class GatherSchema {
         this.backupInformationObject.setPrimaryKeysPerTable( this.primaryKeysPerTable );
         this.foreignKeysPerTable = ImmutableMap.copyOf( foreignKeysPerTable );
         this.backupInformationObject.setForeignKeysPerTable( this.foreignKeysPerTable );
-        this.logicalIndexes = ImmutableMap.copyOf( logicalIndex );
+        //this.logicalIndexes = ImmutableMap.copyOf( logicalIndex.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        //this.logicalIndexes = ImmutableMap.copyOf( logicalIndex.entrySet().stream().collect( Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) )) ) )
+        //TODO(FF): unwrap doesn't work for indexes
         this.backupInformationObject.setLogicalIndexes( this.logicalIndexes );
+        this.materializedViews = ImmutableMap.copyOf( materializedViews.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        this.backupInformationObject.setMaterializedViews( this.materializedViews );
 
         this.backupInformationObject.setCollectedRelSchema( true );
 

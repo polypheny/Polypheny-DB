@@ -61,7 +61,7 @@ public class BackupManager {
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
 
         // datagatherer.GatherEntries gatherEntries = new datagatherer.GatherEntries();
-        GatherEntries gatherEntries = new GatherEntries();
+        //GatherEntries gatherEntries = new GatherEntries();
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
@@ -109,12 +109,16 @@ public class BackupManager {
 
     public void startDataGathering() {
         this.backupInformationObject = new BackupInformationObject();
-        //GatherEntries gatherEntries = new GatherEntries();
+        GatherEntries gatherEntries = new GatherEntries(transactionManager);
         GatherSchema gatherSchema = new GatherSchema();
 
         //gatherEntries.start();
         this.backupInformationObject = gatherSchema.start( backupInformationObject );
         wrapEntities();
+
+        // how/where do i safe the data
+        //gatherEntries.start();
+
     }
 
 
@@ -196,7 +200,6 @@ public class BackupManager {
         Map<Long, List<Long>> test = new HashMap<>();
         if (entityReferencer != null) {
             for ( EntityReferencer tableReferencer : allTableReferencers ) {
-                //FIXME(FF): nullpointerexception
                 List<Long> lol = dependencyManager.getReferencedEntities(entityReferencer, allTableReferencers );
                 test.put( tableReferencer.getEntityId(), lol );
             }
