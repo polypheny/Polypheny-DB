@@ -117,15 +117,22 @@ public class LanguageCrud {
     public static void anyQuery( Context ctx ) {
         QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
         QueryLanguage language = QueryLanguage.from( request.language );
+
         QueryContext context = QueryContext.builder()
                 .query( request.query )
                 .language( language )
                 .isAnalysed( request.analyze )
                 .usesCache( request.cache )
                 .origin( "Polypheny-UI" )
+                .namespaceId( getNamespaceIdOrDefault( request.namespace ) )
                 .batch( request.noLimit ? -1 : crud.getPageSize() )
                 .transactionManager( crud.getTransactionManager() ).build();
         ctx.json( anyQueryResult( context, request ) );
+    }
+
+
+    public static long getNamespaceIdOrDefault( String namespace ) {
+        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
     }
 
 
@@ -141,8 +148,7 @@ public class LanguageCrud {
 
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getError().isPresent() ) {
-                attachError( transaction, results, executedContext, executedContext.getError().get() );
-                return results;
+                return List.of( buildErrorResult( transaction, executedContext, executedContext.getError().get() ).build() );
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
@@ -216,18 +222,18 @@ public class LanguageCrud {
     }
 
 
-    public static void attachError( Transaction transaction, List<Result<?, ?>> results, ExecutedContext context, Throwable t ) {
+    public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
         //String msg = t.getMessage() == null ? "" : t.getMessage();
-        Result<?, ?> result;
+        ResultBuilder<?, ?, ?, ?> result;
         switch ( context.getQuery().getLanguage().getDataModel() ) {
             case RELATIONAL:
-                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
+                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case DOCUMENT:
-                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
+                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case GRAPH:
-                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() ).build();
+                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             default:
                 throw new GenericRuntimeException( "Unknown data model." );
@@ -241,7 +247,7 @@ public class LanguageCrud {
             }
         }
 
-        results.add( result );
+        return result;
     }
 
 
@@ -250,14 +256,14 @@ public class LanguageCrud {
         Catalog catalog = Catalog.getInstance();
         ResultIterator iterator = context.getIterator();
         List<List<PolyValue>> rows = new ArrayList<>();
-        for ( int i = 0; i < request.currentPage; i++ ) {
-            rows = iterator.getNextBatch();
-        }
-
         try {
+            for ( int i = 0; i < request.currentPage; i++ ) {
+                rows = iterator.getNextBatch();
+            }
+
             iterator.close();
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            return buildErrorResult( statement.getTransaction(), context, e );
         }
 
         boolean hasMoreRows = context.getIterator().hasMoreRows();
@@ -365,6 +371,7 @@ public class LanguageCrud {
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
                 .dataModel( context.getIterator().getImplementation().getDataModel() )
+                .affectedTuples( data.size() )
                 .xid( statement.getTransaction().getXid().toString() )
                 .namespace( request.namespace );
 
@@ -378,18 +385,27 @@ public class LanguageCrud {
 
     public static ResultBuilder<?, ?, ?, ?> getDocResult( ExecutedContext context, UIRequest request, Statement statement ) {
         ResultIterator iterator = context.getIterator();
-        List<List<PolyValue>> data = iterator.getNextBatch();
+        List<List<PolyValue>> data = new ArrayList<>();
+
         try {
+            for ( int i = 0; i < request.currentPage; i++ ) {
+                data = iterator.getNextBatch();
+            }
+
             iterator.close();
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            return buildErrorResult( statement.getTransaction(), context, e );
         }
+
+        boolean hasMoreRows = context.getIterator().hasMoreRows();
 
         return DocResult.builder()
                 .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
                 .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
+                .hasMore( hasMoreRows )
+                .affectedTuples( data.size() )
                 .xid( statement.getTransaction().getXid().toString() )
                 .dataModel( context.getIterator().getImplementation().getDataModel() )
                 .namespace( request.namespace );

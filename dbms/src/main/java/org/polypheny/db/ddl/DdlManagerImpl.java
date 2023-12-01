@@ -1528,7 +1528,7 @@ public class DdlManagerImpl extends DdlManager {
         findUnderlyingTablesOfView( algNode, underlyingTables, fieldList );
 
         // add check if underlying table is of model document -> mql, relational -> sql
-        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language, namespaceId ) );
+        underlyingTables.keySet().forEach( tableId -> checkModelLangCompatibility( language.getDataModel(), namespaceId ) );
 
         LogicalView view = catalog.getLogicalRel( namespaceId ).addView(
                 viewName,
@@ -1593,7 +1593,7 @@ public class DdlManagerImpl extends DdlManager {
         LogicalRelSnapshot relSnapshot = snapshot.rel();
 
         // add check if underlying table is of model document -> mql, relational -> sql
-        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language, namespaceId ) );
+        underlying.keySet().forEach( tableId -> checkModelLangCompatibility( language.getDataModel(), namespaceId ) );
 
         if ( materializedCriteria.getCriteriaType() == CriteriaType.UPDATE ) {
             List<EntityType> entityTypes = new ArrayList<>();
@@ -1646,9 +1646,9 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void checkModelLangCompatibility( QueryLanguage language, long namespaceId ) {
+    private void checkModelLangCompatibility( DataModel model, long namespaceId ) {
         LogicalNamespace namespace = catalog.getSnapshot().getNamespace( namespaceId ).orElseThrow();
-        if ( namespace.dataModel != language.getDataModel() ) {
+        if ( namespace.dataModel != model ) {
             throw new GenericRuntimeException(
                     "The used language cannot execute schema changing queries on this entity with the data model %s.",
                     namespace.getDataModel() );
@@ -2001,6 +2001,8 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
+
+        checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
 
         if ( assertEntityExists( namespaceId, adjustedName, ifNotExists ) ) {
             return;

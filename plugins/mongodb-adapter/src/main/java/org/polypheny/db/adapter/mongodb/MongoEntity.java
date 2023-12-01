@@ -497,7 +497,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             try {
                 final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket );
 
-                return Linq4j.asEnumerable( Collections.singletonList( PolyLong.of( changes ) ) );
+                return Linq4j.asEnumerable( Collections.singletonList( new PolyValue[]{ PolyLong.of( changes ) } ) );
             } catch ( MongoException e ) {
                 entity.getTransactionProvider().rollback( xid );
                 log.warn( "Failed" );

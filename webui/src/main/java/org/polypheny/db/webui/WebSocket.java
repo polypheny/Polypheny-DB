@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -124,6 +125,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                 .language( language )
                                 .isAnalysed( queryRequest.analyze )
                                 .usesCache( queryRequest.cache )
+                                .namespaceId( LanguageCrud.getNamespaceIdOrDefault( queryRequest.namespace ) )
                                 .origin( POLYPHENY_UI ).batch( queryRequest.noLimit ? -1 : crud.getPageSize() )
                                 .transactionManager( crud.getTransactionManager() )
                                 .informationTarget( i -> i.setSession( ctx.session ) ).build(), queryRequest );
@@ -157,16 +159,18 @@ public class WebSocket implements Consumer<WsConfig> {
                     UIRequest uiRequest = ctx.messageAsClass( UIRequest.class );
                     try {
                         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( uiRequest.namespace ).orElse( null );
-                        switch ( namespace.dataModel ) {
+                        switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
                             case RELATIONAL:
                                 result = crud.getTable( uiRequest );
                                 break;
                             case DOCUMENT:
+                                String entity = Catalog.snapshot().doc().getCollection( uiRequest.entityId ).map( c -> c.name ).orElse( "" );
                                 result = LanguageCrud.anyQueryResult(
                                         QueryContext.builder()
-                                                .query( "db.%s.find({})" )
+                                                .query( String.format( "db.%s.find({})", entity ) )
                                                 .language( QueryLanguage.from( "mongo" ) )
                                                 .origin( POLYPHENY_UI )
+                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
                                                 .transactionManager( crud.getTransactionManager() )
                                                 .informationTarget( i -> i.setSession( ctx.session ) )
                                                 .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
@@ -178,6 +182,7 @@ public class WebSocket implements Consumer<WsConfig> {
                                                 .query( "MATCH (n) RETURN n" )
                                                 .language( QueryLanguage.from( "cypher" ) )
                                                 .origin( POLYPHENY_UI )
+                                                .batch( uiRequest.noLimit ? -1 : crud.getPageSize() )
                                                 .namespaceId( namespace == null ? Catalog.defaultNamespaceId : namespace.id )
                                                 .transactionManager( crud.getTransactionManager() )
                                                 .informationTarget( i -> i.setSession( ctx.session ) )
