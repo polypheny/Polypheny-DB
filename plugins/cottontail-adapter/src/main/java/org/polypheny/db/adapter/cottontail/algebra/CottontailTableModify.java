@@ -78,7 +78,7 @@ public class CottontailTableModify extends RelModify<CottontailEntity> implement
             List<? extends RexNode> sourceExpressionList,
             boolean flattened ) {
         super( input.getCluster(), traitSet, table, input, operation, updateColumnList, sourceExpressionList, flattened );
-        this.cottontailTable = table.unwrap( CottontailEntity.class );
+        this.cottontailTable = table;
     }
 
 

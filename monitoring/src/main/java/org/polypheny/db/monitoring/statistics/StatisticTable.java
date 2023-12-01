@@ -23,8 +23,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 
 
 /**
@@ -72,7 +72,7 @@ public class StatisticTable {
 
         Catalog catalog = Catalog.getInstance();
         if ( catalog.getSnapshot().getLogicalEntity( tableId ).isPresent() ) {
-            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
+            LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow().orElseThrow();
             this.table = catalogTable.name;
             this.dataModel = catalogTable.dataModel;
             //this.dataPlacements = ImmutableList.copyOf( catalog.getSnapshot().alloc().getDataPlacements( catalogTable.id ).stream().map( c -> c.adapterId ).collect( Collectors.toList() ) );

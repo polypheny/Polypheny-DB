@@ -79,12 +79,12 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
      * Creates an EnumerableScan.
      */
     public static EnumerableScan create( AlgOptCluster cluster, Entity entity ) {
-        PhysicalTable physicalTable = entity.unwrap( PhysicalTable.class );
-        Class<?> elementType = EnumerableScan.deduceElementType( physicalTable );
+        PhysicalTable oPhysicalTable = entity.unwrap( PhysicalTable.class ).orElseThrow();
+        Class<?> elementType = EnumerableScan.deduceElementType( oPhysicalTable );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )
                         .replaceIfs( AlgCollationTraitDef.INSTANCE, entity::getCollations );
-        return new EnumerableScan( cluster, traitSet, physicalTable, elementType );
+        return new EnumerableScan( cluster, traitSet, oPhysicalTable, elementType );
     }
 
 
@@ -116,7 +116,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
             final QueryableEntity queryableTable = (QueryableEntity) entity;
             final Type type = queryableTable.getElementType();
             if ( type instanceof Class ) {
-                return (Class) type;
+                return (Class<?>) type;
             } else {
                 return Object[].class;
             }
@@ -160,9 +160,9 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
         if ( physType.getFormat() == JavaRowFormat.SCALAR
                 && Object[].class.isAssignableFrom( elementType )
                 && getRowType().getFieldCount() == 1
-                && (entity.unwrap( ScannableEntity.class ) != null
-                || entity.unwrap( FilterableEntity.class ) != null
-                || entity.unwrap( ProjectableFilterableEntity.class ) != null) ) {
+                && (entity.unwrap( ScannableEntity.class ).isPresent()
+                || entity.unwrap( FilterableEntity.class ).isPresent()
+                || entity.unwrap( ProjectableFilterableEntity.class ).isPresent()) ) {
             return Expressions.call( BuiltInMethod.SLICE0.method, expression );
         }
         JavaRowFormat oldFormat = format();

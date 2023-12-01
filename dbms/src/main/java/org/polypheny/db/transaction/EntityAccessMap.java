@@ -264,7 +264,7 @@ public class EntityAccessMap {
             if ( p instanceof RelModify ) {
                 newAccess = Mode.WRITE_ACCESS;
                 if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-                    extractWriteConstraints( table.unwrap( LogicalTable.class ) );
+                    extractWriteConstraints( table.unwrap( LogicalTable.class ).orElseThrow() );
                 }
             } else {
                 newAccess = Mode.READ_ACCESS;

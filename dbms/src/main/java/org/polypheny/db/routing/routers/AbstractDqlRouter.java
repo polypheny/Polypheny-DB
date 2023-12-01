@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -188,28 +189,32 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
             return Lists.newArrayList( builders.get( 0 ).push( super.handleDocScan( (DocumentScan<?>) node, statement, null ) ) );
         }
 
-        if ( node instanceof LogicalRelScan && node.getEntity() != null ) {
-            LogicalEntity logicalTable = node.getEntity().unwrap( LogicalEntity.class );
+        if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
+            Optional<LogicalEntity> oLogicalEntity = node.getEntity().unwrap( LogicalEntity.class );
 
-            if ( logicalTable == null ) {
+            if ( oLogicalEntity.isEmpty() ) {
                 throw new GenericRuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
 
-            if ( logicalTable.getDataModel() == DataModel.GRAPH ) {
-                return handleRelationalOnGraphScan( node, statement, logicalTable, builders, cluster, queryInformation );
+            if ( oLogicalEntity.get().getDataModel() == DataModel.GRAPH ) {
+                return handleRelationalOnGraphScan( node, statement, oLogicalEntity.get(), builders, cluster, queryInformation );
             }
 
-            LogicalTable catalogTable = logicalTable.unwrap( LogicalTable.class );
+            Optional<LogicalTable> oLogicalTable = oLogicalEntity.get().unwrap( LogicalTable.class );
+
+            if ( oLogicalTable.isEmpty() ) {
+                throw new GenericRuntimeException( "Unexpected table. Only logical tables expected here!" );
+            }
 
             // Check if table is even horizontal partitioned
 
-            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( catalogTable.id ).size() > 1 ) { // todo dl replace vert atm
-                return handleHorizontalPartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
-            } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( catalogTable.id ).size() > 1 ) { // At the moment multiple strategies
-                return handleVerticalPartitioningOrReplication( node, catalogTable, statement, builders, cluster, queryInformation );
+            if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // todo dl replace vert atm
+                return handleHorizontalPartitioning( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
+            } else if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( oLogicalTable.get().id ).size() > 1 ) { // At the moment multiple strategies
+                return handleVerticalPartitioningOrReplication( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
             }
 
-            return handleNonePartitioning( node, catalogTable, statement, builders, cluster, queryInformation );
+            return handleNonePartitioning( node, oLogicalTable.get(), statement, builders, cluster, queryInformation );
 
         } else if ( node instanceof LogicalValues ) {
             return Lists.newArrayList( super.handleValues( (LogicalValues) node, builders ) );

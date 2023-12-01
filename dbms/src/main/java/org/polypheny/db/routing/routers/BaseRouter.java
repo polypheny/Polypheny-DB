@@ -233,13 +233,13 @@ public abstract class BaseRouter implements Router {
 
         LogicalEntity table;
 
-        if ( entity.unwrap( LogicalTable.class ) != null ) {
+        if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-            table = entity.unwrap( LogicalEntity.class );
+            table = entity.unwrap( LogicalEntity.class ).get();
             builder.scan( allocations.get( 0 ) );
-        } else if ( entity.unwrap( AllocationTable.class ) != null ) {
-            builder.scan( entity.unwrap( AllocationTable.class ) );
-            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).logicalId ).orElseThrow();
+        } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
+            builder.scan( entity.unwrap( AllocationTable.class ).get() );
+            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).orElseThrow().logicalId ).orElseThrow();
         } else {
             throw new NotImplementedException();
         }
@@ -469,7 +469,7 @@ public abstract class BaseRouter implements Router {
         List<AllocationColumn> columns = partitionsColumns.get( partitionId );
 
         // each column is one entity
-        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ) ).collect( Collectors.toList() );
+        List<AllocationTable> tables = columns.stream().map( c -> catalog.getSnapshot().alloc().getAlloc( c.placementId, partitionId ).orElseThrow().unwrap( AllocationTable.class ).orElseThrow() ).collect( Collectors.toList() );
 
         List<AlgNode> nodes = tables.stream().map( t -> handleRelScan( RoutedAlgBuilder.create( statement, cluster ), statement, t ).build() ).collect( Collectors.toList() );
         // todo remove multiple scans, add projection
@@ -484,7 +484,7 @@ public abstract class BaseRouter implements Router {
 
         LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class );
+        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
 
         List<AlgNode> scans = new ArrayList<>();
 

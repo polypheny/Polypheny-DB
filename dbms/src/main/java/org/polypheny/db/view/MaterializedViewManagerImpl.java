@@ -279,7 +279,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( Long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
+        LogicalTable catalogTable = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
@@ -318,7 +318,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             prepareSourceRel( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
 
-            if ( allocation.unwrap( AllocationTable.class ) != null ) {
+            if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
                 List<AllocationColumn> allocColumns = Catalog.snapshot().alloc().getColumns( allocation.placementId );
 
                 //columns.get( placement.adapterId ).forEach( column -> columnPlacements.add( snapshot.alloc().getColumnPlacement( placement.adapterId, column.id ) ) );
@@ -349,7 +349,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
         //List<Long> ids = new ArrayList<>();
         if ( transaction.getSnapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
-            LogicalMaterializedView catalogMaterializedView = transaction.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ) ).orElseThrow();
+            LogicalMaterializedView catalogMaterializedView = transaction.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
             /*List<CatalogDataPlacement> dataPlacements = snapshot.alloc().getDataPlacements( catalogMaterializedView.id );
             for ( AllocationEntity allocation :  ) {
                 ids.add( allocation.adapterId );
@@ -416,7 +416,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                     transaction,
                     List.of(),
                     AlgRoot.of( transaction.getSnapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
-                    transaction.getSnapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ) );
+                    transaction.getSnapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
         }
     }
 

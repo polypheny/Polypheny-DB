@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDecorrelator;
 import org.polypheny.db.algebra.AlgFieldTrimmer;
@@ -445,8 +446,8 @@ public class Programs {
 
         @Override
         public AlgNode run( AlgOptPlanner planner, AlgNode alg, AlgTraitSet requiredOutputTraits ) {
-            final PolyphenyDbConnectionConfig config = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
-            if ( config != null && config.forceDecorrelate() ) {
+            Optional<PolyphenyDbConnectionConfig> oConfig = planner.getContext().unwrap( PolyphenyDbConnectionConfig.class );
+            if ( oConfig.isPresent() && oConfig.get().forceDecorrelate() ) {
                 final AlgBuilder algBuilder = AlgFactories.LOGICAL_BUILDER.create( alg.getCluster(), null );
                 return AlgDecorrelator.decorrelateQuery( alg, algBuilder );
             }

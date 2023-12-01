@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -103,9 +104,9 @@ public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
         }
         this.context = context;
 
-        final CancelFlag cancelFlag = context.unwrap( CancelFlag.class );
-        this.cancelFlag = cancelFlag != null
-                ? cancelFlag.atomicBoolean
+        Optional<CancelFlag> oCancelFlag = context.unwrap( CancelFlag.class );
+        this.cancelFlag = oCancelFlag.isPresent()
+                ? oCancelFlag.get().atomicBoolean
                 : new AtomicBoolean();
 
         // Add abstract {@link AlgNode} classes. No RelNodes will ever be registered with these types, but some operands may use them.

@@ -23,6 +23,7 @@ import io.activej.serializer.annotations.Deserialize;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -75,7 +76,7 @@ public class RelStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -94,12 +95,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalTable getTable( long id ) {
-        return getPhysical( id ).unwrap( PhysicalTable.class );
+        return getPhysical( id ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 
     public PhysicalColumn getColumn( long id, long allocId ) {
-        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class );
+        return fields.get( Pair.of( allocId, id ) ).unwrap( PhysicalColumn.class ).orElseThrow();
     }
 
 
@@ -139,12 +140,12 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public PhysicalTable fromAllocation( long id ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class );
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
         PhysicalTable table = fromAllocation( allocId );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );
@@ -154,7 +155,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
 
     public List<PhysicalColumn> getColumns( long allocId ) {
-        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
+        return fields.values().stream().map( p -> p.unwrap( PhysicalColumn.class ) ).filter( Optional::isPresent ).map( Optional::get ).filter( c -> c.allocId == allocId ).collect( Collectors.toList() );
     }
 
 

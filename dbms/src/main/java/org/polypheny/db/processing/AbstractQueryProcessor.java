@@ -584,7 +584,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( node instanceof LogicalRelModify ) {
                         final Catalog catalog = Catalog.getInstance();
                         final LogicalRelModify ltm = (LogicalRelModify) node;
-                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class );
+                        final LogicalTable table = ltm.getEntity().unwrap( LogicalTable.class ).orElseThrow();
                         final LogicalNamespace namespace = catalog.getSnapshot().getNamespace( table.namespaceId ).orElseThrow();
                         final List<Index> indices = IndexManager.getInstance().getIndices( namespace, table );
 
@@ -881,7 +881,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     // Retrieve the catalog schema and database representations required for index lookup
                     final LogicalNamespace schema = statement.getTransaction().getDefaultNamespace();
-                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class );
+                    final LogicalTable ctable = scan.getEntity().unwrap( LogicalTable.class ).orElseThrow();
                     // Retrieve any index and use for simplification
                     final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
                     if ( idx == null ) {
@@ -1295,7 +1295,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 long scanId = entity.id;
 
                 // Get placements of this table
-                LogicalTable table = entity.unwrap( LogicalTable.class );
+                LogicalTable table = entity.unwrap( LogicalTable.class ).orElseThrow();
 
                 if ( table == null ) {
                     return accessedPartitions;

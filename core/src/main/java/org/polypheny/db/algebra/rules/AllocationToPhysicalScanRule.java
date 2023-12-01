@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.rules;
 
+import java.util.Optional;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -46,8 +47,8 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         Scan<?> scan = call.alg( 0 );
-        AllocationEntity alloc = scan.entity.unwrap( AllocationEntity.class );
-        if ( alloc == null ) {
+        Optional<AllocationEntity> oAlloc = scan.entity.unwrap( AllocationEntity.class );
+        if ( oAlloc.isEmpty() ) {
             return;
         }
 
@@ -55,13 +56,13 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
 
         switch ( scan.entity.dataModel ) {
             case RELATIONAL:
-                newAlg = handleRelationalEntity( call, scan, alloc );
+                newAlg = handleRelationalEntity( call, scan, oAlloc.get() );
                 break;
             case DOCUMENT:
-                newAlg = handleDocumentEntity( call, scan, alloc );
+                newAlg = handleDocumentEntity( call, scan, oAlloc.get() );
                 break;
             case GRAPH:
-                newAlg = handleGraphEntity( call, scan, alloc );
+                newAlg = handleGraphEntity( call, scan, oAlloc.get() );
                 break;
             default:
                 throw new GenericRuntimeException( "Could not transform allocation to physical" );

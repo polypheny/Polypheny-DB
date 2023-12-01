@@ -48,10 +48,10 @@ public class ScanRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final LogicalRelScan oldAlg = call.alg( 0 );
-        if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ) == null ) {
+        if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ).isEmpty() ) {
             return;
         }
-        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).toAlg( oldAlg.getCluster(), oldAlg.getTraitSet() );
+        AlgNode newAlg = oldAlg.getEntity().unwrap( TranslatableEntity.class ).get().toAlg( oldAlg.getCluster(), oldAlg.getTraitSet() );
         call.transformTo( newAlg );
     }
 

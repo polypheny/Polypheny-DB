@@ -62,11 +62,11 @@ public class DocStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class );
+            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class ).orElseThrow();
             List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
             newColumns.remove( u );
             newColumns.add( u );
@@ -87,7 +87,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     public <T extends PhysicalEntity> T fromAllocation( long id, Class<T> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz );
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
     }
 
 
@@ -112,7 +112,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     public PhysicalColumn getColumn( long columnId, long allocId ) {
-        return fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
+        return fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
     }
 
 
@@ -122,7 +122,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
 
     public void dropColumn( long allocId, long columnId ) {
-        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class );
+        PhysicalColumn column = fields.get( Pair.of( allocId, columnId ) ).unwrap( PhysicalColumn.class ).orElseThrow();
         PhysicalTable table = fromAllocation( allocId, PhysicalTable.class );
         List<PhysicalColumn> pColumns = new ArrayList<>( table.columns );
         pColumns.remove( column );

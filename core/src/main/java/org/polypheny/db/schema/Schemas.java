@@ -223,7 +223,7 @@ public final class Schemas {
     public static Queryable<PolyValue[]> queryable( DataContext root, Snapshot snapshot, String entityName ) {
         //QueryableEntity table = (QueryableEntity) schema.getEntity( tableName );
         LogicalTable table = snapshot.rel().getTable( null, entityName ).orElseThrow();
-        return table.unwrap( QueryableEntity.class ).asQueryable( root, snapshot );
+        return table.unwrap( QueryableEntity.class ).orElseThrow().asQueryable( root, snapshot );
     }
 
 

@@ -70,7 +70,7 @@ public interface Scannable {
         }
         // we use first as pk
         scannable.createTable( context, LogicalTableWrapper.of( table, columns, List.of( columns.get( 0 ).id ) ), AllocationTableWrapper.of( allocSubTable, allocColumns ) );
-        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class );
+        return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
     StoreCatalog getCatalog();
@@ -125,7 +125,7 @@ public interface Scannable {
 
     static AlgNode getDocumentScanSubstitute( Scannable scannable, long allocId, AlgBuilder builder ) {
         builder.clear();
-        PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class );
+        PhysicalTable table = scannable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
         builder.scan( table );
         AlgDataType rowType = DocumentType.ofId();
         builder.transform( ModelTrait.DOCUMENT, rowType, false );

@@ -18,6 +18,7 @@ package org.polypheny.db.adapter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
@@ -249,7 +250,7 @@ public interface Modifiable extends Scannable {
     }
 
     static Modify<?> getModify( Entity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( ModifiableTable.class ).toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
+        return table.unwrap( ModifiableTable.class ).orElseThrow().toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
     static void dropGraphSubstitute( Modifiable modifiable, long allocation ) {
@@ -274,10 +275,10 @@ public interface Modifiable extends Scannable {
 
     default AlgNode getRelModify( long allocId, RelModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity table = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        if ( table.unwrap( ModifiableTable.class ) == null ) {
+        if ( table.unwrap( ModifiableTable.class ).isEmpty() ) {
             return null;
         }
-        return table.unwrap( ModifiableTable.class ).toModificationTable(
+        return table.unwrap( ModifiableTable.class ).get().toModificationTable(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 table,
@@ -289,10 +290,10 @@ public interface Modifiable extends Scannable {
 
     default AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        if ( entity.unwrap( ModifiableCollection.class ) == null ) {
+        if ( entity.unwrap( ModifiableCollection.class ).isEmpty() ) {
             return null;
         }
-        return entity.unwrap( ModifiableCollection.class ).toModificationCollection(
+        return entity.unwrap( ModifiableCollection.class ).get().toModificationCollection(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 entity,
@@ -305,8 +306,11 @@ public interface Modifiable extends Scannable {
 
     @Nullable
     static AlgNode getDocModifySubstitute( Modifiable modifiable, long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
-        PhysicalTable table = modifiable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class );
-        if ( table.unwrap( ModifiableTable.class ) == null ) {
+        Optional<PhysicalTable> oTable = modifiable.getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 ).unwrap( PhysicalTable.class );
+        if ( oTable.isEmpty() ) {
+            return null;
+        }
+        if ( oTable.get().unwrap( ModifiableTable.class ).isEmpty() ) {
             return null;
         }
 
@@ -327,10 +331,10 @@ public interface Modifiable extends Scannable {
 
         if ( updates.left == null ) {
             // Values have already been replaced
-            AlgNode node = table.unwrap( ModifiableTable.class ).toModificationTable(
+            AlgNode node = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
-                    table,
+                    oTable.get(),
                     builder.build(),
                     modify.getOperation(),
                     null,
@@ -340,15 +344,15 @@ public interface Modifiable extends Scannable {
             // left side
             AlgNode provider = builder.build();
             // build scan for right
-            builder.scan( table );
+            builder.scan( oTable.get() );
             // attach filter for condition
-            LogicalStreamer.attachFilter( table, builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
+            LogicalStreamer.attachFilter( oTable.get(), builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
 
             AlgNode collector = builder.build();
-            collector = table.unwrap( ModifiableTable.class ).toModificationTable(
+            collector = oTable.get().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
-                    table,
+                    oTable.get(),
                     collector,
                     modify.getOperation(),
                     updates.left,
@@ -376,10 +380,10 @@ public interface Modifiable extends Scannable {
 
     default AlgNode getGraphModify( long allocId, LpgModify<?> modify, AlgBuilder builder ) {
         PhysicalEntity entity = getCatalog().getPhysicalsFromAllocs( allocId ).get( 0 );
-        if ( entity.unwrap( ModifiableGraph.class ) == null ) {
+        if ( entity.unwrap( ModifiableGraph.class ).isEmpty() ) {
             return null;
         }
-        return entity.unwrap( ModifiableGraph.class ).toModificationGraph(
+        return entity.unwrap( ModifiableGraph.class ).get().toModificationGraph(
                 modify.getCluster(),
                 modify.getTraitSet(),
                 entity,

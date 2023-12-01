@@ -268,16 +268,16 @@ public class Bindables {
 
 
         public static boolean canHandle( Entity entity ) {
-            return entity.unwrap( ScannableEntity.class ) != null
-                    || entity.unwrap( FilterableEntity.class ) != null
-                    || entity.unwrap( ProjectableFilterableEntity.class ) != null;
+            return entity.unwrap( ScannableEntity.class ).isPresent()
+                    || entity.unwrap( FilterableEntity.class ).isPresent()
+                    || entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
         }
 
 
         @Override
         public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return entity.unwrap( ScannableEntity.class ).scan( dataContext );
+            return entity.unwrap( ScannableEntity.class ).orElseThrow().scan( dataContext );
         }
 
 

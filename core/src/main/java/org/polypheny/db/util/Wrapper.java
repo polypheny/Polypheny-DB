@@ -17,18 +17,23 @@
 package org.polypheny.db.util;
 
 
-import org.jetbrains.annotations.Nullable;
+import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Mix-in interface that allows you to find sub-objects.
  */
 public interface Wrapper {
 
-    default @Nullable <C> C unwrap( Class<C> aClass ) {
+    default @NotNull <C> Optional<C> unwrap( Class<C> aClass ) {
         if ( aClass.isInstance( this ) ) {
-            return aClass.cast( this );
+            return Optional.of( aClass.cast( this ) );
         }
-        return null;
+        return Optional.empty();
+    }
+
+    default @NotNull <C> C unwrapOrThrow( Class<C> aClass ) {
+        return unwrap( aClass ).orElseThrow();
     }
 
 }

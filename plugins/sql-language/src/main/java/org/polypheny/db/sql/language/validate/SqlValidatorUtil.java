@@ -40,7 +40,6 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -106,30 +105,12 @@ public class SqlValidatorUtil {
     }
 
 
-    private static LogicalTable getLogicalEntity( EntityNamespace entityNamespace, Snapshot snapshot, String datasetName, boolean[] usedDataset, List<AlgDataTypeField> extendedFields ) {
-        // final List<String> names = entityNamespace.getTable().getQualifiedName();
-        /*AlgOptEntity table;
-        if ( datasetName != null && catalogReader instanceof AlgOptSchemaWithSampling ) {
-            final AlgOptSchemaWithSampling reader = (AlgOptSchemaWithSampling) catalogReader;
-            table = snapshot.getTableForMember( names, datasetName, usedDataset );
-        } else {
-            // Schema does not support substitution. Ignore the data set, if any.
-            table = catalogReader.getTableForMember( names );
-        }*/
-
-        /*if ( !extendedFields.isEmpty() ) { // todo dl
-            table = table.extend( extendedFields );
-        }*/
-        return entityNamespace.getTable().unwrap( LogicalTable.class );
-    }
-
-
     /**
      * Gets a list of extended columns with field indices to the underlying table.
      */
     public static List<AlgDataTypeField> getExtendedColumns( AlgDataTypeFactory typeFactory, Entity table, SqlNodeList extendedColumns ) {
         final ImmutableList.Builder<AlgDataTypeField> extendedFields = ImmutableList.builder();
-        final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class );
+        final ExtensibleEntity extTable = table.unwrap( ExtensibleEntity.class ).orElseThrow();
         int extendedFieldOffset =
                 extTable == null
                         ? table.getRowType().getFieldCount()
@@ -277,7 +258,7 @@ public class SqlValidatorUtil {
      * @return the target field or null if the name cannot be resolved
      */
     public static AlgDataTypeField getTargetField( AlgDataType rowType, AlgDataTypeFactory typeFactory, SqlIdentifier id, Snapshot snapshot, Entity table, boolean isDocument ) {
-        final org.polypheny.db.schema.Entity t = table == null ? null : table.unwrap( org.polypheny.db.schema.Entity.class );
+        final Entity t = table == null ? null : table.unwrap( Entity.class ).orElseThrow();
 
         if ( !(t instanceof CustomColumnResolvingEntity) ) {
             final NameMatcher nameMatcher = snapshot.nameMatcher;

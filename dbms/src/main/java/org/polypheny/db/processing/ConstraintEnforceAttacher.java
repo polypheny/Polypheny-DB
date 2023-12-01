@@ -129,7 +129,7 @@ public class ConstraintEnforceAttacher {
             throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ) );
+        statement.getTransaction().getLogicalTables().add( modify.entity.unwrap( LogicalTable.class ).orElseThrow() );
     }
 
 
@@ -194,7 +194,7 @@ public class ConstraintEnforceAttacher {
         }
         final RelModify<?> root = (RelModify<?>) logicalRoot.alg;
 
-        final LogicalTable table = root.getEntity().unwrap( LogicalTable.class );
+        final LogicalTable table = root.getEntity().unwrap( LogicalTable.class ).orElseThrow();
         LogicalRelSnapshot snapshot = statement.getTransaction().getSnapshot().rel();
         final LogicalPrimaryKey primaryKey = snapshot.getPrimaryKey( table.primaryKey ).orElseThrow();
         final List<LogicalConstraint> constraints = new ArrayList<>( snapshot.getConstraints( table.id ) );

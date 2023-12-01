@@ -550,10 +550,10 @@ public class MongoPlugin extends PolyPlugin {
         @Override
         public AlgNode getDocModify( long allocId, DocumentModify<?> modify, AlgBuilder builder ) {
             PhysicalCollection collection = storeCatalog.fromAllocation( allocId, PhysicalCollection.class );
-            if ( collection.unwrap( ModifiableTable.class ) == null ) {
+            if ( collection.unwrap( ModifiableTable.class ).isPresent() ) {
                 return null;
             }
-            return collection.unwrap( ModifiableTable.class ).toModificationTable(
+            return collection.unwrap( ModifiableTable.class ).get().toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     collection,

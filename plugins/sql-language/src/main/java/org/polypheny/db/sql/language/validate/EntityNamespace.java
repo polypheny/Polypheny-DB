@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.validate;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Monotonicity;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -79,7 +80,6 @@ class EntityNamespace extends AbstractNamespace {
     }
 
 
-
     @Override
     public Monotonicity getMonotonicity( String columnName ) {
         final Entity table = getTable();
@@ -99,8 +99,8 @@ class EntityNamespace extends AbstractNamespace {
         builder.addAll( this.extendedFields );
         builder.addAll( SqlValidatorUtil.getExtendedColumns( validator.getTypeFactory(), getTable(), extendList ) );
         final List<AlgDataTypeField> extendedFields = builder.build();
-        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
-        if ( schemaEntity != null && schemaEntity instanceof ExtensibleEntity ) {
+        Optional<Entity> oEntity = table.unwrap( Entity.class );
+        if ( oEntity.isPresent() && table.unwrap( ExtensibleEntity.class ).isPresent() ) {
             checkExtendedColumnTypes( extendList );
             //final AlgOptEntity algOptEntity = ((AlgOptEntity) table).extend( extendedFields );
             //final CatalogEntity validatorTable = algOptEntity.unwrap( ValidatorTable.class );
@@ -114,7 +114,7 @@ class EntityNamespace extends AbstractNamespace {
      * Gets the data-type of all columns in a table (for a view table: including columns of the underlying table)
      */
     private AlgDataType getBaseRowType() {
-        final org.polypheny.db.schema.Entity schemaEntity = table.unwrap( org.polypheny.db.schema.Entity.class );
+        final Entity schemaEntity = table.unwrap( Entity.class ).orElseThrow();
         return schemaEntity.getRowType( validator.typeFactory );
     }
 

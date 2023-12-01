@@ -455,7 +455,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalDocumentScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -488,7 +488,7 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
     public void rewriteAlg( LogicalLpgScan scan ) {
         AlgNode alg = scan;
         if ( scan.entity.isPhysical() ) {
-            alg = scan.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, scan.traitSet );
+            alg = scan.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, scan.traitSet );
         }
         setNewForOldAlg( scan, alg );
     }
@@ -869,11 +869,11 @@ public class AlgStructuredTypeFlattener implements ReflectiveVisitor {
 
     @SuppressWarnings("unused")
     public void rewriteAlg( LogicalRelScan alg ) {
-        if ( alg.entity.unwrap( TranslatableEntity.class ) == null ) {
+        if ( alg.entity.unwrap( TranslatableEntity.class ).isEmpty() ) {
             rewriteGeneric( alg );
             return;
         }
-        AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).toAlg( cluster, alg.traitSet );
+        AlgNode newAlg = alg.entity.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, alg.traitSet );
         if ( !PolyTypeUtil.isFlat( alg.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(

@@ -246,7 +246,7 @@ public class LoptSemiJoinOptimizer {
 
         // Find the best index
         final List<Integer> bestKeyOrder = new ArrayList<>();
-        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).toAlg( factAlg.getCluster(), factAlg.getTraitSet() );
+        LcsScan tmpFactRel = (LcsScan) factTable.unwrap( TranslatableEntity.class ).orElseThrow().toAlg( factAlg.getCluster(), factAlg.getTraitSet() );
 
         LcsIndexOptimizer indexOptimizer = new LcsIndexOptimizer( tmpFactRel );
         FemLocalIndex bestIndex =

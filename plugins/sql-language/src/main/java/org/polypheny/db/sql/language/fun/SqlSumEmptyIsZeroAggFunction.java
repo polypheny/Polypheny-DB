@@ -19,7 +19,6 @@ package org.polypheny.db.sql.language.fun;
 
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.algebra.fun.SumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.language.SqlAggFunction;
 import org.polypheny.db.type.checker.OperandTypes;
@@ -48,13 +47,5 @@ public class SqlSumEmptyIsZeroAggFunction extends SqlAggFunction implements SumE
                 Optionality.FORBIDDEN );
     }
 
-
-    @Override
-    public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SplittableAggFunction.class ) {
-            return clazz.cast( SplittableAggFunction.Sum0Splitter.INSTANCE );
-        }
-        return super.unwrap( clazz );
-    }
 
 }

@@ -157,7 +157,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).collect( Collectors.toList() ) ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -367,7 +367,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 Expressions.call(
                                         mongoNamespace.getStore().getCatalogAsExpression(),
                                         "getPhysical", Expressions.constant( id ) ),
-                                "unwrap", Expressions.constant( MongoEntity.class ) ),
+                                "unwrapOrThrow", Expressions.constant( MongoEntity.class ) ),
                         MongoEntity.class ),
                 "asQueryable",
                 DataContext.ROOT,

@@ -127,7 +127,7 @@ public abstract class Prepare<T> {
             public void visit( AlgNode node, int ordinal, AlgNode parent ) {
                 if ( node instanceof RelScan ) {
                     final AlgOptCluster cluster = node.getCluster();
-                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).toAlg( cluster, node.getTraitSet() );
+                    final AlgNode r = node.getEntity().unwrap( TranslatableEntity.class ).orElseThrow().toAlg( cluster, node.getTraitSet() );
                     planner.registerClass( r );
                 }
                 super.visit( node, ordinal, parent );

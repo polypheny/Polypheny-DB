@@ -18,10 +18,13 @@ package org.polypheny.db.sql.language;
 
 
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.plan.Context;
 import org.polypheny.db.sql.language.validate.SqlValidator;
 import org.polypheny.db.sql.language.validate.SqlValidatorScope;
@@ -69,12 +72,6 @@ public abstract class SqlAggFunction extends SqlFunction implements Context, Agg
         this.requiresOrder = requiresOrder;
         this.requiresOver = requiresOver;
         this.requiresGroupOrder = Objects.requireNonNull( requiresGroupOrder );
-    }
-
-
-    @Override
-    public <T> T unwrap( Class<T> clazz ) {
-        return clazz.isInstance( this ) ? clazz.cast( this ) : null;
     }
 
 
@@ -133,6 +130,15 @@ public abstract class SqlAggFunction extends SqlFunction implements Context, Agg
     @Override
     public boolean allowsFilter() {
         return true;
+    }
+
+
+    @Override
+    public @NotNull <T> Optional<T> unwrap( Class<T> clazz ) {
+        if ( clazz == SplittableAggFunction.class ) {
+            return Optional.of( clazz.cast( SplittableAggFunction.SelfSplitter.INSTANCE ) );
+        }
+        return Context.super.unwrap( clazz );
     }
 
 }

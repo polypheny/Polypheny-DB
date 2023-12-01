@@ -305,7 +305,7 @@ public class DataMigratorImpl implements DataMigrator {
 
             AlgRoot sourceAlg = getSourceIterator( sourceStatement, source, subDistribution );
             AlgRoot targetAlg;
-            AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+            AllocationTable allocation = snapshot.alloc().getEntity( store.id, source.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow().orElseThrow();
             Catalog.getInstance().updateSnapshot();
             if ( allocation.getColumns().size() == columns.size() ) {
                 // There have been no placements for this table on this storeId before. Build insert statement
@@ -624,7 +624,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
         AlgRoot targetAlg;
-        AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+        AllocationTable allocation = snapshot.getEntity( targetPartitionIds.get( 0 ) ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow().orElseThrow();
         if ( allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this storeId before. Build insert statement
             targetAlg = buildInsertStatement( targetStatement, targetColumnPlacements, allocation );
@@ -950,7 +950,7 @@ public class DataMigratorImpl implements DataMigrator {
         Map<Long, AlgRoot> targetAlgs = new HashMap<>();
 
         AlgRoot sourceAlg = getSourceIterator( sourceStatement, sourceTable, placementDistribution );
-        AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow();
+        AllocationTable allocation = snapshot.alloc().getEntity( store.id, sourceTable.id ).map( a -> a.unwrap( AllocationTable.class ) ).orElseThrow().orElseThrow();
         if ( true ) {//allocation.getColumns().size() == columns.size() ) {
             // There have been no placements for this table on this storeId before. Build insert statement
             targetPartitionIds.forEach( id -> targetAlgs.put( id, buildInsertStatement( targetStatements.get( id ), targetColumnPlacements, allocation ) ) );

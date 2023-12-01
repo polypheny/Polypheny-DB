@@ -47,7 +47,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
             List<String> removes,
             Map<String, String> renames ) {
         super( traits, collection, input, operation, updates, removes, renames );
-        this.bucket = entity.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
+        this.bucket = entity.getMongoNamespace().getBucket();
     }
 
 

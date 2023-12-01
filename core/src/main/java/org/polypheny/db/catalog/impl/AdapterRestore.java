@@ -73,13 +73,13 @@ public class AdapterRestore {
             switch ( entity.dataModel ) {
 
                 case RELATIONAL:
-                    adapter.restoreTable( entity.unwrap( AllocationTable.class ), physicals );
+                    adapter.restoreTable( entity.unwrap( AllocationTable.class ).orElseThrow(), physicals );
                     break;
                 case DOCUMENT:
-                    adapter.restoreCollection( entity.unwrap( AllocationCollection.class ), physicals );
+                    adapter.restoreCollection( entity.unwrap( AllocationCollection.class ).orElseThrow(), physicals );
                     break;
                 case GRAPH:
-                    adapter.restoreGraph( entity.unwrap( AllocationGraph.class ), physicals );
+                    adapter.restoreGraph( entity.unwrap( AllocationGraph.class ).orElseThrow(), physicals );
                     break;
             }
 

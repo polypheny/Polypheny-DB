@@ -37,9 +37,11 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgNode;
@@ -569,9 +571,9 @@ public class AlgFactories {
     @Nonnull
     public static ScanFactory expandingScanFactory( @Nonnull ScanFactory scanFactory ) {
         return ( cluster, entity ) -> {
-            final TranslatableEntity translatableTable = entity.unwrap( TranslatableEntity.class );
-            if ( translatableTable != null ) {
-                return translatableTable.toAlg( cluster, cluster.traitSet() );
+            @NotNull Optional<TranslatableEntity> oTranslatableTable = entity.unwrap( TranslatableEntity.class );
+            if ( oTranslatableTable.isPresent() ) {
+                return oTranslatableTable.get().toAlg( cluster, cluster.traitSet() );
             }
             return scanFactory.createScan( cluster, entity );
         };

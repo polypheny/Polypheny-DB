@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.neo4j.NeoConvention;
 import org.polypheny.db.adapter.neo4j.NeoEntity;
@@ -81,24 +82,21 @@ public interface NeoRules {
         public AlgNode convert( AlgNode alg ) {
             RelModify<?> modify = (RelModify<?>) alg;
 
-            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
-            if ( modifiableTable == null ) {
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
                 return null;
             }
-            NeoEntity mongo = modify.getEntity().unwrap( NeoEntity.class );
-            if ( mongo == null ) {
-                return null;
-            }
-
-            return new NeoModify(
+            Optional<NeoEntity> oMongo = modify.getEntity().unwrap( NeoEntity.class );
+            return oMongo.map( neoEntity -> new NeoModify(
                     modify.getCluster(),
                     modify.getTraitSet().replace( NeoConvention.INSTANCE ),
-                    modify.getEntity().unwrap( NeoEntity.class ),
+                    neoEntity,
                     convert( modify.getInput(), NeoConvention.INSTANCE ),
                     modify.getOperation(),
                     modify.getUpdateColumns(),
                     modify.getSourceExpressions(),
-                    modify.isFlattened() );
+                    modify.isFlattened() ) ).orElse( null );
+
         }
 
     }

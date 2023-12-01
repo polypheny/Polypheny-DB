@@ -75,7 +75,7 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
             List<? extends RexNode> sourceExpressions,
             boolean flattened ) {
         super( cluster, traitSet, entity, input, operation, updateColumns, sourceExpressions, flattened );
-        this.bucket = entity.unwrap( MongoEntity.class ).getMongoNamespace().getBucket();
+        this.bucket = entity.getMongoNamespace().getBucket();
     }
 
 
@@ -386,18 +386,10 @@ class MongoTableModify extends RelModify<MongoEntity> implements MongoAlg {
         }
 
         BsonDocument doc = new BsonDocument();
-        MongoEntity entity = implementor.getEntity().unwrap( MongoEntity.class );
+        MongoEntity entity = implementor.getEntity();
         GridFSBucket bucket = implementor.getBucket();
         //noinspection AssertWithSideEffects
         assert input.getRowType().getFieldCount() == this.getEntity().getRowType().getFieldCount();
-        /*Map<Integer, String> physicalMapping;
-        if ( input.getInput() instanceof MongoValues ) {
-            physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), table );
-        } else if ( input.getInput() instanceof MongoDocuments ) {
-            physicalMapping = getPhysicalMap( input.getRowType().getFieldList(), implementor.entity.unwrap( PhysicalCollection.class ) );
-        } else {
-            throw new GenericRuntimeException( "Mapping for physical mongo fields not found" );
-        }*/
         implementor.setEntity( entity );
 
         int pos = 0;

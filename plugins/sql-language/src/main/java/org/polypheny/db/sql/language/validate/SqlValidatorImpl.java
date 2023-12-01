@@ -4120,7 +4120,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         throw new UnsupportedOperationException();
                     }
                 };
-        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).getColumnStrategies();
+        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
         for ( final AlgDataTypeField field : table.getRowType().getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {

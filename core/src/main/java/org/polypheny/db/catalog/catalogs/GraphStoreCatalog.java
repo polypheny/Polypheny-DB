@@ -72,11 +72,11 @@ public class GraphStoreCatalog extends StoreCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
-            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class );
+            PhysicalTable table = physicals.get( u.entityId ).unwrap( PhysicalTable.class ).orElseThrow();
             List<PhysicalColumn> newColumns = new ArrayList<>( table.columns );
             newColumns.remove( u );
             newColumns.add( u );
@@ -105,7 +105,7 @@ public class GraphStoreCatalog extends StoreCatalog {
 
 
     public <E extends PhysicalEntity> E fromAllocation( long id, Class<E> clazz ) {
-        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz );
+        return getPhysicalsFromAllocs( id ).get( 0 ).unwrap( clazz ).orElseThrow();
     }
 
 

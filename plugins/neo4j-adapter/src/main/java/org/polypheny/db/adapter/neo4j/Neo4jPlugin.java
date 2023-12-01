@@ -349,7 +349,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             PhysicalTable physical = storeCatalog.fromAllocation( allocId, PhysicalTable.class );
-            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class );
+            PhysicalColumn column = storeCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             executeDdlTrx(
                     context.getStatement().getTransaction().getXid(),

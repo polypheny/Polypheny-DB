@@ -201,71 +201,40 @@ public class AlgBuilder {
             context = Contexts.EMPTY_CONTEXT;
         }
         this.simplify = Hook.REL_BUILDER_SIMPLIFY.get( true );
-        this.aggregateFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.AggregateFactory.class ),
-                        AlgFactories.DEFAULT_AGGREGATE_FACTORY );
-        this.filterFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.FilterFactory.class ),
-                        AlgFactories.DEFAULT_FILTER_FACTORY );
-        this.projectFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ProjectFactory.class ),
-                        AlgFactories.DEFAULT_PROJECT_FACTORY );
-        this.sortFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SortFactory.class ),
-                        AlgFactories.DEFAULT_SORT_FACTORY );
-        this.exchangeFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ExchangeFactory.class ),
-                        AlgFactories.DEFAULT_EXCHANGE_FACTORY );
-        this.sortExchangeFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SortExchangeFactory.class ),
-                        AlgFactories.DEFAULT_SORT_EXCHANGE_FACTORY );
-        this.setOpFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SetOpFactory.class ),
-                        AlgFactories.DEFAULT_SET_OP_FACTORY );
-        this.joinFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.JoinFactory.class ),
-                        AlgFactories.DEFAULT_JOIN_FACTORY );
-        this.semiJoinFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.SemiJoinFactory.class ),
-                        AlgFactories.DEFAULT_SEMI_JOIN_FACTORY );
-        this.correlateFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.CorrelateFactory.class ),
-                        AlgFactories.DEFAULT_CORRELATE_FACTORY );
-        this.valuesFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.ValuesFactory.class ),
-                        AlgFactories.DEFAULT_VALUES_FACTORY );
-        this.scanFactory =
-                Util.first(
-                        context.unwrap( ScanFactory.class ),
-                        AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
-        this.matchFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.MatchFactory.class ),
-                        AlgFactories.DEFAULT_MATCH_FACTORY );
-        this.documentsFactory =
-                Util.first(
-                        context.unwrap( AlgFactories.DocumentsFactory.class ),
-                        AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
+        this.aggregateFactory = context.unwrap( AlgFactories.AggregateFactory.class )
+                .orElse( AlgFactories.DEFAULT_AGGREGATE_FACTORY );
+        this.filterFactory = context.unwrap( AlgFactories.FilterFactory.class )
+                .orElse( AlgFactories.DEFAULT_FILTER_FACTORY );
+        this.projectFactory = context.unwrap( AlgFactories.ProjectFactory.class )
+                .orElse( AlgFactories.DEFAULT_PROJECT_FACTORY );
+        this.sortFactory = context.unwrap( AlgFactories.SortFactory.class )
+                .orElse( AlgFactories.DEFAULT_SORT_FACTORY );
+        this.exchangeFactory = context.unwrap( AlgFactories.ExchangeFactory.class )
+                .orElse( AlgFactories.DEFAULT_EXCHANGE_FACTORY );
+        this.sortExchangeFactory = context.unwrap( AlgFactories.SortExchangeFactory.class )
+                .orElse( AlgFactories.DEFAULT_SORT_EXCHANGE_FACTORY );
+        this.setOpFactory = context.unwrap( AlgFactories.SetOpFactory.class )
+                .orElse( AlgFactories.DEFAULT_SET_OP_FACTORY );
+        this.joinFactory = context.unwrap( AlgFactories.JoinFactory.class )
+                .orElse( AlgFactories.DEFAULT_JOIN_FACTORY );
+        this.semiJoinFactory = context.unwrap( AlgFactories.SemiJoinFactory.class )
+                .orElse( AlgFactories.DEFAULT_SEMI_JOIN_FACTORY );
+        this.correlateFactory = context.unwrap( AlgFactories.CorrelateFactory.class )
+                .orElse( AlgFactories.DEFAULT_CORRELATE_FACTORY );
+        this.valuesFactory = context.unwrap( AlgFactories.ValuesFactory.class )
+                .orElse( AlgFactories.DEFAULT_VALUES_FACTORY );
+        this.scanFactory = context.unwrap( ScanFactory.class )
+                .orElse( AlgFactories.DEFAULT_TABLE_SCAN_FACTORY );
+        this.matchFactory = context.unwrap( AlgFactories.MatchFactory.class )
+                .orElse( AlgFactories.DEFAULT_MATCH_FACTORY );
+        this.documentsFactory = context.unwrap( AlgFactories.DocumentsFactory.class )
+                .orElse( AlgFactories.DEFAULT_DOCUMENTS_FACTORY );
 
-        final RexExecutor executor =
-                Util.first(
-                        context.unwrap( RexExecutor.class ),
+        final RexExecutor executor = context.unwrap( RexExecutor.class ).orElse(
                         Util.first(
                                 cluster.getPlanner().getExecutor(),
                                 RexUtil.EXECUTOR ) );
-        final AlgOptPredicateList predicates = AlgOptPredicateList.EMPTY;
-        this.simplifier = new RexSimplify( cluster.getRexBuilder(), predicates, executor );
+        this.simplifier = new RexSimplify( cluster.getRexBuilder(), AlgOptPredicateList.EMPTY, executor );
 
     }
 
@@ -1397,6 +1366,7 @@ public class AlgBuilder {
         push( scan );
         return this;
     }
+
 
     /**
      * Creates a {@link RelScan} of the table with a given name.

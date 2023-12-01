@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -86,10 +87,10 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         RelModify<?> modify = extractor.getModify();
 
         if ( modify == null ) {
-            throw new RuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
+            throw new GenericRuntimeException( "The tree did no conform, while generating the constraint enforcement query!" );
         }
 
-        final LogicalTable table = modify.entity.unwrap( LogicalTable.class );
+        final LogicalTable table = modify.entity.unwrap( LogicalTable.class ).orElseThrow();
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = modify.getCluster().getRexBuilder();

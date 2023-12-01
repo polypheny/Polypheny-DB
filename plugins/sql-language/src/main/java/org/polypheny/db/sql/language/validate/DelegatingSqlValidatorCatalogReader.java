@@ -18,6 +18,8 @@ package org.polypheny.db.sql.language.validate;
 
 
 import java.util.List;
+import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.nodes.Identifier;
@@ -62,7 +64,7 @@ public abstract class DelegatingSqlValidatorCatalogReader implements ValidatorCa
 
 
     @Override
-    public <C> C unwrap( Class<C> aClass ) {
+    public @NotNull <C> Optional<C> unwrap( Class<C> aClass ) {
         return catalogReader.unwrap( aClass );
     }
 

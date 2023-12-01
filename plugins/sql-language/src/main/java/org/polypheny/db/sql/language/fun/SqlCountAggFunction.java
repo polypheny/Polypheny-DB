@@ -20,7 +20,6 @@ package org.polypheny.db.sql.language.fun;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.CountAggFunction;
-import org.polypheny.db.algebra.fun.SplittableAggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.validate.Validator;
@@ -78,14 +77,6 @@ public class SqlCountAggFunction extends SqlAggFunction implements CountAggFunct
         return super.deriveType( validator, scope, call );
     }
 
-
-    @Override
-    public <T> T unwrap( Class<T> clazz ) {
-        if ( clazz == SplittableAggFunction.class ) {
-            return clazz.cast( SplittableAggFunction.CountSplitter.INSTANCE );
-        }
-        return super.unwrap( clazz );
-    }
 
 
     @Override

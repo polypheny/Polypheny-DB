@@ -393,7 +393,7 @@ public class RexInterpreter implements RexVisitor<Comparable<?>> {
             v1 = number( v1 );
         }
         //noinspection unchecked
-        final int c = ((Comparable) v0).compareTo( (Comparable) v1 );
+        final int c = ((Comparable) v0).compareTo( v1 );
         return p.test( c );
     }
 

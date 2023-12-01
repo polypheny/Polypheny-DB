@@ -36,20 +36,15 @@ package org.polypheny.db.algebra.logical.relational;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.catalog.entity.Entity;
-import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.view.ViewManager;
 
 
 /**
@@ -124,17 +119,6 @@ public final class LogicalRelScan extends RelScan<Entity> {
         return new LogicalRelScan( cluster, traitSet, entity );
     }
 
-
-    @Override
-    public AlgNode unfoldView( @Nullable AlgNode parent, int index, AlgOptCluster cluster ) {
-        if ( false ) {
-            LogicalTable catalogTable = entity.unwrap( LogicalTable.class );
-            if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
-                return ViewManager.orderMaterialized( this );
-            }
-        }
-        return super.unfoldView( parent, index, cluster );
-    }
 
 }
 

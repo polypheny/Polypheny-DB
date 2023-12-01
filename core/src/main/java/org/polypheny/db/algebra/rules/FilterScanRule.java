@@ -115,7 +115,7 @@ public abstract class FilterScanRule extends AlgOptRule {
 
     public static boolean test( RelScan<?> scan ) {
         // We can only push filters into a FilterableTable or ProjectableFilterableTable.
-        return scan.entity.unwrap( FilterableEntity.class ) != null || scan.entity.unwrap( ProjectableFilterableEntity.class ) != null;
+        return scan.entity.unwrap( FilterableEntity.class ).isPresent() || scan.entity.unwrap( ProjectableFilterableEntity.class ).isPresent();
     }
 
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -867,12 +868,12 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
-            if ( modifiableTable == null ) {
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
                 return null;
             }
-            MongoEntity mongo = modify.getEntity().unwrap( MongoEntity.class );
-            if ( mongo == null ) {
+            Optional<MongoEntity> oMongo = modify.getEntity().unwrap( MongoEntity.class );
+            if ( oMongo.isEmpty() ) {
                 return null;
             }
 
@@ -880,7 +881,7 @@ public class MongoRules {
             return new MongoTableModify(
                     modify.getCluster(),
                     traitSet,
-                    mongo,
+                    oMongo.get(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumns(),
@@ -897,18 +898,18 @@ public class MongoRules {
 
 
         MongoDocumentModificationRule() {
-            super( DocumentModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoCollectionModificationRule." + MongoAlg.CONVENTION );
+            super( DocumentModify.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, MongoDocumentModificationRule.class.getSimpleName() + "." + MongoAlg.CONVENTION );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
             final DocumentModify<MongoEntity> modify = (DocumentModify<MongoEntity>) alg;
-            final ModifiableTable modifiableCollection = modify.entity.unwrap( ModifiableTable.class );
-            if ( modifiableCollection == null ) {
+            Optional<ModifiableTable> oModifiableCollection = modify.entity.unwrap( ModifiableTable.class );
+            if ( oModifiableCollection.isEmpty() ) {
                 return null;
             }
-            if ( modify.entity.unwrap( MongoEntity.class ) == null ) {
+            if ( modify.entity.unwrap( MongoEntity.class ).isEmpty() ) {
                 return null;
             }
 

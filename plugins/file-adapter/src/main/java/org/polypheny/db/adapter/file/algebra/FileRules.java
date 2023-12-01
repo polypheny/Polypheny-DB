@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.file.algebra;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +91,7 @@ public class FileRules {
         @Override
         public boolean matches( AlgOptRuleCall call ) {
             final RelModify<?> modify = call.alg( 0 );
-            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
+            if ( modify.getEntity() == null ) {
                 // todo insert from select is not correctly implemented
                 return false;
             }
@@ -99,7 +100,6 @@ public class FileRules {
                 return false;
             }
 
-            FileTranslatableEntity table = modify.getEntity().unwrap( FileTranslatableEntity.class );
             convention.setModification( true );
             return true;
         }
@@ -108,13 +108,13 @@ public class FileRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final RelModify<?> modify = (RelModify<?>) alg;
-            final ModifiableTable modifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
 
-            if ( modifiableTable == null ) {
+            if ( oModifiableTable.isEmpty() ) {
                 log.warn( "Returning null during conversion" );
                 return null;
             }
-            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ) == null ) {
+            if ( modify.getEntity().unwrap( FileTranslatableEntity.class ).isEmpty() ) {
                 log.warn( "Returning null during conversion" );
                 return null;
             }
@@ -123,7 +123,7 @@ public class FileRules {
             return new FileTableModify(
                     modify.getCluster(),
                     traitSet,
-                    modify.getEntity().unwrap( FileTranslatableEntity.class ),
+                    modify.getEntity().unwrap( FileTranslatableEntity.class ).get(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.getOperation(),
                     modify.getUpdateColumns(),
