@@ -117,15 +117,22 @@ public class LanguageCrud {
     public static void anyQuery( Context ctx ) {
         QueryRequest request = ctx.bodyAsClass( QueryRequest.class );
         QueryLanguage language = QueryLanguage.from( request.language );
+
         QueryContext context = QueryContext.builder()
                 .query( request.query )
                 .language( language )
                 .isAnalysed( request.analyze )
                 .usesCache( request.cache )
                 .origin( "Polypheny-UI" )
+                .namespaceId( getNamespaceIdOrDefault( request.namespace ) )
                 .batch( request.noLimit ? -1 : crud.getPageSize() )
                 .transactionManager( crud.getTransactionManager() ).build();
         ctx.json( anyQueryResult( context, request ) );
+    }
+
+
+    public static long getNamespaceIdOrDefault( String namespace ) {
+        return namespace == null ? Catalog.defaultNamespaceId : Catalog.snapshot().getNamespace( namespace ).orElseThrow().id;
     }
 
 
@@ -364,6 +371,7 @@ public class LanguageCrud {
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
                 .dataModel( context.getIterator().getImplementation().getDataModel() )
+                .affectedTuples( data.size() )
                 .xid( statement.getTransaction().getXid().toString() )
                 .namespace( request.namespace );
 
@@ -377,7 +385,7 @@ public class LanguageCrud {
 
     public static ResultBuilder<?, ?, ?, ?> getDocResult( ExecutedContext context, UIRequest request, Statement statement ) {
         ResultIterator iterator = context.getIterator();
-        List<List<PolyValue>> data = iterator.getNextBatch();
+        List<List<PolyValue>> data = new ArrayList<>();
 
         try {
             for ( int i = 0; i < request.currentPage; i++ ) {
@@ -397,6 +405,7 @@ public class LanguageCrud {
                 .query( context.getQuery().getQuery() )
                 .language( context.getQuery().getLanguage() )
                 .hasMore( hasMoreRows )
+                .affectedTuples( data.size() )
                 .xid( statement.getTransaction().getXid().toString() )
                 .dataModel( context.getIterator().getImplementation().getDataModel() )
                 .namespace( request.namespace );
