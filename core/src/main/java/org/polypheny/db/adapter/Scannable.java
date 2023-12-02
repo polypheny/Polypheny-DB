@@ -23,7 +23,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.IdBuilder;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -73,7 +73,7 @@ public interface Scannable {
         return scannable.getCatalog().getPhysicalsFromAllocs( allocSubTable.id ).get( 0 ).unwrap( PhysicalTable.class ).orElseThrow();
     }
 
-    StoreCatalog getCatalog();
+    AdapterCatalog getCatalog();
 
     static void restoreGraphSubstitute( Scannable scannable, AllocationGraph alloc, List<PhysicalEntity> entities ) {
         throw new GenericRuntimeException( "todo restore" );

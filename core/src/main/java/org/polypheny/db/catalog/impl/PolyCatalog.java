@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.AllocationGraphCatalog;
@@ -44,7 +45,6 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
@@ -100,7 +100,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public final Map<String, QueryInterfaceTemplate> interfaceTemplates;
 
     @Getter
-    public final Map<Long, StoreCatalog> storeCatalogs;
+    public final Map<Long, AdapterCatalog> storeCatalogs;
 
     @Serialize
     public final Map<Long, AdapterRestore> adapterRestore;
@@ -290,13 +290,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     @Override
-    public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
+    public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
         return Optional.ofNullable( (S) storeCatalogs.get( id ) );
     }
 
 
     @Override
-    public void addStoreSnapshot( StoreCatalog snapshot ) {
+    public void addStoreSnapshot( AdapterCatalog snapshot ) {
         storeCatalogs.put( snapshot.adapterId, snapshot );
     }
 

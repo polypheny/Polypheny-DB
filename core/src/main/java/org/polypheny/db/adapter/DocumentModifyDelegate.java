@@ -18,7 +18,7 @@ package org.polypheny.db.adapter;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
-import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
+import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -30,7 +30,7 @@ public class DocumentModifyDelegate extends DocumentScanDelegate implements Modi
     private final Modifiable modifiable;
 
 
-    public DocumentModifyDelegate( Modifiable modifiable, DocStoreCatalog catalog ) {
+    public DocumentModifyDelegate( Modifiable modifiable, DocAdapterCatalog catalog ) {
         super( modifiable, catalog );
         this.modifiable = modifiable;
     }

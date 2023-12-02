@@ -97,7 +97,7 @@ public class LanguageManager {
 
         try {
             parsedQueries = context.getLanguage().getSplitter().apply( context );
-        } catch ( Exception e ) {
+        } catch ( Throwable e ) {
             if ( transaction.isAnalyze() ) {
                 transaction.getQueryAnalyzer().attachStacktrace( e );
             }
@@ -161,7 +161,7 @@ public class LanguageManager {
                 }
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
-            } catch ( Exception e ) {
+            } catch ( Throwable e ) {
                 if ( transaction.isAnalyze() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }
@@ -208,7 +208,7 @@ public class LanguageManager {
                     throw implementation.getException().get();
                 }
                 executedContexts.add( implementation.execute( implementation.getStatement() ) );
-            } catch ( Exception e ) {
+            } catch ( Throwable e ) {
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
                     transaction.getQueryAnalyzer().attachStacktrace( e );
                 }

@@ -47,17 +47,17 @@ import org.polypheny.db.util.Pair;
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class GraphStoreCatalog extends StoreCatalog {
+public class GraphAdapterCatalog extends AdapterCatalog {
 
-    public BinarySerializer<GraphStoreCatalog> serializer = PolySerializable.buildSerializer( GraphStoreCatalog.class );
+    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
 
 
-    public GraphStoreCatalog( long adapterId ) {
+    public GraphAdapterCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
-    public GraphStoreCatalog(
+    public GraphAdapterCatalog(
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
@@ -152,7 +152,7 @@ public class GraphStoreCatalog extends StoreCatalog {
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), GraphStoreCatalog.class );
+        return PolySerializable.deserialize( serialize(), GraphAdapterCatalog.class );
     }
 
 }

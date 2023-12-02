@@ -40,11 +40,13 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -113,7 +115,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
         // If any aggregate functions do not support splitting, bail out
         // If any aggregate call has a filter or is distinct, bail out
         for ( AggregateCall aggregateCall : aggregate.getAggCallList() ) {
-            if ( aggregateCall.getAggregation().unwrap( SplittableAggFunction.class ) == null ) {
+            if ( aggregateCall.getAggregation().unwrap( SplittableAggFunction.class ).isEmpty() ) {
                 return false;
             }
             if ( aggregateCall.filterArg >= 0 || aggregateCall.isDistinct() ) {
@@ -286,7 +288,7 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
             }
             for ( AggregateCall newAggCall : newAggCalls ) {
                 Optional<SplittableAggFunction> oSplitter = newAggCall.getAggregation().unwrap( SplittableAggFunction.class );
-                if ( oSplitter.isEmpty() ) {
+                if ( oSplitter.isPresent() ) {
                     final AlgDataType rowType = algBuilder.peek().getRowType();
                     projects2.add( oSplitter.get().singleton( rexBuilder, rowType, newAggCall ) );
                 }
@@ -328,18 +330,17 @@ public class AggregateJoinTransposeRule extends AlgOptRule {
 
 
     private static void populateEquivalences( Map<Integer, BitSet> equivalence, RexNode predicate ) {
-        switch ( predicate.getKind() ) {
-            case EQUALS:
-                RexCall call = (RexCall) predicate;
-                final List<RexNode> operands = call.getOperands();
-                if ( operands.get( 0 ) instanceof RexIndexRef ) {
-                    final RexIndexRef ref0 = (RexIndexRef) operands.get( 0 );
-                    if ( operands.get( 1 ) instanceof RexIndexRef ) {
-                        final RexIndexRef ref1 = (RexIndexRef) operands.get( 1 );
-                        populateEquivalence( equivalence, ref0.getIndex(), ref1.getIndex() );
-                        populateEquivalence( equivalence, ref1.getIndex(), ref0.getIndex() );
-                    }
+        if ( Objects.requireNonNull( predicate.getKind() ) == Kind.EQUALS ) {
+            RexCall call = (RexCall) predicate;
+            final List<RexNode> operands = call.getOperands();
+            if ( operands.get( 0 ) instanceof RexIndexRef ) {
+                final RexIndexRef ref0 = (RexIndexRef) operands.get( 0 );
+                if ( operands.get( 1 ) instanceof RexIndexRef ) {
+                    final RexIndexRef ref1 = (RexIndexRef) operands.get( 1 );
+                    populateEquivalence( equivalence, ref0.getIndex(), ref1.getIndex() );
+                    populateEquivalence( equivalence, ref1.getIndex(), ref0.getIndex() );
                 }
+            }
         }
     }
 

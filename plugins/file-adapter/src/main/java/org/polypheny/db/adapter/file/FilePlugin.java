@@ -49,7 +49,7 @@ import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -108,7 +108,7 @@ public class FilePlugin extends PolyPlugin {
             description = "An adapter that stores all data as files. It is especially suitable for multimedia collections.",
             usedModes = DeployMode.EMBEDDED,
             defaultMode = DeployMode.EMBEDDED)
-    public static class FileStore extends DataStore<RelStoreCatalog> {
+    public static class FileStore extends DataStore<RelAdapterCatalog> {
 
         @Delegate(excludes = Exclude.class)
         private final RelationalModifyDelegate delegate;
@@ -135,7 +135,7 @@ public class FilePlugin extends PolyPlugin {
 
 
         public FileStore( final long storeId, final String uniqueName, final Map<String, String> settings ) {
-            super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
+            super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
             PolyphenyHomeDirManager fileManager = PolyphenyHomeDirManager.getInstance();
             File adapterRoot = fileManager.registerNewFolder( "data/file-store" );
 

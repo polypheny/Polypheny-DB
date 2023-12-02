@@ -32,6 +32,7 @@ public interface Wrapper {
         return Optional.empty();
     }
 
+    @SuppressWarnings("unused")
     default @NotNull <C> C unwrapOrThrow( Class<C> aClass ) {
         return unwrap( aClass ).orElseThrow();
     }

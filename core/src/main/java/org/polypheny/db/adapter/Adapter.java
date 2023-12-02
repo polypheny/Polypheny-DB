@@ -32,7 +32,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -55,7 +55,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 @Getter
 @Slf4j
-public abstract class Adapter<S extends StoreCatalog> implements Scannable, Expressible {
+public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Expressible {
 
     private final AdapterProperties properties;
     protected final DeployMode deployMode;

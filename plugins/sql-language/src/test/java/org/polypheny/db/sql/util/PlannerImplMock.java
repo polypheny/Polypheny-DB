@@ -238,7 +238,7 @@ public class PlannerImplMock implements Planner {
     private Conformance conformance() {
         final Context context = config.getContext();
         if ( context != null ) {
-            final PolyphenyDbConnectionConfig connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class );
+            final PolyphenyDbConnectionConfig connectionConfig = context.unwrap( PolyphenyDbConnectionConfig.class ).orElseThrow();
             if ( connectionConfig != null ) {
                 return connectionConfig.conformance();
             }

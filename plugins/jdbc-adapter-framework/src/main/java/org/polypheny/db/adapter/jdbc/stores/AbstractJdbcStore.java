@@ -35,7 +35,7 @@ import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -57,7 +57,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> implements ExtensionPoint {
+public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> implements ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalModifyDelegate delegate;
@@ -76,7 +76,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelStoreCatalog> imple
             Map<String, String> settings,
             SqlDialect dialect,
             boolean persistent ) {
-        super( storeId, uniqueName, settings, persistent, new RelStoreCatalog( storeId ) );
+        super( storeId, uniqueName, settings, persistent, new RelAdapterCatalog( storeId ) );
         this.dialect = dialect;
 
         if ( deployMode == DeployMode.DOCKER ) {

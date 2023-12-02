@@ -18,7 +18,7 @@ package org.polypheny.db.mql.mql2alg;
 
 import java.util.Optional;
 import org.polypheny.db.catalog.MockCatalog;
-import org.polypheny.db.catalog.catalogs.StoreCatalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 
 
 public class MqlMockCatalog extends MockCatalog {
@@ -36,13 +36,13 @@ public class MqlMockCatalog extends MockCatalog {
 
 
     @Override
-    public <S extends StoreCatalog> Optional<S> getStoreSnapshot( long id ) {
+    public <S extends AdapterCatalog> Optional<S> getStoreSnapshot( long id ) {
         return Optional.empty();
     }
 
 
     @Override
-    public void addStoreSnapshot( StoreCatalog snapshot ) {
+    public void addStoreSnapshot( AdapterCatalog snapshot ) {
 
     }
 

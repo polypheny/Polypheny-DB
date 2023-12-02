@@ -49,7 +49,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
-import org.polypheny.db.catalog.catalogs.DocStoreCatalog;
+import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -117,7 +117,7 @@ public class MongoPlugin extends PolyPlugin {
     @AdapterSettingInteger(name = "port", defaultValue = 27017, appliesTo = DeploySetting.REMOTE)
     @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
     @AdapterSettingInteger(name = "trxLifetimeLimit", defaultValue = 1209600) // two weeks
-    public static class MongoStore extends DataStore<DocStoreCatalog> {
+    public static class MongoStore extends DataStore<DocAdapterCatalog> {
 
         private final String DEFAULT_DATABASE = "public";
 
@@ -137,7 +137,7 @@ public class MongoPlugin extends PolyPlugin {
 
 
         public MongoStore( long adapterId, String uniqueName, Map<String, String> settings ) {
-            super( adapterId, uniqueName, settings, true, new DocStoreCatalog( adapterId ) );
+            super( adapterId, uniqueName, settings, true, new DocAdapterCatalog( adapterId ) );
 
             if ( deployMode == DeployMode.DOCKER ) {
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {

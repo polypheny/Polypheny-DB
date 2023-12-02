@@ -45,8 +45,8 @@ import org.polypheny.db.util.Pair;
 @Value
 @NonFinal
 @Slf4j
-@SerializeClass(subclasses = { DocStoreCatalog.class, RelStoreCatalog.class, GraphStoreCatalog.class })
-public abstract class StoreCatalog implements PolySerializable {
+@SerializeClass(subclasses = { DocAdapterCatalog.class, RelAdapterCatalog.class, GraphAdapterCatalog.class })
+public abstract class AdapterCatalog implements PolySerializable {
 
     IdBuilder idBuilder = IdBuilder.getInstance();
 
@@ -69,12 +69,12 @@ public abstract class StoreCatalog implements PolySerializable {
     public ConcurrentMap<Pair<Long, Long>, PhysicalField> fields; // allocId, fieldId
 
 
-    public StoreCatalog( long adapterId ) {
+    public AdapterCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
-    public StoreCatalog(
+    public AdapterCatalog(
             long adapterId,
             Map<Long, Namespace> namespaces,
             Map<Long, PhysicalEntity> physicals,

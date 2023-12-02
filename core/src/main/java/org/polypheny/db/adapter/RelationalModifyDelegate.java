@@ -21,7 +21,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
 import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -44,7 +44,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
     private final Modifiable modifiable;
 
 
-    public RelationalModifyDelegate( Modifiable modifiable, RelStoreCatalog catalog ) {
+    public RelationalModifyDelegate( Modifiable modifiable, RelAdapterCatalog catalog ) {
         super( modifiable, catalog );
         this.modifiable = modifiable;
     }

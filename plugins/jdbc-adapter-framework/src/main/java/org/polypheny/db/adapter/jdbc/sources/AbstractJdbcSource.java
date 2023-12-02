@@ -38,7 +38,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -53,7 +53,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> implements ExtensionPoint {
+public abstract class AbstractJdbcSource extends DataSource<RelAdapterCatalog> implements ExtensionPoint {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalScanDelegate delegate;
@@ -71,7 +71,7 @@ public abstract class AbstractJdbcSource extends DataSource<RelStoreCatalog> imp
             String diverClass,
             SqlDialect dialect,
             boolean readOnly ) {
-        super( storeId, uniqueName, settings, readOnly, new RelStoreCatalog( storeId ) );
+        super( storeId, uniqueName, settings, readOnly, new RelAdapterCatalog( storeId ) );
         this.connectionFactory = createConnectionFactory( settings, dialect, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager and enable it

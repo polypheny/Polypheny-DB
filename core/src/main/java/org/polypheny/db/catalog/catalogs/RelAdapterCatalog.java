@@ -50,17 +50,17 @@ import org.polypheny.db.util.Pair;
 @Value
 @Slf4j
 @NonFinal
-public class RelStoreCatalog extends StoreCatalog {
+public class RelAdapterCatalog extends AdapterCatalog {
 
-    public BinarySerializer<GraphStoreCatalog> serializer = PolySerializable.buildSerializer( GraphStoreCatalog.class );
+    public BinarySerializer<GraphAdapterCatalog> serializer = PolySerializable.buildSerializer( GraphAdapterCatalog.class );
 
 
-    public RelStoreCatalog( long adapterId ) {
+    public RelAdapterCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
 
-    public RelStoreCatalog(
+    public RelAdapterCatalog(
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
@@ -161,7 +161,7 @@ public class RelStoreCatalog extends StoreCatalog {
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), RelStoreCatalog.class );
+        return PolySerializable.deserialize( serialize(), RelAdapterCatalog.class );
     }
 
 }

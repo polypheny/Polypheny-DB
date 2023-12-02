@@ -147,8 +147,8 @@ public class LanguageCrud {
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
 
         for ( ExecutedContext executedContext : executedContexts ) {
-            if ( executedContext.getError().isPresent() ) {
-                return List.of( buildErrorResult( transaction, executedContext, executedContext.getError().get() ).build() );
+            if ( executedContext.getException().isPresent() ) {
+                return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );

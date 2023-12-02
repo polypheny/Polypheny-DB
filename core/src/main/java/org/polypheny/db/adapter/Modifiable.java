@@ -263,11 +263,11 @@ public interface Modifiable extends Scannable {
     }
 
     default AlgNode getModify( long allocId, Modify<?> modify, AlgBuilder builder ) {
-        if ( modify.getEntity().unwrap( AllocationTable.class ) != null ) {
+        if ( modify.getEntity().unwrap( AllocationTable.class ).isPresent() ) {
             return getRelModify( allocId, (RelModify<?>) modify, builder );
-        } else if ( modify.getEntity().unwrap( AllocationCollection.class ) != null ) {
+        } else if ( modify.getEntity().unwrap( AllocationCollection.class ).isPresent() ) {
             return getDocModify( allocId, (DocumentModify<?>) modify, builder );
-        } else if ( modify.getEntity().unwrap( AllocationGraph.class ) != null ) {
+        } else if ( modify.getEntity().unwrap( AllocationGraph.class ).isPresent() ) {
             return getGraphModify( allocId, (LpgModify<?>) modify, builder );
         }
         throw new NotImplementedException();

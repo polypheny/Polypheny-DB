@@ -20,7 +20,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
@@ -38,7 +38,7 @@ public class RelationalScanDelegate implements Scannable {
     public final Scannable scannable;
 
     @Getter
-    public final RelStoreCatalog catalog;
+    public final RelAdapterCatalog catalog;
 
 
     @Override

@@ -49,7 +49,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.excel.ExcelTable.Flavor;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.catalogs.RelStoreCatalog;
+import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
@@ -76,7 +76,7 @@ import org.polypheny.db.util.Sources;
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource<RelStoreCatalog> {
+public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
@@ -90,7 +90,7 @@ public class ExcelSource extends DataSource<RelStoreCatalog> {
 
 
     public ExcelSource( long storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, new RelStoreCatalog( storeId ) );
+        super( storeId, uniqueName, settings, true, new RelAdapterCatalog( storeId ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting

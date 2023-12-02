@@ -47,12 +47,12 @@ import org.polypheny.db.util.Pair;
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class DocStoreCatalog extends StoreCatalog {
+public class DocAdapterCatalog extends AdapterCatalog {
 
-    public BinarySerializer<DocStoreCatalog> serializer = PolySerializable.buildSerializer( DocStoreCatalog.class );
+    public BinarySerializer<DocAdapterCatalog> serializer = PolySerializable.buildSerializer( DocAdapterCatalog.class );
 
 
-    public DocStoreCatalog( long adapterId ) {
+    public DocAdapterCatalog( long adapterId ) {
         this( adapterId, Map.of(), Map.of(), Map.of(), Map.of() );
     }
 
@@ -76,7 +76,7 @@ public class DocStoreCatalog extends StoreCatalog {
     }
 
 
-    public DocStoreCatalog(
+    public DocAdapterCatalog(
             @Deserialize("adapterId") long adapterId,
             @Deserialize("physicals") Map<Long, PhysicalEntity> physicals,
             @Deserialize("allocations") Map<Long, AllocationEntity> allocations,
@@ -172,7 +172,7 @@ public class DocStoreCatalog extends StoreCatalog {
 
     @Override
     public PolySerializable copy() {
-        return PolySerializable.deserialize( serialize(), DocStoreCatalog.class );
+        return PolySerializable.deserialize( serialize(), DocAdapterCatalog.class );
     }
 
 }
