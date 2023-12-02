@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import lombok.Value;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.algebra.AlgCollation;
@@ -465,13 +466,12 @@ public abstract class DdlManager {
     /**
      * Adds a new constraint to a table
      *
+     * @param information
      * @param namespaceId
-     * @param constraintName the name of the constraint
-     * @param constraintType the type of the constraint
-     * @param columnIds the ids of the columns for which to create the constraint
-     * @param tableId the id of the table
+     * @param columnIds
+     * @param tableId
      */
-    public abstract void createConstraint( long namespaceId, String constraintName, ConstraintType constraintType, List<Long> columnIds, long tableId );
+    public abstract void createConstraint( ConstraintInformation information, long namespaceId, List<Long> columnIds, long tableId );
 
     /**
      * Drop a NAMESPACE
@@ -559,13 +559,14 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
+    @Value
     public static class FieldInformation {
 
-        public final String name;
-        public final ColumnTypeInformation typeInformation;
-        public final Collation collation;
-        public final PolyValue defaultValue;
-        public final int position;
+        public String name;
+        public ColumnTypeInformation typeInformation;
+        public Collation collation;
+        public PolyValue defaultValue;
+        public int position;
 
 
         public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
@@ -583,17 +584,28 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a constraint,
      * decoupled from its query language
      */
+
+    @Value
     public static class ConstraintInformation {
 
-        public final String name;
-        public final ConstraintType type;
-        public final List<String> columnNames;
+        public String name;
+        public ConstraintType type;
+        public List<String> columnNames;
+        public @Nullable String foreignKeyTable;
+        public @Nullable String foreignKeyColumnName;
 
 
-        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames ) {
+        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames, String foreignKeyTable, String foreignKeyColumnName ) {
             this.name = name;
             this.type = type;
             this.columnNames = columnNames;
+            this.foreignKeyTable = foreignKeyTable;
+            this.foreignKeyColumnName = foreignKeyColumnName;
+        }
+
+
+        public ConstraintInformation( String name, ConstraintType type, List<String> columnNames ) {
+            this( name, type, columnNames, null, null );
         }
 
     }
@@ -603,15 +615,16 @@ public abstract class DdlManager {
      * Helper class, which holds all type information for a column
      * decoupled from the used query language
      */
+    @Value
     public static class ColumnTypeInformation {
 
-        public final PolyType type;
-        public final PolyType collectionType;
-        public final Integer precision;
-        public final Integer scale;
-        public final Integer dimension;
-        public final Integer cardinality;
-        public final Boolean nullable;
+        public PolyType type;
+        public PolyType collectionType;
+        public Integer precision;
+        public Integer scale;
+        public Integer dimension;
+        public Integer cardinality;
+        public Boolean nullable;
 
 
         public ColumnTypeInformation(
@@ -646,16 +659,17 @@ public abstract class DdlManager {
     }
 
 
+    @Value
     public static class PartitionInformation {
 
-        public final LogicalTable table;
-        public final String columnName;
-        public final String typeName;
-        public final List<String> partitionGroupNames;
-        public final int numberOfPartitionGroups;
-        public final int numberOfPartitions;
-        public final List<List<String>> qualifiers;
-        public final RawPartitionInformation rawPartitionInformation;
+        public LogicalTable table;
+        public String columnName;
+        public String typeName;
+        public List<String> partitionGroupNames;
+        public int numberOfPartitionGroups;
+        public int numberOfPartitions;
+        public List<List<String>> qualifiers;
+        public RawPartitionInformation rawPartitionInformation;
 
 
         public PartitionInformation(

@@ -182,6 +182,14 @@ public class SqlDdlNodes {
 
 
     /**
+     * Creates a PRIMARY KEY constraint.
+     */
+    public static SqlKeyConstraint foreign( ParserPos pos, SqlIdentifier name, SqlNodeList columnList, SqlIdentifier referencedTable, SqlIdentifier referencedColumn ) {
+        return new SqlForeignKeyConstraint( pos, name, columnList, referencedTable, referencedColumn );
+    }
+
+
+    /**
      * File type for CREATE FUNCTION.
      */
     public enum FileType {
