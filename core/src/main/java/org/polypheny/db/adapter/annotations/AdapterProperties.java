@@ -22,6 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.polypheny.db.adapter.DeployMode;
 
+
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AdapterProperties {
@@ -33,6 +34,5 @@ public @interface AdapterProperties {
     DeployMode[] usedModes();
 
     DeployMode defaultMode();
-
 
 }
