@@ -131,6 +131,7 @@ public class BackupManager {
         Map<Long, List<Long>> tableDependencies = new HashMap<>();  // key: tableId, value: referencedKeyTableId
         Map<Long, List<Pair<Long, Long>>> namespaceTableDependendencies = new HashMap<>();  // key: namespaceId, value: <namespaceId, referencedKeyTableId>
         Map<Long, List<Long>> viewDependencies = new HashMap<>();
+        //TODO(FF): are there dependencies for collections? (views/indexes from collections?)
 
         //go through all foreign keys, and check if the namespaceId equals the referencedKeySchemaId, and if not, add it to the namespaceDependencies map, with the namespaceId as key and the referencedKeySchemaId as value
         for ( Map.Entry<Long, List<LogicalForeignKey>> entry : foreignKeysPerTable.entrySet() ) {
@@ -180,6 +181,10 @@ public class BackupManager {
         // wrap all tables with BackupEntityWrapper
         ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedTables = backupInformationObject.wrapLogicalEntities( backupInformationObject.getTables(), tableDependencies, namespaceTableDependendencies, true);
         backupInformationObject.setWrappedTables( wrappedTables );
+
+        // wrap all collections with BackupEntityWrapper
+        ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections = backupInformationObject.wrapLogicalEntities( backupInformationObject.getCollections(), null, namespaceTableDependendencies, true);
+        backupInformationObject.setWrappedCollections( wrappedCollections );
 
         /*
         ArrayList<LogicalTable> lol = new ArrayList<>();

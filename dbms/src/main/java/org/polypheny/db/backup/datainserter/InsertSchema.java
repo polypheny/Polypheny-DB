@@ -131,6 +131,7 @@ public class InsertSchema {
         insertCreateTable( backupInformationObject.getWrappedTables() );
 
         // alter table - add unique constraint
+        //TODO(FF): only call if there are any relational schemas (machts senn??)
         insertAlterTableUQ( backupInformationObject.getWrappedTables(), backupInformationObject.getConstraints() );
         insertAlterTableFK( backupInformationObject.getWrappedTables(), backupInformationObject.getForeignKeysPerTable() );
 
@@ -302,41 +303,48 @@ public class InsertSchema {
 
     private void insertAlterTableFK( ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> bupTables, ImmutableMap<Long, List<LogicalForeignKey>> foreignKeysPerTable ) {
         String query = new String();
+        //if (!foreignKeysPerTable.isEmpty()) {
+            // go through foreign key constraints and collect the necessary data
+            for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
+                if (!(fkListPerTable.getValue().isEmpty())) {
+                    Long tableId = fkListPerTable.getKey();
 
-        // go through foreign key constraints and collect the necessary data
-        for ( Map.Entry<Long, List<LogicalForeignKey>> fkListPerTable : foreignKeysPerTable.entrySet() ) {
-            Long tableId = fkListPerTable.getKey();
+                    for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
+                        // get the table where the foreign key is saved
+                        Long nsId = foreignKey.namespaceId;
+                        BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
+                        //boolean lol = table.getToBeInserted();
+                        // check if the table is marked to be inserted
+                        if (table.getToBeInserted()) {
+                            String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
+                            String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
+                            String constraintName = foreignKey.name;
+                            String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
+                            String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
+                            String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
+                            String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
+                            String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
+                            String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
+                            //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
 
-            for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
-                // get the table where the foreign key is saved
-                Long nsId = foreignKey.namespaceId;
-                BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
-                //boolean lol = table.getToBeInserted();
-                // check if the table is marked to be inserted
-                if (table.getToBeInserted()) {
-                    String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
-                    String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
-                    String constraintName = foreignKey.name;
-                    String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
-                    String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
-                    String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
-                    String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
-                    String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
-                    String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
-                    //enforcementTime (on commit) - right now is manually set to the same thing everywhere (in the rest of polypheny)
-
-                    query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
-                    log.info( query );
-                    executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
+                            query = String.format( "ALTER TABLE %s11.%s11 ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s11.%s11 (%s) ON UPDATE %s ON DELETE %s", namespaceName, tableName, constraintName, listOfCols, referencedNamespaceName, referencedTableName, referencedListOfCols, updateAction, deleteAction );
+                            log.info( query );
+                            executeStatementInPolypheny( query, nsId, DataModel.RELATIONAL );
+                        }
+                    }
                 }
+
             }
-        }
+        //}
+
+
     }
 
 
     private void insertCreateCollection(ImmutableMap<Long, List<BackupEntityWrapper<LogicalEntity>>> wrappedCollections) {
         String query = new String();
 
+        //FIXME(FF): collections are not wrapped yet!!
         // go through all collections per namespace and create and execute a query
         for ( Map.Entry<Long, List<BackupEntityWrapper<LogicalEntity>>> collectionsPerNs : wrappedCollections.entrySet() ) {
             Long nsID = collectionsPerNs.getKey();
@@ -349,14 +357,14 @@ public class InsertSchema {
                 // only create collections that should be inserted
                 if ( collection.getToBeInserted()) {
                     // only create tables that don't (exist by default in polypheny)
-                    query = String.format( "db.createCollection(\"%s\")", collection.getNameForQuery() );
+                    query = String.format( "db.createCollection(\"%s11\")", collection.getNameForQuery() );
+                    log.info( query );
                     executeStatementInPolypheny( query, nsID, DataModel.DOCUMENT );
-
                 }
             }
         }
         //db.createCollection('users')
-        executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
+        //executeStatementInPolypheny( "db.createCollection(\"users\")", Catalog.defaultNamespaceId, DataModel.DOCUMENT );
     }
 
 
@@ -596,6 +604,7 @@ public class InsertSchema {
 
 
     private void executeStatementInPolypheny( String query, Long namespaceId, DataModel dataModel ) {
+        log.info( "entered execution with query:"+query );
         Transaction transaction;
         Statement statement = null;
         PolyImplementation result;

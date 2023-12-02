@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.util.Pair;
 
@@ -237,8 +238,8 @@ public class BackupInformationObject {
                 bupEntityList.add( tempBupEntity );
 
 
-                // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject
-                if (entity.getEntityType().equals( EntityType.ENTITY)) {
+                // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject, but only for relational entities
+                if (entity.getEntityType().equals( EntityType.ENTITY) && !(entity.getDataModel().equals( DataModel.DOCUMENT ) || entity.getDataModel().equals( DataModel.GRAPH ))) {
                     EntityReferencer entityReferencer = new EntityReferencer( entity.getId(), BackupEntityType.TABLE );
                     if (tableDependencies.containsKey( entity.getId() )) {
                         entityReferencer.setReferencerTables( tableDependencies.get( entity.getId() ) );
