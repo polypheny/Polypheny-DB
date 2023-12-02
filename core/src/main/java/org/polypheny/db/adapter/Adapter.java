@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,6 +51,7 @@ import org.polypheny.db.prepare.Context;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.schema.types.Expressible;
 import org.polypheny.db.transaction.PolyXid;
+
 
 @Getter
 @Slf4j
@@ -103,7 +103,7 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
         informationGroups = new ArrayList<>();
         informationElements = new ArrayList<>();
 
-        // this is need for docker deployable stores and should not interfere too much with other adapters
+        // This is need for docker deployable stores and should not interfere too much with other adapters
         if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
@@ -183,7 +183,6 @@ public abstract class Adapter<S extends AdapterCatalog> implements Scannable, Ex
                 updatedSettings.add( newSetting.getKey() );
             }
         }
-
         return updatedSettings;
     }
 

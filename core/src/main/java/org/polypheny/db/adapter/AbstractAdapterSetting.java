@@ -144,7 +144,6 @@ public abstract class AbstractAdapterSetting {
 
     public enum AdapterSettingType {
         DIRECTORY, INTEGER, LIST, STRING, BOOLEAN
-
     }
 
 }

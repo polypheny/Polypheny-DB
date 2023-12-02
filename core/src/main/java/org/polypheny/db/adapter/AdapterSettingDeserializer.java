@@ -25,7 +25,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-//see https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
+
+// See https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
 public class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdapterSetting> {
 
     @Override

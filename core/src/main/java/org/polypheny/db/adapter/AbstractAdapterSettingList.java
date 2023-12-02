@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.annotations.AdapterSettingList;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingList extends AbstractAdapterSetting {
+
     public List<String> options;
     public boolean dynamic = false;
 
