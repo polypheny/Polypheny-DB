@@ -18,8 +18,6 @@ package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
@@ -31,8 +29,6 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 
 @SuperBuilder(toBuilder = true)
-@EqualsAndHashCode(callSuper = true)
-@Value
 public class LogicalDocumentModify extends DocumentModify<Entity> implements RelationalTransformable {
 
     /**

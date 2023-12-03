@@ -167,7 +167,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
 
     public String toString() {
-        return "MongoTable {" + physical.name + "}";
+        return "MongoEntity {" + physical.name + "}";
     }
 
 

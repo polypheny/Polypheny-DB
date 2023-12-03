@@ -62,6 +62,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         switch ( this.getOperation() ) {
             case INSERT:
                 handleInsert( implementor, ((MongoDocuments) input) );
+                break;
             case UPDATE:
                 handleUpdate( implementor );
                 break;
@@ -81,6 +82,19 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
     private void handleUpdate( Implementor implementor ) {
         throw new NotImplementedException();
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new MongoDocumentModify(
+                traitSet,
+                entity,
+                inputs.get( 0 ),
+                operation,
+                updates,
+                removes,
+                renames );
     }
 
 

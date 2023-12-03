@@ -177,7 +177,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "entity", entity.id )
-                .item( "layer", entity.getCatalogType() )
+                .item( "layer", entity.getLayer() )
                 .item( "operation", getOperation() )
                 .itemIf( "updateColumns", updateColumns, updateColumns != null )
                 .itemIf( "sourceExpressions", sourceExpressions, sourceExpressions != null )

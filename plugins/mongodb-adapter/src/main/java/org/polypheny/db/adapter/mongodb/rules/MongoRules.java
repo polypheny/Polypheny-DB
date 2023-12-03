@@ -687,7 +687,7 @@ public class MongoRules {
                             && !containsIncompatible( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
-                    "MongoDocumentProjectRule" );
+                    MongoDocumentProjectRule.class.getSimpleName() );
         }
 
 
@@ -904,7 +904,7 @@ public class MongoRules {
 
         @Override
         public AlgNode convert( AlgNode alg ) {
-            final DocumentModify<MongoEntity> modify = (DocumentModify<MongoEntity>) alg;
+            final DocumentModify<?> modify = (DocumentModify<?>) alg;
             Optional<ModifiableTable> oModifiableCollection = modify.entity.unwrap( ModifiableTable.class );
             if ( oModifiableCollection.isEmpty() ) {
                 return null;
@@ -916,7 +916,7 @@ public class MongoRules {
             final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
             return new MongoDocumentModify(
                     traitSet,
-                    modify.entity,
+                    modify.entity.unwrap( MongoEntity.class ).get(),
                     AlgOptRule.convert( modify.getInput(), traitSet ),
                     modify.operation,
                     modify.updates,
@@ -950,8 +950,7 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final LogicalAggregate agg = (LogicalAggregate) alg;
-            final AlgTraitSet traitSet =
-                    agg.getTraitSet().replace( out );
+            final AlgTraitSet traitSet = agg.getTraitSet().replace( out );
             try {
                 return new MongoAggregate(
                         alg.getCluster(),
@@ -977,15 +976,14 @@ public class MongoRules {
 
         private MongoDocumentAggregateRule() {
             super( LogicalDocumentAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
-                    "MongoDocumentAggregateRule" );
+                    MongoDocumentAggregate.class.getSimpleName() );
         }
 
 
         @Override
         public AlgNode convert( AlgNode alg ) {
             final LogicalDocumentAggregate agg = (LogicalDocumentAggregate) alg;
-            final AlgTraitSet traitSet =
-                    agg.getTraitSet().replace( out );
+            final AlgTraitSet traitSet = agg.getTraitSet().replace( out );
             return new MongoDocumentAggregate(
                     alg.getCluster(),
                     traitSet,

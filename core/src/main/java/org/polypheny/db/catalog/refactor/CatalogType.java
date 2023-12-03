@@ -18,18 +18,18 @@ package org.polypheny.db.catalog.refactor;
 
 public interface CatalogType {
 
-    State getCatalogType();
+    State getLayer();
 
     default boolean isLogical() {
-        return getCatalogType() == State.LOGICAL;
+        return getLayer() == State.LOGICAL;
     }
 
     default boolean isAllocation() {
-        return getCatalogType() == State.ALLOCATION;
+        return getLayer() == State.ALLOCATION;
     }
 
     default boolean isPhysical() {
-        return getCatalogType() == State.PHYSICAL;
+        return getLayer() == State.PHYSICAL;
     }
 
     enum State {

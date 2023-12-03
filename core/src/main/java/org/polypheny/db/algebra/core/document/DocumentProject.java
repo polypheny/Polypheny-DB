@@ -23,9 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
-import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -45,9 +42,6 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 
 
-@EqualsAndHashCode(callSuper = false)
-@Value
-@NonFinal
 public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
 

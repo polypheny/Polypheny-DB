@@ -104,7 +104,7 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "table", entity.id )
-                .item( "layer", entity.getCatalogType() );
+                .item( "layer", entity.getLayer() );
     }
 
 

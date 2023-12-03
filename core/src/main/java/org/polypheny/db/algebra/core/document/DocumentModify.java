@@ -21,12 +21,11 @@ import com.google.common.collect.ImmutableMap;
 import com.mongodb.lang.Nullable;
 import java.util.List;
 import java.util.Map;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
-import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -36,10 +35,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 
-@EqualsAndHashCode(callSuper = true)
+@Getter
 @SuperBuilder(toBuilder = true)
-@Value
-@NonFinal
 public abstract class DocumentModify<E extends Entity> extends Modify<E> implements DocumentAlg {
 
     @NonNull
@@ -81,7 +78,19 @@ public abstract class DocumentModify<E extends Entity> extends Modify<E> impleme
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + operation + "$" + input.algCompareString() + "$" + updates.hashCode() + "$" + removes.hashCode() + "$" + renames.hashCode();
+        return "$" + getClass().getSimpleName() + "$" + entity.id + "$" + entity.getLayer() + "$" + operation + "$" + input.algCompareString() + "$" + updates.hashCode() + "$" + removes.hashCode() + "$" + renames.hashCode();
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "entity", entity.id )
+                .item( "layer", entity.getLayer() )
+                .item( "operation", getOperation() )
+                .item( "updates", updates )
+                .item( "removes", removes )
+                .item( "renames", renames );
     }
 
 

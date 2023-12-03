@@ -358,13 +358,13 @@ public class Programs {
                 ( planner, alg, requiredOutputTraits ) -> {
                     planner.setRoot( alg );
 
-                    final AlgNode rootRel2 =
+                    final AlgNode rootAlg2 =
                             alg.getTraitSet().equals( requiredOutputTraits )
                                     ? alg
                                     : planner.changeTraits( alg, requiredOutputTraits );
-                    assert rootRel2 != null;
+                    assert rootAlg2 != null;
 
-                    planner.setRoot( rootRel2 );
+                    planner.setRoot( rootAlg2 );
                     final AlgOptPlanner planner2 = planner.chooseDelegate();
                     final AlgNode rootRel3 = planner2.findBestExp();
                     assert rootRel3 != null : "could not implement exp";

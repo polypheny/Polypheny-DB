@@ -43,7 +43,7 @@ public class AllocationToPhysicalModifyRule extends AlgOptRule {
 
 
     private static boolean canApply( Modify<?> r ) {
-        return r.entity.getCatalogType() == State.ALLOCATION;
+        return r.entity.getLayer() == State.ALLOCATION;
     }
 
 

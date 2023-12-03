@@ -19,10 +19,12 @@ package org.polypheny.db.algebra.rules;
 
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -41,13 +43,13 @@ public class ScanRule extends AlgOptRule {
      * @param algBuilderFactory Builder for relational expressions
      */
     public ScanRule( AlgBuilderFactory algBuilderFactory ) {
-        super( operand( LogicalRelScan.class, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );
+        super( operandJ( Scan.class, Convention.NONE, r -> true, any() ), algBuilderFactory, ScanRule.class.getSimpleName() );
     }
 
 
     @Override
     public void onMatch( AlgOptRuleCall call ) {
-        final LogicalRelScan oldAlg = call.alg( 0 );
+        final Scan<?> oldAlg = call.alg( 0 );
         if ( oldAlg.getEntity().unwrap( TranslatableEntity.class ).isEmpty() ) {
             return;
         }
