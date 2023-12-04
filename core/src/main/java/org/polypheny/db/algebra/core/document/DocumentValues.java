@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
@@ -45,15 +46,24 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     public final List<PolyDocument> documents;
 
+    public final List<RexDynamicParam> dynamicDocuments;
+
+
 
     /**
      * Creates a {@link DocumentValues}.
      * {@link ModelTrait#DOCUMENT} node, which contains values.
      */
     public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents ) {
+        this( cluster, traitSet, documents, new ArrayList<>() );
+    }
+
+
+    public DocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
         super( cluster, traitSet );
         this.rowType = DocumentType.ofId();
         this.documents = validate( documents );
+        this.dynamicDocuments = dynamicDocuments;
     }
 
 
@@ -76,7 +86,7 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
 
     public boolean isPrepared() {
-        return documents.size() == 1 && documents.get( 0 ).asDocument().size() == 1 && documents.get( 0 ).asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) );
+        return !dynamicDocuments.isEmpty();//documents.size() == 1 && documents.get( 0 ).asDocument().size() == 1 && documents.get( 0 ).asDocument().containsKey( PolyString.of( DocumentType.DOCUMENT_ID ) );
     }
 
 

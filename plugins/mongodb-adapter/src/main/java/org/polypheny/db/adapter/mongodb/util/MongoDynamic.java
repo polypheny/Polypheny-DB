@@ -39,6 +39,7 @@ import org.bson.Document;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
@@ -67,12 +68,17 @@ public class MongoDynamic {
     private final Map<Long, String> keyMap = new HashMap<>();
 
 
-    public MongoDynamic( BsonDocument document, GridFSBucket bucket, DataContext dataContext ) {
+    public MongoDynamic( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
         this.dataContext = dataContext;
         this.document = document.clone();
         this.bucket = bucket;
         this.isProject = !document.isEmpty() && document.getFirstKey().equals( "$project" );
-        this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true, false ) );
+        if ( dataModel == DataModel.RELATIONAL ) {
+            this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true, false ) );
+        } else {
+            handleDynamic( this.document, new BsonString( "" ), "", true, false );
+        }
+
     }
 
 

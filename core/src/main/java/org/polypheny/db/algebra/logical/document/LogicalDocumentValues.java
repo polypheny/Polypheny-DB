@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
 
@@ -65,6 +66,11 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
+    public LogicalDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> documents, List<RexDynamicParam> dynamicDocuments ) {
+        super( cluster, traitSet, documents, dynamicDocuments );
+    }
+
+
     public static AlgNode create( AlgOptCluster cluster, List<PolyDocument> documents ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentValues( cluster, traitSet, documents );
@@ -82,6 +88,12 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     }
 
 
+    public static AlgNode createDynamic( AlgOptCluster cluster, List<RexDynamicParam> ids ) {
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        return new LogicalDocumentValues( cluster, traitSet, List.of( new PolyDocument() ), ids );
+    }
+
+
     @Override
     public DataModel getModel() {
         return DataModel.DOCUMENT;
@@ -92,7 +104,7 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         assert inputs.isEmpty();
-        return new LogicalDocumentValues( getCluster(), traitSet, documents );
+        return new LogicalDocumentValues( getCluster(), traitSet, documents, dynamicDocuments );
     }
 
 

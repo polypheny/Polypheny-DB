@@ -20,7 +20,6 @@ package org.polypheny.db.processing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1083,18 +1082,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         AlgDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
                 types.stream().map( t -> 1L ).collect( Collectors.toList() ),
                 types,
-                new AbstractList<>() {
-                    @Override
-                    public String get( int index ) {
-                        return "?" + index;
-                    }
-
-
-                    @Override
-                    public int size() {
-                        return types.size();
-                    }
-                } );
+                IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).collect( Collectors.toList() ) );
 
         return new Pair<>(
                 new AlgRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),

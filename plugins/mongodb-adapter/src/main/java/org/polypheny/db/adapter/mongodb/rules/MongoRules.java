@@ -513,6 +513,7 @@ public class MongoRules {
             return new MongoDocuments(
                     alg.getCluster(),
                     documentValues.documents,
+                    documentValues.dynamicDocuments,
                     alg.getTraitSet().replace( out )
             );
 
@@ -525,8 +526,8 @@ public class MongoRules {
     public static class MongoDocuments extends DocumentValues implements MongoAlg {
 
 
-        public MongoDocuments( AlgOptCluster cluster, List<PolyDocument> documentTuples, AlgTraitSet traitSet ) {
-            super( cluster, traitSet, documentTuples );
+        public MongoDocuments( AlgOptCluster cluster, List<PolyDocument> documentTuples, List<RexDynamicParam> dynamicParams, AlgTraitSet traitSet ) {
+            super( cluster, traitSet, documentTuples, dynamicParams );
         }
 
 
@@ -538,7 +539,7 @@ public class MongoRules {
 
         @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-            return new MongoDocuments( getCluster(), documents, traitSet );
+            return new MongoDocuments( getCluster(), documents, dynamicDocuments, traitSet );
         }
 
     }

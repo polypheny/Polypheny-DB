@@ -219,7 +219,7 @@ public class AggregateTest extends MqlTestTemplate {
                 "key" );
         insertMany( DATA_0 );
 
-        DocResult result = aggregate( $group( "{\"_id\":\"$key.key\"}" ) );
+        DocResult result = aggregate( $group( document( kv( string( "_id" ), string( "$key.key" ) ) ) ) );
 
         MongoConnection.checkDocResultSet( result, expected, false, true );
     }

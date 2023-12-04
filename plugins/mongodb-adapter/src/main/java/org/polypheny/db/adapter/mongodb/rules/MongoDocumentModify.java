@@ -24,12 +24,14 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
+import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
 public class MongoDocumentModify extends DocumentModify<MongoEntity> implements MongoAlg {
 
@@ -70,7 +72,11 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
 
     private void handleDelete( Implementor implementor ) {
-        throw new NotImplementedException();
+        if ( updates.isEmpty() ) {
+            implementor.list.add( Pair.of( null, "{}" ) );
+        } else {
+            throw new NotImplementedException();
+        }
     }
 
 
@@ -93,6 +99,13 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
 
     private void handleInsert( Implementor implementor, MongoDocuments documents ) {
+        if ( documents.isPrepared() ) {
+            implementor.operations = documents.dynamicDocuments
+                    .stream()
+                    .map( BsonDynamic::new )
+                    .collect( Collectors.toList() );
+            return;
+        }
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )

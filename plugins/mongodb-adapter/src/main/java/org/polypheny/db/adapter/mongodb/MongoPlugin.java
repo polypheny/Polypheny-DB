@@ -328,7 +328,7 @@ public class MongoPlugin extends PolyPlugin {
         public void dropCollection( Context context, AllocationCollection allocation ) {
             commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
-            PhysicalCollection collection = storeCatalog.fromAllocation( allocation.id, PhysicalCollection.class );
+            PhysicalEntity collection = storeCatalog.fromAllocation( allocation.id, PhysicalEntity.class );
             this.currentNamespace.database.getCollection( collection.name ).drop();
 
             storeCatalog.removeAllocAndPhysical( allocation.id );
