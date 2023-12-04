@@ -228,9 +228,9 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupAvgTest() {
         List<String> expected = MongoConnection.arrayToDoc( List.of(
-                        new Object[]{ "val2", 5 },
-                        new Object[]{ "val1", 7 } ),
-                "test", "avgValue" );
+                        new Object[]{ "val2", 5.0 },
+                        new Object[]{ "val1", 7.0 } ),
+                "_id", "avgValue" );
         insertMany( DATA_1 );
 
         DocResult result = aggregate( $group(

@@ -57,7 +57,7 @@ public class MongoDynamic {
 
     private final Map<Long, List<KeyWrapper>> keyHandles = new HashMap<>(); // parent, index,
     private final Map<Long, Function<PolyValue, BsonValue>> transformers = new HashMap<>();
-    private final GridFSBucket bucket;
+    protected final GridFSBucket bucket;
     private final BsonDocument document;
     private final Map<Long, Boolean> isRegexMap = new HashMap<>();
     private final Map<Long, Boolean> isFuncMap = new HashMap<>();
@@ -73,12 +73,15 @@ public class MongoDynamic {
         this.document = document.clone();
         this.bucket = bucket;
         this.isProject = !document.isEmpty() && document.getFirstKey().equals( "$project" );
-        if ( dataModel == DataModel.RELATIONAL ) {
-            this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true, false ) );
-        } else {
-            handleDynamic( this.document, new BsonString( "" ), "", true, false );
-        }
+        this.document.forEach( ( k, bsonValue ) -> replaceDynamic( bsonValue, this.document, k, true, false ) );
+    }
 
+
+    public static MongoDynamic create( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
+        if ( dataModel == DataModel.DOCUMENT ) {
+            return new MongoDocumentDynamic( document, bucket, dataContext, DataModel.DOCUMENT );
+        }
+        return new MongoDynamic( document, bucket, dataContext, DataModel.RELATIONAL );
     }
 
 
@@ -376,6 +379,22 @@ public class MongoDynamic {
             children.forEach( c -> c.setKey( newKey ) );
             document.put( newKey, temp );
         }
+
+    }
+
+
+    public static class MongoDocumentDynamic extends MongoDynamic {
+
+        public MongoDocumentDynamic( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
+            super( document, bucket, dataContext, dataModel );
+        }
+
+
+        @Override
+        public List<Document> getAll( List<Map<Long, PolyValue>> parameterValues ) {
+            return parameterValues.stream().flatMap( e -> e.entrySet().stream().map( v -> Document.parse( v.getValue().asDocument().toJson() ) ) ).collect( Collectors.toList() );
+        }
+
 
     }
 

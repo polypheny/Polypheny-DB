@@ -419,7 +419,10 @@ public class TestHelper {
                         fail();
                         throw new RuntimeException( "Should contain " + DocumentType.DOCUMENT_ID + " field." );
                     }
-                    doc.remove( DocumentType.DOCUMENT_ID );
+                    if ( excludeId ) {
+                        doc.remove( DocumentType.DOCUMENT_ID );
+                    }
+
                 }
                 parsedResults.add( doc );
             }
