@@ -80,8 +80,6 @@ import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.type.PolyType;
 
-;
-
 
 /**
  * Tests for {@link AlgToSqlConverter}.

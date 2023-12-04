@@ -57,7 +57,7 @@ public class MqlFunctions {
 
 
     private MqlFunctions() {
-        // empty on purposeD
+        // empty on purpose
     }
 
 
