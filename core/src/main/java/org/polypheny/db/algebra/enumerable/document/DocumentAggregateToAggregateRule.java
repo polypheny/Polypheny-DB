@@ -17,33 +17,13 @@
 package org.polypheny.db.algebra.enumerable.document;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.polypheny.db.algebra.AlgNode;
-import org.polypheny.db.algebra.enumerable.EnumerableConvention;
-import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
-import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
-import org.polypheny.db.algebra.logical.relational.LogicalProject;
-import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.algebra.type.DocumentType;
-import org.polypheny.db.languages.OperatorRegistry;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.tools.AlgBuilder.GroupKey;
-import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.entity.PolyList;
-import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.util.ImmutableBitSet;
 
 public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
@@ -51,7 +31,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
 
     public DocumentAggregateToAggregateRule() {
-        super( operand( LogicalDocumentAggregate.class, any() ), "DOCUMENT_AGGREGATE_TO_AGGREGATE" );
+        super( operand( LogicalDocumentAggregate.class, any() ), DocumentAggregateToAggregateRule.class.getSimpleName() );
     }
 
 
@@ -68,10 +48,11 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
         List<RexNode> nodes = new ArrayList<>();
         List<String> names = new ArrayList<>();
         RexIndexRef parent = builder.getRexBuilder().makeInputRef( alg.getInput(), 0 );
+        // todo dl fix
         //nodes.add( parent );
         //names.add( alg.getInput().getRowType().getFieldNames().get( 0 ) );
 
-        for ( String path : alg.groupSet ) {
+        /*for ( String path : alg.groupSet ) {
             RexNode node = builder.getRexBuilder().makeCall(
                     DocumentType.ofId(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
@@ -119,7 +100,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
         Map<String, RexNode> docs = enumerableAggregate.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) ) );
 
         call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of() ) );
-        // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );
+        // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );*/
     }
 
 }

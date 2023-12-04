@@ -37,6 +37,11 @@ public class RexNameRef extends RexVariable {
     }
 
 
+    public RexNameRef( String name, AlgDataType type ) {
+        this( List.of( name.split( "\\." ) ), type );
+    }
+
+
     public static RexNameRef create( List<String> names, AlgDataType type ) {
         return new RexNameRef( names, type );
     }

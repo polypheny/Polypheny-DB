@@ -16,7 +16,6 @@
 
 package org.polypheny.db.adapter.mongodb.rules;
 
-import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,9 +33,6 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class MongoDocumentModify extends DocumentModify<MongoEntity> implements MongoAlg {
 
-    private final GridFSBucket bucket;
-    private Implementor implementor;
-
 
     protected MongoDocumentModify(
             AlgTraitSet traits,
@@ -47,14 +43,12 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
             List<String> removes,
             Map<String, String> renames ) {
         super( traits, collection, input, operation, updates, removes, renames );
-        this.bucket = entity.getMongoNamespace().getBucket();
     }
 
 
     @Override
     public void implement( Implementor implementor ) {
         implementor.setDML( true );
-        this.implementor = implementor;
 
         implementor.setEntity( entity );
         implementor.setOperation( this.getOperation() );
@@ -102,7 +96,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
-                .map( d -> BsonDocument.parse( d.toTypedJson() ) )
+                .map( d -> BsonDocument.parse( d.toJson() ) )
                 .collect( Collectors.toList() );
     }
 

@@ -463,7 +463,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( Kind.MQL_KIND ) && call.op.getOperatorName() != OperatorName.MQL_QUERY_VALUE ) {
+        if ( call.getKind().belongsTo( Kind.MQL_KIND ) && call.op.getOperatorName() == OperatorName.MQL_QUERY_VALUE ) {
             return call;
         } else if ( call.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             int i = index.getAndIncrement();

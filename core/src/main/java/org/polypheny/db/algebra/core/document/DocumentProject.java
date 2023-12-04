@@ -57,13 +57,13 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         super( cluster, traits, input );
         this.includes = includes;
         this.excludes = excludes;
-        this.rowType = DocumentType.ofDoc();
+        this.rowType = DocumentType.ofIncludes( includes ).ofExcludes( excludes );
     }
 
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + getInput().algCompareString();
+        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + excludes.hashCode() + getInput().algCompareString();
     }
 
 

@@ -17,19 +17,14 @@
 package org.polypheny.db.adapter.mongodb.rules;
 
 import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.Getter;
-import org.bson.BsonArray;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
-import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
@@ -44,13 +39,12 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.document.DocumentAggregate;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
-import org.polypheny.db.algebra.enumerable.RexImpTable;
-import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
@@ -59,8 +53,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFactory;
-import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptRule;
@@ -82,7 +75,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.UnsupportedRexCallVisitor;
-import org.polypheny.db.util.Util;
 import org.polypheny.db.util.ValidatorUtil;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -121,7 +113,7 @@ public class MongoRules {
     /**
      * Returns 'string' if it is a call to item['string'], null otherwise.
      */
-    static String isItem( RexCall call ) {
+    public static String isItem( RexCall call ) {
         if ( call.getOperator().getOperatorName() != OperatorName.ITEM ) {
             return null;
         }
@@ -161,7 +153,7 @@ public class MongoRules {
     }
 
 
-    static String maybeQuote( String s ) {
+    public static String maybeQuote( String s ) {
         if ( !needsQuote( s ) ) {
             return s;
         }
@@ -224,285 +216,11 @@ public class MongoRules {
             return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
         }
         RexCall names = (RexCall) call.operands.get( 1 );
-        if ( names.operands.isEmpty() ) {
-            return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() ) );
-        }
 
-        return new BsonString( prefix + rowType.getFieldNames().get( parent.getIndex() )
-                + "."
-                + names.operands
+        return new BsonString( prefix + names.operands
                 .stream()
                 .map( n -> ((RexLiteral) n).value.asString().value )
                 .collect( Collectors.joining( "." ) ) );
-    }
-
-
-    /**
-     * Translator from {@link RexNode} to strings in MongoDB's expression language.
-     */
-    static class RexToMongoTranslator extends RexVisitorImpl<String> {
-
-        private final AlgDataTypeFactory typeFactory;
-        private final List<String> inFields;
-
-        static final Map<Operator, String> MONGO_OPERATORS = new HashMap<>();
-
-
-        static {
-            // Arithmetic
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.DIVIDE ), "$divide" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MULTIPLY ), "$multiply" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MOD ), "$mod" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.PLUS ), "$add" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.MINUS ), "$subtract" );
-            // Boolean
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.AND ), "$and" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.OR ), "$or" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.NOT ), "$not" );
-            // Comparison
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.EQUALS ), "$eq" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.NOT_EQUALS ), "$ne" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.GREATER_THAN ), "$gt" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.GREATER_THAN_OR_EQUAL ), "$gte" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LESS_THAN ), "$lt" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LESS_THAN_OR_EQUAL ), "$lte" );
-
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.FLOOR ), "$floor" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.CEIL ), "$ceil" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.EXP ), "$exp" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LN ), "$ln" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.LOG10 ), "$log10" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ABS ), "$abs" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.CHAR_LENGTH ), "$strLenCP" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.SUBSTRING ), "$substrCP" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ROUND ), "$round" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ACOS ), "$acos" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.TAN ), "$tan" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.COS ), "$cos" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ASIN ), "$asin" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.SIN ), "$sin" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ATAN ), "$atan" );
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.ATAN2 ), "$atan2" );
-
-            MONGO_OPERATORS.put( OperatorRegistry.get( OperatorName.POWER ), "$pow" );
-        }
-
-
-        private final Implementor implementor;
-
-
-        protected RexToMongoTranslator( AlgDataTypeFactory typeFactory, List<String> inFields, Implementor implementor ) {
-            super( true );
-            this.implementor = implementor;
-            this.typeFactory = typeFactory;
-            this.inFields = inFields;
-        }
-
-
-        @Override
-        public String visitLiteral( RexLiteral literal ) {
-            if ( literal.getValue() == null ) {
-                return "null";
-            }
-            return "{$literal: " + RexToLixTranslator.translateLiteral( literal, literal.getType(), typeFactory, RexImpTable.NullAs.NOT_POSSIBLE ) + "}";
-        }
-
-
-        @Override
-        public String visitDynamicParam( RexDynamicParam dynamicParam ) {
-            return new BsonDynamic( dynamicParam ).toJson();
-        }
-
-
-        @Override
-        public String visitIndexRef( RexIndexRef inputRef ) {
-            implementor.physicalMapper.add( inFields.get( inputRef.getIndex() ) );
-            return maybeQuote( "$" + inFields.get( inputRef.getIndex() ) );
-        }
-
-
-        @Override
-        public String visitCall( RexCall call ) {
-            String name = isItem( call );
-            if ( name != null ) {
-                return "'$" + name + "'";
-            }
-            final List<String> strings = translateList( call.operands );
-            if ( call.getKind() == Kind.CAST ) {
-                return strings.get( 0 );
-            }
-            String stdOperator = MONGO_OPERATORS.get( call.getOperator() );
-            if ( stdOperator != null ) {
-                if ( call.getOperator().equals( OperatorRegistry.get( OperatorName.SUBSTRING ) ) ) {
-                    String first = strings.get( 1 );
-                    first = "{\"$subtract\":[" + first + ", 1]}";
-                    strings.remove( 1 );
-                    strings.add( first );
-                    if ( call.getOperands().size() == 2 ) {
-                        strings.add( " { \"$strLenCP\":" + strings.get( 0 ) + "}" );
-                    }
-                }
-                return "{" + stdOperator + ": [" + Util.commaList( strings ) + "]}";
-            }
-            if ( call.getOperator().getOperatorName() == OperatorName.ITEM ) {
-                final RexNode op1 = call.operands.get( 1 );
-                // normal
-                if ( op1 instanceof RexLiteral && op1.getType().
-
-                        getPolyType() == PolyType.INTEGER ) {
-                    return "{$arrayElemAt:[" + strings.get( 0 ) + "," + (((RexLiteral) op1).value.asNumber().intValue() - 1) + "]}";
-                }
-                // prepared
-                if ( op1 instanceof RexDynamicParam ) {
-                    return "{$arrayElemAt:[" + strings.get( 0 ) + ", {$subtract:[" + new BsonDynamic( (RexDynamicParam) op1 ).toJson() + ", 1]}]}";
-                }
-            }
-            if ( call.getOperator().equals( OperatorRegistry.get( OperatorName.CASE ) ) ) {
-                StringBuilder sb = new StringBuilder();
-                StringBuilder finish = new StringBuilder();
-                // case(a, b, c)  -> $cond:[a, b, c]
-                // case(a, b, c, d) -> $cond:[a, b, $cond:[c, d, null]]
-                // case(a, b, c, d, e) -> $cond:[a, b, $cond:[c, d, e]]
-                for (
-                        int i = 0; i < strings.size(); i += 2 ) {
-                    sb.append( "{$cond:[" );
-                    finish.append( "]}" );
-
-                    sb.append( strings.get( i ) );
-                    sb.append( ',' );
-                    sb.append( strings.get( i + 1 ) );
-                    sb.append( ',' );
-                    if ( i == strings.size() - 3 ) {
-                        sb.append( strings.get( i + 2 ) );
-                        break;
-                    }
-                    if ( i == strings.size() - 2 ) {
-                        sb.append( "null" );
-                        break;
-                    }
-                }
-                sb.append( finish );
-                return sb.toString();
-            }
-            if ( call.op.equals( OperatorRegistry.get( OperatorName.UNARY_MINUS ) ) ) {
-                if ( strings.size() == 1 ) {
-                    return "{\"$multiply\":[" + strings.get( 0 ) + ",-1]}";
-                }
-            }
-
-            String special = handleSpecialCases( call );
-            if ( special != null ) {
-                return special;
-            }
-            /*if ( call.op.getOperatorName() == OperatorName.MQL ) {
-                return call.operands.get( 0 ).accept( this );
-            }*/
-
-            if ( call.op.getOperatorName() == OperatorName.SIGN ) {
-                // x < 0, -1
-                // x == 0, 0
-                // x > 0, 1
-                StringBuilder sb = new StringBuilder();
-                String oper = call.operands.get( 0 ).accept( this );
-                sb.append( "{\"$switch\":\n"
-                        + "            {\n"
-                        + "              \"branches\": [\n"
-                        + "                {\n"
-                        + "                  \"case\": { \"$lt\" : [ " );
-                sb.append( oper );
-                sb.append( ", 0 ] },\n"
-                        + "                  \"then\": -1.0"
-                        + "                },\n"
-                        + "                {\n"
-                        + "                  \"case\": { \"$gt\" : [ " );
-                sb.append( oper );
-                sb.append( ", 0 ] },\n"
-                        + "                  \"then\": 1.0"
-                        + "                },\n"
-                        + "              ],\n"
-                        + "              \"default\": 0.0"
-                        + "            }}" );
-
-                return sb.toString();
-            }
-
-            if ( call.op.equals( OperatorRegistry.get( OperatorName.IS_NOT_NULL ) ) ) {
-                return call.operands.get( 0 ).
-
-                        accept( this );
-
-            }
-
-            throw new IllegalArgumentException( "Translation of " + call + " is not supported by MongoProject" );
-
-        }
-
-
-        public String handleSpecialCases( RexCall call ) {
-            if ( call.getType().getPolyType() == PolyType.ARRAY ) {
-                BsonArray array = new BsonArray();
-                array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
-                return array.toString();
-            } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
-                return translateDocValueAsKey( implementor.getRowType(), call, "$" );
-            } else if ( call.isA( Kind.MQL_ITEM ) ) {
-                RexNode leftPre = call.operands.get( 0 );
-                String left = leftPre.accept( this );
-
-                String right = call.operands.get( 1 ).accept( this );
-
-                return "{\"$arrayElemAt\":[" + left + "," + right + "]}";
-            } else if ( call.isA( Kind.MQL_SLICE ) ) {
-                String left = call.operands.get( 0 ).accept( this );
-                String skip = call.operands.get( 1 ).accept( this );
-                String return_ = call.operands.get( 2 ).accept( this );
-
-                return "{\"$slice\":[ " + left + "," + skip + "," + return_ + "]}";
-            } else if ( call.isA( Kind.MQL_EXCLUDE ) ) {
-                String parent = implementor
-                        .getRowType()
-                        .getFieldNames()
-                        .get( ((RexIndexRef) call.operands.get( 0 )).getIndex() );
-
-                if ( !(call.operands.get( 1 ) instanceof RexCall) || call.operands.size() != 2 ) {
-                    return null;
-                }
-                RexCall excludes = (RexCall) call.operands.get( 1 );
-                List<String> fields = new ArrayList<>();
-                for ( RexNode operand : excludes.operands ) {
-                    if ( !(operand instanceof RexCall) ) {
-                        return null;
-                    }
-                    fields.add( "\"" + parent + "." + ((RexCall) operand)
-                            .operands
-                            .stream()
-                            .map( op -> ((RexLiteral) op).value.asString().value )
-                            .collect( Collectors.joining( "." ) ) + "\": 0" );
-                }
-
-                return String.join( ",", fields );
-            } else if ( call.isA( Kind.UNWIND ) ) {
-                return call.operands.get( 0 ).accept( this );
-            }
-            return null;
-        }
-
-
-        private String stripQuotes( String s ) {
-            return s.startsWith( "'" ) && s.endsWith( "'" )
-                    ? s.substring( 1, s.length() - 1 )
-                    : s;
-        }
-
-
-        public List<String> translateList( List<RexNode> list ) {
-            final List<String> strings = new ArrayList<>();
-            for ( RexNode node : list ) {
-                strings.add( node.accept( this ) );
-            }
-            return strings;
-        }
-
     }
 
 
@@ -514,7 +232,7 @@ public class MongoRules {
         protected final Convention out;
 
 
-        <R extends AlgNode> MongoConverterRule( Class<R> clazz, Predicate<? super R> supports, AlgTrait in, Convention out, String description ) {
+        <R extends AlgNode> MongoConverterRule( Class<R> clazz, Predicate<? super R> supports, AlgTrait<?> in, Convention out, String description ) {
             super( clazz, supports, in, out, AlgFactories.LOGICAL_BUILDER, description );
             this.out = out;
         }
@@ -594,7 +312,7 @@ public class MongoRules {
                     project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
-                    "MongoFilterRule" );
+                    MongoFilterRule.class.getSimpleName() );
         }
 
 
@@ -623,7 +341,7 @@ public class MongoRules {
                     project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
-                    "MongoDocumentFilterRule" );
+                    MongoDocumentFilterRule.class.getSimpleName() );
         }
 
 
@@ -761,7 +479,7 @@ public class MongoRules {
 
 
         private MongoValuesRule() {
-            super( Values.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoValuesRule." + MongoAlg.CONVENTION );
+            super( Values.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, MongoValuesRule.class.getSimpleName() );
         }
 
 
@@ -785,7 +503,7 @@ public class MongoRules {
 
 
         private MongoDocumentsRule() {
-            super( DocumentValues.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, "MongoDocumentRule." + MongoAlg.CONVENTION );
+            super( DocumentValues.class, r -> true, Convention.NONE, MongoAlg.CONVENTION, MongoDocumentsRule.class.getSimpleName() );
         }
 
 
@@ -817,6 +535,12 @@ public class MongoRules {
             // empty on purpose
         }
 
+
+        @Override
+        public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+            return new MongoDocuments( getCluster(), documents, traitSet );
+        }
+
     }
 
 
@@ -826,7 +550,7 @@ public class MongoRules {
 
 
         MongoTableModificationRule() {
-            super( RelModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, "MongoTableModificationRule." + MongoAlg.CONVENTION );
+            super( RelModify.class, MongoTableModificationRule::mongoSupported, Convention.NONE, MongoAlg.CONVENTION, MongoTableModificationRule.class.getSimpleName() );
         }
 
 
@@ -938,12 +662,13 @@ public class MongoRules {
 
         private MongoAggregateRule() {
             super( LogicalAggregate.class, MongoAggregateRule::supported, Convention.NONE, MongoAlg.CONVENTION,
-                    "MongoAggregateRule" );
+                    MongoAggregateRule.class.getSimpleName() );
         }
 
 
         private static boolean supported( LogicalAggregate aggregate ) {
-            return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct );
+            return aggregate.getAggCallList().stream().noneMatch( AggregateCall::isDistinct )
+                    && aggregate.getModel() != DataModel.DOCUMENT;
         }
 
 
@@ -975,8 +700,8 @@ public class MongoRules {
 
 
         private MongoDocumentAggregateRule() {
-            super( LogicalDocumentAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
-                    MongoDocumentAggregate.class.getSimpleName() );
+            super( DocumentAggregate.class, r -> true, Convention.NONE, MongoAlg.CONVENTION,
+                    MongoDocumentAggregateRule.class.getSimpleName() );
         }
 
 
@@ -988,11 +713,8 @@ public class MongoRules {
                     alg.getCluster(),
                     traitSet,
                     convert( agg.getInput(), traitSet.simplify() ),
-                    agg.indicator,
-                    agg.groupSet,
-                    agg.groupSets,
-                    agg.aggCalls,
-                    agg.names );
+                    agg.group,
+                    agg.aggCalls );
         }
 
     }

@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.core.document.DocumentProject;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexNode;
@@ -44,7 +45,7 @@ public class DocumentProjectToCalcRule extends ConverterRule {
     public AlgNode convert( AlgNode alg ) {
         final LogicalDocumentProject project = (LogicalDocumentProject) alg;
         final AlgNode input = project.getInput();
-        final RexProgram program = RexProgram.create( input.getRowType(), List.of( replaceAccess( project.asSingleProject() ) ), null, project.getRowType(), project.getCluster().getRexBuilder() );
+        final RexProgram program = RexProgram.create( input.getRowType(), List.of( replaceAccess( project.asSingleProject() ) ), null, DocumentType.ofId(), project.getCluster().getRexBuilder() );
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
     }
 

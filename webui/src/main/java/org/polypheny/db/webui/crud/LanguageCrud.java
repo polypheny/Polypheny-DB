@@ -358,28 +358,30 @@ public class LanguageCrud {
 
     public static ResultBuilder<?, ?, ?, ?> getGraphResult( ExecutedContext context, UIRequest request, Statement statement ) {
         ResultIterator iterator = context.getIterator();
-        List<PolyValue[]> data = iterator.getArrayRows();
+        List<PolyValue[]> data;
         try {
+            data = iterator.getArrayRows();
+
             iterator.close();
+
+            GraphResultBuilder<?, ?> builder = GraphResult.builder()
+                    .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
+                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .namespace( request.namespace );
+
+            if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+                builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
+            }
+            return builder;
+
         } catch ( Exception e ) {
-            throw new GenericRuntimeException( e );
+            return buildErrorResult( statement.getTransaction(), context, e );
         }
-
-        GraphResultBuilder<?, ?> builder = GraphResult.builder()
-                .data( data.stream().map( r -> Arrays.stream( r ).map( LanguageCrud::toJson ).toArray( String[]::new ) ).toArray( String[][]::new ) )
-                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .query( context.getQuery().getQuery() )
-                .language( context.getQuery().getLanguage() )
-                .dataModel( context.getIterator().getImplementation().getDataModel() )
-                .affectedTuples( data.size() )
-                .xid( statement.getTransaction().getXid().toString() )
-                .namespace( request.namespace );
-
-        if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
-            builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
-        }
-
-        return builder;
     }
 
 
@@ -393,22 +395,22 @@ public class LanguageCrud {
             }
 
             iterator.close();
+
+            boolean hasMoreRows = context.getIterator().hasMoreRows();
+
+            return DocResult.builder()
+                    .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
+                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .query( context.getQuery().getQuery() )
+                    .language( context.getQuery().getLanguage() )
+                    .hasMore( hasMoreRows )
+                    .affectedTuples( data.size() )
+                    .xid( statement.getTransaction().getXid().toString() )
+                    .dataModel( context.getIterator().getImplementation().getDataModel() )
+                    .namespace( request.namespace );
         } catch ( Exception e ) {
             return buildErrorResult( statement.getTransaction(), context, e );
         }
-
-        boolean hasMoreRows = context.getIterator().hasMoreRows();
-
-        return DocResult.builder()
-                .header( context.getIterator().getImplementation().rowType.getFields().stream().map( FieldDefinition::of ).toArray( FieldDefinition[]::new ) )
-                .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
-                .query( context.getQuery().getQuery() )
-                .language( context.getQuery().getLanguage() )
-                .hasMore( hasMoreRows )
-                .affectedTuples( data.size() )
-                .xid( statement.getTransaction().getXid().toString() )
-                .dataModel( context.getIterator().getImplementation().getDataModel() )
-                .namespace( request.namespace );
     }
 
 

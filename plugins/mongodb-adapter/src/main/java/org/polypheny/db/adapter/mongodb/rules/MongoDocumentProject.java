@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
+import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentProject;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -52,14 +54,20 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
         implementor.visitChild( 0, getInput() );
         List<Pair<String, String>> projects = new ArrayList<>();
 
-        final MongoRules.RexToMongoTranslator translator = new MongoRules.RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor );
+        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
         includes.forEach( ( n, p ) -> projects.add( Pair.of( n, p.accept( translator ) ) ) );
-        excludes.forEach( n -> projects.add( Pair.of( n, "1" ) ) );
+        excludes.forEach( n -> projects.add( Pair.of( n, "0" ) ) );
 
         String merged = projects.stream().map( p -> "\"" + p.left + "\":" + p.right ).collect( Collectors.joining( "," ) );
 
         implementor.add( merged, "{$project: " + merged + "}" );
 
+    }
+
+
+    @Override
+    public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
+        return new MongoDocumentProject( getCluster(), traitSet, sole( inputs ), includes, excludes );
     }
 
 }

@@ -44,8 +44,8 @@ import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
+import org.polypheny.db.algebra.core.DocumentAggregateCall;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -89,6 +89,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.document.DocumentUtil.UpdateOperation;
@@ -729,20 +730,9 @@ public class MqlToAlgConverter {
 
         return LogicalDocumentAggregate.create(
                 node,
-                List.of(),
                 null,
                 Collections.singletonList(
-                        AggregateCall.create(
-                                OperatorRegistry.getAgg( OperatorName.COUNT ),
-                                false,
-                                query.isEstimate(),
-                                new ArrayList<>(),
-                                -1,
-                                AlgCollations.EMPTY,
-                                cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
-                                query.isEstimate() ? "estimatedCount" : "count"
-                        ) ),
-                List.of( "count" ) );
+                        DocumentAggregateCall.create( query.isEstimate() ? "estimatedCount" : "count", OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
     }
 
 
@@ -1074,24 +1064,22 @@ public class MqlToAlgConverter {
             throw new GenericRuntimeException( "$group pipeline stage needs a document after, which defines a _id" );
         }
 
-        List<AggFunction> ops = new ArrayList<>();
-        List<RexNode> nodes = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-        List<String> aggNames = new ArrayList<>();
+        Map<String, AggFunction> nameOps = new HashMap<>();
+        //List<String> aggNames = new ArrayList<>();
+        Map<String, RexNode> nameNodes = new HashMap<>();
+        //List<String> names = new ArrayList<>();
 
         for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
             if ( entry.getKey().equals( "_id" ) ) {
                 if ( entry.getValue().isNull() ) {
-                    names.addAll( 0, rowType.getFieldNames() );
-                    nodes.addAll( 0, rowType.getFields().stream().map( f -> RexIndexRef.of( f.getIndex(), rowType ) ).collect( Collectors.toList() ) );
-
+                    nameNodes.put( "_id", new RexLiteral( null, nullableAny, PolyType.NULL ) );
                 } else if ( entry.getValue().isString() ) {
-                    names.add( entry.getValue().asString().getValue().substring( 1 ) );
-                    nodes.add( getIdentifier( entry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                    nameNodes.put( "_id", getIdentifier( entry.getValue().asString().getValue().substring( 1 ), rowType ) );
                 } else if ( entry.getValue().isDocument() ) {
                     for ( Entry<String, BsonValue> idEntry : entry.getValue().asDocument().entrySet() ) {
-                        names.add( idEntry.getValue().asString().getValue().substring( 1 ) );
-                        nodes.add( getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                        nameNodes.put( idEntry.getValue().asString().getValue().substring( 0 ), getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
+                        //names.add( idEntry.getValue().asString().getValue().substring( 1 ) );
+                        //nodes.add( getIdentifier( idEntry.getValue().asString().getValue().substring( 1 ), rowType ) );
                     }
                 } else {
                     throw new GenericRuntimeException( "$group takes as _id values either a document or a string" );
@@ -1101,20 +1089,21 @@ public class MqlToAlgConverter {
                     throw new GenericRuntimeException( "$group needs a document with an accumulator and an expression" );
                 }
                 BsonDocument doc = entry.getValue().asDocument();
-                ops.add( accumulators.get( doc.getFirstKey() ) );
-                aggNames.add( entry.getKey() );
-                names.add( entry.getKey() );
+                nameOps.put( entry.getKey(), accumulators.get( doc.getFirstKey() ) );
+                // ops.add( accumulators.get( doc.getFirstKey() ) );
+                //aggNames.add( entry.getKey() );
+                //names.add( entry.getKey() );
                 AlgDataType nullableDouble = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
                 // when using aggregations MongoQl automatically casts to doubles
-                nodes.add( cluster.getRexBuilder().makeAbstractCast(
-                        nullableDouble,
-                        convertExpression( doc.get( doc.getFirstKey() ), rowType ) ) );
+                String key = doc.get( doc.getFirstKey() ).asString().getValue().substring( 1 );
+                //nodes.add( new RexNameRef( key, nullableDouble ) );
+                nameNodes.put( entry.getKey(), new RexNameRef( key, nullableDouble ) );
             }
         }
 
-        node = LogicalDocumentProject.create( node, nodes, names );
+        //node = LogicalDocumentProject.create( node, nodes, names );
 
-        return groupBy( value, node, node.getRowType(), aggNames, ops );
+        return groupBy( value, nameNodes, node, node.getRowType(), nameOps );
     }
 
 
@@ -1136,25 +1125,18 @@ public class MqlToAlgConverter {
     }
 
 
-    private AlgNode groupBy( BsonValue value, AlgNode node, AlgDataType rowType, List<String> names, List<AggFunction> aggs ) {
+    private AlgNode groupBy( BsonValue value, Map<String, RexNode> nameNodes, AlgNode node, AlgDataType rowType, Map<String, AggFunction> nameOps ) {
         BsonValue groupBy = value.asDocument().get( "_id" );
 
-        List<AggregateCall> convertedAggs = new ArrayList<>();
-        int pos = 0;
-        for ( String name : names ) {
+        List<DocumentAggregateCall> convertedAggs = new ArrayList<>();
+
+        for ( Entry<String, AggFunction> agg : nameOps.entrySet() ) {
 
             convertedAggs.add(
-                    AggregateCall.create(
-                            aggs.get( pos ),
-                            false,
-                            false,
-                            Collections.singletonList( 1 + pos ), // first is original
-                            -1,
-                            AlgCollations.EMPTY,
-                            // when using aggregations MongoQl automatically casts to doubles
-                            cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ),
-                            name ) );
-            pos++;
+                    DocumentAggregateCall.create(
+                            agg.getKey(),
+                            agg.getValue(),
+                            nameNodes.get( agg.getKey() ) ) );
         }
 
         if ( !groupBy.isNull() ) {
@@ -1163,17 +1145,13 @@ public class MqlToAlgConverter {
 
             node = LogicalDocumentAggregate.create(
                     node,
-                    List.of( groupName ),
-                    null,
-                    convertedAggs,
-                    names );
+                    new RexNameRef( groupName, DocumentType.ofDoc() ),
+                    convertedAggs );
         } else {
             node = LogicalDocumentAggregate.create(
                     node,
-                    List.of(),
                     null,
-                    convertedAggs,
-                    names );
+                    convertedAggs );
 
         }
         return node;
@@ -1196,19 +1174,9 @@ public class MqlToAlgConverter {
         }
         return LogicalDocumentAggregate.create(
                 node,
-                List.of(),
                 null,
                 Collections.singletonList(
-                        AggregateCall.create(
-                                OperatorRegistry.getAgg( OperatorName.COUNT ),
-                                false,
-                                false,
-                                new ArrayList<>(),
-                                -1,
-                                AlgCollations.EMPTY,
-                                cluster.getTypeFactory().createPolyType( PolyType.BIGINT ),
-                                value.asString().getValue()
-                        ) ), List.of( "count" ) );
+                        DocumentAggregateCall.create( value.asString().getValue(), OperatorRegistry.getAgg( OperatorName.COUNT ), null ) ) );
     }
 
 
@@ -2192,11 +2160,11 @@ public class MqlToAlgConverter {
             throw new GenericRuntimeException( "The provided projection was not translatable" );
         }
 
-        if ( includes.size() != 0 && excludes.size() != 0 ) {
+        if ( !includes.isEmpty() && !excludes.isEmpty() ) {
             throw new GenericRuntimeException( "Include projection and exclude projections are not possible at the same time." );
         }
 
-        if ( excludes.size() > 0 ) {
+        if ( !excludes.isEmpty() ) {
             if ( _dataExists ) {
 
                 return LogicalDocumentProject.create( node, includes, excludes );
@@ -2242,7 +2210,7 @@ public class MqlToAlgConverter {
             }
 
             return node;
-        } else if ( includes.size() > 0 ) {
+        } else if ( !includes.isEmpty() ) {
 
             if ( !includes.containsKey( DocumentType.DOCUMENT_ID ) ) {
                 includes.put( DocumentType.DOCUMENT_ID, getIdentifier( DocumentType.DOCUMENT_ID, rowType ) );
@@ -2336,7 +2304,6 @@ public class MqlToAlgConverter {
             }
         }
     }
-
 
 
 }
