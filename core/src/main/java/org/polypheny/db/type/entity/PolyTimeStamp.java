@@ -42,7 +42,7 @@ public class PolyTimeStamp extends PolyTemporal {
 
     public static final DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-    public Long milliSinceEpoch; // normalized to utz
+    public Long milliSinceEpoch; // normalized to UTC
 
 
     public PolyTimeStamp( Long milliSinceEpoch ) {

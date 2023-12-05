@@ -195,11 +195,10 @@ public abstract class BaseRouter implements Router {
         AllocationPlacement longestPlacement = catalog.getSnapshot().alloc().getPlacement( adapterIdWithMostPlacements, table.id ).orElseThrow();
         for ( LogicalColumn column : logicalColumns ) {
             Optional<AllocationColumn> optionalColumn = catalog.getSnapshot().alloc().getColumn( longestPlacement.id, column.id );
-            if ( optionalColumn.isPresent() ) {
-                placementList.add( optionalColumn.get() );
-            } else {
-                missingColumns.add( column );
-            }
+            optionalColumn.ifPresentOrElse(
+                    placementList::add,
+                    () -> missingColumns.add( column )
+            );
         }
 
         Map<Long, List<AllocationColumn>> placementToColumns = new HashMap<>();

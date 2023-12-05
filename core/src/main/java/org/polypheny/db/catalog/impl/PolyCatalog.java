@@ -115,9 +115,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     private final AtomicBoolean dirty = new AtomicBoolean( false );
 
     @Getter
-    PropertyChangeListener changeListener = evt -> {
-        dirty.set( true );
-    };
+    PropertyChangeListener changeListener = evt -> dirty.set( true );
 
 
     public PolyCatalog() {
@@ -183,9 +181,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
         // re-add physical namespace, we could check first, but not necessary
 
-        if ( getStoreSnapshot( entity.adapterId ).isPresent() ) {
-            getStoreSnapshot( entity.adapterId ).get().addNamespace( entity.namespaceId, adapter.getCurrentNamespace() );
-        }
+        getStoreSnapshot( entity.adapterId ).ifPresent( e -> e.addNamespace( entity.namespaceId, adapter.getCurrentNamespace() ) );
 
     }
 
