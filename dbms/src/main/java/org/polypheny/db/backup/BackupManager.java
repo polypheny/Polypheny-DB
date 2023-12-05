@@ -26,14 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertSchema;
-import org.polypheny.db.backup.dependencies.DependencyAssembler;
 import org.polypheny.db.backup.dependencies.DependencyManager;
 import org.polypheny.db.backup.dependencies.EntityReferencer;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.*;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
@@ -109,7 +108,6 @@ public class BackupManager {
 
     public void startDataGathering() {
         this.backupInformationObject = new BackupInformationObject();
-        GatherEntries gatherEntries = new GatherEntries(transactionManager);
         GatherSchema gatherSchema = new GatherSchema();
 
         //gatherEntries.start();
@@ -118,6 +116,14 @@ public class BackupManager {
 
         // how/where do i safe the data
         //gatherEntries.start();
+
+
+        List<String> tablesForDataCollection = tableDataToBeGathered();
+        List<Pair<Long, String>> collectionsForDataCollection = collectionDataToBeGathered();
+        List<Long> graphNamespaceIds = collectGraphNamespaceIds();
+        GatherEntries gatherEntries = new GatherEntries(transactionManager, tablesForDataCollection, collectionsForDataCollection, graphNamespaceIds);
+        gatherEntries.start();
+
 
     }
 
@@ -220,6 +226,70 @@ public class BackupManager {
 
         insertSchema.start( backupInformationObject );
         log.info( "inserting done" );
+    }
+
+
+    /**
+     * returns a list of all table names where the entry-data should be collected for the backup (right now, all of them, except sources)
+     * @return list of names with the format: namespacename.tablename
+     */
+    private List<String> tableDataToBeGathered() {
+        List<String> tableDataToBeGathered = new ArrayList<>();
+        List<LogicalNamespace> relationalNamespaces = backupInformationObject.getRelNamespaces();
+
+        if (!relationalNamespaces.isEmpty()) {
+            for ( LogicalNamespace relationalNamespace : relationalNamespaces ) {
+                List<LogicalEntity> tables = backupInformationObject.getTables().get( relationalNamespace.id );
+                if(!tables.isEmpty() ) {
+                    for ( LogicalEntity table : tables ) {
+                        if (!(table.entityType.equals( EntityType.SOURCE ))) {
+                            tableDataToBeGathered.add( relationalNamespace.name + "." + table.name );
+                        }
+                    }
+                }
+            }
+        }
+        /*
+        for ( Map.Entry<Long, List<LogicalEntity>> entry : backupInformationObject.getTables().entrySet() ) {
+            for ( LogicalEntity table : entry.getValue() ) {
+                if (!(table.entityType.equals( EntityType.SOURCE ))) {
+                    tableDataToBeGathered.add( relationalNamespace.name + "." + table.name );
+                }
+            }
+        }
+
+         */
+        return tableDataToBeGathered;
+    }
+
+
+    /**
+     * returns a list of pairs with all collection names and their corresponding namespaceId where the entry-data should be collected for the backup (right now all of them)
+     * @return list of pairs with the format: <namespaceId, collectionName>
+     */
+    private List<Pair<Long, String>> collectionDataToBeGathered() {
+        List<Pair<Long, String>> collectionDataToBeGathered = new ArrayList<>();
+
+        for ( Map.Entry<Long, List<LogicalEntity>> entry : backupInformationObject.getCollections().entrySet() ) {
+            for ( LogicalEntity collection : entry.getValue() ) {
+                collectionDataToBeGathered.add( new Pair<>( entry.getKey(), collection.name ) );
+            }
+        }
+
+        return collectionDataToBeGathered;
+    }
+
+
+    /**
+     * gets a list of all graph namespaceIds
+     * @return list of all graph namespaceIds
+     */
+    private List<Long> collectGraphNamespaceIds() {
+        List<Long> graphNamespaceIds = new ArrayList<>();
+        for ( Map.Entry<Long, LogicalEntity> entry : backupInformationObject.getGraphs().entrySet() ) {
+            graphNamespaceIds.add( entry.getKey() );
+        }
+        return graphNamespaceIds;
     }
 
 }

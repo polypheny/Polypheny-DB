@@ -238,7 +238,7 @@ public class BackupInformationObject {
                 bupEntityList.add( tempBupEntity );
 
 
-                // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject, but only for relational entities
+                // create entityReferences for each table (if there is a reference) with tableDependencies, and add entityReferences to the backupinformationobject, but only for relational entit
                 if (entity.getEntityType().equals( EntityType.ENTITY) && !(entity.getDataModel().equals( DataModel.DOCUMENT ) || entity.getDataModel().equals( DataModel.GRAPH ))) {
                     EntityReferencer entityReferencer = new EntityReferencer( entity.getId(), BackupEntityType.TABLE );
                     if (tableDependencies.containsKey( entity.getId() )) {
