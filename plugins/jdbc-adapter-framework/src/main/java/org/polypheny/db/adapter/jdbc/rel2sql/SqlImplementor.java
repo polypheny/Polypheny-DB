@@ -178,11 +178,8 @@ public abstract class SqlImplementor {
         for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
             final Result result = visitChild( input.i, input.e );
             if ( node == null ) {
-                if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
-                    node = result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() );
-                } else {
-                    node = result.asSelect();
-                }
+                node = input.getValue().unwrap( JdbcScan.class ).map( i -> result.asSelect( i.getEntity().getNodeList() ) )
+                        .orElse( result.asSelect() );
             } else {
                 if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
                     node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() ) );

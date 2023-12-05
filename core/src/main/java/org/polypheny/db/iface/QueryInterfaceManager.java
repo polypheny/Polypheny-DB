@@ -73,8 +73,7 @@ public class QueryInterfaceManager {
 
 
     public QueryInterface getQueryInterface( String uniqueName ) {
-        uniqueName = uniqueName.toLowerCase();
-        return interfaceByName.get( uniqueName );
+        return interfaceByName.get( uniqueName.toLowerCase() );
     }
 
 

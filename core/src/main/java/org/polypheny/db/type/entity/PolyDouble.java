@@ -190,7 +190,6 @@ public class PolyDouble extends PolyNumber {
                 @Override
                 public void encode( BinaryOutput out, PolyDouble item ) {
                     out.writeUTF8Nullable( item.value == null ? null : item.value.toString() );
-                    ;
                 }
 
 

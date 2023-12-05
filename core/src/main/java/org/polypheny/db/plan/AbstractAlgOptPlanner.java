@@ -105,9 +105,7 @@ public abstract class AbstractAlgOptPlanner implements AlgOptPlanner {
         this.context = context;
 
         Optional<CancelFlag> oCancelFlag = context.unwrap( CancelFlag.class );
-        this.cancelFlag = oCancelFlag.isPresent()
-                ? oCancelFlag.get().atomicBoolean
-                : new AtomicBoolean();
+        this.cancelFlag = oCancelFlag.map( c -> c.atomicBoolean ).orElseGet( AtomicBoolean::new );
 
         // Add abstract {@link AlgNode} classes. No RelNodes will ever be registered with these types, but some operands may use them.
         classes.add( AlgNode.class );
