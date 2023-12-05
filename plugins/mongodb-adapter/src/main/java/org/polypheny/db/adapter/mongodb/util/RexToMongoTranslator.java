@@ -38,6 +38,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
@@ -129,6 +130,14 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         }
         implementor.physicalMapper.add( inFields.get( inputRef.getIndex() ) );
         return MongoRules.maybeQuote( "$" + inFields.get( inputRef.getIndex() ) );
+    }
+
+
+    @Override
+    public String visitNameRef( RexNameRef nameRef ) {
+        return nameRef.getIndex()
+                .map( n -> "$" + implementor.getRowType().getFieldNames().get( n ) + "." + nameRef.name )
+                .orElse( MongoRules.maybeQuote( "$" + nameRef.names.get( nameRef.names.size() - 1 ) ) );
     }
 
 
@@ -254,8 +263,6 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             BsonArray array = new BsonArray();
             array.addAll( translateList( call.operands ).stream().map( BsonString::new ).collect( Collectors.toList() ) );
             return array.toString();
-        } else if ( call.isA( Kind.MQL_QUERY_VALUE ) ) {
-            return MongoRules.translateDocValueAsKey( implementor.getRowType(), call, "$" );
         } else if ( call.isA( Kind.MQL_ITEM ) ) {
             RexNode leftPre = call.operands.get( 0 );
             String left = leftPre.accept( this );

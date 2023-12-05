@@ -40,7 +40,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static final String FOLDER_NAME = "monitoring";
-    protected final HashMap<Class<?>, HashMap<UUID, MonitoringDataPoint>> data = new HashMap<>();
+    protected final HashMap<Class<?>, Map<UUID, MonitoringDataPoint>> data = new HashMap<>();
     //protected DB simpleBackendDb;
     protected HashMap<String, QueryPostCostImpl> queryPostCosts;
 
@@ -53,7 +53,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     @Override
     public void dataPoint( @NonNull MonitoringDataPoint dataPoint ) {
-        HashMap<UUID, MonitoringDataPoint> table = this.data.get( dataPoint.getClass() );
+        Map<UUID, MonitoringDataPoint> table = this.data.get( dataPoint.getClass() );
         if ( table == null ) {
             this.createPersistentTable( dataPoint.getClass() );
             table = this.data.get( dataPoint.getClass() );
@@ -148,7 +148,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
 
     private List<Class<?>> getAllDataPointClasses() {
-        return data.keySet().stream().collect( Collectors.toList() );
+        return new ArrayList<>( data.keySet() );
     }
 
 
@@ -263,7 +263,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
 
     private void createPersistentTable( Class<? extends MonitoringDataPoint> classPersistentData ) {
         if ( classPersistentData != null ) {
-            final HashMap<UUID, MonitoringDataPoint> treeMap = new HashMap<>();//simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
+            final Map<UUID, MonitoringDataPoint> treeMap = new HashMap<>();//simpleBackendDb.treeMap( classPersistentData.getName(), Serializer.UUID, Serializer.JAVA ).createOrOpen();
             data.put( classPersistentData, treeMap );
         }
     }

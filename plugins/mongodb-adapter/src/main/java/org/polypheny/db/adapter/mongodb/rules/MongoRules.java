@@ -20,20 +20,17 @@ import java.util.AbstractList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
-import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.SingleAlg;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.AlgFactories;
@@ -65,6 +62,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
@@ -203,14 +201,14 @@ public class MongoRules {
     }
 
 
-    public static String translateDocValueAsKey( AlgDataType rowType, RexCall call, String prefix ) {
-        BsonValue value = translateDocValue( rowType, call, prefix );
+    public static String translateDocValueAsKey( AlgDataType rowType, RexNameRef call ) {
+        BsonValue value = translateDocValue( rowType, call );
         return value.isString() ? value.asString().getValue() : value.asDocument().toJson();
     }
 
 
-    public static BsonValue translateDocValue( AlgDataType rowType, RexCall call, String prefix ) {
-        RexIndexRef parent = (RexIndexRef) call.getOperands().get( 0 );
+    public static BsonValue translateDocValue( AlgDataType rowType, RexNameRef ref ) {
+        /*RexIndexRef parent = (RexIndexRef) call.getOperands().get( 0 );
 
         if ( call.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
             return new BsonDynamic( (RexDynamicParam) call.operands.get( 1 ) ).setIsValue( true, prefix + rowType.getFieldNames().get( parent.getIndex() ) );
@@ -220,7 +218,10 @@ public class MongoRules {
         return new BsonString( prefix + names.operands
                 .stream()
                 .map( n -> ((RexLiteral) n).value.asString().value )
-                .collect( Collectors.joining( "." ) ) );
+                .collect( Collectors.joining( "." ) ) );*/
+        return new BsonString( ref.getIndex()
+                .map( i -> "$" + rowType.getFieldNames().get( i ) + "." + ref.getName() )
+                .orElse( "$" + ref.getName() ) );
     }
 
 

@@ -17,38 +17,57 @@
 package org.polypheny.db.rex;
 
 import java.util.List;
+import java.util.Optional;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RexNameRef extends RexVariable {
 
-    List<String> names;
+    @NotNull
+    public List<String> names;
+    @Nullable
+    Integer index;
+
+
+    public Optional<Integer> getIndex() {
+        return Optional.ofNullable( index );
+    }
 
 
     /**
      * Regular expression, that references an input field by name
      */
-    public RexNameRef( List<String> names, AlgDataType type ) {
+    public RexNameRef( List<String> names, @Nullable Integer index, AlgDataType type ) {
         super( String.join( ".", names ), type );
         this.names = names;
+        this.index = index;
     }
 
 
-    public RexNameRef( String name, AlgDataType type ) {
-        this( List.of( name.split( "\\." ) ), type );
+    public RexNameRef( String name, @Nullable Integer index, AlgDataType type ) {
+        this( List.of( name.split( "\\." ) ), index, type );
     }
 
 
-    public static RexNameRef create( List<String> names, AlgDataType type ) {
-        return new RexNameRef( names, type );
+    public static RexNameRef create( List<String> names, @Nullable Integer index, AlgDataType type ) {
+        return new RexNameRef( names, index, type );
     }
 
 
-    public static RexNameRef create( String name, AlgDataType type ) {
-        return new RexNameRef( List.of( name.split( "\\." ) ), type );
+    public static RexNameRef create( String name, @Nullable Integer index, AlgDataType type ) {
+        return new RexNameRef( List.of( name.split( "\\." ) ), index, type );
+    }
+
+
+    @Override
+    public Kind getKind() {
+        return Kind.NAME_INDEX_REF;
     }
 
 

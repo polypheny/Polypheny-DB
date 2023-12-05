@@ -37,6 +37,7 @@ import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
@@ -69,7 +70,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -205,7 +205,6 @@ public class MqlToAlgConverter {
     }
 
 
-    private boolean _dataExists = true;
     private boolean elemMatchActive = false;
     private long namespaceId;
     private boolean notActive = false;
@@ -229,7 +228,6 @@ public class MqlToAlgConverter {
      * This class is reused and has to reset these values each time this happens
      */
     private void resetDefaults() {
-        _dataExists = true;
         notActive = false;
         elemMatchActive = false;
         entity = null;
@@ -259,13 +257,7 @@ public class MqlToAlgConverter {
             throw new GenericRuntimeException( "The used collection does not exist." );
         }
 
-        AlgNode node;
-
-        if ( entity.dataModel == DataModel.RELATIONAL ) {
-            _dataExists = false;
-        }
-
-        node = LogicalDocumentScan.create( cluster, entity );
+        AlgNode node = LogicalDocumentScan.create( cluster, entity );
         this.usesDocumentModel = true;
 
         AlgDataType rowType = entity.getRowType();
@@ -478,9 +470,6 @@ public class MqlToAlgConverter {
                     List<String> childNames = Arrays.asList( splits );
                     childNames.remove( 0 );
                     childName = String.join( ".", childNames );
-                } else if ( _dataExists ) {
-                    parent = DocumentType.DOCUMENT_DATA;
-                    childName = nodeEntry.getKey();
                 }
 
                 if ( childName == null ) {
@@ -497,7 +486,7 @@ public class MqlToAlgConverter {
             }
         }
 
-        if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) && directUpdates.size() == 0 ) {
+        if ( !Collections.disjoint( directUpdates.entrySet(), childUpdates.keySet() ) && directUpdates.isEmpty() ) {
             throw new GenericRuntimeException( "DML of a field and its subfields at the same time is not possible" );
         }
 
@@ -905,7 +894,6 @@ public class MqlToAlgConverter {
                     List.of()
             );
         }
-        _dataExists = false;
         return project;
     }
 
@@ -1097,7 +1085,7 @@ public class MqlToAlgConverter {
                 // when using aggregations MongoQl automatically casts to doubles
                 String key = doc.get( doc.getFirstKey() ).asString().getValue().substring( 1 );
                 //nodes.add( new RexNameRef( key, nullableDouble ) );
-                nameNodes.put( entry.getKey(), new RexNameRef( key, nullableDouble ) );
+                nameNodes.put( entry.getKey(), new RexNameRef( key, null, nullableDouble ) );
             }
         }
 
@@ -1145,7 +1133,7 @@ public class MqlToAlgConverter {
 
             node = LogicalDocumentAggregate.create(
                     node,
-                    new RexNameRef( groupName, DocumentType.ofDoc() ),
+                    new RexNameRef( groupName, null, DocumentType.ofDoc() ),
                     convertedAggs );
         } else {
             node = LogicalDocumentAggregate.create(
@@ -1586,8 +1574,39 @@ public class MqlToAlgConverter {
             }*/
 
         //}
-        // the default _data field does still exist
-        return translateDocValue( 0, rowType, parentKey, useAccess );
+        // we look if we already extracted a part of the document
+        Integer index = null;
+        int matchLength = 0;
+        for ( String rowName : rowNames ) {
+            StringBuilder partialKey = new StringBuilder();
+            int i = 1;
+            for ( String key : keys ) {
+                partialKey.append( key );
+
+                if ( rowName.contentEquals( partialKey ) ) {
+                    if ( i > matchLength ) {
+                        matchLength = i;
+                        index = rowNames.indexOf( rowName );
+                    }
+                    break;
+                }
+                i++;
+            }
+        }
+        if ( matchLength > 0 ) {
+            // we found a partial match
+            // we have to remove the already matched part from the key
+            StringBuilder newKey = new StringBuilder();
+            for ( int i = matchLength; i < keys.length; i++ ) {
+                newKey.append( keys[i] );
+                if ( i < keys.length - 1 ) {
+                    newKey.append( "." );
+                }
+            }
+            return translateDocValue( index, rowType, newKey.toString(), useAccess );
+        }
+
+        return translateDocValue( index, rowType, parentKey, useAccess );
 
     }
 
@@ -1769,11 +1788,7 @@ public class MqlToAlgConverter {
         if ( index < 0 ) {
             index = rowType.getFieldNames().indexOf( parentKey.split( "\\." )[0] );
             if ( index < 0 ) {
-                if ( _dataExists ) {
-                    index = 0;
-                } else {
-                    throw new GenericRuntimeException( "The field does not exist in the collection" );
-                }
+                throw new GenericRuntimeException( "The field does not exist in the collection" );
             }
         }
         return index;
@@ -1962,7 +1977,7 @@ public class MqlToAlgConverter {
      * @param useAccess if access or input operations should be used
      * @return the node, which defines the retrieval of the underlying key
      */
-    private RexNode translateDocValue( int index, AlgDataType rowType, String key, boolean useAccess ) {
+    private RexNode translateDocValue( @Nullable Integer index, AlgDataType rowType, String key, boolean useAccess ) {
         RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
         if ( elemMatchActive ) {
@@ -1970,12 +1985,14 @@ public class MqlToAlgConverter {
         }
         filter = getStringArray( names );
 
-        return new RexCall(
+        return new RexNameRef( names, index, DocumentType.ofDoc() );
+
+        /*return new RexCall(
                 new DocumentType(),
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_QUERY_VALUE ),
                 Arrays.asList(
                         RexIndexRef.of( index, rowType ),
-                        filter ) );
+                        filter ) );*/
     }
 
 
@@ -2165,24 +2182,21 @@ public class MqlToAlgConverter {
         }
 
         if ( !excludes.isEmpty() ) {
-            if ( _dataExists ) {
 
-                return LogicalDocumentProject.create( node, includes, excludes );
-            } else {
-                // we already projected the _data field away and have to work with what we got
-                List<RexNode> values = new ArrayList<>();
-                List<String> names = new ArrayList<>();
+            // we already projected the _data field away and have to work with what we got
+            List<RexNode> values = new ArrayList<>();
+            List<String> names = new ArrayList<>();
 
-                for ( AlgDataTypeField field : rowType.getFields() ) {
-                    if ( !excludes.contains( field.getName() ) ) {
-                        names.add( field.getName() );
-                        values.add( RexIndexRef.of( field.getIndex(), rowType ) );
-                    }
+            for ( AlgDataTypeField field : rowType.getFields() ) {
+                if ( !excludes.contains( field.getName() ) ) {
+                    names.add( field.getName() );
+                    values.add( RexIndexRef.of( field.getIndex(), rowType ) );
                 }
-
-                return LogicalDocumentProject.create( node, values, names );
             }
-        } else if ( isAddFields && _dataExists ) {
+
+            return LogicalDocumentProject.create( node, values, names );
+
+        } else if ( isAddFields ) {
             List<String> names = new ArrayList<>();
             names.add( null ); // we want it at the root
 

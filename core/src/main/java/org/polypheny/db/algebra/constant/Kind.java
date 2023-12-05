@@ -620,6 +620,12 @@ public enum Kind {
     INPUT_REF,
 
     /**
+     * Reference to an input field, with a qualified name (and perhaps an identifier)
+     *
+     * (Only used at the RexNode level.)
+     */
+    NAME_INDEX_REF,
+    /**
      * Reference to an input field, with a qualified name and an identifier
      *
      * (Only used at the RexNode level.)

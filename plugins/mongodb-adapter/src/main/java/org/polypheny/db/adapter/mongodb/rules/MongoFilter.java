@@ -56,6 +56,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
@@ -633,7 +634,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( node.isA( Kind.INPUT_REF ) ) {
                 return rowType.getFieldNames().get( ((RexIndexRef) node).getIndex() );
             } else {
-                return MongoRules.translateDocValueAsKey( rowType, (RexCall) node, "" );
+                return MongoRules.translateDocValueAsKey( rowType, (RexNameRef) node );
             }
         }
 
@@ -765,8 +766,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return;
             }
 
-            if ( left instanceof RexCall ) {
-                b = translateDocValue( op, (RexCall) left, right );
+            if ( left.isA( Kind.NAME_INDEX_REF ) ) {
+                b = translateDocValue( op, left.unwrap( RexNameRef.class ).orElseThrow(), right );
                 if ( b ) {
                     return;
                 }
@@ -782,7 +783,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( left.isA( Kind.INPUT_REF ) ) {
                 l = new BsonString( "$" + getPhysicalName( (RexIndexRef) left ) );
             } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
-                l = MongoRules.translateDocValue( rowType, (RexCall) left, "$" );
+                l = MongoRules.translateDocValue( rowType, (RexNameRef) left );
             } else {
                 return false;
             }
@@ -790,7 +791,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             if ( right.isA( Kind.INPUT_REF ) ) {
                 r = new BsonString( "$" + getPhysicalName( (RexIndexRef) right ) );
             } else if ( right.isA( Kind.MQL_QUERY_VALUE ) ) {
-                r = MongoRules.translateDocValue( rowType, (RexCall) right, "$" );
+                r = MongoRules.translateDocValue( rowType, (RexNameRef) right );
             } else {
                 return false;
             }
@@ -1045,7 +1046,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                     }
 
                 case MQL_QUERY_VALUE:
-                    return translateDocValue( op, (RexCall) left, right );
+                    return translateDocValue( op, (RexNameRef) left, right );
 
                 // fall through
 
@@ -1064,25 +1065,20 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was possible
          */
         private boolean translateDynamic( String op, RexNode left, RexDynamicParam right ) {
-            if ( left.getKind() == Kind.INPUT_REF ) {
-                attachCondition( op, getPhysicalName( (RexIndexRef) left ), new BsonDynamic( right ) );
-                return true;
-            }
-            if ( left.getKind() == Kind.DISTANCE ) {
-                return translateFunction( op, (RexCall) left, right );
-            }
-            if ( left.getKind() == Kind.OTHER_FUNCTION ) {
-                return translateItem( op, (RexCall) left, right );
-            }
-            if ( left.getKind() == Kind.MOD ) {
-                return translateMod( (RexCall) left, right );
-            }
-
-            if ( left.getKind() == Kind.MQL_QUERY_VALUE ) {
-                return translateDocValue( op, (RexCall) left, right );
-            }
-            if ( left.getKind() == Kind.CAST ) {
-                return translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
+            switch ( left.getKind() ) {
+                case INPUT_REF:
+                    attachCondition( op, getPhysicalName( (RexIndexRef) left ), new BsonDynamic( right ) );
+                    return true;
+                case DISTANCE:
+                    return translateFunction( op, (RexCall) left, right );
+                case OTHER_FUNCTION:
+                    return translateItem( op, (RexCall) left, right );
+                case MOD:
+                    return translateMod( (RexCall) left, right );
+                case NAME_INDEX_REF:
+                    return translateDocValue( op, (RexNameRef) left, right );
+                case CAST:
+                    return translateDynamic( op, ((RexCall) left).operands.get( 0 ), right );
             }
 
             return false;
@@ -1094,19 +1090,19 @@ public class MongoFilter extends Filter implements MongoAlg {
          * to the correct BSON form
          *
          * @param op the operation, which specifies how the left has to match right
-         * @param left the unparsed DOC_QUERY_VALUE
+         * @param left
          * @param right the condition, which has to match the DOC_QUERY_VALUE
          * @return if the translation was successful
          */
-        private boolean translateDocValue( String op, RexCall left, RexNode right ) {
-            BsonValue item = getItem( left, right );
+        private boolean translateDocValue( String op, RexNameRef left, RexNode right ) {
+            BsonValue item = getItem( right );
             if ( item == null ) {
                 return false;
             }
-            if ( !left.getOperands().get( 0 ).isA( Kind.INPUT_REF ) || left.operands.size() != 2 ) {
+            /*if ( !left.getOperands().get( 0 ).isA( Kind.INPUT_REF ) || left.operands.size() != 2 ) {
                 return false;
-            }
-            if ( left.operands.get( 1 ) instanceof RexDynamicParam || left.operands.get( 1 ) instanceof RexCall ) {
+            }*/
+            /*if ( left.operands.get( 1 ) instanceof RexDynamicParam || left.operands.get( 1 ) instanceof RexCall ) {
                 if ( left.operands.get( 1 ) instanceof RexCall && left.operands.get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) && ((RexCall) left.operands.get( 1 )).operands.size() == 0 && this.tempElem != null ) {
                     String mergedName = handleElemMatch( left );
 
@@ -1116,9 +1112,9 @@ public class MongoFilter extends Filter implements MongoAlg {
 
                 attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left, "" ), item );
                 return true;
-            }
-
-            return false;
+            }*/
+            attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
+            return true;
             /*if ( !(left.operands.get( 1 ) instanceof RexCall) || !left.getOperands().get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) ) {
                 return false;
             }
@@ -1172,7 +1168,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 RexNode r = left.operands.get( 1 );
 
                 if ( l.isA( Kind.INPUT_REF ) ) {
-                    BsonValue item = getItem( left, r );
+                    BsonValue item = getItem( r );
                     if ( item == null ) {
                         return false;
                     }
@@ -1193,18 +1189,16 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
         @Nullable
-        private BsonValue getItem( RexCall l, RexNode r ) {
+        private BsonValue getItem( RexNode r ) {
             BsonValue item;
             if ( r.isA( Kind.LITERAL ) ) {
                 item = BsonUtil.getAsBson( (RexLiteral) r, bucket );
             } else if ( r.isA( Kind.DYNAMIC_PARAM ) ) {
                 item = new BsonDynamic( (RexDynamicParam) r );
+            } else if ( r.isA( Kind.NAME_INDEX_REF ) ) {
+                item = MongoRules.translateDocValue( rowType, (RexNameRef) r );
             } else if ( r instanceof RexCall ) {
-                if ( r.getKind() == Kind.MQL_QUERY_VALUE ) {
-                    item = MongoRules.translateDocValue( rowType, (RexCall) r, "$" );
-                } else {
-                    item = getArray( (RexCall) r );
-                }
+                item = getArray( (RexCall) r );
             } else {
                 return null;
             }
