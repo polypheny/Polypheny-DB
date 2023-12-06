@@ -16,10 +16,12 @@
 
 package org.polypheny.db.backup.datagatherer;
 
+import java.io.File;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
@@ -31,16 +33,18 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
 public class GatherEntries {
     private final TransactionManager transactionManager;
-    private final List<String> tablesToBeCollected;
+    private final List<Pair<String, String>> tablesToBeCollected;
     private final List<Pair<Long, String>> collectionsToBeCollected;
     private final List<Long> graphNamespaceIds;
 
 
-    public GatherEntries( TransactionManager transactionManager, List<String> tablesToBeCollected, List<Pair<Long, String>> collectionsForDataCollection, List<Long> graphNamespaceIds ) {
+
+    public GatherEntries( TransactionManager transactionManager, List<Pair<String, String>> tablesToBeCollected, List<Pair<Long, String>> collectionsForDataCollection, List<Long> graphNamespaceIds ) {
         this.transactionManager = transactionManager;
         this.tablesToBeCollected = tablesToBeCollected;
         this.collectionsToBeCollected = collectionsForDataCollection;
@@ -54,11 +58,17 @@ public class GatherEntries {
 
     public void start() {
         if (!tablesToBeCollected.isEmpty()){
-            for ( String nsTableName : tablesToBeCollected ) {
+            //go through each pair in tablesToBeCollectedList
+            for ( Pair<String, String> table : tablesToBeCollected) {
                 //TODO(FF): exclude default columns? no, how do you differentiate for each line if it is not a default value
-                String query = "SELECT * FROM " + nsTableName;
+                String query = String.format( "SELECT * FROM %s.%s" , table.getKey(), table.getValue() );
                 executeQuery( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
             }
+            /*
+            for ( String nsTableName : tablesToBeCollected ) {
+                String query = "SELECT * FROM " + nsTableName;
+                executeQuery( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
+            } */
         }
 
         if (!collectionsToBeCollected.isEmpty()){
@@ -70,10 +80,15 @@ public class GatherEntries {
 
         if (!graphNamespaceIds.isEmpty()){
             for ( Long graphNamespaceId : graphNamespaceIds ) {
-                String query = "MATCH (n) RETURN n";
+                //String query = "MATCH (n) RETURN n";
+                String query = "MATCH (*) RETURN n"; //todo: result is polygraph
                 executeQuery( query, DataModel.GRAPH, graphNamespaceId );
             }
         }
+
+        log.info( "collected entry data" );
+        initializeFileLocation();
+        log.info( "folder was created" );
 
     }
 
@@ -86,15 +101,23 @@ public class GatherEntries {
         Statement statement = null;
         PolyImplementation result;
 
+        /*
+        printed out results of three namespaces with little test entries
+        09:49:55.957 INFO [JettyServerThreadPool-32]: [[1, Best Album Ever!, 10], [2, Pretty Decent Album..., 15], [3, Your Ears will Bleed!, 13]]
+        09:50:10.578 INFO [JettyServerThreadPool-32]: [[{email:jane@example.com,name:Jane Doe,_id:6570348c4023777b64ff8be8}], [{email:jim@example.com,name:Jim Doe,_id:6570348c4023777b64ff8be9}]]
+        09:50:12.880 INFO [JettyServerThreadPool-32]: [[PolyNode{id=5823e305-17bb-4fb7-bd17-2108a91acb70, properties=PolyMap(map={age=45, name=Ann, depno=13}), labels=PolyList(value=[Person])}], [PolyNode{id=e8772eff-10ab-4436-a693-9e3f2f0af6d2, properties=PolyMap(map={age=30, name=John, depno=13}), labels=PolyList(value=[Person2])}]]
+
+         */
+
         switch ( dataModel ) {
             case RELATIONAL:
                 try {
                     // get a transaction and a statement
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                    //TODO(FF): is the list here when there are subqueries? or what was the list for again?
-                    List<ExecutedContext> executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement );
+                    //TODO(FF): be aware for writing into file with batches that you dont overwrite the entries already in the file (evtl you need to read the whole file again
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
                     // in case of results
                     ResultIterator iter = executedQuery.getIterator();
                     while ( iter.hasMoreRows() ) {
@@ -107,9 +130,9 @@ public class GatherEntries {
                         for ( List<PolyValue> row : resultsPerTable ) {
                             for ( PolyValue polyValue : row ) {
                                 String test = polyValue.serialize();
-                                String jsonString = polyValue.toJson();
+                                String jsonString = polyValue.toTypedJson();    //larger, testing easier, replace later
                                 PolyValue deserialized = PolyValue.deserialize( test );
-                                //PolyValue deserialized2 = PolyValue.deserialize( jsonString );    // gives nullpointerexception
+                                PolyValue deserialized2 = PolyValue.fromTypedJson( jsonString, PolyValue.class );    // gives nullpointerexception
                                 int jhg=87;
                             }
                         }
@@ -139,7 +162,6 @@ public class GatherEntries {
                 }
                 break;
 
-            //TODO(FF): fix rest of data collection (just copied, nothing done yet)
             case GRAPH:
                 try {
                     // get a transaction and a statement
@@ -184,6 +206,24 @@ public class GatherEntries {
         }
 
          */
+    }
+
+
+    private static void initializeFileLocation() {
+        PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
+        File applicationConfDir = null;  //todo: wär eig class field (private static)
+        // String currentConfigurationDirectoryName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;    //static string in class field
+        String currentConfigurationDirectoryName = "backup";
+        String currentConfigurationFileName = "backup.bu";
+        File applicationConfFile = homeDirManager.registerNewFolder( currentConfigurationDirectoryName );   //there is complicated thing in ConfigManager>loadConfigFile()
+        // Create config directory and file if they do not already exist
+        //PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
+        if ( applicationConfDir == null ) {
+            applicationConfDir = homeDirManager.registerNewFolder( currentConfigurationDirectoryName );
+        } else {
+            applicationConfDir = homeDirManager.registerNewFolder( applicationConfDir.getParentFile(), currentConfigurationDirectoryName );
+        }
+        applicationConfFile = homeDirManager.registerNewFile( applicationConfDir, currentConfigurationFileName );
     }
 
 }

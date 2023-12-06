@@ -49,6 +49,7 @@ public class BackupManager {
     @Getter
     private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
+    public static int batchSize = 1;  //#rows (100 for the beginning)
     //private final Logger logger;
 
 
@@ -118,7 +119,7 @@ public class BackupManager {
         //gatherEntries.start();
 
 
-        List<String> tablesForDataCollection = tableDataToBeGathered();
+        List<Pair<String, String>> tablesForDataCollection = tableDataToBeGathered();
         List<Pair<Long, String>> collectionsForDataCollection = collectionDataToBeGathered();
         List<Long> graphNamespaceIds = collectGraphNamespaceIds();
         GatherEntries gatherEntries = new GatherEntries(transactionManager, tablesForDataCollection, collectionsForDataCollection, graphNamespaceIds);
@@ -231,10 +232,10 @@ public class BackupManager {
 
     /**
      * returns a list of all table names where the entry-data should be collected for the backup (right now, all of them, except sources)
-     * @return list of names with the format: namespacename.tablename
+     * @return list of pairs with the format: namespacename, tablename with all the names
      */
-    private List<String> tableDataToBeGathered() {
-        List<String> tableDataToBeGathered = new ArrayList<>();
+    private List<Pair<String, String>> tableDataToBeGathered() {
+        List<Pair<String, String>> tableDataToBeGathered = new ArrayList<>();
         List<LogicalNamespace> relationalNamespaces = backupInformationObject.getRelNamespaces();
 
         if (!relationalNamespaces.isEmpty()) {
@@ -243,7 +244,8 @@ public class BackupManager {
                 if(!tables.isEmpty() ) {
                     for ( LogicalEntity table : tables ) {
                         if (!(table.entityType.equals( EntityType.SOURCE ))) {
-                            tableDataToBeGathered.add( relationalNamespace.name + "." + table.name );
+                            Pair pair = new Pair<>( relationalNamespace.name, table.name );
+                            tableDataToBeGathered.add( pair );
                         }
                     }
                 }
