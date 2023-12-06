@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -184,13 +185,15 @@ public class MongoFilter extends Filter implements MongoAlg {
         private BsonValue removeUnnecessaryGate( BsonValue raw ) {
             BsonValue value = raw;
             if ( raw.isDocument() ) {
-                for ( Entry<String, BsonValue> entry : raw.asDocument().entrySet() ) {
-                    if ( entry.getKey().equals( "$and" ) || entry.getKey().equals( "$or" ) ) {
-                        if ( entry.getValue().isArray() && entry.getValue().asArray().size() == 1 ) {
-                            value = entry.getValue().asArray().get( 0 );
-                        }
-                    }
+                BsonDocument document = raw.asDocument();
+                if ( document.size() == 1 && (document.getFirstKey().equals( "$and" ) || document.getFirstKey().equals( "$or" )) && document.get( document.getFirstKey() ).isArray() && document.get( document.getFirstKey() ).asArray().size() == 1 ) {
+                    return removeUnnecessaryGate( document.get( document.getFirstKey() ).asArray().get( 0 ) );
+                } else {
+                    BsonDocument newDoc = new BsonDocument();
+                    document.forEach( ( k, v ) -> newDoc.append( k, removeUnnecessaryGate( v ) ) );
+                    value = newDoc;
                 }
+
 
             } else if ( raw.isArray() ) {
                 List<BsonValue> values = new ArrayList<>();
@@ -634,8 +637,10 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return;
             }
             String left = getParamAsKey( node.operands.get( 0 ) );
+            if ( node.isA( Kind.DYNAMIC_PARAM ) ) {
+                throw new RuntimeException( "translation of " + node + " is not possible with MongoFilter" );
+            }
             String value = getLiteralAs( node, 1, p -> p.asString().value );
-
             boolean isInsensitive = getLiteralAs( node, 2, p -> p.asBoolean().value );
             boolean isMultiline = getLiteralAs( node, 3, p -> p.asBoolean().value );
             boolean doesIgnoreWhitespace = getLiteralAs( node, 4, p -> p.asBoolean().value );
@@ -647,11 +652,12 @@ public class MongoFilter extends Filter implements MongoAlg {
                     + (allowsDot ? "s" : "");
 
             attachCondition( null, left, new BsonRegularExpression( value, options ) );
+
         }
 
 
         private <E> E getLiteralAs( RexCall node, int pos, Function<PolyValue, E> transformer ) {
-            return transformer.apply( ((RexLiteral) node.operands.get( pos )).value );
+            return transformer.apply( node.operands.get( pos ).unwrap( RexLiteral.class ).orElseThrow().value );
         }
 
 
@@ -818,16 +824,16 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue r;
             if ( left.isA( Kind.INPUT_REF ) ) {
                 l = new BsonString( "$" + getPhysicalName( (RexIndexRef) left ) );
-            } else if ( left.isA( Kind.MQL_QUERY_VALUE ) ) {
-                l = MongoRules.translateDocValue( rowType, (RexNameRef) left );
+            } else if ( left.isA( Kind.NAME_INDEX_REF ) ) {
+                l = new BsonString( "$" + MongoRules.translateDocValueAsKey( rowType, (RexNameRef) left ) );
             } else {
                 return false;
             }
 
             if ( right.isA( Kind.INPUT_REF ) ) {
                 r = new BsonString( "$" + getPhysicalName( (RexIndexRef) right ) );
-            } else if ( right.isA( Kind.MQL_QUERY_VALUE ) ) {
-                r = MongoRules.translateDocValue( rowType, (RexNameRef) right );
+            } else if ( right.isA( Kind.NAME_INDEX_REF ) ) {
+                r = new BsonString( "$" + MongoRules.translateDocValueAsKey( rowType, (RexNameRef) right ) );
             } else {
                 return false;
             }
@@ -934,7 +940,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 } else if ( el instanceof RexCall ) {
                     return getOperation( ((RexCall) el).op, ((RexCall) el).operands );
                 } else {
-                    throw new RuntimeException( "Input in array is not translatable." );
+                    throw new GenericRuntimeException( "Input in array is not translatable." );
                 }
             } ).collect( Collectors.toList() ) );
             if ( right.op.getKind() == Kind.CAST ) {

@@ -79,6 +79,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
 
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE );
+
     @Getter
     private final List<AlgDataType> types;
     private final boolean asymmetric;
@@ -458,7 +460,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        if ( call.getKind().belongsTo( Kind.MQL_KIND ) && call.op.getOperatorName() == OperatorName.MQL_QUERY_VALUE ) {
+        if ( excluded.contains( call.op.getOperatorName() ) ) {
             return call;
         } else if ( call.op.getKind() == Kind.ARRAY_VALUE_CONSTRUCTOR ) {
             int i = index.getAndIncrement();

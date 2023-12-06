@@ -71,8 +71,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
  */
 class MongoEnumerator implements Enumerator<PolyValue[]> {
 
-    protected final Iterator<Document> cursor;
-    protected final Function1<Document, PolyValue[]> getter;
+    protected final Iterator<PolyValue[]> cursor;
     protected final GridFSBucket bucket;
     protected PolyValue[] current;
 
@@ -81,11 +80,9 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
      * Creates a MongoEnumerator.
      *
      * @param cursor Mongo iterator (usually a {@link com.mongodb.ServerCursor})
-     * @param getter Converts an object into a list of fields
      */
-    MongoEnumerator( Iterator<Document> cursor, Function1<Document, PolyValue[]> getter, GridFSBucket bucket ) {
+    MongoEnumerator( Iterator<PolyValue[]> cursor, GridFSBucket bucket ) {
         this.cursor = cursor;
-        this.getter = getter;
         this.bucket = bucket;
     }
 
@@ -100,8 +97,7 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
     public boolean moveNext() {
         try {
             if ( cursor.hasNext() ) {
-                Document map = cursor.next();
-                current = getter.apply( map );
+                current = cursor.next();
 
                 //current = handleTransforms( current );
 

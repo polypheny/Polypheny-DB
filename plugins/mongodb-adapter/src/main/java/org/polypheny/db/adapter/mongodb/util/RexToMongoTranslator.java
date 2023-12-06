@@ -135,10 +135,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @Override
     public String visitNameRef( RexNameRef nameRef ) {
-        return MongoRules.maybeQuote(
-                nameRef.getIndex()
-                        .map( n -> "$" + implementor.getRowType().getFieldNames().get( n ) + (nameRef.names.isEmpty() ? "" : "." + nameRef.name) )
-                        .orElse( "$" + nameRef.name ) );
+        return MongoRules.maybeQuote( "$" + nameRef.name );
     }
 
 

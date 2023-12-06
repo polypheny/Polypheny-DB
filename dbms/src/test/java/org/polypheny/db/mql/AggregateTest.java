@@ -192,7 +192,7 @@ public class AggregateTest extends MqlTestTemplate {
                         new Object[]{ 1 },
                         new Object[]{ "test" },
                         new Object[]{ 1.3 } ),
-                "test" );
+                "_id" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $group( "{\"_id\":\"$test\"}" ) );
@@ -203,7 +203,7 @@ public class AggregateTest extends MqlTestTemplate {
                         new Object[]{ null },
                         new Object[]{ 13 },
                         new Object[]{ document( kv( string( "key" ), string( "val" ) ) ) } ),
-                "key" );
+                "_id" );
 
         result = aggregate( $group( "{\"_id\":\"$key\"}" ) );
 

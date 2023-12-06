@@ -199,7 +199,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
             @Override
             public Enumerator<PolyValue[]> enumerator() {
                 final FindIterable<Document> cursor = collection.find( filter ).projection( project );
-                return new MongoEnumerator( cursor.iterator(), getter, table.getMongoNamespace().getBucket() );
+                return new MongoEnumerator( cursor.map( getter::apply ).iterator(), table.getMongoNamespace().getBucket() );
             }
         };
     }
@@ -258,8 +258,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
 
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );
 
-        if ( log.isDebugEnabled() ) {
-            log.debug( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
+        if ( true || log.isDebugEnabled() ) {
+            log.warn( list.stream().map( el -> el.toBsonDocument().toJson( JsonWriterSettings.builder().outputMode( JsonMode.SHELL ).build() ) ).collect( Collectors.joining( ",\n" ) ) );
         }
 
         // empty docs are possible
@@ -270,17 +270,17 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         return new AbstractEnumerable<>() {
             @Override
             public Enumerator<PolyValue[]> enumerator() {
-                final Iterator<Document> resultIterator;
+                final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).iterator();
+                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( d -> getter.apply( d ) ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
                 } catch ( Exception e ) {
                     throw new GenericRuntimeException( "While running MongoDB query " + Util.toString( list, "[", ",\n", "]" ), e );
                 }
-                return new MongoEnumerator( resultIterator, getter, table.getMongoNamespace().getBucket() );
+                return new MongoEnumerator( resultIterator, table.getMongoNamespace().getBucket() );
             }
         };
     }

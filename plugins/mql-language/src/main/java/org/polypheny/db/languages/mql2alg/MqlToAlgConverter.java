@@ -1575,38 +1575,8 @@ public class MqlToAlgConverter {
 
         //}
         // we look if we already extracted a part of the document
-        Integer index = null;
-        int matchLength = 0;
-        for ( String rowName : rowNames ) {
-            StringBuilder partialKey = new StringBuilder();
-            int i = 1;
-            for ( String key : keys ) {
-                partialKey.append( key );
 
-                if ( rowName.contentEquals( partialKey ) ) {
-                    if ( i > matchLength ) {
-                        matchLength = i;
-                        index = rowNames.indexOf( rowName );
-                    }
-                    break;
-                }
-                i++;
-            }
-        }
-        if ( matchLength > 0 ) {
-            // we found a partial match
-            // we have to remove the already matched part from the key
-            StringBuilder newKey = new StringBuilder();
-            for ( int i = matchLength; i < keys.length; i++ ) {
-                newKey.append( keys[i] );
-                if ( i < keys.length - 1 ) {
-                    newKey.append( "." );
-                }
-            }
-            return translateDocValue( index, rowType, newKey.toString(), useAccess );
-        }
-
-        return translateDocValue( index, rowType, parentKey, useAccess );
+        return translateDocValue( null, rowType, parentKey, useAccess );
 
     }
 
@@ -2176,16 +2146,6 @@ public class MqlToAlgConverter {
         }
 
         if ( !excludes.isEmpty() ) {
-            List<RexNode> values = new ArrayList<>();
-            List<String> names = new ArrayList<>();
-
-            for ( AlgDataTypeField field : rowType.getFields() ) {
-                if ( !excludes.contains( field.getName() ) ) {
-                    names.add( field.getName() );
-                    values.add( RexIndexRef.of( field.getIndex(), rowType ) );
-                }
-            }
-
             return LogicalDocumentProject.create( node, new HashMap<>(), excludes );
 
         } else if ( isAddFields ) {
