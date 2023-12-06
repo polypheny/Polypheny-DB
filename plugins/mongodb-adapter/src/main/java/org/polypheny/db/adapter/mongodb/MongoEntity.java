@@ -243,11 +243,11 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         } else {
             // prepared
             preOps.stream()
-                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoNamespace.getBucket(), dataContext, DataModel.DOCUMENT ) )
+                    .map( op -> new MongoDynamic( new BsonDocument( "$addFields", op ), mongoNamespace.getBucket() ) )
                     .forEach( util -> list.add( util.insert( parameterValues ) ) );
 
             for ( String operation : operations ) {
-                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoNamespace().getBucket(), dataContext, DataModel.DOCUMENT );
+                MongoDynamic opUtil = new MongoDynamic( BsonDocument.parse( operation ), getMongoNamespace().getBucket() );
                 list.add( opUtil.insert( parameterValues ) );
             }
         }
@@ -517,7 +517,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         assert operations.size() == 1;
                         // prepared
-                        MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext, getEntity().getDataModel() );
+                        MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, getEntity().getDataModel() );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
                         entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
@@ -533,8 +533,8 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                     // we use only update docs
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared we use document update not pipeline
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext, getEntity().getDataModel() );
-                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket, dataContext, getEntity().getDataModel() );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
+                        MongoDynamic docUtil = new MongoDynamic( BsonDocument.parse( operations.get( 0 ) ), bucket );
                         for ( Map<Long, PolyValue> parameterValue : dataContext.getParameterValues() ) {
                             if ( onlyOne ) {
                                 if ( needsDocument ) {
@@ -582,7 +582,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 case DELETE:
                     if ( !dataContext.getParameterValues().isEmpty() ) {
                         // prepared
-                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket, dataContext, getEntity().getDataModel() );
+                        MongoDynamic filterUtil = new MongoDynamic( BsonDocument.parse( filter ), bucket );
                         List<? extends WriteModel<Document>> filters;
                         if ( onlyOne ) {
                             filters = filterUtil.getAll( dataContext.getParameterValues(), DeleteOneModel::new );

@@ -1318,7 +1318,6 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
-
     /*
      * Deserialize operator
      */

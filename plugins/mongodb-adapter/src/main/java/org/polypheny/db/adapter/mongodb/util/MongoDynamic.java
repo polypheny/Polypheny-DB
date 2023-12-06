@@ -36,10 +36,10 @@ import org.bson.BsonString;
 import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.Document;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.functions.PolyValueFunctions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.BsonUtil;
@@ -61,15 +61,13 @@ public class MongoDynamic {
     private final BsonDocument document;
     private final Map<Long, Boolean> isRegexMap = new HashMap<>();
     private final Map<Long, Boolean> isFuncMap = new HashMap<>();
-    private final DataContext dataContext;
     private final boolean isProject;
-    private final Map<Long, Boolean> isValueMap = new HashMap<>();
 
     private final Map<Long, String> keyMap = new HashMap<>();
+    private final Map<Long, String> functionNames = new HashMap<>();
 
 
-    public MongoDynamic( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
-        this.dataContext = dataContext;
+    public MongoDynamic( BsonDocument document, GridFSBucket bucket ) {
         this.document = document.clone();
         this.bucket = bucket;
         this.isProject = !document.isEmpty() && document.getFirstKey().equals( "$project" );
@@ -77,11 +75,11 @@ public class MongoDynamic {
     }
 
 
-    public static MongoDynamic create( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
+    public static MongoDynamic create( BsonDocument document, GridFSBucket bucket, DataModel dataModel ) {
         if ( dataModel == DataModel.DOCUMENT ) {
-            return new MongoDocumentDynamic( document, bucket, dataContext, DataModel.DOCUMENT );
+            return new MongoDocumentDynamic( document, bucket, DataModel.DOCUMENT );
         }
-        return new MongoDynamic( document, bucket, dataContext, DataModel.RELATIONAL );
+        return new MongoDynamic( document, bucket );
     }
 
 
@@ -124,8 +122,7 @@ public class MongoDynamic {
         BsonValue bsonIndex = preDocument.get( "_dyn" );
         Boolean isRegex = preDocument.get( "_reg" ).asBoolean().getValue();
         Boolean isFunction = preDocument.get( "_func" ).asBoolean().getValue();
-        Boolean isValue = preDocument.get( "_isVal" ).asBoolean().getValue();
-        String keyName = preDocument.get( "_key" ).asString().getValue();
+        String functionName = preDocument.get( "_functionName" ).isNull() ? null : preDocument.get( "_functionName" ).asString().getValue();
         long pos;
         if ( bsonIndex.isInt64() ) {
             pos = bsonIndex.asInt64().getValue();
@@ -135,11 +132,11 @@ public class MongoDynamic {
         Queue<PolyType> polyTypes = Arrays.stream( preDocument.get( "_type" ).asString().getValue().split( "\\$" ) ).map( PolyType::valueOf ).collect( Collectors.toCollection( LinkedList::new ) );
 
         if ( isDoc ) {
-            addDocHandle( pos, (BsonDocument) parent, (String) key, polyTypes, isRegex, isFunction, isValue, keyName );
+            addDocHandle( pos, (BsonDocument) parent, (String) key, polyTypes, isRegex, isFunction, functionName );
         } else if ( isKey ) {
-            addKeyHandle( pos, (BsonDocument) parent, polyTypes, isRegex, isFunction, isValue, keyName );
+            addKeyHandle( pos, (BsonDocument) parent, polyTypes, isRegex, isFunction, functionName );
         } else {
-            addArrayHandle( pos, (BsonArray) parent, (int) key, polyTypes, isRegex, isFunction, isValue, keyName );
+            addArrayHandle( pos, (BsonArray) parent, (int) key, polyTypes, isRegex, isFunction, functionName );
         }
     }
 
@@ -171,19 +168,19 @@ public class MongoDynamic {
      * @param types type of the object itself, to retrieve the correct MongoDB type
      * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
      * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
-     * @param isValue
+     * @param functionName
      */
-    public void addDocHandle( long index, BsonDocument doc, String key, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, Boolean isValue, String keyName ) {
+    public void addDocHandle( long index, BsonDocument doc, String key, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, String functionName ) {
         if ( !arrayHandles.containsKey( index ) ) {
-            initMaps( index, types, isRegex, isFunction, isValue, keyName );
+            initMaps( index, types, isRegex, isFunction, functionName );
         }
         this.docHandles.get( index ).add( new DocWrapper( key, doc ) );
     }
 
 
-    public void addKeyHandle( long index, BsonDocument doc, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, Boolean isValue, String keyName ) {
+    public void addKeyHandle( long index, BsonDocument doc, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, String functionName ) {
         if ( !arrayHandles.containsKey( index ) ) {
-            initMaps( index, types, isRegex, isFunction, isValue, keyName );
+            initMaps( index, types, isRegex, isFunction, functionName );
         }
         this.keyHandles.get( index ).add(
                 new KeyWrapper(
@@ -206,24 +203,26 @@ public class MongoDynamic {
      * @param types type of the object itself, to retrieve the correct MongoDB type
      * @param isRegex flag if the BsonDynamic is a regex, which needs to adjusted
      * @param isFunction flag if the BsonDynamic is defined function, which has to be retrieved uniquely
+     * @param functionName
      */
-    public void addArrayHandle( long index, BsonArray array, int pos, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, Boolean isValue, String keyName ) {
+    public void addArrayHandle( long index, BsonArray array, int pos, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, String functionName ) {
         if ( !arrayHandles.containsKey( index ) ) {
-            initMaps( index, types, isRegex, isFunction, isValue, keyName );
+            initMaps( index, types, isRegex, isFunction, functionName );
         }
         this.arrayHandles.get( index ).add( new ArrayWrapper( pos, array ) );
     }
 
 
-    private void initMaps( long index, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, Boolean isValue, String keyName ) {
+    private void initMaps( long index, Queue<PolyType> types, Boolean isRegex, Boolean isFunction, String functionName ) {
         this.transformers.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
         this.isRegexMap.put( index, isRegex );
         this.isFuncMap.put( index, isFunction );
-        this.isValueMap.put( index, isValue );
-        this.keyMap.put( index, keyName );
         this.docHandles.put( index, new ArrayList<>() );
         this.arrayHandles.put( index, new ArrayList<>() );
         this.keyHandles.put( index, new ArrayList<>() );
+        if ( functionName != null ) {
+            this.functionNames.put( index, functionName );
+        }
     }
 
 
@@ -238,8 +237,7 @@ public class MongoDynamic {
             if ( arrayHandles.containsKey( entry.getKey() ) ) {
                 Boolean isRegex = isRegexMap.get( entry.getKey() );
                 Boolean isFunction = isFuncMap.get( entry.getKey() );
-                boolean isValue = isValueMap.get( entry.getKey() );
-                String key = keyMap.get( entry.getKey() );
+                String functionName = functionNames.get( entry.getKey() );
 
                 if ( isRegex ) {
                     Consumer<Wrapper> task = el -> el.insert( BsonUtil.replaceLikeWithRegex( entry.getValue().asString().value ) );
@@ -249,22 +247,16 @@ public class MongoDynamic {
                 } else if ( isFunction ) {
                     // function is always part of a document
                     docHandles.get( entry.getKey() ).forEach( el -> el.insert( new BsonString( BsonFunctionHelper.getUsedFunction( entry.getValue() ) ) ) );
-                } else if ( isValue ) {
-                    Function<PolyValue, BsonValue> transformer = transformers.get( entry.getKey() );
-                    Consumer<Wrapper> task = el -> el.insert(
-                            new BsonString( key
-                                    + "."
-                                    + transformer.apply( entry.getValue() ).asArray().stream().map( v -> v.asString().getValue() ).collect( Collectors.joining( "." ) ) ) );
-                    docHandles.get( entry.getKey() ).forEach( task );
-                    arrayHandles.get( entry.getKey() ).forEach( task );
-                    keyHandles.get( entry.getKey() ).forEach( task );
                 } else {
                     Function<PolyValue, BsonValue> transformer = transformers.get( entry.getKey() );
                     Consumer<Wrapper> task;
+
+                    Function<PolyValue, PolyValue> wrapper = functionName != null ? PolyValueFunctions.pickWrapper( functionName ) : e -> e;
+
                     if ( this.isProject ) {
-                        task = el -> el.insert( new BsonDocument( "$literal", transformer.apply( entry.getValue() ) ) );
+                        task = el -> el.insert( new BsonDocument( "$literal", transformer.apply( wrapper.apply( entry.getValue() ) ) ) );
                     } else {
-                        task = el -> el.insert( transformer.apply( entry.getValue() ) );
+                        task = el -> el.insert( transformer.apply( wrapper.apply( entry.getValue() ) ) );
                     }
                     arrayHandles.get( entry.getKey() ).forEach( task );
                     docHandles.get( entry.getKey() ).forEach( task );
@@ -273,7 +265,35 @@ public class MongoDynamic {
                 }
             }
         }
-        return document.clone();
+        return unwrapDynamicKeys( document.clone() ).asDocument();
+    }
+
+
+    private BsonValue unwrapDynamicKeys( BsonValue value ) {
+        if ( value.getBsonType() == BsonType.DOCUMENT ) {
+            BsonDocument doc = value.asDocument();
+            BsonDocument newDoc = new BsonDocument();
+            for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
+                if ( entry.getKey().startsWith( "_kv_" ) ) {
+                    if ( entry.getValue().isDocument() ) {
+                        newDoc.put( entry.getValue().asDocument().get( "_k_" ).asString().getValue(), entry.getValue().asDocument().get( "_v_" ) );
+                    } else {
+                        newDoc.put( entry.getValue().asArray().get( 0 ).asDocument().get( "_k_" ).asString().getValue(), entry.getValue().asArray().get( 0 ).asDocument().get( "_v_" ) );
+                    }
+
+                } else {
+                    newDoc.put( entry.getKey(), unwrapDynamicKeys( entry.getValue() ) );
+                }
+            }
+            return newDoc;
+        } else if ( value.getBsonType() == BsonType.ARRAY ) {
+            BsonArray array = value.asArray();
+            for ( int i = 0; i < array.size(); i++ ) {
+                array.set( i, unwrapDynamicKeys( array.get( i ) ) );
+            }
+            return array;
+        }
+        return value;
     }
 
 
@@ -385,8 +405,8 @@ public class MongoDynamic {
 
     public static class MongoDocumentDynamic extends MongoDynamic {
 
-        public MongoDocumentDynamic( BsonDocument document, GridFSBucket bucket, DataContext dataContext, DataModel dataModel ) {
-            super( document, bucket, dataContext, dataModel );
+        public MongoDocumentDynamic( BsonDocument document, GridFSBucket bucket, DataModel dataModel ) {
+            super( document, bucket );
         }
 
 

@@ -135,9 +135,10 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @Override
     public String visitNameRef( RexNameRef nameRef ) {
-        return nameRef.getIndex()
-                .map( n -> "$" + implementor.getRowType().getFieldNames().get( n ) + "." + nameRef.name )
-                .orElse( MongoRules.maybeQuote( "$" + nameRef.names.get( nameRef.names.size() - 1 ) ) );
+        return MongoRules.maybeQuote(
+                nameRef.getIndex()
+                        .map( n -> "$" + implementor.getRowType().getFieldNames().get( n ) + (nameRef.names.isEmpty() ? "" : "." + nameRef.name) )
+                        .orElse( "$" + nameRef.name ) );
     }
 
 
@@ -247,9 +248,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         }
 
         if ( call.op.equals( OperatorRegistry.get( OperatorName.IS_NOT_NULL ) ) ) {
-            return call.operands.get( 0 ).
-
-                    accept( this );
+            return call.operands.get( 0 ).accept( this );
 
         }
 

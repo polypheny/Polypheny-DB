@@ -311,7 +311,7 @@ public class BsonUtil {
                 Function<PolyValue, BsonValue> transformer = getBsonTransformer( types, bucket );
                 return ( o ) -> new BsonArray( o.asList().stream().map( transformer ).collect( Collectors.toList() ) );
             case DOCUMENT:
-                return o -> BsonDocument.parse( "{ k:" + o.toTypedJson() + "}" ).get( "k" );
+                return o -> BsonDocument.parse( "{ k:" + (o.isString() ? o.asString().toQuotedJson() : o.toJson()) + "}" ).get( "k" );
             case CHAR:
             case VARCHAR:
             default:

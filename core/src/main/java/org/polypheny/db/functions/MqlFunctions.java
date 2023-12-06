@@ -16,8 +16,6 @@
 
 package org.polypheny.db.functions;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,11 +47,6 @@ import org.polypheny.db.util.Pair;
  */
 @Slf4j
 public class MqlFunctions {
-
-
-    public static final Gson GSON = new GsonBuilder()
-            .enableComplexMapKeySerialization()
-            .create();
 
 
     private MqlFunctions() {

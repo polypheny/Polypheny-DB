@@ -60,7 +60,7 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
 
         String merged = projects.stream().map( p -> "\"" + p.left + "\":" + p.right ).collect( Collectors.joining( "," ) );
 
-        implementor.add( merged, "{$project: " + merged + "}" );
+        implementor.add( merged, "{$project: {" + merged + "}}" );
 
     }
 

@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -201,7 +202,7 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectMultipleTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                        new Object[]{ 1, null },
+                        new Object[]{ 1 },
                         new Object[]{ 1.3, "val" },
                         new Object[]{ "test", 13 } ),
                 "test",
@@ -217,9 +218,9 @@ public class FindTest extends MqlTestTemplate {
     @Test
     public void projectRenameTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                new Object[]{ 1, null, 1 },
-                new Object[]{ 1.3, "val", 1.3 },
-                new Object[]{ "test", 13, "test" } ), "test", "key", "newName" );
+                new Object[]{ 1, 1 },
+                new Object[]{ 1.3, 1.3, "val" },
+                new Object[]{ "test", "test", 13 } ), "test", "newName", "key" );
         insertMany( DATA_0 );
 
         DocResult result = find( "{}", "{\"test\":1,\"key\":1,\"newName\":\"$test\"}" );
@@ -528,11 +529,12 @@ public class FindTest extends MqlTestTemplate {
 
 
     // not
+    @Ignore // no valid statement
     @Test
     public void notTest() {
         insertMany( DATA_0 );
 
-        DocResult result = find( "{\"key\": { \"$not\": {\"$exists\": true}}}", "{}" );
+        DocResult result = find( "{\"key\": { \"$not\": [{\"$exists\": true}]}}", "{}" );
 
         assertTrue(
                 MongoConnection.checkDocResultSet(

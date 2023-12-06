@@ -91,7 +91,6 @@ public class MongoProject extends Project implements MongoAlg {
     @Override
     public void implement( Implementor implementor ) {
         implementor.visitChild( 0, getInput() );
-
         final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), MongoRules.mongoFieldNames( getInput().getRowType() ), implementor, DataModel.RELATIONAL );
         final List<String> items = new ArrayList<>();
         final List<String> excludes = new ArrayList<>();

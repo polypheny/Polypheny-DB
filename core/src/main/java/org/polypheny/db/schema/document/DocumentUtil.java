@@ -311,12 +311,12 @@ public class DocumentUtil {
     /**
      * Defines one of the possible doc update operations
      */
+    @Getter
     public enum UpdateOperation {
         RENAME( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_RENAME ) ),
         REPLACE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_UPDATE_REPLACE ) ),
         REMOVE( OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_REMOVE ) );
 
-        @Getter
         private final Operator operator;
 
 

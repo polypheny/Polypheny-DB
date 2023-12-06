@@ -220,8 +220,8 @@ public class MongoRules {
                 .map( n -> ((RexLiteral) n).value.asString().value )
                 .collect( Collectors.joining( "." ) ) );*/
         return new BsonString( ref.getIndex()
-                .map( i -> "$" + rowType.getFieldNames().get( i ) + "." + ref.getName() )
-                .orElse( "$" + ref.getName() ) );
+                .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
+                .orElse( ref.getName() ) );
     }
 
 

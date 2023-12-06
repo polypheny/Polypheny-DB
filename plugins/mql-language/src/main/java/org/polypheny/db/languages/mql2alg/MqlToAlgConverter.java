@@ -1467,11 +1467,11 @@ public class MqlToAlgConverter {
             case "$not":
                 this.notActive = true;
                 op = OperatorRegistry.get( OperatorName.NOT );
-                if ( bsonValue.isDocument() ) {
+                if ( bsonValue.isArray() && bsonValue.asArray().size() == 1 ) {
                     AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
-                    return new RexCall( type, op, Collections.singletonList( translateDocument( bsonValue.asDocument(), rowType, parentKey ) ) );
+                    return new RexCall( type, op, Collections.singletonList( translateDocument( bsonValue.asArray().get( 0 ).asDocument(), rowType, parentKey ) ) );
                 } else {
-                    throw new GenericRuntimeException( "After a $not a document is needed" );
+                    throw new GenericRuntimeException( "After a $not an array is needed" );
                 }
 
             default:
@@ -1764,22 +1764,16 @@ public class MqlToAlgConverter {
      * @return a node with the applied filter
      */
     private RexNode convertExists( BsonValue value, String parentKey, AlgDataType rowType ) {
-        if ( value.isBoolean() ) {
-            List<String> keys = Arrays.asList( parentKey.split( "\\." ) );
-
-            RexCall exists = new RexCall(
-                    cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                    OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXISTS ),
-                    Arrays.asList( RexIndexRef.of( 0, rowType ), getStringArray( keys ) ) );
-
-            if ( !value.asBoolean().getValue() ) {
-                return negate( exists );
-            }
-            return exists;
-
-        } else {
+        if ( !value.isBoolean() ) {
             throw new GenericRuntimeException( "$exists without a boolean is not supported" );
         }
+
+        List<String> keys = Arrays.asList( parentKey.split( "\\." ) );
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXISTS ),
+                Arrays.asList( RexIndexRef.of( 0, rowType ), convertLiteral( value.asBoolean() ), getStringArray( keys ) ) );
     }
 
 
@@ -1978,12 +1972,12 @@ public class MqlToAlgConverter {
      * @return the node, which defines the retrieval of the underlying key
      */
     private RexNode translateDocValue( @Nullable Integer index, AlgDataType rowType, String key, boolean useAccess ) {
-        RexCall filter;
+        //RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
         if ( elemMatchActive ) {
             names = names.subList( 1, names.size() );
         }
-        filter = getStringArray( names );
+        //filter = getStringArray( names );
 
         return new RexNameRef( names, index, DocumentType.ofDoc() );
 
@@ -2182,8 +2176,6 @@ public class MqlToAlgConverter {
         }
 
         if ( !excludes.isEmpty() ) {
-
-            // we already projected the _data field away and have to work with what we got
             List<RexNode> values = new ArrayList<>();
             List<String> names = new ArrayList<>();
 
@@ -2194,7 +2186,7 @@ public class MqlToAlgConverter {
                 }
             }
 
-            return LogicalDocumentProject.create( node, values, names );
+            return LogicalDocumentProject.create( node, new HashMap<>(), excludes );
 
         } else if ( isAddFields ) {
             List<String> names = new ArrayList<>();

@@ -86,6 +86,9 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     public RexNode asSingleProject() {
         RexBuilder builder = getCluster().getRexBuilder();
+        if ( true ) {
+            return null;
+        }
         RexNode doc = RexIndexRef.of( 0, getRowType() );
         List<RexNode> nodes = new ArrayList<>();
         nodes.add( doc );

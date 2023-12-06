@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonElement;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
@@ -41,6 +42,7 @@ import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
+import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
@@ -167,7 +169,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         private BsonDocument translateFinalOr( RexNode condition ) {
             for ( RexNode node : AlgOptUtil.disjunctions( condition ) ) {
-                HashMap<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
+                Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
                 this.map = new HashMap<>();
                 translateAnd( node );
 
@@ -175,7 +177,30 @@ public class MongoFilter extends Filter implements MongoAlg {
                 this.map = shallowCopy;
             }
 
-            return asConditionDocument( this.map );
+            return removeUnnecessaryGate( asConditionDocument( this.map ) ).asDocument();
+        }
+
+
+        private BsonValue removeUnnecessaryGate( BsonValue raw ) {
+            BsonValue value = raw;
+            if ( raw.isDocument() ) {
+                for ( Entry<String, BsonValue> entry : raw.asDocument().entrySet() ) {
+                    if ( entry.getKey().equals( "$and" ) || entry.getKey().equals( "$or" ) ) {
+                        if ( entry.getValue().isArray() && entry.getValue().asArray().size() == 1 ) {
+                            value = entry.getValue().asArray().get( 0 );
+                        }
+                    }
+                }
+
+            } else if ( raw.isArray() ) {
+                List<BsonValue> values = new ArrayList<>();
+                for ( BsonValue v : raw.asArray() ) {
+                    values.add( removeUnnecessaryGate( v ) );
+                }
+                value = new BsonArray( values );
+            }
+            return value;
+
         }
 
 
@@ -360,7 +385,11 @@ public class MongoFilter extends Filter implements MongoAlg {
                 translateMatch2( node );
             }
 
-            mergeMaps( this.map, shallowCopy, "$not" );
+            shallowCopy.put( "$not", new BsonArray(
+                    List.of( new BsonDocument(
+                            this.map.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonArray( e.getValue() ) ) )
+                                    .collect( Collectors.toList() ) ) ) ) );
+            //mergeMaps( this.map, shallowCopy, "$not" );
             this.map = shallowCopy;
 
         }
@@ -382,19 +411,10 @@ public class MongoFilter extends Filter implements MongoAlg {
                 for ( Entry<String, List<BsonValue>> values : newValueMap.entrySet() ) {
                     BsonValue entry = asCondition( values.getValue(), values.getKey() );
                     if ( finalValueMap.containsKey( values.getKey() ) ) {
-                        if ( op.equals( "$not" ) ) {
-                            finalValueMap.get( values.getKey() ).add( negate( entry ) );
-                        } else {
-                            finalValueMap.get( values.getKey() ).add( new BsonDocument( op, entry ) );
-                        }
-
+                        finalValueMap.get( values.getKey() ).add( new BsonDocument( op, entry ) );
                     } else {
                         List<BsonValue> bsons = new ArrayList<>();
-                        if ( op.equals( "$not" ) ) {
-                            bsons.add( negate( entry ) );
-                        } else {
-                            bsons.add( new BsonDocument( op, entry ) );
-                        }
+                        bsons.add( new BsonDocument( op, entry ) );
                         finalValueMap.put( values.getKey(), bsons );
                     }
                 }
@@ -406,6 +426,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                         ors.addAll( entry.getValue() );
                     } else if ( entry.getKey().equals( "$and" ) ) {
                         ors.add( new BsonDocument( "$and", new BsonArray( entry.getValue() ) ) );
+                    } else if ( entry.getKey().equals( "$not" ) ) {
+                        ors.add( new BsonDocument( entry.getKey(), new BsonArray( entry.getValue() ) ) );
                     } else {
                         List<BsonValue> ands = new ArrayList<>();
                         for ( BsonValue value : entry.getValue() ) {
@@ -529,15 +551,24 @@ public class MongoFilter extends Filter implements MongoAlg {
 
 
         private void translateExists( RexCall node ) {
-            assert node.operands.size() == 2;
-            assert node.operands.get( 1 ) instanceof RexCall;
+            assert node.operands.size() == 3; // where / if exists / key
+            assert node.operands.get( 0 ) instanceof RexIndexRef;
             String key = getParamAsKey( node.operands.get( 0 ) );
-            key += "." + ((RexCall) node.operands.get( 1 ))
-                    .operands
-                    .stream()
-                    .map( o -> ((RexLiteral) o).value.asString().value )
-                    .collect( Collectors.joining( "." ) );
-            attachCondition( "$exists", key, new BsonBoolean( true ) );
+
+            if ( node.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
+                BsonDynamic identifier = new BsonDynamic( node.operands.get( 2 ).unwrap( RexDynamicParam.class )
+                        .orElseThrow() ).setPolyFunction( "joinPoint" ).adjustType( PolyType.VARCHAR );
+                BsonKeyValue keyValue = new BsonKeyValue( identifier, new BsonDocument().append( "$exists", new BsonDynamic( node.operands.get( 1 ).unwrap( RexDynamicParam.class ).orElseThrow() ) ) );
+                attachCondition( null, keyValue.placeholderKey, keyValue );
+            } else if ( node.operands.get( 2 ).unwrap( RexCall.class ).isPresent() ) {
+                key += "." + ((RexCall) node.operands.get( 2 ))
+                        .operands
+                        .stream()
+                        .map( o -> ((RexLiteral) o).value.asString().value )
+                        .collect( Collectors.joining( "." ) );
+                attachCondition( "$exists", key, BsonBoolean.valueOf( node.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asBoolean().value ) );
+            }
+
         }
 
 
@@ -572,19 +603,24 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @param node the untranslated node
          */
         private void translateTypeMatch( RexCall node ) {
-            if ( node.operands.size() != 2
-                    || !(node.operands.get( 1 ) instanceof RexCall)
-                    || ((RexCall) node.operands.get( 1 )).op.getKind() != Kind.ARRAY_VALUE_CONSTRUCTOR ) {
+            if ( node.operands.size() != 2 || node.operands.get( 0 ).unwrap( RexNameRef.class ).isEmpty() ) {
                 return;
             }
 
-            String key = getParamAsKey( node.operands.get( 0 ) );
-            List<BsonValue> types = ((RexCall) node.operands.get( 1 )).operands
-                    .stream()
-                    .map( el -> ((RexLiteral) el).value.asNumber().intValue() )
-                    .map( BsonInt32::new )
-                    .collect( Collectors.toList() );
-            attachCondition( "$type", key, new BsonArray( types ) );
+            String key = MongoRules.translateDocValueAsKey( rowType, node.operands.get( 0 ).unwrap( RexNameRef.class ).orElseThrow() );
+
+            if ( node.operands.get( 1 ).unwrap( RexCall.class ).isPresent() ) {
+                List<BsonValue> types = ((RexCall) node.operands.get( 1 )).operands
+                        .stream()
+                        .map( el -> ((RexLiteral) el).value.asNumber().intValue() )
+                        .map( BsonInt32::new )
+                        .collect( Collectors.toList() );
+                attachCondition( "$type", key, new BsonArray( types ) );
+            } else if ( node.operands.get( 1 ).isA( Kind.DYNAMIC_PARAM ) ) {
+                attachCondition( "$type", key, new BsonDynamic( (RexDynamicParam) node.operands.get( 1 ) ) );
+            }
+
+
         }
 
 
@@ -1144,7 +1180,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             RexIndexRef parent = (RexIndexRef) left.getOperands().get( 0 );
             String mergedName = rowType.getFieldNames().get( parent.getIndex() );
 
-            if ( names.operands.size() > 0 ) {
+            if ( !names.operands.isEmpty() ) {
                 mergedName += "." + names.operands
                         .stream()
                         .map( name -> ((RexLiteral) name).value.asString().value )
