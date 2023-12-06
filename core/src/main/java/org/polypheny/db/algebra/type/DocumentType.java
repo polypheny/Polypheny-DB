@@ -87,7 +87,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     public static DocumentType ofIncludes( Map<String, ? extends RexNode> includes ) {
-        return new DocumentType( Streams.mapWithIndex( includes.entrySet().stream(), ( e, i ) -> new AlgDataTypeFieldImpl( -1L, e.getKey(), (int) i, e.getValue().getType() ) ).collect( Collectors.toList() ) );
+        return new DocumentType( Streams.mapWithIndex( includes.entrySet().stream(), ( e, i ) -> new AlgDataTypeFieldImpl( -1L, e.getKey() == null ? "" : e.getKey(), (int) i, e.getValue().getType() ) ).collect( Collectors.toList() ) );
     }
 
 

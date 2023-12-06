@@ -885,7 +885,7 @@ public class MqlToAlgConverter {
 
             BsonValue finalNewRoot = newRoot;
             Map<String, RexNode> nodes = new HashMap<>() {{
-                put( null, getIdentifier( finalNewRoot.asString().getValue().substring( 1 ), node.getRowType() ) );
+                put( null, new RexCall( any, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_REPLACE_ROOT ), List.of( getIdentifier( finalNewRoot.asString().getValue().substring( 1 ), node.getRowType() ) ) ) );
             }};
 
             project = LogicalDocumentProject.create(
@@ -1557,9 +1557,9 @@ public class MqlToAlgConverter {
             throw new GenericRuntimeException( "The used identifier is not part of the table." );
         }
 
-        if ( elemMatchActive ) {
+        /*if ( elemMatchActive ) {
             return RexIndexRef.of( 0, rowType );
-        }
+        }*/
 
         //if ( rowNames.contains( parentKey.split( "\\." )[0] ) ) {
         String[] keys = parentKey.split( "\\." );
@@ -1944,9 +1944,9 @@ public class MqlToAlgConverter {
     private RexNode translateDocValue( @Nullable Integer index, AlgDataType rowType, String key, boolean useAccess ) {
         //RexCall filter;
         List<String> names = Arrays.asList( key.split( "\\." ) );
-        if ( elemMatchActive ) {
+        /*if ( elemMatchActive ) {
             names = names.subList( 1, names.size() );
-        }
+        }*/
         //filter = getStringArray( names );
 
         return new RexNameRef( names, index, DocumentType.ofDoc() );
@@ -2166,7 +2166,6 @@ public class MqlToAlgConverter {
                             any,
                             OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
                             Arrays.asList(
-                                    RexIndexRef.of( 0, rowType ),
                                     cluster.getRexBuilder().makeArray( cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyList.copyOf( Arrays.stream( entry.getKey().split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ),
                                     entry.getValue() ) ) );
 

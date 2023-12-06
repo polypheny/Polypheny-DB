@@ -55,6 +55,16 @@ public class BsonDynamic extends BsonDocument {
     }
 
 
+    public static BsonDocument addFunction( BsonDocument doc, String functionName ) {
+        return doc.append( "_functionName", new BsonString( functionName ) );
+    }
+
+
+    public static BsonDocument changeType( BsonDocument doc, PolyType polyType ) {
+        return doc.append( "_type", new BsonString( polyType.getTypeName() ) );
+    }
+
+
     public BsonDynamic setIsRegex( boolean isRegex ) {
         append( "_reg", new BsonBoolean( isRegex ) );
         return this;

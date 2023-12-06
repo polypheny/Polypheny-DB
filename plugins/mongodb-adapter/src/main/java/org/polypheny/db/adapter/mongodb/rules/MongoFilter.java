@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonElement;
 import org.bson.BsonInt32;
 import org.bson.BsonNull;
 import org.bson.BsonRegularExpression;
@@ -122,6 +121,8 @@ public class MongoFilter extends Filter implements MongoAlg {
         private Map<String, List<BsonValue>> map = new HashMap<>();
         private boolean inExpr;
         private RexNode tempElem = null;
+
+        private String modifier = null;
 
 
         Translator( List<String> fieldNames, Implementor implementor ) {
@@ -382,18 +383,22 @@ public class MongoFilter extends Filter implements MongoAlg {
             Map<String, List<BsonValue>> shallowCopy = new HashMap<>( this.map );
             this.map = new HashMap<>();
 
+            this.modifier = "$not";
+
             if ( node.operands.size() == 1 ) {
                 translateNode( node.operands.get( 0 ) );
             } else {
                 translateMatch2( node );
             }
 
-            shallowCopy.put( "$not", new BsonArray(
+            this.modifier = null;
+
+            /*shallowCopy.put( "$not", new BsonArray(
                     List.of( new BsonDocument(
                             this.map.entrySet().stream().map( e -> new BsonElement( e.getKey(), new BsonArray( e.getValue() ) ) )
-                                    .collect( Collectors.toList() ) ) ) ) );
+                                    .collect( Collectors.toList() ) ) ) ) );*/
             //mergeMaps( this.map, shallowCopy, "$not" );
-            this.map = shallowCopy;
+            //this.map = shallowCopy;
 
         }
 
@@ -1007,7 +1012,7 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case ARRAY_VALUE_CONSTRUCTOR:
                     return "$eq";
                 default:
-                    throw new RuntimeException( "Sql operation is not supported" );
+                    throw new GenericRuntimeException( "Sql operation is not supported" );
             }
         }
 
@@ -1145,14 +1150,15 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return false;
             }*/
             /*if ( left.operands.get( 1 ) instanceof RexDynamicParam || left.operands.get( 1 ) instanceof RexCall ) {
-                if ( left.operands.get( 1 ) instanceof RexCall && left.operands.get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) && ((RexCall) left.operands.get( 1 )).operands.size() == 0 && this.tempElem != null ) {
+                if ( left.operands.get( 1 ) instanceof RexCall && left.operands.get( 1 ).isA( Kind.ARRAY_VALUE_CONSTRUCTOR ) &&
+                        ((RexCall) left.operands.get( 1 )).operands.size() == 0 && this.tempElem != null ) {
                     String mergedName = handleElemMatch( left );
 
                     attachCondition( op, mergedName, item );
                     return true;
                 }
 
-                attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left, "" ), item );
+                attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
                 return true;
             }*/
             attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
@@ -1181,10 +1187,10 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        private String handleElemMatch( RexCall left ) {
+        private String handleElemMatch( RexNameRef left ) {
             RexCall names = (RexCall) ((RexCall) this.tempElem).operands.get( 1 );
-            RexIndexRef parent = (RexIndexRef) left.getOperands().get( 0 );
-            String mergedName = rowType.getFieldNames().get( parent.getIndex() );
+            //RexIndexRef parent = (RexIndexRef) left.getOperands().get( 0 );
+            String mergedName = left.name;
 
             if ( !names.operands.isEmpty() ) {
                 mergedName += "." + names.operands
@@ -1280,21 +1286,28 @@ public class MongoFilter extends Filter implements MongoAlg {
             /*if ( op == null && ((!right.isDocument() && !right.isArray()) || right instanceof BsonDynamic) && !(right instanceof BsonRegularExpression) ) {
                 op = "$eq";
             }*/
+            // E.g.: {deptno: 100}
+            BsonValue adjustedRight = right;
 
-            if ( op == null ) {
-                // E.g.: {deptno: 100}
-                if ( map.containsKey( name ) ) {
-                    map.get( name ).add( right );
-                } else {
-                    map.put( name, new ArrayList<>( Collections.singletonList( right ) ) );
-                }
-            } else {
+            if ( op != null ) {
                 // E.g. {deptno: {$lt: 100}} which may later be combined with other conditions: E.g. {deptno: [$lt: 100, $gt: 50]}
-                if ( map.containsKey( name ) ) {
-                    map.get( name ).add( new BsonDocument( op, right ) );
+                adjustedRight = new BsonDocument( op, adjustedRight );
+            }
+
+            if ( modifier != null ) {
+                if ( adjustedRight instanceof BsonKeyValue ) {
+                    // $op : {keyValue}
+                    adjustedRight = ((BsonKeyValue) adjustedRight).wrapValue( v -> new BsonDocument( modifier, v ) );
                 } else {
-                    map.put( name, new ArrayList<>( Collections.singletonList( new BsonDocument( op, right ) ) ) );
+                    adjustedRight = new BsonDocument( modifier, adjustedRight );
                 }
+            }
+
+            //E.g. {deptno: [$lt: 100, $gt: 50]}
+            if ( map.containsKey( name ) ) {
+                map.get( name ).add( adjustedRight );
+            } else {
+                map.put( name, new ArrayList<>( Collections.singletonList( adjustedRight ) ) );
             }
 
         }

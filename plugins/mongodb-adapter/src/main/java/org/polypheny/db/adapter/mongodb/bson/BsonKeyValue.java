@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.mongodb.bson;
 
+import java.util.function.Function;
 import lombok.Value;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -23,14 +24,22 @@ import org.bson.BsonValue;
 @Value
 public class BsonKeyValue extends BsonDocument {
 
+    public static final String PLACEHOLDER_KEY = "_kv_";
+    public static final String KEY_KEY = "_k_";
+    public static final String VALUE_KEY = "_v_";
     public String placeholderKey;
 
 
-    public BsonKeyValue( BsonValue placeholderKey, BsonValue value ) {
+    public BsonKeyValue( BsonValue key, BsonValue value ) {
         super();
-        append( "_k_", placeholderKey );
-        append( "_v_", value );
-        this.placeholderKey = "_kv_" + placeholderKey.hashCode();
+        append( KEY_KEY, key );
+        append( VALUE_KEY, value );
+        this.placeholderKey = PLACEHOLDER_KEY + key.hashCode();
+    }
+
+
+    public BsonValue wrapValue( Function<BsonValue, BsonValue> wrapper ) {
+        return append( VALUE_KEY, wrapper.apply( get( VALUE_KEY ) ) );
     }
 
 }

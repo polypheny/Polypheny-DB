@@ -79,10 +79,10 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void projectMultipleTest() {
         List<String> expected = MongoConnection.arrayToDoc( Arrays.asList(
-                        new Object[]{ null, 1, 1 },
-                        new Object[]{ "{\"key\":\"val\"}", 1.3, 1.3 },
-                        new Object[]{ 13, "test", "test" } ),
-                "newName2", "newName1", "test" );
+                        new Object[]{ 1, 1 }, // field key is not present, which is unset, not null
+                        new Object[]{ 1.3, 1.3, "{\"key\":\"val\"}" },
+                        new Object[]{ "test", "test", 13 } ),
+                "newName1", "test", "newName2" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $project( "{\"test\":1,\"key\":1}" ), $project( "{\"newName2\":\"$key\",\"newName1\":\"$test\",\"test\":1}" ) );
@@ -297,7 +297,6 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceWithTest() {
-        // todo not document should throw
         List<String> expected = Arrays.asList(
                 document( kv( string( "key" ), 1 ) ),
                 document( kv( string( "key1" ), 5 ) ),
@@ -313,13 +312,16 @@ public class AggregateTest extends MqlTestTemplate {
 
     @Test
     public void replaceWithNonDocTest() {
-        try {
-            insertMany( DATA_2 );
 
+        insertMany( DATA_2 );
+
+        try {
             DocResult result = aggregate( $replaceWith( "$test.key" ) );
+
+            // this has to fail
             Assert.fail();
         } catch ( Exception e ) {
-            //empty on purpose
+            // empty on purpose
         }
     }
 

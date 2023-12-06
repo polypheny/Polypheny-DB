@@ -22,9 +22,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
+import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.enumerable.RexImpTable;
@@ -297,8 +300,35 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
             return String.join( ",", fields );
         } else if ( call.isA( Kind.UNWIND ) ) {
             return call.operands.get( 0 ).accept( this );
+        } else if ( call.isA( Kind.MQL_ADD_FIELDS ) ) {
+            return handleAddFieldsFunctions( call );
+        } else if ( call.op.getOperatorName() == OperatorName.MQL_REPLACE_ROOT ) {
+            return handleWithFunctions( call );
         }
         return null;
+    }
+
+
+    @NotNull
+    private String handleAddFieldsFunctions( RexCall call ) {
+        String names = call.operands.get( 0 ).accept( this );
+        String value = call.operands.get( 1 ).accept( this );
+        if ( call.operands.get( 0 ).isA( Kind.DYNAMIC_PARAM ) ) {
+            BsonKeyValue kv = new BsonKeyValue( BsonDynamic.changeType( BsonDynamic.addFunction( BsonDocument.parse( names ), "joinPoint" ), PolyType.VARCHAR ), BsonDocument.parse( value ) );
+            return "{\"$addFields\": {" + MongoRules.maybeQuote( kv.placeholderKey ) + ":" + kv.toJson() + "}}";
+        }
+        return "{\"$addFields\": {" + MongoRules.maybeQuote( names ) + ":" + value + "}}";
+    }
+
+
+    @NotNull
+    private String handleWithFunctions( RexCall call ) {
+        String names = call.operands.get( 0 ).accept( this );
+        if ( call.operands.get( 0 ).isA( Kind.DYNAMIC_PARAM ) ) {
+            BsonDocument key = BsonDynamic.changeType( BsonDynamic.addFunction( BsonDocument.parse( names ), "joinPoint" ), PolyType.VARCHAR );
+            return "{\"$replaceWith\": " + key.toJson() + "}";
+        }
+        return "{\"$replaceWith\": " + names + "}";
     }
 
 

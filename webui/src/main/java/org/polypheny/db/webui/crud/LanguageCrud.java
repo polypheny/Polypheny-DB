@@ -227,13 +227,13 @@ public class LanguageCrud {
         ResultBuilder<?, ?, ?, ?> result;
         switch ( context.getQuery().getLanguage().getDataModel() ) {
             case RELATIONAL:
-                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case DOCUMENT:
-                result = DocResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             case GRAPH:
-                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+                result = GraphResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
                 break;
             default:
                 throw new GenericRuntimeException( "Unknown data model." );

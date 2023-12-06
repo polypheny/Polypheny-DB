@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -529,7 +528,6 @@ public class FindTest extends MqlTestTemplate {
 
 
     // not
-    @Ignore // no valid statement
     @Test
     public void notTest() {
         insertMany( DATA_0 );

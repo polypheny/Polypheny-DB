@@ -55,6 +55,13 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
         List<Pair<String, String>> projects = new ArrayList<>();
 
         final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+
+        // is it something which interacts with root?
+        if ( excludes.isEmpty() && includes.size() == 1 && includes.containsKey( null ) ) {
+            adjustRoot( implementor, translator );
+            return;
+        }
+
         includes.forEach( ( n, p ) -> projects.add( Pair.of( n, p.accept( translator ) ) ) );
         excludes.forEach( n -> projects.add( Pair.of( n, "0" ) ) );
 
@@ -62,6 +69,12 @@ public class MongoDocumentProject extends DocumentProject implements MongoAlg {
 
         implementor.add( merged, "{$project: {" + merged + "}}" );
 
+    }
+
+
+    private void adjustRoot( Implementor implementor, RexToMongoTranslator translator ) {
+        String merged = includes.get( null ).accept( translator );
+        implementor.add( null, merged );
     }
 
 
