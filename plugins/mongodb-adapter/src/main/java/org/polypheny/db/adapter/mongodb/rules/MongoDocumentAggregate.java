@@ -56,8 +56,8 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
         implementor.visitChild( 0, getInput() );
         List<String> list = new ArrayList<>();
 
-        final String inName = group.unwrap( RexNameRef.class ).orElseThrow().name;
-        list.add( "_id: " + MongoRules.maybeQuote( "$" + inName ) );
+        final String inName = MongoRules.maybeQuote( getGroup().map( n -> "$" + n.unwrap( RexNameRef.class ).orElseThrow().name ).orElse( "null" ) );
+        list.add( "_id: " + inName );
         //implementor.physicalMapper.add( inName );
 
         for ( DocumentAggregateCall aggCall : aggCalls ) {
@@ -104,7 +104,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new MongoDocumentAggregate( getCluster(), traitSet, sole( inputs ), group, aggCalls );
+        return new MongoDocumentAggregate( getCluster(), traitSet, sole( inputs ), getGroup().orElse( null ), aggCalls );
     }
 
 }

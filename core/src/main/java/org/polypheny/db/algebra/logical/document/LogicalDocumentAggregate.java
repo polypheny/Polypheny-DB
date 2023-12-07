@@ -70,7 +70,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), group, aggCalls );
+        return new LogicalDocumentAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), getGroup().orElse( null ), aggCalls );
     }
 
 

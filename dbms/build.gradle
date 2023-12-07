@@ -328,6 +328,7 @@ task createProperties() {
         }
         // copy needed, otherwise the bean VersionController can't load the file at startup when running complete-app tests.
         copy {
+            setDuplicatesStrategy(DuplicatesStrategy.WARN)
             from "$buildDir/version.properties"
             into "src/main/resources"
         }

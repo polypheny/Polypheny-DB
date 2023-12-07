@@ -715,7 +715,7 @@ public class MongoRules {
                     alg.getCluster(),
                     traitSet,
                     convert( agg.getInput(), traitSet.simplify() ),
-                    agg.group,
+                    agg.getGroup().orElse( null ),
                     agg.aggCalls );
         }
 

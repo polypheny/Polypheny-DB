@@ -190,7 +190,6 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
      * @return Enumerator of results
      */
     private Enumerable<PolyValue[]> find( MongoDatabase mongoDb, MongoEntity table, String filterJson, String projectJson, MongoTupleType tupleType ) {
-        final MongoCollection<Document> collection = mongoDb.getCollection( physical.name );
         final Bson filter = filterJson == null ? new BsonDocument() : BsonDocument.parse( filterJson );
         final Bson project = projectJson == null ? new BsonDocument() : BsonDocument.parse( projectJson );
         final Function1<Document, PolyValue[]> getter = MongoEnumerator.getter( tupleType );

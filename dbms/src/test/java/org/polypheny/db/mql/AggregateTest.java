@@ -169,7 +169,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         DocResult result = aggregate( $count( "newName" ) );
 
-        MongoConnection.checkDocResultSet( result, expected, false, true );
+        MongoConnection.checkDocResultSet( result, expected, true, true );
     }
 
     //$group
@@ -214,9 +214,9 @@ public class AggregateTest extends MqlTestTemplate {
     @Test
     public void groupSubFieldTest() {
         List<String> expected = MongoConnection.arrayToDoc( ImmutableList.of(
-                        new Object[]{ document( kv( string( "key" ), null ) ) },
-                        new Object[]{ document( kv( string( "key" ), string( "val" ) ) ) } ),
-                "key" );
+                        new Object[]{ null },
+                        new Object[]{ "val" } ),
+                "_id" );
         insertMany( DATA_0 );
 
         DocResult result = aggregate( $group( document( kv( string( "_id" ), string( "$key.key" ) ) ) ) );
