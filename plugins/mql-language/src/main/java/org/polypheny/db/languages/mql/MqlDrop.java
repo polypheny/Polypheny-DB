@@ -47,7 +47,7 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         DdlManager ddlManager = DdlManager.getInstance();
-        long namespaceId = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
+        long namespaceId = parsedQueryContext.getNamespaceId();
 
         Optional<LogicalNamespace> optionalNamespace = context.getSnapshot().getNamespace( namespaceId );
         if ( optionalNamespace.isEmpty() ) {

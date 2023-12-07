@@ -16,6 +16,8 @@
 
 package org.polypheny.db.processing;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import lombok.Builder;
@@ -29,6 +31,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
 @Value
@@ -68,6 +71,11 @@ public class QueryContext {
     @Builder.Default
     long namespaceId = Catalog.defaultNamespaceId;
 
+    // we can have mixed transactions, which have ddls and dmls, as long as we commit instantly for ddls,
+    // we have to open a new transaction for the next statement, so we need to keep track of all transactions (in theory only the last one is needed)
+    @Builder.Default
+    List<Transaction> transactions = new ArrayList<>();
+
 
     @EqualsAndHashCode(callSuper = true)
     @Value
@@ -89,6 +97,7 @@ public class QueryContext {
                     .origin( context.getOrigin() )
                     .batch( context.batch )
                     .namespaceId( context.namespaceId )
+                    .transactions( context.transactions )
                     .transactionManager( context.transactionManager )
                     .informationTarget( context.informationTarget ).build();
         }
@@ -98,6 +107,12 @@ public class QueryContext {
             return Optional.ofNullable( queryNode );
         }
 
+    }
+
+
+    public <T extends QueryContext> T addTransaction( Transaction transaction ) {
+        transactions.add( transaction );
+        return (T) this;
     }
 
 }

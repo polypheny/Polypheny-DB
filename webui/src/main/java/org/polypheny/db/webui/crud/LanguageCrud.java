@@ -141,7 +141,7 @@ public class LanguageCrud {
         transaction.setUseCache( context.isUsesCache() );
         attachAnalyzerIfSpecified( context, crud, transaction );
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, transaction.createStatement() );
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ), transaction.createStatement() );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
@@ -154,29 +154,33 @@ public class LanguageCrud {
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( transaction, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
+        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElseThrow() );
 
         return results;
     }
 
 
-    public static void commitAndFinish( Transaction transaction, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
+    public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
         executionTime = System.nanoTime() - executionTime;
-        String commitStatus;
-        try {
-            transaction.commit();
-            commitStatus = "Committed";
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+        String commitStatus = "Error on starting committing";
+        for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).collect( Collectors.toList() ) ) {
+            // this has a lot of unnecessary no-op commits atm
             try {
-                transaction.rollback();
-                commitStatus = "Rolled back";
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-                commitStatus = "Error while rolling back";
+                transaction.commit();
+                commitStatus = "Committed";
+            } catch ( TransactionException e ) {
+                log.error( "Caught exception", e );
+                results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+                try {
+                    transaction.rollback();
+                    commitStatus = "Rolled back";
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", e );
+                    commitStatus = "Error while rolling back";
+                }
             }
         }
+
 
         if ( queryAnalyzer != null ) {
             Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );

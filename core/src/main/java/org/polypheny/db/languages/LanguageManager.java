@@ -111,6 +111,7 @@ public class LanguageManager {
 
         Processor processor = context.getLanguage().getProcessorSupplier().get();
         List<ImplementationContext> implementationContexts = new ArrayList<>();
+        boolean previousDdl = false;
         for ( ParsedQueryContext parsed : parsedQueries ) {
             try {
                 // test if parsing was successful
@@ -131,9 +132,23 @@ public class LanguageManager {
                                 new GenericRuntimeException( "DDL statement is not executable" ),
                                 implementationContexts );
                     }
-                    implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
-                } else {
+                    // as long as we directly commit the transaction, we cannot reuse the same transaction
+                    if ( previousDdl && !transaction.isActive() ) {
+                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
+                        statement = transaction.createStatement();
+                        parsed.addTransaction( transaction );
+                    }
 
+                    implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
+                    previousDdl = true;
+                } else {
+                    // as long as we directly commit the transaction, we cannot reuse the same transaction
+                    if ( previousDdl && !transaction.isActive() ) {
+                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
+                        statement = transaction.createStatement();
+                        parsed.addTransaction( transaction );
+                    }
+                    previousDdl = false;
                     if ( context.getLanguage().getValidatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
                             statement.getOverviewDuration().start( "Validation" );
@@ -196,7 +211,6 @@ public class LanguageManager {
 
 
     public List<ExecutedContext> anyQuery( QueryContext context, Statement statement ) {
-
         List<ImplementationContext> prepared = anyPrepareQuery( context, statement );
         Transaction transaction = statement.getTransaction();
 

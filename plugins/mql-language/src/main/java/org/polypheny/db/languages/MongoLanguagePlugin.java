@@ -109,7 +109,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                 if ( queryNode instanceof MqlCreateCollection || queryNode instanceof MqlCreateView ) {
                     // entity was created during this query
                     created.add( Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
-                } else {
+                } else if ( !queryNode.isA( Kind.DDL ) ) {
                     // we have to create this query manually
                     toCreate.add( 0, Pair.of( context.getNamespaceId(), queryNode.getEntity() ) );
                 }
@@ -121,6 +121,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
                         .query( "db.createCollection(" + p.right + ")" )
                         .namespaceId( p.left )
                         .language( context.getLanguage() )
+                        .namespaceId( context.getNamespaceId() )
                         .transactionManager( context.getTransactionManager() )
                         .origin( context.getOrigin() )
                         .informationTarget( context.getInformationTarget() )

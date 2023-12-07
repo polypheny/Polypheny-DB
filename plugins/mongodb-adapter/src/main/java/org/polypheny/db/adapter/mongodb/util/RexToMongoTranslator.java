@@ -30,8 +30,6 @@ import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.enumerable.RexImpTable;
-import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -116,7 +114,7 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( literal.getValue() == null ) {
             return "null";
         }
-        return "{$literal: " + RexToLixTranslator.translateLiteral( literal, literal.getType(), typeFactory, RexImpTable.NullAs.NOT_POSSIBLE ) + "}";
+        return "{$literal: " + literal.value.toJson() + "}";
     }
 
 

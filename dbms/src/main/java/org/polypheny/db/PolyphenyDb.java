@@ -124,7 +124,7 @@ public class PolyphenyDb {
     public boolean daemonMode = false;
 
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
-    public String defaultStoreName = "mongodb";
+    public String defaultStoreName = "hsqldb";
 
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public String defaultSourceName = "csv";
@@ -393,7 +393,7 @@ public class PolyphenyDb {
                 null,
                 AlgProcessor::new,
                 null,
-                null );
+                q -> null );
         LanguageManager.getINSTANCE().addQueryLanguage( language );
 
         // Initialize index manager

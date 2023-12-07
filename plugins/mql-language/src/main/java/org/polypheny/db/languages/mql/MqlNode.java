@@ -105,7 +105,7 @@ public abstract class MqlNode implements Node {
 
     @Override
     public boolean isA( Set<Kind> category ) {
-        return false;
+        return category.contains( this.getKind() );
     }
 
 

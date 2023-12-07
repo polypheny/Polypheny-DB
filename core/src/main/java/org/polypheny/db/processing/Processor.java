@@ -18,11 +18,11 @@ package org.polypheny.db.processing;
 
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -35,7 +35,7 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
-
+@Slf4j
 public abstract class Processor {
 
     public abstract List<? extends Node> parse( String query );
@@ -66,7 +66,7 @@ public abstract class Processor {
     PolyImplementation getImplementation( Statement statement, ExecutableStatement node, ParsedQueryContext context ) throws TransactionException {
         node.execute( statement.getPrepareContext(), statement, context );
         statement.getTransaction().commit();
-        Catalog.getInstance().commit();
+        //Catalog.getInstance().commit();
         return new PolyImplementation(
                 null,
                 context.getLanguage().getDataModel(),

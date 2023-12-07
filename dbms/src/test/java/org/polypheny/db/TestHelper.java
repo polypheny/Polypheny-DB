@@ -391,8 +391,7 @@ public class TestHelper {
                 } else if ( result.length == 0 ) {
                     return DocResult.builder().build();
                 }
-                fail( "There was more than one result in the response!" );
-                throw new RuntimeException( "This cannot happen" );
+                return result[result.length - 1];
 
             } catch ( JsonSyntaxException | JsonProcessingException e ) {
                 log.warn( "{}\nmessage: {}", res.getBody(), e.getMessage() );

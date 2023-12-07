@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.mongodb.rules;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
@@ -26,12 +27,13 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
+import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.document.DocumentModify;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 public class MongoDocumentModify extends DocumentModify<MongoEntity> implements MongoAlg {
 
@@ -72,8 +74,13 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
 
     private void handleDelete( Implementor implementor ) {
+        Implementor condImplementor = new Implementor( true );
+        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+
+        implementor.filter = condImplementor.filter;
+
         if ( updates.isEmpty() ) {
-            implementor.list.add( Pair.of( null, "{}" ) );
+            implementor.add( null, "{}" );
         } else {
             throw new NotImplementedException();
         }
@@ -81,7 +88,24 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
 
     private void handleUpdate( Implementor implementor ) {
-        throw new NotImplementedException();
+        Implementor condImplementor = new Implementor( true );
+        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+
+        implementor.filter = condImplementor.filter;
+
+        final RexToMongoTranslator translator = new RexToMongoTranslator( getCluster().getTypeFactory(), List.of(), implementor, DataModel.DOCUMENT );
+        for ( Entry<String, ? extends RexNode> entry : updates.entrySet() ) {
+            String key = entry.getKey();
+            String value = entry.getValue().accept( translator );
+            implementor.operations.add( BsonDocument.parse( "{ $set:{" + key + ":" + value + "}}" ) );
+        }
+        if ( !removes.isEmpty() ) {
+            implementor.operations.add( BsonDocument.parse( "{ $unset:{ " + removes.stream().map( r -> r + ":\"\"" ).collect( Collectors.joining( "," ) ) + "}" ) );
+        }
+
+        if ( !renames.isEmpty() ) {
+            implementor.operations.add( BsonDocument.parse( "{ $rename:{ " + renames.entrySet().stream().map( r -> r.getKey() + ": \"" + r.getValue() + "\"" ).collect( Collectors.joining( "," ) ) + "}" ) );
+        }
     }
 
 

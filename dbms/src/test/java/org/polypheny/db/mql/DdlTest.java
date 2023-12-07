@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
@@ -43,11 +42,6 @@ public class DdlTest extends MqlTestTemplate {
 
     final static String collectionName = "doc";
 
-
-    @After
-    public void removeCollection() {
-        execute( String.format( "db.%s.drop()", collectionName ) );
-    }
 
 
     @Test
@@ -71,6 +65,15 @@ public class DdlTest extends MqlTestTemplate {
         assertEquals( size + 1, Catalog.snapshot().doc().getCollections( namespace.id, null ).size() );
 
         execute( String.format( "db.%s.drop()", name ) );
+    }
+
+
+    @Test
+    public void addCollection2Test() {
+        String name = "testCollection";
+
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
+
     }
 
 
