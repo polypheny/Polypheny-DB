@@ -186,49 +186,51 @@ public class DataMigratorImpl implements DataMigrator {
                 true );
         algRoot = algRoot.withAlg( typeFlattener.rewrite( algRoot.alg ) );
 
-        PolyImplementation result = statement.getQueryProcessor().prepareQuery(
+        PolyImplementation implementation = statement.getQueryProcessor().prepareQuery(
                 algRoot,
                 algRoot.alg.getCluster().getTypeFactory().builder().build(),
                 true,
                 false,
                 false );
 
-        final Enumerable<PolyValue[]> enumerable = result.enumerable( statement.getDataContext() );
+        int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
 
-        Iterator<PolyValue[]> sourceIterator = enumerable.iterator();
+        final ResultIterator sourceIterator = implementation.execute( statement, batchSize );
 
-        if ( sourceIterator.hasNext() ) {
+        do {
             // we have a new statement
             statement = transaction.createStatement();
             builder = AlgBuilder.create( statement );
 
-            LogicalDocumentValues values = getLogicalDocValues( builder, sourceIterator );
+            LogicalDocumentValues values = getLogicalDocValues( builder, sourceIterator.getNextBatch() );
+
+            if ( values.dynamicDocuments.isEmpty() && values.documents.isEmpty() ) {
+                // no values retrieved
+                return;
+            }
 
             LogicalDocumentModify modify = new LogicalDocumentModify( builder.getCluster().traitSetOf( ModelTrait.DOCUMENT ), to, values, Modify.Operation.INSERT, null, null, null );
 
-            AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeDocumentDml( modify, statement, to, List.of( to.placementId ) );
+            // AlgNode routedModify = RoutingManager.getInstance().getDmlRouter().routeDocumentDml( modify, statement, to, List.of( to.placementId ) );
 
-            result = statement.getQueryProcessor().prepareQuery(
-                    AlgRoot.of( routedModify, Kind.SELECT ),
-                    routedModify.getCluster().getTypeFactory().builder().build(),
+            PolyImplementation modifyImpl = statement.getQueryProcessor().prepareQuery(
+                    AlgRoot.of( modify, Kind.SELECT ),
+                    modify.getCluster().getTypeFactory().builder().build(),
                     true,
                     false,
                     false );
 
-            final Enumerable<?> modifyEnumerable = result.enumerable( statement.getDataContext() );
+            final ResultIterator modifyIterator = modifyImpl.execute( statement, batchSize );
 
-            Iterator<?> modifyIterator = modifyEnumerable.iterator();
-            if ( modifyIterator.hasNext() ) {
-                modifyIterator.next();
+            while ( modifyIterator.hasMoreRows() ) {
+                modifyIterator.getNextBatch();
             }
-        }
+        } while ( implementation.hasMoreRows() );
     }
 
 
-    private LogicalDocumentValues getLogicalDocValues( AlgBuilder builder, Iterator<PolyValue[]> iterator ) {
-        List<PolyDocument> documents = new ArrayList<>();
-
-        iterator.forEachRemaining( e -> documents.add( e[0].asDocument() ) );
+    private LogicalDocumentValues getLogicalDocValues( AlgBuilder builder, List<List<PolyValue>> tuples ) {
+        List<PolyDocument> documents = tuples.stream().map( l -> l.get( 0 ) ).map( PolyValue::asDocument ).collect( Collectors.toList() );
 
         return new LogicalDocumentValues( builder.getCluster(), builder.getCluster().traitSet(), documents );
     }

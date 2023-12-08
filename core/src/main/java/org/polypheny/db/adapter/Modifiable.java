@@ -330,8 +330,14 @@ public interface Modifiable extends Scannable {
         }
 
         if ( updates.left == null ) {
-            // Values have already been replaced
-            AlgNode node = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
+            // Values require additional effort but less than updates
+            builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
+            AlgNode provider = builder.build();
+            // right side prepared
+            builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
+            builder.project( DocumentType.asRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), DocumentType.asRelational().getFieldNames() );
+
+            AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     oTable.get(),
@@ -339,7 +345,7 @@ public interface Modifiable extends Scannable {
                     modify.getOperation(),
                     null,
                     null );
-            builder.push( node );
+            builder.push( LogicalStreamer.create( provider, collector ) );
         } else {
             // left side
             AlgNode provider = builder.build();

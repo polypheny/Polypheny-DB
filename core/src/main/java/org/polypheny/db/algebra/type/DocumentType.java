@@ -95,6 +95,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
         return new DocumentType( fixed, excludes );
     }
 
+
     private String computeDigest() {
         assert fixed != null;
         return getClass().getSimpleName() +

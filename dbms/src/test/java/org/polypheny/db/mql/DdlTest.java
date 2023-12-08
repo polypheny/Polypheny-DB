@@ -68,14 +68,6 @@ public class DdlTest extends MqlTestTemplate {
     }
 
 
-    @Test
-    public void addCollection2Test() {
-        String name = "testCollection";
-
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( database ).orElseThrow();
-
-    }
-
 
     @Test
     public void addPlacementTest() throws SQLException {

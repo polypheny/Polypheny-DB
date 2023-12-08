@@ -32,6 +32,7 @@ import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -47,13 +48,13 @@ public class EnumerableDocumentValues extends DocumentValues implements Enumerab
      * @param traitSet
      * @param document
      */
-    public EnumerableDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document ) {
-        super( cluster, traitSet.replace( EnumerableConvention.INSTANCE ), document );
+    public EnumerableDocumentValues( AlgOptCluster cluster, AlgTraitSet traitSet, List<PolyDocument> document, List<RexDynamicParam> dynamicDocuments ) {
+        super( cluster, traitSet.replace( EnumerableConvention.INSTANCE ), document, dynamicDocuments );
     }
 
 
     public static EnumerableDocumentValues create( DocumentValues values ) {
-        return new EnumerableDocumentValues( values.getCluster(), values.getTraitSet(), values.documents );
+        return new EnumerableDocumentValues( values.getCluster(), values.getTraitSet(), values.documents, values.dynamicDocuments );
     }
 
 

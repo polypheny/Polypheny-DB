@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.core.relational.RelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalProject;
@@ -72,6 +74,7 @@ public class LogicalStreamer extends Streamer {
     }
 
 
+    @Nullable
     public static LogicalStreamer create( Modify<?> allModify, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
 
@@ -123,7 +126,9 @@ public class LogicalStreamer extends Streamer {
             // at the moment no data model is able to conditionally insert
             attachFilter( modify, algBuilder, rexBuilder );
         } else {
-            assert input.getRowType().getFieldCount() == modify.getEntity().getRowType().getFieldCount() : input.getRowType().getFieldCount() + " not equal to " + modify.getEntity().getRowType().getFieldCount();
+            if ( input.getRowType().getFieldCount() != modify.getEntity().getRowType().getFieldCount() ) {
+                return null;
+            }
             // attach a projection, so the values can be inserted on execution
             algBuilder.push( getCollector( rexBuilder, input ) );
         }
@@ -199,7 +204,7 @@ public class LogicalStreamer extends Streamer {
     public static boolean isModifyApplicable( RelModify<?> modify ) {
 
         // simple delete, which all store should be able to handle by themselves
-        if ( modify.isInsert() && modify.getInput() instanceof Values ) {
+        if ( modify.isInsert() && modify.getInput() instanceof Values || modify.getInput() instanceof DocumentValues ) {
             // simple insert, which all store should be able to handle by themselves
             return false;
         } else {

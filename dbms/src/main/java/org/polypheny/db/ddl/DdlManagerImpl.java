@@ -2105,6 +2105,8 @@ public class DdlManagerImpl extends DdlManager {
 
             store.createCollection( statement.getPrepareContext(), collection, alloc );
 
+            catalog.updateSnapshot();
+
             if ( !preExistingPlacements.isEmpty() ) {
                 // Copy the data to the newly added column placements
                 DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
