@@ -226,6 +226,9 @@ public class AlgRoot {
             // DML statements return a single count column. The validated type is of the SELECT. Still, we regard the mapping as trivial.
             return true;
         }
+        if ( getModel() != ModelTrait.RELATIONAL ) {
+            return true;
+        }
         final AlgDataType inputRowType = alg.getRowType();
         return Mappings.isIdentity( Pair.left( fields ), inputRowType.getFieldCount() );
     }

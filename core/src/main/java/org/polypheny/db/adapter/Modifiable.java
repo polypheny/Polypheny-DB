@@ -329,12 +329,13 @@ public interface Modifiable extends Scannable {
             builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
         }
 
-        if ( updates.left == null ) {
+        if ( updates.left == null && modify.operation != Operation.UPDATE && modify.operation != Operation.DELETE ) {
             // Values require additional effort but less than updates
             builder.transform( ModelTrait.RELATIONAL, DocumentType.asRelational(), false );
             AlgNode provider = builder.build();
             // right side prepared
             builder.push( LogicalValues.createOneRow( modify.getCluster() ) );
+
             builder.project( DocumentType.asRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).collect( Collectors.toList() ), DocumentType.asRelational().getFieldNames() );
 
             AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(

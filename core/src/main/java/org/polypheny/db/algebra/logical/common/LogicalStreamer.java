@@ -55,7 +55,7 @@ public class LogicalStreamer extends Streamer {
 
     /**
      * {@code
-     * Streamer
+     *      Streamer
      * ^               |
      * |               v
      * Provider    Collector

@@ -16,7 +16,6 @@
 
 package org.polypheny.db.util;
 
-import com.google.auto.service.AutoService;
 import java.io.PrintWriter;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -33,7 +32,6 @@ import javax.tools.Diagnostic;
 
 @SupportedAnnotationTypes("OptionalGetter")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
-@AutoService( javax.annotation.processing.Processor.class )
 public class PolyProcessor extends AbstractProcessor {
 
     @Override

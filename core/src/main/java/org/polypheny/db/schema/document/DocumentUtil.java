@@ -56,6 +56,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal;
@@ -305,6 +306,23 @@ public class DocumentUtil {
 
     public static RexCall getArray( List<RexNode> elements, AlgDataType type ) {
         return new RexCall( type, OperatorRegistry.get( OperatorName.ARRAY_VALUE_CONSTRUCTOR ), elements );
+    }
+
+
+    public static RexLiteral getArrayLiteral( List<String> elements, AlgOptCluster cluster ) {
+        AlgDataType type = cluster.getTypeFactory().createArrayType(
+                cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ),
+                elements.size() );
+        return new RexLiteral( PolyList.of( elements.stream().map( PolyString::of ).collect( Collectors.toList() ) ), type, PolyType.ARRAY );
+    }
+
+
+    public static AlgDataType getNestedArrayType( AlgOptCluster cluster, int depth, AlgDataType componentType ) {
+        if ( depth == 0 ) {
+            return componentType;
+        } else {
+            return cluster.getTypeFactory().createArrayType( getNestedArrayType( cluster, depth - 1, componentType ), -1 );
+        }
     }
 
 

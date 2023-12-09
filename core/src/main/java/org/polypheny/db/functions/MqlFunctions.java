@@ -108,7 +108,7 @@ public class MqlFunctions {
             input.asList().add( value );
             return input;
         } else {
-            throw new RuntimeException( "AddToSet can only be applied to arrays" );
+            throw new GenericRuntimeException( "AddToSet can only be applied to arrays" );
         }
     }
 
@@ -221,6 +221,22 @@ public class MqlFunctions {
                 doc = doc.get( name ).asDocument();
             }
         }
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyDocument projectIncludes( PolyValue input, PolyList<PolyList<PolyString>> names, PolyValue... includes ) {
+        if ( !input.isDocument() ) {
+            return new PolyDocument();
+        }
+        PolyDocument doc = input.asDocument();
+        List<Pair<PolyList<PolyString>, PolyValue>> result = new ArrayList<>();
+        for ( Pair<PolyList<PolyString>, PolyValue> nameInclude : Pair.zip( names, List.of( includes ) ) ) {
+            if ( MqlFunctions.docExists( input, PolyBoolean.TRUE, nameInclude.right.asList() ).value ) {
+                result.add( Pair.of( nameInclude.left, docQueryValue( input, nameInclude.right.asList() ) ) );
+            }
+        }
+        return mergeDocument( new PolyDocument(), result.stream().map( p -> p.left ).collect( Collectors.toList() ), result.stream().map( p -> p.right ).toArray( PolyValue[]::new ) );
     }
 
 
@@ -659,7 +675,11 @@ public class MqlFunctions {
      * @return if the path exists
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docExists( PolyValue obj, List<PolyString> path ) {
+    public static PolyBoolean docExists( PolyValue obj, PolyValue opIfExists, List<PolyString> path ) {
+        if ( !opIfExists.isBoolean() ) {
+            throw new GenericRuntimeException( "The second parameter must be a boolean" );
+        }
+        boolean ifExists = opIfExists.asBoolean().value;
         if ( obj == null || !obj.isDocument() ) {
             return PolyBoolean.FALSE;
         }
@@ -670,16 +690,16 @@ public class MqlFunctions {
         while ( map.containsKey( current ) ) {
             obj = map.get( current );
             if ( !iter.hasNext() ) {
-                return PolyBoolean.TRUE;
+                return ifExists ? PolyBoolean.TRUE : PolyBoolean.FALSE;
             }
             if ( !(obj instanceof Map) ) {
-                return PolyBoolean.FALSE;
+                return ifExists ? PolyBoolean.FALSE : PolyBoolean.TRUE;
             }
             map = map.get( current ).asDocument();
             current = iter.next();
         }
 
-        return PolyBoolean.FALSE;
+        return ifExists ? PolyBoolean.FALSE : PolyBoolean.TRUE;
     }
 
 

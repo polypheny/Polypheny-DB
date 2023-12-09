@@ -23,11 +23,22 @@ import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.schema.document.DocumentUtil;
 
 public class DocumentFilterToCalcRule extends ConverterRule {
 
@@ -48,11 +59,40 @@ public class DocumentFilterToCalcRule extends ConverterRule {
         final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
         final AlgDataType inputRowType = input.getRowType();
         final RexProgramBuilder programBuilder = new RexProgramBuilder( inputRowType, rexBuilder );
+        NameRefReplacer replacer = new NameRefReplacer( filter.getCluster(), false );
         programBuilder.addIdentity();
-        programBuilder.addCondition( filter.condition );
+        programBuilder.addCondition( filter.condition.accept( replacer ) );
         final RexProgram program = programBuilder.getProgram();
 
         return EnumerableCalc.create( convert( input, input.getTraitSet().replace( EnumerableConvention.INSTANCE ) ), program );
+    }
+
+
+    /**
+     * Visitor which replaces {@link RexNameRef} with {@link RexCall} using {@link OperatorName#MQL_QUERY_VALUE}.
+     */
+    public static class NameRefReplacer extends RexShuttle {
+
+        private final AlgOptCluster cluster;
+        boolean inplace;
+
+
+        public NameRefReplacer( AlgOptCluster cluster, boolean inplace ) {
+            this.cluster = cluster;
+            this.inplace = inplace;
+        }
+
+
+        @Override
+        public RexNode visitNameRef( RexNameRef nameRef ) {
+            return new RexCall(
+                    nameRef.getType(),
+                    OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_QUERY_VALUE ),
+                    RexIndexRef.of( 0, DocumentType.ofDoc() ),
+                    DocumentUtil.getStringArray( nameRef.names, cluster ) );
+        }
+
+
     }
 
 

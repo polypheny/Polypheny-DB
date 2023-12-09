@@ -460,8 +460,10 @@ public enum BuiltInMethod {
     MQL_UPDATE_REPLACE( MqlFunctions.class, "docUpdateReplace", PolyValue.class, List.class, List.class ),
     MQL_UPDATE_RENAME( MqlFunctions.class, "docUpdateRename", PolyValue.class, List.class, List.class ),
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
-    MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, List.class ),
+    MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+
+    MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
     CYPHER_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),

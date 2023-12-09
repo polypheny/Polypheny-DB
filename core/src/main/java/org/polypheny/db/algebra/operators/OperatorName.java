@@ -1356,6 +1356,8 @@ public enum OperatorName {
 
     MQL_MERGE( LangFunctionOperator.class ),
 
+    MQL_PROJECT_INCLUDES( LangFunctionOperator.class ),
+
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     //-------------------------------------------------------------
