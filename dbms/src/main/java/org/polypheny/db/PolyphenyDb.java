@@ -37,8 +37,8 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.StatusService.ErrorConfig;
-import org.polypheny.db.StatusService.StatusType;
+import org.polypheny.db.StatusNotificationService.ErrorConfig;
+import org.polypheny.db.StatusNotificationService.StatusType;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
@@ -47,6 +47,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.cli.PolyModesConverter;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
@@ -59,11 +61,12 @@ import org.polypheny.db.gui.SplashHelper;
 import org.polypheny.db.gui.TrayGui;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
-import org.polypheny.db.information.HostInformation;
-import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.information.StatusService;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
+import org.polypheny.db.monitoring.information.HostInformation;
+import org.polypheny.db.monitoring.information.JavaInformation;
 import org.polypheny.db.monitoring.statistics.StatisticQueryProcessor;
 import org.polypheny.db.monitoring.statistics.StatisticsManagerImpl;
 import org.polypheny.db.partition.FrequencyMap;
@@ -149,8 +152,8 @@ public class PolyphenyDb {
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
             final PolyphenyDb polyphenyDb = parser.parse( args );
 
-            StatusService.addSubscriber( log::info, StatusType.INFO );
-            StatusService.addSubscriber( log::error, StatusType.ERROR );
+            StatusNotificationService.addSubscriber( log::info, StatusType.INFO );
+            StatusNotificationService.addSubscriber( log::error, StatusType.ERROR );
 
             // Hide dock icon on macOS systems
             System.setProperty( "apple.awt.UIElement", "true" );
@@ -165,12 +168,14 @@ public class PolyphenyDb {
             }
 
             polyphenyDb.runPolyphenyDb();
-        } catch ( ParseException e ) {
+        } catch (
+                ParseException e ) {
             log.error( "Error parsing command line parameters: " + e.getMessage() );
-        } catch ( Throwable uncaught ) {
+        } catch (
+                Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
                 log.error( "Uncaught Throwable.", uncaught );
-                StatusService.printError(
+                StatusNotificationService.printError(
                         "Error: " + uncaught.getMessage(),
                         ErrorConfig.builder().func( ErrorConfig.DO_NOTHING ).doExit( true ).showButton( true ).buttonMessage( "Exit" ).build() );
             }
@@ -216,6 +221,8 @@ public class PolyphenyDb {
 
         // we have to set the mode before checking
         PolyphenyHomeDirManager dirManager = PolyphenyHomeDirManager.setModeAndGetInstance( mode );
+
+        initializeStatusNotificationService();
 
         // Check if Polypheny is already running
         if ( GuiUtils.checkPolyphenyAlreadyRunning() ) {
@@ -360,10 +367,12 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve java runtime information." );
         }
         try {
-            new HostInformation();
+            HostInformation.getINSTANCE();
         } catch ( Exception e ) {
             log.error( "Unable to retrieve host information." );
         }
+
+        StatusService.initialize( transactionManager, server.getServer() );
 
         if ( initializeDockerManager() ) {
             return;
@@ -489,6 +498,22 @@ public class PolyphenyDb {
         return false;
     }
 
+
+    private static void initializeStatusNotificationService() {
+        StatusNotificationService.setPort( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        RuntimeConfig.WEBUI_SERVER_PORT.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+        } );
+    }
 
     private void initializeIndexManager() {
         try {

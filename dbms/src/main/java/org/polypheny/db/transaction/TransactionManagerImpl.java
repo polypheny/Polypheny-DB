@@ -137,4 +137,9 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
+    @Override
+    public long getNumberOfActiveTransactions() {
+        return transactions.size();
+    }
+
 }

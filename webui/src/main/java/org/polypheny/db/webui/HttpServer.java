@@ -37,7 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -118,7 +118,7 @@ public class HttpServer implements Runnable {
 
         attachRoutes( server, crud );
 
-        StatusService.printInfo(
+        StatusNotificationService.printInfo(
                 String.format( "Polypheny-UI started and is listening on port %d.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() ) );
 
         attachExceptions( server );

@@ -215,4 +215,9 @@ public class RoutingPlanCache {
         MonitoringServiceProvider.getInstance().resetQueryPostCosts();
     }
 
+
+    public long getSize() {
+        return planCache.size();
+    }
+
 }

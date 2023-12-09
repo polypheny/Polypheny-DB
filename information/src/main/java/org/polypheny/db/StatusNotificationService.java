@@ -36,9 +36,11 @@ import lombok.extern.slf4j.Slf4j;
  * to the attached subscribers.
  */
 @Slf4j
-public class StatusService {
+public class StatusNotificationService {
 
-    private static final String POLY_URL = "http://localhost:8080";
+    private static int POLY_PORT = 7659;
+
+    private static final String POLY_URL = "http://localhost:" + POLY_PORT + "/";
 
     private static final AtomicInteger idBuilder = new AtomicInteger();
 
@@ -47,7 +49,7 @@ public class StatusService {
 
 
     public static synchronized int addInfoSubscriber( BiConsumer<String, Object> printer ) {
-        return StatusService.addSubscriber( printer, StatusType.INFO );
+        return StatusNotificationService.addSubscriber( printer, StatusType.INFO );
     }
 
 
@@ -86,6 +88,11 @@ public class StatusService {
     public static void removeSubscriber( int id ) {
         infoSubs.remove( id );
         errorSubs.remove( id );
+    }
+
+
+    public static void setPort( int port ) {
+        POLY_PORT = port;
     }
 
 

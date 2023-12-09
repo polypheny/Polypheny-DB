@@ -32,7 +32,7 @@ import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
 import org.pf4j.Extension;
-import org.polypheny.db.StatusService;
+import org.polypheny.db.StatusNotificationService;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
@@ -139,7 +139,7 @@ public class AvaticaInterfacePlugin extends PolyPlugin {
                 log.error( "Exception while starting " + INTERFACE_NAME, e );
             }
 
-            StatusService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
+            StatusNotificationService.printInfo( String.format( "%s started and is listening on port %d.", INTERFACE_NAME, port ) );
         }
 
 

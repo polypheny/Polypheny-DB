@@ -17,9 +17,8 @@
 package org.polypheny.db.webui.models.requests;
 
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
 import java.util.Map;
+import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 import org.polypheny.db.webui.models.SortState;
 
@@ -43,7 +42,7 @@ public class UIRequest extends RequestModel {
      * Information about the pagination,
      * what current page should be loaded
      */
-    @JsonSetter(nulls = Nulls.SKIP)
+    @Builder.Default
     public int currentPage = 1;
 
     /**

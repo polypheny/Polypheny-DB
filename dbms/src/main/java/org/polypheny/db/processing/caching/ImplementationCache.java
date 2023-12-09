@@ -165,4 +165,9 @@ public class ImplementationCache {
         im.registerInformation( invalidateAction );
     }
 
+
+    public long getCacheSize() {
+        return implementationCache.size();
+    }
+
 }

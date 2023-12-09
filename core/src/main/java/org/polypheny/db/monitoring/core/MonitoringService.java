@@ -115,4 +115,6 @@ public interface MonitoringService {
      */
     void resetQueryPostCosts();
 
+    long getSize();
+
 }
