@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.core.DocumentAggregateCall;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
@@ -39,14 +39,14 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     public final List<DocumentAggregateCall> aggCalls;
 
     @Nullable // null means "group by all columns in input row"
-    private final RexNode group;
+    private final RexNameRef group;
 
 
     /**
      * Creates a {@link DocumentAggregate}.
      * {@link ModelTrait#DOCUMENT} native node of an aggregate.
      */
-    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNode group, List<DocumentAggregateCall> aggCalls ) {
+    protected DocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         super( cluster, traits, child );
         this.group = group;
         this.aggCalls = ImmutableList.copyOf( aggCalls );
@@ -54,7 +54,7 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     }
 
 
-    public Optional<RexNode> getGroup() {
+    public Optional<RexNameRef> getGroup() {
         return Optional.ofNullable( group );
     }
 

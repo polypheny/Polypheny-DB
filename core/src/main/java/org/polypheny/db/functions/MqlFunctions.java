@@ -35,6 +35,7 @@ import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -62,11 +63,11 @@ public class MqlFunctions {
         PolyValue temp = input;
         for ( PolyString filter : filters ) {
             if ( !temp.isDocument() ) {
-                return null;
+                return PolyDocument.ofUnset(); // all fields except _id are unset
             }
             temp = temp.asDocument().get( filter );
             if ( temp == null ) {
-                return null;
+                return PolyDocument.ofUnset();
             }
         }
 
@@ -429,6 +430,9 @@ public class MqlFunctions {
         Map<PolyString, PolyValue> temp;
 
         for ( int i = 0; i < documents.length; i++ ) {
+            if ( documents[i].isDocument() && documents[i].asDocument().isUnset ) {
+                continue;
+            }
             iter = names.get( i ).iterator();
             temp = doc;
             while ( iter.hasNext() ) {
@@ -458,9 +462,12 @@ public class MqlFunctions {
      * @return if the size matches
      */
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyBoolean docSizeMatch( PolyValue input, PolyNumber size ) {
+    public static PolyBoolean docSizeMatch( PolyValue input, PolyValue size ) {
+        if ( !size.isNumber() ) {
+            return PolyBoolean.FALSE;
+        }
         if ( input.isList() ) {
-            return PolyBoolean.of( input.asList().size() == size.intValue() );
+            return PolyBoolean.of( input.asList().size() == size.asNumber().intValue() );
         }
         return PolyBoolean.FALSE;
     }
@@ -524,6 +531,14 @@ public class MqlFunctions {
                 () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
     }
 
+
+    @SuppressWarnings("unused")
+    public static PolyValue notUnset( PolyValue value ) {
+        if ( value.isDocument() && value.asDocument().isEmpty() ) {
+            return PolyNull.NULL;
+        }
+        return value;
+    }
 
     /**
      * Special less than operation, which conforms the MongoQl standard.

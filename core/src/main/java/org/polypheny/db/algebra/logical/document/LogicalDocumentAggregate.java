@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.document;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.DocumentAggregateCall;
@@ -27,7 +28,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexNameRef;
 
 
 public class LogicalDocumentAggregate extends DocumentAggregate {
@@ -35,7 +36,7 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Subclass of {@link DocumentAggregate} not targeted at any particular engine or calling convention.
      */
-    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode group, List<DocumentAggregateCall> aggCalls ) {
+    protected LogicalDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -43,12 +44,12 @@ public class LogicalDocumentAggregate extends DocumentAggregate {
     /**
      * Creates a LogicalAggregate.
      */
-    public static LogicalDocumentAggregate create( final AlgNode input, RexNode group, List<DocumentAggregateCall> aggCalls ) {
+    public static LogicalDocumentAggregate create( final AlgNode input, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         return create_( input, group, aggCalls );
     }
 
 
-    private static LogicalDocumentAggregate create_( final AlgNode input, RexNode group, List<DocumentAggregateCall> aggCalls ) {
+    private static LogicalDocumentAggregate create_( final AlgNode input, @Nullable RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         final AlgOptCluster cluster = input.getCluster();
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
         return new LogicalDocumentAggregate( cluster, traitSet, input, group, aggCalls );

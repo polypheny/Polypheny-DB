@@ -2159,17 +2159,16 @@ public class MqlToAlgConverter {
 
             for ( Entry<String, RexNode> entry : includes.entrySet() ) {
                 List<RexNode> values = new ArrayList<>();
-                for ( AlgDataTypeField field : rowType.getFields() ) {
 
-                    // we attach the new values to the input bson
-                    values.add( new RexCall(
-                            any,
-                            OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
-                            Arrays.asList(
-                                    cluster.getRexBuilder().makeArray( cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ), PolyList.copyOf( Arrays.stream( entry.getKey().split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ),
-                                    entry.getValue() ) ) );
-
-                }
+                // we attach the new values to the input bson
+                values.add( new RexCall(
+                        any,
+                        OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_ADD_FIELDS ),
+                        Arrays.asList(
+                                RexIndexRef.of( 0, rowType ),
+                                cluster.getRexBuilder().makeArray( cluster.getTypeFactory().createArrayType( cluster.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
+                                        PolyList.copyOf( Arrays.stream( entry.getKey().split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ),
+                                entry.getValue() ) ) );
 
                 node = LogicalDocumentProject.create( node, values, names );
             }

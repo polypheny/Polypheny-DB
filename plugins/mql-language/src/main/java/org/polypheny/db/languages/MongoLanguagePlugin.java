@@ -187,6 +187,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_GTE, new LangFunctionOperator( "MQL_GTE", Kind.GREATER_THAN_OR_EQUAL ) );
 
+        register( OperatorName.MQL_NOT_UNSET, new LangFunctionOperator( "MQL_NOT_UNSET", Kind.OTHER ) );
+
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER ) );
 
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER ) );

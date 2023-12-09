@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument.PolyDocumentDeserializer;
@@ -58,9 +59,19 @@ import org.polypheny.db.util.Pair;
 @JsonDeserialize(using = PolyDocumentDeserializer.class)
 public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
+    public static PolyDocument ID_NULL = new PolyDocument( Map.of( new PolyString( "_id" ), PolyNull.NULL ) );
 
-    public PolyDocument( @JsonProperty("map") @Deserialize("map") Map<PolyString, PolyValue> value ) {
+    public boolean isUnset; // documents can contain documents and so on, additionally such a sub document, can not only be null, but also unset
+
+
+    public PolyDocument( @JsonProperty("map") @Deserialize("map") Map<PolyString, PolyValue> value, @JsonProperty("isUnset") @Deserialize("isUnset") boolean isUnset ) {
         super( value, PolyType.DOCUMENT );
+        this.isUnset = isUnset;
+    }
+
+
+    public PolyDocument( Map<PolyString, PolyValue> value ) {
+        this( value, false );
     }
 
 
@@ -68,6 +79,11 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
         this( new HashMap<>() {{
             put( key, value );
         }} );
+    }
+
+
+    public static PolyDocument ofUnset() {
+        return new PolyDocument( new HashMap<>(), true );
     }
 
 
@@ -99,6 +115,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
         throw new NotImplementedException( "convert value to Document" );
     }
 
+
     @Override
     public @Nullable String toTypedJson() {
         try {
@@ -113,7 +130,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDocument.class, super.asExpression() );
+        return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
     }
 
 
@@ -130,6 +147,10 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyDocument item ) {
+                    out.writeBoolean( item.isUnset );
+                    if ( item.isUnset ) {
+                        return;
+                    }
                     out.writeLong( item.size() );
                     for ( Entry<PolyString, PolyValue> entry : item.entrySet() ) {
                         out.writeUTF8( PolySerializable.serialize( serializer, entry.getKey() ) );
@@ -141,6 +162,9 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
                 @Override
                 public PolyDocument decode( BinaryInput in ) throws CorruptedDataException {
                     Map<PolyString, PolyValue> map = new HashMap<>();
+                    if ( in.readBoolean() ) {
+                        return PolyDocument.ofUnset();
+                    }
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
                         map.put(

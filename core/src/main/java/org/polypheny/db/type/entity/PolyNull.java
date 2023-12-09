@@ -99,7 +99,7 @@ public class PolyNull extends PolyValue {
 
     @Override
     public boolean isDocument() {
-        return true;
+        return false;
     }
 
 

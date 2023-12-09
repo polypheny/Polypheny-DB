@@ -60,6 +60,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Experimental;
@@ -2750,10 +2751,10 @@ public class AlgBuilder {
         private final AggFunction aggFunction;
         private final boolean distinct;
         private final boolean approximate;
-        private final RexNode filter; // may be null
-        private final String alias; // may be null
-        private final ImmutableList<RexNode> operands; // may be empty, never null
-        private final ImmutableList<RexNode> orderKeys; // may be empty, never null
+        private final @Nullable RexNode filter;
+        private final @Nullable String alias;
+        private final @Nonnull ImmutableList<RexNode> operands;
+        private final @Nonnull ImmutableList<RexNode> orderKeys;
 
 
         AggCallImpl(

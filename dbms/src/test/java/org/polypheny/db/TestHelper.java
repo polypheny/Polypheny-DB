@@ -429,9 +429,9 @@ public class TestHelper {
 
             if ( unordered ) {
                 assertTrue( "Expected result does not contain all actual results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
-                        parsedExpected.containsAll( parsedResults ) );
+                        areDocumentEqual( parsedExpected, parsedResults ) );
                 assertTrue( "Actual result does not contain all expected results: \nexpected: \n" + new BsonArray( parsedExpected ) + "\nactual: \n" + new BsonArray( parsedResults ),
-                        parsedResults.containsAll( parsedExpected ) );
+                        areDocumentEqual( parsedResults, parsedExpected ) );
             } else {
                 List<Pair<BsonValue, BsonValue>> wrong = new ArrayList<>();
                 for ( Pair<BsonValue, BsonValue> pair : Pair.zip( parsedExpected, parsedResults ) ) {
@@ -447,6 +447,68 @@ public class TestHelper {
             }
 
             return true;
+        }
+
+
+        /**
+         * Checks if all elements of parsedExpected are in parsedResults
+         * This is needed because the order of the elements in the result is not guaranteed
+         * The document model does not guarantee specific types like 8.0 and 8 are treated as equal
+         *
+         * @param parsedExpected
+         * @param parsedResults
+         * @return
+         */
+        private static boolean areDocumentEqual( List<BsonValue> parsedExpected, List<BsonValue> parsedResults ) {
+            for ( BsonValue bsonValue : parsedExpected ) {
+                if ( parsedResults.contains( bsonValue ) ) {
+                    continue;
+                }
+                boolean found = false;
+                for ( BsonValue parsedResult : parsedResults ) {
+                    if ( areValueEqual( bsonValue, parsedResult ) ) {
+                        found = true;
+                        break;
+                    }
+                }
+                if ( !found ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        private static boolean areValueEqual( BsonValue bsonValue, BsonValue parsedResult ) {
+            if ( bsonValue.equals( parsedResult ) ) {
+                return true;
+            }
+            if ( bsonValue.isDocument() && parsedResult.isDocument() ) {
+                BsonDocument bsonDocument = bsonValue.asDocument();
+                BsonDocument parsedDocument = parsedResult.asDocument();
+                for ( String key : bsonDocument.keySet() ) {
+                    if ( !parsedDocument.containsKey( key ) ) {
+                        return false;
+                    }
+                    if ( !areValueEqual( bsonDocument.get( key ), parsedDocument.get( key ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isArray() && parsedResult.isArray() ) {
+                BsonArray bsonArray = bsonValue.asArray();
+                BsonArray parsedArray = parsedResult.asArray();
+                for ( int i = 0; i < bsonArray.size(); i++ ) {
+                    if ( !areValueEqual( bsonArray.get( i ), parsedArray.get( i ) ) ) {
+                        return false;
+                    }
+                }
+                return true;
+            } else if ( bsonValue.isNumber() && parsedResult.isNumber() ) {
+                return bsonValue.asNumber().doubleValue() == parsedResult.asNumber().doubleValue();
+            }
+            return false;
+
         }
 
 

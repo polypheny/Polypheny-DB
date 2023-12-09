@@ -446,7 +446,7 @@ public enum BuiltInMethod {
     MQL_GTE( MqlFunctions.class, "docGte", PolyValue.class, PolyValue.class ),
     MQL_LT( MqlFunctions.class, "docLt", PolyValue.class, PolyValue.class ),
     MQL_LTE( MqlFunctions.class, "docLte", PolyValue.class, PolyValue.class ),
-    MQL_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", PolyValue.class, PolyNumber.class ),
+    MQL_SIZE_MATCH( MqlFunctions.class, "docSizeMatch", PolyValue.class, PolyValue.class ),
     MQL_JSON_MATCH( MqlFunctions.class, "docJsonMatch", PolyValue.class, String.class ),
     MQL_REGEX_MATCH( MqlFunctions.class, "docRegexMatch", PolyValue.class, PolyString.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class, PolyBoolean.class ),
     MQL_TYPE_MATCH( MqlFunctions.class, "docTypeMatch", PolyValue.class, List.class ),
@@ -462,6 +462,7 @@ public enum BuiltInMethod {
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),

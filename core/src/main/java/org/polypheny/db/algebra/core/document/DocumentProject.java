@@ -34,10 +34,8 @@ import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -88,7 +86,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
     public RexNode asSingleProject() {
         RexBuilder builder = getCluster().getRexBuilder();
-        RexNode doc = RexIndexRef.of( 0, getRowType() );
+        RexNode doc = RexIndexRef.of( 0, DocumentType.ofId() );
         List<RexNode> nodes = new ArrayList<>();
         nodes.add( doc );
         // null key is replaceRoot
@@ -100,15 +98,7 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
         nodes.addAll( includes.entrySet().stream().filter( o -> Objects.nonNull( o.getKey() ) ).map( Entry::getValue ).collect( Collectors.toList() ) );
 
         if ( !includes.isEmpty() ) {
-
-            List<RexNode> inc = new ArrayList<>( List.of(
-                    doc,
-                    new RexLiteral(
-                            PolyList.of( includes.keySet().stream().map( n -> PolyList.of( Arrays.stream( n.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ).collect( Collectors.toList() ) ),
-                            DocumentUtil.getNestedArrayType( getCluster(), 2, getCluster().getTypeFactory().createPolyType( PolyType.VARCHAR, 255 ) ), PolyType.ARRAY ) ) );
-
-            inc.addAll( includes.values() );
-            doc = builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_PROJECT_INCLUDES ), inc );
+            doc = builder.makeCall( getRowType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
 
             List<Entry<String, ? extends RexNode>> root = includes.entrySet().stream().filter( obj -> Objects.isNull( obj.getKey() ) ).collect( Collectors.toList() );
             if ( !root.isEmpty() ) {

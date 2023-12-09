@@ -423,6 +423,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_MERGE ), BuiltInMethod.MQL_MERGE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
 
         defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );

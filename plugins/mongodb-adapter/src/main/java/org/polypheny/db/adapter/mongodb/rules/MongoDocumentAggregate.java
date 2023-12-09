@@ -28,7 +28,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlSumAggFunction;
@@ -46,7 +45,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
      * @param child Input of this expression
      * @param aggCalls Aggregate calls
      */
-    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNode group, List<DocumentAggregateCall> aggCalls ) {
+    protected MongoDocumentAggregate( AlgOptCluster cluster, AlgTraitSet traits, AlgNode child, RexNameRef group, List<DocumentAggregateCall> aggCalls ) {
         super( cluster, traits, child, group, aggCalls );
     }
 
@@ -56,7 +55,13 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
         implementor.visitChild( 0, getInput() );
         List<String> list = new ArrayList<>();
 
-        final String inName = MongoRules.maybeQuote( getGroup().map( n -> "$" + n.unwrap( RexNameRef.class ).orElseThrow().name ).orElse( "null" ) );
+        if ( getGroup().isEmpty() && aggCalls.size() == 1 ) {
+            handleSpecificAggregate( implementor, list, aggCalls.get( 0 ) );
+            return;
+        }
+
+        final String inName = MongoRules.maybeQuote( getGroup().map( n -> "$" + n.unwrap( RexNameRef.class ).orElseThrow().name ).orElseThrow() );
+
         list.add( "_id: " + inName );
         //implementor.physicalMapper.add( inName );
 
@@ -64,6 +69,19 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
             list.add( MongoRules.maybeQuote( aggCall.name ) + ": " + toMongo( aggCall ) );
         }
         implementor.add( null, "{$group: " + Util.toString( list, "{", ", ", "}" ) + "}" );
+    }
+
+
+    private void handleSpecificAggregate( Implementor implementor, List<String> list, DocumentAggregateCall call ) {
+
+        switch ( call.function.getKind() ) {
+            case COUNT:
+                implementor.add( null, "{$count: \"" + call.name + "\" }" );
+                break;
+            default:
+                throw new GenericRuntimeException( "unknown aggregate " + call.function );
+        }
+
     }
 
 

@@ -17,13 +17,34 @@
 package org.polypheny.db.algebra.enumerable.document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.DocumentAggregateCall;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
+import org.polypheny.db.algebra.logical.relational.LogicalAggregate;
+import org.polypheny.db.algebra.logical.relational.LogicalProject;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.DocumentType;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.ImmutableBitSet;
 
 public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
@@ -49,36 +70,44 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
         List<String> names = new ArrayList<>();
         RexIndexRef parent = builder.getRexBuilder().makeInputRef( alg.getInput(), 0 );
         // todo dl fix
-        //nodes.add( parent );
-        //names.add( alg.getInput().getRowType().getFieldNames().get( 0 ) );
-
-        /*for ( String path : alg.groupSet ) {
+        /*nodes.add( parent );
+        names.add( alg.getInput().getRowType().getFieldNames().get( 0 ) );*/
+        ImmutableBitSet groupSet = ImmutableBitSet.of();
+        if ( alg.getGroup().isPresent() ) {
+            groupSet = ImmutableBitSet.of( List.of( 0 ) );
+            String groupKey = alg.getGroup().get().getName();
             RexNode node = builder.getRexBuilder().makeCall(
                     DocumentType.ofId(),
                     OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
                     parent,
                     builder.getRexBuilder().makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
-                            PolyList.copyOf( Arrays.stream( path.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ) );
+                            PolyList.copyOf( Arrays.stream( groupKey.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ) );
             nodes.add( node );
-            names.add( path );
+            names.add( DocumentType.DOCUMENT_ID );
         }
 
         int i = 0;
-        for ( String path : alg.names ) {
+        for ( DocumentAggregateCall agg : alg.aggCalls ) {
+            RexNode node = RexIndexRef.of( 0, DocumentType.ofDoc() );
+            if ( agg.getInput().isPresent() ) {
+                node = builder.getRexBuilder().makeCall(
+                        DocumentType.ofDoc(),
+                        OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
+                        parent,
+                        builder.getRexBuilder().makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
+                                PolyList.copyOf( agg.getInput().map( r -> r.unwrap( RexNameRef.class ).map( n -> n.names.stream().map( PolyString::of ) ).orElseThrow() ).orElseThrow().collect( Collectors.toList() ) ) ) );
+            }
 
-            RexNode node = builder.getRexBuilder().makeCall(
-                    alg.aggCalls.get( i ).getType(),
-                    OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_QUERY_VALUE ),
-                    parent,
-                    builder.getRexBuilder().makeArray( builder.getTypeFactory().createArrayType( builder.getTypeFactory().createPolyType( PolyType.CHAR, 255 ), -1 ),
-                            PolyList.copyOf( Arrays.stream( path.split( "\\." ) ).map( PolyString::of ).collect( Collectors.toList() ) ) ) );
+            if ( agg.requiresCast( alg.getCluster() ).isPresent() ) {
+                node = builder.getRexBuilder().makeAbstractCast( agg.requiresCast( alg.getCluster() ).get(), node );
+            }
 
             if ( node.getType().getPolyType() != PolyType.DOCUMENT ) {
                 node = builder.getRexBuilder().makeAbstractCast( node.getType(), node );
             }
 
             nodes.add( node );
-            names.add( path );
+            names.add( agg.name );
             i++;
         }
 
@@ -88,16 +117,18 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
         builder.push( enumerableProject );
 
-        GroupKey groupKey = builder.groupKey( ImmutableBitSet.of( IntStream.range( 0, alg.groupSet.size() ).boxed().collect( Collectors.toList() ) ) );
-
-        builder.aggregate( groupKey, alg.aggCalls );
+        builder.push( LogicalAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( project.getRowType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
 
         AlgNode aggregate = builder.build();
 
         AlgNode enumerableAggregate = aggregate.copy( aggregate.getTraitSet().replace( ModelTrait.DOCUMENT ), aggregate.getInputs() );
 
         //RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ) );
-        Map<String, RexNode> docs = enumerableAggregate.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) ) );
+        Map<String, RexNode> docs = enumerableAggregate.getRowType().getFields().stream().collect( Collectors.toMap( AlgDataTypeField::getName, e -> e.getName().equals( DocumentType.DOCUMENT_ID )
+                ? builder.getRexBuilder().makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_NOT_UNSET ), builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) )
+                : builder.getRexBuilder().makeInputRef( DocumentType.ofDoc(), e.getIndex() ) ) );
+
+        // RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
 
         call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of() ) );
         // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );*/

@@ -169,7 +169,7 @@ public class AggregateTest extends MqlTestTemplate {
 
         DocResult result = aggregate( $count( "newName" ) );
 
-        MongoConnection.checkDocResultSet( result, expected, true, true );
+        MongoConnection.checkDocResultSet( result, expected, false, true );
     }
 
     //$group

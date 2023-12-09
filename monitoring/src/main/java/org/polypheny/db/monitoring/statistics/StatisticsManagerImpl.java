@@ -545,11 +545,12 @@ public class StatisticsManagerImpl extends StatisticsManager {
                         Collections.singletonList( tableScan.getRowType().getFieldNames().get( i ) ) );
 
                 LogicalAggregate logicalAggregate = LogicalAggregate.create(
-                        logicalProject, ImmutableBitSet.of( 0 ),
+                        logicalProject,
+                        ImmutableBitSet.of( 0 ),
                         Collections.singletonList( ImmutableBitSet.of( 0 ) ),
                         Collections.emptyList() );
 
-                Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( (int) 6 ), PolyType.DECIMAL );
+                Pair<BigDecimal, PolyType> valuePair = new Pair<>( new BigDecimal( 6 ), PolyType.DECIMAL );
 
                 return LogicalSort.create(
                         logicalAggregate,

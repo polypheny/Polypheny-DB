@@ -1360,6 +1360,8 @@ public enum OperatorName {
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
+    MQL_NOT_UNSET( LangFunctionOperator.class ),
+
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
     //-------------------------------------------------------------

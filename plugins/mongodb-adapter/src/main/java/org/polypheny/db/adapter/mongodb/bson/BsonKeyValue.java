@@ -17,10 +17,12 @@
 package org.polypheny.db.adapter.mongodb.bson;
 
 import java.util.function.Function;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 
+@EqualsAndHashCode(callSuper = true)
 @Value
 public class BsonKeyValue extends BsonDocument {
 
