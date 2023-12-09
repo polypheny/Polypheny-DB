@@ -17,6 +17,7 @@
 package org.polypheny.db.backup;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +50,8 @@ public class BackupManager {
     @Getter
     private BackupInformationObject backupInformationObject;
     public static TransactionManager transactionManager = null;
-    public static int batchSize = 1;  //#rows (100 for the beginning)
+    public static int batchSize = 2;  //#rows (100 for the beginning)
+    public static int threadNumber = 8; //#cores (#cpu's) for now
     //private final Logger logger;
 
 

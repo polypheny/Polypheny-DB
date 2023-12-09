@@ -16,13 +16,33 @@
 
 package org.polypheny.db.backup.datagatherer;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.backup.BackupManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -41,6 +61,11 @@ public class GatherEntries {
     private final List<Pair<String, String>> tablesToBeCollected;
     private final List<Pair<Long, String>> collectionsToBeCollected;
     private final List<Long> graphNamespaceIds;
+    //private final int = hal.getProcessor().getPhysicalProcessorCount();
+
+    private File backupFolder = null;
+    @Getter
+    private File dataFolder = null;
 
 
 
@@ -57,12 +82,21 @@ public class GatherEntries {
     // Structure for saving: 1 schemafile, 1 storagefile, 1 to many datadata file(s)
 
     public void start() {
+        ExecutorService executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
+        //initFileTest();
+        PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
+        backupFolder = fileSystemManager.registerNewFolder( "backup" );
+        dataFolder = fileSystemManager.registerNewFolder( backupFolder, "data" );
+
         if (!tablesToBeCollected.isEmpty()){
             //go through each pair in tablesToBeCollectedList
             for ( Pair<String, String> table : tablesToBeCollected) {
                 //TODO(FF): exclude default columns? no, how do you differentiate for each line if it is not a default value
                 String query = String.format( "SELECT * FROM %s.%s" , table.getKey(), table.getValue() );
-                executeQuery( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
+                //executeQuery2( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
+
+                File tableData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getKey() , table.getValue() ));
+                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.RELATIONAL, Catalog.defaultNamespaceId , tableData) );
             }
             /*
             for ( String nsTableName : tablesToBeCollected ) {
@@ -74,7 +108,9 @@ public class GatherEntries {
         if (!collectionsToBeCollected.isEmpty()){
             for ( Pair<Long, String> collection : collectionsToBeCollected ) {
                 String query = String.format( "db.%s.find()", collection.getValue() );
-                executeQuery( query, DataModel.DOCUMENT, collection.getKey() );
+                //executeQuery2( query, DataModel.DOCUMENT, collection.getKey() );
+                File collectionData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getValue() ));
+                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.DOCUMENT, collection.getKey(), collectionData ) );
             }
         }
 
@@ -82,19 +118,22 @@ public class GatherEntries {
             for ( Long graphNamespaceId : graphNamespaceIds ) {
                 //String query = "MATCH (n) RETURN n";
                 String query = "MATCH (*) RETURN n"; //todo: result is polygraph
-                executeQuery( query, DataModel.GRAPH, graphNamespaceId );
+                //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
+                File graphData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ));
+                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
             }
         }
 
         log.info( "collected entry data" );
-        initializeFileLocation();
+        //initializeFileLocation();
         log.info( "folder was created" );
+        executorService.shutdown();
 
     }
 
     // Gather entries with select statements
 
-    private void executeQuery( String query, DataModel dataModel, long namespaceId ) {
+    private void executeQuery2( String query, DataModel dataModel, long namespaceId ) {
 
         log.debug( "gather entries" );
         Transaction transaction;
@@ -107,6 +146,11 @@ public class GatherEntries {
         09:50:10.578 INFO [JettyServerThreadPool-32]: [[{email:jane@example.com,name:Jane Doe,_id:6570348c4023777b64ff8be8}], [{email:jim@example.com,name:Jim Doe,_id:6570348c4023777b64ff8be9}]]
         09:50:12.880 INFO [JettyServerThreadPool-32]: [[PolyNode{id=5823e305-17bb-4fb7-bd17-2108a91acb70, properties=PolyMap(map={age=45, name=Ann, depno=13}), labels=PolyList(value=[Person])}], [PolyNode{id=e8772eff-10ab-4436-a693-9e3f2f0af6d2, properties=PolyMap(map={age=30, name=John, depno=13}), labels=PolyList(value=[Person2])}]]
 
+
+        if the batchsize is 1: this is printed
+        17:32:48.142 INFO [JettyServerThreadPool-418]: [[1, Best Album Ever!, 10]]
+        17:33:53.853 INFO [JettyServerThreadPool-418]: [[2, Pretty Decent Album..., 15]]
+        17:33:53.858 INFO [JettyServerThreadPool-418]: [[3, Your Ears will Bleed!, 13]]
          */
 
         switch ( dataModel ) {
@@ -208,22 +252,187 @@ public class GatherEntries {
          */
     }
 
+    private static void initFileTest() {
+        // this creates (only folders): dataa>cottontaildb-store>store23>dataIntern
+        PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
+        File adapterRoot = fileSystemManager.registerNewFolder( "dataaa/cottontaildb-store" );
+
+        File embeddedDir = fileSystemManager.registerNewFolder( adapterRoot, "store" + 23 );
+        File testFolder = fileSystemManager.registerNewFolder( "dataaa/cottontaildb-store/test" );  // works too
+
+        final File dataFolder = fileSystemManager.registerNewFolder( embeddedDir, "dataIntern" );
+
+    }
+
 
     private static void initializeFileLocation() {
         PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
-        File applicationConfDir = null;  //todo: wär eig class field (private static)
-        // String currentConfigurationDirectoryName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;    //static string in class field
-        String currentConfigurationDirectoryName = "backup";
-        String currentConfigurationFileName = "backup.bu";
-        File applicationConfFile = homeDirManager.registerNewFolder( currentConfigurationDirectoryName );   //there is complicated thing in ConfigManager>loadConfigFile()
+        File folder = null;  //todo: wär eig class field (private static)
+        // String folderName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;    //static string in class field
+        Date date = new java.util.Date();
+        String datum = date.toString();
+        String folderName = "backup";
+        String fileName = "backup.txt";
+        File file = homeDirManager.registerNewFolder( folderName );   //there is complicated thing in ConfigManager>loadConfigFile()
         // Create config directory and file if they do not already exist
         //PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
-        if ( applicationConfDir == null ) {
-            applicationConfDir = homeDirManager.registerNewFolder( currentConfigurationDirectoryName );
+
+
+        if ( folder == null ) {
+            folder = homeDirManager.registerNewFolder( folderName );
         } else {
-            applicationConfDir = homeDirManager.registerNewFolder( applicationConfDir.getParentFile(), currentConfigurationDirectoryName );
+            folder = homeDirManager.registerNewFolder( folder.getParentFile(), folderName );
         }
-        applicationConfFile = homeDirManager.registerNewFile( applicationConfDir, currentConfigurationFileName );
+        file = homeDirManager.registerNewFile( folder, fileName );
+
+
+
+
+
+        // For a large amount of data, we will require a better raw performance.
+        // In this case, buffered methods like BufferedWriter and Files.write() can offer improved efficiency.
+        // Use FileChannel to write larger files. It is the preferred way of writing files in Java 8 as well.
+        // https://howtodoinjava.com/java/io/java-write-to-file/
+
+
+
+
+        // this is apparently also an option;
+        try {
+            String str = "lisjlk";
+            byte[] strToBytes = str.getBytes();
+
+            Files.write( file.toPath(), strToBytes);
+
+            String read = Files.readAllLines(file.toPath()).get(0);
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+
+        // apparently this is slower, no buffered is okee
+        try {
+            BufferedWriter writer = new BufferedWriter( new FileWriter( file ), 32768 );
+            writer.write( "test2" );
+            writer.close();
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+
+        //this is apparently faster, same as above (??) but for raw data
+        try {
+            //bufferedOutputStream??
+            FileInputStream fis = new FileInputStream(new File("in.txt"));
+            FileOutputStream fos = new FileOutputStream(new File("out.txt"));
+            byte[] buffer = new byte[1024];
+            int len;
+            while((len = fis.read(buffer)) != -1){
+                fos.write(buffer, 0, len);
+            }
+            fos.close();
+            fis.close();
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( e );
+        }
+
+        //apparently this is superfast? https://stackoverflow.com/questions/8109762/dataoutputstream-vs-dataoutputstreamnew-bufferedoutputstream
+        try {
+            File dataFile = null;
+            FileOutputStream fos = new FileOutputStream(dataFile);
+            DataOutputStream out = new DataOutputStream(new BufferedOutputStream(fos));
+            DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(dataFile)));
+
+            String str = "hello world";
+            byte[] strToBytes = str.getBytes();
+            out.write( strToBytes );
+
+
+            out.writeUTF("test");
+            out.close();
+            String result = in.readUTF();
+            in.close();
+
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+
+
+        //https://stackoverflow.com/questions/1605332/java-nio-filechannel-versus-fileoutputstream-performance-usefulness
+        //randomAccessFile: lets you start writing from specific point in file (after byte offset)... filechannel is from nio, apparently faster with large amount of data (+buffer)
+        try {
+            RandomAccessFile stream = new RandomAccessFile(fileName, "rw");
+            FileChannel channel = stream.getChannel();
+            String value = "Hello";
+            byte[] strBytes = value.getBytes();
+            ByteBuffer buffer = ByteBuffer.allocate(strBytes.length);
+            buffer.put(strBytes);
+            buffer.flip();
+            channel.write(buffer);
+            stream.close();
+            channel.close();
+
+            // verify
+            RandomAccessFile reader = new RandomAccessFile(fileName, "r");
+            //assertEquals(value, reader.readLine());
+            reader.close();
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+
+
     }
+
+
+    private void speedTest() {
+        char[] chars = new char[100*1024*1024];
+        Arrays.fill(chars, 'A');
+        String text = new String(chars);
+        long start = System.nanoTime();
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter("/tmp/a.txt"));
+            bw.write(text);
+            bw.close();
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
+
+        long time = System.nanoTime() - start;
+        log.info("Wrote " + chars.length*1000L/time+" MB/s.");
+        // stackoverflow dude: Wrote 135 MB/s
+    }
+
+
+    //from: https://www.devinline.com/2013/09/write-to-file-in-java.html
+    // With buffered input:- Read input file and write to output file
+    /*
+    public static void writeBinaryStreamEfficient(File outputFile, File inputFile) {
+        int byteCoint;
+        Long starttime = System.currentTimeMillis();
+        try {
+            FileInputStream is = new FileInputStream(inputFile);
+            // Buffered input stream and loop over buffered result
+            BufferedInputStream bis = new BufferedInputStream(is);
+
+            FileOutputStream os = new FileOutputStream(outputFile);
+            BufferedOutputStream bos = new BufferedOutputStream(os);
+            while ((byteCoint = bis.read()) != -1) {
+                bos.write(byteCoint);
+            }
+
+//Closes this file input/output stream and releases any system resources associated with the stream.
+            is.close();
+            os.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Total time spent in writing "
+                + "with buffered input is (in millisec) "
+                + (System.currentTimeMillis() - starttime));
+
+    }
+
+     */
 
 }
