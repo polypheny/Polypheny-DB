@@ -71,6 +71,8 @@ public class StatusService {
 
         webuiServer.get( PREFIX_KEY + "/transactions-active", this::getActiveTransactions );
 
+        webuiServer.get( PREFIX_KEY + "/transactions-total", this::getTransactionCount );
+
         webuiServer.get( PREFIX_KEY + "/cache-implementation", this::getImplementationCacheSize );
 
         webuiServer.get( PREFIX_KEY + "/cache-queryplan", this::getQueryPlanCacheSize );
@@ -79,6 +81,11 @@ public class StatusService {
 
         webuiServer.get( PREFIX_KEY + "/monitoring-queue", this::getMonitoringQueueSize );
 
+    }
+
+
+    private void getTransactionCount( Context context ) {
+        context.result( String.valueOf( transactionManager.getNumberOfTotalTransactions() ) );
     }
 
 

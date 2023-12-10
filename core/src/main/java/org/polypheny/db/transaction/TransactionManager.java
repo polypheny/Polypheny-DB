@@ -34,4 +34,6 @@ public interface TransactionManager {
 
     long getNumberOfActiveTransactions();
 
+    long getNumberOfTotalTransactions();
+
 }

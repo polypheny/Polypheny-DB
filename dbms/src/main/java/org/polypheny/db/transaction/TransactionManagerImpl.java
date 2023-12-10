@@ -19,6 +19,7 @@ package org.polypheny.db.transaction;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -40,6 +41,8 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 public class TransactionManagerImpl implements TransactionManager {
 
     private final ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
+
+    private final AtomicLong totalTransactions = new AtomicLong( 0 );
 
 
     private TransactionManagerImpl() {
@@ -84,6 +87,7 @@ public class TransactionManagerImpl implements TransactionManager {
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
         transactions.put( xid, new TransactionImpl( xid, this, user, defaultNamespace, analyze, origin, flavor ) );
+        totalTransactions.incrementAndGet();
         return transactions.get( xid );
     }
 
@@ -140,6 +144,12 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public long getNumberOfActiveTransactions() {
         return transactions.size();
+    }
+
+
+    @Override
+    public long getNumberOfTotalTransactions() {
+        return totalTransactions.get();
     }
 
 }
