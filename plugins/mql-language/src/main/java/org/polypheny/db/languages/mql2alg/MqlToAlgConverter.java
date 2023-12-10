@@ -203,6 +203,7 @@ public class MqlToAlgConverter {
         operators.add( "$all" );
         operators.add( "$elemMatch" );
         operators.add( "$size" );
+        operators.add( "$geoWithin" );
         operators.add( "$near" );
         operators.add( "$nearSphere" );
     }
@@ -1294,6 +1295,8 @@ public class MqlToAlgConverter {
                             return convertElemMatch( bsonValue, parentKey, rowType );
                         case "$size":
                             return convertSize( bsonValue, parentKey, rowType );
+                        case "$geoWithin":
+                            return convertGeoWithin( bsonValue, parentKey, rowType );
                         case "$near":
                             return convertNear( bsonValue, parentKey, rowType );
                         case "$nearSphere":
@@ -1913,6 +1916,37 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_TYPE_MATCH ),
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
+    }
+
+
+    /**
+     * Converts a $geoWithin filter field
+     * <pre>
+     *      { <field>: { $geoWithin: { $geometry: {<GeoJSON>} } }
+     * </pre>
+     *
+     * @param bson the $geoWithin information as BSON,
+     * which is a document with the necessary keys ($geoWithin.$geometry)
+     * @param parentKey the key of the parent document
+     * @param rowType the rowType of the node which is filtered by $geoWithin
+     * @return the filtered node
+     */
+    private RexNode convertGeoWithin( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        if ( !bson.isDocument() ) {
+            throw new GenericRuntimeException( "$geoWithin has to be a document." );
+        }
+        BsonDocument geoWithin = bson.asDocument();
+        if ( !geoWithin.containsKey( "$geometry" ) || !geoWithin.get( "$geometry" ).isDocument() ) {
+            throw new GenericRuntimeException( "$geoWithin.$geometry has to be a document." );
+        }
+        BsonDocument geometry = geoWithin.get( "$geometry" ).asDocument();
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_WITHIN ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( geometry ) ));
     }
 
 

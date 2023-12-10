@@ -336,6 +336,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case MQL_EXISTS:
                     translateExists( (RexCall) node );
                     return;
+                case MQL_GEO_WITHIN:
+                    translateGeoWithin( (RexCall) node );
+                    return;
                 case MQL_NEAR:
                     translateNear( (RexCall) node );
                     return;
@@ -680,6 +683,28 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue value = getParamAsValue( node.operands.get( 1 ) );
             attachCondition( null, left, new BsonDocument( "$size", value ) );
 
+        }
+
+
+        /**
+         * Translates a {@link Kind#MQL_GEO_WITHIN } to its form:
+         * <pre>
+         *      { <field>: { $geoWithin: { $geometry: {<GeoJSON>} } }
+         * </pre>
+         *
+         * @param node the untranslated node
+         */
+        private void translateGeoWithin( RexCall node ) {
+            if ( node.operands.size() != 2 ) {
+                return;
+            }
+            // field
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            // $geometry
+            BsonValue geometry = getParamAsValue( node.operands.get( 1 ) );
+            attachCondition( null, left, new BsonDocument()
+                    .append( "$geoWithin", new BsonDocument()
+                            .append( "$geometry", geometry ) ) );
         }
 
 

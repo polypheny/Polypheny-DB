@@ -723,6 +723,29 @@ public class MqlFunctions {
 
 
     /**
+     * Tests if the object/document is $geoWithin the provided geometry
+     *
+     * @param input the object/document
+     * @param geometry the $geometry to test if it is $geoWithin. In GeoJSON format
+     * @return <code>TRUE</code> if the provided object/document is $near the given geometry
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry ) {
+        if ( input == null || !input.isDocument() || !geometry.isDocument() ) {
+            return PolyBoolean.FALSE;
+        }
+        PolyGeometry inputGeom;
+        PolyGeometry geom;
+        try {
+            inputGeom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
+            geom = PolyGeometry.fromGeoJson( geometry.asDocument().toJson() );
+        } catch ( InvalidGeometryException e ) {
+            return PolyBoolean.FALSE;
+        }
+        return PolyBoolean.of( inputGeom.within( geom ) );
+    }
+
+    /**
      * Tests if the object/document is $near the provided geolocation on the <strong>plane</strong>.
      *
      * @param input the object/document
