@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -275,5 +276,7 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void restore();
 
+
+    public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
 
 }

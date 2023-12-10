@@ -458,6 +458,10 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) {
+        if ( tableId == referencesTableId ) {
+            throw new GenericRuntimeException( "A foreign key can not reference the same table." );
+        }
+
         LogicalTable table = tables.get( tableId );
         Snapshot snapshot = Catalog.getInstance().getSnapshot();
         List<LogicalKey> childKeys = snapshot.rel().getTableKeys( referencesTableId );
@@ -474,11 +478,8 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
                     throw new GenericRuntimeException( "The data type of the referenced columns does not match the data type of the referencing column: %s != %s", referencingColumn.type.name(), referencedColumn.type );
                 }
             }
-            // TODO same keys for key and foreign key
-            /*if ( getKeyUniqueCount( refKey.id ) > 0 ) {
-                continue;
-            }*/
             long keyId = getOrAddKey( tableId, columnIds, EnforcementTime.ON_COMMIT );
+
             LogicalForeignKey key = new LogicalForeignKey(
                     keyId,
                     constraintName,
@@ -497,6 +498,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             }
             return;
         }
+        throw new GenericRuntimeException( "Referenced columns are not defined as UNIQUE, which is required for foreign keys." );
 
     }
 

@@ -73,6 +73,7 @@ public class MapDbRepository implements PersistentMonitoringRepository {
             return table.values()
                     .stream()
                     .map( monitoringPersistentData -> (TPersistent) monitoringPersistentData )
+                    .filter( elem -> elem != null && elem.timestamp() != null )
                     .sorted( Comparator.comparing( MonitoringDataPoint::timestamp ).reversed() )
                     .collect( Collectors.toList() );
         }

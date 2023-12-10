@@ -21,11 +21,15 @@ import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AbstractAdapterSetting;
@@ -63,6 +67,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.catalog.snapshot.impl.SnapshotBuilder;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.type.PolySerializable;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -73,6 +78,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+
+    /**
+     * Constraints which have to be met before a commit can be executed.
+     */
+    private Collection<Pair<Supplier<Boolean>, String>> commitConstraints = new ConcurrentLinkedDeque<>();
 
 
     @Serialize
@@ -198,6 +208,17 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             log.debug( "Nothing changed" );
             return;
         }
+        // check constraints e.g. primary key constraints
+        List<Pair<Boolean, String>> fails = commitConstraints
+                .stream()
+                .map( c -> Pair.of( c.left.get(), c.right ) )
+                .filter( c -> !c.left )
+                .collect( Collectors.toList() );
+
+        if ( !fails.isEmpty() ) {
+            commitConstraints.clear();
+            throw new GenericRuntimeException( "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        }
 
         log.debug( "commit" );
         this.backup = serialize();
@@ -205,6 +226,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         updateSnapshot();
         persister.write( backup );
         this.dirty.set( false );
+        this.commitConstraints.clear();
     }
 
 
@@ -442,6 +464,12 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         } );
 
         updateSnapshot();
+    }
+
+
+    @Override
+    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
+        commitConstraints.add( Pair.of( constraintChecker, description ) );
     }
 
 

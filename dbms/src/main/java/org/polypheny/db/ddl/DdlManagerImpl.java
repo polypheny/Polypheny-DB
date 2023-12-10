@@ -1924,6 +1924,12 @@ public class DdlManagerImpl extends DdlManager {
                 pkIds = columnIds;
             }
         }
+        if ( constraints.stream().noneMatch( c -> c.type == ConstraintType.PRIMARY ) ) {
+            // no primary was set for now, we attach condition to check on commit
+            catalog.attachCommitConstraint(
+                    () -> logical.primaryKey != null && catalog.getSnapshot().rel().getPrimaryKey( logical.primaryKey ).isPresent(),
+                    "No primary key defined for table: " + name );
+        }
 
         // addATable
         AllocationPartition partition = createSinglePartition( namespaceId, logical ).left;
