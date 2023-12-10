@@ -339,6 +339,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case MQL_NEAR:
                     translateNear( (RexCall) node );
                     return;
+                case MQL_NEAR_SPHERE:
+                    translateNearSphere( (RexCall) node );
+                    return;
                 case DYNAMIC_PARAM:
                     translateBooleanDyn( (RexDynamicParam) node );
                     return;
@@ -679,6 +682,7 @@ public class MongoFilter extends Filter implements MongoAlg {
 
         }
 
+
         /**
          * Translates a {@link Kind#MQL_NEAR } to its form:
          * <pre>
@@ -688,6 +692,25 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @param node the untranslated node
          */
         private void translateNear( RexCall node ) {
+            attachNearCondition( node, false );
+        }
+
+
+        /**
+         * Translates a {@link Kind#MQL_NEAR_SPHERE } to its form:
+         * <pre>
+         *      { <field>: { $nearSphere: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
+         * </pre>
+         *
+         * @param node the untranslated node
+         */
+        private void translateNearSphere( RexCall node ) {
+            attachNearCondition( node, true );
+        }
+
+
+        private void attachNearCondition( RexCall node, boolean spherical ) {
+            String opName = spherical ? "$nearSphere" : "$near";
             if ( node.operands.size() != 4 ) {
                 return;
             }
@@ -700,7 +723,7 @@ public class MongoFilter extends Filter implements MongoAlg {
             // $maxDistance
             BsonValue maxDistance = getParamAsValue( node.operands.get( 3 ) );
             attachCondition( null, left, new BsonDocument()
-                    .append( "$near", new BsonDocument()
+                    .append( opName, new BsonDocument()
                             .append( "$geometry", geometry )
                             .append( "$minDistance", minDistance )
                             .append( "$maxDistance", maxDistance ) ) );

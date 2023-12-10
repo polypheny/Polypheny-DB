@@ -723,62 +723,52 @@ public class MqlFunctions {
 
 
     /**
-     * Tests if the object/document is near the provided geolocation
+     * Tests if the object/document is $near the provided geolocation on the <strong>plane</strong>.
      *
      * @param input the object/document
-     * @param geometry the $geometry to test if it is near. In GeoJSON format
+     * @param geometry the $geometry to test if it is $near. In GeoJSON format
      * @param minDistance of the $near filter
-     * @param maxDistance of the near filter
-     * @return <code>TRUE</code> if the provided object/document is near the given geometry
+     * @param maxDistance of the $near filter
+     * @return <code>TRUE</code> if the provided object/document is $near the given geometry
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docNear( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
-        if ( input == null || !input.isDocument() ) {
+        if ( input == null || !input.isDocument() || !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
             return PolyBoolean.FALSE;
         }
-
         // calculate the distance between input and geometry argument
-        if ( !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
-            return PolyBoolean.FALSE;
-        }
-        PolyGeometry inputGeom;
-        PolyGeometry geom;
-        try {
-            inputGeom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
-            geom = PolyGeometry.fromGeoJson( geometry.asDocument().toJson() );
-        } catch ( InvalidGeometryException e ) {
-            return PolyBoolean.FALSE;
-        }
-
         double distance;
         try {
-            distance = GeoDistanceFunctions.sphericalDistance( inputGeom, geom );
-        } catch ( GeometryTopologicalException e ) {
+            distance = calculateGeomDistance( input.asDocument(), geometry.asDocument(), false );
+        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
             return PolyBoolean.FALSE;
         }
-
         return PolyBoolean.of( minDistance.asDouble().value <= distance && distance <= maxDistance.asDouble().value );
-
     }
 
-    private static PolyValue findDoc( PolyValue obj, PolyValue field ){
-        List<PolyString> path = Arrays.stream( field.asString().value.split( "\\." ) ).map( PolyString::new ).collect( Collectors.toList() );
-        PolyDocument map = obj.asDocument();
-        Iterator<PolyString> iter = path.iterator();
-        PolyString current = iter.next();
 
-        while ( map.containsKey( current ) ) {
-            obj = map.get( current );
-            if ( !iter.hasNext() ) {
-                return obj;
-            }
-            if ( !(obj instanceof Map) ) {
-                return null;
-            }
-            map = map.get( current ).asDocument();
-            current = iter.next();
+    /**
+     * Tests if the object/document is $nearSphere the provided geolocation on the <strong>sphere</strong>.
+     *
+     * @param input the object/document
+     * @param geometry the $geometry to test if it is $nearSphere. In GeoJSON format
+     * @param minDistance of the $nearSphere filter
+     * @param maxDistance of the $nearSphere filter
+     * @return <code>TRUE</code> if the provided object/document is $nearSphere the given geometry
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docNearSphere( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+        if ( input == null || !input.isDocument() || !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
+            return PolyBoolean.FALSE;
         }
-        return null;
+        // calculate the distance between input and geometry argument
+        double distance;
+        try {
+            distance = calculateGeomDistance( input.asDocument(), geometry.asDocument(), true );
+        } catch ( InvalidGeometryException | GeometryTopologicalException e ) {
+            return PolyBoolean.FALSE;
+        }
+        return PolyBoolean.of( minDistance.asDouble().value <= distance && distance <= maxDistance.asDouble().value );
     }
 
 
@@ -834,6 +824,25 @@ public class MqlFunctions {
             default:
                 return null;
         }
+    }
+
+
+    /**
+     * Calculate the distance between 2 {@link PolyGeometry}.
+     * See {@link PolyGeometry#distance}
+     *
+     * @param doc1 {@link PolyGeometry}
+     * @param doc2 another {@link PolyGeometry}
+     * @param spherical use the spheroid to calculate the distance
+     * @return the distance in meters if <strong>spherical</strong>, otherwise in Cartesian coordinate units
+     */
+    private static double calculateGeomDistance( PolyDocument doc1, PolyDocument doc2, boolean spherical ) throws InvalidGeometryException, GeometryTopologicalException {
+        PolyGeometry geom1;
+        PolyGeometry geom2;
+        int srid = spherical ? PolyGeometry.WGS_84 : PolyGeometry.NO_SRID;
+        geom1 = PolyGeometry.fromGeoJson( doc1.toJson(), srid );
+        geom2 = PolyGeometry.fromGeoJson( doc2.toJson(), srid );
+        return geom1.distance( geom2 );
     }
 
 }

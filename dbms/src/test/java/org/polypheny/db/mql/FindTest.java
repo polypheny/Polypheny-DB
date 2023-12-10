@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import org.polypheny.db.AdapterTestSuite;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.excluded.FileExcluded;
+import org.polypheny.db.excluded.MongodbExcluded;
 import org.polypheny.db.webui.models.results.DocResult;
 
 
@@ -715,10 +716,10 @@ public class FindTest extends MqlTestTemplate {
     // near
 
     @Test
+    @Category( MongodbExcluded.class )
     public void nearTest() {
+        // for mongodb: $near requires a 2dsphere index
         insertMany( DATA_6 );
-
-        // TODO: figure out why it's not running on mongo db; maybe a syntax or other error
 
         DocResult result = find(
                 document(
@@ -732,7 +733,36 @@ public class FindTest extends MqlTestTemplate {
                                 ) ) ) ) )
                 , "{}" );
 
-        // find( "{\"location\": {\"$near\": { \"$geometry\": { \"type\": \"Point\", \"coordinates\": [ 7.9, 48.0] }, \"$maxDistance\": 5000000.00 }}}", "{}" );
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of(
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
+                        true,
+                        true ) );
+    }
+
+
+    // nearSphere
+
+    @Test
+    @Category( MongodbExcluded.class )
+    public void nearSphereTest() {
+        // for mongodb: $nearSphere requires a 2dsphere index
+        insertMany( DATA_6 );
+
+        DocResult result = find(
+                document(
+                        kv( string( "location" ), document(
+                                kv( string( "$nearSphere" ), document(
+                                        kv( string( "$geometry" ), document(
+                                                kv( string( "type" ), string( "Point" ) ),
+                                                kv( string( "coordinates" ), "[7.9, 48.0]" ) )
+                                        ),
+                                        kv( string( "$maxDistance" ), 5000000.00 )
+                                ) ) ) ) )
+                , "{}" );
 
         assertTrue(
                 MongoConnection.checkDocResultSet(

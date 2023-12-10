@@ -197,6 +197,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_NEAR, new LangFunctionOperator( "MQL_NEAR", Kind.MQL_NEAR ) );
 
+        register( OperatorName.MQL_NEAR_SPHERE, new LangFunctionOperator( "MQL_NEAR_SPHERE", Kind.MQL_NEAR_SPHERE ) );
+
         register( OperatorName.DESERIALIZE, new DeserializeFunctionOperator( "DESERIALIZE_DOC" ) );
 
         register( OperatorName.EXTRACT_NAME, new LangFunctionOperator( "EXTRACT_NAME", Kind.EXTRACT ) );

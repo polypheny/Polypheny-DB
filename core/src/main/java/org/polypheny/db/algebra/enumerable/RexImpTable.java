@@ -486,6 +486,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
 
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR_SPHERE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR_SPHERE.method ), false );
 
         defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );

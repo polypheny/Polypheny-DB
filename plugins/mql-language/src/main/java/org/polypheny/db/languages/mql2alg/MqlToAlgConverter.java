@@ -204,6 +204,7 @@ public class MqlToAlgConverter {
         operators.add( "$elemMatch" );
         operators.add( "$size" );
         operators.add( "$near" );
+        operators.add( "$nearSphere" );
     }
 
 
@@ -1295,6 +1296,8 @@ public class MqlToAlgConverter {
                             return convertSize( bsonValue, parentKey, rowType );
                         case "$near":
                             return convertNear( bsonValue, parentKey, rowType );
+                        case "$nearSphere":
+                            return convertNearSphere( bsonValue, parentKey, rowType );
                     }
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
@@ -1912,8 +1915,9 @@ public class MqlToAlgConverter {
 
     }
 
+
     /**
-     * Translates a $near filter field
+     * Converts a $near filter field
      * <pre>
      *      { <field>: { $near: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
      * </pre>
@@ -1925,15 +1929,39 @@ public class MqlToAlgConverter {
      * @return the filtered node
      */
     private RexNode convertNear( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        return convertNearRexCall( bson, parentKey, rowType, false );
+    }
+
+
+    /**
+     * Converts a $nearSphere filter field
+     * <pre>
+     *      { <field>: { $nearSphere: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
+     * </pre>
+     *
+     * @param bson the $nearSphere information as BSON,
+     * which is a document with the necessary keys ($nearSphere.$geometry)
+     * @param parentKey the key of the parent document
+     * @param rowType the rowType of the node which is filtered by $nearSphere
+     * @return the filtered node
+     */
+    private RexNode convertNearSphere( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        return convertNearRexCall( bson, parentKey, rowType, true );
+    }
+
+
+    private RexNode convertNearRexCall( BsonValue bson, String parentKey, AlgDataType rowType, boolean spherical ) {
+        String funcName = spherical ? "$nearSphere" : "$near";
+        OperatorName opName = spherical ? OperatorName.MQL_NEAR_SPHERE : OperatorName.MQL_NEAR;
         if ( !bson.isDocument() ) {
-            throw new GenericRuntimeException( "$near has to be a document." );
+            throw new GenericRuntimeException( funcName + " has to be a document." );
         }
         BsonDocument near = bson.asDocument();
         double minDistance = 0;
         double maxDistance = Double.MAX_VALUE;
 
         if ( !near.containsKey( "$geometry" ) || !near.get( "$geometry" ).isDocument() ) {
-            throw new GenericRuntimeException( "$near.$geometry has to be a document." );
+            throw new GenericRuntimeException( funcName + ".$geometry has to be a document." );
         }
         BsonDocument geometry = near.get( "$geometry" ).asDocument();
         if ( near.containsKey( "$minDistance" ) ) {
@@ -1945,7 +1973,7 @@ public class MqlToAlgConverter {
 
         return new RexCall(
                 cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
-                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NEAR ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), opName ),
                 Arrays.asList(
                         getIdentifier( parentKey, rowType ),
                         convertLiteral( geometry ),

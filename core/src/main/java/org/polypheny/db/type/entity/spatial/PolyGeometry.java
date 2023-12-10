@@ -63,7 +63,7 @@ public class PolyGeometry extends PolyValue {
     // default plane
     public static final int NO_SRID = 0;
     // World Geodetic System 1984; default for GeoJSON
-    private static final int WGS_84 = 4326;
+    public static final int WGS_84 = 4326;
 
     /**
      * Wrap the JTS {@link Geometry} class.

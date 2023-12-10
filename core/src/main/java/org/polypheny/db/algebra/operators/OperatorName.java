@@ -1633,6 +1633,8 @@ public enum OperatorName {
 
     MQL_NEAR( LangFunctionOperator.class ),
 
+    MQL_NEAR_SPHERE( LangFunctionOperator.class ),
+
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
     //-------------------------------------------------------------

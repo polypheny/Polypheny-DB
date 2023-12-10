@@ -1328,6 +1328,11 @@ public enum Kind {
      * Document model {@code $near} operator
      */
     MQL_NEAR,
+
+    /**
+     * Document model {@code $nearSphere} operator
+     */
+    MQL_NEAR_SPHERE,
     /*
      * Deserialize operator
      */
@@ -1579,7 +1584,8 @@ public enum Kind {
             MQL_JSONIFY,
             MQL_UPDATE,
             MQL_EXISTS,
-            MQL_NEAR);
+            MQL_NEAR,
+            MQL_NEAR_SPHERE);
 
     /**
      * Lower-case name.
