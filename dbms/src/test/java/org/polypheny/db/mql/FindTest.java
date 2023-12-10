@@ -58,6 +58,11 @@ public class FindTest extends MqlTestTemplate {
             "{\"test\": [\"test\"], \"key\": 2}",
             "{\"test\": [3,1], \"key\": 2}" );
 
+    private final List<String> DATA_6 = Arrays.asList(
+            "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
+            "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}",
+            "{\"test\": [3,1], \"key\": 1}" );
+
 
     @Test
     public void filterSingleNumberTest() {
@@ -703,6 +708,38 @@ public class FindTest extends MqlTestTemplate {
                 MongoConnection.checkDocResultSet(
                         result,
                         ImmutableList.of( "{\"test\": [\"test\"], \"key\": 2}" ),
+                        true,
+                        true ) );
+    }
+
+    // near
+
+    @Test
+    public void nearTest() {
+        insertMany( DATA_6 );
+
+        // TODO: figure out why it's not running on mongo db; maybe a syntax or other error
+
+        DocResult result = find(
+                document(
+                        kv( string( "location" ), document(
+                                kv( string( "$near" ), document(
+                                        kv( string( "$geometry" ), document(
+                                                kv( string( "type" ), string( "Point" ) ),
+                                                kv( string( "coordinates" ), "[7.9, 48.0]" ) )
+                                        ),
+                                        kv( string( "$maxDistance" ), 5000000.00 )
+                                ) ) ) ) )
+                , "{}" );
+
+        // find( "{\"location\": {\"$near\": { \"$geometry\": { \"type\": \"Point\", \"coordinates\": [ 7.9, 48.0] }, \"$maxDistance\": 5000000.00 }}}", "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of(
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
                         true,
                         true ) );
     }

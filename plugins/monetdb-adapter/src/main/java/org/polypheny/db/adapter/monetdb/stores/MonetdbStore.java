@@ -325,6 +325,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case VARCHAR:
                 return "VARCHAR";
             case JSON:
+            case GEOMETRY:
                 return "TEXT";
             case DATE:
                 return "DATE";

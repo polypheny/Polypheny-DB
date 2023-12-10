@@ -72,6 +72,14 @@ public class GeometryTest {
         multiPolygon = PolyGeometry.of( GeometryConstants.MULTIPOLYGON_WKT );
     }
 
+    @Test
+    public void testGeometryFormats() throws InvalidGeometryException {
+        // from TWKB
+        assertEquals( PolyGeometry.fromWKT( GeometryConstants.POINT_EWKT ), PolyGeometry.fromTWKB( GeometryConstants.POINT_TWKB, GeometryConstants.WSG_84 ) );
+        // from GeoJson
+        assertEquals( point2d, PolyGeometry.fromGeoJson( GeometryConstants.POINT_GEO_JSON ) );
+    }
+
 
     @Test
     public void testPointValidity() {
@@ -84,8 +92,7 @@ public class GeometryTest {
                     assertEquals( 13.4050, point.getX(), GeometryConstants.DELTA );
                     assertEquals( 52.5200, point.getY(), GeometryConstants.DELTA );
                     assertFalse( point.hasZ() );
-                    assertFalse( point.hasM() );
-        } );
+                } );
 
         assertAll( "Group assertions of valid Point in WKT",
                 () -> assertDoesNotThrow( () -> PolyGeometry.of( GeometryConstants.POINT_WKT ) ),
@@ -97,8 +104,7 @@ public class GeometryTest {
                     assertEquals( 52.5200, point.getY(), GeometryConstants.DELTA );
                     assertTrue( point.hasZ() );
                     assertEquals( 36.754, point.getZ(), GeometryConstants.DELTA );
-                    assertFalse( point.hasM() );
-        } );
+                } );
 
         assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POINT (13.4050)" ) );
         assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "POINT (13.4050 13.4050 13.4050 13.4050 13.4050)" ) );
@@ -119,7 +125,7 @@ public class GeometryTest {
                     assertFalse( line.isEmpty() );
                     assertTrue( line.isSimple() );
                     assertFalse( line.isClosed() );
-        } );
+                } );
 
         assertThrows( InvalidGeometryException.class, () -> PolyGeometry.of( "LINESTRING (0 0)" ) );
     }

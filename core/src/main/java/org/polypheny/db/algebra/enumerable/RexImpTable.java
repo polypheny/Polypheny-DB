@@ -368,7 +368,13 @@ public class RexImpTable {
         winAggMap.put( OperatorRegistry.getAgg( OperatorName.REGR_COUNT ), constructorSupplier( CountWinImplementor.class ) );
 
         // geo functions
-        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOFROMTEXT ), BuiltInMethod.ST_GEOFROMTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTEXT ), BuiltInMethod.ST_GEOMFROMTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMTWKB ), BuiltInMethod.ST_GEOMFROMTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_GEOMFROMGEOJSON ), BuiltInMethod.ST_GEOMFROMGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTEXT ), BuiltInMethod.ST_ASTEXT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASTWKB ), BuiltInMethod.ST_ASTWKB.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_ASGEOJSON ), BuiltInMethod.ST_ASGEOJSON.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TRANSFORM ), BuiltInMethod.ST_TRANSFORM.method, NullPolicy.STRICT );
         // Common properties
         defineMethod( OperatorRegistry.get( OperatorName.ST_ISSIMPLE ), BuiltInMethod.ST_ISSIMPLE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_ISEMPTY ), BuiltInMethod.ST_ISEMPTY.method, NullPolicy.STRICT );
@@ -383,6 +389,18 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.ST_CENTROID ), BuiltInMethod.ST_CENTROID.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_REVERSE ), BuiltInMethod.ST_REVERSE.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.ST_BUFFER ), BuiltInMethod.ST_BUFFER.method, NullPolicy.STRICT );
+        // Spatial relationships
+        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHINDISTANCE ), BuiltInMethod.ST_WITHINDISTANCE.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_DISJOINT ), BuiltInMethod.ST_DISJOINT.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_TOUCHES ), BuiltInMethod.ST_TOUCHES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_INTERSECTS ), BuiltInMethod.ST_INTERSECTS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CROSSES ), BuiltInMethod.ST_CROSSES.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_WITHIN ), BuiltInMethod.ST_WITHIN.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_CONTAINS ), BuiltInMethod.ST_CONTAINS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_OVERLAPS ), BuiltInMethod.ST_OVERLAPS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVERS ), BuiltInMethod.ST_COVERS.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_COVEREDBY ), BuiltInMethod.ST_COVEREDBY.method, NullPolicy.STRICT );
+        defineMethod( OperatorRegistry.get( OperatorName.ST_RELATE ), BuiltInMethod.ST_RELATE.method, NullPolicy.STRICT );
         // Yield metric values
         defineMethod( OperatorRegistry.get( OperatorName.ST_DISTANCE ), BuiltInMethod.ST_DISTANCE.method, NullPolicy.STRICT );
         // Set operations
@@ -466,6 +484,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_PROJECT_INCLUDES ), BuiltInMethod.MQL_PROJECT_INCLUDES.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
+
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR.method ), false );
 
         defineMqlMethod( OperatorName.PLUS, "plus", NullPolicy.STRICT );
         defineMqlMethod( OperatorName.MINUS, "minus", NullPolicy.STRICT );

@@ -311,6 +311,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     preparedStatement.setBytes( i, value.asBlob().asByteArray() );
                 }
                 break;
+            case GEOMETRY:
+                if ( connectionHandler.getDialect().supportsGeoJson() ) {
+                    preparedStatement.setString( i, value.asGeometry().toJson() );
+                } else {
+                    preparedStatement.setString( i, value.asGeometry().toString() );
+                }
+                break;
             default:
                 log.warn( "potentially unhandled type" );
                 preparedStatement.setObject( i, value );

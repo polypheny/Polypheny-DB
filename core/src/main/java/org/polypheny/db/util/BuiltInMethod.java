@@ -446,7 +446,13 @@ public enum BuiltInMethod {
     RESULTSET_GETBINARYSTREAM( ResultSet.class, "getBinaryStream", int.class ),
     UNWRAP_INTERVAL( RefactorFunctions.class, "unwrap", PolyInterval.class ),
     // GEO METHODS
-    ST_GEOFROMTEXT( GeoFunctions.class, "stGeoFromText", PolyString.class ),
+    ST_GEOMFROMTEXT( GeoFunctions.class, "stGeomFromText", PolyString.class ),
+    ST_GEOMFROMTWKB( GeoFunctions.class, "stGeomFromTWKB", PolyString.class ),
+    ST_GEOMFROMGEOJSON( GeoFunctions.class, "stGeomFromGeoJson", PolyString.class ),
+    ST_ASTEXT( GeoFunctions.class, "stAsText", PolyGeometry.class ),
+    ST_ASTWKB( GeoFunctions.class, "stAsTWKB", PolyGeometry.class ),
+    ST_ASGEOJSON( GeoFunctions.class, "stAsGeoJson", PolyGeometry.class ),
+    ST_TRANSFORM( GeoFunctions.class, "stTransform", PolyGeometry.class, PolyNumber.class ),
     // Common properties
     ST_ISSIMPLE( GeoFunctions.class, "stIsSimple", PolyGeometry.class ),
     ST_ISEMPTY( GeoFunctions.class, "stIsEmpty", PolyGeometry.class ),
@@ -461,6 +467,18 @@ public enum BuiltInMethod {
     ST_CENTROID( GeoFunctions.class, "stCentroid", PolyGeometry.class ),
     ST_REVERSE( GeoFunctions.class, "stReverse", PolyGeometry.class ),
     ST_BUFFER( GeoFunctions.class, "stBuffer", PolyGeometry.class, PolyNumber.class ),
+    // Spatial relationships
+    ST_WITHINDISTANCE( GeoFunctions.class, "stWithinDistance", PolyGeometry.class, PolyGeometry.class, PolyNumber.class ),
+    ST_DISJOINT( GeoFunctions.class, "stDisjoint", PolyGeometry.class, PolyGeometry.class ),
+    ST_TOUCHES( GeoFunctions.class, "stTouches", PolyGeometry.class, PolyGeometry.class ),
+    ST_INTERSECTS( GeoFunctions.class, "stIntersects", PolyGeometry.class, PolyGeometry.class ),
+    ST_CROSSES( GeoFunctions.class, "stCrosses", PolyGeometry.class, PolyGeometry.class ),
+    ST_WITHIN( GeoFunctions.class, "stWithin", PolyGeometry.class, PolyGeometry.class ),
+    ST_CONTAINS( GeoFunctions.class, "stContains", PolyGeometry.class, PolyGeometry.class ),
+    ST_OVERLAPS( GeoFunctions.class, "stOverlaps", PolyGeometry.class, PolyGeometry.class ),
+    ST_COVERS( GeoFunctions.class, "stCovers", PolyGeometry.class, PolyGeometry.class ),
+    ST_COVEREDBY( GeoFunctions.class, "stCoveredBy", PolyGeometry.class, PolyGeometry.class ),
+    ST_RELATE( GeoFunctions.class, "stRelate", PolyGeometry.class, PolyGeometry.class, PolyString.class ),
     // Yield metric values
     ST_DISTANCE( GeoFunctions.class, "stDistance", PolyGeometry.class, PolyGeometry.class ),
     // Set operations
@@ -509,6 +527,7 @@ public enum BuiltInMethod {
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
+    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),

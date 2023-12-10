@@ -98,6 +98,7 @@ import org.polypheny.db.type.entity.PolyTime;
 import org.polypheny.db.type.entity.PolyTimeStamp;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -342,7 +343,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
 
         }
-        final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i );
+        final Expression poly = getOfPolyExpression( fieldType, source, dialect, resultSet_, i );
 
         //source is null if an expression was already added to the builder.
         if ( poly != null ) {
@@ -376,7 +377,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             return Expressions.call(
                     BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
                     Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
-                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i ), argument ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument, dialect, resultSet_, i ), argument ),
                     Expressions.constant( depth )
             );
         }
@@ -390,7 +391,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i ) {
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, SqlDialect dialect, ParameterExpression resultSet_, int i ) {
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
@@ -438,6 +439,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case IMAGE:
             case VIDEO:
                 poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                break;
+            case GEOMETRY:
+                // TODO: check how it will work with GeoJson and SRID since we are using multiple params
+                if ( dialect.supportsGeoJson() ) {
+                    poly = Expressions.call( PolyGeometry.class, "fromGeoJson", Expressions.convert_( source, String.class ), Expressions.convert_( Expressions.field( source, "SRID" ), Number.class ) );
+                } else {
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
+                }
                 break;
             default:
                 log.warn( "potentially unhandled polyValue" );

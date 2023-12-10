@@ -29,16 +29,21 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Coordinates;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
-import org.polypheny.db.functions.GeoDistanceFunctions;
+import org.locationtech.jts.io.geojson.GeoJsonReader;
+import org.locationtech.jts.io.geojson.GeoJsonWriter;
+import org.locationtech.jts.io.twkb.TWKBReader;
+import org.locationtech.jts.io.twkb.TWKBWriter;
+import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -49,13 +54,15 @@ import org.polypheny.db.type.entity.spatial.PolyGeometryType.BufferCapStyle;
  * <p>
  * {@link PolyGeometry} wraps the {@link Geometry} of the JTS library
  * and the functionality of {@link PolyGeometry} is provided my means of JTS.
+ * <p>
+ * {@link PolyGeometry} could be created from Well-known Text (WKT), Tiny Well-known Binary (TWKB), as well as GeoJson.
  */
 @Slf4j
 public class PolyGeometry extends PolyValue {
 
     // default plane
-    private static final int NO_SRID = 0;
-    // World Geodetic System 1984
+    public static final int NO_SRID = 0;
+    // World Geodetic System 1984; default for GeoJSON
     private static final int WGS_84 = 4326;
 
     /**
@@ -96,7 +103,7 @@ public class PolyGeometry extends PolyValue {
         } catch ( NumberFormatException e ) {
             throw new InvalidGeometryException( e.getMessage() );
         }
-        init( wkt, srid );
+        initFromWKT( wkt, srid );
     }
 
 
@@ -109,7 +116,31 @@ public class PolyGeometry extends PolyValue {
      */
     public PolyGeometry( @JsonProperty("wkt") @Deserialize("wkt") String wkt, int srid ) throws InvalidGeometryException {
         this( PolyType.GEOMETRY );
-        init( wkt, srid );
+        initFromWKT( wkt, srid );
+    }
+
+
+    /**
+     * Constructor creates the {@link PolyGeometry} from the {@link GeometryInputFormat} using the provided SRID.
+     *
+     * @param input representation of the geometry
+     * @param srid Spatial reference system of the geometry
+     * @param inputFormat describes the representation format of the geometry
+     * @throws InvalidGeometryException if {@link PolyGeometry} is invalid or provided input is invalid.
+     */
+    private PolyGeometry( @JsonProperty("geo") @Deserialize("geo") String input, int srid, GeometryInputFormat inputFormat ) throws InvalidGeometryException {
+        this( PolyType.GEOMETRY );
+        switch ( inputFormat ) {
+            case WKT:
+                initFromWKT( input, srid );
+                break;
+            case TWKB:
+                initFromTWKB( input, srid );
+                break;
+            case GEO_JSON:
+                initFromGeoJson( input, srid );
+                break;
+        }
     }
 
 
@@ -139,6 +170,16 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    public static PolyGeometry ofNullable( String wkt ) {
+        try {
+            return wkt == null ? null : of( wkt );
+        } catch ( InvalidGeometryException e ) {
+            // hack to deal that InvalidGeometryException is not caught in code generation
+            return null;
+        }
+    }
+
+
     public static PolyGeometry of( String wkt, int srid ) throws InvalidGeometryException {
         return new PolyGeometry( wkt, srid );
     }
@@ -154,11 +195,64 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    private void init( String wkt, int srid ) throws InvalidGeometryException {
-        this.SRID = srid;
+    public static PolyGeometry fromWKT( String wkt ) throws InvalidGeometryException {
+        return new PolyGeometry( wkt );
+    }
+
+
+    public static PolyGeometry fromWKT( String wkt, int srid ) throws InvalidGeometryException {
+        return new PolyGeometry( wkt, srid );
+    }
+
+
+    public static PolyGeometry fromTWKB( String twkb ) throws InvalidGeometryException {
+        return fromTWKB( twkb, NO_SRID );
+    }
+
+
+    public static PolyGeometry fromTWKB( String twkb, int srid ) throws InvalidGeometryException {
+        return new PolyGeometry( twkb, srid, GeometryInputFormat.TWKB );
+    }
+
+
+    public static PolyGeometry fromGeoJson( String geoJson ) throws InvalidGeometryException {
+        return fromGeoJson( geoJson, WGS_84 );
+    }
+
+
+    public static PolyGeometry fromGeoJson( String geoJson, int srid ) throws InvalidGeometryException {
+        return new PolyGeometry( geoJson, srid, GeometryInputFormat.GEO_JSON );
+    }
+
+
+    private void initFromWKT( String wkt, int srid ) throws InvalidGeometryException {
         WKTReader reader = new WKTReader();
+        readGeometry( srid, () -> reader.read( wkt ) );
+    }
+
+
+    private void initFromTWKB( String twkb, int srid ) throws InvalidGeometryException {
+        byte[] twkbBinary;
         try {
-            this.jtsGeometry = reader.read( wkt );
+            twkbBinary = Hex.decodeHex( twkb );
+        } catch ( DecoderException e ) {
+            throw new InvalidGeometryException( e.getMessage() );
+        }
+        TWKBReader reader = new TWKBReader();
+        readGeometry( srid, () -> reader.read( twkbBinary ) );
+    }
+
+
+    private void initFromGeoJson( String geoJson, int srid ) throws InvalidGeometryException {
+        GeoJsonReader reader = new GeoJsonReader();
+        readGeometry( srid, () -> reader.read( geoJson ) );
+    }
+
+
+    private void readGeometry( int srid, GeometryReaderFunction readerFunction ) throws InvalidGeometryException {
+        this.SRID = srid;
+        try {
+            this.jtsGeometry = readerFunction.read();
             if ( !jtsGeometry.isValid() ) {
                 throw new ParseException( "Provided geometry is not valid." );
             }
@@ -193,6 +287,7 @@ public class PolyGeometry extends PolyValue {
                 throw new NotImplementedException( "value" );
         }
     }
+
 
     /*
      * Casting methods
@@ -268,10 +363,6 @@ public class PolyGeometry extends PolyValue {
         throw cannotParse( this, PolyGeometryCollection.class );
     }
 
-    /*
-     * Query Geometry properties
-     */
-
 
     /**
      * Tests whether this {@link PolyGeometry} is a simple geometry: does not intersect itself.
@@ -282,6 +373,10 @@ public class PolyGeometry extends PolyValue {
     public boolean isSimple() {
         return jtsGeometry.isSimple();
     }
+
+    /*
+     * Query Geometry properties
+     */
 
 
     /**
@@ -444,14 +539,6 @@ public class PolyGeometry extends PolyValue {
         return PolyGeometry.of( jtsGeometry.reverse(), getSRID() );
     }
 
-    /*
-     * Topological relationships
-     */
-
-    /*
-     * Binary predicates
-     */
-
 
     /**
      * Check that another {@link PolyGeometry} is withing the given distance.
@@ -467,6 +554,14 @@ public class PolyGeometry extends PolyValue {
         }
         return GeoDistanceFunctions.isWithinSphericalDistance( this, g, distance );
     }
+
+    /*
+     * Topological relationships
+     */
+
+    /*
+     * Binary predicates
+     */
 
 
     /**
@@ -640,11 +735,6 @@ public class PolyGeometry extends PolyValue {
     }
 
 
-    /*
-     * Set operations
-     */
-
-
     /**
      * Compute the intersection set of both {@link PolyGeometry}s.
      * The produced {@link PolyGeometry} is less than original or equal to the minimum dimension of both {@link PolyGeometry}
@@ -664,6 +754,11 @@ public class PolyGeometry extends PolyValue {
             throw new GeometryTopologicalException( e.getMessage() );
         }
     }
+
+
+    /*
+     * Set operations
+     */
 
 
     /**
@@ -762,8 +857,8 @@ public class PolyGeometry extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        // TODO: dont know what is it
-        return null;
+        // this basically calls a constructor with WKT
+        return Expressions.new_( PolyGeometry.class, Expressions.constant( this.toString() ) );
     }
 
 
@@ -792,6 +887,56 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    /**
+     * Output the {@link PolyGeometry} in a GeoJson format with its SRID
+     */
+    @Override
+    public String toJson() {
+        GeoJsonWriter writer = new GeoJsonWriter();
+        if ( getSRID().equals( NO_SRID ) ) {
+            // do not output zero SRID
+            writer.setEncodeCRS( false );
+        }
+        return writer.write( getJtsGeometry() );
+    }
+
+
+    /**
+     * Output the {@link PolyGeometry} in a TWKB format (HEX encoded)
+     */
+    public String toBinary() {
+        TWKBWriter writer = new TWKBWriter();
+        return Hex.encodeHexString( writer.write( getJtsGeometry() ) );
+    }
+
+
+    /**
+     * Describe the input format of Geometry
+     */
+    enum GeometryInputFormat {
+
+
+        WKT( "wkt" ), // Well-known Text
+        TWKB( "twkb" ), // Tiny Well-known Binary
+        GEO_JSON( "geoJson" );  // GeoJson
+
+        final String value;
+
+
+        GeometryInputFormat( String code ) {
+            this.value = code;
+        }
+    }
+
+
+    @FunctionalInterface
+    interface GeometryReaderFunction {
+
+        Geometry read() throws ParseException;
+
+    }
+
+
     public static class PolyGeometrySerializerDef extends SimpleSerializerDef<PolyGeometry> {
 
         @Override
@@ -799,14 +944,17 @@ public class PolyGeometry extends PolyValue {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyGeometry item ) {
-                    out.writeUTF8( item.toString() );
+                    out.writeLong( item.getSRID() );
+                    out.writeUTF8( item.toBinary() );
                 }
 
 
                 @Override
                 public PolyGeometry decode( BinaryInput in ) throws CorruptedDataException {
                     try {
-                        return PolyGeometry.of( in.readUTF8() );
+                        int srid = (int) in.readLong();
+                        String twkb = in.readUTF8();
+                        return PolyGeometry.fromTWKB( twkb, srid );
                     } catch ( InvalidGeometryException e ) {
                         throw new CorruptedDataException( e.getMessage() );
                     }

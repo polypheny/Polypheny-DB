@@ -19,6 +19,7 @@ package org.polypheny.db.functions;
 import static org.polypheny.db.functions.Functions.toUnchecked;
 
 import java.util.Objects;
+import org.polypheny.db.functions.spatial.GeoTransformFunctions;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyFloat;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -51,7 +52,7 @@ public class GeoFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyGeometry stGeoFromText( PolyString wkt ) {
+    public static PolyGeometry stGeomFromText( PolyString wkt ) {
         try {
             return PolyGeometry.of( wkt.value );
         } catch ( InvalidGeometryException e ) {
@@ -61,7 +62,7 @@ public class GeoFunctions {
 
 
     @SuppressWarnings("UnusedDeclaration")
-    public static PolyGeometry stGeoFromText( PolyString wkt, PolyNumber srid ) {
+    public static PolyGeometry stGeomFromText( PolyString wkt, PolyNumber srid ) {
         try {
             return PolyGeometry.of( wkt.value, srid.intValue() );
         } catch ( InvalidGeometryException e ) {
@@ -69,17 +70,79 @@ public class GeoFunctions {
         }
     }
 
-    // TODO: transform to another SRID
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromTWKB( PolyString twkb ) {
+        try {
+            return PolyGeometry.fromTWKB( twkb.value );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromTWKB( PolyString twkb, PolyNumber srid ) {
+        try {
+            return PolyGeometry.fromTWKB( twkb.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromGeoJson( PolyString geoJson ) {
+        try {
+            return PolyGeometry.fromGeoJson( geoJson.value );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyGeometry stGeomFromGeoJson( PolyString geoJson, PolyNumber srid ) {
+        try {
+            return PolyGeometry.fromGeoJson( geoJson.value, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsText( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toString() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsTWKB( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toBinary() );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyString stAsGeoJson( PolyGeometry geometry ) {
+        return PolyString.of( geometry.toJson() );
+    }
+
+
     @SuppressWarnings("UnusedDeclaration")
     public static PolyGeometry stTransform( PolyGeometry geometry, PolyNumber srid ) {
-        // todo:
-        return null;
+        try {
+            return GeoTransformFunctions.transform( geometry, srid.intValue() );
+        } catch ( InvalidGeometryException e ) {
+            throw toUnchecked( e );
+        }
     }
 
 
     /*
      * Common properties
      */
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean stIsSimple( PolyGeometry geometry ) {
@@ -171,13 +234,100 @@ public class GeoFunctions {
     }
 
     /*
-     * TODO: Spatial relationships
+     * Spatial relationships
      */
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stWithinDistance( PolyGeometry g1, PolyGeometry g2, PolyNumber distance ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyBoolean.of( g1.isWithinDistance( g2, distance.doubleValue() ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stDisjoint( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.disjoint( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stTouches( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.touches( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stIntersects( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.intersects( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCrosses( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.crosses( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stWithin( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.within( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stContains( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.contains( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stOverlaps( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.overlaps( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCovers( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.covers( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stCoveredBy( PolyGeometry g1, PolyGeometry g2 ) {
+        restrictToSrid( g1, g2 );
+        return PolyBoolean.of( g1.coveredBy( g2 ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean stRelate( PolyGeometry g1, PolyGeometry g2, PolyString pattern ) {
+        restrictToSrid( g1, g2 );
+        try {
+            return PolyBoolean.of( g1.relate( g2, pattern.value ) );
+        } catch ( GeometryTopologicalException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
 
 
     /*
      * Yield metric values
      */
+
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyNumber stDistance( PolyGeometry g1, PolyGeometry g2 ) {

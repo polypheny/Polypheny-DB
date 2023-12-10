@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.functions;
+package org.polypheny.db.functions.spatial;
 
 import org.jetbrains.annotations.NotNull;
 import org.locationtech.jts.geom.Coordinate;
@@ -27,12 +27,12 @@ import org.polypheny.db.type.entity.spatial.PolyLineString;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
 
 /**
- * Calculate the spherical distances between various geometries
+ * Calculate the spherical distances between various geometries on the <strong>PERFECT SPHERE</strong>
  */
 public class GeoDistanceFunctions {
 
-    // Define the radius of the Earth's sphere (in kilometers)
-    private static final double EARTH_RADIUS_KM = 6371.0;
+    // Define the radius of the Earth's sphere (in meters)
+    private static final double EARTH_RADIUS_KM = 6371.0 * 1000;
 
 
     private GeoDistanceFunctions() {
@@ -40,12 +40,30 @@ public class GeoDistanceFunctions {
     }
 
 
+    /**
+     * Check that the distance between two geometries is within the given threshold
+     *
+     * @param g1 one geometry
+     * @param g2 another one
+     * @param distanceThreshold limit the distance between geometries
+     * @return <code>TRUE</code> if two geometries are within the given distance
+     * @throws GeometryTopologicalException if distance cannot be calculated
+     */
     public static boolean isWithinSphericalDistance( @NotNull PolyGeometry g1, @NotNull PolyGeometry g2, double distanceThreshold ) throws GeometryTopologicalException {
         return sphericalDistance( g1, g2 ) <= distanceThreshold;
     }
 
 
+    /**
+     * Calculate the spherical distance between 2 geometries
+     *
+     * @param g1 one geometry
+     * @param g2 another
+     * @return the distance between geometries
+     * @throws GeometryTopologicalException if distance cannot be calculated
+     */
     public static double sphericalDistance( @NotNull PolyGeometry g1, @NotNull PolyGeometry g2 ) throws GeometryTopologicalException {
+        // distance calculation are dependent on the type of the geometry
         if ( g1.isPoint() && g2.isPoint() ) {
             return calculateSphericalDistance( g1.asPoint(), g2.asPoint() );
         } else if ( g1.isLineString() && g2.isLineString() ) {

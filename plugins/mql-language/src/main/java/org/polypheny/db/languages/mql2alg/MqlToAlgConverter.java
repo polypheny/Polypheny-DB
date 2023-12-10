@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonNumber;
 import org.bson.BsonRegularExpression;
@@ -202,6 +203,7 @@ public class MqlToAlgConverter {
         operators.add( "$all" );
         operators.add( "$elemMatch" );
         operators.add( "$size" );
+        operators.add( "$near" );
     }
 
 
@@ -1291,6 +1293,8 @@ public class MqlToAlgConverter {
                             return convertElemMatch( bsonValue, parentKey, rowType );
                         case "$size":
                             return convertSize( bsonValue, parentKey, rowType );
+                        case "$near":
+                            return convertNear( bsonValue, parentKey, rowType );
                     }
                     return translateLogical( key, parentKey, bsonValue, rowType );
                 }
@@ -1906,6 +1910,47 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_TYPE_MATCH ),
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
+    }
+
+    /**
+     * Translates a $near filter field
+     * <pre>
+     *      { <field>: { $near: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
+     * </pre>
+     *
+     * @param bson the $near information as BSON,
+     * which is a document with the necessary keys ($near.$geometry)
+     * @param parentKey the key of the parent document
+     * @param rowType the rowType of the node which is filtered by $near
+     * @return the filtered node
+     */
+    private RexNode convertNear( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        if ( !bson.isDocument() ) {
+            throw new GenericRuntimeException( "$near has to be a document." );
+        }
+        BsonDocument near = bson.asDocument();
+        double minDistance = 0;
+        double maxDistance = Double.MAX_VALUE;
+
+        if ( !near.containsKey( "$geometry" ) || !near.get( "$geometry" ).isDocument() ) {
+            throw new GenericRuntimeException( "$near.$geometry has to be a document." );
+        }
+        BsonDocument geometry = near.get( "$geometry" ).asDocument();
+        if ( near.containsKey( "$minDistance" ) ) {
+            minDistance = near.get( "$minDistance" ).isNumber() ? near.get( "$minDistance" ).asNumber().asDouble().doubleValue() : minDistance;
+        }
+        if ( near.containsKey( "$maxDistance" ) ) {
+            maxDistance = near.get( "$maxDistance" ).isNumber() ? near.get( "$maxDistance" ).asNumber().asDouble().doubleValue() : maxDistance;
+        }
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NEAR ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( geometry ),
+                        convertLiteral( new BsonDouble( minDistance ) ),
+                        convertLiteral( new BsonDouble( maxDistance ) ) ));
     }
 
 

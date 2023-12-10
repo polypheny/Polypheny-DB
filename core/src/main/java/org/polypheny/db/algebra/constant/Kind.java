@@ -1323,6 +1323,11 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
+
+    /**
+     * Document model {@code $near} operator
+     */
+    MQL_NEAR,
     /*
      * Deserialize operator
      */
@@ -1573,7 +1578,8 @@ public enum Kind {
             MQL_UPDATE_RENAME,
             MQL_JSONIFY,
             MQL_UPDATE,
-            MQL_EXISTS );
+            MQL_EXISTS,
+            MQL_NEAR);
 
     /**
      * Lower-case name.

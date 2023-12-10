@@ -31,6 +31,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.spatial.GeoDistanceFunctions;
 import org.polypheny.db.schema.document.DocumentUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInteger;
@@ -40,6 +41,9 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
+import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
 
@@ -715,6 +719,66 @@ public class MqlFunctions {
         }
 
         return ifExists ? PolyBoolean.FALSE : PolyBoolean.TRUE;
+    }
+
+
+    /**
+     * Tests if the object/document is near the provided geolocation
+     *
+     * @param input the object/document
+     * @param geometry the $geometry to test if it is near. In GeoJSON format
+     * @param minDistance of the $near filter
+     * @param maxDistance of the near filter
+     * @return <code>TRUE</code> if the provided object/document is near the given geometry
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docNear( PolyValue input, PolyValue geometry, PolyValue minDistance, PolyValue maxDistance ) {
+        if ( input == null || !input.isDocument() ) {
+            return PolyBoolean.FALSE;
+        }
+
+        // calculate the distance between input and geometry argument
+        if ( !geometry.isDocument() || !minDistance.isDouble() || !maxDistance.isDouble() ) {
+            return PolyBoolean.FALSE;
+        }
+        PolyGeometry inputGeom;
+        PolyGeometry geom;
+        try {
+            inputGeom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
+            geom = PolyGeometry.fromGeoJson( geometry.asDocument().toJson() );
+        } catch ( InvalidGeometryException e ) {
+            return PolyBoolean.FALSE;
+        }
+
+        double distance;
+        try {
+            distance = GeoDistanceFunctions.sphericalDistance( inputGeom, geom );
+        } catch ( GeometryTopologicalException e ) {
+            return PolyBoolean.FALSE;
+        }
+
+        return PolyBoolean.of( minDistance.asDouble().value <= distance && distance <= maxDistance.asDouble().value );
+
+    }
+
+    private static PolyValue findDoc( PolyValue obj, PolyValue field ){
+        List<PolyString> path = Arrays.stream( field.asString().value.split( "\\." ) ).map( PolyString::new ).collect( Collectors.toList() );
+        PolyDocument map = obj.asDocument();
+        Iterator<PolyString> iter = path.iterator();
+        PolyString current = iter.next();
+
+        while ( map.containsKey( current ) ) {
+            obj = map.get( current );
+            if ( !iter.hasNext() ) {
+                return obj;
+            }
+            if ( !(obj instanceof Map) ) {
+                return null;
+            }
+            map = map.get( current ).asDocument();
+            current = iter.next();
+        }
+        return null;
     }
 
 

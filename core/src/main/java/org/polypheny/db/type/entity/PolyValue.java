@@ -238,8 +238,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case VIDEO:
                 return o -> o.asBlob().asByteArray();
             case GEOMETRY:
-                // TODO: we need to convert to types that avatica has / that are in JDBC
-                return o -> o.asGeometry().toString(); // (Object) o.asGeometry().getJtsGeometry();
+                return o -> o.asGeometry().toString();
             default:
                 throw new NotImplementedException( "meta" );
         }
@@ -407,7 +406,6 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case DYNAMIC_STAR:
                 return PolyValue.class;
             case GEOMETRY:
-                // TODO: should here be all Geometry classes?
                 return PolyGeometry.class;
             case FILE:
             case IMAGE:

@@ -19,6 +19,8 @@ package org.polypheny.db.type.spatial;
 public class GeometryConstants {
 
     static final String POINT_EWKT = "SRID=4326;POINT (13.4050 52.5200)";
+    static final String POINT_TWKB = "e10801a0c3eb7f80aaeff40300"; // in HEX
+    static final String POINT_GEO_JSON = "{ \"type\": \"Point\", \"coordinates\": [ 13.4050, 52.5200 ] }";
     static final String POINT_WKT = "POINT (13.4050 52.5200 36.754)";
     static final String LINESTRING_WKT = "LINESTRING (-1 -1, 2 2, 4 5, 6 7)";
     static final String LINEAR_RING_WKT = "LINEARRING (0 0, 0 10, 10 10, 10 0, 0 0)";
@@ -29,4 +31,5 @@ public class GeometryConstants {
     static final String MULTIPOLYGON_WKT = "MULTIPOLYGON ( ( (1 5, 5 5, 5 1, 1 1, 1 5) ), ( (6 5, 9 1, 6 1, 6 5) ) )";
     static final double DELTA = 1e-5;
     static final int NO_SRID = 0;
+    static final int WSG_84 = 4326;
 }

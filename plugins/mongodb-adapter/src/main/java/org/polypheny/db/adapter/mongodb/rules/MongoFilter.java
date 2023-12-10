@@ -336,6 +336,9 @@ public class MongoFilter extends Filter implements MongoAlg {
                 case MQL_EXISTS:
                     translateExists( (RexCall) node );
                     return;
+                case MQL_NEAR:
+                    translateNear( (RexCall) node );
+                    return;
                 case DYNAMIC_PARAM:
                     translateBooleanDyn( (RexDynamicParam) node );
                     return;
@@ -674,6 +677,33 @@ public class MongoFilter extends Filter implements MongoAlg {
             BsonValue value = getParamAsValue( node.operands.get( 1 ) );
             attachCondition( null, left, new BsonDocument( "$size", value ) );
 
+        }
+
+        /**
+         * Translates a {@link Kind#MQL_NEAR } to its form:
+         * <pre>
+         *      { <field>: { $near: { $geometry: {<GeoJSON>}, $minDistance: <minDistance>, $maxDistance: <maxDistance> } }
+         * </pre>
+         *
+         * @param node the untranslated node
+         */
+        private void translateNear( RexCall node ) {
+            if ( node.operands.size() != 4 ) {
+                return;
+            }
+            // field
+            String left = getParamAsKey( node.operands.get( 0 ) );
+            // $geometry
+            BsonValue geometry = getParamAsValue( node.operands.get( 1 ) );
+            // $minDistance
+            BsonValue minDistance = getParamAsValue( node.operands.get( 2 ) );
+            // $maxDistance
+            BsonValue maxDistance = getParamAsValue( node.operands.get( 3 ) );
+            attachCondition( null, left, new BsonDocument()
+                    .append( "$near", new BsonDocument()
+                            .append( "$geometry", geometry )
+                            .append( "$minDistance", minDistance )
+                            .append( "$maxDistance", maxDistance ) ) );
         }
 
 

@@ -146,7 +146,9 @@ import org.polypheny.db.sql.language.fun.SqlRowOperator;
 import org.polypheny.db.sql.language.fun.SqlSequenceValueOperator;
 import org.polypheny.db.sql.language.fun.SqlSingleValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlStBuffer;
-import org.polypheny.db.sql.language.fun.SqlStGeoFromText;
+import org.polypheny.db.sql.language.fun.SqlStGeomFromGeoJson;
+import org.polypheny.db.sql.language.fun.SqlStGeomFromTWKB;
+import org.polypheny.db.sql.language.fun.SqlStGeomFromText;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.fun.SqlStringContextVariable;
 import org.polypheny.db.sql.language.fun.SqlSubstringFunction;
@@ -2495,9 +2497,52 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.UNWRAP_INTERVAL, new LangFunctionOperator( OperatorName.UNWRAP_INTERVAL.name(), Kind.OTHER_FUNCTION ) );
 
         // GEO functions
-        register( OperatorName.ST_GEOFROMTEXT, new SqlStGeoFromText() );
+        register( OperatorName.ST_GEOMFROMTEXT, new SqlStGeomFromText() );
+        register( OperatorName.ST_GEOMFROMTWKB, new SqlStGeomFromTWKB() );
+        register( OperatorName.ST_GEOMFROMGEOJSON, new SqlStGeomFromGeoJson() );
+
+        register(
+                OperatorName.ST_ASTEXT,
+                new SqlFunction(
+                        "ST_ASTEXT",
+                        Kind.GEO,
+                        ReturnTypes.VARCHAR_2000,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_ASTWKB,
+                new SqlFunction(
+                        "ST_ASTWKB",
+                        Kind.GEO,
+                        ReturnTypes.VARCHAR_2000,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_ASGEOJSON,
+                new SqlFunction(
+                        "ST_ASGEOJSON",
+                        Kind.GEO,
+                        ReturnTypes.VARCHAR_2000,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_TRANSFORM,
+                new SqlFunction(
+                        "ST_TRANSFORM",
+                        Kind.GEO,
+                        ReturnTypes.GEOMETRY,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_INTEGER,
+                        FunctionCategory.GEOMETRY ) );
 
         // Common properties
+
         register(
                 OperatorName.ST_ISSIMPLE,
                 new SqlFunction(
@@ -2620,7 +2665,120 @@ public class SqlLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.ST_BUFFER, new SqlStBuffer() );
 
+        // Spatial relationships
+
+        register(
+                OperatorName.ST_WITHINDISTANCE,
+                new SqlFunction(
+                        "ST_WITHINDISTANCE",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY_NUMERIC,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_DISJOINT,
+                new SqlFunction(
+                        "ST_DISJOINT",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_TOUCHES,
+                new SqlFunction(
+                        "ST_TOUCHES",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_INTERSECTS,
+                new SqlFunction(
+                        "ST_INTERSECTS",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_CROSSES,
+                new SqlFunction(
+                        "ST_CROSSES",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_WITHIN,
+                new SqlFunction(
+                        "ST_WITHIN",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_CONTAINS,
+                new SqlFunction(
+                        "ST_CONTAINS",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_OVERLAPS,
+                new SqlFunction(
+                        "ST_OVERLAPS",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_COVERS,
+                new SqlFunction(
+                        "ST_COVERS",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_COVEREDBY,
+                new SqlFunction(
+                        "ST_COVEREDBY",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY,
+                        FunctionCategory.GEOMETRY ) );
+
+        register(
+                OperatorName.ST_RELATE,
+                new SqlFunction(
+                        "ST_RELATE",
+                        Kind.GEO,
+                        ReturnTypes.BOOLEAN,
+                        InferTypes.GEOMETRY,
+                        OperandTypes.GEOMETRY_GEOMETRY_STRING,
+                        FunctionCategory.GEOMETRY ) );
+
         // Yield metric values
+
         register(
                 OperatorName.ST_DISTANCE,
                 new SqlFunction(

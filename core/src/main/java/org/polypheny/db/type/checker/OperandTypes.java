@@ -288,6 +288,8 @@ public abstract class OperandTypes {
     public static final PolySingleOperandTypeChecker GEOMETRY = family( PolyTypeFamily.GEO );
     public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO );
     public static final PolySingleOperandTypeChecker GEOMETRY_INTEGER = family( PolyTypeFamily.GEO, PolyTypeFamily.INTEGER );
+    public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY_STRING = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO, PolyTypeFamily.STRING );
+    public static final PolySingleOperandTypeChecker GEOMETRY_GEOMETRY_NUMERIC = family( PolyTypeFamily.GEO, PolyTypeFamily.GEO, PolyTypeFamily.NUMERIC );
 
     /**
      * Checks that returns whether a value is a multiset or an array. Cf Java, where list and set are collections but a map is not.

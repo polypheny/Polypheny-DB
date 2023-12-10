@@ -18,31 +18,26 @@ package org.polypheny.db.sql.language.fun;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.List;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.nodes.CallBinding;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.type.OperandCountRange;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyTypeUtil;
-import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.checker.PolyOperandTypeChecker;
-import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.CoreUtil;
-import org.polypheny.db.util.Util;
 
 /**
- * Definition of the "ST_GeoFromText" spatial function.
+ * Definition of the "ST_GeomFromText" spatial function.
  * The function has a required parameter - WKT string representation
  * and an optional SRID integer.
  */
-public class SqlStGeoFromText extends SqlFunction {
+public class SqlStGeomFromText extends SqlFunction {
 
-    private static final PolyOperandTypeChecker ST_GEOFROMTEXT_ARG_CHECKER = new PolyOperandTypeChecker() {
+    static final PolyOperandTypeChecker ST_GEOMFROMTEXT_ARG_CHECKER = new PolyOperandTypeChecker() {
 
         @Override
         public boolean checkOperandTypes( CallBinding callBinding, boolean throwOnFailure ) {
@@ -92,7 +87,7 @@ public class SqlStGeoFromText extends SqlFunction {
 
         @Override
         public String getAllowedSignatures( Operator op, String opName ) {
-            return "'ST_GeoFromText(<STRING>)'" + "\n" + "'ST_GeoFromText(<STRING>, <INTEGER>)'";
+            return "'ST_GeomFromText(<STRING>)'" + "\n" + "'ST_GeomFromText(<STRING>, <INTEGER>)'";
         }
 
 
@@ -118,8 +113,8 @@ public class SqlStGeoFromText extends SqlFunction {
     /**
      * Creates the SqlStGeoFromText.
      */
-    public SqlStGeoFromText() {
-        super( "ST_GEOFROMTEXT", Kind.GEO, ReturnTypes.GEOMETRY, null, ST_GEOFROMTEXT_ARG_CHECKER, FunctionCategory.GEOMETRY );
+    public SqlStGeomFromText() {
+        super( "ST_GEOMFROMTEXT", Kind.GEO, ReturnTypes.GEOMETRY, null, ST_GEOMFROMTEXT_ARG_CHECKER, FunctionCategory.GEOMETRY );
     }
 
 

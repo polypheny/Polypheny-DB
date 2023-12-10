@@ -782,6 +782,10 @@ public class SqlDialect {
         return true;
     }
 
+    public boolean supportsGeoJson() {
+        return false;
+    }
+
 
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 

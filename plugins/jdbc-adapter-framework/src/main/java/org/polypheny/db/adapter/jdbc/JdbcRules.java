@@ -435,6 +435,7 @@ public class JdbcRules {
                     && !userDefinedFunctionInProject( project )
                     && !knnFunctionInProject( project )
                     && !multimediaFunctionInProject( project )
+                    && !geoFunctionInProject( project )
                     && !DocumentRules.containsJson( project )
                     && !DocumentRules.containsDocument( project )
                     && !UnsupportedRexCallVisitor.containsModelItem( project.getProjects() )
@@ -473,6 +474,18 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsMultimediaFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean geoFunctionInProject( Project project ) {
+            CheckingGeoFunctionVisitor visitor = new CheckingGeoFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsGeoFunction() ) {
                     return true;
                 }
             }
@@ -1218,6 +1231,33 @@ public class JdbcRules {
             Operator operator = call.getOperator();
             if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isMultimedia() ) {
                 containsMultimediaFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingGeoFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsGeoFunction = false;
+
+
+        CheckingGeoFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsGeoFunction() {
+            return containsGeoFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() ) {
+                containsGeoFunction = true;
             }
             return super.visitCall( call );
         }

@@ -1309,9 +1309,39 @@ public enum OperatorName {
     //-------------------------------------------------------------
 
     /**
-     * The <code>ST_GeoFromText</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from text
+     * The <code>ST_GeomFromText</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from WKT
      */
-    ST_GEOFROMTEXT( Function.class ),
+    ST_GEOMFROMTEXT( Function.class ),
+
+    /**
+     * The <code>ST_GeomFromTWKB</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from TWKB
+     */
+    ST_GEOMFROMTWKB( Function.class ),
+
+    /**
+     * The <code>ST_GeomFromGeoJson</code> operator function: create the {@link org.polypheny.db.type.entity.spatial.PolyGeometry} from GeoJson
+     */
+    ST_GEOMFROMGEOJSON( Function.class ),
+
+    /**
+     * The <code>ST_AsText</code> operator function: output the WKT representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASTEXT( Function.class ),
+
+    /**
+     * The <code>ST_AsTWKB</code> operator function: output the TWKB representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASTWKB( Function.class ),
+
+    /**
+     * The <code>ST_AsGeoJson</code> operator function: output the GeoJson representation of {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
+     */
+    ST_ASGEOJSON( Function.class ),
+
+    /**
+     * The <code>ST_Transform</code> operator function: transform coordinates of {@link org.polypheny.db.type.entity.spatial.PolyGeometry} to another SRID
+     */
+    ST_TRANSFORM( Function.class ),
 
     // Common properties
 
@@ -1380,7 +1410,65 @@ public enum OperatorName {
      */
     ST_BUFFER( Function.class ),
 
+    // Spatial relationships
+
+    /**
+     * The <code>ST_WithinDistance</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are withing the given distance
+     */
+    ST_WITHINDISTANCE( Function.class ),
+
+    /**
+     * The <code>ST_Disjoint</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are disjoint
+     */
+    ST_DISJOINT( Function.class ),
+
+    /**
+     * The <code>ST_Touches</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} touches another
+     */
+    ST_TOUCHES( Function.class ),
+
+    /**
+     * The <code>ST_Intersects</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} intersects another
+     */
+    ST_INTERSECTS( Function.class ),
+
+    /**
+     * The <code>ST_Crosses</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} crosses another
+     */
+    ST_CROSSES( Function.class ),
+
+    /**
+     * The <code>ST_Within</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is within another
+     */
+    ST_WITHIN( Function.class ),
+
+    /**
+     * The <code>ST_Contains</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} contains another
+     */
+    ST_CONTAINS( Function.class ),
+
+    /**
+     * The <code>ST_Overlaps</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} overlaps another
+     */
+    ST_OVERLAPS( Function.class ),
+
+    /**
+     * The <code>ST_Covers</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} covers another
+     */
+    ST_COVERS( Function.class ),
+
+    /**
+     * The <code>ST_CoveredBy</code> operator function: check if {@link org.polypheny.db.type.entity.spatial.PolyGeometry} is covered by another
+     */
+    ST_COVEREDBY( Function.class ),
+
+    /**
+     * The <code>ST_Relate</code> operator function: check if two {@link org.polypheny.db.type.entity.spatial.PolyGeometry} are relate
+     */
+    ST_RELATE( Function.class ),
+
     // Yield metric values
+
     /**
      * The <code>ST_Distance</code> operator function: compute the distance between two {@link org.polypheny.db.type.entity.spatial.PolyGeometry}
      */
@@ -1542,6 +1630,8 @@ public enum OperatorName {
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     MQL_NOT_UNSET( LangFunctionOperator.class ),
+
+    MQL_NEAR( LangFunctionOperator.class ),
 
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
