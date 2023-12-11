@@ -249,10 +249,10 @@ public class PolyphenyDb {
 
         // Backup content of Polypheny folder
         if ( mode == PolyMode.TEST || memoryCatalog ) {
-            if ( dirManager.checkIfExists( "_test_backup" ) ) {
+            if ( dirManager.getGlobalFile( "_test_backup" ).isPresent() ) {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
-            File backupFolder = dirManager.registerNewFolder( "_test_backup" );
+            File backupFolder = dirManager.registerNewGlobalFolder( "_test_backup" );
             for ( File item : dirManager.getRootPath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
@@ -266,16 +266,16 @@ public class PolyphenyDb {
 
         // Enables Polypheny to be started with a different config.
         // Otherwise, Config at default location is used.
-        if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().checkIfExists( applicationConfPath ) ) {
+        if ( applicationConfPath != null && PolyphenyHomeDirManager.getInstance().getHomeFile( applicationConfPath ).isPresent() ) {
             ConfigManager.getInstance();
             ConfigManager.setApplicationConfFile( new File( applicationConfPath ) );
         }
 
         // Generate UUID for Polypheny (if there isn't one already)
         String uuid;
-        if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "uuid" ) ) {
+        if ( PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).isEmpty() ) {
             UUID id = UUID.randomUUID();
-            File f = PolyphenyHomeDirManager.getInstance().registerNewFile( "uuid" );
+            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
 
             try ( FileOutputStream out = new FileOutputStream( f ) ) {
                 out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
@@ -285,7 +285,7 @@ public class PolyphenyDb {
 
             uuid = id.toString();
         } else {
-            Path path = PolyphenyHomeDirManager.getInstance().getFileIfExists( "uuid" ).toPath();
+            Path path = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" ).orElseThrow().toPath();
 
             try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
                 uuid = UUID.fromString( in.readLine() ).toString();
@@ -526,14 +526,14 @@ public class PolyphenyDb {
 
 
     private static void restoreHomeFolderIfNecessary( PolyphenyHomeDirManager dirManager ) {
-        if ( dirManager.checkIfExists( "_test_backup" ) && dirManager.getFileIfExists( "_test_backup" ).isDirectory() ) {
-            File backupFolder = dirManager.getFileIfExists( "_test_backup" );
+        if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
+            File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
             // Cleanup Polypheny folder
             for ( File item : dirManager.getRootPath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
                 }
-                if ( dirManager.getFileIfExists( item.getName() ).isFile() ) {
+                if ( dirManager.getHomeFile( item.getName() ).orElseThrow().isFile() ) {
                     dirManager.deleteFile( item.getName() );
                 } else {
                     dirManager.recursiveDeleteFolder( item.getName() );
@@ -541,7 +541,7 @@ public class PolyphenyDb {
             }
             // Restore contents from backup
             for ( File item : backupFolder.listFiles() ) {
-                if ( dirManager.checkIfExists( "_test_backup/" + item.getName() ) ) {
+                if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
                     if ( !item.renameTo( new File( dirManager.getRootPath(), item.getName() ) ) ) {
                         throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
                     }

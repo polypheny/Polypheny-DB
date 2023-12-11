@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -41,11 +42,11 @@ public class Persister {
 
 
     private static File initBackupFile() {
-        if ( !PolyphenyHomeDirManager.getInstance().checkIfExists( "catalog" ) ) {
+        if ( PolyphenyHomeDirManager.getInstance().getHomeFile( "catalog" ).isEmpty() ) {
             PolyphenyHomeDirManager.getInstance().registerNewFolder( "catalog" );
         }
-        File folder = PolyphenyHomeDirManager.getInstance().getFileIfExists( "catalog" );
-        if ( !folder.isDirectory() ) {
+        Optional<File> folder = PolyphenyHomeDirManager.getInstance().getHomeFile( "catalog" );
+        if ( !folder.map( File::isDirectory ).orElse( false ) ) {
             throw new GenericRuntimeException( "There is an error with the catalog folder in the .polypheny folder." );
         }
         return PolyphenyHomeDirManager.getInstance().registerNewFile( "catalog/catalog.poly" );

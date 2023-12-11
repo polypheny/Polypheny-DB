@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 
 /**
@@ -37,6 +39,7 @@ public class PolyphenyHomeDirManager {
     private static PolyphenyHomeDirManager INSTANCE = null;
 
     private File root;
+    private File home;
     private final List<File> dirs = new ArrayList<>();
     private final List<File> deleteOnExit = new ArrayList<>();
     private static PolyMode mode;
@@ -58,11 +61,12 @@ public class PolyphenyHomeDirManager {
             pathVar = System.getProperty( "user.home" );
         }
         String prefix = getPrefix();
-        root = Path.of( pathVar, ".polypheny", prefix ).toFile();
+        root = Path.of( pathVar, ".polypheny" ).toFile();
+        home = Path.of( pathVar, ".polypheny", prefix ).toFile();
 
-        if ( !probeCreatingFolder( root ) ) {
-            root = new File( "." );
-            if ( !probeCreatingFolder( root ) ) {
+        if ( !probeCreatingFolder( home ) ) {
+            home = new File( "." );
+            if ( !probeCreatingFolder( home ) ) {
                 throw new RuntimeException( "Could not create root directory: .polypheny neither in: " + pathVar + " nor \".\"" );
             }
         }
@@ -106,10 +110,10 @@ public class PolyphenyHomeDirManager {
         }
 
         boolean couldCreate = true;
-        if ( !root.exists() ) {
-            couldCreate = root.mkdirs();
+        if ( !home.exists() ) {
+            couldCreate = home.mkdirs();
         }
-        return couldCreate && root.canWrite();
+        return couldCreate && home.canWrite();
     }
 
 
@@ -143,40 +147,45 @@ public class PolyphenyHomeDirManager {
 
 
     public File registerNewFile( String pathToFile ) {
+        return registerNewFile( home, pathToFile );
+    }
+
+
+    public File registerNewGlobalFile( String pathToFile ) {
         return registerNewFile( root, pathToFile );
     }
 
 
-    public boolean checkIfExists( String path ) {
-        return getFileIfExists( path ).exists();
+    public @NotNull Optional<File> getHomeFile( String path ) {
+        return new File( this.home, path ).exists() ? Optional.of( new File( this.home, path ) ) : Optional.empty();
     }
 
 
-    public File getFileIfExists( String path ) {
-        return new File( this.root, path );
+    public @NotNull Optional<File> getGlobalFile( String path ) {
+        return new File( this.root, path ).exists() ? Optional.of( new File( this.root, path ) ) : Optional.empty();
     }
 
 
     public boolean moveFolder( String oldPath, String newPath ) {
-        if ( checkIfExists( newPath ) ) {
+        if ( getHomeFile( newPath ).isEmpty() ) {
             throw new RuntimeException( "Target folder does already exist." );
         }
-        File file = new File( this.root, oldPath );
-        return file.renameTo( new File( this.root, newPath ) );
+        File file = new File( this.home, oldPath );
+        return file.renameTo( new File( this.home, newPath ) );
     }
 
 
     public boolean moveFile( String oldPath, String newPath ) {
-        if ( checkIfExists( newPath ) ) {
+        if ( getHomeFile( newPath ).isEmpty() ) {
             throw new RuntimeException( "Target file does already exist." );
         }
-        File file = new File( this.root, oldPath );
-        return file.renameTo( new File( this.root, newPath ) );
+        File file = new File( this.home, oldPath );
+        return file.renameTo( new File( this.home, newPath ) );
     }
 
 
     public boolean deleteFile( String path ) {
-        File file = new File( this.root, path );
+        File file = new File( this.home, path );
         if ( file.exists() ) {
             if ( !file.isFile() ) {
                 throw new RuntimeException( "Target is not a file." );
@@ -188,7 +197,7 @@ public class PolyphenyHomeDirManager {
 
 
     public boolean recursiveDeleteFolder( String path ) {
-        File folder = new File( this.root, path );
+        File folder = new File( this.home, path );
         if ( folder.exists() ) {
             return recursiveDeleteFolder( folder );
         }
@@ -197,7 +206,7 @@ public class PolyphenyHomeDirManager {
 
 
     public void recursiveDeleteFolderOnExit( String path ) {
-        File folder = new File( this.root, path );
+        File folder = new File( this.home, path );
         if ( !folder.exists() ) {
             throw new RuntimeException( "There is no directory with this name: " + folder.getPath() );
         }
@@ -241,7 +250,11 @@ public class PolyphenyHomeDirManager {
 
 
     public File registerNewFolder( String folder ) {
-        return registerNewFolder( this.root, folder );
+        return registerNewFolder( this.home, folder );
+    }
+
+    public File registerNewGlobalFolder( String testBackup ) {
+        return registerNewFolder( this.root, testBackup );
     }
 
 
@@ -251,7 +264,10 @@ public class PolyphenyHomeDirManager {
 
 
     public File getRootPath() {
-        return root;
+        return home;
     }
+
+
+
 
 }
