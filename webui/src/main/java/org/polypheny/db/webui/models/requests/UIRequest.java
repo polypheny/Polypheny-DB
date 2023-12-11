@@ -17,11 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.webui.models.SortState;
 
 
@@ -41,7 +43,9 @@ public class UIRequest extends RequestModel {
 
 
     @JsonProperty
-    public String namespace;
+    @JsonAlias("database")
+    @Builder.Default
+    public String namespace = Catalog.defaultNamespaceName;
 
     /**
      * Information about the pagination,
