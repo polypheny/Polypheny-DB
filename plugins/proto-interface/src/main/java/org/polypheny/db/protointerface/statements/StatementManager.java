@@ -42,12 +42,13 @@ public class StatementManager {
 
     public StatementManager( PIClient client ) {
         this.client = client;
-        statementIdGenerator = new AtomicInteger();
+        statementIdGenerator = new AtomicInteger( 1 );
         openStatements = new ConcurrentHashMap<>();
         openUnparameterizedBatches = new ConcurrentHashMap<>();
     }
 
-    private LogicalNamespace getNamespace(String namespaceName) {
+
+    private LogicalNamespace getNamespace( String namespaceName ) {
         Optional<LogicalNamespace> optionalNamespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName );
 
         if ( optionalNamespace.isEmpty() ) {
@@ -196,6 +197,9 @@ public class StatementManager {
 
 
     public PIStatement getStatement( int statementId ) {
+        if ( statementId == 0 ) {
+            throw new PIServiceException( "Invalid statement id: 0 (possibly uninitialized protobuf field)" );
+        }
         PIStatement statement = openStatements.get( statementId );
         if ( statement == null ) {
             throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
@@ -205,24 +209,18 @@ public class StatementManager {
 
 
     public PIPreparedNamedStatement getNamedPreparedStatement( int statementId ) throws PIServiceException {
-        PIStatement statement = openStatements.get( statementId );
-        if ( statement == null ) {
-            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
-        }
+        PIStatement statement = getStatement( statementId );
         if ( !(statement instanceof PIPreparedNamedStatement) ) {
-            throw new PIServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
+            throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
         }
         return (PIPreparedNamedStatement) statement;
     }
 
 
     public PIPreparedIndexedStatement getIndexedPreparedStatement( int statementId ) throws PIServiceException {
-        PIStatement statement = openStatements.get( statementId );
-        if ( statement == null ) {
-            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
-        }
+        PIStatement statement = getStatement( statementId );
         if ( !(statement instanceof PIPreparedIndexedStatement) ) {
-            throw new PIServiceException( "A prepared statement with id " + statementId + " does not exist for that client" );
+            throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
         }
         return (PIPreparedIndexedStatement) statement;
     }
