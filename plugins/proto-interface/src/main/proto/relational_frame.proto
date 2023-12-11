@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 import "value.proto";
 
 option java_multiple_files = true;

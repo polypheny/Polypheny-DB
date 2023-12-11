@@ -13,8 +13,11 @@ message ConnectionResponse {
   optional int64 heartbeat_interval = 4;
 }
 
-message DisconnectionResponse{}
+message DisconnectionResponse {
+}
 
-message ConnectionCheckResponse{}
+message ConnectionCheckResponse {
+}
 
-message ConnectionPropertiesUpdateResponse {}
+message ConnectionPropertiesUpdateResponse {
+}

@@ -24,6 +24,8 @@ message ConnectionProperties {
   optional string namespace_name = 2;
 }
 
-message DisconnectRequest{}
+message DisconnectRequest {
+}
 
-message ConnectionCheckRequest{}
+message ConnectionCheckRequest {
+}

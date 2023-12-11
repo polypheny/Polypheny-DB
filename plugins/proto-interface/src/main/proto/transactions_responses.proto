@@ -6,6 +6,8 @@ option java_outer_classname = "TransactionResponses";
 
 package polypheny.protointerface;
 
-message CommitResponse{}
+message CommitResponse {
+}
 
-message RollbackResponse{}
+message RollbackResponse {
+}

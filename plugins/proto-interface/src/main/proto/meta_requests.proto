@@ -6,10 +6,11 @@ option java_outer_classname = "MetaRequests";
 
 package polypheny.protointerface;
 
-message DbmsVersionRequest{
+message DbmsVersionRequest {
 }
 
-message LanguageRequest {}
+message LanguageRequest {
+}
 
 message DatabasesRequest {
 }
