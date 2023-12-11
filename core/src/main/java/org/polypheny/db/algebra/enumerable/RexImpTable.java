@@ -485,6 +485,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_REPLACE_ROOT ), BuiltInMethod.MQL_REPLACE_ROOT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_UNSET ), BuiltInMethod.MQL_NOT_UNSET.method, NullPolicy.STRICT );
 
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_INTERSECTS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_INTERSECTS.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GEO_WITHIN ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GEO_WITHIN.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NEAR_SPHERE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NEAR_SPHERE.method ), false );

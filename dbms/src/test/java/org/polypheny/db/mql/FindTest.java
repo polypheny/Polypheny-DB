@@ -713,6 +713,35 @@ public class FindTest extends MqlTestTemplate {
                         true ) );
     }
 
+
+    // geoIntersects
+
+    @Test
+    public void geoIntersectsTest() {
+        insertMany( DATA_6 );
+
+        DocResult result = find(
+                document(
+                        kv( string( "location" ), document(
+                                kv( string( "$geoIntersects" ), document(
+                                        kv( string( "$geometry" ), document(
+                                                kv( string( "type" ), string( "Polygon" ) ),
+                                                kv( string( "coordinates" ), "[ [ [ 9.289382 48.741588 ], [10.289382 47.741588], [9.289382 47.741588], [9.289382 48.741588] ] ]" ) )
+                                        )
+                                ) ) ) ) )
+                , "{}" );
+
+        assertTrue(
+                MongoConnection.checkDocResultSet(
+                        result,
+                        ImmutableList.of(
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 7.852923, 47.998949 ] }, \"key\": 3}",
+                                "{\"location\": { \"type\": \"Point\", \"coordinates\": [ 9.289382, 48.741588 ] }, \"key\": 2}" ),
+                        true,
+                        true ) );
+    }
+
+
     // geoWithin
 
     @Test

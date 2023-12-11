@@ -723,23 +723,35 @@ public class MqlFunctions {
 
 
     /**
+     * Tests if the object/document is $geoIntersects the provided geometry
+     *
+     * @param input the object/document
+     * @param geometry the $geometry to test if it is $geoIntersects. In GeoJSON format
+     * @return <code>TRUE</code> if the provided object/document is $geoIntersects the given geometry
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docGeoIntersects( PolyValue input, PolyValue geometry ) {
+        PolyGeometry inputGeom = validateAndCreateGeometry( input );
+        PolyGeometry geom = validateAndCreateGeometry( geometry );
+        if ( inputGeom == null || geom == null ) {
+            return PolyBoolean.FALSE;
+        }
+        return PolyBoolean.of( inputGeom.intersects( geom ) );
+    }
+
+
+    /**
      * Tests if the object/document is $geoWithin the provided geometry
      *
      * @param input the object/document
      * @param geometry the $geometry to test if it is $geoWithin. In GeoJSON format
-     * @return <code>TRUE</code> if the provided object/document is $near the given geometry
+     * @return <code>TRUE</code> if the provided object/document is $geoWithin the given geometry
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGeoWithin( PolyValue input, PolyValue geometry ) {
-        if ( input == null || !input.isDocument() || !geometry.isDocument() ) {
-            return PolyBoolean.FALSE;
-        }
-        PolyGeometry inputGeom;
-        PolyGeometry geom;
-        try {
-            inputGeom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
-            geom = PolyGeometry.fromGeoJson( geometry.asDocument().toJson() );
-        } catch ( InvalidGeometryException e ) {
+        PolyGeometry inputGeom = validateAndCreateGeometry( input );
+        PolyGeometry geom = validateAndCreateGeometry( geometry );
+        if ( inputGeom == null || geom == null ) {
             return PolyBoolean.FALSE;
         }
         return PolyBoolean.of( inputGeom.within( geom ) );
@@ -847,6 +859,20 @@ public class MqlFunctions {
             default:
                 return null;
         }
+    }
+
+
+    private static PolyGeometry validateAndCreateGeometry( PolyValue input ) {
+        if ( input == null || !input.isDocument() ) {
+            return null;
+        }
+        PolyGeometry geom;
+        try {
+            geom = PolyGeometry.fromGeoJson( input.asDocument().toJson() );
+        } catch ( InvalidGeometryException e ) {
+            return null;
+        }
+        return geom;
     }
 
 

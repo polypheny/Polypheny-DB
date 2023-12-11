@@ -441,9 +441,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyBlob.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
                 break;
             case GEOMETRY:
-                // TODO: check how it will work with GeoJson and SRID since we are using multiple params
                 if ( dialect.supportsGeoJson() ) {
-                    poly = Expressions.call( PolyGeometry.class, "fromGeoJson", Expressions.convert_( source, String.class ), Expressions.convert_( Expressions.field( source, "SRID" ), Number.class ) );
+                    poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "fromNullableGeoJson": "fromGeoJson", Expressions.convert_( source, String.class ) );
                 } else {
                     poly = Expressions.call( PolyGeometry.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, String.class ) );
                 }

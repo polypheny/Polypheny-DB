@@ -195,6 +195,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER ) );
 
+        register( OperatorName.MQL_GEO_INTERSECTS, new LangFunctionOperator( "MQL_GEO_INTERSECTS", Kind.MQL_GEO_INTERSECTS ) );
+
         register( OperatorName.MQL_GEO_WITHIN, new LangFunctionOperator( "MQL_GEO_WITHIN", Kind.MQL_GEO_WITHIN ) );
 
         register( OperatorName.MQL_NEAR, new LangFunctionOperator( "MQL_NEAR", Kind.MQL_NEAR ) );

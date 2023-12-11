@@ -1325,6 +1325,11 @@ public enum Kind {
     MQL_EXISTS,
 
     /**
+     * Document model {@code $geoIntersects} operator
+     */
+    MQL_GEO_INTERSECTS,
+
+    /**
      * Document model {@code $geoWithin} operator
      */
     MQL_GEO_WITHIN,
@@ -1589,6 +1594,7 @@ public enum Kind {
             MQL_JSONIFY,
             MQL_UPDATE,
             MQL_EXISTS,
+            MQL_GEO_INTERSECTS,
             MQL_GEO_WITHIN,
             MQL_NEAR,
             MQL_NEAR_SPHERE);

@@ -215,6 +215,16 @@ public class PolyGeometry extends PolyValue {
     }
 
 
+    public static PolyGeometry fromNullableGeoJson( String geoJson ) {
+        try {
+            return geoJson == null ? null : fromGeoJson( geoJson );
+        } catch ( InvalidGeometryException e ) {
+            // hack to deal that InvalidGeometryException is not caught in code generation
+            return null;
+        }
+    }
+
+
     public static PolyGeometry fromGeoJson( String geoJson ) throws InvalidGeometryException {
         return fromGeoJson( geoJson, WGS_84 );
     }

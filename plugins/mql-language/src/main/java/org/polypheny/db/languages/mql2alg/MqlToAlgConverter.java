@@ -203,6 +203,7 @@ public class MqlToAlgConverter {
         operators.add( "$all" );
         operators.add( "$elemMatch" );
         operators.add( "$size" );
+        operators.add( "$geoIntersects" );
         operators.add( "$geoWithin" );
         operators.add( "$near" );
         operators.add( "$nearSphere" );
@@ -1295,6 +1296,8 @@ public class MqlToAlgConverter {
                             return convertElemMatch( bsonValue, parentKey, rowType );
                         case "$size":
                             return convertSize( bsonValue, parentKey, rowType );
+                        case "$geoIntersects":
+                            return convertGeoIntersects( bsonValue, parentKey, rowType );
                         case "$geoWithin":
                             return convertGeoWithin( bsonValue, parentKey, rowType );
                         case "$near":
@@ -1916,6 +1919,37 @@ public class MqlToAlgConverter {
                 OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_TYPE_MATCH ),
                 Arrays.asList( getIdentifier( parentKey, rowType ), types ) );
 
+    }
+
+
+    /**
+     * Converts a $geoIntersects filter field
+     * <pre>
+     *      { <field>: { $geoIntersects: { $geometry: {<GeoJSON>} } }
+     * </pre>
+     *
+     * @param bson the $geoIntersects information as BSON,
+     * which is a document with the necessary keys ($geoIntersects.$geometry)
+     * @param parentKey the key of the parent document
+     * @param rowType the rowType of the node which is filtered by $geoIntersects
+     * @return the filtered node
+     */
+    private RexNode convertGeoIntersects( BsonValue bson, String parentKey, AlgDataType rowType ) {
+        if ( !bson.isDocument() ) {
+            throw new GenericRuntimeException( "$geoIntersects has to be a document." );
+        }
+        BsonDocument geoIntersects = bson.asDocument();
+        if ( !geoIntersects.containsKey( "$geometry" ) || !geoIntersects.get( "$geometry" ).isDocument() ) {
+            throw new GenericRuntimeException( "$geoIntersects.$geometry has to be a document." );
+        }
+        BsonDocument geometry = geoIntersects.get( "$geometry" ).asDocument();
+
+        return new RexCall(
+                cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ),
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GEO_INTERSECTS ),
+                Arrays.asList(
+                        getIdentifier( parentKey, rowType ),
+                        convertLiteral( geometry ) ));
     }
 
 
