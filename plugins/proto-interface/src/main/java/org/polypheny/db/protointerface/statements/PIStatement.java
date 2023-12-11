@@ -22,7 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.transaction.Statement;
@@ -37,7 +39,7 @@ public abstract class PIStatement {
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage language;
     @Setter
-    private PolyImplementation.ResultIterator iterator;
+    private ResultIterator iterator;
     protected LogicalNamespace namespace;
 
 
@@ -59,7 +61,7 @@ public abstract class PIStatement {
         try {
             iterator.close();
         } catch ( Exception e ) {
-            throw new RuntimeException( "Closing of open result iterator failed" );
+            throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }
     }
 

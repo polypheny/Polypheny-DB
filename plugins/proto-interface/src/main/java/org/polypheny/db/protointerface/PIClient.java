@@ -19,7 +19,7 @@ package org.polypheny.db.protointerface;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.protointerface.statements.StatementManager;
 import org.polypheny.db.transaction.Transaction;
@@ -31,7 +31,7 @@ public class PIClient {
 
     @Getter
     private String clientUUID;
-    private CatalogUser catalogUser;
+    private LogicalUser catalogUser;
     private Transaction currentTransaction;
     private TransactionManager transactionManager;
     @Getter
@@ -49,7 +49,7 @@ public class PIClient {
 
     public PIClient(
             String clientUUID,
-            CatalogUser catalogUser,
+            LogicalUser catalogUser,
             TransactionManager transactionManager,
             LogicalNamespace namespace,
             boolean isAutoCommit ) {

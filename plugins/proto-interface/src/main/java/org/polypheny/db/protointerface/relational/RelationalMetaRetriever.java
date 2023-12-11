@@ -47,7 +47,7 @@ public class RelationalMetaRetriever {
 
 
     public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
-        return parameterRowType.getFieldList().stream()
+        return parameterRowType.getFields().stream()
                 .map( p -> retrieveParameterMeta( p, null ) )
                 .collect( Collectors.toList() );
     }
@@ -71,7 +71,7 @@ public class RelationalMetaRetriever {
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
         int index = 0;
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFieldList() ) ) {
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFields() ) ) {
             final AlgDataTypeField field = pair.e;
             final AlgDataType type = field.getType();
             columns.add( retrieveColumnMeta( index++, field.getName(), type, origins.get( pair.i ) ) );
@@ -148,7 +148,7 @@ public class RelationalMetaRetriever {
             PolyType polyType = algDataType.getPolyType();
             if ( Objects.requireNonNull( polyType ) == PolyType.STRUCTURED ) {
                 List<FieldMeta> fieldMetas = algDataType
-                        .getFieldList()
+                        .getFields()
                         .stream()
                         .map( f -> retrieveFieldMeta( f.getIndex(), f.getName(), f.getType() ) )
                         .collect( Collectors.toList() );

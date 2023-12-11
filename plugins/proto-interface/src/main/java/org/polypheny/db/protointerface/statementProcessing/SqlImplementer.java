@@ -16,22 +16,19 @@
 
 package org.polypheny.db.protointerface.statementProcessing;
 
-import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.config.RuntimeConfig;
+import java.util.List;
+import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.languages.QueryParameters;
-import org.polypheny.db.nodes.Node;
-import org.polypheny.db.processing.Processor;
+import org.polypheny.db.processing.ImplementationContext;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.statements.PIStatement;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.util.Pair;
 
 public class SqlImplementer extends StatementImplementer {
+
     private static QueryLanguage language = QueryLanguage.from( "sql" );
+
 
     @Override
     public QueryLanguage getLanguage() {
@@ -40,7 +37,7 @@ public class SqlImplementer extends StatementImplementer {
 
 
     @Override
-    public void implement(PIStatement piStatement ) throws PIServiceException{
+    public void implement( PIStatement piStatement ) throws PIServiceException {
         if ( hasInvalidLanguage( piStatement ) ) {
             throw new PIServiceException( "The statement in the language "
                     + piStatement.getLanguage()
@@ -50,26 +47,15 @@ public class SqlImplementer extends StatementImplementer {
             );
         }
         Statement statement = piStatement.getStatement();
-        if (statement == null) {
+        if ( statement == null ) {
             throw new PIServiceException( "Statement is not linked to a polypheny statement",
                     "I9003",
                     9003
             );
         }
         String query = piStatement.getQuery();
-        PolyImplementation implementation;
-        Processor queryProcessor = statement.getTransaction().getProcessor( language );
-        Node parsedStatement = queryProcessor.parse( query ).get( 0 );
-        if ( parsedStatement.isA( Kind.DDL ) ) {
-            implementation = queryProcessor.prepareDdl( statement, parsedStatement,
-                    new QueryParameters( query, language.getNamespaceType() ) );
-        } else {
-            Pair<Node, AlgDataType> validated = queryProcessor.validate( piStatement.getTransaction(),
-                    parsedStatement, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            AlgRoot logicalRoot = queryProcessor.translate( statement, validated.left, null );
-            AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
-            implementation = statement.getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, true );
-        }
-        piStatement.setImplementation( implementation );
+        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( QueryContext.builder().query( query ).language( QueryLanguage.from( "sql" ) ).namespaceId( piStatement.getNamespace().id ).build(), statement );
+        piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
+
 }

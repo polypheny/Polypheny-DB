@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -79,7 +79,7 @@ public class ClientManager {
         }
         String username = connectionRequest.hasUsername() ? connectionRequest.getUsername() : Catalog.USER_NAME;
         String password = connectionRequest.hasPassword() ? connectionRequest.getPassword() : null;
-        CatalogUser user = authenticator.authenticate( username, password );
+        LogicalUser user = authenticator.authenticate( username, password );
         Transaction transaction = transactionManager.startTransaction( user.id, false, "proto-interface" );
         transaction.commit();
         LogicalNamespace namespace = getNamespaceOrDefault( connectionRequest );

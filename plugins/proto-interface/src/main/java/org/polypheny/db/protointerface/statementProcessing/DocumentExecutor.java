@@ -17,10 +17,11 @@
 package org.polypheny.db.protointerface.statementProcessing;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.PolyImplementation.ResultIterator;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.ResultIterator;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.protointerface.PIClient;
 import org.polypheny.db.protointerface.PIServiceException;
 import org.polypheny.db.protointerface.proto.Frame;
@@ -32,11 +33,11 @@ import org.polypheny.db.type.entity.PolyValue;
 
 public class DocumentExecutor extends Executor {
 
-    private static NamespaceType namespaceType = NamespaceType.DOCUMENT;
+    private static DataModel namespaceType = DataModel.DOCUMENT;
 
 
     @Override
-    NamespaceType getNamespaceType() {
+    DataModel getDataModel() {
         return namespaceType;
     }
 
@@ -45,7 +46,7 @@ public class DocumentExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getNamespaceType()
+                    + piStatement.getLanguage().getDataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000
@@ -75,7 +76,7 @@ public class DocumentExecutor extends Executor {
     StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getNamespaceType()
+                    + piStatement.getLanguage().getDataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000
@@ -109,7 +110,7 @@ public class DocumentExecutor extends Executor {
     Frame fetch( PIStatement piStatement, int fetchSize ) {
         if ( hasInvalidNamespaceType( piStatement ) ) {
             throw new PIServiceException( "The results of type "
-                    + piStatement.getLanguage().getNamespaceType()
+                    + piStatement.getLanguage().getDataModel()
                     + "returned by this statement can't be retrieved by a document retriever.",
                     "I9000",
                     9000
@@ -138,7 +139,7 @@ public class DocumentExecutor extends Executor {
             );
         }
         startOrResumeStopwatch( executionStopWatch );
-        List<PolyValue> data = iterator.getSingleRows();
+        List<PolyValue> data = iterator.getNextBatch().stream().map( p -> p.get( 0 ) ).collect( Collectors.toList() );
         executionStopWatch.stop();
         return ProtoUtils.buildDocumentFrame( !iterator.hasMoreRows(), data );
     }

@@ -17,7 +17,7 @@
 package org.polypheny.db.protointerface.statementProcessing;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.catalog.logistic.NamespaceType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.protointerface.proto.Frame;
 import org.polypheny.db.protointerface.proto.StatementResult;
 import org.polypheny.db.protointerface.statements.PIStatement;
@@ -34,10 +34,11 @@ public abstract class Executor {
     }
 
     protected boolean hasInvalidNamespaceType(PIStatement piStatement) {
-        return piStatement.getLanguage().getNamespaceType() != getNamespaceType();
+        return piStatement.getLanguage().getDataModel() != getDataModel();
     }
 
-    abstract NamespaceType getNamespaceType();
+
+    abstract DataModel getDataModel();
 
     abstract StatementResult executeAndGetResult(PIStatement piStatement) throws Exception;
 

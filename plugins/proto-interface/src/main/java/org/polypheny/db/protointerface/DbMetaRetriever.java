@@ -25,8 +25,8 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogObject;
-import org.polypheny.db.catalog.entity.CatalogObject.Visibility;
+import org.polypheny.db.catalog.entity.PolyObject;
+import org.polypheny.db.catalog.entity.PolyObject.Visibility;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
@@ -34,8 +34,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.catalog.logistic.NamespaceType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -79,8 +79,8 @@ public class DbMetaRetriever {
         if ( namespaceType == null ) {
             return logicalNamespaces;
         }
-        NamespaceType catalogNamespaceType = NamespaceType.valueOf( namespaceType );
-        return logicalNamespaces.stream().filter( n -> n.getNamespaceType() == catalogNamespaceType ).collect( Collectors.toList() );
+        DataModel catalogNamespaceType = DataModel.valueOf( namespaceType );
+        return logicalNamespaces.stream().filter( n -> n.getDataModel() == catalogNamespaceType ).collect( Collectors.toList() );
     }
 
 
@@ -89,7 +89,7 @@ public class DbMetaRetriever {
         namespaceBuilder.setNamespaceName( logicalNamespace.getName() );
         namespaceBuilder.setDatabaseName( logicalNamespace.getDatabaseName() );
         namespaceBuilder.setOwnerName( logicalNamespace.getOwnerName() );
-        Optional.ofNullable( logicalNamespace.getNamespaceType() ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.name() ) );
+        Optional.ofNullable( logicalNamespace.getDataModel() ).ifPresent( p -> namespaceBuilder.setNamespaceType( p.name() ) );
         return namespaceBuilder.build();
     }
 
@@ -108,7 +108,7 @@ public class DbMetaRetriever {
     public static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( namespaceName ).orElseThrow();
-        switch ( namespace.getNamespaceType() ) {
+        switch ( namespace.getDataModel() ) {
             case RELATIONAL:
                 responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) );
                 break;
@@ -195,9 +195,9 @@ public class DbMetaRetriever {
         Optional.ofNullable( logicalColumn.getLength() ).ifPresent( columnBuilder::setTypeLength );
         Optional.ofNullable( logicalColumn.getScale() ).ifPresent( columnBuilder::setTypeScale );
         columnBuilder.setIsNullable( logicalColumn.isNullable() );
-        Optional.ofNullable( logicalColumn.getDefaultValue() ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.getValue() ) );
+        Optional.ofNullable( logicalColumn.getDefaultValue() ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.value.toJson() ) );
         columnBuilder.setColumnIndex( logicalColumn.getPosition() );
-        Optional.ofNullable( CatalogObject.getEnumNameOrNull( logicalColumn.getCollation() ) ).ifPresent( columnBuilder::setCollation );
+        Optional.ofNullable( PolyObject.getEnumNameOrNull( logicalColumn.getCollation() ) ).ifPresent( columnBuilder::setCollation );
         columnBuilder.setIsHidden( logicalColumn.getVisibility() == Visibility.INTERNAL );
         columnBuilder.setColumnType( Column.ColumnType.UNSPECIFIED ); //TODO: reserved for future use
         return columnBuilder.build();
