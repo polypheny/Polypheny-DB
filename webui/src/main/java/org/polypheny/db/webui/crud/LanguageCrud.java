@@ -67,6 +67,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.PolyMode;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
@@ -336,7 +337,7 @@ public class LanguageCrud {
                     temp[counter] = null;
                 } else {
                     String columnName = String.valueOf( header.get( counter ).name.hashCode() );
-                    File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                    File mmFolder = PolyphenyHomeDirManager.getInstance().getGlobalFile( "/tmp" ).orElseThrow();
                     mmFolder.mkdirs();
                     ContentInfoUtil util = new ContentInfoUtil();
                     if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {

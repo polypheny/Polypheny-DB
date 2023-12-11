@@ -247,12 +247,21 @@ public class PolyInteger extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyInteger item ) {
+                    if ( item == null ) {
+                        out.writeBoolean( true );
+                        return;
+                    }
+                    out.writeBoolean( false );
+
                     out.writeInt( item.value );
                 }
 
 
                 @Override
                 public PolyInteger decode( BinaryInput in ) throws CorruptedDataException {
+                    if ( in.readBoolean() ) {
+                        return null;
+                    }
                     return new PolyInteger( in.readInt() );
                 }
             };

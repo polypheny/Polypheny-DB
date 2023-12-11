@@ -191,13 +191,13 @@ public class PolyString extends PolyValue {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyString item ) {
-                    out.writeUTF8( item.value );
+                    out.writeUTF8Nullable( item.value );
                 }
 
 
                 @Override
                 public PolyString decode( BinaryInput in ) throws CorruptedDataException {
-                    return PolyString.of( in.readUTF8() );
+                    return PolyString.of( in.readUTF8Nullable() );
                 }
             };
         }

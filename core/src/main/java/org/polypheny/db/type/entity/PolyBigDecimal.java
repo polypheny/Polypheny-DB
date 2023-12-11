@@ -250,13 +250,14 @@ public class PolyBigDecimal extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyBigDecimal item ) {
-                    out.writeUTF8( item.value.toString() );
+                    out.writeUTF8Nullable( item.value.toString() );
                 }
 
 
                 @Override
                 public PolyBigDecimal decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyBigDecimal( new BigDecimal( in.readUTF8() ) );
+                    String val = in.readUTF8Nullable();
+                    return new PolyBigDecimal( val == null ? null : new BigDecimal( val ) );
                 }
             };
         }

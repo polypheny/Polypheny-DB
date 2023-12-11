@@ -249,10 +249,10 @@ public class PolyphenyDb {
 
         // Backup content of Polypheny folder
         if ( mode == PolyMode.TEST || memoryCatalog ) {
-            if ( dirManager.getGlobalFile( "_test_backup" ).isPresent() ) {
+            if ( dirManager.getHomeFile( "_test_backup" ).isPresent() ) {
                 throw new GenericRuntimeException( "Unable to backup the Polypheny folder since there is already a backup folder." );
             }
-            File backupFolder = dirManager.registerNewGlobalFolder( "_test_backup" );
+            File backupFolder = dirManager.registerNewFolder( "_test_backup" );
             for ( File item : dirManager.getRootPath().listFiles() ) {
                 if ( item.getName().equals( "_test_backup" ) ) {
                     continue;
