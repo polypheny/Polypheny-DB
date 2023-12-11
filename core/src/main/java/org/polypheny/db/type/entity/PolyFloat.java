@@ -188,13 +188,14 @@ public class PolyFloat extends PolyNumber {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyFloat item ) {
-                    out.writeUTF8( item.value.toString() );
+                    out.writeUTF8Nullable( item == null ? null : item.value.toString() );
                 }
 
 
                 @Override
                 public PolyFloat decode( BinaryInput in ) throws CorruptedDataException {
-                    return new PolyFloat( Float.valueOf( in.readUTF8() ) );
+                    String readUTF8Nullable = in.readUTF8Nullable();
+                    return new PolyFloat( readUTF8Nullable == null ? null : Float.valueOf( readUTF8Nullable ) );
                 }
             };
         }

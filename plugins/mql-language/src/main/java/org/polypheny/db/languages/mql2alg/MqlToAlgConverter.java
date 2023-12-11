@@ -931,9 +931,9 @@ public class MqlToAlgConverter {
 
     /**
      * Translates a $skip stage of the aggregation pipeline
-     * <pre>
+     * {@code <pre>
      *     { $skip: <positive 64-bit integer> }
-     * </pre>
+     * </pre>}
      *
      * @param value the untransformed BSON value
      * @param node the node up to this point
@@ -950,9 +950,9 @@ public class MqlToAlgConverter {
 
     /**
      * Translates a $skip stage of the aggregation pipeline
-     * <pre>
+     * {@code <pre>
      *     { $limit: <positive 64-bit integer> }
-     * </pre>
+     * </pre>}
      *
      * @param value the untransformed BSON value
      * @param node the node up to this point

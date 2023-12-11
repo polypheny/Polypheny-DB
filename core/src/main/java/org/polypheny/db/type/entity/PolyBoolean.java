@@ -119,12 +119,20 @@ public class PolyBoolean extends PolyValue {
             return new BinarySerializer<>() {
                 @Override
                 public void encode( BinaryOutput out, PolyBoolean item ) {
+                    out.writeBoolean( item == null );
+                    if ( item == null ) {
+                        return;
+                    }
                     out.writeBoolean( item.value );
                 }
 
 
                 @Override
                 public PolyBoolean decode( BinaryInput in ) throws CorruptedDataException {
+                    boolean isNull = in.readBoolean();
+                    if ( isNull ) {
+                        return PolyBoolean.of( null );
+                    }
                     return in.readBoolean() ? PolyBoolean.TRUE : PolyBoolean.FALSE;
                 }
             };

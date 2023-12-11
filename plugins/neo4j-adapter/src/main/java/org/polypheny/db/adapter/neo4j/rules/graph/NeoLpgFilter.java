@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -38,7 +39,7 @@ public class NeoLpgFilter extends LpgFilter implements NeoGraphAlg {
      * Creates a {@link org.polypheny.db.adapter.neo4j.NeoConvention} of a {@link LpgFilter}.
      *
      * @param cluster Cluster this expression belongs to
-     * @param traits Traits active for this node, including {@link org.polypheny.db.schema.ModelTrait#GRAPH}
+     * @param traits Traits active for this node, including {@link DataModel#GRAPH}
      * @param input Input algebraic expression
      */
     public NeoLpgFilter( AlgOptCluster cluster, AlgTraitSet traits, AlgNode input, RexNode condition ) {
