@@ -71,7 +71,7 @@ public class StatusService {
 
         webuiServer.get( PREFIX_KEY + "/transactions-active", this::getActiveTransactions );
 
-        webuiServer.get( PREFIX_KEY + "/transactions-total", this::getTransactionCount );
+        webuiServer.get( PREFIX_KEY + "/transactions-since-restart", this::getTransactionRestart );
 
         webuiServer.get( PREFIX_KEY + "/cache-implementation", this::getImplementationCacheSize );
 
@@ -84,7 +84,7 @@ public class StatusService {
     }
 
 
-    private void getTransactionCount( Context context ) {
+    private void getTransactionRestart( Context context ) {
         context.result( String.valueOf( transactionManager.getNumberOfTotalTransactions() ) );
     }
 

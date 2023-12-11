@@ -1758,14 +1758,15 @@ CypherClause MatchClause() :
     Token t;
     Token whereToken = null;
     boolean optional = false;
-    List<CypherPattern> patterns;
-    List<CypherHint> hints;
+    List<CypherPattern> patterns = List.of();
+    boolean fullScan = false;
+    List<CypherHint> hints = List.of();
     CypherWhere where = null;
 }
 {
-    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=WhereClause() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> ("(*)" {fullScan = true;} | patterns=PatternList() hints=Hints()) ( where=WhereClause() )?
     {
-        return CypherFactory.createMatch( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where );
+        return CypherFactory.createMatch( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where, fullScan );
     }
 }
 

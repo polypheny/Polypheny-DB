@@ -17,9 +17,12 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 
-
+@Jacksonized
+@SuperBuilder
 public class ExploreTables extends UIRequest{
 
     public Integer id;

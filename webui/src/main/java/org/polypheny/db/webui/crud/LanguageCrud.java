@@ -65,6 +65,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.PolyMode;
 import org.polypheny.db.webui.Crud;
 import org.polypheny.db.webui.TemporalFileManager;
@@ -181,7 +182,6 @@ public class LanguageCrud {
             }
         }
 
-
         if ( queryAnalyzer != null ) {
             Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
         }
@@ -205,12 +205,17 @@ public class LanguageCrud {
         Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
-                        .query( "MATCH (*) RETURN n" )
+                        .query( "MATCH (*) RETURN *" )
                         .language( language )
                         .origin( transaction.getOrigin() )
+                        .namespaceId( getNamespaceIdOrDefault( namespace ) )
                         .transactionManager( manager )
                         .informationTarget( i -> i.setSession( session ) )
                         .build(), transaction.createStatement() ).get( 0 );
+
+        if ( context.getException().isPresent() ) {
+            return new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) );
+        }
 
         ResultIterator iterator = context.execute( transaction.createStatement() ).getIterator();
         List<List<PolyValue>> res = iterator.getNextBatch();

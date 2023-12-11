@@ -40,6 +40,12 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     }
 
 
+    @Override
+    public boolean isFullScan() {
+        return clauses.stream().anyMatch( CypherNode::isFullScan );
+    }
+
+
     public CypherSingleQuery( List<CypherClause> clauses ) {
         this( ParserPos.ZERO, clauses );
     }

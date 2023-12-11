@@ -54,6 +54,11 @@ public abstract class CypherNode implements Node {
     public abstract CypherKind getCypherKind();
 
 
+    public boolean isFullScan() {
+        return false;
+    }
+
+
     @Override
     public Node clone( ParserPos pos ) {
         return null;
@@ -161,6 +166,7 @@ public abstract class CypherNode implements Node {
         REL_PATTERN,
         SHORTEST_PATTERN,
         LITERAL,
+        FULL,
         SET_ITEM
     }
 
