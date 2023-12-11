@@ -22,11 +22,15 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 
 @EqualsAndHashCode(callSuper = true)
 @Getter
 @Value
+@Jacksonized
+@SuperBuilder
 public class GraphRequest extends QueryRequest {
 
     public List<String> nodeIds;

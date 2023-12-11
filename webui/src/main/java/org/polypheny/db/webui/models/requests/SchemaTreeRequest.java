@@ -18,8 +18,12 @@ package org.polypheny.db.webui.models.requests;
 
 
 import java.util.List;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.catalog.logistic.DataModel;
 
+@Jacksonized
+@SuperBuilder
 public class SchemaTreeRequest extends UIRequest {
 
     public String routerLinkRoot;

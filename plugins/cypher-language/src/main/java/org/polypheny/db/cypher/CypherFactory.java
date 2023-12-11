@@ -228,7 +228,10 @@ public interface CypherFactory {
         return new CypherDelete( pos, detach, list );
     }
 
-    static CypherClause createMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where ) {
+    static CypherClause createMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where, boolean fullScan ) {
+        if ( fullScan ) {
+            return new CypherFull( pos );
+        }
         return new CypherMatch( pos, optional, patterns, pos1, hints, where, false );
     }
 

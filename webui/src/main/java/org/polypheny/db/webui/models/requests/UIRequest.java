@@ -17,9 +17,11 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import lombok.Builder;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.polypheny.db.webui.models.SortState;
 
 
@@ -27,15 +29,18 @@ import org.polypheny.db.webui.models.SortState;
  * Required to parse a request coming from the UI using Gson
  */
 @SuperBuilder(toBuilder = true)
+@Jacksonized
 public class UIRequest extends RequestModel {
 
 
     /**
      * The name of the table the data should be fetched from
      */
+    @JsonProperty
     public Long entityId;
 
 
+    @JsonProperty
     public String namespace;
 
     /**
@@ -43,31 +48,37 @@ public class UIRequest extends RequestModel {
      * what current page should be loaded
      */
     @Builder.Default
+    @JsonProperty
     public int currentPage = 1;
 
     /**
      * Data that should be inserted
      */
+    @JsonProperty
     public Map<String, String> data;
 
     /**
      * For each column: If it should be filtered empty string if it should not be filtered
      */
+    @JsonProperty
     public Map<String, String> filter;
 
     /**
      * For each column: If and how it should be sorted
      */
+    @JsonProperty
     public Map<String, SortState> sortState;
 
     /**
      * Request to fetch a result without a limit. Default false.
      */
+    @JsonProperty
     public boolean noLimit;
 
     /**
      * The time interval of the diagram should be fetched from.
      */
+    @JsonProperty
     public String selectInterval;
 
 
