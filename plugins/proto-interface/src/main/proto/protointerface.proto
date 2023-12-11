@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+// Can we drop this?  Causes warnings
 import "value.proto";
 import "meta_requests.proto";
 import "meta_responses.proto";
@@ -26,7 +27,7 @@ service ProtoInterface {
   rpc GetTableTypes(TableTypesRequest) returns (TableTypesResponse) {}
   rpc GetTypes(TypesRequest) returns (TypesResponse) {}
   rpc GetUserDefinedTypes(UserDefinedTypesRequest) returns (UserDefinedTypesResponse) {}
-  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse){}
+  rpc GetClientInfoPropertyMetas(ClientInfoPropertyMetaRequest) returns (ClientInfoPropertyMetaResponse) {}
   rpc SearchProcedures(ProceduresRequest) returns (ProceduresResponse) {}
   rpc SearchFunctions(FunctionsRequest) returns (FunctionsResponse) {}
   rpc SearchNamespaces(NamespacesRequest) returns (NamespacesResponse) {}
@@ -51,8 +52,8 @@ service ProtoInterface {
   rpc ExecuteIndexedStatement(ExecuteIndexedStatementRequest) returns (StatementResult) {}
   rpc ExecuteIndexedStatementBatch(ExecuteIndexedStatementBatchRequest) returns (StatementBatchResponse) {}
   rpc PrepareNamedStatement(PrepareStatementRequest) returns (PreparedStatementSignature) {}
-  rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult){}
   rpc ExecuteNamedStatement(ExecuteNamedStatementRequest) returns (StatementResult) {}
+  // ExecuteNamedStatementBatch ?
   // Results
   rpc FetchResult(FetchRequest) returns (Frame) {}
   // Transaction handling
