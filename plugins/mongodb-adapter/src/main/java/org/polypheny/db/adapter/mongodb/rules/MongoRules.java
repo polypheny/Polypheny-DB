@@ -339,7 +339,8 @@ public class MongoRules {
         private MongoDocumentFilterRule() {
             super(
                     LogicalDocumentFilter.class,
-                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
+                            && !containsIncompatible( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoDocumentFilterRule.class.getSimpleName() );
@@ -462,6 +463,8 @@ public class MongoRules {
                     || operator.getOperatorName() == OperatorName.OVERLAY
                     || operator.getOperatorName() == OperatorName.COT
                     || operator.getOperatorName() == OperatorName.FLOOR
+                    || operator.getOperatorName() == OperatorName.MQL_NEAR
+                    || operator.getOperatorName() == OperatorName.MQL_NEAR_SPHERE
                     || (operator.getOperatorName() == OperatorName.CAST
                     && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
