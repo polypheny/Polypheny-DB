@@ -266,7 +266,7 @@ public class ConfigManager {
     public static void setApplicationConfFile( File customConfFile ) {
         PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
         // If specified custom File is equal to the system default. Omit further processing and return to default
-        if ( !customConfFile.equals( homeDirManager.getFileIfExists( DEFAULT_CONFIGURATION_DIRECTORY_NAME + "/" + DEFAULT_CONFIGURATION_FILE_NAME ) ) ) {
+        if ( !customConfFile.equals( homeDirManager.getHomeFile( DEFAULT_CONFIGURATION_DIRECTORY_NAME + "/" + DEFAULT_CONFIGURATION_FILE_NAME ) ) ) {
             if ( customConfFile.exists() && homeDirManager.isAccessible( customConfFile ) ) {
                 applicationConfFile = customConfFile.getAbsoluteFile();
 
