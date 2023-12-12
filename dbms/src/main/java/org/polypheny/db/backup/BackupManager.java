@@ -17,15 +17,15 @@
 package org.polypheny.db.backup;
 
 import com.google.common.collect.ImmutableMap;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.backup.datagatherer.GatherEntries;
+import org.polypheny.db.backup.datagatherer.entryGatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
+import org.polypheny.db.backup.datainserter.InsertEntries;
 import org.polypheny.db.backup.datainserter.InsertSchema;
 import org.polypheny.db.backup.dependencies.DependencyManager;
 import org.polypheny.db.backup.dependencies.EntityReferencer;
@@ -126,6 +126,7 @@ public class BackupManager {
         List<Long> graphNamespaceIds = collectGraphNamespaceIds();
         GatherEntries gatherEntries = new GatherEntries(transactionManager, tablesForDataCollection, collectionsForDataCollection, graphNamespaceIds);
         gatherEntries.start();
+        log.info( "finished all datagathering" );
 
 
     }
@@ -227,7 +228,15 @@ public class BackupManager {
     private void startInserting() {
         InsertSchema insertSchema = new InsertSchema( transactionManager );
 
-        insertSchema.start( backupInformationObject );
+        if ( backupInformationObject != null ) {
+            insertSchema.start( backupInformationObject );
+        } else {
+            log.info( "backupInformationObject is null" );
+        }
+
+
+        InsertEntries insertEntries = new InsertEntries();
+        insertEntries.start();
         log.info( "inserting done" );
     }
 

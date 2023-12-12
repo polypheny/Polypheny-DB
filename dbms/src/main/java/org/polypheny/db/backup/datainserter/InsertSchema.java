@@ -42,6 +42,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 import java.util.List;
@@ -618,9 +619,12 @@ public class InsertSchema {
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
                     ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    transaction.commit();
 
                 } catch ( Exception e ) {
                     throw new RuntimeException( "Error while starting transaction", e );
+                } catch ( TransactionException e ) {
+                    throw new RuntimeException( e );
                 }
                 break;
 
@@ -630,9 +634,12 @@ public class InsertSchema {
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
                     ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    transaction.commit();
 
                 } catch ( Exception e ) {
                     throw new RuntimeException( "Error while starting transaction", e );
+                } catch ( TransactionException e ) {
+                    throw new RuntimeException( e );
                 }
                 break;
 
@@ -642,9 +649,12 @@ public class InsertSchema {
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Inserter" );
                     statement = transaction.createStatement();
                     ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "cypher" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    transaction.commit();
 
                 } catch ( Exception e ) {
                     throw new RuntimeException( "Error while starting transaction", e );
+                } catch ( TransactionException e ) {
+                    throw new RuntimeException( e );
                 }
                 break;
 

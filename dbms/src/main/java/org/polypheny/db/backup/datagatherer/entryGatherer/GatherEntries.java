@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer;
+package org.polypheny.db.backup.datagatherer.entryGatherer;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -30,13 +30,15 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -50,6 +52,7 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -82,52 +85,70 @@ public class GatherEntries {
     // Structure for saving: 1 schemafile, 1 storagefile, 1 to many datadata file(s)
 
     public void start() {
-        ExecutorService executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
-        //initFileTest();
-        PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-        backupFolder = fileSystemManager.registerNewFolder( "backup" );
-        dataFolder = fileSystemManager.registerNewFolder( backupFolder, "data" );
+        ExecutorService executorService = null;
+        List<EntityInfo> entityInfoList = new ArrayList<>();
+        try {
+            executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
+            //initFileTest();
+            PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
+            backupFolder = fileSystemManager.registerNewFolder( "backup" );
+            dataFolder = fileSystemManager.registerNewFolder( backupFolder, "data" );
 
-        if (!tablesToBeCollected.isEmpty()){
-            //go through each pair in tablesToBeCollectedList
-            for ( Pair<String, String> table : tablesToBeCollected) {
-                //TODO(FF): exclude default columns? no, how do you differentiate for each line if it is not a default value
-                String query = String.format( "SELECT * FROM %s.%s" , table.getKey(), table.getValue() );
-                //executeQuery2( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
+            if ( !tablesToBeCollected.isEmpty() ) {
+                //go through each pair in tablesToBeCollectedList
+                for ( Pair<String, String> table : tablesToBeCollected ) {
+                    //TODO(FF): exclude default columns? no, how do you differentiate for each line if it is not a default value
+                    String query = String.format( "SELECT * FROM %s.%s", table.getKey(), table.getValue() );
+                    //executeQuery2( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
 
-                File tableData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getKey() , table.getValue() ));
-                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.RELATIONAL, Catalog.defaultNamespaceId , tableData) );
-            }
+                    File tableData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getKey(), table.getValue() ) );
+                    executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.RELATIONAL, Catalog.defaultNamespaceId, tableData ) );
+                }
             /*
             for ( String nsTableName : tablesToBeCollected ) {
                 String query = "SELECT * FROM " + nsTableName;
                 executeQuery( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
             } */
-        }
+            }
 
-        if (!collectionsToBeCollected.isEmpty()){
-            for ( Pair<Long, String> collection : collectionsToBeCollected ) {
-                String query = String.format( "db.%s.find()", collection.getValue() );
-                //executeQuery2( query, DataModel.DOCUMENT, collection.getKey() );
-                File collectionData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getValue() ));
-                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.DOCUMENT, collection.getKey(), collectionData ) );
+            if ( !collectionsToBeCollected.isEmpty() ) {
+                for ( Pair<Long, String> collection : collectionsToBeCollected ) {
+                    String query = String.format( "db.%s.find()", collection.getValue() );
+                    //executeQuery2( query, DataModel.DOCUMENT, collection.getKey() );
+                    File collectionData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getValue() ) );
+                    executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.DOCUMENT, collection.getKey(), collectionData ) );
+                }
+            }
+
+            if ( !graphNamespaceIds.isEmpty() ) {
+                for ( Long graphNamespaceId : graphNamespaceIds ) {
+                    //String query = "MATCH (n) RETURN n";
+                    String query = "MATCH (*) RETURN n"; //todo: result is polygraph
+                    //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
+                    File graphData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ) );
+                    executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
+                }
+            }
+
+            log.info( "collected entry data" );
+            //initializeFileLocation();
+            executorService.shutdown();
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+            log.info( "executor service was shut down" );
+            //FIXME(FF): does it shutdown properly?? seems to block something...
+
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        } finally {
+            if ( Objects.nonNull( executorService ) && !executorService.isTerminated() ) {
+                log.error( "cancelling all non-finished tasks" );
+            }
+            if ( Objects.nonNull( executorService ) ) {
+                //executorService.shutdownNow();
+                log.info( "shutdown finished" );
             }
         }
 
-        if (!graphNamespaceIds.isEmpty()){
-            for ( Long graphNamespaceId : graphNamespaceIds ) {
-                //String query = "MATCH (n) RETURN n";
-                String query = "MATCH (*) RETURN n"; //todo: result is polygraph
-                //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
-                File graphData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ));
-                executorService.submit( new ExecuteQuery( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
-            }
-        }
-
-        log.info( "collected entry data" );
-        //initializeFileLocation();
-        log.info( "folder was created" );
-        executorService.shutdown();
 
     }
 
@@ -160,8 +181,9 @@ public class GatherEntries {
                     transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                     statement = transaction.createStatement();
                     //TODO(FF): be aware for writing into file with batches that you dont overwrite the entries already in the file (evtl you need to read the whole file again
-                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                    ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
+                    //ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).batch( BackupManager.batchSize ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                    //ExecutedContext executedQuery1 = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( Catalog.defaultNamespaceId ).build(), statement ).get( 0 );
                     // in case of results
                     ResultIterator iter = executedQuery.getIterator();
                     while ( iter.hasMoreRows() ) {
@@ -182,9 +204,13 @@ public class GatherEntries {
                         }
 
                     }
+                    //iter.close();
+                    transaction.commit();
 
                 } catch ( Exception e ) {
                     throw new RuntimeException( "Error while starting transaction", e );
+                } catch ( TransactionException e ) {
+                    throw new RuntimeException( e );
                 }
                 break;
 
@@ -227,7 +253,7 @@ public class GatherEntries {
             default:
                 throw new RuntimeException( "Backup - GatherEntries: DataModel not supported" );
         }
-
+        statement.close();
 
         /*
         try {
@@ -350,6 +376,9 @@ public class GatherEntries {
             out.writeUTF("test");
             out.close();
             String result = in.readUTF();
+            String result2 = in.readAllBytes().toString();
+            byte[] byteResult = new byte[100];
+            in.readFully( byteResult ); //reads bytes from an input stream and allocates those into the buffer array b.
             in.close();
 
         } catch ( Exception e ) {
