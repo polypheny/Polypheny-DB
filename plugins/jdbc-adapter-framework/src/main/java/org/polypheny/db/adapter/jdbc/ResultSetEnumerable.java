@@ -70,7 +70,6 @@ import org.polypheny.db.util.Static;
 
 /**
  * Executes a SQL statement and returns the result as an {@link Enumerable}.
- *
  */
 @Slf4j
 public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
@@ -290,7 +289,11 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 break;
             case VARBINARY:
             case BINARY:
-                preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
+                if ( !connectionHandler.getDialect().supportsComplexBinary() ) {
+                    preparedStatement.setString( i, value.asBinary().toTypedJson() );
+                } else {
+                    preparedStatement.setBytes( i, value.asBinary().value.getBytes() );
+                }
                 break;
             case ARRAY:
                 if ( connectionHandler.getDialect().supportsNestedArrays() ) {
@@ -317,6 +320,9 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 } else {
                     preparedStatement.setString( i, value.asGeometry().toString() );
                 }
+                break;
+            case TEXT:
+                preparedStatement.setString( i, value.asString().value );
                 break;
             default:
                 log.warn( "potentially unhandled type" );

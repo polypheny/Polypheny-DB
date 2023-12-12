@@ -343,7 +343,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
 
         }
-        final Expression poly = getOfPolyExpression( fieldType, source, dialect, resultSet_, i );
+        final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
 
         //source is null if an expression was already added to the builder.
         if ( poly != null ) {
@@ -377,7 +377,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             return Expressions.call(
                     BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
                     Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
-                    Expressions.lambda( getOfPolyExpression( componentType, argument, dialect, resultSet_, i ), argument ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i, dialect ), argument ),
                     Expressions.constant( depth )
             );
         }
@@ -391,7 +391,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, SqlDialect dialect, ParameterExpression resultSet_, int i ) {
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
         final Expression poly;
         switch ( fieldType.getPolyType() ) {
             case BIGINT:
@@ -432,7 +432,11 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 poly = Expressions.call( PolyList.class, fieldType.isNullable() ? "ofNullable" : "of", source ); // todo might change
                 break;
             case VARBINARY:
-                poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                if ( dialect.supportsComplexBinary() ) {
+                    poly = Expressions.call( PolyBinary.class, fieldType.isNullable() ? "ofNullable" : "of", Expressions.convert_( source, byte[].class ) );
+                } else {
+                    poly = Expressions.call( PolyBinary.class, "fromTypedJson", Expressions.convert_( source, String.class ), Expressions.constant( PolyBinary.class ) );
+                }
                 break;
             case FILE:
             case AUDIO:

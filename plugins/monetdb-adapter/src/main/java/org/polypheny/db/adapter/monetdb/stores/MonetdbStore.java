@@ -307,7 +307,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
-                throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
+                return "VARCHAR";//throw new GenericRuntimeException( "Unsupported datatype: " + type.name() );
             case TINYINT:
                 return "TINYINT";
             case SMALLINT:
@@ -334,6 +334,8 @@ public class MonetdbStore extends AbstractJdbcStore {
             case TIMESTAMP:
                 return "TIMESTAMP";
             case ARRAY:
+                return "TEXT";
+            case TEXT:
                 return "TEXT";
         }
         throw new GenericRuntimeException( "Unknown type: " + type.name() );
