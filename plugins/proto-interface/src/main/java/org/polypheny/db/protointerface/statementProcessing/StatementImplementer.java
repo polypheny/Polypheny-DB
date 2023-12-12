@@ -21,12 +21,16 @@ import org.polypheny.db.protointerface.statements.PIStatement;
 
 public abstract class StatementImplementer {
 
-    protected boolean hasInvalidLanguage(PIStatement piStatement) {
+    protected final String ORIGIN = "Proto-Interface";
+
+
+    protected boolean hasInvalidLanguage( PIStatement piStatement ) {
         return piStatement.getLanguage() != getLanguage();
     }
 
+
     abstract QueryLanguage getLanguage();
 
-    abstract void implement(PIStatement piStatement );
+    abstract void implement( PIStatement piStatement );
 
 }

@@ -53,8 +53,13 @@ public class MongoImplementer extends StatementImplementer {
                     9001
             );
         }
-        String query = piStatement.getQuery();
-        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( QueryContext.builder().query( query ).language( QueryLanguage.from( "mql" ) ).namespaceId( piStatement.getNamespace().id ).build(), statement );
+        QueryContext context = QueryContext.builder()
+                .query( piStatement.getQuery() )
+                .language( QueryLanguage.from( "mql" ) )
+                .namespaceId( piStatement.getNamespace().id )
+                .origin( ORIGIN )
+                .build();
+        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
 
         piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
