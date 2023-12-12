@@ -771,7 +771,6 @@ public class FindTest extends MqlTestTemplate {
     // near
 
     @Test
-    @Category( MongodbExcluded.class )
     public void nearTest() {
         // for mongodb: $near requires a 2dsphere index
         insertMany( DATA_6 );
@@ -802,7 +801,6 @@ public class FindTest extends MqlTestTemplate {
     // nearSphere
 
     @Test
-    @Category( MongodbExcluded.class )
     public void nearSphereTest() {
         // for mongodb: $nearSphere requires a 2dsphere index
         insertMany( DATA_6 );

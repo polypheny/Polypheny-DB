@@ -37,6 +37,8 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.document.DocumentAggregate;
+import org.polypheny.db.algebra.core.document.DocumentAlg.DocType;
+import org.polypheny.db.algebra.core.document.DocumentFilter;
 import org.polypheny.db.algebra.core.document.DocumentModify;
 import org.polypheny.db.algebra.core.document.DocumentSort;
 import org.polypheny.db.algebra.core.document.DocumentValues;
@@ -310,7 +312,8 @@ public class MongoRules {
         private MongoFilterRule() {
             super(
                     LogicalFilter.class,
-                    project -> MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ),
+                    project -> (MongoConvention.mapsDocuments || !DocumentRules.containsDocument( project ))
+                            && !containsIncompatible( project ),
                     Convention.NONE,
                     MongoAlg.CONVENTION,
                     MongoFilterRule.class.getSimpleName() );

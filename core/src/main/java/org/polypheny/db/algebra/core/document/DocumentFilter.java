@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.core.document;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -56,6 +57,12 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
     @Override
     public DocType getDocType() {
         return DocType.FILTER;
+    }
+
+
+    @Override
+    public List<RexNode> getChildExps() {
+        return ImmutableList.of( condition );
     }
 
 
