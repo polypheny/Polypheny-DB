@@ -27,7 +27,7 @@ import org.polypheny.db.type.entity.PolyValue;
 public class NamedValueProcessor {
 
     // matches tags such as :name
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!'):([\\w]*)(?!')" );
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile( "(?<!'):(\\w+)(?!')" );
     private static final String REPLACEMENT_CHARACTER = "?";
     @Getter
     private String processedQuery;
