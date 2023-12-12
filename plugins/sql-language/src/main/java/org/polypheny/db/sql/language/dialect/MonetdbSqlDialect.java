@@ -79,6 +79,9 @@ public class MonetdbSqlDialect extends SqlDialect {
                 // We need to flag the type with a underscore to flag the type (the underscore is removed in the unparse method)
                 castSpec = "_TEXT";
                 break;
+            case VARBINARY:
+                castSpec = "_TEXT";
+                break;
             case FILE:
             case IMAGE:
             case VIDEO:
@@ -102,6 +105,12 @@ public class MonetdbSqlDialect extends SqlDialect {
 
     @Override
     public boolean supportsIsBoolean() {
+        return false;
+    }
+
+
+    @Override
+    public boolean supportsComplexBinary() {
         return false;
     }
 

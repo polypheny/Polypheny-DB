@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -61,6 +62,8 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBigDecimal.PolyBigDecimalSerializerDef;
+import org.polypheny.db.type.entity.PolyBinary.ByteStringDeserializer;
+import org.polypheny.db.type.entity.PolyBinary.ByteStringSerializer;
 import org.polypheny.db.type.entity.PolyBoolean.PolyBooleanSerializerDef;
 import org.polypheny.db.type.entity.PolyDouble.PolyDoubleSerializerDef;
 import org.polypheny.db.type.entity.PolyFloat.PolyFloatSerializerDef;
@@ -158,11 +161,13 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
 
 
     public static final ObjectMapper JSON_WRAPPER = JsonMapper.builder()
-
             .configure( MapperFeature.REQUIRE_TYPE_ID_FOR_SUBTYPES, true )
             .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false )
             .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
             .configure( MapperFeature.USE_STATIC_TYPING, true )
+            .addModule( new SimpleModule()
+                    .addSerializer( ByteString.class, new ByteStringSerializer() )
+                    .addDeserializer( ByteString.class, new ByteStringDeserializer() ) )
             .build();
 
 

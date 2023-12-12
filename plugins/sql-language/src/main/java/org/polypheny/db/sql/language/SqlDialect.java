@@ -786,6 +786,11 @@ public class SqlDialect {
     }
 
 
+    public boolean supportsComplexBinary() {
+        return true;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 

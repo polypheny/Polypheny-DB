@@ -150,6 +150,7 @@ public class LanguageCrud {
 
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getException().isPresent() ) {
+                log.warn( "Caught exception", executedContext.getException().get() );
                 return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
             }
 
