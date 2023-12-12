@@ -23,12 +23,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.backup.datagatherer.entryGatherer.GatherEntries;
+import org.polypheny.db.backup.datagatherer.GatherEntries;
 import org.polypheny.db.backup.datagatherer.GatherSchema;
 import org.polypheny.db.backup.datainserter.InsertEntries;
 import org.polypheny.db.backup.datainserter.InsertSchema;
 import org.polypheny.db.backup.dependencies.DependencyManager;
 import org.polypheny.db.backup.dependencies.EntityReferencer;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -37,6 +38,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.*;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 @Slf4j
@@ -121,8 +123,8 @@ public class BackupManager {
         //gatherEntries.start();
 
 
-        List<Pair<String, String>> tablesForDataCollection = tableDataToBeGathered();
-        List<Pair<Long, String>> collectionsForDataCollection = collectionDataToBeGathered();
+        List<Triple<Long, String, String>> tablesForDataCollection = tableDataToBeGathered();
+        List<Triple<Long, String, String>> collectionsForDataCollection = collectionDataToBeGathered();
         List<Long> graphNamespaceIds = collectGraphNamespaceIds();
         GatherEntries gatherEntries = new GatherEntries(transactionManager, tablesForDataCollection, collectionsForDataCollection, graphNamespaceIds);
         gatherEntries.start();
@@ -235,7 +237,7 @@ public class BackupManager {
         }
 
 
-        InsertEntries insertEntries = new InsertEntries();
+        InsertEntries insertEntries = new InsertEntries(transactionManager);
         insertEntries.start();
         log.info( "inserting done" );
     }
@@ -243,10 +245,10 @@ public class BackupManager {
 
     /**
      * returns a list of all table names where the entry-data should be collected for the backup (right now, all of them, except sources)
-     * @return list of pairs with the format: namespacename, tablename with all the names
+     * @return list of triples with the format: namespaceId (long), namespaceName (string), tablename (string) with all the names/id's
      */
-    private List<Pair<String, String>> tableDataToBeGathered() {
-        List<Pair<String, String>> tableDataToBeGathered = new ArrayList<>();
+    private List<Triple<Long, String, String>> tableDataToBeGathered() {
+        List<Triple<Long, String, String>> tableDataToBeGathered = new ArrayList<>();
         List<LogicalNamespace> relationalNamespaces = backupInformationObject.getRelNamespaces();
 
         if (!relationalNamespaces.isEmpty()) {
@@ -255,40 +257,31 @@ public class BackupManager {
                 if(!tables.isEmpty() ) {
                     for ( LogicalEntity table : tables ) {
                         if (!(table.entityType.equals( EntityType.SOURCE ))) {
-                            Pair pair = new Pair<>( relationalNamespace.name, table.name );
-                            tableDataToBeGathered.add( pair );
+                            Triple triple = new Triple( relationalNamespace.id, relationalNamespace.name, table.name );
+                            tableDataToBeGathered.add( triple );
                         }
                     }
                 }
             }
         }
-        /*
-        for ( Map.Entry<Long, List<LogicalEntity>> entry : backupInformationObject.getTables().entrySet() ) {
-            for ( LogicalEntity table : entry.getValue() ) {
-                if (!(table.entityType.equals( EntityType.SOURCE ))) {
-                    tableDataToBeGathered.add( relationalNamespace.name + "." + table.name );
-                }
-            }
-        }
 
-         */
         return tableDataToBeGathered;
     }
 
 
     /**
      * returns a list of pairs with all collection names and their corresponding namespaceId where the entry-data should be collected for the backup (right now all of them)
-     * @return list of pairs with the format: <namespaceId, collectionName>
+     * @return list of triples with the format: <namespaceId (long), namespaceName (string), collectionName (string)>
      */
-    private List<Pair<Long, String>> collectionDataToBeGathered() {
-        List<Pair<Long, String>> collectionDataToBeGathered = new ArrayList<>();
+    private List<Triple<Long, String, String>> collectionDataToBeGathered() {
+        List<Triple<Long, String, String>> collectionDataToBeGathered = new ArrayList<>();
 
         for ( Map.Entry<Long, List<LogicalEntity>> entry : backupInformationObject.getCollections().entrySet() ) {
             for ( LogicalEntity collection : entry.getValue() ) {
-                collectionDataToBeGathered.add( new Pair<>( entry.getKey(), collection.name ) );
+                String nsName = getNamespaceName( entry.getKey() );
+                collectionDataToBeGathered.add( new Triple<>( entry.getKey(), nsName, collection.name ) );
             }
         }
-
         return collectionDataToBeGathered;
     }
 
@@ -303,6 +296,27 @@ public class BackupManager {
             graphNamespaceIds.add( entry.getKey() );
         }
         return graphNamespaceIds;
+    }
+
+
+    /**
+     * gets the namespaceName for a given namespaceId
+     * @param nsId id of the namespace you want the name for
+     * @return the name of the namespace
+     */
+    private String getNamespaceName (Long nsId) {
+        String namespaceName = backupInformationObject.getNamespaces().stream().filter( namespace -> namespace.id == nsId ).findFirst().get().name;
+        return namespaceName;
+    }
+
+    public int getNumberColumns( Long nsId, String tableName ) {
+        //get the tableId for the given tableName
+        Long tableId = backupInformationObject.getTables().get( nsId ).stream().filter( table -> table.name.equals( tableName ) ).findFirst().get().id;
+
+        // go through all columns in the backupinformationobject and see how many are associated with a table
+        int nbrCols = backupInformationObject.getColumns().get( tableId ).size();
+        log.info( String.format( "nbr cols for table %s: %s", tableName, nbrCols ));
+        return nbrCols;
     }
 
 }

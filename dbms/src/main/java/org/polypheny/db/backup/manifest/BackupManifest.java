@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer.entryGatherer;
+package org.polypheny.db.backup.manifest;
 
 
+import java.util.Date;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,10 +26,12 @@ import lombok.Setter;
 public class BackupManifest {
     private List<EntityInfo> entityInfos;
     private String overallChecksum;
+    private Date backupDate;
 
-    public BackupManifest( List<EntityInfo> entityInfos, String overallChecksum ) {
+    public BackupManifest( List<EntityInfo> entityInfos, String overallChecksum, Date backupDate ) {
         this.entityInfos = entityInfos;
         this.overallChecksum = overallChecksum;
+        this.backupDate = backupDate;
     }
 
 }

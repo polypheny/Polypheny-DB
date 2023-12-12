@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer.entryGatherer;
+package org.polypheny.db.backup.manifest;
 
 import java.util.List;
 import lombok.Getter;
@@ -28,15 +28,25 @@ public class EntityInfo {
     private String namespaceName;
     private Long namespaceId;
     private DataModel dataModel;
+    private int nbrCols;
     private String checksum;
 
-    public EntityInfo( List<String> filePaths, String entityName, String namespaceName, Long namespaceId, DataModel dataModel, String checksum ) {
+
+    public EntityInfo( List<String> filePaths, String entityName, String namespaceName, Long namespaceId, DataModel dataModel ) {
         this.filePaths = filePaths;
         this.entityName = entityName;
         this.namespaceName = namespaceName;
         this.namespaceId = namespaceId;
         this.dataModel = dataModel;
-        this.checksum = checksum;
+    }
+
+    public EntityInfo( List<String> filePaths, String entityName, String namespaceName, Long namespaceId, DataModel dataModel, int nbrCols ) {
+        this.filePaths = filePaths;
+        this.entityName = entityName;
+        this.namespaceName = namespaceName;
+        this.namespaceId = namespaceId;
+        this.dataModel = dataModel;
+        this.nbrCols = nbrCols;
     }
 
 }

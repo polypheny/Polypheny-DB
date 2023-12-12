@@ -17,21 +17,29 @@
 package org.polypheny.db.backup.datainserter;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.BackupManager;
+import org.polypheny.db.backup.manifest.BackupManifest;
+import org.polypheny.db.backup.manifest.EntityInfo;
+import org.polypheny.db.backup.manifest.ManifestReader;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
 public class InsertEntries {
     File backupFile = null;
+    TransactionManager transactionManager = null;
 
 
-    public InsertEntries() {
+    public InsertEntries(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
     }
 
 
@@ -39,16 +47,35 @@ public class InsertEntries {
         ExecutorService executorService = null;
         try {
             executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
-            //initFileTest();
-            PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-            // getfiles (or operate over path?)
-            this.backupFile = fileSystemManager.getFileIfExists( "backup" );
-            log.info( "insertEntries: " + backupFile.getPath() );
-            File[] files = backupFile.listFiles();
-            File[] lol = fileSystemManager.getFileIfExists( backupFile.getPath() ).listFiles();    //FIXME(FF): is null... try filesystemManager.dirs
+            PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
 
-            if ( backupFile != null ) {
-                //TODO(FF): get correct file to read from...
+            this.backupFile = homeDirManager.getFileIfExists( "backup" );
+            File manifestFile = homeDirManager.getFileIfExists( "backup/manifest.txt" );
+            BackupManifest manifest = new ManifestReader().readManifest( manifestFile.getPath() );
+
+            File[] files = backupFile.listFiles();
+
+            for ( EntityInfo entityInfo : manifest.getEntityInfos() ) {
+                for ( String path : entityInfo.getFilePaths()) {
+                    //TODO(FF): check if file is there from path, if not, skip it and move to next file...
+                    File filee = new File( path );
+                    Path filePath = Path.of( path );
+                    File file = filePath.toFile();
+                    log.info( path );
+                    if ( file.isFile() && file.exists() ) {
+                        log.info( "insertEntries - file exists: " + file.getPath() );
+                        //TransactionManager transactionManager, File dataFile, DataModel dataModel, Long namespaceId, String namespaceName, String tableName, int nbrCols
+                        executorService.submit( new InsertEntriesTask( transactionManager, file, entityInfo.getDataModel(), entityInfo.getNamespaceId(), entityInfo.getNamespaceName(), entityInfo.getEntityName(), entityInfo.getNbrCols() ) );
+                    } else {
+                        log.warn( "Insert Entries for Backup: " + file.getPath() + " does not exist, but is listed in manifest" );
+                    }
+
+                }
+            }
+
+                /*
+
+                if ( backupFile != null ) {
                 for ( File file : files ) {
                     if ( file.isDirectory() ) {
                         log.info( "insertEntries: " + file.getPath() );
@@ -59,8 +86,8 @@ public class InsertEntries {
                             }
                         }
                     }
-                /*
-                File dataFolder = fileSystemManager.getFileIfExists( "backup/data" );
+
+                File dataFolder = homeDirManager.getFileIfExists( "backup/data" );
                 File[] dataFiles = dataFolder.listFiles();
                 for ( File dataFile : dataFiles ) { //i can go through file... (or check if file is file, bcs if it is folder, subfiles are listed
                     executorService.submit( new InsertEntriesTask( dataFile ) );
@@ -71,13 +98,19 @@ public class InsertEntries {
                 if ( file.isFile() ) {
                     executorService.submit( new InsertEntriesTask( file ) );
                 }
-
-                 */
                 }
             }
+                 */
+
+            executorService.shutdown();
+            //executorService.awaitTermination(10, TimeUnit.SECONDS);
+            log.info( "executor service was shut down" );
+
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
-        } finally {
+        }
+        /*
+        finally {
             if ( Objects.nonNull( executorService ) && !executorService.isTerminated() ) {
                 log.error( "cancelling all non-finished tasks" );
             }
@@ -86,6 +119,8 @@ public class InsertEntries {
                 log.info( "shutdown finished" );
             }
         }
+
+         */
 
 
     }

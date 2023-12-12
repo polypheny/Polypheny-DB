@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer.entryGatherer;
+package org.polypheny.db.backup.manifest;
 
 import com.google.gson.Gson;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.monitoring.exceptions.GenericEventAnalyzeRuntimeException;
 
 public class BackupManifestGenerator {
 
 
-    public static void generateManifest( List<EntityInfo> entityInfoList, String overallChecksum, String manifestPath) {
-        BackupManifest backupManifest = new BackupManifest(entityInfoList, overallChecksum);
+    public static void generateManifest( List<EntityInfo> entityInfoList, String overallChecksum, File manifestPath, Date backupDate ) {
+        BackupManifest backupManifest = new BackupManifest(entityInfoList, overallChecksum, backupDate);
         Gson gson = new Gson();
         String json = gson.toJson(backupManifest);
 
+        // TODO(FF): change how to write to file (use polyphenywriter thing)
         try (FileWriter writer = new FileWriter(manifestPath);)
         {
             writer.write(json);

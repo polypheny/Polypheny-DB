@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer.entryGatherer;
+package org.polypheny.db.backup.datagatherer;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -221,7 +221,6 @@ public class GatherEntriesTask implements Runnable {
 
                     }
                     bOut.flush();
-                    log.info( "end of thread reached: case relational" );
                     out.close();
                     transaction.commit();
 

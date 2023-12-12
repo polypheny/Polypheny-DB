@@ -21,40 +21,43 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.stream.Stream;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.backup.BackupManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
+import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
 public class InsertEntriesTask implements Runnable{
-    File dataFile = null;
-    DataModel dataModel = null;
-    Long namespaceId = null;
-    String namespaceName = null;
-    String collectionName = null;
-    String tableName = null;
+    TransactionManager transactionManager;
+    File dataFile;
+    DataModel dataModel;
+    Long namespaceId;
+    String namespaceName;
+    String entityName;
+    int nbrCols;
 
-    public InsertEntriesTask( File dataFile, DataModel dataModel, Long namespaceId, String collectionName ) {
+    public InsertEntriesTask( TransactionManager transactionManager, File dataFile, DataModel dataModel, Long namespaceId, String namespaceName, String entityName, int nbrCols ) {
+        this.transactionManager = transactionManager;
         this.dataFile = dataFile;
         this.dataModel = dataModel;
         this.namespaceId = namespaceId;
-        this.collectionName = collectionName;
-    }
-
-    public InsertEntriesTask( File dataFile, DataModel dataModel, String namespaceName, String tableName ) {
-        this.dataFile = dataFile;
-        this.dataModel = dataModel;
         this.namespaceName = namespaceName;
-        this.tableName = tableName;
+        this.entityName = entityName;
+        this.nbrCols = nbrCols;
     }
 
 
@@ -69,12 +72,67 @@ public class InsertEntriesTask implements Runnable{
                 BufferedReader bIn = new BufferedReader( new InputStreamReader( new BufferedInputStream( new FileInputStream( dataFile ), 32768 ) ) );
             )
         {
+            int counter = 0;
+            String query = "";
+
             switch ( dataModel ) {
                 case RELATIONAL:
-                    //lkj
+                    String inLine = "";
+                    String row = "";
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
+                    statement = transaction.createStatement();
+                    //build up row for query (since each value is one row in the file), and then execute query for each row
+                    while ( (inLine = bIn.readLine()) != null ) {
+                        counter++;
+                        //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
+                        PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
+
+                        String value = deserialized.toJson();
+                        value = value.replaceAll( "'", "''" );
+                        if (PolyType.CHAR_TYPES.contains( deserialized.getType() ) || PolyType.DATETIME_TYPES.contains( deserialized.getType() ) ) {
+                            value = String.format( "'%s'", value );
+                        } else {
+                            value = String.format( "%s", value );
+                        }
+                        row += value + ", ";
+
+                        if (counter == nbrCols) {
+                            row = row.substring( 0, row.length() - 2 ); // remove last ", "
+                            query = String.format( "INSERT INTO %s.%s VALUES (%s)", namespaceName, entityName, row );
+                            log.info( query );
+
+                            ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "sql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+
+                            counter = 0;
+                            query = "";
+                            row= "";
+                        }
+
+                    }
+                    transaction.commit();
                     break;
                 case DOCUMENT:
-                    //lkj
+                    transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Inserter" );
+                    statement = transaction.createStatement();
+                    while ( (inLine = bIn.readLine()) != null ) {
+                        //PolyValue deserialized = PolyValue.deserialize( inLine );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
+                        PolyValue deserialized = PolyValue.fromTypedJson( inLine, PolyValue.class );
+                        String value = deserialized.toJson();
+                        query = String.format( "db.%s.insertOne(%s)", entityName, value );
+                        log.info( query );
+
+                        transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
+                        statement = transaction.createStatement();
+                        ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
+                        if ( executedQuery.getError().isPresent() ) {
+                            Optional<Exception> lol = executedQuery.getError();
+                            log.info( lol.get().getMessage() );
+                        }
+                        transaction.commit();
+
+
+                    }
+                    transaction.commit();
                     break;
                 case GRAPH:
                     //lkj
@@ -82,32 +140,12 @@ public class InsertEntriesTask implements Runnable{
                 default:
                     throw new GenericRuntimeException( "Unknown data model" );
             }
-
-
-
-            String line = "";
-            String query = "";
-            DataModel dataModel = null;
-            while ( (line = bIn.readLine()) != null ) {
-                //PolyValue deserialized = PolyValue.deserialize( line );   //somehow only reads two first lines from table file and nothing else (if there is only doc file, it doesnt read)
-                PolyValue deserialized = PolyValue.fromTypedJson( line, PolyValue.class );
-
-                String value = deserialized.toJson();
-                value = value.replaceAll( "'", "''" );
-                if (PolyType.CHAR_TYPES.contains( deserialized.getType() ) || PolyType.DATETIME_TYPES.contains( deserialized.getType() ) ) {
-                    query = String.format( " DEFAULT '%s'", value );
-                } else {
-                    query = String.format( " DEFAULT %s", value );
-                }
-                log.info( value );
-            }
-
-
+            log.info( "data-insertion: end of thread for " + entityName );
 
             /*
             String test = bIn.readLine();
-            StringTokenizer tk = new StringTokenizer(line);
-            int a = Integer.parseInt(tk.nextToken()); // <-- read single word on line and parse to int
+            StringTokenizer tk = new StringTokenizer(inLine);
+            int a = Integer.parseInt(tk.nextToken()); // <-- read single word on inLine and parse to int
             log.info( test );
 
             byte[] bytes = new byte[1000];
@@ -123,6 +161,8 @@ public class InsertEntriesTask implements Runnable{
 
         } catch(Exception e){
             throw new GenericRuntimeException( "Error while inserting entries", e );
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( e );
         }
     }
 

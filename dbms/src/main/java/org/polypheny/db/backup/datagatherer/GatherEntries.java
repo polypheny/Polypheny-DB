@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.backup.datagatherer.entryGatherer;
+package org.polypheny.db.backup.datagatherer;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -30,8 +30,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +45,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.backup.BackupManager;
+import org.polypheny.db.backup.manifest.BackupManifestGenerator;
+import org.polypheny.db.backup.manifest.EntityInfo;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -55,24 +59,26 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.Triple;
 
 @Slf4j
 public class GatherEntries {
     private final TransactionManager transactionManager;
-    private final List<Pair<String, String>> tablesToBeCollected;
-    private final List<Pair<Long, String>> collectionsToBeCollected;
+    private final List<Triple<Long, String, String>> tablesToBeCollected;
+    private final List<Triple<Long, String, String>> collectionsToBeCollected;
     private final List<Long> graphNamespaceIds;
     //private final int = hal.getProcessor().getPhysicalProcessorCount();
 
+    @Getter
     private File backupFolder = null;
     @Getter
     private File dataFolder = null;
+    PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
 
 
 
-    public GatherEntries( TransactionManager transactionManager, List<Pair<String, String>> tablesToBeCollected, List<Pair<Long, String>> collectionsForDataCollection, List<Long> graphNamespaceIds ) {
+    public GatherEntries( TransactionManager transactionManager, List<Triple<Long, String, String>> tablesToBeCollected, List<Triple<Long, String, String>> collectionsForDataCollection, List<Long> graphNamespaceIds ) {
         this.transactionManager = transactionManager;
         this.tablesToBeCollected = tablesToBeCollected;
         this.collectionsToBeCollected = collectionsForDataCollection;
@@ -90,18 +96,24 @@ public class GatherEntries {
         try {
             executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
             //initFileTest();
-            PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
-            backupFolder = fileSystemManager.registerNewFolder( "backup" );
-            dataFolder = fileSystemManager.registerNewFolder( backupFolder, "data" );
+            //PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
+            backupFolder = homeDirManager.registerNewFolder( "backup" );
+            dataFolder = homeDirManager.registerNewFolder( backupFolder, "data" );
 
             if ( !tablesToBeCollected.isEmpty() ) {
                 //go through each pair in tablesToBeCollectedList
-                for ( Pair<String, String> table : tablesToBeCollected ) {
+                for ( Triple<Long, String, String> table : tablesToBeCollected ) {
+                    List<String> filePaths = new ArrayList<>();
+                    //int nbrCols = BackupManager.getNumberColumns(table.getLeft(), table.getRight());
+                    int nbrCols = BackupManager.getINSTANCE().getNumberColumns( table.getLeft(), table.getRight() );
                     //TODO(FF): exclude default columns? no, how do you differentiate for each line if it is not a default value
-                    String query = String.format( "SELECT * FROM %s.%s", table.getKey(), table.getValue() );
+                    String query = String.format( "SELECT * FROM %s.%s", table.getMiddle(), table.getRight() );
                     //executeQuery2( query, DataModel.RELATIONAL, Catalog.defaultNamespaceId );
 
-                    File tableData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getKey(), table.getValue() ) );
+                    File tableData = homeDirManager.registerNewFile( getDataFolder(), String.format( "tab_%s_%s.txt", table.getMiddle(), table.getRight() ) );
+                    filePaths.add( tableData.getPath() );   //FIXME(FF): is complete path, i only want path from backup folder
+                    EntityInfo entityInfo = new EntityInfo( filePaths, table.getRight(), table.getMiddle(), table.getLeft(), DataModel.RELATIONAL, nbrCols );
+                    entityInfoList.add( entityInfo );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.RELATIONAL, Catalog.defaultNamespaceId, tableData ) );
                 }
             /*
@@ -112,11 +124,15 @@ public class GatherEntries {
             }
 
             if ( !collectionsToBeCollected.isEmpty() ) {
-                for ( Pair<Long, String> collection : collectionsToBeCollected ) {
-                    String query = String.format( "db.%s.find()", collection.getValue() );
+                for ( Triple<Long, String, String> collection : collectionsToBeCollected ) {
+                    List<String> filePaths = new ArrayList<>();
+                    String query = String.format( "db.%s.find()", collection.getRight() );
                     //executeQuery2( query, DataModel.DOCUMENT, collection.getKey() );
-                    File collectionData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getValue() ) );
-                    executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.DOCUMENT, collection.getKey(), collectionData ) );
+                    File collectionData = homeDirManager.registerNewFile( getDataFolder(), String.format( "col_%s.txt", collection.getRight() ) );
+                    filePaths.add( collectionData.getPath() );  //FIXME(FF): is complete path, i only want path from backup folder
+                    EntityInfo entityInfo = new EntityInfo( filePaths, collection.getRight(), collection.getMiddle(), collection.getLeft(), DataModel.DOCUMENT );
+                    entityInfoList.add( entityInfo );
+                    executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.DOCUMENT, collection.getLeft(), collectionData ) );
                 }
             }
 
@@ -125,7 +141,7 @@ public class GatherEntries {
                     //String query = "MATCH (n) RETURN n";
                     String query = "MATCH (*) RETURN n"; //todo: result is polygraph
                     //executeQuery2( query, DataModel.GRAPH, graphNamespaceId );
-                    File graphData = fileSystemManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ) );
+                    File graphData = homeDirManager.registerNewFile( getDataFolder(), String.format( "graph_%s.txt", graphNamespaceId.toString() ) );
                     executorService.submit( new GatherEntriesTask( transactionManager, query, DataModel.GRAPH, graphNamespaceId, graphData ) );
                 }
             }
@@ -133,13 +149,14 @@ public class GatherEntries {
             log.info( "collected entry data" );
             //initializeFileLocation();
             executorService.shutdown();
-            executorService.awaitTermination(10, TimeUnit.SECONDS);
+            //executorService.awaitTermination(10, TimeUnit.SECONDS);
             log.info( "executor service was shut down" );
-            //FIXME(FF): does it shutdown properly?? seems to block something...
 
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
-        } finally {
+        }
+        /*
+        finally {
             if ( Objects.nonNull( executorService ) && !executorService.isTerminated() ) {
                 log.error( "cancelling all non-finished tasks" );
             }
@@ -147,6 +164,18 @@ public class GatherEntries {
                 //executorService.shutdownNow();
                 log.info( "shutdown finished" );
             }
+        }
+
+         */
+
+        try {
+            Calendar calendar = Calendar.getInstance();
+            Date currentDate = calendar.getTime();
+            //TODO(FF): calculate checksum
+            File manifestFile = homeDirManager.registerNewFile( getBackupFolder(), "manifest.txt" );
+            BackupManifestGenerator.generateManifest( entityInfoList, "", manifestFile, currentDate );
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Could not create manifest for backup" + e );
         }
 
 
@@ -278,7 +307,7 @@ public class GatherEntries {
          */
     }
 
-    private static void initFileTest() {
+    private void initFileTest() {
         // this creates (only folders): dataa>cottontaildb-store>store23>dataIntern
         PolyphenyHomeDirManager fileSystemManager = PolyphenyHomeDirManager.getInstance();
         File adapterRoot = fileSystemManager.registerNewFolder( "dataaa/cottontaildb-store" );
@@ -291,7 +320,7 @@ public class GatherEntries {
     }
 
 
-    private static void initializeFileLocation() {
+    private void initializeFileLocation() {
         PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
         File folder = null;  //todo: wär eig class field (private static)
         // String folderName = DEFAULT_CONFIGURATION_DIRECTORY_NAME;    //static string in class field
