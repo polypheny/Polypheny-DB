@@ -754,7 +754,6 @@ public class MqlFunctions {
         if ( inputGeom == null || geom == null ) {
             return PolyBoolean.FALSE;
         }
-        boolean res = inputGeom.within( geom );
         return PolyBoolean.of( inputGeom.within( geom ) );
     }
 

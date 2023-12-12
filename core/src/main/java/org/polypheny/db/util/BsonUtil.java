@@ -470,6 +470,7 @@ public class BsonUtil {
             case VARCHAR:
                 return el.getValue();
             case GEOMETRY:
+                return el.getValue().toString();
             case FILE:
             case IMAGE:
             case VIDEO:
@@ -538,6 +539,7 @@ public class BsonUtil {
             case VARCHAR:
             case BINARY:
             case VARBINARY:
+            case GEOMETRY:
                 return String.class;
             case FILE:
             case IMAGE:
@@ -593,8 +595,8 @@ public class BsonUtil {
 
 
     /**
-     * Method to retrieve the type numbers according to the MongoDB specifications
-     * https://docs.mongodb.com/manual/reference/operator/query/type/
+     * Method to retrieve the type numbers according to the
+     * <a href="https://docs.mongodb.com/manual/reference/operator/query/type/">MongoDB specifications</a>
      *
      * @param type PolyType which is matched
      * @return the corresponding type number for MongoDB
@@ -624,6 +626,7 @@ public class BsonUtil {
             case VARCHAR:
             case BINARY:
             case VARBINARY:
+            case GEOMETRY:
                 return 2;
             default:
                 throw new IllegalStateException( "Unexpected value: " + type );

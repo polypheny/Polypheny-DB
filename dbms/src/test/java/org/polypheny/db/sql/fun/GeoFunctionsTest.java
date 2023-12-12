@@ -89,7 +89,7 @@ public class GeoFunctionsTest {
     // --------------- Test spatial functions without the actual persisted data ----------------------
 
     @Test
-    public void GeomFromText() throws SQLException {
+    public void geomFromText() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
