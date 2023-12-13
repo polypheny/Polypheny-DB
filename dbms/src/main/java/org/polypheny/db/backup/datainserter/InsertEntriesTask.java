@@ -124,10 +124,6 @@ public class InsertEntriesTask implements Runnable{
                         transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Backup Entry-Gatherer" );
                         statement = transaction.createStatement();
                         ExecutedContext executedQuery = LanguageManager.getINSTANCE().anyQuery( QueryContext.builder().language( QueryLanguage.from( "mql" ) ).query( query ).origin( "Backup Manager" ).transactionManager( transactionManager ).namespaceId( namespaceId ).build(), statement ).get( 0 );
-                        if ( executedQuery.getError().isPresent() ) {
-                            Optional<Exception> lol = executedQuery.getError();
-                            log.info( lol.get().getMessage() );
-                        }
                         transaction.commit();
 
 

@@ -277,9 +277,9 @@ public class InsertSchema {
                 //TODO(FF - cosmetic): exclude source tables (for speed)
 
                 // compare the table id with the constraint keys, and if they are the same, create the constraint, and check if it schoult be inserted
-                if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).getId() )) && table.getToBeInserted()) {
-                    List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
-                    List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().unwrap( LogicalTable.class ).getId() );
+                if ( (constraints.containsKey( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() )) && table.getToBeInserted()) {
+                    List<LogicalConstraint> constraintsList = constraints.get( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() );
+                    List<LogicalColumn> logicalColumns = backupInformationObject.getColumns().get( table.getEntityObject().unwrap( LogicalTable.class ).get().getId() );
 
                     // go through all constraints per table
                     for ( LogicalConstraint constraint : constraintsList ) {
@@ -313,16 +313,16 @@ public class InsertSchema {
                     for ( LogicalForeignKey foreignKey : fkListPerTable.getValue() ) {
                         // get the table where the foreign key is saved
                         Long nsId = foreignKey.namespaceId;
-                        BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == tableId ).findFirst().get();
+                        BackupEntityWrapper<LogicalEntity> table = backupInformationObject.getWrappedTables().get( nsId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == tableId ).findFirst().get();
                         //boolean lol = table.getToBeInserted();
                         // check if the table is marked to be inserted
                         if (table.getToBeInserted()) {
                             String namespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.namespaceId ).getNameForQuery();
-                            String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
+                            String tableName = backupInformationObject.getWrappedTables().get( foreignKey.namespaceId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == foreignKey.tableId ).findFirst().get().getNameForQuery();
                             String constraintName = foreignKey.name;
                             String listOfCols = getListOfCol( foreignKey.columnIds, backupInformationObject.getColumns().get( foreignKey.tableId ) );
                             String referencedNamespaceName = backupInformationObject.getWrappedNamespaces().get( foreignKey.referencedKeySchemaId ).getNameForQuery();
-                            String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
+                            String referencedTableName = backupInformationObject.getWrappedTables().get( foreignKey.referencedKeySchemaId ).stream().filter( e -> e.getEntityObject().unwrap( LogicalTable.class ).get().getId() == foreignKey.referencedKeyTableId ).findFirst().get().getNameForQuery();
                             String referencedListOfCols = getListOfCol( foreignKey.referencedKeyColumnIds, backupInformationObject.getColumns().get( foreignKey.referencedKeyTableId ) );
                             String updateAction = foreignKey.updateRule.foreignKeyOptionToString();
                             String deleteAction = foreignKey.deleteRule.foreignKeyOptionToString();
@@ -405,7 +405,7 @@ public class InsertSchema {
         String pkConstraint = new String();
         ImmutableMap<Long, List<LogicalColumn>> columns = backupInformationObject.getColumns();
         ImmutableMap<Long, List<LogicalPrimaryKey>> primaryKeys = backupInformationObject.getPrimaryKeysPerTable();
-        LogicalTable logicalTable = table.getEntityObject().unwrap( LogicalTable.class );
+        LogicalTable logicalTable = table.getEntityObject().unwrap( LogicalTable.class ).get();
         Long tableID = logicalTable.getId();
         List<LogicalColumn> colsPerTable = columns.get( tableID );
         List<LogicalPrimaryKey> pksPerTable = primaryKeys.get( tableID );

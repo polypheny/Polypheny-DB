@@ -19,6 +19,7 @@ package org.polypheny.db.backup.datainserter;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,7 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 @Slf4j
 public class InsertEntries {
-    File backupFile = null;
+    Optional<File> backupFile = null;
     TransactionManager transactionManager = null;
 
 
@@ -49,11 +50,11 @@ public class InsertEntries {
             executorService = Executors.newFixedThreadPool( BackupManager.threadNumber );
             PolyphenyHomeDirManager homeDirManager = PolyphenyHomeDirManager.getInstance();
 
-            this.backupFile = homeDirManager.getFileIfExists( "backup" );
-            File manifestFile = homeDirManager.getFileIfExists( "backup/manifest.txt" );
-            BackupManifest manifest = new ManifestReader().readManifest( manifestFile.getPath() );
+            this.backupFile = homeDirManager.getHomeFile( "backup" );
+            Optional<File> manifestFile = homeDirManager.getHomeFile( "backup/manifest.txt" );
+            BackupManifest manifest = new ManifestReader().readManifest( manifestFile.get().getPath() );
 
-            File[] files = backupFile.listFiles();
+            File[] files = backupFile.get().listFiles();
 
             for ( EntityInfo entityInfo : manifest.getEntityInfos() ) {
                 for ( String path : entityInfo.getFilePaths()) {

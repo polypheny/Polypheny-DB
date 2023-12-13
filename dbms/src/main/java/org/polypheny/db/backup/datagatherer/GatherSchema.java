@@ -17,6 +17,7 @@
 package org.polypheny.db.backup.datagatherer;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map.Entry;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.backup.BackupInformationObject;
 import org.polypheny.db.catalog.Catalog;
@@ -197,11 +198,13 @@ public class GatherSchema {
         }
 
         //safes the gathered information in the class variables
-        this.tables = ImmutableMap.copyOf( tables.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )));
+        //this.tables = ImmutableMap.copyOf( tables.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )));
+        //this.tables = (ImmutableMap<Long, List<LogicalEntity>>) ImmutableMap.copyOf( (Map<?, ? extends List<LogicalEntity>>) tables.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        this.tables = ImmutableMap.copyOf( tables.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
         //this.tables = ImmutableMap.copyOf( (Map<? extends Long, ? extends List<LogicalEntity>>) tables );
         //this.tables = ImmutableMap.copyOf( (Map<Long, ? extends List<LogicalEntity>>) tables );
         this.backupInformationObject.setTables( this.tables );
-        this.views = ImmutableMap.copyOf( views.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        this.views = ImmutableMap.copyOf( views.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
         this.backupInformationObject.setViews( this.views );
         this.columns = ImmutableMap.copyOf( columns );
         this.backupInformationObject.setColumns( this.columns );
@@ -216,7 +219,7 @@ public class GatherSchema {
         //this.logicalIndexes = ImmutableMap.copyOf( logicalIndex.entrySet().stream().collect( Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) )) ) )
         //TODO(FF): unwrap doesn't work for indexes
         this.backupInformationObject.setLogicalIndexes( this.logicalIndexes );
-        this.materializedViews = ImmutableMap.copyOf( materializedViews.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        this.materializedViews = ImmutableMap.copyOf( materializedViews.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
         this.backupInformationObject.setMaterializedViews( this.materializedViews );
 
         this.backupInformationObject.setCollectedRelSchema( true );
@@ -273,7 +276,7 @@ public class GatherSchema {
         }
 
         //safes the gathered information in the class variables
-        this.collections = ImmutableMap.copyOf( nsCollections.entrySet().stream().collect(Collectors.toMap(v -> v.getKey(), v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ) ).collect(Collectors.toList() ) )) );
+        this.collections = ImmutableMap.copyOf( collections.entrySet().stream().collect( Collectors.toMap( Entry::getKey, v -> v.getValue().stream().map( e -> e.unwrap( LogicalEntity.class ).orElseThrow() ).collect( Collectors.toList() ) ) ) );
         this.backupInformationObject.setCollections( this.collections );
         this.backupInformationObject.setCollectedDocSchema( true );
     }
