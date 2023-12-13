@@ -338,7 +338,7 @@ public class LanguageCrud {
                     temp[counter] = null;
                 } else {
                     String columnName = String.valueOf( header.get( counter ).name.hashCode() );
-                    File mmFolder = PolyphenyHomeDirManager.getInstance().getGlobalFile( "/tmp" ).orElseThrow();
+                    File mmFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "/tmp" );
                     mmFolder.mkdirs();
                     ContentInfoUtil util = new ContentInfoUtil();
                     if ( List.of( PolyType.FILE.getName(), PolyType.VIDEO.getName(), PolyType.AUDIO.getName(), PolyType.IMAGE.getName() ).contains( header.get( counter ).dataType ) ) {

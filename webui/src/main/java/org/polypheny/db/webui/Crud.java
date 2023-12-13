@@ -572,7 +572,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         long entityId = Long.parseLong( unparsed );
 
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( Catalog.defaultNamespaceId ).orElseThrow();
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
         String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
 
         Transaction transaction = getTransaction();
